@@ -2065,95 +2065,101 @@ struct ProfessionalDirectSelectionView: View {
     
     @ViewBuilder
     private func professionalBezierDisplay(for shape: VectorShape) -> some View {
-        // PROFESSIONAL ANCHOR POINT AND HANDLE DISPLAY (Adobe Illustrator Standards)
-        // Show ALL anchor points AND control handles for direct-selected shapes
-        ForEach(shape.path.elements.indices, id: \.self) { elementIndex in
-            let element = shape.path.elements[elementIndex]
-            
-            // 1. RENDER CONTROL HANDLES FIRST (Adobe Illustrator draws handles behind anchor points)
-            Group {
-                if case .curve(let to, let control1, let control2) = element {
-                    let anchorLocation = CGPoint(x: to.x, y: to.y)
-                    let control1Location = CGPoint(x: control1.x, y: control1.y)
-                    let control2Location = CGPoint(x: control2.x, y: control2.y)
-                    
-                    // FIX: Don't double-transform - handles are already in shape coordinate space
-                    let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
-                    let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
-                    let screenControl2 = canvasToScreen(control2Location, geometry: geometry)
-                    
-                    // CONTROL HANDLE 1 LINE
-                    Path { path in
-                        path.move(to: screenAnchor)
-                        path.addLine(to: screenControl1)
-                    }
-                    .stroke(Color.blue, lineWidth: 1.0)
-                    
-                    // CONTROL HANDLE 1 CIRCLE
-                    Circle()
-                        .fill(Color.blue)
-                        .stroke(Color.white, lineWidth: 0.5)
-                        .frame(width: 4, height: 4)
-                        .position(screenControl1)
-                    
-                    // CONTROL HANDLE 2 LINE
-                    Path { path in
-                        path.move(to: screenAnchor)
-                        path.addLine(to: screenControl2)
-                    }
-                    .stroke(Color.blue, lineWidth: 1.0)
-                    
-                    // CONTROL HANDLE 2 CIRCLE
-                    Circle()
-                        .fill(Color.blue)
-                        .stroke(Color.white, lineWidth: 0.5)
-                        .frame(width: 4, height: 4)
-                        .position(screenControl2)
+        ZStack {
+            // RENDER ALL HANDLES AND ANCHOR POINTS
+            ForEach(Array(shape.path.elements.enumerated()), id: \.offset) { elementIndex, element in
+                Group {
+                    // HANDLES FIRST
+                    switch element {
+                    case .curve(let to, _, let control2):
+                        let anchorLocation = CGPoint(x: to.x, y: to.y)
+                        let control2Location = CGPoint(x: control2.x, y: control2.y)
                         
-                } else if case .quadCurve(let to, let control) = element {
-                    let anchorLocation = CGPoint(x: to.x, y: to.y)
-                    let controlLocation = CGPoint(x: control.x, y: control.y)
-                    
-                    // FIX: Don't double-transform - handles are already in shape coordinate space
-                    let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
-                    let screenControl = canvasToScreen(controlLocation, geometry: geometry)
-                    
-                    // CONTROL HANDLE LINE
-                    Path { path in
-                        path.move(to: screenAnchor)
-                        path.addLine(to: screenControl)
+                        let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
+                        let screenControl2 = canvasToScreen(control2Location, geometry: geometry)
+                        
+                        // INCOMING HANDLE
+                        Path { path in
+                            path.move(to: screenAnchor)
+                            path.addLine(to: screenControl2)
+                        }
+                        .stroke(Color.blue, lineWidth: 1.0)
+                        
+                        Circle()
+                            .fill(Color.blue)
+                            .stroke(Color.white, lineWidth: 0.5)
+                            .frame(width: 4, height: 4)
+                            .position(screenControl2)
+                            
+                        // OUTGOING HANDLE
+                        if elementIndex + 1 < shape.path.elements.count {
+                            let nextElement = shape.path.elements[elementIndex + 1]
+                            if case .curve(_, let nextControl1, _) = nextElement {
+                                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
+                                
+                                Path { path in
+                                    path.move(to: screenAnchor)
+                                    path.addLine(to: screenControl1)
+                                }
+                                .stroke(Color.blue, lineWidth: 1.0)
+                                
+                                Circle()
+                                    .fill(Color.blue)
+                                    .stroke(Color.white, lineWidth: 0.5)
+                                    .frame(width: 4, height: 4)
+                                    .position(screenControl1)
+                            }
+                        }
+                        
+                    case .move(let to), .line(let to):
+                        let anchorLocation = CGPoint(x: to.x, y: to.y)
+                        let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
+                        
+                        // OUTGOING HANDLE
+                        if elementIndex + 1 < shape.path.elements.count {
+                            let nextElement = shape.path.elements[elementIndex + 1]
+                            if case .curve(_, let nextControl1, _) = nextElement {
+                                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
+                                
+                                Path { path in
+                                    path.move(to: screenAnchor)
+                                    path.addLine(to: screenControl1)
+                                }
+                                .stroke(Color.blue, lineWidth: 1.0)
+                                
+                                Circle()
+                                    .fill(Color.blue)
+                                    .stroke(Color.white, lineWidth: 0.5)
+                                    .frame(width: 4, height: 4)
+                                    .position(screenControl1)
+                            }
+                        }
+                        
+                    default:
+                        EmptyView()
                     }
-                    .stroke(Color.blue, lineWidth: 1.0)
                     
-                    // CONTROL HANDLE CIRCLE
-                    Circle()
-                        .fill(Color.blue)
-                        .stroke(Color.white, lineWidth: 0.5)
-                        .frame(width: 4, height: 4)
-                        .position(screenControl)
+                    // ANCHOR POINTS ON TOP
+                    if let point = extractPointFromElement(element) {
+                        let pointLocation = CGPoint(x: point.x, y: point.y)
+                        let screenPoint = canvasToScreen(pointLocation, geometry: geometry)
+                        
+                        let pointID = DrawingCanvas.PointID(
+                            shapeID: shape.id,
+                            pathIndex: 0,
+                            elementIndex: elementIndex
+                        )
+                        let isPointSelected = selectedPoints.contains(pointID)
+                        
+                        Rectangle()
+                            .fill(isPointSelected ? Color.blue : Color.white)
+                            .stroke(Color.blue, lineWidth: 1.0)
+                            .frame(width: 6, height: 6)
+                            .position(screenPoint)
+                    }
                 }
-            }
-            
-            // 2. RENDER ANCHOR POINTS ON TOP (Adobe Illustrator standard)
-            if let point = extractPointFromElement(element) {
-                let pointLocation = CGPoint(x: point.x, y: point.y)
-                // FIX: Don't double-transform - points are already in shape coordinate space
-                let screenPoint = canvasToScreen(pointLocation, geometry: geometry)
-                
-                // Check if this anchor point is individually selected
-                let pointID = DrawingCanvas.PointID(
-                    shapeID: shape.id,
-                    pathIndex: 0,
-                    elementIndex: elementIndex
-                )
-                let isPointSelected = selectedPoints.contains(pointID)
-                
-                // PROFESSIONAL ANCHOR POINT (Adobe Illustrator standard)
-                Rectangle()
-                    .fill(isPointSelected ? Color.blue : Color.white)
-                    .stroke(Color.blue, lineWidth: 1.0)
-                    .frame(width: 6, height: 6)
-                    .position(screenPoint)
             }
         }
     }
