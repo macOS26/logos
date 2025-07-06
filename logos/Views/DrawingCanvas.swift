@@ -1144,38 +1144,13 @@ struct DrawingCanvas: View {
                 let newHandle = VectorPoint(newPosition.x, newPosition.y)
                 var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
                 
+                // STEP 1: Update the dragged handle
                 switch elements[handleID.elementIndex] {
                 case .curve(let to, let control1, let control2):
-                    let anchorPoint = CGPoint(x: to.x, y: to.y)
-                    
                     if handleID.handleType == .control1 {
-                        // Moving control1 (outgoing handle from previous point)
                         elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
-                        
-                        // PROFESSIONAL LINKED HANDLES: Default to smooth behavior (Adobe Illustrator standard)
-                        // Only break the link if Alt/Option key is held
-                        if !optionPressed() {
-                            let linkedControl2 = calculateLinkedHandle(
-                                anchorPoint: anchorPoint,
-                                draggedHandle: newPosition,
-                                originalOppositeHandle: CGPoint(x: control2.x, y: control2.y)
-                            )
-                            elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: VectorPoint(linkedControl2.x, linkedControl2.y))
-                        }
                     } else {
-                        // Moving control2 (incoming handle to current point)
                         elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
-                        
-                        // PROFESSIONAL LINKED HANDLES: Default to smooth behavior (Adobe Illustrator standard)
-                        // Only break the link if Alt/Option key is held
-                        if !optionPressed() {
-                            let linkedControl1 = calculateLinkedHandle(
-                                anchorPoint: anchorPoint,
-                                draggedHandle: newPosition,
-                                originalOppositeHandle: CGPoint(x: control1.x, y: control1.y)
-                            )
-                            elements[handleID.elementIndex] = .curve(to: to, control1: VectorPoint(linkedControl1.x, linkedControl1.y), control2: newHandle)
-                        }
                     }
                 case .quadCurve(let to, _):
                     if handleID.handleType == .control1 {
@@ -1185,9 +1160,70 @@ struct DrawingCanvas: View {
                     break
                 }
                 
+                // STEP 2: PROFESSIONAL LINKED HANDLES - Update the opposite handle of THE SAME ANCHOR POINT
+                if !optionPressed() {
+                    updateLinkedHandle(
+                        elements: &elements,
+                        draggedHandleID: handleID,
+                        newDraggedPosition: newPosition
+                    )
+                }
+                
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 return
+            }
+        }
+    }
+    
+    /// Updates the opposite handle of the SAME anchor point to maintain smooth curves
+    /// PROFESSIONAL BEHAVIOR: Smooth points work like a teeter-totter - both handles move together in a straight line
+    private func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
+        
+        if draggedHandleID.handleType == .control2 {
+            // Dragging INCOMING handle (control2) of current curve element
+            // This handle belongs to the anchor point at the END of this curve
+            guard case .curve(let anchorTo, let control1, _) = elements[draggedHandleID.elementIndex] else { return }
+            
+            let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
+            
+            // Find the OUTGOING handle of the same anchor point (control1 of NEXT curve element)
+            let nextIndex = draggedHandleID.elementIndex + 1
+            if nextIndex < elements.count, case .curve(let nextTo, let currentOutgoing, let nextControl2) = elements[nextIndex] {
+                
+                // Calculate the opposite handle position (180° from dragged handle through anchor point)
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newDraggedPosition,
+                    originalOppositeHandle: CGPoint(x: currentOutgoing.x, y: currentOutgoing.y)
+                )
+                
+                // Update both handles: the dragged one and its opposite
+                elements[draggedHandleID.elementIndex] = .curve(to: anchorTo, control1: control1, control2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
+                elements[nextIndex] = .curve(to: nextTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: nextControl2)
+            }
+            
+        } else if draggedHandleID.handleType == .control1 {
+            // Dragging OUTGOING handle (control1) of current curve element
+            // This handle belongs to the anchor point where the PREVIOUS curve ended
+            
+            let prevIndex = draggedHandleID.elementIndex - 1
+            if prevIndex >= 0, case .curve(let anchorTo, let prevControl1, let currentIncoming) = elements[prevIndex] {
+                
+                let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
+                
+                // Calculate the opposite handle position (180° from dragged handle through anchor point)
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newDraggedPosition,
+                    originalOppositeHandle: CGPoint(x: currentIncoming.x, y: currentIncoming.y)
+                )
+                
+                // Update both handles: the dragged one and its opposite
+                if case .curve(let currentTo, _, let currentControl2) = elements[draggedHandleID.elementIndex] {
+                    elements[prevIndex] = .curve(to: anchorTo, control1: prevControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
+                    elements[draggedHandleID.elementIndex] = .curve(to: currentTo, control1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y), control2: currentControl2)
+                }
             }
         }
     }
