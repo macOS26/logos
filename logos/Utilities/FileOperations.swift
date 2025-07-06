@@ -3700,9 +3700,210 @@ class FileOperations {
     }
     
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
-        // TODO: Implement SVG export
-        print("🔧 SVG export implementation required")
-        throw VectorImportError.parsingError("SVG export not yet implemented", line: nil)
+        print("🎨 Exporting document to SVG: \(url.path)")
+        
+        do {
+            let svgContent = try generateSVGContent(from: document)
+            try svgContent.write(to: url, atomically: true, encoding: .utf8)
+            print("✅ Successfully exported SVG document")
+        } catch {
+            print("❌ SVG export failed: \(error)")
+            throw VectorImportError.parsingError("Failed to export SVG: \(error.localizedDescription)", line: nil)
+        }
+    }
+    
+    private static func generateSVGContent(from document: VectorDocument) throws -> String {
+        let bounds = document.getDocumentBounds()
+        let width = max(bounds.width, 100) // Minimum width
+        let height = max(bounds.height, 100) // Minimum height
+        
+        var svg = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="\(width)" height="\(height)" viewBox="0 0 \(width) \(height)" xmlns="http://www.w3.org/2000/svg">
+        <title>Logos Vector Document</title>
+        <defs>
+        </defs>
+        
+        """
+        
+        // Export each layer
+        for (layerIndex, layer) in document.layers.enumerated() {
+            if !layer.isVisible { continue }
+            
+            svg += "<g id=\"layer-\(layerIndex)\" data-layer-name=\"\(layer.name)\">\n"
+            
+            // Export shapes in this layer
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                svg += try generateSVGShape(shape)
+            }
+            
+            svg += "</g>\n"
+        }
+        
+        // Export text objects
+        for text in document.textObjects {
+            svg += try generateSVGText(text)
+        }
+        
+        svg += "</svg>"
+        return svg
+    }
+    
+    private static func generateSVGShape(_ shape: VectorShape) throws -> String {
+        let pathData = try generateSVGPath(shape.path)
+        let fillStyle = generateSVGFill(shape.fillStyle)
+        let strokeStyle = generateSVGStroke(shape.strokeStyle)
+        let transform = generateSVGTransform(shape.transform)
+        
+        return """
+        <path d="\(pathData)" \(fillStyle) \(strokeStyle) \(transform) id="shape-\(shape.id)"/>
+        
+        """
+    }
+    
+    private static func generateSVGPath(_ path: VectorPath) throws -> String {
+        var pathString = ""
+        
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                pathString += "M \(to.x) \(to.y) "
+            case .line(let to):
+                pathString += "L \(to.x) \(to.y) "
+            case .curve(let to, let control1, let control2):
+                pathString += "C \(control1.x) \(control1.y) \(control2.x) \(control2.y) \(to.x) \(to.y) "
+            case .quadCurve(let to, let control):
+                pathString += "Q \(control.x) \(control.y) \(to.x) \(to.y) "
+            case .close:
+                pathString += "Z "
+            }
+        }
+        
+        return pathString.trimmingCharacters(in: .whitespaces)
+    }
+    
+    private static func generateSVGFill(_ fillStyle: FillStyle?) -> String {
+        guard let fillStyle = fillStyle else {
+            return "fill=\"none\""
+        }
+        
+        let color = fillStyle.color
+        let opacity = fillStyle.opacity
+        let rgbComponents = extractRGBComponents(from: color)
+        
+        if opacity < 1.0 {
+            return "fill=\"rgb(\(rgbComponents.red),\(rgbComponents.green),\(rgbComponents.blue))\" fill-opacity=\"\(opacity)\""
+        } else {
+            return "fill=\"rgb(\(rgbComponents.red),\(rgbComponents.green),\(rgbComponents.blue))\""
+        }
+    }
+    
+    private static func generateSVGStroke(_ strokeStyle: StrokeStyle?) -> String {
+        guard let strokeStyle = strokeStyle else {
+            return "stroke=\"none\""
+        }
+        
+        let color = strokeStyle.color
+        let width = strokeStyle.width
+        let opacity = strokeStyle.opacity
+        let rgbComponents = extractRGBComponents(from: color)
+        
+        var strokeAttributes = "stroke=\"rgb(\(rgbComponents.red),\(rgbComponents.green),\(rgbComponents.blue))\" stroke-width=\"\(width)\""
+        
+        if opacity < 1.0 {
+            strokeAttributes += " stroke-opacity=\"\(opacity)\""
+        }
+        
+        // Handle line caps
+        switch strokeStyle.lineCap {
+        case .round:
+            strokeAttributes += " stroke-linecap=\"round\""
+        case .square:
+            strokeAttributes += " stroke-linecap=\"square\""
+        case .butt:
+            strokeAttributes += " stroke-linecap=\"butt\""
+        }
+        
+        // Handle line joins
+        switch strokeStyle.lineJoin {
+        case .round:
+            strokeAttributes += " stroke-linejoin=\"round\""
+        case .bevel:
+            strokeAttributes += " stroke-linejoin=\"bevel\""
+        case .miter:
+            strokeAttributes += " stroke-linejoin=\"miter\""
+        }
+        
+        return strokeAttributes
+    }
+    
+    private static func extractRGBComponents(from color: VectorColor) -> (red: Int, green: Int, blue: Int) {
+        let cgColor = color.cgColor
+        let components = cgColor.components ?? [0, 0, 0, 1]
+        
+        // Handle different color spaces
+        if cgColor.numberOfComponents == 4 {
+            // RGBA
+            return (
+                red: Int(components[0] * 255),
+                green: Int(components[1] * 255),
+                blue: Int(components[2] * 255)
+            )
+        } else if cgColor.numberOfComponents == 2 {
+            // Grayscale
+            let gray = components[0]
+            return (
+                red: Int(gray * 255),
+                green: Int(gray * 255),
+                blue: Int(gray * 255)
+            )
+        } else {
+            // Default to black
+            return (red: 0, green: 0, blue: 0)
+        }
+    }
+    
+    private static func generateSVGTransform(_ transform: CGAffineTransform) -> String {
+        if transform.isIdentity {
+            return ""
+        }
+        
+        // Convert CGAffineTransform to SVG matrix
+        return "transform=\"matrix(\(transform.a) \(transform.b) \(transform.c) \(transform.d) \(transform.tx) \(transform.ty))\""
+    }
+    
+    private static func generateSVGText(_ text: VectorText) throws -> String {
+        // Convert typography properties to SVG
+        let fillColor = text.typography.fillColor
+        let fillOpacity = text.typography.fillOpacity
+        let strokeColor = text.typography.strokeColor
+        let strokeWidth = text.typography.strokeWidth
+        let strokeOpacity = text.typography.strokeOpacity
+        let hasStroke = text.typography.hasStroke
+        
+        let fillRgb = extractRGBComponents(from: fillColor)
+        let strokeRgb = extractRGBComponents(from: strokeColor)
+        
+        var fillStyle = "fill=\"rgb(\(fillRgb.red),\(fillRgb.green),\(fillRgb.blue))\""
+        if fillOpacity < 1.0 {
+            fillStyle += " fill-opacity=\"\(fillOpacity)\""
+        }
+        
+        var strokeStyle = "stroke=\"none\""
+        if hasStroke {
+            strokeStyle = "stroke=\"rgb(\(strokeRgb.red),\(strokeRgb.green),\(strokeRgb.blue))\" stroke-width=\"\(strokeWidth)\""
+            if strokeOpacity < 1.0 {
+                strokeStyle += " stroke-opacity=\"\(strokeOpacity)\""
+            }
+        }
+        
+        let transform = generateSVGTransform(text.transform)
+        
+        return """
+        <text x="\(text.position.x)" y="\(text.position.y)" font-family="\(text.typography.fontFamily)" font-size="\(text.typography.fontSize)" \(fillStyle) \(strokeStyle) \(transform) id="text-\(text.id)">\(text.content)</text>
+        
+        """
     }
     
     static func exportToPDF(_ document: VectorDocument, url: URL) throws {
