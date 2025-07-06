@@ -21,6 +21,7 @@ struct DrawingCanvas: View {
     // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
     @State private var isShiftPressed = false
     @State private var isCommandPressed = false
+    @State private var isOptionPressed = false
     @State private var keyEventMonitor: Any?
     
     // Bezier tool specific state
@@ -575,6 +576,7 @@ struct DrawingCanvas: View {
         let modifierFlags = event.modifierFlags
         isShiftPressed = modifierFlags.contains(.shift)
         isCommandPressed = modifierFlags.contains(.command)
+        isOptionPressed = modifierFlags.contains(.option)
     }
     
     private func isAnyTextEditing() -> Bool {
@@ -1144,10 +1146,36 @@ struct DrawingCanvas: View {
                 
                 switch elements[handleID.elementIndex] {
                 case .curve(let to, let control1, let control2):
+                    let anchorPoint = CGPoint(x: to.x, y: to.y)
+                    
                     if handleID.handleType == .control1 {
+                        // Moving control1 (outgoing handle from previous point)
                         elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: control2)
+                        
+                        // PROFESSIONAL LINKED HANDLES: Default to smooth behavior (Adobe Illustrator standard)
+                        // Only break the link if Alt/Option key is held
+                        if !optionPressed() {
+                            let linkedControl2 = calculateLinkedHandle(
+                                anchorPoint: anchorPoint,
+                                draggedHandle: newPosition,
+                                originalOppositeHandle: CGPoint(x: control2.x, y: control2.y)
+                            )
+                            elements[handleID.elementIndex] = .curve(to: to, control1: newHandle, control2: VectorPoint(linkedControl2.x, linkedControl2.y))
+                        }
                     } else {
+                        // Moving control2 (incoming handle to current point)
                         elements[handleID.elementIndex] = .curve(to: to, control1: control1, control2: newHandle)
+                        
+                        // PROFESSIONAL LINKED HANDLES: Default to smooth behavior (Adobe Illustrator standard)
+                        // Only break the link if Alt/Option key is held
+                        if !optionPressed() {
+                            let linkedControl1 = calculateLinkedHandle(
+                                anchorPoint: anchorPoint,
+                                draggedHandle: newPosition,
+                                originalOppositeHandle: CGPoint(x: control1.x, y: control1.y)
+                            )
+                            elements[handleID.elementIndex] = .curve(to: to, control1: VectorPoint(linkedControl1.x, linkedControl1.y), control2: newHandle)
+                        }
                     }
                 case .quadCurve(let to, _):
                     if handleID.handleType == .control1 {
@@ -1162,6 +1190,44 @@ struct DrawingCanvas: View {
                 return
             }
         }
+    }
+    
+    /// Detects if Option/Alt key is pressed for independent handle control
+    private func optionPressed() -> Bool {
+        return isOptionPressed
+    }
+    
+    /// Calculates the linked handle position for smooth curve behavior
+    private func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
+        // Vector from anchor to dragged handle
+        let draggedVector = CGPoint(
+            x: draggedHandle.x - anchorPoint.x,
+            y: draggedHandle.y - anchorPoint.y
+        )
+        
+        // Keep the original opposite handle length
+        let originalVector = CGPoint(
+            x: originalOppositeHandle.x - anchorPoint.x,
+            y: originalOppositeHandle.y - anchorPoint.y
+        )
+        let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
+        
+        // Create opposite vector (180° from dragged handle) with original length
+        let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
+        guard draggedLength > 0.1 else { return originalOppositeHandle } // Avoid division by zero
+        
+        let normalizedDragged = CGPoint(
+            x: draggedVector.x / draggedLength,
+            y: draggedVector.y / draggedLength
+        )
+        
+        // Opposite direction with original length
+        let linkedHandle = CGPoint(
+            x: anchorPoint.x - normalizedDragged.x * originalLength,
+            y: anchorPoint.y - normalizedDragged.y * originalLength
+        )
+        
+        return linkedHandle
     }
     
 
