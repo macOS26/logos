@@ -2347,7 +2347,9 @@ struct ProfessionalDirectSelectionView: View {
     }
     
     private func getHandleInfo(_ handleID: DrawingCanvas.HandleID) -> (pointLocation: CGPoint, handleLocation: CGPoint)? {
-        // Find the shape and extract handle information
+        // CRITICAL FIX: Match the selection logic exactly!
+        // HandleIDs now point to where the handle data actually lives in the bezier structure
+        
         for layer in document.layers {
             if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
                 if handleID.elementIndex < shape.path.elements.count {
@@ -2355,15 +2357,49 @@ struct ProfessionalDirectSelectionView: View {
                     
                     switch element {
                     case .curve(let to, let control1, let control2):
-                        let pointLocation = CGPoint(x: to.x, y: to.y)
-                        let handleLocation = handleID.handleType == .control1 
-                            ? CGPoint(x: control1.x, y: control1.y)
-                            : CGPoint(x: control2.x, y: control2.y)
-                        return (pointLocation, handleLocation)
+                        if handleID.handleType == .control1 {
+                            // OUTGOING HANDLE: control1 of current element belongs to PREVIOUS anchor point
+                            if handleID.elementIndex > 0 {
+                                let prevElement = shape.path.elements[handleID.elementIndex - 1]
+                                switch prevElement {
+                                case .move(let prevTo), .line(let prevTo):
+                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                                    let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                                    return (pointLocation, handleLocation)
+                                case .curve(let prevTo, _, _):
+                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                                    let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                                    return (pointLocation, handleLocation)
+                                default:
+                                    return nil
+                                }
+                            }
+                        } else {
+                            // INCOMING HANDLE: control2 of current element belongs to current anchor point
+                            let pointLocation = CGPoint(x: to.x, y: to.y)
+                            let handleLocation = CGPoint(x: control2.x, y: control2.y)
+                            return (pointLocation, handleLocation)
+                        }
                     case .quadCurve(let to, let control):
-                        let pointLocation = CGPoint(x: to.x, y: to.y)
-                        let handleLocation = CGPoint(x: control.x, y: control.y)
-                        return (pointLocation, handleLocation)
+                        if handleID.handleType == .control1 {
+                            // For quad curves, control1 could be outgoing from previous point
+                            if handleID.elementIndex > 0 {
+                                let prevElement = shape.path.elements[handleID.elementIndex - 1]
+                                switch prevElement {
+                                case .move(let prevTo), .line(let prevTo), .curve(let prevTo, _, _):
+                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                                    let handleLocation = CGPoint(x: control.x, y: control.y)
+                                    return (pointLocation, handleLocation)
+                                default:
+                                    return nil
+                                }
+                            }
+                        } else {
+                            // Standard quad curve control handle
+                            let pointLocation = CGPoint(x: to.x, y: to.y)
+                            let handleLocation = CGPoint(x: control.x, y: control.y)
+                            return (pointLocation, handleLocation)
+                        }
                     default:
                         return nil
                     }
