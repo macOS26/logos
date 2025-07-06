@@ -1505,36 +1505,46 @@ struct DrawingCanvas: View {
                         case .move(let to), .line(let to):
                             point = to
                             
+                            // Check for OUTGOING HANDLE (control1 from NEXT element - if it exists)
+                            if elementIndex + 1 < shape.path.elements.count {
+                                let nextElement = shape.path.elements[elementIndex + 1]
+                                if case .curve(_, let nextControl1, _) = nextElement {
+                                    let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                    if distance(location, outgoingHandleLocation) <= tolerance {
+                                        // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
+                                        let handleID = HandleID(
+                                            shapeID: shape.id,
+                                            pathIndex: 0,
+                                            elementIndex: elementIndex + 1, // NEXT element, not current!
+                                            handleType: .control1
+                                        )
+                                        
+                                        if isShiftPressed && selectedHandles.contains(handleID) {
+                                            selectedHandles.remove(handleID)
+                                            print("🎯 Deselected OUTGOING handle from line/move point")
+                                        } else {
+                                            if !isShiftPressed {
+                                                selectedHandles.removeAll()
+                                                selectedPoints.removeAll()
+                                            }
+                                            selectedHandles.insert(handleID)
+                                            print("🎯 Selected OUTGOING handle from line/move point")
+                                        }
+                                        return true
+                                    }
+                                }
+                            }
+                            
                         case .curve(let to, let control1, let control2):
                             point = to
                             
                             // FIRST: Check control handles (higher priority than anchor points)
-                            let handle1Location = CGPoint(x: control1.x, y: control1.y)
+                            // For curves, we need to match the DISPLAY logic exactly:
+                            // - control2 is the INCOMING handle to this anchor point
+                            // - control1 from NEXT element is the OUTGOING handle from this anchor point
+                            
+                            // INCOMING HANDLE (control2 of current element)
                             let handle2Location = CGPoint(x: control2.x, y: control2.y)
-                            
-                            if distance(location, handle1Location) <= tolerance {
-                                let handleID = HandleID(
-                                    shapeID: shape.id,
-                                    pathIndex: 0,
-                                    elementIndex: elementIndex,
-                                    handleType: .control1
-                                )
-                                
-                                if isShiftPressed && selectedHandles.contains(handleID) {
-                                    // Shift+Click on selected handle: deselect it
-                                    selectedHandles.remove(handleID)
-                                    print("🎯 Deselected handle control1")
-                                } else {
-                                    if !isShiftPressed {
-                                        selectedHandles.removeAll()
-                                        selectedPoints.removeAll()
-                                    }
-                                    selectedHandles.insert(handleID)
-                                    print("🎯 Selected handle control1")
-                                }
-                                return true
-                            }
-                            
                             if distance(location, handle2Location) <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
@@ -1544,18 +1554,47 @@ struct DrawingCanvas: View {
                                 )
                                 
                                 if isShiftPressed && selectedHandles.contains(handleID) {
-                                    // Shift+Click on selected handle: deselect it
                                     selectedHandles.remove(handleID)
-                                    print("🎯 Deselected handle control2")
+                                    print("🎯 Deselected INCOMING handle")
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
-                                    print("🎯 Selected handle control2")
+                                    print("🎯 Selected INCOMING handle")
                                 }
                                 return true
+                            }
+                            
+                            // OUTGOING HANDLE (control1 from NEXT element - if it exists)
+                            if elementIndex + 1 < shape.path.elements.count {
+                                let nextElement = shape.path.elements[elementIndex + 1]
+                                if case .curve(_, let nextControl1, _) = nextElement {
+                                    let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                    if distance(location, outgoingHandleLocation) <= tolerance {
+                                        // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
+                                        let handleID = HandleID(
+                                            shapeID: shape.id,
+                                            pathIndex: 0,
+                                            elementIndex: elementIndex + 1, // NEXT element, not current!
+                                            handleType: .control1
+                                        )
+                                        
+                                        if isShiftPressed && selectedHandles.contains(handleID) {
+                                            selectedHandles.remove(handleID)
+                                            print("🎯 Deselected OUTGOING handle")
+                                        } else {
+                                            if !isShiftPressed {
+                                                selectedHandles.removeAll()
+                                                selectedPoints.removeAll()
+                                            }
+                                            selectedHandles.insert(handleID)
+                                            print("🎯 Selected OUTGOING handle")
+                                        }
+                                        return true
+                                    }
+                                }
                             }
                             
                         case .quadCurve(let to, let control):
