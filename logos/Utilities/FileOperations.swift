@@ -3666,15 +3666,37 @@ class FileOperations {
     // MARK: - TODO: Other export formats (for future implementation)
     
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
-        // TODO: Implement JSON export
-        print("🔧 JSON export implementation required")
-        throw VectorImportError.parsingError("JSON export not yet implemented", line: nil)
+        print("💾 Exporting document to JSON: \(url.path)")
+        
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        
+        do {
+            let jsonData = try encoder.encode(document)
+            try jsonData.write(to: url)
+            print("✅ Successfully exported JSON document")
+        } catch {
+            print("❌ JSON export failed: \(error)")
+            throw VectorImportError.parsingError("Failed to export JSON: \(error.localizedDescription)", line: nil)
+        }
     }
     
     static func importFromJSON(url: URL) throws -> VectorDocument {
-        // TODO: Implement JSON import
-        print("🔧 JSON import implementation required")
-        throw VectorImportError.parsingError("JSON import not yet implemented", line: nil)
+        print("📂 Importing document from JSON: \(url.path)")
+        
+        do {
+            let jsonData = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            let document = try decoder.decode(VectorDocument.self, from: jsonData)
+            print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+            return document
+        } catch {
+            print("❌ JSON import failed: \(error)")
+            throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
+        }
     }
     
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
