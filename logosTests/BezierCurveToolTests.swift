@@ -5,7 +5,7 @@
 //  Comprehensive Bezier Curve Tool Tests
 //  Tests the professional Bezier pen tool with straight tangent handles
 //
-//  Created by AI Assistant on 1/12/25.
+//  Created by Todd Bruss on 7/6/25.
 //
 
 import XCTest

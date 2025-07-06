@@ -5,7 +5,7 @@
 //  Comprehensive File Import Tests for Professional Vector Graphics
 //  Tests SVG, PDF, Adobe Illustrator, EPS, PostScript, and DWF import functionality
 //
-//  Created by AI Assistant on 1/12/25.
+//  Created by Todd Bruss on 7/6/25.
 //
 
 import XCTest

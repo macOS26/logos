@@ -229,56 +229,68 @@ struct MainView: View {
     
     private func openDocument() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType.json]
+        panel.allowedContentTypes = [UTType.json, UTType.svg]
         panel.allowsMultipleSelection = false
         panel.title = "Open Document"
         
         panel.begin { response in
             guard response == .OK, let url = panel.urls.first else { return }
             
-            do {
-                let loadedDocument = try FileOperations.importFromJSON(url: url)
-                
-                // Replace current document with loaded one
-                DispatchQueue.main.async {
-                    // Update the document by copying all properties
-                    document.settings = loadedDocument.settings
-                    document.layers = loadedDocument.layers
-                    document.colorSwatches = loadedDocument.colorSwatches
-                    document.selectedLayerIndex = loadedDocument.selectedLayerIndex
-                    document.selectedShapeIDs = loadedDocument.selectedShapeIDs
-                    document.selectedTextIDs = loadedDocument.selectedTextIDs
-                    document.textObjects = loadedDocument.textObjects
-                    document.currentTool = loadedDocument.currentTool
-                    document.viewMode = loadedDocument.viewMode
-                    document.zoomLevel = loadedDocument.zoomLevel
-                    document.canvasOffset = loadedDocument.canvasOffset
-                    document.showRulers = loadedDocument.showRulers
-                    document.snapToGrid = loadedDocument.snapToGrid
+            let fileExtension = url.pathExtension.lowercased()
+            
+            Task {
+                do {
+                    let loadedDocument: VectorDocument
                     
-                    // Update current document URL
-                    currentDocumentURL = url
+                    if fileExtension == "svg" {
+                        // Import SVG file
+                        loadedDocument = try await FileOperations.importFromSVG(url: url)
+                    } else {
+                        // Import JSON file (default)
+                        loadedDocument = try FileOperations.importFromJSON(url: url)
+                    }
                     
-                    print("✅ Successfully opened document from: \(url.path)")
+                    // Replace current document with loaded one
+                    await MainActor.run {
+                        // Update the document by copying all properties
+                        document.settings = loadedDocument.settings
+                        document.layers = loadedDocument.layers
+                        document.colorSwatches = loadedDocument.colorSwatches
+                        document.selectedLayerIndex = loadedDocument.selectedLayerIndex
+                        document.selectedShapeIDs = loadedDocument.selectedShapeIDs
+                        document.selectedTextIDs = loadedDocument.selectedTextIDs
+                        document.textObjects = loadedDocument.textObjects
+                        document.currentTool = loadedDocument.currentTool
+                        document.viewMode = loadedDocument.viewMode
+                        document.zoomLevel = loadedDocument.zoomLevel
+                        document.canvasOffset = loadedDocument.canvasOffset
+                        document.showRulers = loadedDocument.showRulers
+                        document.snapToGrid = loadedDocument.snapToGrid
+                        
+                        // Update current document URL
+                        currentDocumentURL = url
+                        
+                        print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
+                        
+                        // Show success notification
+                        let alert = NSAlert()
+                        alert.messageText = "Document Opened"
+                        alert.informativeText = "\(fileExtension.uppercased()) document loaded successfully"
+                        alert.alertStyle = .informational
+                        alert.runModal()
+                    }
                     
-                    // Show success notification
-                    let alert = NSAlert()
-                    alert.messageText = "Document Opened"
-                    alert.informativeText = "Document loaded successfully"
-                    alert.alertStyle = .informational
-                    alert.runModal()
-                }
-                
-            } catch {
-                print("❌ Open failed: \(error)")
-                
-                // Show error notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "Open Failed"
-                    alert.informativeText = "Error: \(error.localizedDescription)"
-                    alert.alertStyle = .critical
-                    alert.runModal()
+                } catch {
+                    print("❌ Open failed: \(error)")
+                    
+                    // Show error notification
+                    await MainActor.run {
+                        let alert = NSAlert()
+                        alert.messageText = "Open Failed"
+                        alert.informativeText = "Error: \(error.localizedDescription)"
+                        alert.alertStyle = .critical
+                        alert.runModal()
+                    }
                 }
             }
         }

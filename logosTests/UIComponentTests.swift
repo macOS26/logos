@@ -5,7 +5,7 @@
 //  Comprehensive UI Component Tests for Professional Vector Graphics App
 //  Tests all UI panels, text handling, selection, and layout
 //
-//  Created by AI Assistant on 1/12/25.
+//  Created by Todd Bruss on 7/6/25.
 //
 
 import XCTest

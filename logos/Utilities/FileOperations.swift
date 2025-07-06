@@ -3699,6 +3699,46 @@ class FileOperations {
         }
     }
     
+    static func importFromSVG(url: URL) async throws -> VectorDocument {
+        print("🎨 Importing document from SVG: \(url.path)")
+        
+        let result = await VectorImportManager.shared.importVectorFile(from: url)
+        
+        if !result.success {
+            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
+            throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
+        }
+        
+        // Create a new VectorDocument from the imported shapes
+        let document = VectorDocument()
+        
+        // Set document size based on SVG metadata
+        let sizeInPoints = result.metadata.documentSize
+        document.settings.width = sizeInPoints.width / 72.0 // Convert to inches
+        document.settings.height = sizeInPoints.height / 72.0
+        document.settings.unit = .inches
+        
+        // Clear default layer and create new one with imported shapes
+        document.layers.removeAll()
+        let importedLayer = VectorLayer(name: "Imported SVG")
+        document.layers.append(importedLayer)
+        
+        // Add all imported shapes to the layer
+        for shape in result.shapes {
+            document.layers[0].addShape(shape)
+        }
+        
+        document.selectedLayerIndex = 0
+        
+        // Log warnings if any
+        for warning in result.warnings {
+            print("⚠️ SVG Import Warning: \(warning)")
+        }
+        
+        print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
+        return document
+    }
+    
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
         print("🎨 Exporting document to SVG: \(url.path)")
         

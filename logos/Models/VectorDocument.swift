@@ -236,17 +236,15 @@ class VectorDocument: ObservableObject, Codable {
         // Find the shape across all layers
         for layerIndex in layers.indices {
             if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeId }) {
-                // Shape found - removed unused variable
-                _ = layers[layerIndex].shapes[shapeIndex]
-                
-                // Calculate center point of original bounds for scaling origin - removed unused variable
-                _ = CGPoint(
-                    x: initialBounds.midX,
-                    y: initialBounds.midY
-                )
+                // Calculate center point of original bounds for scaling origin
+                let centerX = initialBounds.midX
+                let centerY = initialBounds.midY
                 
                 // Create scaling transform around center point
-                let scaleTransform = CGAffineTransform(scaleX: scaleX, y: scaleY)
+                let scaleTransform = CGAffineTransform.identity
+                    .translatedBy(x: centerX, y: centerY)
+                    .scaledBy(x: scaleX, y: scaleY)
+                    .translatedBy(x: -centerX, y: -centerY)
                 
                 // Apply scaling to the initial transform (not the current one to avoid accumulation)
                 let newTransform = initialTransform.concatenating(scaleTransform)
@@ -254,14 +252,75 @@ class VectorDocument: ObservableObject, Codable {
                 // Update the shape's transform
                 layers[layerIndex].shapes[shapeIndex].transform = newTransform
                 
-                // Update bounds (scaling affects the bounds)
-                layers[layerIndex].shapes[shapeIndex].updateBounds()
+                // CRITICAL FIX: Apply transform to actual coordinates after scaling
+                // This ensures object origin stays with object (Adobe Illustrator behavior)
+                applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
                 
                 // Force UI update
                 objectWillChange.send()
                 break
             }
         }
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
+    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
+        let shape = layers[layerIndex].shapes[shapeIndex]
+        let transform = shape.transform
+        
+        // Don't apply identity transforms
+        if transform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying transform to shape coordinates: \(shape.name)")
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        layers[layerIndex].shapes[shapeIndex].transform = .identity
+        layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated - object origin now follows object position")
     }
     
     // MARK: - Codable Implementation
@@ -432,13 +491,71 @@ class VectorDocument: ObservableObject, Codable {
         for shape in shapesToDuplicate {
             var newShape = shape
             newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate (Adobe Illustrator standard)
-            newShape.transform = newShape.transform.translatedBy(x: 10, y: 10)
+            
+            // PROFESSIONAL COORDINATE SYSTEM: Apply offset to actual coordinates instead of using transform
+            // This ensures object origin follows object position (Adobe Illustrator behavior)
+            let offsetTransform = CGAffineTransform(translationX: 10, y: 10)
+            newShape = applyTransformToShapeCoordinates(shape: newShape, transform: offsetTransform)
             newShape.updateBounds()
             layers[layerIndex].addShape(newShape)
             newShapeIDs.insert(newShape.id)
         }
         
         selectedShapeIDs = newShapeIDs
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM: Apply transform to shape coordinates
+    /// Returns a new shape with transformed coordinates and identity transform
+    private func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
+        // Don't apply identity transforms
+        if transform.isIdentity {
+            return shape
+        }
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new shape with transformed path and identity transform
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        var newShape = shape
+        newShape.path = transformedPath
+        newShape.transform = .identity
+        
+        return newShape
     }
     
     // MARK: - Undo/Redo

@@ -976,14 +976,18 @@ struct DrawingCanvas: View {
                 return
             }
             
-            // Check if any shape actually moved
+            // CRITICAL FIX: Apply transform to actual path coordinates and reset transform
+            // This ensures object origin moves with the object for proper direct selection and scaling
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
                    let originalTransform = dragStartTransforms[shapeID] {
                     let currentTransform = document.layers[layerIndex].shapes[shapeIndex].transform
+                    
                     if currentTransform != originalTransform {
                         didMove = true
-                        break
+                        
+                        // Apply the transform to the actual path coordinates
+                        applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
                     }
                 }
             }
@@ -994,6 +998,66 @@ struct DrawingCanvas: View {
             
             dragStartTransforms.removeAll()
         }
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
+    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let transform = shape.transform
+        
+        // Don't apply identity transforms
+        if transform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying transform to shape coordinates: \(shape.name)")
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated - object origin now follows object position")
     }
     
     // MARK: - Direct Selection Drag Handling

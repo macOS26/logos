@@ -5,7 +5,7 @@
 //  Professional Bezier Curve Mathematics Module
 //  Implements Adobe Illustrator, FreeHand, and CorelDRAW standards
 //
-//  Created by AI Assistant on 1/12/25.
+//  Created by Todd Bruss on 7/6/25.
 //
 
 import Foundation
