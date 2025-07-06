@@ -124,39 +124,38 @@ struct ShapeView: View {
             )
             
         case .outside:
-            // PROFESSIONAL OUTSIDE STROKE (Adobe Illustrator Standard) - FIXED VERSION
-            // Simple approach: Draw stroke with double width, then mask out interior
-            Path { path in
-                addPathElements(shape.path.elements, to: &path)
-            }
-            .stroke(
-                strokeStyle.color.color,
-                style: SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2, // Double width since we're masking half away
-                    lineCap: swiftUIStrokeStyle.lineCap,
-                    lineJoin: swiftUIStrokeStyle.lineJoin,
-                    miterLimit: swiftUIStrokeStyle.miterLimit,
-                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
+            // OUTSIDE STROKE - SIMPLE & CORRECT: Just cover the inside with the shape's fill
+            ZStack {
+                // 1. Draw stroke at double width (extends both inside and outside)
+                Path { path in
+                    addPathElements(shape.path.elements, to: &path)
+                }
+                .stroke(
+                    strokeStyle.color.color.opacity(strokeStyle.opacity),
+                    style: SwiftUI.StrokeStyle(
+                        lineWidth: strokeStyle.width * 2, // Double width
+                        lineCap: swiftUIStrokeStyle.lineCap,
+                        lineJoin: swiftUIStrokeStyle.lineJoin,
+                        miterLimit: swiftUIStrokeStyle.miterLimit,
+                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
+                    )
                 )
-            )
-            .mask(
-                // FIXED: Simple inverted mask with large background
-                Rectangle()
-                    .fill(Color.black)
-                    .frame(
-                        width: max(2000, shape.bounds.width + strokeStyle.width * 10), 
-                        height: max(2000, shape.bounds.height + strokeStyle.width * 10)
-                    )
-                    .overlay(
-                        // Subtract the shape interior using destinationOut blend mode
-                        Path { path in
-                            addPathElements(shape.path.elements, to: &path)
-                        }
-                        .fill(Color.black)
-                        .blendMode(.destinationOut)
-                    )
-                    .compositingGroup() // Critical for proper blend mode operation
-            )
+                
+                // 2. Cover the inside stroke completely with white background
+                // This ensures NO stroke color bleeds through, regardless of fill opacity
+                Path { path in
+                    addPathElements(shape.path.elements, to: &path)
+                }
+                .fill(Color.white)
+                
+                // 3. Draw the actual fill at correct opacity on top
+                if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
+                    Path { path in
+                        addPathElements(shape.path.elements, to: &path)
+                    }
+                    .fill(fillStyle.color.color.opacity(fillStyle.opacity))
+                }
+            }
         }
     }
     

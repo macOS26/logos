@@ -2077,13 +2077,10 @@ struct ProfessionalDirectSelectionView: View {
                     let control1Location = CGPoint(x: control1.x, y: control1.y)
                     let control2Location = CGPoint(x: control2.x, y: control2.y)
                     
-                    let transformedAnchor = anchorLocation.applying(shape.transform)
-                    let transformedControl1 = control1Location.applying(shape.transform)
-                    let transformedControl2 = control2Location.applying(shape.transform)
-                    
-                    let screenAnchor = canvasToScreen(transformedAnchor, geometry: geometry)
-                    let screenControl1 = canvasToScreen(transformedControl1, geometry: geometry)
-                    let screenControl2 = canvasToScreen(transformedControl2, geometry: geometry)
+                    // FIX: Don't double-transform - handles are already in shape coordinate space
+                    let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
+                    let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
+                    let screenControl2 = canvasToScreen(control2Location, geometry: geometry)
                     
                     // CONTROL HANDLE 1 LINE
                     Path { path in
@@ -2117,11 +2114,9 @@ struct ProfessionalDirectSelectionView: View {
                     let anchorLocation = CGPoint(x: to.x, y: to.y)
                     let controlLocation = CGPoint(x: control.x, y: control.y)
                     
-                    let transformedAnchor = anchorLocation.applying(shape.transform)
-                    let transformedControl = controlLocation.applying(shape.transform)
-                    
-                    let screenAnchor = canvasToScreen(transformedAnchor, geometry: geometry)
-                    let screenControl = canvasToScreen(transformedControl, geometry: geometry)
+                    // FIX: Don't double-transform - handles are already in shape coordinate space
+                    let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
+                    let screenControl = canvasToScreen(controlLocation, geometry: geometry)
                     
                     // CONTROL HANDLE LINE
                     Path { path in
@@ -2142,8 +2137,8 @@ struct ProfessionalDirectSelectionView: View {
             // 2. RENDER ANCHOR POINTS ON TOP (Adobe Illustrator standard)
             if let point = extractPointFromElement(element) {
                 let pointLocation = CGPoint(x: point.x, y: point.y)
-                let transformedPoint = pointLocation.applying(shape.transform)
-                let screenPoint = canvasToScreen(transformedPoint, geometry: geometry)
+                // FIX: Don't double-transform - points are already in shape coordinate space
+                let screenPoint = canvasToScreen(pointLocation, geometry: geometry)
                 
                 // Check if this anchor point is individually selected
                 let pointID = DrawingCanvas.PointID(
