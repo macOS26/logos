@@ -280,11 +280,19 @@ struct DrawingCanvas: View {
                     finishBezierPath()
                 }
                 
+                // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection tool (Adobe Illustrator behavior)
+                if newTool == .directSelection && previousTool != .directSelection {
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    print("🎯 Switched to Direct Selection - cleared regular selection handles")
+                }
+                
                 // Clear direct selection state when switching away from direct selection tool
                 if previousTool == .directSelection && newTool != .directSelection {
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     directSelectedShapeIDs.removeAll()
+                    print("🎯 Switched away from Direct Selection - cleared direct selection state")
                 }
                 
                 previousTool = newTool
