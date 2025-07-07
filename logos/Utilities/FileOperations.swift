@@ -4317,6 +4317,11 @@ class FileOperations {
             if styleData.fill.contains("rgb(") {
                 let fillColor = extractColorFromSVGAttribute(styleData.fill)
                 svg += "        fill: \(fillColor);\n"
+                
+                // Extract and include fill opacity
+                if let fillOpacity = extractOpacityFromSVGAttribute(styleData.fill, type: "fill") {
+                    svg += "        fill-opacity: \(fillOpacity);\n"
+                }
             } else if styleData.fill.contains("none") {
                 svg += "        fill: none;\n"
             }
@@ -4328,8 +4333,24 @@ class FileOperations {
                 if strokeWidth != "1" {
                     svg += "        stroke-width: \(strokeWidth)px;\n"
                 }
+                
+                // CRITICAL FIX: Extract and include stroke opacity for transparency support
+                if let strokeOpacity = extractOpacityFromSVGAttribute(styleData.stroke, type: "stroke") {
+                    svg += "        stroke-opacity: \(strokeOpacity);\n"
+                } else {
+                    // Check if the original stroke style had opacity < 1.0
+                    if styleData.stroke.contains("stroke-opacity") {
+                        // Extract existing stroke-opacity attribute
+                        if let range = styleData.stroke.range(of: "stroke-opacity=\"([^\"]+)\"", options: .regularExpression) {
+                            let match = String(styleData.stroke[range])
+                            let opacity = match.replacingOccurrences(of: "stroke-opacity=\"", with: "").replacingOccurrences(of: "\"", with: "")
+                            svg += "        stroke-opacity: \(opacity);\n"
+                        }
+                    }
+                }
             } else if styleData.stroke.contains("none") {
                 svg += "        stroke: none;\n"
+                svg += "        stroke-width: 0px;\n"
             }
             
             svg += "      }\n\n"
@@ -4377,7 +4398,21 @@ class FileOperations {
     
     private static func generateSVGShape(_ shape: VectorShape) throws -> String {
         // CRITICAL FIX: Apply transform to coordinates for proper round-trip export/import
-        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        var transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        
+        // CRITICAL FIX: Ensure filled shapes are properly closed
+        if shape.fillStyle != nil && shape.fillStyle?.color != .clear && !transformedPath.isClosed {
+            // If it has a fill but isn't marked as closed, mark it as closed and ensure Z command
+            var newElements = transformedPath.elements
+            
+            // Only add close if there isn't already one
+            if !newElements.contains(where: { if case .close = $0 { return true }; return false }) {
+                newElements.append(.close)
+            }
+            
+            transformedPath = VectorPath(elements: newElements, isClosed: true)
+        }
+        
         let pathData = try generateSVGPath(transformedPath)
         let fillStyle = generateSVGFill(shape.fillStyle)
         let strokeStyle = generateSVGStroke(shape.strokeStyle)
@@ -4405,6 +4440,11 @@ class FileOperations {
             case .close:
                 pathString += "Z "
             }
+        }
+        
+        // CRITICAL FIX: Ensure closed paths always end with Z command
+        if path.isClosed && !pathString.trimmingCharacters(in: .whitespaces).hasSuffix("Z") {
+            pathString += "Z "
         }
         
         return pathString.trimmingCharacters(in: .whitespaces)
@@ -4553,7 +4593,21 @@ class FileOperations {
     
     private static func generateSVGShapeWithClass(_ shape: VectorShape, className: String) throws -> String {
         // CRITICAL FIX: Apply transform to coordinates for proper round-trip export/import
-        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        var transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        
+        // CRITICAL FIX: Ensure filled shapes are properly closed
+        if shape.fillStyle != nil && shape.fillStyle?.color != .clear && !transformedPath.isClosed {
+            // If it has a fill but isn't marked as closed, mark it as closed and ensure Z command
+            var newElements = transformedPath.elements
+            
+            // Only add close if there isn't already one
+            if !newElements.contains(where: { if case .close = $0 { return true }; return false }) {
+                newElements.append(.close)
+            }
+            
+            transformedPath = VectorPath(elements: newElements, isClosed: true)
+        }
+        
         let pathData = try generateSVGPath(transformedPath)
         
         // Don't include transform attribute since coordinates are already transformed
@@ -4588,6 +4642,17 @@ class FileOperations {
             return width
         }
         return "1"  // Default width
+    }
+    
+    private static func extractOpacityFromSVGAttribute(_ attribute: String, type: String) -> String? {
+        // Extract opacity from attributes like "fill-opacity="0.5"" or "stroke-opacity="0.2""
+        let pattern = "\(type)-opacity=\"([^\"]+)\""
+        if let range = attribute.range(of: pattern, options: .regularExpression) {
+            let match = String(attribute[range])
+            let opacity = match.replacingOccurrences(of: "\(type)-opacity=\"", with: "").replacingOccurrences(of: "\"", with: "")
+            return opacity
+        }
+        return nil
     }
     
     private static func generateSVGText(_ text: VectorText) throws -> String {

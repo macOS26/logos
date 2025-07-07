@@ -10,7 +10,7 @@ import AppKit
 import UniformTypeIdentifiers
 
 struct MainView: View {
-    @StateObject private var document = VectorDocument()
+    @StateObject private var document = TemplateManager.shared.createBlankDocument()
     @State private var showingDocumentSettings = false
     @State private var showingExportDialog = false
     @State private var showingColorPicker = false
@@ -136,14 +136,8 @@ struct MainView: View {
     }
     
     private func setupDocument() {
-        // Add some sample shapes for demonstration
-        let rect = VectorShape.rectangle(at: CGPoint(x: 100, y: 100), size: CGSize(width: 150, height: 100))
-        let circle = VectorShape.circle(center: CGPoint(x: 300, y: 150), radius: 50)
-        let star = VectorShape.star(center: CGPoint(x: 200, y: 300), outerRadius: 40, innerRadius: 20)
-        
-        document.addShape(rect)
-        document.addShape(circle)
-        document.addShape(star)
+        // Document starts completely empty - no default shapes
+        print("✅ Document setup complete - starting with empty canvas")
     }
     
     // MARK: - Document Save/Load Functionality
@@ -203,8 +197,8 @@ struct MainView: View {
     }
     
     private func newDocument() {
-        // Create a new document (reset to default state)
-        let newDoc = VectorDocument()
+        // PROFESSIONAL TEMPLATE SYSTEM: Use proper document template creation
+        let newDoc = TemplateManager.shared.createBlankDocument()
         
         // Update the current document by copying all properties
         document.settings = newDoc.settings
@@ -224,7 +218,7 @@ struct MainView: View {
         // Clear the current document URL (new document has no saved location)
         currentDocumentURL = nil
         
-        print("✅ Created new document")
+        print("✅ Created new document using TemplateManager - completely empty")
     }
     
     private func openDocument() {

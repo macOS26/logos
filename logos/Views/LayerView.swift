@@ -61,7 +61,8 @@ struct ShapeView: View {
             } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
                 // In color mode, show the actual stroke with proper placement and transparency
                 renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: viewMode)
-                    .opacity(strokeStyle.opacity) // PROFESSIONAL STROKE TRANSPARENCY
+                    // CRITICAL FIX: Don't apply opacity here for outside strokes - handled internally
+                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
                     .blendMode(strokeStyle.blendMode.swiftUIBlendMode) // PROFESSIONAL STROKE BLEND MODES
             }
             
@@ -124,14 +125,14 @@ struct ShapeView: View {
             )
             
         case .outside:
-            // OUTSIDE STROKE - SIMPLE & CORRECT: Just cover the inside with the shape's fill
+            // OUTSIDE STROKE - CRITICAL FIX: Handle opacity internally to prevent bleed-through
             ZStack {
-                // 1. Draw stroke at double width (extends both inside and outside)
+                // 1. Draw stroke at double width with correct opacity (extends both inside and outside)
                 Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }
                 .stroke(
-                    strokeStyle.color.color.opacity(strokeStyle.opacity),
+                    strokeStyle.color.color.opacity(strokeStyle.opacity), // Apply opacity here internally
                     style: SwiftUI.StrokeStyle(
                         lineWidth: strokeStyle.width * 2, // Double width
                         lineCap: swiftUIStrokeStyle.lineCap,
@@ -141,12 +142,12 @@ struct ShapeView: View {
                     )
                 )
                 
-                // 2. Cover the inside stroke completely with white background
+                // 2. Cover the inside stroke completely with opaque background
                 // This ensures NO stroke color bleeds through, regardless of fill opacity
                 Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }
-                .fill(Color.white)
+                .fill(Color.white.opacity(1.0)) // Ensure completely opaque white background
                 
                 // 3. Draw the actual fill at correct opacity on top
                 if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
