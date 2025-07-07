@@ -1403,15 +1403,30 @@ struct DrawingCanvas: View {
             fillStyle: fillStyle
         )
         
-        print("Finished bezier path with \(bezierPoints.count) points")
+        print("✅ Finished bezier path with \(bezierPoints.count) points")
         print("Path elements: \(path.elements.count)")
         print("Shape bounds: \(shape.bounds)")
         print("Stroke color: \(strokeStyle.color)")
         
+        // Add shape to document
         document.addShape(shape)
         
-        // Reset bezier state
+        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select new path
+        let newShapeID = shape.id
+        
+        // Reset bezier state BEFORE switching tools
         cancelBezierDrawing()
+        
+        // Switch to direct selection tool
+        document.currentTool = .directSelection
+        
+        // Direct-select the newly created shape
+        directSelectedShapeIDs.removeAll()
+        directSelectedShapeIDs.insert(newShapeID)
+        selectedPoints.removeAll() // Clear any existing point selections
+        selectedHandles.removeAll() // Clear any existing handle selections
+        
+        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected new path")
     }
     
     private func finishBezierPenDrag() {
@@ -2100,11 +2115,25 @@ struct DrawingCanvas: View {
         // Add to document
         document.addShape(shape)
         
-        // Clear bezier state
+        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select new closed path
+        let newShapeID = shape.id
+        
+        // Clear bezier state BEFORE switching tools
         cancelBezierDrawing()
         
         // Hide any close path hints
         showClosePathHint = false
+        
+        // Switch to direct selection tool
+        document.currentTool = .directSelection
+        
+        // Direct-select the newly created closed shape
+        directSelectedShapeIDs.removeAll()
+        directSelectedShapeIDs.insert(newShapeID)
+        selectedPoints.removeAll() // Clear any existing point selections
+        selectedHandles.removeAll() // Clear any existing handle selections
+        
+        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected new closed path")
     }
     
     private func handleConvertAnchorPointTap(at location: CGPoint) {
