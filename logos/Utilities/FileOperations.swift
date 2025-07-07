@@ -1431,6 +1431,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let y = Double(tokens[i + 1]) ?? 0
                     print("   Line to: (\(x), \(y))")
                     currentPoint = CGPoint(x: x, y: y)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 2
                 } else {
@@ -1443,6 +1444,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let dx = Double(tokens[i]) ?? 0
                     let dy = Double(tokens[i + 1]) ?? 0
                     currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 2
                 } else {
@@ -1453,6 +1455,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i < tokens.count {
                     let x = Double(tokens[i]) ?? 0
                     currentPoint = CGPoint(x: x, y: currentPoint.y)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 1
                 } else {
@@ -1463,6 +1466,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i < tokens.count {
                     let dx = Double(tokens[i]) ?? 0
                     currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 1
                 } else {
@@ -1473,6 +1477,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i < tokens.count {
                     let y = Double(tokens[i]) ?? 0
                     currentPoint = CGPoint(x: currentPoint.x, y: y)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 1
                 } else {
@@ -1483,6 +1488,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i < tokens.count {
                     let dy = Double(tokens[i]) ?? 0
                     currentPoint = CGPoint(x: currentPoint.x, y: currentPoint.y + dy)
+                    lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 1
                 } else {
@@ -1550,9 +1556,22 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let x = Double(tokens[i + 2]) ?? 0
                     let y = Double(tokens[i + 3]) ?? 0
                     
-                    // Calculate reflected control point
-                    let x1 = lastControlPoint != nil ? 2 * currentPoint.x - lastControlPoint!.x : currentPoint.x
-                    let y1 = lastControlPoint != nil ? 2 * currentPoint.y - lastControlPoint!.y : currentPoint.y
+                    // Calculate reflected control point - if no previous control point, use current point
+                    let x1: Double
+                    let y1: Double
+                    
+                    if let lastCP = lastControlPoint {
+                        // Reflect the previous control point across the current point
+                        x1 = 2 * currentPoint.x - lastCP.x
+                        y1 = 2 * currentPoint.y - lastCP.y
+                    } else {
+                        // No previous control point, use current point (creates a straight line start)
+                        x1 = currentPoint.x
+                        y1 = currentPoint.y
+                    }
+                    
+                    print("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))")
+                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
                     
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = CGPoint(x: x2, y: y2)
@@ -1572,20 +1591,46 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let dx = Double(tokens[i + 2]) ?? 0
                     let dy = Double(tokens[i + 3]) ?? 0
                     
-                    // Calculate reflected control point
-                    let x1 = lastControlPoint != nil ? 2 * currentPoint.x - lastControlPoint!.x : currentPoint.x
-                    let y1 = lastControlPoint != nil ? 2 * currentPoint.y - lastControlPoint!.y : currentPoint.y
+                    // Calculate reflected control point - if no previous control point, use current point
+                    let reflectedX: Double
+                    let reflectedY: Double
                     
-                    let x2 = currentPoint.x + dx2
-                    let y2 = currentPoint.y + dy2
-                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
-                    lastControlPoint = CGPoint(x: x2, y: y2)
+                    if let lastCP = lastControlPoint {
+                        // CRITICAL FIX: Reflect the previous control point across the current point
+                        reflectedX = 2.0 * currentPoint.x - lastCP.x
+                        reflectedY = 2.0 * currentPoint.y - lastCP.y
+                    } else {
+                        // No previous control point, use current point (creates a straight line start)
+                        reflectedX = currentPoint.x
+                        reflectedY = currentPoint.y
+                    }
                     
-                    elements.append(.curve(
-                        to: VectorPoint(currentPoint),
-                        control1: VectorPoint(x1, y1),
-                        control2: VectorPoint(x2, y2)
-                    ))
+                    // Calculate second control point (relative to current point)
+                    let secondControlX = currentPoint.x + dx2
+                    let secondControlY = currentPoint.y + dy2
+                    
+                    // Calculate end point (relative to current point)
+                    let endX = currentPoint.x + dx
+                    let endY = currentPoint.y + dy
+                    
+                    // Create explicit VectorPoint objects to avoid any variable mixup
+                    let firstControl = VectorPoint(reflectedX, reflectedY)
+                    let secondControl = VectorPoint(secondControlX, secondControlY)
+                    let endPointVector = VectorPoint(endX, endY)
+                    
+                    // Update state
+                    currentPoint = CGPoint(x: endX, y: endY)
+                    lastControlPoint = CGPoint(x: secondControlX, y: secondControlY)
+                    
+                    // Create curve element with explicit control point order
+                    // SVG 's' command: control1 = reflected, control2 = second control
+                    let smoothCurveElement = PathElement.curve(
+                        to: endPointVector,
+                        control1: firstControl,
+                        control2: secondControl
+                    )
+                    
+                    elements.append(smoothCurveElement)
                     i += 4
                 }
                 
