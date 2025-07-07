@@ -2271,35 +2271,44 @@ struct ProfessionalDirectSelectionView: View {
                 }
             }
             
-            // HIGHLIGHT INDIVIDUALLY SELECTED HANDLES (Adobe Illustrator standard)
+            // HIGHLIGHT INDIVIDUALLY SELECTED HANDLES - USE SAME COORDINATE SYSTEM AS ARROW TOOL
             ForEach(Array(selectedHandles), id: \.self) { handleID in
-                if let handleInfo = getHandleInfo(handleID) {
-                    // Draw HIGHLIGHTED line from point to handle
+                if let handleInfo = getHandleInfo(handleID),
+                   let shape = getShapeForHandle(handleID) {
+                    // Draw HIGHLIGHTED line from point to handle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                     Path { path in
-                        let screenPoint = canvasToScreen(handleInfo.pointLocation, geometry: geometry)
-                        let screenHandle = canvasToScreen(handleInfo.handleLocation, geometry: geometry)
-                        path.move(to: screenPoint)
-                        path.addLine(to: screenHandle)
+                        path.move(to: handleInfo.pointLocation)
+                        path.addLine(to: handleInfo.handleLocation)
                     }
-                    .stroke(Color.orange, lineWidth: 2.0) // Orange for selected handles
+                    .stroke(Color.orange, lineWidth: 2.0 / document.zoomLevel) // Scale-independent, orange for selected handles
+                    .transformEffect(shape.transform)  // Same as arrow tool
+                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                     
-                    // Draw HIGHLIGHTED handle as larger circle
+                    // Draw HIGHLIGHTED handle as larger circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                     Circle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 6, height: 6)
-                        .position(canvasToScreen(handleInfo.handleLocation, geometry: geometry))
+                        .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
+                        .position(handleInfo.handleLocation)
+                        .transformEffect(shape.transform)  // Same as arrow tool
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                 }
             }
             
-            // HIGHLIGHT INDIVIDUALLY SELECTED ANCHOR POINTS (Adobe Illustrator standard)
+            // HIGHLIGHT INDIVIDUALLY SELECTED ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
             ForEach(Array(selectedPoints), id: \.self) { pointID in
-                if let pointLocation = getPointLocation(pointID) {
+                if let pointLocation = getPointLocation(pointID),
+                   let shape = getShapeForPoint(pointID) {
                     Rectangle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 8, height: 8)
-                        .position(canvasToScreen(pointLocation, geometry: geometry))
+                        .frame(width: 8 / document.zoomLevel, height: 8 / document.zoomLevel) // Scale-independent
+                        .position(pointLocation)
+                        .transformEffect(shape.transform)  // Same as arrow tool
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                 }
             }
         }
@@ -2308,74 +2317,91 @@ struct ProfessionalDirectSelectionView: View {
     @ViewBuilder
     private func professionalBezierDisplay(for shape: VectorShape) -> some View {
         ZStack {
-            // RENDER ALL HANDLES AND ANCHOR POINTS
+            // RENDER ALL HANDLES AND ANCHOR POINTS - USE SAME COORDINATE CHAIN AS ARROW TOOL
             ForEach(Array(shape.path.elements.enumerated()), id: \.offset) { elementIndex, element in
                 Group {
-                    // HANDLES FIRST
+                    // HANDLES FIRST - USE SAME COORDINATE CHAIN AS ARROW TOOL
                     switch element {
                     case .curve(let to, _, let control2):
                         let anchorLocation = CGPoint(x: to.x, y: to.y)
                         let control2Location = CGPoint(x: control2.x, y: control2.y)
                         
-                        let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
-                        let screenControl2 = canvasToScreen(control2Location, geometry: geometry)
-                        
-                        // INCOMING HANDLE
+                        // INCOMING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Path { path in
-                            path.move(to: screenAnchor)
-                            path.addLine(to: screenControl2)
+                            path.move(to: anchorLocation)
+                            path.addLine(to: control2Location)
                         }
-                        .stroke(Color.blue, lineWidth: 1.0)
+                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                        .transformEffect(shape.transform)  // Same as arrow tool
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         
+                        // INCOMING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
                             .fill(Color.blue)
                             .stroke(Color.white, lineWidth: 0.5)
-                            .frame(width: 4, height: 4)
-                            .position(screenControl2)
+                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                            .position(control2Location)
+                            .transformEffect(shape.transform)  // Same as arrow tool
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                             
-                        // OUTGOING HANDLE
+                        // OUTGOING HANDLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         if elementIndex + 1 < shape.path.elements.count {
                             let nextElement = shape.path.elements[elementIndex + 1]
                             if case .curve(_, let nextControl1, _) = nextElement {
                                 let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
                                 
+                                // OUTGOING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Path { path in
-                                    path.move(to: screenAnchor)
-                                    path.addLine(to: screenControl1)
+                                    path.move(to: anchorLocation)
+                                    path.addLine(to: control1Location)
                                 }
-                                .stroke(Color.blue, lineWidth: 1.0)
+                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                                .transformEffect(shape.transform)  // Same as arrow tool
+                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                                 
+                                // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
                                     .fill(Color.blue)
                                     .stroke(Color.white, lineWidth: 0.5)
-                                    .frame(width: 4, height: 4)
-                                    .position(screenControl1)
+                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                                    .position(control1Location)
+                                    .transformEffect(shape.transform)  // Same as arrow tool
+                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                             }
                         }
                         
                     case .move(let to), .line(let to):
                         let anchorLocation = CGPoint(x: to.x, y: to.y)
-                        let screenAnchor = canvasToScreen(anchorLocation, geometry: geometry)
                         
-                        // OUTGOING HANDLE
+                        // OUTGOING HANDLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         if elementIndex + 1 < shape.path.elements.count {
                             let nextElement = shape.path.elements[elementIndex + 1]
                             if case .curve(_, let nextControl1, _) = nextElement {
                                 let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                let screenControl1 = canvasToScreen(control1Location, geometry: geometry)
                                 
+                                // OUTGOING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Path { path in
-                                    path.move(to: screenAnchor)
-                                    path.addLine(to: screenControl1)
+                                    path.move(to: anchorLocation)
+                                    path.addLine(to: control1Location)
                                 }
-                                .stroke(Color.blue, lineWidth: 1.0)
+                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                                .transformEffect(shape.transform)  // Same as arrow tool
+                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                                 
+                                // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
                                     .fill(Color.blue)
                                     .stroke(Color.white, lineWidth: 0.5)
-                                    .frame(width: 4, height: 4)
-                                    .position(screenControl1)
+                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                                    .position(control1Location)
+                                    .transformEffect(shape.transform)  // Same as arrow tool
+                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                             }
                         }
                         
@@ -2383,10 +2409,9 @@ struct ProfessionalDirectSelectionView: View {
                         EmptyView()
                     }
                     
-                    // ANCHOR POINTS ON TOP
+                    // ANCHOR POINTS ON TOP - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                     if let point = extractPointFromElement(element) {
                         let pointLocation = CGPoint(x: point.x, y: point.y)
-                        let screenPoint = canvasToScreen(pointLocation, geometry: geometry)
                         
                         let pointID = DrawingCanvas.PointID(
                             shapeID: shape.id,
@@ -2398,8 +2423,11 @@ struct ProfessionalDirectSelectionView: View {
                         Rectangle()
                             .fill(isPointSelected ? Color.blue : Color.white)
                             .stroke(Color.blue, lineWidth: 1.0)
-                            .frame(width: 6, height: 6)
-                            .position(screenPoint)
+                            .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
+                            .position(pointLocation)
+                            .transformEffect(shape.transform)  // Same as arrow tool
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                     }
                 }
             }
@@ -2505,6 +2533,26 @@ struct ProfessionalDirectSelectionView: View {
                         return nil
                     }
                 }
+            }
+        }
+        return nil
+    }
+    
+    private func getShapeForHandle(_ handleID: DrawingCanvas.HandleID) -> VectorShape? {
+        // Find the shape that contains this handle
+        for layer in document.layers {
+            if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
+                return shape
+            }
+        }
+        return nil
+    }
+    
+    private func getShapeForPoint(_ pointID: DrawingCanvas.PointID) -> VectorShape? {
+        // Find the shape that contains this point
+        for layer in document.layers {
+            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+                return shape
             }
         }
         return nil
