@@ -4269,25 +4269,86 @@ class FileOperations {
         let width = max(bounds.width, 100) // Minimum width
         let height = max(bounds.height, 100) // Minimum height
         
+        // Collect unique styles for CSS generation
+        var uniqueStyles: [String: (fill: String, stroke: String)] = [:]
+        var styleCounter = 1
+        
+        // Pre-analyze all shapes to generate CSS classes
+        for layer in document.layers {
+            if !layer.isVisible { continue }
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                let fillStyle = generateSVGFill(shape.fillStyle)
+                let strokeStyle = generateSVGStroke(shape.strokeStyle)
+                let styleKey = "\(fillStyle)|\(strokeStyle)"
+                
+                if uniqueStyles[styleKey] == nil {
+                    uniqueStyles[styleKey] = (fill: fillStyle, stroke: strokeStyle)
+                }
+            }
+        }
+        
         var svg = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <svg width="\(width)" height="\(height)" viewBox="0 0 \(width) \(height)" xmlns="http://www.w3.org/2000/svg">
-        <title>Logos Vector Document</title>
+        <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 \(width) \(height)">
         <defs>
-        </defs>
+        <style>
+        """
         
+        // Generate CSS classes for common styles
+        for (index, (styleKey, styleData)) in uniqueStyles.enumerated() {
+            let className = "cls-\(index + 1)"
+            svg += "      .\(className) {\n"
+            
+            // Parse fill and stroke data to generate proper CSS
+            if styleData.fill.contains("rgb(") {
+                let fillColor = extractColorFromSVGAttribute(styleData.fill)
+                svg += "        fill: \(fillColor);\n"
+            } else if styleData.fill.contains("none") {
+                svg += "        fill: none;\n"
+            }
+            
+            if styleData.stroke.contains("rgb(") {
+                let strokeColor = extractColorFromSVGAttribute(styleData.stroke)
+                let strokeWidth = extractStrokeWidthFromSVGAttribute(styleData.stroke)
+                svg += "        stroke: \(strokeColor);\n"
+                if strokeWidth != "1" {
+                    svg += "        stroke-width: \(strokeWidth)px;\n"
+                }
+            } else if styleData.stroke.contains("none") {
+                svg += "        stroke: none;\n"
+            }
+            
+            svg += "      }\n\n"
+        }
+        
+        svg += """
+        </style>
+        </defs>
         """
         
         // Export each layer
         for (layerIndex, layer) in document.layers.enumerated() {
             if !layer.isVisible { continue }
             
-            svg += "<g id=\"layer-\(layerIndex)\" data-layer-name=\"\(layer.name)\">\n"
+            svg += "<g id=\"layer-\(layerIndex)\">\n"
             
             // Export shapes in this layer
             for shape in layer.shapes {
                 if !shape.isVisible { continue }
-                svg += try generateSVGShape(shape)
+                
+                // Find matching CSS class
+                let fillStyle = generateSVGFill(shape.fillStyle)
+                let strokeStyle = generateSVGStroke(shape.strokeStyle)
+                let styleKey = "\(fillStyle)|\(strokeStyle)"
+                
+                if let styleIndex = Array(uniqueStyles.keys).firstIndex(of: styleKey) {
+                    let className = "cls-\(styleIndex + 1)"
+                    svg += try generateSVGShapeWithClass(shape, className: className)
+                } else {
+                    svg += try generateSVGShape(shape)
+                }
             }
             
             svg += "</g>\n"
@@ -4303,6 +4364,7 @@ class FileOperations {
     }
     
     private static func generateSVGShape(_ shape: VectorShape) throws -> String {
+        // Get original path data without applying shape transform (to preserve original coordinates)
         let pathData = try generateSVGPath(shape.path)
         let fillStyle = generateSVGFill(shape.fillStyle)
         let strokeStyle = generateSVGStroke(shape.strokeStyle)
@@ -4353,6 +4415,11 @@ class FileOperations {
     
     private static func generateSVGStroke(_ strokeStyle: StrokeStyle?) -> String {
         guard let strokeStyle = strokeStyle else {
+            return "stroke=\"none\""
+        }
+        
+        // Handle zero-width strokes properly - export as "none" 
+        if strokeStyle.width <= 0.0 {
             return "stroke=\"none\""
         }
         
@@ -4423,6 +4490,44 @@ class FileOperations {
         
         // Convert CGAffineTransform to SVG matrix
         return "transform=\"matrix(\(transform.a) \(transform.b) \(transform.c) \(transform.d) \(transform.tx) \(transform.ty))\""
+    }
+    
+    private static func generateSVGShapeWithClass(_ shape: VectorShape, className: String) throws -> String {
+        // Get original path data without applying shape transform (to preserve original coordinates)
+        let pathData = try generateSVGPath(shape.path)
+        let transform = generateSVGTransform(shape.transform)
+        
+        return """
+        <path id="shape-\(shape.id)" class="\(className)" d="\(pathData)" \(transform)/>
+        
+        """
+    }
+    
+    private static func extractColorFromSVGAttribute(_ attribute: String) -> String {
+        // Extract RGB values from "rgb(255,0,128)" format and convert to hex
+        if let range = attribute.range(of: "rgb\\((\\d+),(\\d+),(\\d+)\\)", options: .regularExpression) {
+            let rgbString = String(attribute[range])
+            let components = rgbString.replacingOccurrences(of: "rgb(", with: "").replacingOccurrences(of: ")", with: "").split(separator: ",")
+            
+            if components.count == 3 {
+                if let r = Int(components[0].trimmingCharacters(in: .whitespaces)),
+                   let g = Int(components[1].trimmingCharacters(in: .whitespaces)),
+                   let b = Int(components[2].trimmingCharacters(in: .whitespaces)) {
+                    return String(format: "#%02x%02x%02x", r, g, b)
+                }
+            }
+        }
+        return "#000"  // Default to black
+    }
+    
+    private static func extractStrokeWidthFromSVGAttribute(_ attribute: String) -> String {
+        // Extract stroke width from "stroke-width="1.5""
+        if let range = attribute.range(of: "stroke-width=\"([^\"]+)\"", options: .regularExpression) {
+            let match = String(attribute[range])
+            let width = match.replacingOccurrences(of: "stroke-width=\"", with: "").replacingOccurrences(of: "\"", with: "")
+            return width
+        }
+        return "1"  // Default width
     }
     
     private static func generateSVGText(_ text: VectorText) throws -> String {
