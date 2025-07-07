@@ -269,7 +269,8 @@ struct DrawingCanvas: View {
                 )
                 
                 // Direct selection points and handles
-                if document.currentTool == .directSelection {
+                // Show direct selection UI for both Direct Selection tool AND Convert Point tool
+                if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint {
                     ProfessionalDirectSelectionView(
                         document: document,
                         selectedPoints: selectedPoints,
@@ -295,19 +296,21 @@ struct DrawingCanvas: View {
                     finishBezierPath()
                 }
                 
-                // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection tool (Adobe Illustrator behavior)
-                if newTool == .directSelection && previousTool != .directSelection {
+                // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection or convert point tools
+                if (newTool == .directSelection || newTool == .convertAnchorPoint) && 
+                   (previousTool != .directSelection && previousTool != .convertAnchorPoint) {
                     document.selectedShapeIDs.removeAll()
                     document.selectedTextIDs.removeAll()
-                    print("🎯 Switched to Direct Selection - cleared regular selection handles")
+                    print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
                 }
                 
-                // Clear direct selection state when switching away from direct selection tool
-                if previousTool == .directSelection && newTool != .directSelection {
+                // Clear direct selection state when switching away from direct selection tools
+                if (previousTool == .directSelection || previousTool == .convertAnchorPoint) && 
+                   (newTool != .directSelection && newTool != .convertAnchorPoint) {
                     selectedPoints.removeAll()
                     selectedHandles.removeAll()
                     directSelectedShapeIDs.removeAll()
-                    print("🎯 Switched away from Direct Selection - cleared direct selection state")
+                    print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
                 }
                 
                 previousTool = newTool
@@ -1535,20 +1538,34 @@ struct DrawingCanvas: View {
     private func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
         let controlPointOffset = radius * 0.552
         
+        // PROFESSIONAL 4-CURVE CIRCLE: Each quadrant gets its own curve
+        // Start at 3 o'clock, go clockwise: Right → Bottom → Left → Top → Back to Right
         return VectorPath(elements: [
+            // Start at right (3 o'clock)
             .move(to: VectorPoint(center.x + radius, center.y)),
+            
+            // Curve 1: Right → Bottom (3 o'clock to 6 o'clock)
             .curve(to: VectorPoint(center.x, center.y + radius),
                    control1: VectorPoint(center.x + radius, center.y + controlPointOffset),
                    control2: VectorPoint(center.x + controlPointOffset, center.y + radius)),
+            
+            // Curve 2: Bottom → Left (6 o'clock to 9 o'clock)
             .curve(to: VectorPoint(center.x - radius, center.y),
                    control1: VectorPoint(center.x - controlPointOffset, center.y + radius),
                    control2: VectorPoint(center.x - radius, center.y + controlPointOffset)),
+            
+            // Curve 3: Left → Top (9 o'clock to 12 o'clock)
             .curve(to: VectorPoint(center.x, center.y - radius),
                    control1: VectorPoint(center.x - radius, center.y - controlPointOffset),
                    control2: VectorPoint(center.x - controlPointOffset, center.y - radius)),
+            
+            // Curve 4: Top → Right (12 o'clock back to 3 o'clock) - CRITICAL!
+            // This completes the circle with a proper curve, not a straight line
             .curve(to: VectorPoint(center.x + radius, center.y),
                    control1: VectorPoint(center.x + controlPointOffset, center.y - radius),
                    control2: VectorPoint(center.x + radius, center.y - controlPointOffset)),
+            
+            // Close the path (this just marks it as closed, the curves do the actual work)
             .close
         ], isClosed: true)
     }
@@ -2173,6 +2190,9 @@ struct DrawingCanvas: View {
     private func handleConvertAnchorPointTap(at location: CGPoint) {
         let tolerance: Double = 8.0 // Hit test tolerance
         
+        // EXIT TEXT EDITING when using convert point tool (Adobe Illustrator behavior)
+        exitAllTextEditing()
+        
         // Search through all visible layers and shapes for points to convert
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -2189,6 +2209,9 @@ struct DrawingCanvas: View {
                         if distance(location, pointLocation) <= tolerance {
                             // Convert line point to smooth point by adding curve handles
                             convertLineToSmooth(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            
+                            // PROFESSIONAL UX: Auto-enable direct selection to show the result
+                            enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
                             return
                         }
                     case .curve(let to, _, _):
@@ -2196,6 +2219,9 @@ struct DrawingCanvas: View {
                         if distance(location, pointLocation) <= tolerance {
                             // Convert smooth point to corner point by removing curve handles
                             convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            
+                            // PROFESSIONAL UX: Auto-enable direct selection to show the result
+                            enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
                             return
                         }
                     case .quadCurve(let to, _):
@@ -2203,6 +2229,9 @@ struct DrawingCanvas: View {
                         if distance(location, pointLocation) <= tolerance {
                             // Convert quad curve to corner point
                             convertQuadToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            
+                            // PROFESSIONAL UX: Auto-enable direct selection to show the result
+                            enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
                             return
                         }
                     case .close:
@@ -2212,13 +2241,110 @@ struct DrawingCanvas: View {
             }
         }
         
+        // If no point was found, try to select the shape for direct selection UI
+        tryToSelectShapeForConvertTool(at: location)
+        
         print("Convert Anchor Point: No point found at location \(location)")
+    }
+    
+    // PROFESSIONAL UX: Auto-select shapes when clicking with Convert Point tool
+    private func tryToSelectShapeForConvertTool(at location: CGPoint) {
+        // Search for any shape at the click location
+        for layerIndex in document.layers.indices.reversed() {
+            let layer = document.layers[layerIndex]
+            if !layer.isVisible { continue }
+            
+            for shape in layer.shapes.reversed() {
+                if !shape.isVisible { continue }
+                
+                var isHit = false
+                
+                // Use the same hit testing logic as selection tool
+                let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
+                
+                if isStrokeOnly && shape.strokeStyle != nil {
+                    // Stroke-only shapes: Use stroke-based hit testing
+                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                    let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                    isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                } else {
+                    // Filled shapes: Use bounds + path hit testing
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                    
+                    if expandedBounds.contains(location) {
+                        isHit = true
+                    } else {
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                    }
+                }
+                
+                if isHit {
+                    // Select this shape for direct selection UI
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    selectedPoints.removeAll()
+                    selectedHandles.removeAll()
+                    directSelectedShapeIDs.removeAll()
+                    
+                    // Direct-select the shape to show all anchor points and handles
+                    directSelectedShapeIDs.insert(shape.id)
+                    
+                    // Force UI update
+                    document.objectWillChange.send()
+                    
+                    print("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI")
+                    return
+                }
+            }
+        }
+        
+        // If no shape was hit, clear all selections
+        selectedPoints.removeAll()
+        selectedHandles.removeAll()
+        directSelectedShapeIDs.removeAll()
+        document.objectWillChange.send()
+    }
+    
+    // PROFESSIONAL UX IMPROVEMENT: Enable direct selection UI for convert point tool
+    private func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
+        // Clear any existing selections but KEEP the convert point tool active
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        selectedPoints.removeAll()
+        selectedHandles.removeAll()
+        directSelectedShapeIDs.removeAll()
+        
+        // DON'T switch tools - keep Convert Point tool active
+        // But enable direct selection UI mode for this tool
+        
+        // Direct-select the shape that was modified (for UI display)
+        directSelectedShapeIDs.insert(shapeID)
+        
+        // Select the specific point that was converted for immediate feedback
+        let pointID = PointID(
+            shapeID: shapeID,
+            pathIndex: 0,
+            elementIndex: elementIndex
+        )
+        selectedPoints.insert(pointID)
+        
+        // Force UI update to show the changes
+        document.objectWillChange.send()
+        
+        print("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)")
+        print("  - Shape: \(shapeID)")
+        print("  - Point: Element \(elementIndex)")
+        print("  - User can see bezier handles while continuing to use Convert Point tool")
     }
     
     private func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
         
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
         
@@ -2234,7 +2360,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("Converted line point to smooth curve")
+            print("✅ CONVERTED LINE POINT TO SMOOTH CURVE with bezier handles")
         default:
             break
         }
@@ -2245,6 +2371,9 @@ struct DrawingCanvas: View {
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
         
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
         
         switch element {
@@ -2254,7 +2383,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("Converted smooth curve to corner point")
+            print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (removed bezier handles)")
         default:
             break
         }
@@ -2265,6 +2394,9 @@ struct DrawingCanvas: View {
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
         
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
         
         switch element {
@@ -2274,7 +2406,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("Converted quad curve to corner point")
+            print("✅ CONVERTED QUAD CURVE TO CORNER POINT (removed quadratic handle)")
         default:
             break
         }
