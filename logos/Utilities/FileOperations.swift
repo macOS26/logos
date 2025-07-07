@@ -4277,9 +4277,19 @@ class FileOperations {
     }
     
     private static func generateSVGContent(from document: VectorDocument) throws -> String {
-        let bounds = document.getDocumentBounds()
-        let width = max(bounds.width, 100) // Minimum width
-        let height = max(bounds.height, 100) // Minimum height
+        // FIXED: Use pasteboard bounds for consistent export sizing
+        // This ensures exported SVGs maintain the same page dimensions as the document
+        let pasteboardBounds = CGRect(origin: .zero, size: document.settings.sizeInPoints)
+        let contentBounds = document.getDocumentBounds()
+        
+        // Use pasteboard bounds for viewBox, but center content if needed
+        let width = max(pasteboardBounds.width, 100) // Use pasteboard width
+        let height = max(pasteboardBounds.height, 100) // Use pasteboard height
+        
+        print("📊 SVG Export bounds:")
+        print("   Pasteboard: \(pasteboardBounds)")
+        print("   Content: \(contentBounds)")
+        print("   Using pasteboard bounds for consistent export")
         
         // Collect unique styles for CSS generation
         var uniqueStyles: [String: (fill: String, stroke: String)] = [:]

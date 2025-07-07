@@ -47,6 +47,9 @@ struct DrawingCanvas: View {
     // Track previous tool to detect changes
     @State private var previousTool: DrawingTool = .selection
     
+    // Zoom gesture state
+    @State private var initialZoomLevel: CGFloat = 1.0
+    
     // Direct selection state
     @State private var selectedPoints: Set<PointID> = []
     @State private var selectedHandles: Set<HandleID> = []
@@ -111,11 +114,12 @@ struct DrawingCanvas: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background
+                // PERFECT BACKGROUND SYNC: Uses EXACTLY the same coordinate transform as LayerView
                 Rectangle()
                     .fill(document.settings.backgroundColor.color)
-                    .frame(width: document.settings.sizeInPoints.width * document.zoomLevel,
-                           height: document.settings.sizeInPoints.height * document.zoomLevel)
+                    .frame(width: document.settings.sizeInPoints.width, 
+                           height: document.settings.sizeInPoints.height)
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
                     .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
                 
                 // Grid (if enabled)
@@ -359,9 +363,23 @@ struct DrawingCanvas: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
-                        handleZoom(value: value, geometry: geometry)
+                        // SIMPLIFIED ZOOM: Direct calculation without feedback loops
+                        // Value represents total magnification from start of gesture
+                        let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+                        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
+                    }
+                    .onEnded { value in
+                        // Finalize zoom level and store for next gesture
+                        let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+                        document.zoomLevel = finalZoomLevel
+                        initialZoomLevel = finalZoomLevel
+                        print("🔍 ZOOM GESTURE ENDED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x")
                     }
             )
+            .onTapGesture(count: 2) { location in
+                // Double-tap to fit to page
+                fitToPage(geometry: geometry)
+            }
             .contextMenu {
                 directSelectionContextMenu
             }
@@ -451,14 +469,62 @@ struct DrawingCanvas: View {
     }
     
     private func setupCanvas(geometry: GeometryProxy) {
-        // Center the canvas initially
+        // UNIFIED COORDINATE SYSTEM: Center canvas using same transform chain as visuals
+        fitToPage(geometry: geometry)
+        initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
+        print("🎯 UNIFIED CANVAS SETUP: Centered using fit-to-page, initial zoom = \(String(format: "%.3f", initialZoomLevel))x")
+    }
+    
+    private func fitToPage(geometry: GeometryProxy) {
+        // PERFECT FIT TO PAGE: Center canvas using same coordinate transformation as zoom
         let canvasSize = document.settings.sizeInPoints
         let viewSize = geometry.size
         
-        document.canvasOffset = CGPoint(
-            x: (viewSize.width - canvasSize.width * document.zoomLevel) / 2,
-            y: (viewSize.height - canvasSize.height * document.zoomLevel) / 2
+        // Calculate zoom level to fit the canvas in the view with padding
+        let padding: CGFloat = 50.0
+        let availableWidth = viewSize.width - (padding * 2)
+        let availableHeight = viewSize.height - (padding * 2)
+        
+        let scaleX = availableWidth / canvasSize.width
+        let scaleY = availableHeight / canvasSize.height
+        let fitZoom = min(scaleX, scaleY)
+        
+        // Clamp zoom to reasonable bounds
+        document.zoomLevel = max(0.1, min(10.0, fitZoom))
+        
+        // PERFECT CENTERING: Use the same coordinate transformation as zoom operations
+        // We want the canvas center to be at the view center
+        let viewCenter = CGPoint(
+            x: viewSize.width / 2.0,
+            y: viewSize.height / 2.0
         )
+        
+        let canvasCenter = CGPoint(
+            x: canvasSize.width / 2.0,
+            y: canvasSize.height / 2.0
+        )
+        
+        // Calculate offset using the same formula as zoom: screen = (canvas * zoom) + offset
+        // So: offset = screen - (canvas * zoom)
+        document.canvasOffset = CGPoint(
+            x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
+            y: viewCenter.y - (canvasCenter.y * document.zoomLevel)
+        )
+        
+        // Update initial zoom level for gesture handling - CRITICAL for preventing drift
+        initialZoomLevel = document.zoomLevel
+        
+        print("🎯 PERFECT FIT TO PAGE:")
+        print("   Canvas: \(String(format: "%.1f", canvasSize.width)) × \(String(format: "%.1f", canvasSize.height))")
+        print("   View: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
+        print("   Available: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
+        print("   Scale factors: X=\(String(format: "%.3f", scaleX)), Y=\(String(format: "%.3f", scaleY))")
+        print("   Final zoom: \(String(format: "%.3f", document.zoomLevel))x")
+        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   Canvas center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
+        print("   Calculated offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+        print("   Initial zoom level set to: \(String(format: "%.3f", initialZoomLevel))x")
+        print("   ✅ Background and graphics use IDENTICAL coordinate transformation")
     }
     
     private func handleTap(at location: CGPoint, geometry: GeometryProxy) {
@@ -485,6 +551,12 @@ struct DrawingCanvas: View {
             handleConvertAnchorPointTap(at: canvasLocation)
         case .bezierPen:
             handleBezierPenTap(at: canvasLocation)
+        case .text:
+            // Cancel bezier drawing if switching to text tool
+            if isBezierDrawing {
+                cancelBezierDrawing()
+            }
+            handleTextTap(at: canvasLocation)
         default:
             // Cancel bezier drawing if switching to other tools
             if isBezierDrawing {
@@ -603,6 +675,23 @@ struct DrawingCanvas: View {
         isShiftPressed = modifierFlags.contains(.shift)
         isCommandPressed = modifierFlags.contains(.command)
         isOptionPressed = modifierFlags.contains(.option)
+        
+        // Handle Tab key for deselection
+        if event.type == .keyDown {
+            switch event.keyCode {
+            case 48: // Tab key
+                // Deselect all objects
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+                directSelectedShapeIDs.removeAll()
+                document.objectWillChange.send()
+                print("✅ Tab pressed - deselected all objects")
+            default:
+                break
+            }
+        }
     }
     
     private func isAnyTextEditing() -> Bool {
@@ -725,10 +814,45 @@ struct DrawingCanvas: View {
                 print("🎯 REGULAR CLICK: Selected \(shape.name) only (cleared previous selection)")
             }
         } else {
-            // Only clear selection if clicking on empty space without modifiers
-            if !isShiftPressed && !isCommandPressed {
+            // Check if clicking outside the canvas bounds (dead area)
+            let canvasBounds = CGRect(
+                origin: CGPoint.zero,
+                size: document.settings.sizeInPoints
+            )
+            let isOutsideCanvas = !canvasBounds.contains(location)
+            
+            // IMPROVED: Handle large objects that cover the entire page
+            if isOutsideCanvas {
+                // Clicking in dead space outside canvas always deselects
                 document.selectedShapeIDs.removeAll()
-                print("🎯 Clicked empty space: Cleared all selections")
+                document.selectedTextIDs.removeAll()
+                print("🎯 Clicked dead space (outside canvas): Cleared all selections")
+            } else if !isShiftPressed && !isCommandPressed {
+                // Clicking inside canvas without modifiers: check for large object deselection
+                let hasLargeSelectedObject = document.selectedShapeIDs.contains { shapeID in
+                    for layer in document.layers {
+                        if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+                            let shapeBounds = shape.bounds.applying(shape.transform)
+                            let canvasBounds = CGRect(origin: .zero, size: document.settings.sizeInPoints)
+                            // Consider "large" if object covers more than 80% of the canvas
+                            let coverageRatio = (shapeBounds.width * shapeBounds.height) / (canvasBounds.width * canvasBounds.height)
+                            return coverageRatio > 0.8
+                        }
+                    }
+                    return false
+                }
+                
+                if hasLargeSelectedObject {
+                    // For large objects, allow deselection by clicking anywhere on empty space
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    print("🎯 Clicked empty space with large object selected: Deselected large object")
+                } else {
+                    // Regular behavior for normal-sized objects
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    print("🎯 Clicked empty space: Cleared all selections")
+                }
             } else {
                 print("🎯 Clicked empty space with modifiers: Keeping existing selection")
             }
@@ -927,6 +1051,21 @@ struct DrawingCanvas: View {
             )
             let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
             currentPath = createCirclePath(center: center, radius: radius)
+        case .star:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let outerRadius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            let innerRadius = outerRadius * 0.4 // Inner radius is 40% of outer radius
+            currentPath = createStarPath(center: center, outerRadius: outerRadius, innerRadius: innerRadius, points: 5)
+        case .polygon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            currentPath = createPolygonPath(center: center, radius: radius, sides: 6) // Default hexagon
         default:
             break
         }
@@ -1497,42 +1636,81 @@ struct DrawingCanvas: View {
         )
     }
     
-    private func handleZoom(value: CGFloat, geometry: GeometryProxy) {
-        let newZoomLevel = max(0.1, min(10.0, document.zoomLevel * value))
+    private func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
+        let oldZoomLevel = document.zoomLevel
+        
+        // Only proceed if zoom level actually changes
+        guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
+        
+        // PERFECT ZOOM SYNCHRONIZATION: Keep the view center pointing to the same canvas coordinate
+        // This approach works perfectly with .scaleEffect(zoomLevel, anchor: .topLeading)
+        
+        // Calculate what canvas point is currently at the view center
+        let viewCenter = CGPoint(
+            x: geometry.size.width / 2.0,
+            y: geometry.size.height / 2.0
+        )
+        
+        // Find the canvas coordinate that's currently at the view center
+        let canvasPointAtViewCenter = CGPoint(
+            x: (viewCenter.x - document.canvasOffset.x) / oldZoomLevel,
+            y: (viewCenter.y - document.canvasOffset.y) / oldZoomLevel
+        )
+        
+        // Update zoom level
         document.zoomLevel = newZoomLevel
+        
+        // Calculate what the new offset should be to keep the same canvas point at the view center
+        // Using the inverse of the coordinate transformation: screen = (canvas * zoom) + offset
+        // So: offset = screen - (canvas * zoom)
+        let newOffset = CGPoint(
+            x: viewCenter.x - (canvasPointAtViewCenter.x * newZoomLevel),
+            y: viewCenter.y - (canvasPointAtViewCenter.y * newZoomLevel)
+        )
+        
+        document.canvasOffset = newOffset
+        
+        print("🔍 PERFECT ZOOM SYNC: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   Canvas point at view center: (\(String(format: "%.1f", canvasPointAtViewCenter.x)), \(String(format: "%.1f", canvasPointAtViewCenter.y)))")
+        print("   New offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+    }
+    
+    private func handleZoomToLevel(newZoomLevel: CGFloat, geometry: GeometryProxy) {
+        // Legacy function - redirect to simplified version
+        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
     }
     
     private func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // CRITICAL FIX: Use high precision conversion to match visual coordinate system exactly
-        // This must be the mathematical inverse of the visual coordinate chain:
-        // Visual: ((originalCoords * transform) * zoomLevel) + canvasOffset = screen
-        // Reverse: (screen - canvasOffset) / zoomLevel = originalCoords * transform
-        let precision = Double(document.zoomLevel)
-        let precisionOffsetX = Double(document.canvasOffset.x)
-        let precisionOffsetY = Double(document.canvasOffset.y)
-        let precisionPointX = Double(point.x)
-        let precisionPointY = Double(point.y)
+        // PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
+        // Mathematical inverse: (screen - canvasOffset) / zoomLevel = canvas
+        // Use high precision to prevent floating-point drift
+        let preciseScreenX = Double(point.x)
+        let preciseScreenY = Double(point.y)
+        let preciseOffsetX = Double(document.canvasOffset.x)
+        let preciseOffsetY = Double(document.canvasOffset.y)
+        let preciseZoom = Double(document.zoomLevel)
         
-        return CGPoint(
-            x: (precisionPointX - precisionOffsetX) / precision,
-            y: (precisionPointY - precisionOffsetY) / precision
-        )
+        let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
+        let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
+        
+        return CGPoint(x: canvasX, y: canvasY)
     }
     
     private func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // CRITICAL FIX: Use high precision conversion to match visual coordinate system exactly
-        // This must exactly match the visual coordinate chain:
-        // Visual: ((originalCoords * transform) * zoomLevel) + canvasOffset = screen
-        let precision = Double(document.zoomLevel)
-        let precisionOffsetX = Double(document.canvasOffset.x)
-        let precisionOffsetY = Double(document.canvasOffset.y)
-        let precisionPointX = Double(point.x)
-        let precisionPointY = Double(point.y)
+        // PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
+        // Visual chain: (canvas * zoomLevel) + canvasOffset = screen
+        // Use high precision to prevent floating-point drift
+        let preciseCanvasX = Double(point.x)
+        let preciseCanvasY = Double(point.y)
+        let preciseOffsetX = Double(document.canvasOffset.x)
+        let preciseOffsetY = Double(document.canvasOffset.y)
+        let preciseZoom = Double(document.zoomLevel)
         
-        return CGPoint(
-            x: (precisionPointX * precision) + precisionOffsetX,
-            y: (precisionPointY * precision) + precisionOffsetY
-        )
+        let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
+        let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
+        
+        return CGPoint(x: screenX, y: screenY)
     }
     
     private func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
@@ -1568,6 +1746,82 @@ struct DrawingCanvas: View {
             // Close the path (this just marks it as closed, the curves do the actual work)
             .close
         ], isClosed: true)
+    }
+    
+    private func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
+        var elements: [PathElement] = []
+        let angleStep = .pi / Double(points)
+        
+        for i in 0..<(points * 2) {
+            let angle = Double(i) * angleStep - .pi / 2 // Start at top
+            let radius = i % 2 == 0 ? outerRadius : innerRadius
+            let x = center.x + cos(angle) * radius
+            let y = center.y + sin(angle) * radius
+            
+            if i == 0 {
+                elements.append(.move(to: VectorPoint(x, y)))
+            } else {
+                elements.append(.line(to: VectorPoint(x, y)))
+            }
+        }
+        elements.append(.close)
+        
+        return VectorPath(elements: elements, isClosed: true)
+    }
+    
+    private func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPath {
+        var elements: [PathElement] = []
+        let angleStep = 2 * .pi / Double(sides)
+        
+        for i in 0..<sides {
+            let angle = Double(i) * angleStep - .pi / 2 // Start at top
+            let x = center.x + cos(angle) * radius
+            let y = center.y + sin(angle) * radius
+            
+            if i == 0 {
+                elements.append(.move(to: VectorPoint(x, y)))
+            } else {
+                elements.append(.line(to: VectorPoint(x, y)))
+            }
+        }
+        elements.append(.close)
+        
+        return VectorPath(elements: elements, isClosed: true)
+    }
+    
+    private func handleTextTap(at location: CGPoint) {
+        // Create a new text object at the tap location
+        let typography = TypographyProperties(
+            fontFamily: "Helvetica",
+            fontWeight: .regular,
+            fontStyle: .normal,
+            fontSize: 24.0,
+            lineHeight: 28.8,
+            letterSpacing: 0.0,
+            alignment: .left,
+            hasStroke: false,
+            strokeColor: .black,
+            strokeWidth: 1.0,
+            strokeOpacity: 1.0,
+            fillColor: .black,
+            fillOpacity: 1.0
+        )
+        
+        let textObject = VectorText(
+            content: "Text",
+            typography: typography,
+            position: location
+        )
+        
+        // Add to document
+        document.addText(textObject)
+        
+        // Select the new text object
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        document.selectedTextIDs.insert(textObject.id)
+        
+        print("✅ Created text object at location: \(location)")
     }
     
     private func addPathElements(_ elements: [PathElement], to path: inout Path) {
@@ -2797,12 +3051,7 @@ struct ProfessionalDirectSelectionView: View {
         }
     }
     
-    private func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        return CGPoint(
-            x: point.x * document.zoomLevel + document.canvasOffset.x,
-            y: point.y * document.zoomLevel + document.canvasOffset.y
-        )
-    }
+    // REMOVED: Duplicate function - use the precision version above
     
     private func getPointLocation(_ pointID: DrawingCanvas.PointID) -> CGPoint? {
         // Find the shape and extract point location

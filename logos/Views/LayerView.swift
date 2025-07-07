@@ -77,7 +77,7 @@ struct ShapeView: View {
         }
         // Apply same transforms as ShapeView in same order
         .transformEffect(shape.transform)
-        .scaleEffect(zoomLevel)
+        .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         .opacity(shape.opacity)
     }
@@ -183,29 +183,36 @@ struct GridView: View {
     let geometry: GeometryProxy
     
     var body: some View {
-        let gridSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit * document.zoomLevel
+        let gridSpacing = document.settings.gridSpacing * document.settings.unit.pointsPerUnit
         let canvasSize = document.settings.sizeInPoints
         
         // Prevent infinite loop when grid spacing is 0
         if gridSpacing > 0 {
         Path { path in
+            // UNIFIED COORDINATE SYSTEM: Draw grid in canvas space then transform
+            let gridSteps = Int(ceil(max(canvasSize.width, canvasSize.height) / gridSpacing)) + 1
+            
             // Vertical lines
-            var x = document.canvasOffset.x
-            while x < document.canvasOffset.x + canvasSize.width * document.zoomLevel {
-                path.move(to: CGPoint(x: x, y: document.canvasOffset.y))
-                path.addLine(to: CGPoint(x: x, y: document.canvasOffset.y + canvasSize.height * document.zoomLevel))
-                x += gridSpacing
+            for i in 0...gridSteps {
+                let x = CGFloat(i) * gridSpacing
+                if x <= canvasSize.width {
+                    path.move(to: CGPoint(x: x, y: 0))
+                    path.addLine(to: CGPoint(x: x, y: canvasSize.height))
+                }
             }
             
             // Horizontal lines
-            var y = document.canvasOffset.y
-            while y < document.canvasOffset.y + canvasSize.height * document.zoomLevel {
-                path.move(to: CGPoint(x: document.canvasOffset.x, y: y))
-                path.addLine(to: CGPoint(x: document.canvasOffset.x + canvasSize.width * document.zoomLevel, y: y))
-                y += gridSpacing
+            for i in 0...gridSteps {
+                let y = CGFloat(i) * gridSpacing
+                if y <= canvasSize.height {
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: canvasSize.width, y: y))
+                }
             }
         }
-        .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
+        .stroke(Color.gray.opacity(0.3), lineWidth: 0.5 / document.zoomLevel)
+        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         } else {
             // Return empty view when grid spacing is 0
             EmptyView()
@@ -279,7 +286,7 @@ struct SelectionHandles: View {
                 .frame(width: bounds.width, height: bounds.height)
                 .position(center)
                 .transformEffect(shape.transform)
-                .scaleEffect(zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
             
             // Corner resize handles (scale proportionally)
@@ -290,7 +297,7 @@ struct SelectionHandles: View {
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
                     .transformEffect(shape.transform)
-                    .scaleEffect(zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .gesture(
                         DragGesture()
@@ -311,7 +318,7 @@ struct SelectionHandles: View {
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
                     .transformEffect(shape.transform)
-                    .scaleEffect(zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .gesture(
                         DragGesture()
@@ -334,7 +341,7 @@ struct SelectionHandles: View {
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                 .position(rotationPosition)
                 .transformEffect(shape.transform)
-                .scaleEffect(zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .gesture(
                     DragGesture()
@@ -351,7 +358,7 @@ struct SelectionHandles: View {
             }
             .stroke(Color.green, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
             .transformEffect(shape.transform)
-            .scaleEffect(zoomLevel)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
         }
         .onAppear {
