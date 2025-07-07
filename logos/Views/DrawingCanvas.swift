@@ -2376,43 +2376,16 @@ struct DrawingCanvas: View {
             let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             
-            // Also update the outgoing handle in the NEXT element if it exists
-            updateOutgoingHandleInNextElement(
-                layerIndex: layerIndex, 
-                shapeIndex: shapeIndex, 
-                elementIndex: elementIndex, 
-                newOutgoingHandle: outgoingHandle
-            )
+            // DON'T modify adjacent points - only modify the clicked point!
             
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree handles")
             
         case .move(let to):
-            // Convert move to smooth curve if there's a following curve element
-            let point = VectorPoint(to.x, to.y)
-            
-            // For move points, we can only add an outgoing handle if the next element is a curve
-            if elementIndex + 1 < shape.path.elements.count {
-                let nextElement = shape.path.elements[elementIndex + 1]
-                if case .curve = nextElement {
-                    let (_, outgoingHandle) = calculateSmoothHandles(
-                        for: point, 
-                        elementIndex: elementIndex, 
-                        in: shape.path.elements
-                    )
-                    
-                    // Update the outgoing handle in the next element
-                    updateOutgoingHandleInNextElement(
-                        layerIndex: layerIndex, 
-                        shapeIndex: shapeIndex, 
-                        elementIndex: elementIndex, 
-                        newOutgoingHandle: outgoingHandle
-                    )
-                    
-                    print("✅ ADDED OUTGOING HANDLE TO MOVE POINT")
-                }
-            }
+            // Move points can't be converted to smooth curves directly
+            // They need to be converted using the bezier pen tool instead
+            print("ℹ️ MOVE POINT: Use bezier pen tool to add curve handles to path start points")
             
         default:
             break
@@ -2439,15 +2412,7 @@ struct DrawingCanvas: View {
             let newElement = PathElement.curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             
-            // Also need to fix the outgoing handle in the NEXT element if it exists
-            if elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count {
-                let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
-                if case .curve(let nextTo, _, let nextControl2) = nextElement {
-                    // Set the outgoing handle (control1 of next element) to the corner point
-                    let fixedNextElement = PathElement.curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
-                    document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1] = fixedNextElement
-                }
-            }
+            // DON'T modify adjacent points - only modify the clicked point!
             
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
@@ -2484,13 +2449,7 @@ struct DrawingCanvas: View {
             let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             
-            // Also update the outgoing handle in the NEXT element if it exists
-            updateOutgoingHandleInNextElement(
-                layerIndex: layerIndex, 
-                shapeIndex: shapeIndex, 
-                elementIndex: elementIndex, 
-                newOutgoingHandle: outgoingHandle
-            )
+            // DON'T modify adjacent points - only modify the clicked point!
             
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
@@ -2622,23 +2581,7 @@ struct DrawingCanvas: View {
         return (incomingHandle, outgoingHandle)
     }
     
-    // PROFESSIONAL HANDLE COORDINATION: Update outgoing handle in next element
-    private func updateOutgoingHandleInNextElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int, newOutgoingHandle: VectorPoint) {
-        guard elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
-        
-        let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
-        
-        switch nextElement {
-        case .curve(let to, _, let control2):
-            // Update the control1 (outgoing handle) in the next element
-            let updatedElement = PathElement.curve(to: to, control1: newOutgoingHandle, control2: control2)
-            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1] = updatedElement
-            
-        default:
-            // For non-curve elements, we can't add handles
-            break
-        }
-    }
+
 }
 
 struct ProfessionalDirectSelectionView: View {
