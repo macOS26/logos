@@ -2358,34 +2358,48 @@ struct DrawingCanvas: View {
         document.saveToUndoStack()
         
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
         case .line(let to):
-            // Convert corner point to smooth curve with 180-degree handles
+            // CRITICAL FIX: Convert line to curve but ONLY modify handles that belong to this anchor point
             let point = VectorPoint(to.x, to.y)
+            let handleLength: Double = 30.0
             
-            // Calculate intelligent handle positions based on neighboring points
-            let (incomingHandle, outgoingHandle) = calculateSmoothHandles(
-                for: point, 
-                elementIndex: elementIndex, 
-                in: shape.path.elements
-            )
+            // STEP 1: Convert current line element to curve with incoming handle
+            let incomingHandle = VectorPoint(point.x - handleLength, point.y)
+            elements[elementIndex] = .curve(to: point, control1: VectorPoint(point.x, point.y), control2: incomingHandle)
             
-            // Create smooth curve with 180-degree handles
-            let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
-            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            // STEP 2: Add outgoing handle to NEXT element (if it exists and is a curve)
+            if elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                    let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+                }
+            }
             
-            // DON'T modify adjacent points - only modify the clicked point!
-            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree handles")
+            print("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure")
             
         case .move(let to):
-            // Move points can't be converted to smooth curves directly
-            // They need to be converted using the bezier pen tool instead
-            print("ℹ️ MOVE POINT: Use bezier pen tool to add curve handles to path start points")
+            // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
+            let point = VectorPoint(to.x, to.y)
+            let handleLength: Double = 30.0
+            
+            // Add outgoing handle to NEXT element (if it exists and is a curve)
+            if elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                    let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+                    
+                    document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    
+                    print("✅ ADDED OUTGOING HANDLE to move point")
+                }
+            }
             
         default:
             break
@@ -2401,19 +2415,24 @@ struct DrawingCanvas: View {
         document.saveToUndoStack()
         
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, _, _):
-            // CRITICAL FIX: Don't convert to line! Keep it as a curve but with coincident handles
-            // This creates a corner point that maintains the curve structure for future conversions
+        case .curve(let to, let control1, _):
+            // CRITICAL FIX: Collapse handles to anchor point (creates corner point)
             let cornerPoint = VectorPoint(to.x, to.y)
             
-            // Set both control points to the anchor point position (creates sharp corner)
-            let newElement = PathElement.curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
-            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            // STEP 1: Collapse incoming handle (control2) to anchor point
+            elements[elementIndex] = .curve(to: cornerPoint, control1: control1, control2: cornerPoint)
             
-            // DON'T modify adjacent points - only modify the clicked point!
+            // STEP 2: Collapse outgoing handle (control1 of NEXT element) to anchor point
+            if elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
+                }
+            }
             
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)")
@@ -2431,29 +2450,30 @@ struct DrawingCanvas: View {
         document.saveToUndoStack()
         
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, _, _):
-            // Convert corner point back to smooth curve with 180-degree handles
+        case .curve(let to, let control1, _):
+            // CRITICAL FIX: Add symmetric handles to create smooth point
             let point = VectorPoint(to.x, to.y)
+            let handleLength: Double = 30.0
             
-            // Calculate intelligent handle positions based on neighboring points
-            let (incomingHandle, outgoingHandle) = calculateSmoothHandles(
-                for: point, 
-                elementIndex: elementIndex, 
-                in: shape.path.elements
-            )
+            // STEP 1: Add incoming handle (control2) to current element
+            let incomingHandle = VectorPoint(point.x - handleLength, point.y)
+            elements[elementIndex] = .curve(to: point, control1: control1, control2: incomingHandle)
             
-            // Create smooth curve with 180-degree handles
-            let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
-            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            // STEP 2: Add outgoing handle (control1 of NEXT element) 
+            if elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                    let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+                }
+            }
             
-            // DON'T modify adjacent points - only modify the clicked point!
-            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED CORNER POINT BACK TO SMOOTH CURVE with 180-degree handles")
+            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree handles")
         default:
             break
         }
@@ -2483,61 +2503,15 @@ struct DrawingCanvas: View {
         }
     }
     
-    // USE THE EXISTING PROFESSIONAL SMOOTH HANDLE LOGIC - NO MORE REINVENTING!
+    // SIMPLE 180-DEGREE SYMMETRIC HANDLES - NO COMPLEX MATH!
     private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
-        // Get previous and next points
-        var prevPoint: VectorPoint?
-        var nextPoint: VectorPoint?
+        // Just create simple horizontal 180-degree handles like Adobe Illustrator
+        let handleLength: Double = 30.0
         
-        // Find previous point
-        if elementIndex > 0 {
-            let prevElement = elements[elementIndex - 1]
-            switch prevElement {
-            case .move(let to), .line(let to):
-                prevPoint = to
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                prevPoint = to
-            case .close:
-                if let firstElement = elements.first, case .move(let to) = firstElement {
-                    prevPoint = to
-                }
-            }
-        }
+        let incomingHandle = VectorPoint(point.x - handleLength, point.y)
+        let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
         
-        // Find next point
-        if elementIndex + 1 < elements.count {
-            let nextElement = elements[elementIndex + 1]
-            switch nextElement {
-            case .move(let to), .line(let to):
-                nextPoint = to
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                nextPoint = to
-            case .close:
-                if let firstElement = elements.first, case .move(let to) = firstElement {
-                    nextPoint = to
-                }
-            }
-        }
-        
-        // USE THE EXISTING PROFESSIONAL ALGORITHM FROM ProfessionalBezierMathematics
-        let (incomingHandle, outgoingHandle) = ProfessionalBezierMathematics.generateSmoothHandles(
-            previousPoint: prevPoint,
-            currentPoint: point,
-            nextPoint: nextPoint,
-            tension: 0.33 // Adobe Illustrator standard tension
-        )
-        
-        // Return the handles or fallback to simple symmetric handles
-        if let incoming = incomingHandle, let outgoing = outgoingHandle {
-            return (incoming, outgoing)
-        } else {
-            // Simple fallback for edge cases
-            let fallbackLength: Double = 25.0
-            return (
-                VectorPoint(point.x - fallbackLength, point.y),
-                VectorPoint(point.x + fallbackLength, point.y)
-            )
-        }
+        return (incomingHandle, outgoingHandle)
     }
     
 
