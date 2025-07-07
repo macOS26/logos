@@ -72,6 +72,27 @@ struct DocumentSettings: Codable, Hashable {
     }
 }
 
+// MARK: - Zoom Request System (Professional Adobe Illustrator Standards)
+enum ZoomMode: Equatable {
+    case zoomIn
+    case zoomOut
+    case fitToPage
+    case actualSize
+    case custom(CGPoint) // Custom zoom with focal point
+}
+
+struct ZoomRequest: Equatable {
+    let targetZoom: CGFloat
+    let mode: ZoomMode
+    let timestamp: Date
+    
+    init(targetZoom: CGFloat, mode: ZoomMode) {
+        self.targetZoom = targetZoom
+        self.mode = mode
+        self.timestamp = Date()
+    }
+}
+
 // MARK: - Vector Document
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
@@ -85,6 +106,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var viewMode: ViewMode
     @Published var zoomLevel: Double
     @Published var canvasOffset: CGPoint
+    @Published var zoomRequest: ZoomRequest? = nil // For coordinated zoom operations
     @Published var showRulers: Bool
     @Published var snapToGrid: Bool
     @Published var undoStack: [VectorDocument]
@@ -1017,6 +1039,20 @@ class VectorDocument: ObservableObject, Codable {
             shape.strokeStyle != nil &&
             PathOperations.canOutlineStroke(path: shape.path.cgPath, strokeStyle: shape.strokeStyle!)
         }.count
+    }
+    
+    // MARK: - Professional Zoom Management (Adobe Illustrator Standards)
+    
+    /// Request a coordinated zoom operation that maintains proper focal point
+    func requestZoom(to targetZoom: CGFloat, mode: ZoomMode) {
+        let request = ZoomRequest(targetZoom: targetZoom, mode: mode)
+        zoomRequest = request
+        print("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%")
+    }
+    
+    /// Clear zoom request after processing
+    func clearZoomRequest() {
+        zoomRequest = nil
     }
     
     // MARK: - Color Management

@@ -785,21 +785,24 @@ struct MainToolbarContent: ToolbarContent {
             // Zoom Controls
             Menu {
                 Button("Zoom In") {
-                    document.zoomLevel = min(10.0, document.zoomLevel * 1.25)
+                    onZoomIn()
                 }
+                .keyboardShortcut("=", modifiers: [.command])
                 
                 Button("Zoom Out") {
-                    document.zoomLevel = max(0.1, document.zoomLevel / 1.25)
+                    onZoomOut()
                 }
+                .keyboardShortcut("-", modifiers: [.command])
                 
-                Button("Zoom to Fit") {
-                    document.zoomLevel = 1.0
-                    document.canvasOffset = .zero
+                Button("Fit to Page") {
+                    onFitToPage()
                 }
+                .keyboardShortcut("0", modifiers: [.command])
                 
                 Button("Actual Size") {
-                    document.zoomLevel = 1.0
+                    onActualSize()
                 }
+                .keyboardShortcut("1", modifiers: [.command])
                 
             } label: {
                 Image(systemName: "magnifyingglass")
@@ -842,6 +845,34 @@ struct MainToolbarContent: ToolbarContent {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+    }
+    
+    // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
+    
+    private func onZoomIn() {
+        // Zoom in by 25% (Adobe Illustrator standard)
+        let newZoom = min(10.0, document.zoomLevel * 1.25)
+        document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
+        print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+    }
+    
+    private func onZoomOut() {
+        // Zoom out by 25% (Adobe Illustrator standard)
+        let newZoom = max(0.1, document.zoomLevel / 1.25)
+        document.requestZoom(to: CGFloat(newZoom), mode: .zoomOut)
+        print("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+    }
+    
+    private func onFitToPage() {
+        // Fit the entire page to the view (Adobe Illustrator standard)
+        document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
+    }
+    
+    private func onActualSize() {
+        // Set to 100% zoom (Adobe Illustrator standard)
+        document.requestZoom(to: 1.0, mode: .actualSize)
+        print("🔍 ACTUAL SIZE: Set to 100% zoom")
     }
     
     // MARK: - Professional Object Management Functions (Adobe Illustrator Standards)

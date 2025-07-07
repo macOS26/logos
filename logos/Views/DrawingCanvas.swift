@@ -113,177 +113,13 @@ struct DrawingCanvas: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
-                // PERFECT BACKGROUND SYNC: Uses EXACTLY the same coordinate transform as LayerView
-                Rectangle()
-                    .fill(document.settings.backgroundColor.color)
-                    .frame(width: document.settings.sizeInPoints.width, 
-                           height: document.settings.sizeInPoints.height)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                
-                // Grid (if enabled)
-                if document.snapToGrid {
-                    GridView(document: document, geometry: geometry)
-                }
-                
-                // Render all layers and shapes
-                ForEach(document.layers.indices, id: \.self) { layerIndex in
-                    if document.layers[layerIndex].isVisible {
-                        LayerView(
-                            layer: document.layers[layerIndex],
-                            zoomLevel: document.zoomLevel,
-                            canvasOffset: document.canvasOffset,
-                            selectedShapeIDs: document.selectedShapeIDs,
-                            viewMode: document.viewMode
-                        )
-                    }
-                }
-                
-                // Current drawing path (while drawing)
-                if let currentPath = currentPath {
-                    Path { path in
-                        addPathElements(currentPath.elements, to: &path)
-                    }
-                    .stroke(Color.blue, lineWidth: 1.0)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                }
-                
-                // PROFESSIONAL BEZIER PATH PREVIEW (Adobe Illustrator style with scale-independent rendering)
-                bezierPathPreview()
-                
-                // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
-                rubberBandPreview(geometry: geometry)
-                
-                // PROFESSIONAL BEZIER ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                if isBezierDrawing {
-                    ForEach(bezierPoints.indices, id: \.self) { index in
-                        let point = bezierPoints[index]
-                        let pointLocation = CGPoint(x: point.x, y: point.y)
-                        let isActive = activeBezierPointIndex == index
-                        let isFirstPoint = index == 0
-                        let isCloseHovering = showClosePathHint && isFirstPoint
-                        
-                        // PROFESSIONAL SCALE-INDEPENDENT SIZING (Adobe Illustrator Standards)
-                        let anchorSize = 6.0 / document.zoomLevel  // Scale-independent anchor point size
-                        let lineWidth = 1.0 / document.zoomLevel   // Scale-independent stroke width
-                        
-                        // PROFESSIONAL FIRST POINT HIGHLIGHTING (like Adobe Illustrator)
-                        if isCloseHovering {
-                            // Enlarged, highlighted first point when hovering to close - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                            Rectangle()
-                                .fill(Color.green)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.white, lineWidth: lineWidth)
-                                )
-                                .frame(width: anchorSize * 1.3, height: anchorSize * 1.3)
-                                .position(pointLocation)
-                                .scaleEffect(document.zoomLevel * 1.2)   // Same as arrow tool with animation scale
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                                .animation(.easeInOut(duration: 0.2), value: isCloseHovering)
-                        } else {
-                            // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                            // Active point: solid black square with white stroke
-                            // Inactive point: hollow white square with black stroke
-                            Rectangle()
-                                .fill(isActive ? Color.black : Color.white)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
-                                )
-                                .frame(width: anchorSize, height: anchorSize)
-                                .position(pointLocation)
-                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                        }
-                        
-                        // Render bezier handles if they exist for this point - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        if let handleInfo = bezierHandles[index], handleInfo.hasHandles {
-                            // Draw control handle lines - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                            if let control1 = handleInfo.control1 {
-                                let control1Location = CGPoint(x: control1.x, y: control1.y)
-                                Path { path in
-                                    path.move(to: pointLocation)
-                                    path.addLine(to: control1Location)
-                                }
-                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                                
-                                // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                                    .position(control1Location)
-                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                            }
-                            
-                            if let control2 = handleInfo.control2 {
-                                let control2Location = CGPoint(x: control2.x, y: control2.y)
-                                Path { path in
-                                    path.move(to: pointLocation)
-                                    path.addLine(to: control2Location)
-                                }
-                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                                
-                                // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Circle()
-                                    .fill(Color.blue)
-                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                                    .position(control2Location)
-                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                            }
-                        }
-                    }
-                }
-                
-                // PROFESSIONAL CLOSE PATH VISUAL HINT - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                if showClosePathHint {
-                    ZStack {
-                        // Green circle indicating close path area - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        Circle()
-                            .stroke(Color.green, lineWidth: 2.0 / document.zoomLevel) // Scale-independent
-                            .fill(Color.green.opacity(0.1))
-                            .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel) // Scale-independent
-                            .position(closePathHintLocation)
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                        
-                        // Small "close" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        Image(systemName: "multiply.circle.fill")
-                            .foregroundColor(.green)
-                            .font(.system(size: 12 / document.zoomLevel)) // Scale-independent
-                            .position(closePathHintLocation)
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                    }
-                    .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
-                }
-                
-                // Selection handles for selected shapes
-                SelectionHandlesView(
-                    document: document,
-                    geometry: geometry
-                )
-                
-                // Direct selection points and handles
-                // Show direct selection UI for both Direct Selection tool AND Convert Point tool
-                if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint {
-                    ProfessionalDirectSelectionView(
-                        document: document,
-                        selectedPoints: selectedPoints,
-                        selectedHandles: selectedHandles,
-                        directSelectedShapeIDs: directSelectedShapeIDs,
-                        geometry: geometry
-                    )
-                }
-            }
+            canvasMainContent(geometry: geometry)
+        }
+    }
+    
+    @ViewBuilder
+    private func canvasMainContent(geometry: GeometryProxy) -> some View {
+        canvasBaseContent(geometry: geometry)
             .clipped()
             .onAppear {
                 setupCanvas(geometry: geometry)
@@ -295,29 +131,7 @@ struct DrawingCanvas: View {
                 teardownKeyEventMonitoring()
             }
             .onChange(of: document.currentTool) { oldTool, newTool in
-                // Auto-finalize bezier path when switching away from bezier tool
-                if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
-                    finishBezierPath()
-                }
-                
-                // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection or convert point tools
-                if (newTool == .directSelection || newTool == .convertAnchorPoint) && 
-                   (previousTool != .directSelection && previousTool != .convertAnchorPoint) {
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
-                    print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
-                }
-                
-                // Clear direct selection state when switching away from direct selection tools
-                if (previousTool == .directSelection || previousTool == .convertAnchorPoint) && 
-                   (newTool != .directSelection && newTool != .convertAnchorPoint) {
-                    selectedPoints.removeAll()
-                    selectedHandles.removeAll()
-                    directSelectedShapeIDs.removeAll()
-                    print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
-                }
-                
-                previousTool = newTool
+                handleToolChange(oldTool: oldTool, newTool: newTool)
             }
             .onTapGesture { location in
                 handleTap(at: location, geometry: geometry)
@@ -326,31 +140,8 @@ struct DrawingCanvas: View {
                 // Enable mouse tracking for rubber band preview
             }
             .onContinuousHover { phase in
-                if case .active(let location) = phase {
-                    currentMouseLocation = location
-                    
-                    // PROFESSIONAL CLOSE PATH VISUAL FEEDBACK
-                    if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count >= 3 {
-                        let canvasLocation = screenToCanvas(location, geometry: geometry)
-                        let firstPoint = bezierPoints[0]
-                        let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                        let closeTolerance: Double = 25.0
-                        
-                        if distance(canvasLocation, firstPointLocation) <= closeTolerance {
-                            showClosePathHint = true
-                            closePathHintLocation = firstPointLocation // USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        } else {
-                            showClosePathHint = false
-                        }
-                    } else {
-                        showClosePathHint = false
-                    }
-                } else {
-                    currentMouseLocation = nil
-                    showClosePathHint = false
-                }
+                handleHover(phase: phase, geometry: geometry)
             }
-
             .gesture(
                 DragGesture(minimumDistance: 3)
                     .onChanged { value in
@@ -363,13 +154,10 @@ struct DrawingCanvas: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
-                        // SIMPLIFIED ZOOM: Direct calculation without feedback loops
-                        // Value represents total magnification from start of gesture
                         let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
                         handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
                     }
                     .onEnded { value in
-                        // Finalize zoom level and store for next gesture
                         let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
                         document.zoomLevel = finalZoomLevel
                         initialZoomLevel = finalZoomLevel
@@ -377,12 +165,266 @@ struct DrawingCanvas: View {
                     }
             )
             .onTapGesture(count: 2) { location in
-                // Double-tap to fit to page
                 fitToPage(geometry: geometry)
+            }
+            .onChange(of: document.zoomRequest) { _ in
+                if let request = document.zoomRequest {
+                    handleZoomRequest(request, geometry: geometry)
+                }
             }
             .contextMenu {
                 directSelectionContextMenu
             }
+    }
+    
+    @ViewBuilder
+    private func canvasBaseContent(geometry: GeometryProxy) -> some View {
+        ZStack {
+            // PERFECT BACKGROUND SYNC: Uses EXACTLY the same coordinate transform as LayerView
+            Rectangle()
+                .fill(document.settings.backgroundColor.color)
+                .frame(width: document.settings.sizeInPoints.width, 
+                       height: document.settings.sizeInPoints.height)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            
+            // Grid (if enabled)
+            if document.snapToGrid {
+                GridView(document: document, geometry: geometry)
+            }
+            
+            // Render all layers and shapes
+            ForEach(document.layers.indices, id: \.self) { layerIndex in
+                if document.layers[layerIndex].isVisible {
+                    LayerView(
+                        layer: document.layers[layerIndex],
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        selectedShapeIDs: document.selectedShapeIDs,
+                        viewMode: document.viewMode
+                    )
+                }
+            }
+            
+            canvasOverlays(geometry: geometry)
+        }
+    }
+    
+    private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
+        // Auto-finalize bezier path when switching away from bezier tool
+        if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
+            finishBezierPath()
+        }
+        
+        // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection or convert point tools
+        if (newTool == .directSelection || newTool == .convertAnchorPoint) && 
+           (previousTool != .directSelection && previousTool != .convertAnchorPoint) {
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+            print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
+        }
+        
+        // Clear direct selection state when switching away from direct selection tools
+        if (previousTool == .directSelection || previousTool == .convertAnchorPoint) && 
+           (newTool != .directSelection && newTool != .convertAnchorPoint) {
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+            directSelectedShapeIDs.removeAll()
+            print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
+        }
+        
+        previousTool = newTool
+    }
+    
+    private func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
+        if case .active(let location) = phase {
+            currentMouseLocation = location
+            
+            // PROFESSIONAL CLOSE PATH VISUAL FEEDBACK
+            if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count >= 3 {
+                let canvasLocation = screenToCanvas(location, geometry: geometry)
+                let firstPoint = bezierPoints[0]
+                let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+                let closeTolerance: Double = 25.0
+                
+                if distance(canvasLocation, firstPointLocation) <= closeTolerance {
+                    showClosePathHint = true
+                    closePathHintLocation = firstPointLocation
+                } else {
+                    showClosePathHint = false
+                }
+            } else {
+                showClosePathHint = false
+            }
+        } else {
+            currentMouseLocation = nil
+            showClosePathHint = false
+        }
+    }
+    
+    @ViewBuilder
+    private func canvasOverlays(geometry: GeometryProxy) -> some View {
+        // Current drawing path (while drawing)
+        if let currentPath = currentPath {
+            Path { path in
+                addPathElements(currentPath.elements, to: &path)
+            }
+            .stroke(Color.blue, lineWidth: 1.0)
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+        
+        // PROFESSIONAL BEZIER PATH PREVIEW (Adobe Illustrator style with scale-independent rendering)
+        bezierPathPreview()
+        
+        // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
+        rubberBandPreview(geometry: geometry)
+        
+        bezierAnchorPoints()
+        bezierControlHandles()
+        bezierClosePathHint()
+        
+        // Selection handles for selected shapes
+        SelectionHandlesView(
+            document: document,
+            geometry: geometry
+        )
+        
+        // Direct selection points and handles
+        // Show direct selection UI for both Direct Selection tool AND Convert Point tool
+        if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint {
+            ProfessionalDirectSelectionView(
+                document: document,
+                selectedPoints: selectedPoints,
+                selectedHandles: selectedHandles,
+                directSelectedShapeIDs: directSelectedShapeIDs,
+                geometry: geometry
+            )
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierAnchorPoints() -> some View {
+        // PROFESSIONAL BEZIER ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+        if isBezierDrawing {
+            ForEach(bezierPoints.indices, id: \.self) { index in
+                let point = bezierPoints[index]
+                let pointLocation = CGPoint(x: point.x, y: point.y)
+                let isActive = activeBezierPointIndex == index
+                let isFirstPoint = index == 0
+                let isCloseHovering = showClosePathHint && isFirstPoint
+                
+                // PROFESSIONAL SCALE-INDEPENDENT SIZING (Adobe Illustrator Standards)
+                let anchorSize = 6.0 / document.zoomLevel  // Scale-independent anchor point size
+                let lineWidth = 1.0 / document.zoomLevel   // Scale-independent stroke width
+                
+                // PROFESSIONAL FIRST POINT HIGHLIGHTING (like Adobe Illustrator)
+                if isCloseHovering {
+                    // Enlarged, highlighted first point when hovering to close - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                    Rectangle()
+                        .fill(Color.green)
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.white, lineWidth: lineWidth)
+                        )
+                        .frame(width: anchorSize * 1.3, height: anchorSize * 1.3)
+                        .position(pointLocation)
+                        .scaleEffect(document.zoomLevel * 1.2)   // Same as arrow tool with animation scale
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        .animation(.easeInOut(duration: 0.2), value: isCloseHovering)
+                } else {
+                    // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                    // Active point: solid black square with white stroke
+                    // Inactive point: hollow white square with black stroke
+                    Rectangle()
+                        .fill(isActive ? Color.black : Color.white)
+                        .overlay(
+                            Rectangle()
+                                .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
+                        )
+                        .frame(width: anchorSize, height: anchorSize)
+                        .position(pointLocation)
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierControlHandles() -> some View {
+        // Render bezier handles if they exist
+        if isBezierDrawing {
+            ForEach(bezierPoints.indices, id: \.self) { index in
+                if let handleInfo = bezierHandles[index], handleInfo.hasHandles {
+                    let pointLocation = CGPoint(x: bezierPoints[index].x, y: bezierPoints[index].y)
+                    
+                    // Draw control handle lines - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                    if let control1 = handleInfo.control1 {
+                        let control1Location = CGPoint(x: control1.x, y: control1.y)
+                        Path { path in
+                            path.move(to: pointLocation)
+                            path.addLine(to: control1Location)
+                        }
+                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        
+                        // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                            .position(control1Location)
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    }
+                    
+                    if let control2 = handleInfo.control2 {
+                        let control2Location = CGPoint(x: control2.x, y: control2.y)
+                        Path { path in
+                            path.move(to: pointLocation)
+                            path.addLine(to: control2Location)
+                        }
+                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        
+                        // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                            .position(control2Location)
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierClosePathHint() -> some View {
+        // PROFESSIONAL CLOSE PATH VISUAL HINT - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+        if showClosePathHint {
+            ZStack {
+                // Green circle indicating close path area - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                Circle()
+                    .stroke(Color.green, lineWidth: 2.0 / document.zoomLevel) // Scale-independent
+                    .fill(Color.green.opacity(0.1))
+                    .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel) // Scale-independent
+                    .position(closePathHintLocation)
+                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                
+                // Small "close" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                Image(systemName: "multiply.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.system(size: 12 / document.zoomLevel)) // Scale-independent
+                    .position(closePathHintLocation)
+                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+            }
+            .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
         }
     }
     
@@ -1686,6 +1728,101 @@ struct DrawingCanvas: View {
     private func handleZoomToLevel(newZoomLevel: CGFloat, geometry: GeometryProxy) {
         // Legacy function - redirect to simplified version
         handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
+    }
+    
+    /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)
+    private func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
+        
+        switch request.mode {
+        case .fitToPage:
+            // Fit to page: Calculate optimal zoom and center
+            fitToPage(geometry: geometry)
+            print("🔍 HANDLED ZOOM REQUEST: Fit to Page")
+            
+        case .actualSize:
+            // Actual size: Set to 100% and center properly
+            actualSize(geometry: geometry)
+            print("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)")
+            
+        case .zoomIn, .zoomOut:
+            // Zoom in/out: Maintain current focal point
+            handleSimplifiedZoom(newZoomLevel: request.targetZoom, geometry: geometry)
+            print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))%")
+            
+        case .custom(let focalPoint):
+            // Custom zoom with specific focal point
+            handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
+            print("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)")
+        }
+        
+        // Clear the request after processing
+        document.clearZoomRequest()
+    }
+    
+    /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
+    private func actualSize(geometry: GeometryProxy) {
+        let oldZoomLevel = document.zoomLevel
+        let newZoomLevel: Double = 1.0 // 100% actual size
+        
+        // Calculate what canvas point is currently at the view center
+        let viewCenter = CGPoint(
+            x: geometry.size.width / 2.0,
+            y: geometry.size.height / 2.0
+        )
+        
+        // For actual size, we want to center the page center in the view
+        let canvasSize = document.settings.sizeInPoints
+        let canvasCenter = CGPoint(
+            x: canvasSize.width / 2.0,
+            y: canvasSize.height / 2.0
+        )
+        
+        // Update zoom level
+        document.zoomLevel = newZoomLevel
+        
+        // Calculate offset to center the page
+        document.canvasOffset = CGPoint(
+            x: viewCenter.x - (canvasCenter.x * CGFloat(newZoomLevel)),
+            y: viewCenter.y - (canvasCenter.y * CGFloat(newZoomLevel))
+        )
+        
+        // Update initial zoom level for gesture handling
+        initialZoomLevel = CGFloat(newZoomLevel)
+        
+        print("🎯 ACTUAL SIZE: Set to 100% and centered page")
+        print("   Page center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
+        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+    }
+    
+    /// Zoom at a specific point (Adobe Illustrator standard)
+    private func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy) {
+        let oldZoomLevel = document.zoomLevel
+        
+        // Only proceed if zoom level actually changes
+        guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
+        
+        // Find the canvas coordinate at the focal point
+        let canvasPointAtFocus = CGPoint(
+            x: (focalPoint.x - document.canvasOffset.x) / oldZoomLevel,
+            y: (focalPoint.y - document.canvasOffset.y) / oldZoomLevel
+        )
+        
+        // Update zoom level
+        document.zoomLevel = newZoomLevel
+        
+        // Calculate what the new offset should be to keep the same canvas point at the focal point
+        let newOffset = CGPoint(
+            x: focalPoint.x - (canvasPointAtFocus.x * newZoomLevel),
+            y: focalPoint.y - (canvasPointAtFocus.y * newZoomLevel)
+        )
+        
+        document.canvasOffset = newOffset
+        
+        print("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        print("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))")
+        print("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))")
+        print("   New offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
     
     private func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
