@@ -2521,14 +2521,23 @@ struct DrawingCanvas: View {
                 }
             }
             
-            // Create symmetric handles using the direction vector (EXACTLY like pen tool)
+            // ROTATE HANDLES BY -45 DEGREES for better visibility while maintaining 180-degree symmetry
+            let rotationAngle = -45.0 * .pi / 180.0  // -45 degrees in radians
+            let cosAngle = cos(rotationAngle)
+            let sinAngle = sin(rotationAngle)
+            
+            // Apply rotation to direction vector
+            let rotatedDirX = directionVector.x * cosAngle - directionVector.y * sinAngle
+            let rotatedDirY = directionVector.x * sinAngle + directionVector.y * cosAngle
+            
+            // Create symmetric handles using the rotated direction vector (EXACTLY like pen tool)
             let outgoingHandle = VectorPoint(
-                point.x + directionVector.x * handleLength,
-                point.y + directionVector.y * handleLength
+                point.x + rotatedDirX * handleLength,
+                point.y + rotatedDirY * handleLength
             )
             let incomingHandle = VectorPoint(
-                point.x - directionVector.x * handleLength,
-                point.y - directionVector.y * handleLength
+                point.x - rotatedDirX * handleLength,
+                point.y - rotatedDirY * handleLength
             )
             
             // STEP 1: Add incoming handle (control2) to current element
