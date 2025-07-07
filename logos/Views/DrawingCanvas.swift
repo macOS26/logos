@@ -2214,11 +2214,22 @@ struct DrawingCanvas: View {
                             enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
                             return
                         }
-                    case .curve(let to, _, _):
+                    case .curve(let to, let control1, let control2):
                         let pointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, pointLocation) <= tolerance {
-                            // Convert smooth point to corner point by removing curve handles
-                            convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            // Check if this is already a corner point (handles coincident with anchor)
+                            let isCornerPoint = (
+                                abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1 &&
+                                abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1
+                            )
+                            
+                            if isCornerPoint {
+                                // Convert corner point back to smooth curve
+                                convertCornerToSmooth(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            } else {
+                                // Convert smooth point to corner point
+                                convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                            }
                             
                             // PROFESSIONAL UX: Auto-enable direct selection to show the result
                             enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
@@ -2347,20 +2358,62 @@ struct DrawingCanvas: View {
         document.saveToUndoStack()
         
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
         
         switch element {
         case .line(let to):
-            // Convert line to cubic curve with small handles
+            // Convert corner point to smooth curve with 180-degree handles
             let point = VectorPoint(to.x, to.y)
-            let handleOffset: Double = 20.0
-            let control1 = VectorPoint(to.x - handleOffset, to.y)
-            let control2 = VectorPoint(to.x + handleOffset, to.y)
             
-            let newElement = PathElement.curve(to: point, control1: control1, control2: control2)
+            // Calculate intelligent handle positions based on neighboring points
+            let (incomingHandle, outgoingHandle) = calculateSmoothHandles(
+                for: point, 
+                elementIndex: elementIndex, 
+                in: shape.path.elements
+            )
+            
+            // Create smooth curve with 180-degree handles
+            let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            
+            // Also update the outgoing handle in the NEXT element if it exists
+            updateOutgoingHandleInNextElement(
+                layerIndex: layerIndex, 
+                shapeIndex: shapeIndex, 
+                elementIndex: elementIndex, 
+                newOutgoingHandle: outgoingHandle
+            )
+            
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED LINE POINT TO SMOOTH CURVE with bezier handles")
+            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree handles")
+            
+        case .move(let to):
+            // Convert move to smooth curve if there's a following curve element
+            let point = VectorPoint(to.x, to.y)
+            
+            // For move points, we can only add an outgoing handle if the next element is a curve
+            if elementIndex + 1 < shape.path.elements.count {
+                let nextElement = shape.path.elements[elementIndex + 1]
+                if case .curve = nextElement {
+                    let (_, outgoingHandle) = calculateSmoothHandles(
+                        for: point, 
+                        elementIndex: elementIndex, 
+                        in: shape.path.elements
+                    )
+                    
+                    // Update the outgoing handle in the next element
+                    updateOutgoingHandleInNextElement(
+                        layerIndex: layerIndex, 
+                        shapeIndex: shapeIndex, 
+                        elementIndex: elementIndex, 
+                        newOutgoingHandle: outgoingHandle
+                    )
+                    
+                    print("✅ ADDED OUTGOING HANDLE TO MOVE POINT")
+                }
+            }
+            
         default:
             break
         }
@@ -2378,12 +2431,70 @@ struct DrawingCanvas: View {
         
         switch element {
         case .curve(let to, _, _):
-            // Convert curve to line (corner point)
-            let newElement = PathElement.line(to: to)
+            // CRITICAL FIX: Don't convert to line! Keep it as a curve but with coincident handles
+            // This creates a corner point that maintains the curve structure for future conversions
+            let cornerPoint = VectorPoint(to.x, to.y)
+            
+            // Set both control points to the anchor point position (creates sharp corner)
+            let newElement = PathElement.curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            
+            // Also need to fix the outgoing handle in the NEXT element if it exists
+            if elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count {
+                let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
+                if case .curve(let nextTo, _, let nextControl2) = nextElement {
+                    // Set the outgoing handle (control1 of next element) to the corner point
+                    let fixedNextElement = PathElement.curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
+                    document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1] = fixedNextElement
+                }
+            }
+            
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (removed bezier handles)")
+            print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)")
+        default:
+            break
+        }
+    }
+    
+    private func convertCornerToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+        guard layerIndex < document.layers.count,
+              shapeIndex < document.layers[layerIndex].shapes.count,
+              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        
+        switch element {
+        case .curve(let to, _, _):
+            // Convert corner point back to smooth curve with 180-degree handles
+            let point = VectorPoint(to.x, to.y)
+            
+            // Calculate intelligent handle positions based on neighboring points
+            let (incomingHandle, outgoingHandle) = calculateSmoothHandles(
+                for: point, 
+                elementIndex: elementIndex, 
+                in: shape.path.elements
+            )
+            
+            // Create smooth curve with 180-degree handles
+            let newElement = PathElement.curve(to: point, control1: outgoingHandle, control2: incomingHandle)
+            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
+            
+            // Also update the outgoing handle in the NEXT element if it exists
+            updateOutgoingHandleInNextElement(
+                layerIndex: layerIndex, 
+                shapeIndex: shapeIndex, 
+                elementIndex: elementIndex, 
+                newOutgoingHandle: outgoingHandle
+            )
+            
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            print("✅ CONVERTED CORNER POINT BACK TO SMOOTH CURVE with 180-degree handles")
         default:
             break
         }
@@ -2401,13 +2512,130 @@ struct DrawingCanvas: View {
         
         switch element {
         case .quadCurve(let to, _):
-            // Convert quad curve to line (corner point)
-            let newElement = PathElement.line(to: to)
+            // Convert quad curve to corner point (keep as curve structure)
+            let cornerPoint = VectorPoint(to.x, to.y)
+            let newElement = PathElement.curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED QUAD CURVE TO CORNER POINT (removed quadratic handle)")
+            print("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)")
         default:
+            break
+        }
+    }
+    
+    // PROFESSIONAL SMOOTH HANDLE CALCULATION: Create 180-degree handles for smooth curves
+    private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
+        // Get previous and next points to calculate handle direction
+        var prevPoint: VectorPoint?
+        var nextPoint: VectorPoint?
+        
+        // Find previous point
+        if elementIndex > 0 {
+            let prevElement = elements[elementIndex - 1]
+            switch prevElement {
+            case .move(let to), .line(let to):
+                prevPoint = to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                prevPoint = to
+            case .close:
+                // For closed paths, find the first point
+                if let firstElement = elements.first {
+                    switch firstElement {
+                    case .move(let to):
+                        prevPoint = to
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+        
+        // Find next point
+        if elementIndex + 1 < elements.count {
+            let nextElement = elements[elementIndex + 1]
+            switch nextElement {
+            case .move(let to), .line(let to):
+                nextPoint = to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                nextPoint = to
+            case .close:
+                // For closed paths, find the first point
+                if let firstElement = elements.first {
+                    switch firstElement {
+                    case .move(let to):
+                        nextPoint = to
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+        
+        // Calculate handle direction and length
+        let handleLength: Double = 30.0 // Base handle length
+        
+        if let prev = prevPoint, let next = nextPoint {
+            // Calculate the angle bisector for smooth 180-degree handles
+            let prevVector = CGVector(dx: point.x - prev.x, dy: point.y - prev.y)
+            let nextVector = CGVector(dx: next.x - point.x, dy: next.y - point.y)
+            
+            // Normalize vectors
+            let prevLength = sqrt(prevVector.dx * prevVector.dx + prevVector.dy * prevVector.dy)
+            let nextLength = sqrt(nextVector.dx * nextVector.dx + nextVector.dy * nextVector.dy)
+            
+            if prevLength > 0 && nextLength > 0 {
+                let prevNorm = CGVector(dx: prevVector.dx / prevLength, dy: prevVector.dy / prevLength)
+                let nextNorm = CGVector(dx: nextVector.dx / nextLength, dy: nextVector.dy / nextLength)
+                
+                // Calculate perpendicular direction for 180-degree handles
+                let bisectorX = (prevNorm.dx + nextNorm.dx) / 2
+                let bisectorY = (prevNorm.dy + nextNorm.dy) / 2
+                let bisectorLength = sqrt(bisectorX * bisectorX + bisectorY * bisectorY)
+                
+                if bisectorLength > 0.001 {
+                    // Use perpendicular to bisector for 180-degree handles
+                    let perpX = -bisectorY / bisectorLength
+                    let perpY = bisectorX / bisectorLength
+                    
+                    let adjustedLength = min(handleLength, min(prevLength, nextLength) * 0.3)
+                    
+                    let incomingHandle = VectorPoint(
+                        point.x - perpX * adjustedLength,
+                        point.y - perpY * adjustedLength
+                    )
+                    let outgoingHandle = VectorPoint(
+                        point.x + perpX * adjustedLength,
+                        point.y + perpY * adjustedLength
+                    )
+                    
+                    return (incomingHandle, outgoingHandle)
+                }
+            }
+        }
+        
+        // Fallback: create horizontal handles
+        let fallbackLength = handleLength * 0.5
+        let incomingHandle = VectorPoint(point.x - fallbackLength, point.y)
+        let outgoingHandle = VectorPoint(point.x + fallbackLength, point.y)
+        
+        return (incomingHandle, outgoingHandle)
+    }
+    
+    // PROFESSIONAL HANDLE COORDINATION: Update outgoing handle in next element
+    private func updateOutgoingHandleInNextElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int, newOutgoingHandle: VectorPoint) {
+        guard elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
+        
+        switch nextElement {
+        case .curve(let to, _, let control2):
+            // Update the control1 (outgoing handle) in the next element
+            let updatedElement = PathElement.curve(to: to, control1: newOutgoingHandle, control2: control2)
+            document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1] = updatedElement
+            
+        default:
+            // For non-curve elements, we can't add handles
             break
         }
     }
