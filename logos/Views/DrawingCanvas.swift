@@ -2467,18 +2467,76 @@ struct DrawingCanvas: View {
         
         switch element {
         case .curve(let to, let control1, _):
-            // CRITICAL FIX: Add symmetric handles to create smooth point
+            // CRITICAL FIX: Create proper 180-degree symmetric handles based on path direction
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
             
+            // Calculate the direction vector based on adjacent points
+            var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
+            
+            // Try to get direction from previous point
+            if elementIndex > 0 {
+                let prevElement = elements[elementIndex - 1]
+                var prevPoint: VectorPoint?
+                
+                switch prevElement {
+                case .move(let from), .line(let from):
+                    prevPoint = from
+                case .curve(let from, _, _):
+                    prevPoint = from
+                default:
+                    break
+                }
+                
+                if let prev = prevPoint {
+                    let dx = point.x - prev.x
+                    let dy = point.y - prev.y
+                    let length = sqrt(dx * dx + dy * dy)
+                    if length > 0.1 {
+                        directionVector = CGPoint(x: dx / length, y: dy / length)
+                    }
+                }
+            }
+            // If no previous point, try to get direction from next point
+            else if elementIndex + 1 < elements.count {
+                let nextElement = elements[elementIndex + 1]
+                var nextPoint: VectorPoint?
+                
+                switch nextElement {
+                case .move(let next), .line(let next):
+                    nextPoint = next
+                case .curve(let next, _, _):
+                    nextPoint = next
+                default:
+                    break
+                }
+                
+                if let next = nextPoint {
+                    let dx = next.x - point.x
+                    let dy = next.y - point.y
+                    let length = sqrt(dx * dx + dy * dy)
+                    if length > 0.1 {
+                        directionVector = CGPoint(x: dx / length, y: dy / length)
+                    }
+                }
+            }
+            
+            // Create symmetric handles using the direction vector (EXACTLY like pen tool)
+            let outgoingHandle = VectorPoint(
+                point.x + directionVector.x * handleLength,
+                point.y + directionVector.y * handleLength
+            )
+            let incomingHandle = VectorPoint(
+                point.x - directionVector.x * handleLength,
+                point.y - directionVector.y * handleLength
+            )
+            
             // STEP 1: Add incoming handle (control2) to current element
-            let incomingHandle = VectorPoint(point.x - handleLength, point.y)
             elements[elementIndex] = .curve(to: point, control1: control1, control2: incomingHandle)
             
             // STEP 2: Add outgoing handle (control1 of NEXT element) 
             if elementIndex + 1 < elements.count {
                 if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
-                    let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
                     elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
                 }
             }
@@ -2486,11 +2544,13 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree handles")
+            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles")
         default:
             break
         }
     }
+    
+
     
     private func convertQuadToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
