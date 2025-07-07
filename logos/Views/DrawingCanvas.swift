@@ -152,11 +152,11 @@ struct DrawingCanvas: View {
                 // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
                 rubberBandPreview(geometry: geometry)
                 
-                // PROFESSIONAL BEZIER ANCHOR POINTS (Adobe Illustrator Standards)
+                // PROFESSIONAL BEZIER ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                 if isBezierDrawing {
                     ForEach(bezierPoints.indices, id: \.self) { index in
                         let point = bezierPoints[index]
-                        let screenPoint = canvasToScreen(point.cgPoint, geometry: geometry)
+                        let pointLocation = CGPoint(x: point.x, y: point.y)
                         let isActive = activeBezierPointIndex == index
                         let isFirstPoint = index == 0
                         let isCloseHovering = showClosePathHint && isFirstPoint
@@ -167,7 +167,7 @@ struct DrawingCanvas: View {
                         
                         // PROFESSIONAL FIRST POINT HIGHLIGHTING (like Adobe Illustrator)
                         if isCloseHovering {
-                            // Enlarged, highlighted first point when hovering to close
+                            // Enlarged, highlighted first point when hovering to close - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                             Rectangle()
                                 .fill(Color.green)
                                 .overlay(
@@ -175,11 +175,12 @@ struct DrawingCanvas: View {
                                         .stroke(Color.white, lineWidth: lineWidth)
                                 )
                                 .frame(width: anchorSize * 1.3, height: anchorSize * 1.3)
-                                .position(screenPoint)
-                                .scaleEffect(1.2)
+                                .position(pointLocation)
+                                .scaleEffect(document.zoomLevel * 1.2)   // Same as arrow tool with animation scale
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                                 .animation(.easeInOut(duration: 0.2), value: isCloseHovering)
                         } else {
-                            // PROFESSIONAL ANCHOR POINT RENDERING (Adobe Illustrator style)
+                            // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                             // Active point: solid black square with white stroke
                             // Inactive point: hollow white square with black stroke
                             Rectangle()
@@ -189,60 +190,74 @@ struct DrawingCanvas: View {
                                         .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
                                 )
                                 .frame(width: anchorSize, height: anchorSize)
-                                .position(screenPoint)
+                                .position(pointLocation)
+                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         }
                         
-                        // Render bezier handles if they exist for this point
+                        // Render bezier handles if they exist for this point - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         if let handleInfo = bezierHandles[index], handleInfo.hasHandles {
-                            // Draw control handle lines
+                            // Draw control handle lines - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                             if let control1 = handleInfo.control1 {
-                                let control1Screen = canvasToScreen(control1.cgPoint, geometry: geometry)
+                                let control1Location = CGPoint(x: control1.x, y: control1.y)
                                 Path { path in
-                                    path.move(to: screenPoint)
-                                    path.addLine(to: control1Screen)
+                                    path.move(to: pointLocation)
+                                    path.addLine(to: control1Location)
                                 }
-                                .stroke(Color.blue, lineWidth: 1.0)
+                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                                 
-                                // Control handle circle
+                                // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
                                     .fill(Color.blue)
-                                    .frame(width: 4, height: 4)
-                                    .position(control1Screen)
+                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                                    .position(control1Location)
+                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                             }
                             
                             if let control2 = handleInfo.control2 {
-                                let control2Screen = canvasToScreen(control2.cgPoint, geometry: geometry)
+                                let control2Location = CGPoint(x: control2.x, y: control2.y)
                                 Path { path in
-                                    path.move(to: screenPoint)
-                                    path.addLine(to: control2Screen)
+                                    path.move(to: pointLocation)
+                                    path.addLine(to: control2Location)
                                 }
-                                .stroke(Color.blue, lineWidth: 1.0)
+                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
+                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                                 
-                                // Control handle circle
+                                // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
                                     .fill(Color.blue)
-                                    .frame(width: 4, height: 4)
-                                    .position(control2Screen)
+                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
+                                    .position(control2Location)
+                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                             }
                         }
                     }
                 }
                 
-                // PROFESSIONAL CLOSE PATH VISUAL HINT (like Adobe Illustrator)
+                // PROFESSIONAL CLOSE PATH VISUAL HINT - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                 if showClosePathHint {
                     ZStack {
-                        // Green circle indicating close path area
+                        // Green circle indicating close path area - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
-                            .stroke(Color.green, lineWidth: 2.0)
+                            .stroke(Color.green, lineWidth: 2.0 / document.zoomLevel) // Scale-independent
                             .fill(Color.green.opacity(0.1))
-                            .frame(width: 16, height: 16)
+                            .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel) // Scale-independent
                             .position(closePathHintLocation)
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         
-                        // Small "close" icon
+                        // Small "close" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Image(systemName: "multiply.circle.fill")
                             .foregroundColor(.green)
-                            .font(.system(size: 12))
+                            .font(.system(size: 12 / document.zoomLevel)) // Scale-independent
                             .position(closePathHintLocation)
+                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                     }
                     .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
                 }
@@ -316,7 +331,7 @@ struct DrawingCanvas: View {
                         
                         if distance(canvasLocation, firstPointLocation) <= closeTolerance {
                             showClosePathHint = true
-                            closePathHintLocation = canvasToScreen(firstPointLocation, geometry: geometry)
+                            closePathHintLocation = firstPointLocation // USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         } else {
                             showClosePathHint = false
                         }
