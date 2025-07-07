@@ -1500,16 +1500,35 @@ struct DrawingCanvas: View {
     }
     
     private func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
+        // CRITICAL FIX: Use high precision conversion to match visual coordinate system exactly
+        // This must be the mathematical inverse of the visual coordinate chain:
+        // Visual: ((originalCoords * transform) * zoomLevel) + canvasOffset = screen
+        // Reverse: (screen - canvasOffset) / zoomLevel = originalCoords * transform
+        let precision = Double(document.zoomLevel)
+        let precisionOffsetX = Double(document.canvasOffset.x)
+        let precisionOffsetY = Double(document.canvasOffset.y)
+        let precisionPointX = Double(point.x)
+        let precisionPointY = Double(point.y)
+        
         return CGPoint(
-            x: (point.x - document.canvasOffset.x) / document.zoomLevel,
-            y: (point.y - document.canvasOffset.y) / document.zoomLevel
+            x: (precisionPointX - precisionOffsetX) / precision,
+            y: (precisionPointY - precisionOffsetY) / precision
         )
     }
     
     private func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
+        // CRITICAL FIX: Use high precision conversion to match visual coordinate system exactly
+        // This must exactly match the visual coordinate chain:
+        // Visual: ((originalCoords * transform) * zoomLevel) + canvasOffset = screen
+        let precision = Double(document.zoomLevel)
+        let precisionOffsetX = Double(document.canvasOffset.x)
+        let precisionOffsetY = Double(document.canvasOffset.y)
+        let precisionPointX = Double(point.x)
+        let precisionPointY = Double(point.y)
+        
         return CGPoint(
-            x: point.x * document.zoomLevel + document.canvasOffset.x,
-            y: point.y * document.zoomLevel + document.canvasOffset.y
+            x: (precisionPointX * precision) + precisionOffsetX,
+            y: (precisionPointY * precision) + precisionOffsetY
         )
     }
     
