@@ -2483,9 +2483,9 @@ struct DrawingCanvas: View {
         }
     }
     
-    // PROFESSIONAL SMOOTH HANDLE CALCULATION: Create 180-degree handles for smooth curves
+    // USE THE EXISTING PROFESSIONAL SMOOTH HANDLE LOGIC - NO MORE REINVENTING!
     private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
-        // Get previous and next points to calculate handle direction
+        // Get previous and next points
         var prevPoint: VectorPoint?
         var nextPoint: VectorPoint?
         
@@ -2498,14 +2498,8 @@ struct DrawingCanvas: View {
             case .curve(let to, _, _), .quadCurve(let to, _):
                 prevPoint = to
             case .close:
-                // For closed paths, find the first point
-                if let firstElement = elements.first {
-                    switch firstElement {
-                    case .move(let to):
-                        prevPoint = to
-                    default:
-                        break
-                    }
+                if let firstElement = elements.first, case .move(let to) = firstElement {
+                    prevPoint = to
                 }
             }
         }
@@ -2519,66 +2513,31 @@ struct DrawingCanvas: View {
             case .curve(let to, _, _), .quadCurve(let to, _):
                 nextPoint = to
             case .close:
-                // For closed paths, find the first point
-                if let firstElement = elements.first {
-                    switch firstElement {
-                    case .move(let to):
-                        nextPoint = to
-                    default:
-                        break
-                    }
+                if let firstElement = elements.first, case .move(let to) = firstElement {
+                    nextPoint = to
                 }
             }
         }
         
-        // Calculate handle direction and length
-        let handleLength: Double = 30.0 // Base handle length
+        // USE THE EXISTING PROFESSIONAL ALGORITHM FROM ProfessionalBezierMathematics
+        let (incomingHandle, outgoingHandle) = ProfessionalBezierMathematics.generateSmoothHandles(
+            previousPoint: prevPoint,
+            currentPoint: point,
+            nextPoint: nextPoint,
+            tension: 0.33 // Adobe Illustrator standard tension
+        )
         
-        if let prev = prevPoint, let next = nextPoint {
-            // Calculate the angle bisector for smooth 180-degree handles
-            let prevVector = CGVector(dx: point.x - prev.x, dy: point.y - prev.y)
-            let nextVector = CGVector(dx: next.x - point.x, dy: next.y - point.y)
-            
-            // Normalize vectors
-            let prevLength = sqrt(prevVector.dx * prevVector.dx + prevVector.dy * prevVector.dy)
-            let nextLength = sqrt(nextVector.dx * nextVector.dx + nextVector.dy * nextVector.dy)
-            
-            if prevLength > 0 && nextLength > 0 {
-                let prevNorm = CGVector(dx: prevVector.dx / prevLength, dy: prevVector.dy / prevLength)
-                let nextNorm = CGVector(dx: nextVector.dx / nextLength, dy: nextVector.dy / nextLength)
-                
-                // Calculate perpendicular direction for 180-degree handles
-                let bisectorX = (prevNorm.dx + nextNorm.dx) / 2
-                let bisectorY = (prevNorm.dy + nextNorm.dy) / 2
-                let bisectorLength = sqrt(bisectorX * bisectorX + bisectorY * bisectorY)
-                
-                if bisectorLength > 0.001 {
-                    // Use perpendicular to bisector for 180-degree handles
-                    let perpX = -bisectorY / bisectorLength
-                    let perpY = bisectorX / bisectorLength
-                    
-                    let adjustedLength = min(handleLength, min(prevLength, nextLength) * 0.3)
-                    
-                    let incomingHandle = VectorPoint(
-                        point.x - perpX * adjustedLength,
-                        point.y - perpY * adjustedLength
-                    )
-                    let outgoingHandle = VectorPoint(
-                        point.x + perpX * adjustedLength,
-                        point.y + perpY * adjustedLength
-                    )
-                    
-                    return (incomingHandle, outgoingHandle)
-                }
-            }
+        // Return the handles or fallback to simple symmetric handles
+        if let incoming = incomingHandle, let outgoing = outgoingHandle {
+            return (incoming, outgoing)
+        } else {
+            // Simple fallback for edge cases
+            let fallbackLength: Double = 25.0
+            return (
+                VectorPoint(point.x - fallbackLength, point.y),
+                VectorPoint(point.x + fallbackLength, point.y)
+            )
         }
-        
-        // Fallback: create horizontal handles
-        let fallbackLength = handleLength * 0.5
-        let incomingHandle = VectorPoint(point.x - fallbackLength, point.y)
-        let outgoingHandle = VectorPoint(point.x + fallbackLength, point.y)
-        
-        return (incomingHandle, outgoingHandle)
     }
     
 
