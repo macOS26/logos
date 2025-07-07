@@ -40,13 +40,11 @@ struct TextObjectView: View {
                 selectionOutline
             }
         }
-        // PROFESSIONAL COORDINATE SYSTEM: Fix text positioning with proper zoom/offset order
+        // CRITICAL FIX: Use unified coordinate system - apply scale/offset first, then transform
+        .position(textObject.position)
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
         .transformEffect(textObject.transform)
-        .position(
-            x: (textObject.position.x * zoomLevel) + canvasOffset.x,
-            y: (textObject.position.y * zoomLevel) + canvasOffset.y
-        )
-        .scaleEffect(zoomLevel)
         .onAppear {
             editingText = textObject.content
         }

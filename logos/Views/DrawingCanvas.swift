@@ -3129,9 +3129,9 @@ struct ProfessionalDirectSelectionView: View {
                         path.addLine(to: handleInfo.handleLocation)
                     }
                     .stroke(Color.orange, lineWidth: 2.0 / document.zoomLevel) // Scale-independent, orange for selected handles
-                    .transformEffect(shape.transform)  // Same as arrow tool
-                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    .transformEffect(shape.transform)
                     
                     // Draw HIGHLIGHTED handle as larger circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                     Circle()
@@ -3139,9 +3139,9 @@ struct ProfessionalDirectSelectionView: View {
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
                         .position(handleInfo.handleLocation)
-                        .transformEffect(shape.transform)  // Same as arrow tool
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                        .transformEffect(shape.transform)
                 }
             }
             
@@ -3154,9 +3154,9 @@ struct ProfessionalDirectSelectionView: View {
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 8 / document.zoomLevel, height: 8 / document.zoomLevel) // Scale-independent
                         .position(pointLocation)
-                        .transformEffect(shape.transform)  // Same as arrow tool
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                        .transformEffect(shape.transform)
                 }
             }
         }
@@ -3180,9 +3180,9 @@ struct ProfessionalDirectSelectionView: View {
                             path.addLine(to: control2Location)
                         }
                         .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                        .transformEffect(shape.transform)  // Same as arrow tool
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                        .transformEffect(shape.transform)
                         
                         // INCOMING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
@@ -3190,9 +3190,9 @@ struct ProfessionalDirectSelectionView: View {
                             .stroke(Color.white, lineWidth: 0.5)
                             .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
                             .position(control2Location)
-                            .transformEffect(shape.transform)  // Same as arrow tool
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                            .transformEffect(shape.transform)
                             
                         // OUTGOING HANDLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         if elementIndex + 1 < shape.path.elements.count {
@@ -3206,9 +3206,9 @@ struct ProfessionalDirectSelectionView: View {
                                     path.addLine(to: control1Location)
                                 }
                                 .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .transformEffect(shape.transform)  // Same as arrow tool
-                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                                .transformEffect(shape.transform)
                                 
                                 // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
@@ -3216,9 +3216,9 @@ struct ProfessionalDirectSelectionView: View {
                                     .stroke(Color.white, lineWidth: 0.5)
                                     .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
                                     .position(control1Location)
-                                    .transformEffect(shape.transform)  // Same as arrow tool
-                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                                    .transformEffect(shape.transform)
                             }
                         }
                         
@@ -3237,9 +3237,9 @@ struct ProfessionalDirectSelectionView: View {
                                     path.addLine(to: control1Location)
                                 }
                                 .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .transformEffect(shape.transform)  // Same as arrow tool
-                                .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                                .transformEffect(shape.transform)
                                 
                                 // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                                 Circle()
@@ -3247,9 +3247,9 @@ struct ProfessionalDirectSelectionView: View {
                                     .stroke(Color.white, lineWidth: 0.5)
                                     .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
                                     .position(control1Location)
-                                    .transformEffect(shape.transform)  // Same as arrow tool
-                                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                                    .transformEffect(shape.transform)
                             }
                         }
                         
@@ -3273,9 +3273,9 @@ struct ProfessionalDirectSelectionView: View {
                             .stroke(Color.blue, lineWidth: 1.0)
                             .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
                             .position(pointLocation)
-                            .transformEffect(shape.transform)  // Same as arrow tool
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                            .transformEffect(shape.transform)
                     }
                 }
             }

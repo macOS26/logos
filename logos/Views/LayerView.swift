@@ -75,10 +75,10 @@ struct ShapeView: View {
                 .opacity(0.7)
             }
         }
-        // Apply same transforms as ShapeView in same order
-        .transformEffect(shape.transform)
+        // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first, then shape transform
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .transformEffect(shape.transform)
         .opacity(shape.opacity)
     }
     
@@ -285,9 +285,9 @@ struct SelectionHandles: View {
                 .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
                 .frame(width: bounds.width, height: bounds.height)
                 .position(center)
-                .transformEffect(shape.transform)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
             
             // Corner resize handles (scale proportionally)
             ForEach(0..<4) { i in
@@ -296,9 +296,9 @@ struct SelectionHandles: View {
                     .fill(Color.blue)
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
-                    .transformEffect(shape.transform)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
                     .gesture(
                         DragGesture()
                             .onChanged { value in
@@ -317,9 +317,9 @@ struct SelectionHandles: View {
                     .fill(Color.blue)
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
-                    .transformEffect(shape.transform)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
                     .gesture(
                         DragGesture()
                             .onChanged { value in
@@ -340,9 +340,9 @@ struct SelectionHandles: View {
                 .fill(Color.green)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                 .position(rotationPosition)
-                .transformEffect(shape.transform)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
@@ -357,9 +357,9 @@ struct SelectionHandles: View {
                 path.addLine(to: rotationPosition)
             }
             .stroke(Color.green, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-            .transformEffect(shape.transform)
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
         }
         .onAppear {
             initialBounds = shape.bounds
