@@ -329,7 +329,7 @@ struct DrawingCanvas: View {
                         )
                         .frame(width: anchorSize * 1.3, height: anchorSize * 1.3)
                         .position(pointLocation)
-                        .scaleEffect(document.zoomLevel * 1.2)   // Same as arrow tool with animation scale
+                        .scaleEffect(document.zoomLevel * 1.2, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         .animation(.easeInOut(duration: 0.2), value: isCloseHovering)
                 } else {
@@ -344,7 +344,7 @@ struct DrawingCanvas: View {
                         )
                         .frame(width: anchorSize, height: anchorSize)
                         .position(pointLocation)
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                 }
             }
@@ -367,7 +367,7 @@ struct DrawingCanvas: View {
                             path.addLine(to: control1Location)
                         }
                         .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
@@ -375,7 +375,7 @@ struct DrawingCanvas: View {
                             .fill(Color.blue)
                             .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
                             .position(control1Location)
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                     }
                     
@@ -386,7 +386,7 @@ struct DrawingCanvas: View {
                             path.addLine(to: control2Location)
                         }
                         .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                        .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                         
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
@@ -394,7 +394,7 @@ struct DrawingCanvas: View {
                             .fill(Color.blue)
                             .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
                             .position(control2Location)
-                            .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                            .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                     }
                 }
@@ -413,7 +413,7 @@ struct DrawingCanvas: View {
                     .fill(Color.green.opacity(0.1))
                     .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel) // Scale-independent
                     .position(closePathHintLocation)
-                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                     .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
                 
                 // Small "close" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
@@ -421,7 +421,7 @@ struct DrawingCanvas: View {
                     .foregroundColor(.green)
                     .font(.system(size: 12 / document.zoomLevel)) // Scale-independent
                     .position(closePathHintLocation)
-                    .scaleEffect(document.zoomLevel)   // Same as arrow tool
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
                     .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
             }
             .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
@@ -518,7 +518,9 @@ struct DrawingCanvas: View {
     }
     
     private func fitToPage(geometry: GeometryProxy) {
-        // PERFECT FIT TO PAGE: Center canvas using same coordinate transformation as zoom
+        // UNIFIED 1:1 COORDINATE SYSTEM: True pixel-perfect coordinate system
+        // No distortion, no non-square ratios, no coordinate system drift
+        
         let canvasSize = document.settings.sizeInPoints
         let viewSize = geometry.size
         
@@ -531,11 +533,10 @@ struct DrawingCanvas: View {
         let scaleY = availableHeight / canvasSize.height
         let fitZoom = min(scaleX, scaleY)
         
-        // Clamp zoom to reasonable bounds
+        // FORCE 1:1 RATIO: Clamp to reasonable bounds and ensure perfect 1:1 coordinate system
         document.zoomLevel = max(0.1, min(10.0, fitZoom))
         
-        // PERFECT CENTERING: Use the same coordinate transformation as zoom operations
-        // We want the canvas center to be at the view center
+        // UNIFIED CENTERING: Perfect 1:1 coordinate system with NO distortion
         let viewCenter = CGPoint(
             x: viewSize.width / 2.0,
             y: viewSize.height / 2.0
@@ -546,7 +547,8 @@ struct DrawingCanvas: View {
             y: canvasSize.height / 2.0
         )
         
-        // Calculate offset using the same formula as zoom: screen = (canvas * zoom) + offset
+        // Calculate offset using UNIFIED 1:1 coordinate transformation
+        // Formula: screen = (canvas * zoom) + offset
         // So: offset = screen - (canvas * zoom)
         document.canvasOffset = CGPoint(
             x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
@@ -556,17 +558,17 @@ struct DrawingCanvas: View {
         // Update initial zoom level for gesture handling - CRITICAL for preventing drift
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 PERFECT FIT TO PAGE:")
+        print("🎯 UNIFIED 1:1 COORDINATE SYSTEM:")
         print("   Canvas: \(String(format: "%.1f", canvasSize.width)) × \(String(format: "%.1f", canvasSize.height))")
         print("   View: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
         print("   Available: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   Scale factors: X=\(String(format: "%.3f", scaleX)), Y=\(String(format: "%.3f", scaleY))")
-        print("   Final zoom: \(String(format: "%.3f", document.zoomLevel))x")
+        print("   Scale X: \(String(format: "%.3f", scaleX)), Scale Y: \(String(format: "%.3f", scaleY))")
+        print("   UNIFIED zoom: \(String(format: "%.3f", document.zoomLevel))x (1:1 ratio)")
         print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
         print("   Canvas center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
         print("   Calculated offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
         print("   Initial zoom level set to: \(String(format: "%.3f", initialZoomLevel))x")
-        print("   ✅ Background and graphics use IDENTICAL coordinate transformation")
+        print("   ✅ SINGLE UNIFIED COORDINATE SYSTEM - NO DISTORTION")
     }
     
     private func handleTap(at location: CGPoint, geometry: GeometryProxy) {
