@@ -1082,7 +1082,19 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         let stroke = parseStrokeStyle(mergedAttributes)
         let fill = parseFillStyle(mergedAttributes)
-        let transform = parseTransform(mergedAttributes["transform"] ?? "").concatenating(currentTransform)
+        
+        // CRITICAL FIX: Don't apply SVG transforms to our own exported shapes since coordinates are already transformed
+        // Only apply transforms for external SVGs that use transform attributes
+        let transform: CGAffineTransform
+        if mergedAttributes["transform"] != nil {
+            // External SVG with transform attribute - apply it
+            transform = parseTransform(mergedAttributes["transform"] ?? "").concatenating(currentTransform)
+            print("🔄 Applied external SVG transform")
+        } else {
+            // Our own exported SVG (no transform attribute) - coordinates are already correct
+            transform = currentTransform.isIdentity ? .identity : currentTransform
+            print("✅ Using identity transform for logos-exported shape")
+        }
         
         return VectorShape(
             name: name,
@@ -4364,14 +4376,15 @@ class FileOperations {
     }
     
     private static func generateSVGShape(_ shape: VectorShape) throws -> String {
-        // Get original path data without applying shape transform (to preserve original coordinates)
-        let pathData = try generateSVGPath(shape.path)
+        // CRITICAL FIX: Apply transform to coordinates for proper round-trip export/import
+        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        let pathData = try generateSVGPath(transformedPath)
         let fillStyle = generateSVGFill(shape.fillStyle)
         let strokeStyle = generateSVGStroke(shape.strokeStyle)
-        let transform = generateSVGTransform(shape.transform)
         
+        // Don't include transform attribute since coordinates are already transformed
         return """
-        <path d="\(pathData)" \(fillStyle) \(strokeStyle) \(transform) id="shape-\(shape.id)"/>
+        <path d="\(pathData)" \(fillStyle) \(strokeStyle) id="shape-\(shape.id)"/>
         
         """
     }
@@ -4492,13 +4505,60 @@ class FileOperations {
         return "transform=\"matrix(\(transform.a) \(transform.b) \(transform.c) \(transform.d) \(transform.tx) \(transform.ty))\""
     }
     
-    private static func generateSVGShapeWithClass(_ shape: VectorShape, className: String) throws -> String {
-        // Get original path data without applying shape transform (to preserve original coordinates)
-        let pathData = try generateSVGPath(shape.path)
-        let transform = generateSVGTransform(shape.transform)
+    /// Apply transform to path coordinates (for proper SVG export)
+    private static func applyTransformToPath(_ path: VectorPath, transform: CGAffineTransform) -> VectorPath {
+        // If transform is identity, return original path
+        if transform.isIdentity {
+            return path
+        }
         
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        return VectorPath(elements: transformedElements, isClosed: path.isClosed)
+    }
+    
+    private static func generateSVGShapeWithClass(_ shape: VectorShape, className: String) throws -> String {
+        // CRITICAL FIX: Apply transform to coordinates for proper round-trip export/import
+        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+        let pathData = try generateSVGPath(transformedPath)
+        
+        // Don't include transform attribute since coordinates are already transformed
         return """
-        <path id="shape-\(shape.id)" class="\(className)" d="\(pathData)" \(transform)/>
+        <path id="shape-\(shape.id)" class="\(className)" d="\(pathData)"/>
         
         """
     }
@@ -4555,10 +4615,12 @@ class FileOperations {
             }
         }
         
-        let transform = generateSVGTransform(text.transform)
+        // CRITICAL FIX: Apply transform to text position for proper round-trip export/import
+        let transformedPosition = CGPoint(x: text.position.x, y: text.position.y).applying(text.transform)
         
+        // Don't include transform attribute since position is already transformed
         return """
-        <text x="\(text.position.x)" y="\(text.position.y)" font-family="\(text.typography.fontFamily)" font-size="\(text.typography.fontSize)" \(fillStyle) \(strokeStyle) \(transform) id="text-\(text.id)">\(text.content)</text>
+        <text x="\(transformedPosition.x)" y="\(transformedPosition.y)" font-family="\(text.typography.fontFamily)" font-size="\(text.typography.fontSize)" \(fillStyle) \(strokeStyle) id="text-\(text.id)">\(text.content)</text>
         
         """
     }
