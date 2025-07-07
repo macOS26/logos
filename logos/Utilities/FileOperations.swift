@@ -675,6 +675,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var creator: String?
     private var version: String?
     private var currentElementName = ""
+    private var cssStyles: [String: [String: String]] = [:]
+    private var currentStyleContent = ""
     
     struct ParseResult {
         let shapes: [VectorShape]
@@ -716,6 +718,14 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "svg":
             parseSVGRoot(attributes: attributeDict)
             
+        case "defs":
+            // Start of definitions section
+            break
+            
+        case "style":
+            // Start of CSS style section
+            currentStyleContent = ""
+            
         case "g":
             parseGroup(attributes: attributeDict)
             
@@ -751,9 +761,56 @@ class SVGParser: NSObject, XMLParserDelegate {
                 currentTransform = transformStack.last ?? .identity
             }
             
+        case "style":
+            // Parse CSS styles
+            parseCSSStyles(currentStyleContent)
+            currentStyleContent = ""
+            
         default:
             break
         }
+    }
+    
+    func parser(_ parser: XMLParser, foundCharacters string: String) {
+        if currentElementName == "style" {
+            currentStyleContent += string
+        }
+    }
+    
+    // MARK: - CSS Style Parsing
+    
+    private func parseCSSStyles(_ cssContent: String) {
+        print("🎨 Parsing CSS styles")
+        
+        // Parse CSS rules from style content
+        let rules = cssContent.components(separatedBy: "}")
+        
+        for rule in rules {
+            let parts = rule.components(separatedBy: "{")
+            if parts.count == 2 {
+                let selector = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                let declarations = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                var styles: [String: String] = [:]
+                
+                // Parse individual declarations
+                let declParts = declarations.components(separatedBy: ";")
+                for decl in declParts {
+                    let keyValue = decl.components(separatedBy: ":")
+                    if keyValue.count >= 2 {
+                        let key = keyValue[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                        // Join back in case the value contains colons (like in URLs)
+                        let value = keyValue[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                        styles[key] = value
+                    }
+                }
+                
+                cssStyles[selector] = styles
+                print("📋 Added CSS rule: \(selector) -> \(styles)")
+            }
+        }
+        
+        print("✅ CSS parsing complete - \(cssStyles.count) rules parsed")
     }
     
     // MARK: - SVG Element Parsers
@@ -787,8 +844,12 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
         
+        print("🔍 Parsing SVG path: \(d)")
+        
         let pathData = parsePathData(d)
         let vectorPath = VectorPath(elements: pathData)
+        
+        print("📐 Created path with \(pathData.count) elements")
         
         let shape = createShape(
             name: "Path",
@@ -796,7 +857,19 @@ class SVGParser: NSObject, XMLParserDelegate {
             attributes: attributes
         )
         
+        if let fill = shape.fillStyle {
+            print("🎨 Shape has fill style: \(fill)")
+        } else {
+            print("⚪ Shape has no fill")
+        }
+        if let stroke = shape.strokeStyle {
+            print("🖊️ Shape has stroke style: \(stroke)")
+        } else {
+            print("📝 Shape has no stroke")
+        }
+        
         shapes.append(shape)
+        print("✅ Added shape to collection - total: \(shapes.count)")
     }
     
     private func parseRectangle(attributes: [String: String]) {
@@ -961,9 +1034,55 @@ class SVGParser: NSObject, XMLParserDelegate {
     // MARK: - Helper Functions
     
     private func createShape(name: String, path: VectorPath, attributes: [String: String], geometricType: GeometricShapeType? = nil) -> VectorShape {
-        let stroke = parseStrokeStyle(attributes)
-        let fill = parseFillStyle(attributes)
-        let transform = parseTransform(attributes["transform"] ?? "").concatenating(currentTransform)
+        // Merge CSS class styles with inline styles
+        var mergedAttributes = attributes
+        
+        if let className = attributes["class"] {
+            print("🏷️ Processing classes: \(className)")
+            // Handle multiple classes separated by spaces
+            let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+            for cls in classNames {
+                let selector = "." + cls
+                if let classStyles = cssStyles[selector] {
+                    print("✅ Found styles for \(selector): \(classStyles)")
+                    // CSS class styles have lower priority than inline styles
+                    for (key, value) in classStyles {
+                        if mergedAttributes[key] == nil {
+                            mergedAttributes[key] = value
+                            print("   Applied \(key): \(value)")
+                        }
+                    }
+                } else {
+                    print("❌ No styles found for \(selector)")
+                }
+            }
+        }
+        
+        // Also check for combined class selectors (e.g., ".cls-1, .cls-2, .cls-3")
+        for (selector, styles) in cssStyles {
+            if selector.contains(",") {
+                // Split comma-separated selectors
+                let selectors = selector.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                if let className = attributes["class"] {
+                    let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+                    for cls in classNames {
+                        if selectors.contains("." + cls) {
+                            // Apply these styles
+                            for (key, value) in styles {
+                                if mergedAttributes[key] == nil {
+                                    mergedAttributes[key] = value
+                                }
+                            }
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        
+        let stroke = parseStrokeStyle(mergedAttributes)
+        let fill = parseFillStyle(mergedAttributes)
+        let transform = parseTransform(mergedAttributes["transform"] ?? "").concatenating(currentTransform)
         
         return VectorShape(
             name: name,
@@ -976,7 +1095,16 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func parseStrokeStyle(_ attributes: [String: String]) -> StrokeStyle? {
-        guard let stroke = attributes["stroke"], stroke != "none" else { return nil }
+        // Check for stroke-width: 0 or 0px first - this means no stroke
+        if let strokeWidth = attributes["stroke-width"] {
+            let width = parseLength(strokeWidth) ?? 1.0
+            if width == 0.0 {
+                return nil // No stroke when width is 0
+            }
+        }
+        
+        let stroke = attributes["stroke"] ?? "none"
+        guard stroke != "none" else { return nil }
         
         let color = parseColor(stroke) ?? .black
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
@@ -992,7 +1120,18 @@ class SVGParser: NSObject, XMLParserDelegate {
         let color = parseColor(fill) ?? .black
         let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
         
-        return FillStyle(color: color, opacity: opacity)
+        // Parse fill-rule for complex paths
+        let fillRule = attributes["fill-rule"] ?? "nonzero"
+        
+        var fillStyle = FillStyle(color: color, opacity: opacity)
+        
+        // Handle fill-rule property (critical for complex shapes)
+        if fillRule == "evenodd" {
+            // Mark this somehow - we'll need to handle this in the path rendering
+            // For now, create the fill style but we'll need to modify VectorPath to support this
+        }
+        
+        return fillStyle
     }
     
     private func parseColor(_ colorString: String) -> VectorColor? {
@@ -1005,6 +1144,12 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let r = Double(Int(hex.prefix(2), radix: 16) ?? 0) / 255.0
                 let g = Double(Int(hex.dropFirst(2).prefix(2), radix: 16) ?? 0) / 255.0
                 let b = Double(Int(hex.suffix(2), radix: 16) ?? 0) / 255.0
+                return .rgb(RGBColor(red: r, green: g, blue: b))
+            } else if hex.count == 3 {
+                // Short hex format #RGB -> #RRGGBB
+                let r = Double(Int(String(hex.prefix(1)), radix: 16) ?? 0) / 15.0
+                let g = Double(Int(String(hex.dropFirst().prefix(1)), radix: 16) ?? 0) / 15.0
+                let b = Double(Int(String(hex.suffix(1)), radix: 16) ?? 0) / 15.0
                 return .rgb(RGBColor(red: r, green: g, blue: b))
             }
         } else if color.hasPrefix("rgb(") {
@@ -1025,6 +1170,17 @@ class SVGParser: NSObject, XMLParserDelegate {
             case "yellow": return .rgb(RGBColor(red: 1, green: 1, blue: 0))
             case "cyan": return .rgb(RGBColor(red: 0, green: 1, blue: 1))
             case "magenta": return .rgb(RGBColor(red: 1, green: 0, blue: 1))
+            case "orange": return .rgb(RGBColor(red: 1, green: 0.5, blue: 0))
+            case "purple": return .rgb(RGBColor(red: 0.5, green: 0, blue: 1))
+            case "lime": return .rgb(RGBColor(red: 0, green: 1, blue: 0))
+            case "navy": return .rgb(RGBColor(red: 0, green: 0, blue: 0.5))
+            case "teal": return .rgb(RGBColor(red: 0, green: 0.5, blue: 0.5))
+            case "silver": return .rgb(RGBColor(red: 0.75, green: 0.75, blue: 0.75))
+            case "gray", "grey": return .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0.5))
+            case "maroon": return .rgb(RGBColor(red: 0.5, green: 0, blue: 0))
+            case "olive": return .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0))
+            case "aqua": return .rgb(RGBColor(red: 0, green: 1, blue: 1))
+            case "fuchsia": return .rgb(RGBColor(red: 1, green: 0, blue: 1))
             default: return .black
             }
         }
@@ -1037,17 +1193,26 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
+        // Handle "0" or "0px" etc. - all should return 0
+        if trimmed == "0" {
+            return 0.0
+        }
+        
         // Remove common SVG units and convert to points
         if trimmed.hasSuffix("px") {
-            return Double(trimmed.dropLast(2))
+            return Double(String(trimmed.dropLast(2)))
         } else if trimmed.hasSuffix("pt") {
-            return Double(trimmed.dropLast(2))
+            return Double(String(trimmed.dropLast(2)))
         } else if trimmed.hasSuffix("mm") {
-            return (Double(trimmed.dropLast(2)) ?? 0) * 2.834645669  // mm to points
+            return (Double(String(trimmed.dropLast(2))) ?? 0) * 2.834645669  // mm to points
         } else if trimmed.hasSuffix("cm") {
-            return (Double(trimmed.dropLast(2)) ?? 0) * 28.346456693 // cm to points
+            return (Double(String(trimmed.dropLast(2))) ?? 0) * 28.346456693 // cm to points
         } else if trimmed.hasSuffix("in") {
-            return (Double(trimmed.dropLast(2)) ?? 0) * 72.0         // inches to points
+            return (Double(String(trimmed.dropLast(2))) ?? 0) * 72.0         // inches to points
+        } else if trimmed.hasSuffix("em") {
+            return (Double(String(trimmed.dropLast(2))) ?? 0) * 16.0         // em to points (approximate)
+        } else if trimmed.hasSuffix("%") {
+            return (Double(String(trimmed.dropLast(1))) ?? 0) / 100.0        // percentage
         } else {
             return Double(trimmed)
         }
@@ -1096,53 +1261,245 @@ class SVGParser: NSObject, XMLParserDelegate {
         return transform
     }
     
+    // MARK: - Professional SVG Path Tokenization
+    private func tokenizeSVGPath(_ pathData: String) -> [String] {
+        var tokens: [String] = []
+        let chars = Array(pathData)
+        var i = 0
+        
+        while i < chars.count {
+            let char = chars[i]
+            
+            // Skip whitespace and commas
+            if char.isWhitespace || char == "," {
+                i += 1
+                continue
+            }
+            
+            // Handle commands (letters)
+            if char.isLetter {
+                tokens.append(String(char))
+                i += 1
+                continue
+            }
+            
+            // Handle numbers (including negative and decimal)
+            if char.isNumber || char == "." || (char == "-" || char == "+") {
+                var numberStr = ""
+                var hasDecimal = false
+                var startIndex = i
+                
+                // Handle sign only if it's at the start of a number
+                if char == "-" || char == "+" {
+                    // Look ahead to see if this is actually a number
+                    if i + 1 < chars.count && (chars[i + 1].isNumber || chars[i + 1] == ".") {
+                        numberStr.append(char)
+                        i += 1
+                    } else {
+                        // Not a number, skip this character
+                        i += 1
+                        continue
+                    }
+                }
+                
+                // Collect digits and decimal point
+                while i < chars.count {
+                    let currentChar = chars[i]
+                    
+                    if currentChar.isNumber {
+                        numberStr.append(currentChar)
+                        i += 1
+                    } else if currentChar == "." && !hasDecimal {
+                        // Only accept decimal point if followed by digit or if we haven't started collecting digits yet
+                        if i + 1 < chars.count && chars[i + 1].isNumber || numberStr.isEmpty || numberStr == "-" || numberStr == "+" {
+                            numberStr.append(currentChar)
+                            hasDecimal = true
+                            i += 1
+                        } else {
+                            break
+                        }
+                    } else {
+                        break
+                    }
+                }
+                
+                // Handle scientific notation (e/E)
+                if i < chars.count && (chars[i] == "e" || chars[i] == "E") {
+                    numberStr.append(chars[i])
+                    i += 1
+                    
+                    // Handle sign after e/E
+                    if i < chars.count && (chars[i] == "+" || chars[i] == "-") {
+                        numberStr.append(chars[i])
+                        i += 1
+                    }
+                    
+                    // Collect exponent digits
+                    while i < chars.count && chars[i].isNumber {
+                        numberStr.append(chars[i])
+                        i += 1
+                    }
+                }
+                
+                // Only add if we actually collected a valid number
+                if !numberStr.isEmpty && numberStr != "-" && numberStr != "+" {
+                    tokens.append(numberStr)
+                }
+                continue
+            }
+            
+            // Unknown character, skip it
+            i += 1
+        }
+        
+        return tokens
+    }
+    
     private func parsePathData(_ pathData: String) -> [PathElement] {
         var elements: [PathElement] = []
         var currentPoint = CGPoint.zero
+        var subpathStart = CGPoint.zero
+        var lastControlPoint: CGPoint?
         
-        let commands = pathData.replacingOccurrences(of: ",", with: " ")
-            .replacingOccurrences(of: "([a-zA-Z])", with: " $1 ", options: .regularExpression)
-            .split(separator: " ")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
+        print("🔍 RAW PATH DATA: \(pathData.prefix(100))...")
+        
+        // Professional SVG tokenization using proper regex patterns
+        let tokens = tokenizeSVGPath(pathData)
+        print("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))")
+        
+        // Check for basic parsing issues
+        var coordinateCount = 0
+        var commandCount = 0
+        for token in tokens {
+            if token.rangeOfCharacter(from: .letters) != nil {
+                commandCount += 1
+            } else if Double(token) != nil {
+                coordinateCount += 1
+            }
+        }
+        print("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates")
         
         var i = 0
-        while i < commands.count {
-            let command = commands[i]
-            i += 1
+        var currentCommand: String = ""
+        
+        while i < tokens.count {
+            let token = tokens[i]
             
-            switch command.uppercased() {
-            case "M":
-                // Move to
-                if i + 1 < commands.count {
-                    let x = Double(commands[i]) ?? 0
-                    let y = Double(commands[i + 1]) ?? 0
+            // Check if this is a command or a parameter
+            if token.rangeOfCharacter(from: .letters) != nil {
+                // It's a command
+                currentCommand = token
+                print("🔧 COMMAND: \(currentCommand)")
+                i += 1
+                continue
+            }
+            
+            // It's a parameter - process based on current command
+            switch currentCommand {
+            case "M": // Move to (absolute)
+                if i + 1 < tokens.count {
+                    let x = Double(tokens[i]) ?? 0
+                    let y = Double(tokens[i + 1]) ?? 0
+                    print("   Move to: (\(x), \(y))")
                     currentPoint = CGPoint(x: x, y: y)
+                    subpathStart = currentPoint
                     elements.append(.move(to: VectorPoint(currentPoint)))
                     i += 2
+                    // After first moveto, subsequent coordinate pairs are treated as lineto
+                    currentCommand = "L"
+                } else {
+                    print("   ⚠️ Not enough tokens for M command")
+                    i += 1
                 }
                 
-            case "L":
-                // Line to
-                if i + 1 < commands.count {
-                    let x = Double(commands[i]) ?? 0
-                    let y = Double(commands[i + 1]) ?? 0
+            case "m": // Move to (relative)
+                if i + 1 < tokens.count {
+                    let dx = Double(tokens[i]) ?? 0
+                    let dy = Double(tokens[i + 1]) ?? 0
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    subpathStart = currentPoint
+                    elements.append(.move(to: VectorPoint(currentPoint)))
+                    i += 2
+                    currentCommand = "l"
+                } else {
+                    i += 1
+                }
+                
+            case "L": // Line to (absolute)
+                if i + 1 < tokens.count {
+                    let x = Double(tokens[i]) ?? 0
+                    let y = Double(tokens[i + 1]) ?? 0
+                    print("   Line to: (\(x), \(y))")
                     currentPoint = CGPoint(x: x, y: y)
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 2
+                } else {
+                    print("   ⚠️ Not enough tokens for L command")
+                    i += 1
                 }
                 
-            case "C":
-                // Cubic bezier curve
-                if i + 5 < commands.count {
-                    let x1 = Double(commands[i]) ?? 0
-                    let y1 = Double(commands[i + 1]) ?? 0
-                    let x2 = Double(commands[i + 2]) ?? 0
-                    let y2 = Double(commands[i + 3]) ?? 0
-                    let x = Double(commands[i + 4]) ?? 0
-                    let y = Double(commands[i + 5]) ?? 0
+            case "l": // Line to (relative)
+                if i + 1 < tokens.count {
+                    let dx = Double(tokens[i]) ?? 0
+                    let dy = Double(tokens[i + 1]) ?? 0
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    elements.append(.line(to: VectorPoint(currentPoint)))
+                    i += 2
+                } else {
+                    i += 1
+                }
+                
+            case "H": // Horizontal line to (absolute)
+                if i < tokens.count {
+                    let x = Double(tokens[i]) ?? 0
+                    currentPoint = CGPoint(x: x, y: currentPoint.y)
+                    elements.append(.line(to: VectorPoint(currentPoint)))
+                    i += 1
+                } else {
+                    i += 1
+                }
+                
+            case "h": // Horizontal line to (relative)
+                if i < tokens.count {
+                    let dx = Double(tokens[i]) ?? 0
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y)
+                    elements.append(.line(to: VectorPoint(currentPoint)))
+                    i += 1
+                } else {
+                    i += 1
+                }
+                
+            case "V": // Vertical line to (absolute)
+                if i < tokens.count {
+                    let y = Double(tokens[i]) ?? 0
+                    currentPoint = CGPoint(x: currentPoint.x, y: y)
+                    elements.append(.line(to: VectorPoint(currentPoint)))
+                    i += 1
+                } else {
+                    i += 1
+                }
+                
+            case "v": // Vertical line to (relative)
+                if i < tokens.count {
+                    let dy = Double(tokens[i]) ?? 0
+                    currentPoint = CGPoint(x: currentPoint.x, y: currentPoint.y + dy)
+                    elements.append(.line(to: VectorPoint(currentPoint)))
+                    i += 1
+                } else {
+                    i += 1
+                }
+                
+            case "C": // Cubic bezier curve (absolute)
+                if i + 5 < tokens.count {
+                    let x1 = Double(tokens[i]) ?? 0
+                    let y1 = Double(tokens[i + 1]) ?? 0
+                    let x2 = Double(tokens[i + 2]) ?? 0
+                    let y2 = Double(tokens[i + 3]) ?? 0
+                    let x = Double(tokens[i + 4]) ?? 0
+                    let y = Double(tokens[i + 5]) ?? 0
                     
                     currentPoint = CGPoint(x: x, y: y)
+                    lastControlPoint = CGPoint(x: x2, y: y2)
                     
                     elements.append(.curve(
                         to: VectorPoint(currentPoint),
@@ -1150,35 +1507,145 @@ class SVGParser: NSObject, XMLParserDelegate {
                         control2: VectorPoint(x2, y2)
                     ))
                     i += 6
+                } else {
+                    i += 1
                 }
                 
-            case "Q":
-                // Quadratic bezier curve
-                if i + 3 < commands.count {
-                    let x1 = Double(commands[i]) ?? 0
-                    let y1 = Double(commands[i + 1]) ?? 0
-                    let x = Double(commands[i + 2]) ?? 0
-                    let y = Double(commands[i + 3]) ?? 0
+            case "c": // Cubic bezier curve (relative)
+                if i + 5 < tokens.count {
+                    let dx1 = Double(tokens[i]) ?? 0
+                    let dy1 = Double(tokens[i + 1]) ?? 0
+                    let dx2 = Double(tokens[i + 2]) ?? 0
+                    let dy2 = Double(tokens[i + 3]) ?? 0
+                    let dx = Double(tokens[i + 4]) ?? 0
+                    let dy = Double(tokens[i + 5]) ?? 0
+                    
+                    let x1 = currentPoint.x + dx1
+                    let y1 = currentPoint.y + dy1
+                    let x2 = currentPoint.x + dx2
+                    let y2 = currentPoint.y + dy2
+                    let newPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    
+                    print("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))")
+                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
+                    
+                    currentPoint = newPoint
+                    lastControlPoint = CGPoint(x: x2, y: y2)
+                    
+                    elements.append(.curve(
+                        to: VectorPoint(currentPoint),
+                        control1: VectorPoint(x1, y1),
+                        control2: VectorPoint(x2, y2)
+                    ))
+                    i += 6
+                } else {
+                    print("   ⚠️ Not enough tokens for c command")
+                    i += 1
+                }
+                
+            case "S": // Smooth cubic bezier curve (absolute)
+                while i + 3 < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
+                    let x2 = Double(tokens[i]) ?? 0
+                    let y2 = Double(tokens[i + 1]) ?? 0
+                    let x = Double(tokens[i + 2]) ?? 0
+                    let y = Double(tokens[i + 3]) ?? 0
+                    
+                    // Calculate reflected control point
+                    let x1 = lastControlPoint != nil ? 2 * currentPoint.x - lastControlPoint!.x : currentPoint.x
+                    let y1 = lastControlPoint != nil ? 2 * currentPoint.y - lastControlPoint!.y : currentPoint.y
                     
                     currentPoint = CGPoint(x: x, y: y)
+                    lastControlPoint = CGPoint(x: x2, y: y2)
+                    
+                    elements.append(.curve(
+                        to: VectorPoint(currentPoint),
+                        control1: VectorPoint(x1, y1),
+                        control2: VectorPoint(x2, y2)
+                    ))
+                    i += 4
+                }
+                
+            case "s": // Smooth cubic bezier curve (relative)
+                while i + 3 < tokens.count && tokens[i].rangeOfCharacter(from: .letters) == nil {
+                    let dx2 = Double(tokens[i]) ?? 0
+                    let dy2 = Double(tokens[i + 1]) ?? 0
+                    let dx = Double(tokens[i + 2]) ?? 0
+                    let dy = Double(tokens[i + 3]) ?? 0
+                    
+                    // Calculate reflected control point
+                    let x1 = lastControlPoint != nil ? 2 * currentPoint.x - lastControlPoint!.x : currentPoint.x
+                    let y1 = lastControlPoint != nil ? 2 * currentPoint.y - lastControlPoint!.y : currentPoint.y
+                    
+                    let x2 = currentPoint.x + dx2
+                    let y2 = currentPoint.y + dy2
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    lastControlPoint = CGPoint(x: x2, y: y2)
+                    
+                    elements.append(.curve(
+                        to: VectorPoint(currentPoint),
+                        control1: VectorPoint(x1, y1),
+                        control2: VectorPoint(x2, y2)
+                    ))
+                    i += 4
+                }
+                
+            case "Q": // Quadratic bezier curve (absolute)
+                if i + 3 < tokens.count {
+                    let x1 = Double(tokens[i]) ?? 0
+                    let y1 = Double(tokens[i + 1]) ?? 0
+                    let x = Double(tokens[i + 2]) ?? 0
+                    let y = Double(tokens[i + 3]) ?? 0
+                    
+                    currentPoint = CGPoint(x: x, y: y)
+                    lastControlPoint = CGPoint(x: x1, y: y1)
                     
                     elements.append(.quadCurve(
                         to: VectorPoint(currentPoint),
                         control: VectorPoint(x1, y1)
                     ))
                     i += 4
+                } else {
+                    i += 1
                 }
                 
-            case "Z":
-                // Close path
+            case "q": // Quadratic bezier curve (relative)
+                if i + 3 < tokens.count {
+                    let dx1 = Double(tokens[i]) ?? 0
+                    let dy1 = Double(tokens[i + 1]) ?? 0
+                    let dx = Double(tokens[i + 2]) ?? 0
+                    let dy = Double(tokens[i + 3]) ?? 0
+                    
+                    let x1 = currentPoint.x + dx1
+                    let y1 = currentPoint.y + dy1
+                    currentPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
+                    lastControlPoint = CGPoint(x: x1, y: y1)
+                    
+                    elements.append(.quadCurve(
+                        to: VectorPoint(currentPoint),
+                        control: VectorPoint(x1, y1)
+                    ))
+                    i += 4
+                } else {
+                    i += 1
+                }
+                
+            case "Z", "z": // Close path
+                print("   Close path")
                 elements.append(.close)
+                currentPoint = subpathStart
+                lastControlPoint = nil
+                i += 1
                 
             default:
                 // Skip unknown commands
-                break
+                i += 1
             }
         }
         
+        print("🏁 FINAL ELEMENTS: \(elements.count) total")
+        for (index, element) in elements.enumerated() {
+            print("  [\(index)] \(element)")
+        }
         return elements
     }
     
