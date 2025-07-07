@@ -483,6 +483,75 @@ struct MainToolbarContent: ToolbarContent {
         document.objectWillChange.send()
     }
     
+    private func hasSelectedPathsToClose() -> Bool {
+        // Check if any selected shapes have open paths that can be closed
+        guard !document.selectedShapeIDs.isEmpty else { return false }
+        
+        for layer in document.layers {
+            for shape in layer.shapes {
+                if document.selectedShapeIDs.contains(shape.id) {
+                    // Check if path has no close element and has enough points to close
+                    let hasCloseElement = shape.path.elements.contains { element in
+                        if case .close = element { return true }
+                        return false
+                    }
+                    
+                    let pointCount = shape.path.elements.filter { element in
+                        switch element {
+                        case .move, .line, .curve, .quadCurve: return true
+                        case .close: return false
+                        }
+                    }.count
+                    
+                    if !hasCloseElement && pointCount >= 3 {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    private func closeSelectedPaths() {
+        // Close paths for selected shapes only
+        document.saveToUndoStack()
+        
+        for layerIndex in document.layers.indices {
+            for shapeIndex in document.layers[layerIndex].shapes.indices {
+                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                
+                // Only close if this shape is selected
+                if document.selectedShapeIDs.contains(shape.id) {
+                    // Check if path is open and has enough points
+                    let hasCloseElement = shape.path.elements.contains { element in
+                        if case .close = element { return true }
+                        return false
+                    }
+                    
+                    let pointCount = shape.path.elements.filter { element in
+                        switch element {
+                        case .move, .line, .curve, .quadCurve: return true
+                        case .close: return false
+                        }
+                    }.count
+                    
+                    if !hasCloseElement && pointCount >= 3 {
+                        // Add close element
+                        var newElements = shape.path.elements
+                        newElements.append(.close)
+                        
+                        let newPath = VectorPath(elements: newElements, isClosed: true)
+                        document.layers[layerIndex].shapes[shapeIndex].path = newPath
+                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                        print("🎯 Closed selected path for shape \(shape.name)")
+                    }
+                }
+            }
+        }
+        
+        document.objectWillChange.send()
+    }
+    
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
             // File Operations
@@ -595,6 +664,20 @@ struct MainToolbarContent: ToolbarContent {
                 .keyboardShortcut(.delete, modifiers: [.command])
                 .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
                 
+                Divider()
+                
+                Button("Close Open Paths") {
+                    if document.currentTool == .directSelection {
+                        // Close selected paths (direct selection mode)
+                        closeSelectedPaths()
+                    } else {
+                        // Close all open paths (global mode)
+                        closeOpenPaths()
+                    }
+                }
+                .keyboardShortcut("j", modifiers: [.command, .shift]) // Adobe Illustrator standard
+                .disabled(!hasOpenPaths() && !hasSelectedPathsToClose())
+                
             } label: {
                 Image(systemName: "pencil.circle")
             }
@@ -679,7 +762,7 @@ struct MainToolbarContent: ToolbarContent {
             } label: {
                 Image(systemName: "circle.dashed")
             }
-            .help("Close Open Paths (⌘J)")
+            .help("Close Open Paths (⌘⇧J)")
             .disabled(!hasOpenPaths())
             
             // View Controls
@@ -951,7 +1034,7 @@ struct StatusBar: View {
                         .font(.caption2)
                         .foregroundColor(.blue)
                 } else if document.currentTool == .directSelection {
-                    Text("Select anchor points and handles • ⌘⇧J to close selected paths")
+                    Text("Select anchor points and handles • ⌘⇧J to close open paths")
                         .font(.caption2)
                         .foregroundColor(.blue)
                 }

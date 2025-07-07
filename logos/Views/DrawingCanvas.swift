@@ -99,7 +99,7 @@ struct DrawingCanvas: View {
             Button("Close Path") {
                 closeSelectedPaths()
             }
-            .keyboardShortcut("c", modifiers: [.command])
+            // Note: Global Command+Shift+J shortcut handles this in MainView
             
             Button("Delete Selected") {
                 deleteSelectedPoints()
