@@ -738,6 +738,25 @@ class VectorDocument: ObservableObject, Codable {
         return nil
     }
     
+    /// Clear all objects from the document for testing purposes
+    func clearAllObjects() {
+        saveToUndoStack()
+        
+        // Clear all shapes from all layers
+        for layerIndex in layers.indices {
+            layers[layerIndex].shapes.removeAll()
+        }
+        
+        // Clear all text objects
+        textObjects.removeAll()
+        
+        // Clear all selections
+        selectedShapeIDs.removeAll()
+        selectedTextIDs.removeAll()
+        
+        print("🧹 Cleared all objects from document")
+    }
+    
     func updateTextContent(_ textID: UUID, content: String) {
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].content = content
