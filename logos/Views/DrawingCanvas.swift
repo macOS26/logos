@@ -2217,18 +2217,31 @@ struct DrawingCanvas: View {
                     case .curve(let to, let control1, let control2):
                         let pointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, pointLocation) <= tolerance {
-                            // Check if this is already a corner point (handles coincident with anchor)
-                            let isCornerPoint = (
-                                abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1 &&
-                                abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1
-                            )
+                            // CRITICAL FIX: Proper corner point detection
+                            // A point is a corner point if BOTH its incoming AND outgoing handles are collapsed to the anchor
+                            
+                            // Check incoming handle (control2 of current element)
+                            let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                            
+                            // Check outgoing handle (control1 of NEXT element, if it exists)
+                            var outgoingHandleCollapsed = true // Default to true if no next element
+                            if elementIndex + 1 < shape.path.elements.count {
+                                let nextElement = shape.path.elements[elementIndex + 1]
+                                if case .curve(_, let nextControl1, _) = nextElement {
+                                    outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                                }
+                            }
+                            
+                            let isCornerPoint = incomingHandleCollapsed && outgoingHandleCollapsed
                             
                             if isCornerPoint {
                                 // Convert corner point back to smooth curve
                                 convertCornerToSmooth(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                print("🔄 DETECTED CORNER POINT → Converting to SMOOTH")
                             } else {
                                 // Convert smooth point to corner point
                                 convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                print("🔄 DETECTED SMOOTH POINT → Converting to CORNER")
                             }
                             
                             // PROFESSIONAL UX: Auto-enable direct selection to show the result
