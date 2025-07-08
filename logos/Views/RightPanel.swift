@@ -195,7 +195,10 @@ struct LayersPanel: View {
                 clearDragState()
                 return result
             } isTargeted: { isTargeted in
-                dropTargetIndex = isTargeted ? targetIndex : nil
+                // Only set drop target for layer drops, not object drops
+                if draggedLayerIndex != nil {
+                    dropTargetIndex = isTargeted ? targetIndex : nil
+                }
             }
             .dropDestination(for: ObjectDragData.self) { items, location in
                 guard let draggedData = items.first else { return false }
@@ -210,12 +213,13 @@ struct LayersPanel: View {
                     targetLayerIndex = targetIndex
                 }
                 
+                print("🎯 DIVIDER DROP: Object drop on divider, targeting layer \(targetLayerIndex)")
                 let result = handleObjectDrop(draggedData: draggedData, targetLayerIndex: targetLayerIndex)
                 clearDragState()
                 return result
             } isTargeted: { isTargeted in
                 if isTargeted {
-                    // For object drops, highlight the target layer
+                    // For object drops, highlight the target layer and show divider
                     if targetIndex == document.layers.count {
                         hoveredLayerIndex = document.layers.count - 1
                     } else {
@@ -223,9 +227,13 @@ struct LayersPanel: View {
                     }
                     // Also show drop indicator for visual feedback
                     dropTargetIndex = targetIndex
+                    print("🎯 DIVIDER HOVER: Object hovering over divider, highlighting layer \(hoveredLayerIndex ?? -1)")
                 } else {
-                    hoveredLayerIndex = nil
-                    dropTargetIndex = nil
+                    // Clear hover states when not targeted
+                    if draggedLayerIndex == nil { // Only clear if not dragging a layer
+                        hoveredLayerIndex = nil
+                        dropTargetIndex = nil
+                    }
                 }
             }
     }
@@ -291,7 +299,7 @@ struct LayersPanel: View {
             draggedLayerIndex = nil
             dropTargetIndex = nil
             hoveredLayerIndex = nil
-            print("🏁 Finished dragging")
+            print("🏁 Finished dragging - cleared all drag states")
         }
     }
     
@@ -476,6 +484,7 @@ struct LayersPanel: View {
 // DRAG DATA FOR LAYER REORDERING
 struct LayerDragData: Transferable, Codable {
     let layerIndex: Int
+    let dragType: String = "layer" // Unique identifier
     
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .data)
@@ -487,6 +496,7 @@ struct ObjectDragData: Transferable, Codable {
     let objectType: String  // "shape" or "text"
     let objectId: UUID
     let sourceLayerIndex: Int
+    let dragType: String = "object" // Unique identifier
     
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .data)
@@ -665,52 +675,65 @@ struct ProfessionalLayerRow: View {
             
             // Expanded Object List (Adobe Illustrator Style)
             if isExpanded {
-                VStack(spacing: 1) {
+                VStack(spacing: 0) {
                     // Text Objects in this layer context
                     ForEach(document.textObjects.indices, id: \.self) { textIndex in
                         let textObject = document.textObjects[textIndex]
-                        ObjectRow(
-                            objectType: .text,
-                            objectId: textObject.id,
-                            name: textObject.content.isEmpty ? "Empty Text" : String(textObject.content.prefix(20)),
-                            isSelected: document.selectedTextIDs.contains(textObject.id),
-                            isVisible: textObject.isVisible,
-                            isLocked: textObject.isLocked,
-                            onSelect: {
-                                document.selectedTextIDs = [textObject.id]
-                                document.selectedShapeIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            onDrag: {
-                                onObjectDrag(.text, textObject.id)
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
+                        VStack(spacing: 0) {
+                            // Object insertion zone above this object
+                            objectInsertionZone(layerIndex: layerIndex, insertPosition: textIndex)
+                            
+                            ObjectRow(
+                                objectType: .text,
+                                objectId: textObject.id,
+                                name: textObject.content.isEmpty ? "Empty Text" : String(textObject.content.prefix(20)),
+                                isSelected: document.selectedTextIDs.contains(textObject.id),
+                                isVisible: textObject.isVisible,
+                                isLocked: textObject.isLocked,
+                                onSelect: {
+                                    document.selectedTextIDs = [textObject.id]
+                                    document.selectedShapeIDs.removeAll()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                onDrag: {
+                                    onObjectDrag(.text, textObject.id)
+                                },
+                                layerIndex: layerIndex,
+                                document: document
+                            )
+                        }
                     }
                     
-                    // Shape Objects
-                    ForEach(layer.shapes.indices.reversed(), id: \.self) { shapeIndex in
+                    // Shape Objects with insertion zones
+                    ForEach(Array(layer.shapes.indices.reversed().enumerated()), id: \.element) { visualIndex, shapeIndex in
                         let shape = layer.shapes[shapeIndex]
-                        ObjectRow(
-                            objectType: .shape,
-                            objectId: shape.id,
-                            name: shape.name,
-                            isSelected: document.selectedShapeIDs.contains(shape.id),
-                            isVisible: shape.isVisible,
-                            isLocked: shape.isLocked,
-                            onSelect: {
-                                document.selectedShapeIDs = [shape.id]
-                                document.selectedTextIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            onDrag: {
-                                onObjectDrag(.shape, shape.id)
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
+                        VStack(spacing: 0) {
+                            // Object insertion zone above this shape
+                            objectInsertionZone(layerIndex: layerIndex, insertPosition: shapeIndex)
+                            
+                            ObjectRow(
+                                objectType: .shape,
+                                objectId: shape.id,
+                                name: shape.name,
+                                isSelected: document.selectedShapeIDs.contains(shape.id),
+                                isVisible: shape.isVisible,
+                                isLocked: shape.isLocked,
+                                onSelect: {
+                                    document.selectedShapeIDs = [shape.id]
+                                    document.selectedTextIDs.removeAll()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                onDrag: {
+                                    onObjectDrag(.shape, shape.id)
+                                },
+                                layerIndex: layerIndex,
+                                document: document
+                            )
+                        }
                     }
+                    
+                    // Final insertion zone at bottom of object list
+                    objectInsertionZone(layerIndex: layerIndex, insertPosition: -1) // -1 means "append to end"
                 }
                 .padding(.leading, 20) // Indent objects under layer
             }
@@ -792,6 +815,111 @@ struct ProfessionalLayerRow: View {
     private func objectCountInLayer(_ layerIndex: Int) -> Int {
         // Count text objects that conceptually belong to this layer
         return document.textObjects.filter { $0.isVisible }.count
+    }
+    
+    @ViewBuilder
+    private func objectInsertionZone(layerIndex: Int, insertPosition: Int) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 3)
+            .overlay(
+                Group {
+                    if isHovered {
+                        Rectangle()
+                            .fill(Color.blue.opacity(0.3))
+                            .frame(height: 1)
+                            .padding(.horizontal, 4)
+                    }
+                }
+            )
+            .dropDestination(for: ObjectDragData.self) { items, location in
+                guard let draggedData = items.first else { return false }
+                return handleObjectInsertion(draggedData: draggedData, targetLayerIndex: layerIndex, insertPosition: insertPosition)
+            } isTargeted: { isTargeted in
+                onObjectHover(isTargeted)
+            }
+    }
+    
+    private func handleObjectInsertion(draggedData: ObjectDragData, targetLayerIndex: Int, insertPosition: Int) -> Bool {
+        let sourceLayerIndex = draggedData.sourceLayerIndex
+        let objectId = draggedData.objectId
+        let objectType = draggedData.objectType
+        
+        print("🔄 OBJECT INSERTION: Moving \(objectType) from layer \(sourceLayerIndex) to layer \(targetLayerIndex) at position \(insertPosition)")
+        
+        // PROTECT LOCKED LAYERS: Check if source layer is locked
+        if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT LOCKED LAYERS: Check if target layer is locked
+        if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow objects to be moved to Canvas layer (index 0)
+        if targetLayerIndex == 0 {
+            print("🚫 Cannot move objects to Canvas layer")
+            return false
+        }
+        
+        // Ensure target layer exists
+        guard targetLayerIndex < document.layers.count else {
+            print("❌ Target layer index out of bounds")
+            return false
+        }
+        
+        document.saveToUndoStack()
+        
+        // Handle shape insertion with precise positioning
+        if objectType == "shape" {
+            // Find and move shape
+            for layerIdx in document.layers.indices {
+                if let shapeIndex = document.layers[layerIdx].shapes.firstIndex(where: { $0.id == objectId }) {
+                    let shape = document.layers[layerIdx].shapes.remove(at: shapeIndex)
+                    
+                    // Determine insertion index
+                    let finalInsertIndex: Int
+                    if insertPosition == -1 {
+                        // Append to end
+                        finalInsertIndex = document.layers[targetLayerIndex].shapes.count
+                    } else if sourceLayerIndex == targetLayerIndex {
+                        // Moving within same layer - adjust for removal
+                        if shapeIndex < insertPosition {
+                            finalInsertIndex = insertPosition - 1
+                        } else {
+                            finalInsertIndex = insertPosition
+                        }
+                    } else {
+                        // Moving to different layer
+                        finalInsertIndex = min(insertPosition, document.layers[targetLayerIndex].shapes.count)
+                    }
+                    
+                    document.layers[targetLayerIndex].shapes.insert(shape, at: finalInsertIndex)
+                    
+                    // Update selection to target layer
+                    document.selectedLayerIndex = targetLayerIndex
+                    document.selectedShapeIDs = [objectId]
+                    
+                    print("✅ Successfully inserted shape '\(shape.name)' into layer '\(document.layers[targetLayerIndex].name)' at position \(finalInsertIndex)")
+                    return true
+                }
+            }
+        } else if objectType == "text" {
+            // For text objects, just associate with the target layer (text objects remain global)
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == objectId }) {
+                document.selectedLayerIndex = targetLayerIndex  
+                document.selectedTextIDs = [objectId]
+                
+                print("✅ Successfully associated text object with layer '\(document.layers[targetLayerIndex].name)'")
+                return true
+            }
+        }
+        
+        print("❌ Failed to find object to insert")
+        return false
     }
 }
 
