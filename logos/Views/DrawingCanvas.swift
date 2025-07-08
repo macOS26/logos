@@ -518,10 +518,10 @@ struct DrawingCanvas: View {
     }
     
     private func setupDefaultView(geometry: GeometryProxy) {
-        // BRILLIANT USER SOLUTION: Use canvas layer bounds instead of manual settings
-        // This eliminates coordinate synchronization issues
+        // Use document bounds for zoom/fit calculations (standard approach)
+        // No Canvas-specific coordinate logic needed
         
-        let canvasBounds = document.canvasBounds
+        let documentBounds = document.documentBounds
         let viewSize = geometry.size
         
         // ASPECT RATIO SCALING: Calculate both scales and use minimum for uniform scaling
@@ -529,8 +529,8 @@ struct DrawingCanvas: View {
         let availableWidth = viewSize.width - (padding * 2)
         let availableHeight = viewSize.height - (padding * 2)
         
-        let scaleX = availableWidth / canvasBounds.width
-        let scaleY = availableHeight / canvasBounds.height
+        let scaleX = availableWidth / documentBounds.width
+        let scaleY = availableHeight / documentBounds.height
         let uniformScale = min(scaleX, scaleY)  // ✅ UNIFORM SCALING - maintains aspect ratio
         
         // Cap the default zoom at reasonable bounds (like professional apps)
@@ -543,23 +543,23 @@ struct DrawingCanvas: View {
             y: viewSize.height / 2.0
         )
         
-        let canvasCenter = CGPoint(
-            x: canvasBounds.midX,
-            y: canvasBounds.midY
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
         )
         
-        // Calculate offset to center canvas: screen = (canvas * zoom) + offset
+        // Calculate offset to center document: screen = (document * zoom) + offset
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
-            y: viewCenter.y - (canvasCenter.y * document.zoomLevel)
+            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
+            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
         )
         
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 CANVAS LAYER SCALING (No More Sync Issues!):")
-        print("   Canvas Bounds: \(canvasBounds)")
-        print("   Canvas Aspect Ratio: \(String(format: "%.3f", canvasBounds.width / canvasBounds.height))")
+        print("🎯 DOCUMENT SCALING (Standard Approach):")
+        print("   Document Bounds: \(documentBounds)")
+        print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
         print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
         print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
         print("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
@@ -807,9 +807,6 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
-                // SKIP CANVAS SHAPE: Never allow selection of canvas background
-                if document.isCanvasShape(shape.id) { continue }
-                
                 print("Testing shape: \(shape.name)")
                 print("  - Has stroke: \(shape.strokeStyle != nil)")
                 print("  - Has fill: \(shape.fillStyle != nil)")
@@ -878,25 +875,25 @@ struct DrawingCanvas: View {
                 print("🎯 REGULAR CLICK: Selected \(shape.name) only (cleared previous selection)")
             }
         } else {
-            // Check if clicking outside the canvas bounds (dead area)
-            let canvasBounds = document.canvasBounds
-            let isOutsideCanvas = !canvasBounds.contains(location)
+            // Check if clicking outside the document bounds (dead area)
+            let documentBounds = document.documentBounds
+            let isOutsideDocument = !documentBounds.contains(location)
             
             // IMPROVED: Handle large objects that cover the entire page
-            if isOutsideCanvas {
-                // Clicking in dead space outside canvas always deselects
+            if isOutsideDocument {
+                // Clicking in dead space outside document always deselects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-                print("🎯 Clicked dead space (outside canvas): Cleared all selections")
+                print("🎯 Clicked dead space (outside document): Cleared all selections")
             } else if !isShiftPressed && !isCommandPressed {
-                // Clicking inside canvas without modifiers: check for large object deselection
+                // Clicking inside document without modifiers: check for large object deselection
                 let hasLargeSelectedObject = document.selectedShapeIDs.contains { shapeID in
                     for layer in document.layers {
                         if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
                             let shapeBounds = shape.bounds.applying(shape.transform)
-                            let canvasBounds = document.canvasBounds
-                            // Consider "large" if object covers more than 80% of the canvas
-                            let coverageRatio = (shapeBounds.width * shapeBounds.height) / (canvasBounds.width * canvasBounds.height)
+                            let documentBounds = document.documentBounds
+                            // Consider "large" if object covers more than 80% of the document
+                            let coverageRatio = (shapeBounds.width * shapeBounds.height) / (documentBounds.width * documentBounds.height)
                             return coverageRatio > 0.8
                         }
                     }
@@ -1782,27 +1779,27 @@ struct DrawingCanvas: View {
             y: geometry.size.height / 2.0
         )
         
-        // For actual size, we want to center the canvas center in the view
-        let canvasBounds = document.canvasBounds
-        let canvasCenter = CGPoint(
-            x: canvasBounds.midX,
-            y: canvasBounds.midY
+        // For actual size, we want to center the document center in the view
+        let documentBounds = document.documentBounds
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
         )
         
         // Update zoom level
         document.zoomLevel = newZoomLevel
         
-        // Calculate offset to center the canvas
+        // Calculate offset to center the document
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (canvasCenter.x * CGFloat(newZoomLevel)),
-            y: viewCenter.y - (canvasCenter.y * CGFloat(newZoomLevel))
+            x: viewCenter.x - (documentCenter.x * CGFloat(newZoomLevel)),
+            y: viewCenter.y - (documentCenter.y * CGFloat(newZoomLevel))
         )
         
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        print("🎯 ACTUAL SIZE: Set to 100% and centered canvas layer")
-        print("   Canvas center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
+        print("🎯 ACTUAL SIZE: Set to 100% and centered document")
+        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
         print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
@@ -2216,9 +2213,6 @@ struct DrawingCanvas: View {
             
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
-                
-                // SKIP CANVAS SHAPE: Never allow direct selection of canvas background
-                if document.isCanvasShape(shape.id) { continue }
                 
                 var isHit = false
                 
@@ -2693,9 +2687,6 @@ struct DrawingCanvas: View {
             
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
-                
-                // SKIP CANVAS SHAPE: Never allow convert point tool on canvas background
-                if document.isCanvasShape(shape.id) { continue }
                 
                 var isHit = false
                 
@@ -3375,8 +3366,8 @@ struct DrawingCanvas: View {
     }
 
     private func fitToPage(geometry: GeometryProxy) {
-        // BRILLIANT USER SOLUTION: Fit the canvas layer like any other shape!
-        let canvasBounds = document.canvasBounds
+        // Use standard document bounds for fit-to-page calculations
+        let documentBounds = document.documentBounds
         let viewSize = geometry.size
         
         // Calculate zoom level to fit the canvas in the view with padding
@@ -3384,8 +3375,8 @@ struct DrawingCanvas: View {
         let availableWidth = viewSize.width - (padding * 2)
         let availableHeight = viewSize.height - (padding * 2)
         
-        let scaleX = availableWidth / canvasBounds.width
-        let scaleY = availableHeight / canvasBounds.height
+        let scaleX = availableWidth / documentBounds.width
+        let scaleY = availableHeight / documentBounds.height
         let fitZoom = min(scaleX, scaleY)
         
         // Set zoom level to fit canvas in view
@@ -3397,24 +3388,24 @@ struct DrawingCanvas: View {
             y: viewSize.height / 2.0
         )
         
-        let canvasCenter = CGPoint(
-            x: canvasBounds.midX,
-            y: canvasBounds.midY
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
         )
         
-        // Calculate offset to center canvas
+        // Calculate offset to center document
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
-            y: viewCenter.y - (canvasCenter.y * document.zoomLevel)
+            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
+            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
         )
         
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🔍 FIT TO PAGE: Using canvas layer bounds (no more coordinate sync issues!)")
-        print("   Canvas Bounds: \(canvasBounds)")
+        print("🔍 FIT TO PAGE: Using standard document bounds")
+        print("   Document Bounds: \(documentBounds)")
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
-        print("   Canvas layer automatically stays in sync with everything else!")
+        print("   Standard coordinate system approach")
     }
 
 }

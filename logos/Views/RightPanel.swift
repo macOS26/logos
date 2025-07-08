@@ -117,15 +117,7 @@ struct LayersPanel: View {
                 
                 Spacer()
                 
-                // Fit Canvas to Artwork Button
-                Button {
-                    document.fitCanvasToArtwork()
-                } label: {
-                    Image(systemName: "doc.viewfinder")
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Fit Canvas to Artwork")
+
                 
                 Button {
                     document.addLayer()
@@ -198,9 +190,7 @@ struct ProfessionalLayerRow: View {
         document.selectedLayerIndex == layerIndex
     }
     
-    private var isCanvasLayer: Bool {
-        return layerIndex == 0 && layer.name == "Canvas"
-    }
+
     
     var body: some View {
         VStack(spacing: 0) {
@@ -251,8 +241,8 @@ struct ProfessionalLayerRow: View {
             
             // Layer Name
             Text(layer.name)
-                .font(.system(size: 12, weight: isCanvasLayer ? .regular : .medium))
-                .foregroundColor(isCanvasLayer ? .secondary : .primary)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
                 // Object Count
@@ -271,11 +261,6 @@ struct ProfessionalLayerRow: View {
                 // SAFE LAYER ACCESS: Check bounds before selection
                 guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
                 
-                // PREVENT SELECTING CANVAS LAYER: Canvas layer should not be selectable
-                if layerIndex == 0 && document.layers[layerIndex].name == "Canvas" {
-                    print("🚫 Cannot select Canvas layer - it's locked for editing")
-                    return
-                }
                 document.selectedLayerIndex = layerIndex
             }
             

@@ -4239,7 +4239,8 @@ class FileOperations {
         // Calculate bounds of imported artwork to size canvas appropriately
         var artworkBounds = CGRect.null
         for shape in result.shapes {
-            let shapeBounds = shape.bounds
+            // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
+            let shapeBounds = shape.bounds.applying(shape.transform)
             if artworkBounds.isNull {
                 artworkBounds = shapeBounds
             } else {
@@ -4257,31 +4258,13 @@ class FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
         
-        // Ensure Canvas layer exists (should be created during init, but create if missing)
-        if document.layers.isEmpty || document.layers[0].name != "Canvas" {
-            document.createCanvasLayer()
-        }
+        print("🎯 SVG IMPORT BOUNDS CALCULATION:")
+        print("   Raw artwork bounds: \(artworkBounds)")
+        print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
+        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
-        // Update Canvas layer background to fit the artwork
-        if var canvasLayer = document.layers.first(where: { $0.name == "Canvas" }) {
-            canvasLayer.shapes.removeAll() // Clear any existing canvas shapes
-            
-            // Create white background rectangle to fit the artwork
-            let backgroundRect = VectorShape.rectangle(
-                at: CGPoint(x: 0, y: 0),
-                size: CGSize(width: canvasWidth, height: canvasHeight)
-            )
-            canvasLayer.addShape(backgroundRect)
-            
-            // Update the layer in the document
-            if let canvasIndex = document.layers.firstIndex(where: { $0.name == "Canvas" }) {
-                document.layers[canvasIndex] = canvasLayer
-            }
-            print("📐 Created Canvas background: \(canvasWidth) × \(canvasHeight) pts")
-        }
-        
-        // Clear non-canvas layers and create new layer for imported shapes
-        document.layers.removeAll { $0.name != "Canvas" }
+        // Clear existing layers and create new layer for imported shapes
+        document.layers.removeAll()
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
@@ -4292,6 +4275,11 @@ class FileOperations {
         let canvasCenterY = canvasHeight / 2
         let translateX = canvasCenterX - artworkCenterX
         let translateY = canvasCenterY - artworkCenterY
+        
+        print("🎯 CENTERING CALCULATION:")
+        print("   Artwork center: (\(String(format: "%.1f", artworkCenterX)), \(String(format: "%.1f", artworkCenterY)))")
+        print("   Canvas center: (\(String(format: "%.1f", canvasCenterX)), \(String(format: "%.1f", canvasCenterY)))")
+        print("   Translation needed: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
         
         // Add all imported shapes to the layer with translation to center them
         for shape in result.shapes {
@@ -4305,8 +4293,8 @@ class FileOperations {
             document.layers[importedIndex] = importedLayer
         }
         
-        // Select the imported layer (Canvas layer should not be selectable)
-        document.selectedLayerIndex = 1 // Index 1 since Canvas is at index 0
+        // Select the imported layer
+        document.selectedLayerIndex = 0 // Index 0 since it's the only layer
         
         // Log warnings if any
         for warning in result.warnings {

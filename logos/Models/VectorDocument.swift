@@ -120,8 +120,7 @@ class VectorDocument: ObservableObject, Codable {
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
         
-        // BRILLIANT USER SOLUTION: Create canvas as a regular layer/shape instead of manual background sync
-        // This eliminates all coordinate system synchronization issues!
+        // Standard layer initialization (no special Canvas layer)
         self.layers = []
         
         // Load appropriate color swatches based on color mode
@@ -144,12 +143,11 @@ class VectorDocument: ObservableObject, Codable {
         // Add notification observers for scaling operations
         setupNotificationObservers()
         
-        // CRITICAL: Create canvas layer AFTER all properties are initialized
-        createCanvasLayer()
+        // Create default working layer
         createDefaultLayer()
         
-        // NOW set the correct selected layer index
-        self.selectedLayerIndex = 1 // Layer 1 is the working layer (Canvas is layer 0)
+        // Set the selected layer index
+        self.selectedLayerIndex = 0 // First (and only) layer is the working layer
         print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
         print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
         print("=" + String(repeating: "=", count: 50))
@@ -157,29 +155,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Canvas Management (User's Brilliant Solution!)
     
-    /// Creates the special "Canvas" layer as layer 0 (bottom-most layer)
-    /// This brilliant approach eliminates coordinate synchronization issues
-    func createCanvasLayer() {
-        var canvasLayer = VectorLayer(name: "Canvas")
-        canvasLayer.isLocked = true // Prevent accidental selection/modification
-        canvasLayer.isVisible = true // Make sure it's visible in layers panel
-        
-        // Create canvas rectangle using document dimensions
-        let canvasPath = createCanvasPath()
-        
-        let canvasShape = VectorShape(
-            name: "Canvas Background",
-            path: canvasPath,
-            strokeStyle: nil, // No stroke for canvas
-            fillStyle: FillStyle(color: settings.backgroundColor, opacity: 1.0)
-        )
-        
-        canvasLayer.addShape(canvasShape)
-        layers.insert(canvasLayer, at: 0) // Always insert at index 0 (bottom)
-        
-        print("🎨 CANVAS LAYER CREATED: \(settings.sizeInPoints.width) × \(settings.sizeInPoints.height)")
-        print("✅ Canvas will auto-sync with all graphics - no more coordinate issues!")
-    }
+
     
     /// Creates the default working layer (Layer 1)
     private func createDefaultLayer() {
@@ -187,64 +163,22 @@ class VectorDocument: ObservableObject, Codable {
         print("📋 CREATED DEFAULT LAYER: Layer 1 (index \(layers.count - 1))")
     }
     
-    /// Creates a rectangular path for the canvas background
-    private func createCanvasPath() -> VectorPath {
-        let size = settings.sizeInPoints
-        return VectorPath(elements: [
-            .move(to: VectorPoint(0, 0)),
-            .line(to: VectorPoint(size.width, 0)),
-            .line(to: VectorPoint(size.width, size.height)),
-            .line(to: VectorPoint(0, size.height)),
-            .close
-        ], isClosed: true)
+
+    
+
+    
+
+    
+
+    
+
+    
+    /// Gets document bounds using standard document size (no Canvas-specific logic)
+    var documentBounds: CGRect {
+        return CGRect(origin: .zero, size: settings.sizeInPoints)
     }
     
-    /// Gets the canvas shape (guaranteed to exist as first shape in first layer)
-    var canvasShape: VectorShape? {
-        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return nil }
-        return layers[0].shapes[0]
-    }
-    
-    /// Updates canvas size when document settings change
-    func updateCanvasSize() {
-        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
-        
-        let newPath = createCanvasPath()
-        layers[0].shapes[0].path = newPath
-        layers[0].shapes[0].updateBounds()
-        
-        print("🎨 CANVAS UPDATED: \(settings.sizeInPoints.width) × \(settings.sizeInPoints.height)")
-    }
-    
-    /// Updates canvas background color
-    func updateCanvasColor(_ color: VectorColor) {
-        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
-        
-        layers[0].shapes[0].fillStyle = FillStyle(color: color, opacity: 1.0)
-        settings.backgroundColor = color
-        
-        print("🎨 CANVAS COLOR UPDATED: \(color)")
-    }
-    
-    /// Makes canvas transparent (no fill)
-    func makeCanvasTransparent() {
-        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
-        
-        layers[0].shapes[0].fillStyle = FillStyle(color: .clear, opacity: 0.0)
-        
-        print("🎨 CANVAS MADE TRANSPARENT")
-    }
-    
-    /// Gets canvas bounds for fit-to-page operations
-    var canvasBounds: CGRect {
-        return canvasShape?.bounds ?? CGRect(origin: .zero, size: settings.sizeInPoints)
-    }
-    
-    /// Checks if a shape ID belongs to the canvas shape (to prevent selection)
-    func isCanvasShape(_ shapeID: UUID) -> Bool {
-        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return false }
-        return layers[0].shapes[0].id == shapeID
-    }
+
     
     /// Debug function to print current document state
     func debugCurrentState() {
@@ -486,31 +420,10 @@ class VectorDocument: ObservableObject, Codable {
         redoStack = []
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
-        // CRITICAL: Ensure canvas layer exists for loaded documents
         setupNotificationObservers()
-        ensureCanvasLayerExists()
     }
     
-    /// Ensures canvas layer exists in loaded documents (backward compatibility)
-    private func ensureCanvasLayerExists() {
-        // Check if first layer is already a canvas layer
-        let hasCanvasLayer = !layers.isEmpty && 
-                            layers[0].name == "Canvas" && 
-                            !layers[0].shapes.isEmpty &&
-                            layers[0].shapes[0].name == "Canvas Background"
-        
-        if !hasCanvasLayer {
-            // Insert canvas layer for existing documents
-            createCanvasLayer()
-            // Adjust selectedLayerIndex if needed
-            if let currentIndex = selectedLayerIndex {
-                selectedLayerIndex = currentIndex + 1
-            }
-            print("🔄 ADDED CANVAS LAYER to existing document for compatibility")
-        } else {
-            print("✅ CANVAS LAYER already exists in loaded document")
-        }
-    }
+
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -536,9 +449,9 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func removeLayer(at index: Int) {
-        // PROTECT CANVAS LAYER: Never allow deletion of canvas layer (index 0)
-        guard index >= 1 && index < layers.count && layers.count > 2 else { 
-            print("⚠️ Cannot remove Canvas layer or only remaining layer")
+        // Allow deletion of any layer, just prevent deleting the last layer
+        guard index >= 0 && index < layers.count && layers.count > 1 else { 
+            print("⚠️ Cannot remove last remaining layer")
             return 
         }
         layers.remove(at: index)
@@ -555,118 +468,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedLayerIndex = to
     }
     
-    // MARK: - Canvas Management
-    /// Fit canvas to artwork bounds (Adobe Illustrator style)
-    func fitCanvasToArtwork() {
-        print("🎯 FIT CANVAS TO ARTWORK...")
-        
-        // Calculate bounds of all artwork (excluding Canvas layer)
-        var artworkBounds: CGRect?
-        
-        for (layerIndex, layer) in layers.enumerated() {
-            // Skip Canvas layer (layer 0)
-            if layerIndex == 0 && layer.name == "Canvas" {
-                continue
-            }
-            
-            for shape in layer.shapes {
-                if shape.isVisible {
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    
-                    if artworkBounds == nil {
-                        artworkBounds = shapeBounds
-                    } else {
-                        artworkBounds = artworkBounds!.union(shapeBounds)
-                    }
-                }
-            }
-        }
-        
-        // Also include text objects
-        for textObject in textObjects {
-            if textObject.isVisible {
-                let textBounds = textObject.bounds
-                
-                if artworkBounds == nil {
-                    artworkBounds = textBounds
-                } else {
-                    artworkBounds = artworkBounds!.union(textBounds)
-                }
-            }
-        }
-        
-        guard let bounds = artworkBounds else {
-            print("❌ No artwork found to fit canvas to")
-            return
-        }
-        
-        // Add padding around artwork
-        let padding: CGFloat = 50.0
-        let paddedBounds = bounds.insetBy(dx: -padding, dy: -padding)
-        
-        // Update document settings to new size
-        let newWidth = max(1.0, paddedBounds.width / settings.unit.pointsPerUnit)
-        let newHeight = max(1.0, paddedBounds.height / settings.unit.pointsPerUnit)
-        
-        settings.width = newWidth
-        settings.height = newHeight
-        
-        // Update canvas layer if it exists
-        if !layers.isEmpty && layers[0].name == "Canvas" && !layers[0].shapes.isEmpty {
-            // Create new canvas path with artwork-centered positioning
-            let canvasOffsetX = -paddedBounds.origin.x
-            let canvasOffsetY = -paddedBounds.origin.y
-            
-            let newCanvasPath = VectorPath(elements: [
-                .move(to: VectorPoint(paddedBounds.origin.x, paddedBounds.origin.y)),
-                .line(to: VectorPoint(paddedBounds.maxX, paddedBounds.origin.y)),
-                .line(to: VectorPoint(paddedBounds.maxX, paddedBounds.maxY)),
-                .line(to: VectorPoint(paddedBounds.origin.x, paddedBounds.maxY)),
-                .close
-            ], isClosed: true)
-            
-            layers[0].shapes[0].path = newCanvasPath
-            
-            // Move all artwork to be relative to new canvas origin
-            translateAllArtwork(dx: canvasOffsetX, dy: canvasOffsetY)
-            
-            print("✅ Canvas fitted to artwork:")
-            print("   Original artwork bounds: \(bounds)")
-            print("   New canvas size: \(newWidth) × \(newHeight) \(settings.unit.abbreviation)")
-            print("   Canvas bounds: \(paddedBounds)")
-            print("   Artwork offset: (\(canvasOffsetX), \(canvasOffsetY))")
-            
-            // Auto-center the view on the new canvas
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(name: NSNotification.Name("FitCanvasToPage"), object: nil)
-            }
-        }
-    }
-    
-    /// Translate all artwork by the given offset (helper for fit canvas)
-    private func translateAllArtwork(dx: CGFloat, dy: CGFloat) {
-        let translation = CGAffineTransform(translationX: dx, y: dy)
-        
-        // Translate shapes in all layers (except Canvas layer)
-        for (layerIndex, layer) in layers.enumerated() {
-            // Skip Canvas layer
-            if layerIndex == 0 && layer.name == "Canvas" {
-                continue
-            }
-            
-            for shapeIndex in layer.shapes.indices {
-                layers[layerIndex].shapes[shapeIndex].transform = layers[layerIndex].shapes[shapeIndex].transform.concatenating(translation)
-            }
-        }
-        
-        // Translate text objects
-        for textIndex in textObjects.indices {
-            textObjects[textIndex].position = CGPoint(
-                x: textObjects[textIndex].position.x + dx,
-                y: textObjects[textIndex].position.y + dy
-            )
-        }
-    }
+
 
     // MARK: - Shape Management
     func addShape(_ shape: VectorShape) {
