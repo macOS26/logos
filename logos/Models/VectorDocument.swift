@@ -178,8 +178,6 @@ class VectorDocument: ObservableObject, Codable {
         layers.insert(canvasLayer, at: 0) // Always insert at index 0 (bottom)
         
         print("🎨 CANVAS LAYER CREATED: \(settings.sizeInPoints.width) × \(settings.sizeInPoints.height)")
-        print("   Canvas layer index: 0, locked: \(canvasLayer.isLocked), visible: \(canvasLayer.isVisible)")
-        print("   Canvas shape: \(canvasShape.name), bounds: \(canvasShape.bounds)")
         print("✅ Canvas will auto-sync with all graphics - no more coordinate issues!")
     }
     
@@ -187,10 +185,6 @@ class VectorDocument: ObservableObject, Codable {
     private func createDefaultLayer() {
         layers.append(VectorLayer(name: "Layer 1"))
         print("📋 CREATED DEFAULT LAYER: Layer 1 (index \(layers.count - 1))")
-        print("📊 TOTAL LAYERS: \(layers.count)")
-        for (index, layer) in layers.enumerated() {
-            print("   Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)")
-        }
     }
     
     /// Creates a rectangular path for the canvas background

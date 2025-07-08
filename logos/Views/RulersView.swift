@@ -16,16 +16,14 @@ struct RulersView: View {
     var body: some View {
         if document.showRulers {
             ZStack {
-                // Horizontal Ruler (Top) - FIXED ALIGNMENT: Account for canvas offset
+                // Horizontal Ruler (Top)
                 HorizontalRuler(document: document, geometry: geometry)
                     .frame(height: rulerThickness)
-                    .offset(x: rulerThickness, y: 0)  // Offset to align with canvas
                     .position(x: geometry.size.width / 2, y: rulerThickness / 2)
                 
-                // Vertical Ruler (Left) - FIXED ALIGNMENT: Account for canvas offset  
+                // Vertical Ruler (Left)
                 VerticalRuler(document: document, geometry: geometry)
                     .frame(width: rulerThickness)
-                    .offset(x: 0, y: rulerThickness)  // Offset to align with canvas
                     .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 
                 // Corner Square
@@ -88,7 +86,8 @@ struct HorizontalRuler: View {
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
-            let screenX = x * zoomLevel + canvasOffset.x
+            // FIXED: Account for ruler thickness offset in screen position
+            let screenX = x * zoomLevel + canvasOffset.x + 20
             
             if screenX >= 0 && screenX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
@@ -166,7 +165,8 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            let screenY = y * zoomLevel + canvasOffset.y
+            // FIXED: Account for ruler thickness offset in screen position
+            let screenY = y * zoomLevel + canvasOffset.y + 20
             
             if screenY >= 0 && screenY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
