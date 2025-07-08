@@ -91,6 +91,13 @@ struct PanelTabBar: View {
     }
 }
 
+// SHARED STRUCTS FOR DRAG AND DROP
+struct ObjectDropTarget {
+    let layerIndex: Int
+    let insertionIndex: Int // Index where object should be inserted
+    let isValid: Bool
+}
+
 // PROFESSIONAL LAYERS PANEL (Adobe Illustrator Style)
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
@@ -100,6 +107,8 @@ struct LayersPanel: View {
     @State private var dropTargetIndex: Int? = nil // Visual feedback for drop target
     @State private var draggedLayerIndex: Int? = nil // Track which layer is being dragged
     @State private var hoveredLayerIndex: Int? = nil // Track which layer is being hovered by objects
+    @State private var isDraggingObject: Bool = false // Track when ANY object is being dragged
+    @State private var objectDropTargetInfo: ObjectDropTarget? = nil // Track object drop target
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     
@@ -246,6 +255,8 @@ struct LayersPanel: View {
             isRenaming: renamingLayerIndex == layerIndex,
             newLayerName: $newLayerName,
             isHovered: hoveredLayerIndex == layerIndex,
+            isDraggingObject: isDraggingObject,
+            objectDropTargetInfo: objectDropTargetInfo,
             onToggleExpanded: {
                 if expandedLayers.contains(layerIndex) {
                     expandedLayers.remove(layerIndex)
@@ -274,9 +285,13 @@ struct LayersPanel: View {
                     id: objectId,
                     sourceLayerIndex: layerIndex
                 )
+                isDraggingObject = true
             },
             onObjectHover: { isHovered in
                 hoveredLayerIndex = isHovered ? layerIndex : nil
+            },
+            onObjectDropTargetChanged: { dropTarget in
+                objectDropTargetInfo = dropTarget
             }
         )
         .draggable(LayerDragData(layerIndex: layerIndex)) {
@@ -299,6 +314,8 @@ struct LayersPanel: View {
             draggedLayerIndex = nil
             dropTargetIndex = nil
             hoveredLayerIndex = nil
+            isDraggingObject = false
+            objectDropTargetInfo = nil
             print("🏁 Finished dragging - cleared all drag states")
         }
     }
@@ -316,41 +333,24 @@ struct LayersPanel: View {
         .cornerRadius(4)
     }
     
-    // Computed property for drop indicator color
+    // Computed property for drop indicator color - SIMPLIFIED
     private var dropIndicatorColor: Color {
         guard let targetIndex = dropTargetIndex else { return .clear }
         
-        // If we're dragging a layer, use layer drop logic
-        if let draggedIndex = draggedLayerIndex {
-            let isDropAllowed = isDropAllowed(targetIndex: targetIndex)
-            return isDropAllowed ? .green : .red
+        // LAYER DROP INDICATORS
+        if draggedLayerIndex != nil {
+            // Validate layer drop
+            let isValid = isDropAllowed(targetIndex: targetIndex)
+            return isValid ? .green : .red
         }
         
-        // If we're dragging an object, check layer locks
-        if hoveredLayerIndex != nil {
-            // Determine the target layer for object drops
-            let targetLayerIndex: Int
-            if targetIndex == document.layers.count {
-                targetLayerIndex = document.layers.count - 1
-            } else {
-                targetLayerIndex = targetIndex
-            }
-            
-            // Check if target layer is locked or is Canvas layer
-            if targetLayerIndex == 0 || 
-               (targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked) {
-                return .red // Red indicator for locked layers or Canvas
-            }
-            
-            return .green // Green indicator for valid object drops
-        }
-        
-        // Default: check if layer drop is allowed
-        let isDropAllowed = isDropAllowed(targetIndex: targetIndex)
-        return isDropAllowed ? .green : .red
+        // OBJECT DROP INDICATORS  
+        // For object drops, we assume they're valid unless there's a specific reason they're not
+        // This will be refined based on actual drop validation in the drop handlers
+        return .green
     }
     
-    // Check if drop is allowed at target index
+    // Check if layer drop is allowed at target index
     private func isDropAllowed(targetIndex: Int) -> Bool {
         guard let draggedIndex = draggedLayerIndex else { return true }
         
@@ -364,13 +364,13 @@ struct LayersPanel: View {
             return false // Red indicator - cannot drop below Canvas
         }
         
-        // Don't allow dropping on the same position
-        if draggedIndex == targetIndex {
+        // Don't allow dropping on the same position (except for "move to top" case)
+        if draggedIndex == targetIndex && targetIndex != document.layers.count {
             return false // Red indicator - same position
         }
         
-        // All other positions are valid
-        return true // Green indicator - valid drop
+        // All other drops are valid
+        return true // Green indicator
     }
     
     private func handleLayerDrop(draggedData: LayerDragData, targetIndex: Int) -> Bool {
@@ -465,8 +465,8 @@ struct LayersPanel: View {
                 }
             }
         } else if objectType == "text" {
-            // Find and move text object (text objects are global, but we associate them with layers conceptually)
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == objectId }) {
+            // For text objects, just associate with the target layer
+            if document.textObjects.contains(where: { $0.id == objectId }) {
                 // Update selection to target layer (text objects remain global)
                 document.selectedLayerIndex = targetLayerIndex  
                 document.selectedTextIDs = [objectId]
@@ -484,7 +484,6 @@ struct LayersPanel: View {
 // DRAG DATA FOR LAYER REORDERING
 struct LayerDragData: Transferable, Codable {
     let layerIndex: Int
-    let dragType: String = "layer" // Unique identifier
     
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .data)
@@ -496,7 +495,6 @@ struct ObjectDragData: Transferable, Codable {
     let objectType: String  // "shape" or "text"
     let objectId: UUID
     let sourceLayerIndex: Int
-    let dragType: String = "object" // Unique identifier
     
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .data)
@@ -511,12 +509,15 @@ struct ProfessionalLayerRow: View {
     let isRenaming: Bool
     @Binding var newLayerName: String
     let isHovered: Bool
+    let isDraggingObject: Bool
+    let objectDropTargetInfo: ObjectDropTarget?
     let onToggleExpanded: () -> Void
     let onStartRename: () -> Void
     let onFinishRename: () -> Void
     let onCancelRename: () -> Void
     let onObjectDrag: (LayersPanel.DraggedObject.ObjectType, UUID) -> Void
     let onObjectHover: (Bool) -> Void
+    let onObjectDropTargetChanged: (ObjectDropTarget?) -> Void
     
     private var layer: VectorLayer {
         // SAFE LAYER ACCESS: Prevent crash during SVG import or layer changes
@@ -676,50 +677,100 @@ struct ProfessionalLayerRow: View {
             // Expanded Object List (Adobe Illustrator Style)
             if isExpanded {
                 VStack(spacing: 0) {
-                    // Text Objects in this layer context
-                    ForEach(document.textObjects.indices, id: \.self) { textIndex in
-                        let textObject = document.textObjects[textIndex]
-                        ObjectRow(
-                            objectType: .text,
-                            objectId: textObject.id,
-                            name: textObject.content.isEmpty ? "Empty Text" : String(textObject.content.prefix(20)),
-                            isSelected: document.selectedTextIDs.contains(textObject.id),
-                            isVisible: textObject.isVisible,
-                            isLocked: textObject.isLocked,
-                            onSelect: {
-                                document.selectedTextIDs = [textObject.id]
-                                document.selectedShapeIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            onDrag: {
-                                onObjectDrag(.text, textObject.id)
-                            },
-                            layerIndex: layerIndex,
-                            document: document
+                    // TOP INSERTION ZONE - only visible during object drag
+                    if isDraggingObject {
+                        objectInsertionZone(
+                            layerIndex: layerIndex, 
+                            insertionIndex: layer.shapes.count, // Insert at end (top of visual list)
+                            isHighlighted: objectDropTargetInfo?.layerIndex == layerIndex && 
+                                          objectDropTargetInfo?.insertionIndex == layer.shapes.count
                         )
                     }
                     
-                    // Shape Objects - CLEAN, NO INSERTION ZONES
-                    ForEach(layer.shapes.indices.reversed(), id: \.self) { shapeIndex in
+                    // Shape Objects with insertion zones
+                    ForEach(Array(layer.shapes.indices.reversed().enumerated()), id: \.element) { visualIndex, shapeIndex in
                         let shape = layer.shapes[shapeIndex]
-                        ObjectRow(
-                            objectType: .shape,
-                            objectId: shape.id,
-                            name: shape.name,
-                            isSelected: document.selectedShapeIDs.contains(shape.id),
-                            isVisible: shape.isVisible,
-                            isLocked: shape.isLocked,
-                            onSelect: {
-                                document.selectedShapeIDs = [shape.id]
-                                document.selectedTextIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            onDrag: {
-                                onObjectDrag(.shape, shape.id)
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
+                        
+                        VStack(spacing: 0) {
+                            // The object row
+                            ObjectRow(
+                                objectType: .shape,
+                                objectId: shape.id,
+                                name: shape.name,
+                                isSelected: document.selectedShapeIDs.contains(shape.id),
+                                isVisible: shape.isVisible,
+                                isLocked: shape.isLocked,
+                                onSelect: {
+                                    document.selectedShapeIDs = [shape.id]
+                                    document.selectedTextIDs.removeAll()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                onDrag: {
+                                    onObjectDrag(.shape, shape.id)
+                                },
+                                layerIndex: layerIndex,
+                                document: document,
+                                onInsertionTargetChanged: { insertionIndex in
+                                    if let insertionIndex = insertionIndex {
+                                        onObjectDropTargetChanged(ObjectDropTarget(
+                                            layerIndex: layerIndex,
+                                            insertionIndex: insertionIndex,
+                                            isValid: true
+                                        ))
+                                    } else {
+                                        onObjectDropTargetChanged(nil)
+                                    }
+                                }
+                            )
+                            
+                            // INSERTION ZONE below this object - only visible during object drag
+                            if isDraggingObject {
+                                objectInsertionZone(
+                                    layerIndex: layerIndex,
+                                    insertionIndex: shapeIndex, // Insert at this index
+                                    isHighlighted: objectDropTargetInfo?.layerIndex == layerIndex && 
+                                                  objectDropTargetInfo?.insertionIndex == shapeIndex
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Text Objects with insertion zones  
+                    ForEach(document.textObjects.indices, id: \.self) { textIndex in
+                        let textObject = document.textObjects[textIndex]
+                        
+                        VStack(spacing: 0) {
+                            // The object row
+                            ObjectRow(
+                                objectType: .text,
+                                objectId: textObject.id,
+                                name: textObject.content.isEmpty ? "Empty Text" : String(textObject.content.prefix(20)),
+                                isSelected: document.selectedTextIDs.contains(textObject.id),
+                                isVisible: textObject.isVisible,
+                                isLocked: textObject.isLocked,
+                                onSelect: {
+                                    document.selectedTextIDs = [textObject.id]
+                                    document.selectedShapeIDs.removeAll()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                onDrag: {
+                                    onObjectDrag(.text, textObject.id)
+                                },
+                                layerIndex: layerIndex,
+                                document: document,
+                                onInsertionTargetChanged: { insertionIndex in
+                                    if let insertionIndex = insertionIndex {
+                                        onObjectDropTargetChanged(ObjectDropTarget(
+                                            layerIndex: layerIndex,
+                                            insertionIndex: insertionIndex,
+                                            isValid: true
+                                        ))
+                                    } else {
+                                        onObjectDropTargetChanged(nil)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(.leading, 20) // Indent objects under layer
@@ -779,8 +830,8 @@ struct ProfessionalLayerRow: View {
                 }
             }
         } else if objectType == "text" {
-            // Find and move text object (text objects are global, but we associate them with layers conceptually)
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == objectId }) {
+            // For text objects, just associate with the target layer
+            if document.textObjects.contains(where: { $0.id == objectId }) {
                 // Update selection to target layer (text objects remain global)
                 document.selectedLayerIndex = targetLayerIndex  
                 document.selectedTextIDs = [objectId]
@@ -788,6 +839,9 @@ struct ProfessionalLayerRow: View {
                 print("✅ Successfully associated text object with layer '\(document.layers[targetLayerIndex].name)'")
                 return true
             }
+            
+            print("❌ Could not find text object to move")
+            return false
         }
         
         print("❌ Failed to find object to move")
@@ -803,7 +857,118 @@ struct ProfessionalLayerRow: View {
         // Count text objects that conceptually belong to this layer
         return document.textObjects.filter { $0.isVisible }.count
     }
+    
+    @ViewBuilder
+    private func objectInsertionZone(layerIndex: Int, insertionIndex: Int, isHighlighted: Bool) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: 3)
+            .overlay(
+                Rectangle()
+                    .fill(isHighlighted ? Color.blue : Color.clear)
+                    .frame(height: 1)
+                    .padding(.horizontal, 8)
+            )
+            .dropDestination(for: ObjectDragData.self) { items, location in
+                guard let draggedData = items.first else { return false }
+                return handleObjectInsertion(draggedData: draggedData, targetLayerIndex: layerIndex, insertionIndex: insertionIndex)
+            } isTargeted: { isTargeted in
+                if isTargeted {
+                    onObjectDropTargetChanged(ObjectDropTarget(
+                        layerIndex: layerIndex,
+                        insertionIndex: insertionIndex,
+                        isValid: true
+                    ))
+                } else {
+                    onObjectDropTargetChanged(nil)
+                }
+            }
+    }
+    
+    private func handleObjectInsertion(draggedData: ObjectDragData, targetLayerIndex: Int, insertionIndex: Int) -> Bool {
+        let sourceLayerIndex = draggedData.sourceLayerIndex
+        let objectId = draggedData.objectId
+        let objectType = draggedData.objectType
+        
+        print("🎯 OBJECT INSERTION: Moving \(objectType) to layer \(targetLayerIndex) at index \(insertionIndex)")
+        
+        // PROTECT LOCKED LAYERS: Check if source layer is locked
+        if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT LOCKED LAYERS: Check if target layer is locked
+        if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow objects to be moved to Canvas layer (index 0)
+        if targetLayerIndex == 0 {
+            print("🚫 Cannot move objects to Canvas layer")
+            return false
+        }
+        
+        // Ensure target layer exists
+        guard targetLayerIndex < document.layers.count else {
+            print("❌ Target layer index out of bounds")
+            return false
+        }
+        
+        document.saveToUndoStack()
+        
+        if objectType == "shape" {
+            // Find and move shape
+            for layerIdx in document.layers.indices {
+                if let shapeIndex = document.layers[layerIdx].shapes.firstIndex(where: { $0.id == objectId }) {
+                    let shape = document.layers[layerIdx].shapes.remove(at: shapeIndex)
+                    
+                    // Calculate final insertion index
+                    let finalInsertionIndex = min(insertionIndex, document.layers[targetLayerIndex].shapes.count)
+                    
+                    // Insert at the specified position
+                    document.layers[targetLayerIndex].shapes.insert(shape, at: finalInsertionIndex)
+                    
+                    // Update selection to target layer
+                    document.selectedLayerIndex = targetLayerIndex
+                    document.selectedShapeIDs = [objectId]
+                    
+                    print("✅ Inserted shape '\(shape.name)' in layer '\(document.layers[targetLayerIndex].name)' at index \(finalInsertionIndex)")
+                    return true
+                }
+            }
+        } else if objectType == "text" {
+            // For text objects, just associate with the target layer
+            if document.textObjects.contains(where: { $0.id == objectId }) {
+                document.selectedLayerIndex = targetLayerIndex  
+                document.selectedTextIDs = [objectId]
+                
+                print("✅ Associated text object with layer '\(document.layers[targetLayerIndex].name)'")
+                return true
+            }
+        }
+        
+        print("❌ Failed to find object to move")
+        return false
+    }
+}
 
+// CONDITIONAL DRAGGABLE MODIFIER FOR LOCKED OBJECT PROTECTION
+struct ConditionalDraggableModifier<DragData: Transferable>: ViewModifier {
+    let isEnabled: Bool
+    let dragData: DragData
+    let preview: AnyView
+    
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content.draggable(dragData) {
+                preview
+            }
+        } else {
+            content
+        }
+    }
 }
 
 // PROFESSIONAL OBJECT ROW (Individual objects within layers)
@@ -818,6 +983,7 @@ struct ObjectRow: View {
     let onDrag: () -> Void
     let layerIndex: Int
     let document: VectorDocument
+    let onInsertionTargetChanged: (Int?) -> Void
     
     var body: some View {
         HStack(spacing: 6) {
@@ -864,33 +1030,58 @@ struct ObjectRow: View {
                 print("🚫 Cannot select objects on locked layer '\(document.layers[layerIndex].name)'")
                 return
             }
+            
+            // PROTECT LOCKED OBJECTS: Don't allow selection of locked objects
+            if isLocked {
+                print("🚫 Cannot select locked object '\(name)'")
+                return
+            }
+            
             onSelect()
         }
-        .draggable(ObjectDragData(objectType: objectType.rawValue, objectId: objectId, sourceLayerIndex: layerIndex)) {
-            // PROTECT LOCKED LAYERS: Show locked indicator for objects on locked layers
-            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                HStack {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.orange)
-                    Text("Locked")
-                        .font(.system(size: 11, weight: .medium))
-                        .lineLimit(1)
+        .modifier(
+            // CONDITIONAL DRAGGABLE: Only make draggable if layer and object are unlocked
+            ConditionalDraggableModifier(
+                isEnabled: !(layerIndex < document.layers.count && document.layers[layerIndex].isLocked) && !isLocked,
+                dragData: ObjectDragData(objectType: objectType.rawValue, objectId: objectId, sourceLayerIndex: layerIndex),
+                preview: AnyView(
+                    Group {
+                        if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                            lockedLayerPreview
+                        } else if isLocked {
+                            lockedObjectPreview
+                        } else {
+                            objectDragPreview
+                        }
+                    }
+                )
+            )
+        )
+        .allowsHitTesting(!(layerIndex < document.layers.count && document.layers[layerIndex].isLocked) && !isLocked)
+        .disabled(isLocked || (layerIndex < document.layers.count && document.layers[layerIndex].isLocked))
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { _ in
+                    // Object drag started - this will be handled by the parent
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color.gray.opacity(0.8))
-                .foregroundColor(.white)
-                .cornerRadius(3)
-            } else {
-                objectDragPreview
-            }
-        }
+                .onEnded { _ in
+                    onInsertionTargetChanged(nil) // Clear insertion target when drag ends
+                }
+        )
         .dropDestination(for: ObjectDragData.self) { items, location in
             guard let draggedData = items.first else { return false }
             return handleObjectRearrange(draggedData: draggedData, targetObjectId: objectId, targetLayerIndex: layerIndex)
         } isTargeted: { isTargeted in
-            // Visual feedback for object rearrangement could be added here
+            if isTargeted {
+                // Calculate insertion index for this object
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == objectId }) {
+                    onInsertionTargetChanged(shapeIndex)
+                } else {
+                    onInsertionTargetChanged(nil)
+                }
+            } else {
+                onInsertionTargetChanged(nil)
+            }
         }
     }
     
@@ -917,14 +1108,46 @@ struct ObjectRow: View {
         
         // PROTECT LOCKED LAYERS: Check if source layer is locked
         if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
-            print("🚫 Cannot rearrange objects in locked layer '\(document.layers[sourceLayerIndex].name)'")
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
             return false
         }
         
         // PROTECT LOCKED LAYERS: Check if target layer is locked
         if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
-            print("🚫 Cannot rearrange objects in locked layer '\(document.layers[targetLayerIndex].name)'")
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
             return false
+        }
+        
+        // PROTECT LOCKED OBJECTS: Check if dragged object is locked
+        if objectType == "shape" {
+            for layerIdx in document.layers.indices {
+                if let shape = document.layers[layerIdx].shapes.first(where: { $0.id == draggedObjectId }) {
+                    if shape.isLocked {
+                        print("🚫 Cannot move locked shape '\(shape.name)'")
+                        return false
+                    }
+                    break
+                }
+            }
+        } else if objectType == "text" {
+            if let textObject = document.textObjects.first(where: { $0.id == draggedObjectId }) {
+                if textObject.isLocked {
+                    print("🚫 Cannot move locked text object")
+                    return false
+                }
+            }
+        }
+        
+        // PROTECT LOCKED OBJECTS: Check if target object is locked
+        if objectType == "shape" {
+            if targetLayerIndex < document.layers.count {
+                if let targetShape = document.layers[targetLayerIndex].shapes.first(where: { $0.id == targetObjectId }) {
+                    if targetShape.isLocked {
+                        print("🚫 Cannot drop onto locked target shape '\(targetShape.name)'")
+                        return false
+                    }
+                }
+            }
         }
         
         // PROTECT CANVAS LAYER: Never allow objects to be moved to Canvas layer (index 0)
@@ -946,18 +1169,35 @@ struct ObjectRow: View {
                 // SAME LAYER: Rearrange objects within the layer
                 guard let draggedShapeIndex = document.layers[sourceLayerIndex].shapes.firstIndex(where: { $0.id == draggedObjectId }),
                       let targetShapeIndex = document.layers[targetLayerIndex].shapes.firstIndex(where: { $0.id == targetObjectId }) else {
+                    print("❌ Could not find dragged or target shape indices")
                     return false
                 }
                 
-                let draggedShape = document.layers[sourceLayerIndex].shapes.remove(at: draggedShapeIndex)
-                let insertIndex = draggedShapeIndex < targetShapeIndex ? targetShapeIndex - 1 : targetShapeIndex
-                document.layers[targetLayerIndex].shapes.insert(draggedShape, at: insertIndex)
+                print("🔄 SAME LAYER REORDER: Moving shape from index \(draggedShapeIndex) to position relative to index \(targetShapeIndex)")
                 
-                print("✅ Rearranged shape '\(draggedShape.name)' within layer '\(document.layers[targetLayerIndex].name)'")
+                // Remove the dragged shape first
+                let draggedShape = document.layers[sourceLayerIndex].shapes.remove(at: draggedShapeIndex)
+                
+                // Recalculate target index after removal
+                let newTargetIndex: Int
+                if draggedShapeIndex < targetShapeIndex {
+                    // Dragging forward: target index shifts down by 1 after removal
+                    newTargetIndex = targetShapeIndex - 1
+                } else {
+                    // Dragging backward: target index stays the same
+                    newTargetIndex = targetShapeIndex
+                }
+                
+                // Insert at the calculated position
+                // Since UI shows objects in reverse order, inserting "above" means lower index
+                document.layers[targetLayerIndex].shapes.insert(draggedShape, at: newTargetIndex)
+                
+                print("✅ Rearranged shape '\(draggedShape.name)' within layer '\(document.layers[targetLayerIndex].name)' at index \(newTargetIndex)")
                 return true
             } else {
                 // CROSS LAYER: Move object to different layer, place it near target object
                 guard let targetShapeIndex = document.layers[targetLayerIndex].shapes.firstIndex(where: { $0.id == targetObjectId }) else {
+                    print("❌ Could not find target shape index in target layer")
                     return false
                 }
                 
@@ -973,22 +1213,29 @@ struct ObjectRow: View {
                         document.selectedLayerIndex = targetLayerIndex
                         document.selectedShapeIDs = [draggedObjectId]
                         
-                        print("✅ Moved shape '\(shape.name)' from '\(document.layers[layerIdx].name)' to '\(document.layers[targetLayerIndex].name)'")
+                        print("✅ Moved shape '\(shape.name)' from '\(document.layers[layerIdx].name)' to '\(document.layers[targetLayerIndex].name)' at index \(targetShapeIndex)")
                         return true
                     }
                 }
+                
+                print("❌ Could not find dragged shape in any layer")
+                return false
             }
         } else if objectType == "text" {
             // For text objects, just associate with the target layer
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == draggedObjectId }) {
+            if document.textObjects.contains(where: { $0.id == draggedObjectId }) {
                 document.selectedLayerIndex = targetLayerIndex  
                 document.selectedTextIDs = [draggedObjectId]
                 
                 print("✅ Associated text object with layer '\(document.layers[targetLayerIndex].name)'")
                 return true
             }
+            
+            print("❌ Could not find text object to move")
+            return false
         }
         
+        print("❌ Unknown object type: \(objectType)")
         return false
     }
     
@@ -1008,6 +1255,38 @@ struct ObjectRow: View {
         case .text:
             return .green
         }
+    }
+    
+    private var lockedLayerPreview: some View {
+        HStack {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.orange)
+            Text("Layer Locked")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.orange.opacity(0.8))
+        .foregroundColor(.white)
+        .cornerRadius(3)
+    }
+    
+    private var lockedObjectPreview: some View {
+        HStack {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10))
+                .foregroundColor(.red)
+            Text("Object Locked")
+                .font(.system(size: 11, weight: .medium))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.red.opacity(0.8))
+        .foregroundColor(.white)
+        .cornerRadius(3)
     }
 }
 
