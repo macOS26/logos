@@ -517,11 +517,9 @@ class TemplateManager {
         
         let document = VectorDocument(settings: blankSettings)
         
-        // VectorDocument.init() already creates exactly 1 "Layer 1" - no duplicates needed
-        // Just use the single layer that was created
-        
-        // Select the working layer
-        document.selectedLayerIndex = 0
+        // VectorDocument.init() now creates Canvas (index 0) + Layer 1 (index 1)
+        // Select the working layer (not the Canvas)
+        document.selectedLayerIndex = 1
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.textObjects.removeAll()

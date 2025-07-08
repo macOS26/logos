@@ -147,7 +147,7 @@ class VectorDocument: ObservableObject, Codable {
         createCanvasAndWorkingLayers()
         
         // Set the selected layer index to working layer (not canvas)
-        self.selectedLayerIndex = 1 // Working layer (Canvas is at index 0)
+        self.selectedLayerIndex = 1 // Working layer is now at index 1
         print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
         print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
         print("=" + String(repeating: "=", count: 50))
@@ -159,7 +159,7 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Creates both Canvas layer and working layer for normal startup
     private func createCanvasAndWorkingLayers() {
-        // Create Canvas layer (index 0) - background layer, treated like any other layer
+        // Create Canvas layer FIRST (index 0) - background layer, treated like any other layer
         var canvasLayer = VectorLayer(name: "Canvas")
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
@@ -173,7 +173,7 @@ class VectorDocument: ObservableObject, Codable {
         layers.append(canvasLayer)
         print("📋 CREATED CANVAS LAYER: Canvas (index 0)")
         
-        // Create working layer (index 1) - for actual drawing
+        // Create working layer SECOND (index 1) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
         print("📋 CREATED WORKING LAYER: Layer 1 (index 1)")
     }

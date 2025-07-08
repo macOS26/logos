@@ -4263,10 +4263,10 @@ class FileOperations {
         print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
-        // Clear existing layers and create canvas + imported layers
+        // Clear existing layers and create canvas + imported layers  
         document.layers.removeAll()
         
-        // Create canvas layer (normal layer, just happens to be a background)
+        // Create canvas layer FIRST (index 0) so it's in the background
         var canvasLayer = VectorLayer(name: "Canvas")
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
@@ -4279,7 +4279,7 @@ class FileOperations {
         canvasLayer.addShape(backgroundShape)
         document.layers.append(canvasLayer)
         
-        // Create imported layer
+        // Create imported layer SECOND (index 1) so it's on top
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
@@ -4296,10 +4296,23 @@ class FileOperations {
         print("   Canvas center: (\(String(format: "%.1f", canvasCenterX)), \(String(format: "%.1f", canvasCenterY)))")
         print("   Translation needed: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
         
-        // Add all imported shapes to the layer with translation to center them
+        // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
         for shape in result.shapes {
             var centeredShape = shape
-            centeredShape.transform = centeredShape.transform.translatedBy(x: translateX, y: translateY)
+            
+            // CRITICAL FIX: Apply centering to actual coordinates, not transforms
+            // This prevents coordinate drift during zoom operations
+            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+            let finalTransform = shape.transform.concatenating(centeringTransform)
+            
+            // Apply the complete transform to coordinates and reset transform to identity
+            centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+            centeredShape.transform = .identity
+            
+            // Ensure the shape is editable
+            centeredShape.isLocked = false
+            centeredShape.isVisible = true
+            
             importedLayer.addShape(centeredShape)
         }
         
@@ -4319,6 +4332,61 @@ class FileOperations {
         print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
         print("📐 Canvas sized to \(canvasWidth) × \(canvasHeight) pts with artwork centered")
         return document
+    }
+    
+    /// Apply transform to shape coordinates and return new shape with identity transform
+    /// This prevents coordinate drift during zoom operations
+    private static func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
+        // Don't apply identity transforms
+        if transform.isIdentity {
+            return shape
+        }
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new shape with transformed path and identity transform
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        var newShape = shape
+        newShape.path = transformedPath
+        newShape.transform = .identity
+        newShape.updateBounds()
+        
+        return newShape
     }
     
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
