@@ -86,7 +86,7 @@ struct HorizontalRuler: View {
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
-            // FIXED: Account for ruler thickness offset in screen position
+            // FIXED: Proper horizontal ruler alignment with offset for ruler thickness
             let screenX = x * zoomLevel + canvasOffset.x + 20
             
             if screenX >= 0 && screenX <= size.width {
@@ -165,7 +165,7 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            // FIXED: Account for ruler thickness offset in screen position
+            // FIXED: Proper vertical ruler alignment with offset for ruler thickness
             let screenY = y * zoomLevel + canvasOffset.y + 20
             
             if screenY >= 0 && screenY <= size.height {

@@ -159,7 +159,7 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Creates the special "Canvas" layer as layer 0 (bottom-most layer)
     /// This brilliant approach eliminates coordinate synchronization issues
-    private func createCanvasLayer() {
+    func createCanvasLayer() {
         var canvasLayer = VectorLayer(name: "Canvas")
         canvasLayer.isLocked = true // Prevent accidental selection/modification
         canvasLayer.isVisible = true // Make sure it's visible in layers panel
@@ -555,6 +555,119 @@ class VectorDocument: ObservableObject, Codable {
         selectedLayerIndex = to
     }
     
+    // MARK: - Canvas Management
+    /// Fit canvas to artwork bounds (Adobe Illustrator style)
+    func fitCanvasToArtwork() {
+        print("🎯 FIT CANVAS TO ARTWORK...")
+        
+        // Calculate bounds of all artwork (excluding Canvas layer)
+        var artworkBounds: CGRect?
+        
+        for (layerIndex, layer) in layers.enumerated() {
+            // Skip Canvas layer (layer 0)
+            if layerIndex == 0 && layer.name == "Canvas" {
+                continue
+            }
+            
+            for shape in layer.shapes {
+                if shape.isVisible {
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    
+                    if artworkBounds == nil {
+                        artworkBounds = shapeBounds
+                    } else {
+                        artworkBounds = artworkBounds!.union(shapeBounds)
+                    }
+                }
+            }
+        }
+        
+        // Also include text objects
+        for textObject in textObjects {
+            if textObject.isVisible {
+                let textBounds = textObject.bounds
+                
+                if artworkBounds == nil {
+                    artworkBounds = textBounds
+                } else {
+                    artworkBounds = artworkBounds!.union(textBounds)
+                }
+            }
+        }
+        
+        guard let bounds = artworkBounds else {
+            print("❌ No artwork found to fit canvas to")
+            return
+        }
+        
+        // Add padding around artwork
+        let padding: CGFloat = 50.0
+        let paddedBounds = bounds.insetBy(dx: -padding, dy: -padding)
+        
+        // Update document settings to new size
+        let newWidth = max(1.0, paddedBounds.width / settings.unit.pointsPerUnit)
+        let newHeight = max(1.0, paddedBounds.height / settings.unit.pointsPerUnit)
+        
+        settings.width = newWidth
+        settings.height = newHeight
+        
+        // Update canvas layer if it exists
+        if !layers.isEmpty && layers[0].name == "Canvas" && !layers[0].shapes.isEmpty {
+            // Create new canvas path with artwork-centered positioning
+            let canvasOffsetX = -paddedBounds.origin.x
+            let canvasOffsetY = -paddedBounds.origin.y
+            
+            let newCanvasPath = VectorPath(elements: [
+                .move(to: VectorPoint(paddedBounds.origin.x, paddedBounds.origin.y)),
+                .line(to: VectorPoint(paddedBounds.maxX, paddedBounds.origin.y)),
+                .line(to: VectorPoint(paddedBounds.maxX, paddedBounds.maxY)),
+                .line(to: VectorPoint(paddedBounds.origin.x, paddedBounds.maxY)),
+                .close
+            ], isClosed: true)
+            
+            layers[0].shapes[0].path = newCanvasPath
+            
+            // Move all artwork to be relative to new canvas origin
+            translateAllArtwork(dx: canvasOffsetX, dy: canvasOffsetY)
+            
+            print("✅ Canvas fitted to artwork:")
+            print("   Original artwork bounds: \(bounds)")
+            print("   New canvas size: \(newWidth) × \(newHeight) \(settings.unit.abbreviation)")
+            print("   Canvas bounds: \(paddedBounds)")
+            print("   Artwork offset: (\(canvasOffsetX), \(canvasOffsetY))")
+            
+            // Auto-center the view on the new canvas
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: NSNotification.Name("FitCanvasToPage"), object: nil)
+            }
+        }
+    }
+    
+    /// Translate all artwork by the given offset (helper for fit canvas)
+    private func translateAllArtwork(dx: CGFloat, dy: CGFloat) {
+        let translation = CGAffineTransform(translationX: dx, y: dy)
+        
+        // Translate shapes in all layers (except Canvas layer)
+        for (layerIndex, layer) in layers.enumerated() {
+            // Skip Canvas layer
+            if layerIndex == 0 && layer.name == "Canvas" {
+                continue
+            }
+            
+            for shapeIndex in layer.shapes.indices {
+                layers[layerIndex].shapes[shapeIndex].transform = layers[layerIndex].shapes[shapeIndex].transform.concatenating(translation)
+            }
+        }
+        
+        // Translate text objects
+        for textIndex in textObjects.indices {
+            textObjects[textIndex].position = CGPoint(
+                x: textObjects[textIndex].position.x + dx,
+                y: textObjects[textIndex].position.y + dy
+            )
+        }
+    }
+
     // MARK: - Shape Management
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }

@@ -117,6 +117,16 @@ struct LayersPanel: View {
                 
                 Spacer()
                 
+                // Fit Canvas to Artwork Button
+                Button {
+                    document.fitCanvasToArtwork()
+                } label: {
+                    Image(systemName: "doc.viewfinder")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Fit Canvas to Artwork")
+                
                 Button {
                     document.addLayer()
                 } label: {
@@ -176,11 +186,20 @@ struct ProfessionalLayerRow: View {
     let onObjectDrag: (LayersPanel.DraggedObject.ObjectType, UUID) -> Void
     
     private var layer: VectorLayer {
-        document.layers[layerIndex]
+        // SAFE LAYER ACCESS: Prevent crash during SVG import or layer changes
+        guard layerIndex >= 0 && layerIndex < document.layers.count else {
+            // Return a dummy layer if index is out of bounds
+            return VectorLayer(name: "Invalid Layer")
+        }
+        return document.layers[layerIndex]
     }
     
     private var isSelected: Bool {
         document.selectedLayerIndex == layerIndex
+    }
+    
+    private var isCanvasLayer: Bool {
+        return layerIndex == 0 && layer.name == "Canvas"
     }
     
     var body: some View {
@@ -199,7 +218,10 @@ struct ProfessionalLayerRow: View {
                 
             // Visibility Toggle
             Button {
+                // SAFE LAYER ACCESS: Check bounds before toggling
+                if layerIndex >= 0 && layerIndex < document.layers.count {
                     document.layers[layerIndex].isVisible.toggle()
+                }
             } label: {
                     Image(systemName: layer.isVisible ? "eye.fill" : "eye.slash.fill")
                         .font(.system(size: 11))
@@ -210,7 +232,10 @@ struct ProfessionalLayerRow: View {
             
             // Lock Toggle
             Button {
+                // SAFE LAYER ACCESS: Check bounds before toggling
+                if layerIndex >= 0 && layerIndex < document.layers.count {
                     document.layers[layerIndex].isLocked.toggle()
+                }
             } label: {
                     Image(systemName: layer.isLocked ? "lock.fill" : "lock.open.fill")
                         .font(.system(size: 11))
@@ -226,8 +251,8 @@ struct ProfessionalLayerRow: View {
             
             // Layer Name
             Text(layer.name)
-                    .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.primary)
+                .font(.system(size: 12, weight: isCanvasLayer ? .regular : .medium))
+                .foregroundColor(isCanvasLayer ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
                 // Object Count
@@ -243,6 +268,9 @@ struct ProfessionalLayerRow: View {
             .padding(.vertical, 4)
             .background(isSelected ? Color.blue.opacity(0.15) : Color.clear)
             .onTapGesture {
+                // SAFE LAYER ACCESS: Check bounds before selection
+                guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
+                
                 // PREVENT SELECTING CANVAS LAYER: Canvas layer should not be selectable
                 if layerIndex == 0 && document.layers[layerIndex].name == "Canvas" {
                     print("🚫 Cannot select Canvas layer - it's locked for editing")
@@ -437,6 +465,13 @@ struct LayerDropDelegate: DropDelegate {
     }
     
     private func moveShapeBetweenLayers(shapeId: UUID, from sourceIndex: Int, to targetIndex: Int) {
+        // SAFE LAYER ACCESS: Check bounds before moving shapes
+        guard sourceIndex >= 0 && sourceIndex < document.layers.count,
+              targetIndex >= 0 && targetIndex < document.layers.count else {
+            print("❌ Invalid layer indices: source=\(sourceIndex), target=\(targetIndex), layers=\(document.layers.count)")
+            return
+        }
+        
         // Find and remove the shape from source layer
         guard let shapeIndex = document.layers[sourceIndex].shapes.firstIndex(where: { $0.id == shapeId }) else {
             return

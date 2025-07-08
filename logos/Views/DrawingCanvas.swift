@@ -176,6 +176,10 @@ struct DrawingCanvas: View {
             .contextMenu {
                 directSelectionContextMenu
             }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FitCanvasToPage"))) { _ in
+                // Auto-center view after canvas fit operation
+                fitToPage(geometry: geometry)
+            }
     }
     
     @ViewBuilder
