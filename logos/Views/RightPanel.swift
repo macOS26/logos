@@ -20,17 +20,17 @@ struct RightPanel: View {
             Group {
                 switch selectedTab {
                 case .layers:
-                LayersPanel(document: document)
+                    LayersPanel(document: document)
                 case .properties:
                     StrokeFillPanel(document: document)
                 case .typography:
                     TypographyPanel(document: document)
                 case .color:
-                ColorPanel(document: document)
+                    ColorPanel(document: document)
                 case .pathOps:
-                PathOperationsPanel(document: document)
+                    PathOperationsPanel(document: document)
+                }
             }
-        }
         }
         .background(Color(NSColor.controlBackgroundColor))
         .overlay(
@@ -98,6 +98,7 @@ struct LayersPanel: View {
     @State private var draggedObject: DraggedObject?
     @State private var draggedLayer: DraggedLayer?
     @State private var dropTargetIndex: Int? = nil // Visual feedback for drop target
+    @State private var draggedLayerIndex: Int? = nil // Track which layer is being dragged
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     
@@ -122,123 +123,217 @@ struct LayersPanel: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Text("Layers")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Spacer()
-                Button(action: {
-                    document.addLayer(name: "New Layer")
-                }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Add New Layer")
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            
-            Divider()
-                .padding(.horizontal, 8)
-            
-            // Layers List
-            ScrollView(.vertical, showsIndicators: true) {
-                LazyVStack(spacing: 2) {
-                    // CRITICAL: Process layers in REVERSE order for proper UI display
-                    // Layer at index 0 (Canvas) should appear at BOTTOM of panel
-                    ForEach(document.layers.indices.reversed(), id: \.self) { layerIndex in
-                        VStack(spacing: 0) {
-                            // Drop indicator ABOVE this layer
-                            if dropTargetIndex == layerIndex + 1 {
-                                Rectangle()
-                                    .fill(Color.blue)
-                                    .frame(height: 2)
-                                    .padding(.horizontal, 8)
-                            }
-                            
-                            ProfessionalLayerRow(
-                                document: document,
-                                layerIndex: layerIndex,
-                                isExpanded: expandedLayers.contains(layerIndex),
-                                isRenaming: renamingLayerIndex == layerIndex,
-                                newLayerName: $newLayerName,
-                                onToggleExpanded: {
-                                    if expandedLayers.contains(layerIndex) {
-                                        expandedLayers.remove(layerIndex)
-                                    } else {
-                                        expandedLayers.insert(layerIndex)
-                                    }
-                                },
-                                onStartRename: {
-                                    renamingLayerIndex = layerIndex
-                                    newLayerName = document.layers[layerIndex].name
-                                },
-                                onFinishRename: {
-                                    if !newLayerName.isEmpty {
-                                        document.renameLayer(at: layerIndex, to: newLayerName)
-                                    }
-                                    renamingLayerIndex = nil
-                                    newLayerName = ""
-                                },
-                                onCancelRename: {
-                                    renamingLayerIndex = nil
-                                    newLayerName = ""
-                                },
-                                onObjectDrag: { objectType, objectId in
-                                    draggedObject = DraggedObject(
-                                        type: objectType,
-                                        id: objectId,
-                                        sourceLayerIndex: layerIndex
-                                    )
-                                }
-                            )
-                            .draggable(LayerDragData(layerIndex: layerIndex)) {
-                                // Drag preview
-                                HStack {
-                                    Image(systemName: "square.stack.3d.down.right")
-                                    Text(document.layers[layerIndex].name)
-                                        .font(.system(size: 12, weight: .medium))
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.8))
-                                .foregroundColor(.white)
-                                .cornerRadius(4)
-                            }
-                            .dropDestination(for: LayerDragData.self) { items, location in
-                                // Handle layer drop
-                                guard let draggedData = items.first else { return false }
-                                return handleLayerDrop(draggedData: draggedData, targetIndex: layerIndex)
-                            } isTargeted: { isTargeted in
-                                // Visual feedback during drag
-                                dropTargetIndex = isTargeted ? layerIndex : nil
-                            }
-                            
-                            // Drop indicator BELOW this layer
-                            if dropTargetIndex == layerIndex {
-                                Rectangle()
-                                    .fill(Color.blue)
-                                    .frame(height: 2)
-                                    .padding(.horizontal, 8)
-                            }
-                        }
-                    }
-                    
-                    // Drop indicator at the very bottom (for Canvas protection)
-                    if dropTargetIndex == 0 {
-                        Rectangle()
-                            .fill(Color.red) // Red to indicate "not allowed"
-                            .frame(height: 2)
-                            .padding(.horizontal, 8)
-                    }
-                }
-                .padding(.horizontal, 4)
-            }
-            
+            layersHeader
+            Divider().padding(.horizontal, 8)
+            layersScrollContent
             Spacer()
         }
+    }
+    
+    private var layersHeader: some View {
+        HStack {
+            Text("Layers")
+                .font(.headline)
+                .foregroundColor(.primary)
+            Spacer()
+            Button(action: {
+                document.addLayer(name: "New Layer")
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help("Add New Layer")
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 12)
+    }
+    
+    private var layersScrollContent: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            LazyVStack(spacing: 2) {
+                topDropIndicator
+                layersList
+            }
+            .padding(.horizontal, 4)
+            .dropDestination(for: LayerDragData.self) { items, location in
+                guard let draggedData = items.first else { return false }
+                let result = handleLayerDrop(draggedData: draggedData, targetIndex: document.layers.count)
+                // Clear drag state after drop
+                draggedLayerIndex = nil
+                return result
+            } isTargeted: { isTargeted in
+                if isTargeted {
+                    dropTargetIndex = document.layers.count
+                } else {
+                    dropTargetIndex = nil
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var topDropIndicator: some View {
+        if dropTargetIndex == document.layers.count {
+            Rectangle()
+                .fill(dropIndicatorColor)
+                .frame(height: 2)
+                .padding(.horizontal, 8)
+        }
+    }
+    
+    private var layersList: some View {
+        ForEach(document.layers.indices.reversed(), id: \.self) { layerIndex in
+            createLayerRow(for: layerIndex)
+        }
+    }
+    
+    @ViewBuilder
+    private func createLayerRow(for layerIndex: Int) -> some View {
+        VStack(spacing: 0) {
+            layerRowContent(for: layerIndex)
+            bottomDropIndicator(for: layerIndex)
+        }
+    }
+    
+    private func layerRowContent(for layerIndex: Int) -> some View {
+        ProfessionalLayerRow(
+            document: document,
+            layerIndex: layerIndex,
+            isExpanded: expandedLayers.contains(layerIndex),
+            isRenaming: renamingLayerIndex == layerIndex,
+            newLayerName: $newLayerName,
+            onToggleExpanded: {
+                if expandedLayers.contains(layerIndex) {
+                    expandedLayers.remove(layerIndex)
+                } else {
+                    expandedLayers.insert(layerIndex)
+                }
+            },
+            onStartRename: {
+                renamingLayerIndex = layerIndex
+                newLayerName = document.layers[layerIndex].name
+            },
+            onFinishRename: {
+                if !newLayerName.isEmpty {
+                    document.renameLayer(at: layerIndex, to: newLayerName)
+                }
+                renamingLayerIndex = nil
+                newLayerName = ""
+            },
+            onCancelRename: {
+                renamingLayerIndex = nil
+                newLayerName = ""
+            },
+            onObjectDrag: { objectType, objectId in
+                draggedObject = DraggedObject(
+                    type: objectType,
+                    id: objectId,
+                    sourceLayerIndex: layerIndex
+                )
+            }
+        )
+        .draggable(LayerDragData(layerIndex: layerIndex)) {
+            dragPreview(for: layerIndex)
+        }
+        .dropDestination(for: LayerDragData.self) { items, location in
+            guard let draggedData = items.first else { return false }
+            let result = handleLayerDrop(draggedData: draggedData, targetIndex: layerIndex)
+            // Clear drag state after drop
+            draggedLayerIndex = nil
+            return result
+        } isTargeted: { isTargeted in
+            if isTargeted {
+                dropTargetIndex = layerIndex
+                // Track which layer is being dragged when hovering
+                if draggedLayerIndex == nil {
+                    // We need to infer this from the drop context
+                    // For now, we'll handle this in the drop indicator color logic
+                }
+            } else {
+                dropTargetIndex = nil
+            }
+        }
+        .simultaneousGesture(
+            DragGesture()
+                .onChanged { _ in
+                    // Track which layer started dragging
+                    draggedLayerIndex = layerIndex
+                    print("🔄 Started dragging layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
+                }
+                .onEnded { _ in
+                    // Clear drag tracking when gesture ends
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        draggedLayerIndex = nil
+                        dropTargetIndex = nil
+                        print("🏁 Finished dragging")
+                    }
+                }
+        )
+    }
+    
+    private func dragPreview(for layerIndex: Int) -> some View {
+        HStack {
+            Image(systemName: "square.stack.3d.down.right")
+            Text(document.layers[layerIndex].name)
+                .font(.system(size: 12, weight: .medium))
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.blue.opacity(0.8))
+        .foregroundColor(.white)
+        .cornerRadius(4)
+    }
+    
+    @ViewBuilder
+    private func bottomDropIndicator(for layerIndex: Int) -> some View {
+        if dropTargetIndex == layerIndex {
+            Rectangle()
+                .fill(dropIndicatorColor)
+                .frame(height: 2)
+                .padding(.horizontal, 8)
+        }
+    }
+    
+    // Computed property for drop indicator color
+    private var dropIndicatorColor: Color {
+        guard let targetIndex = dropTargetIndex else { return .clear }
+        
+        // Check if the drop would be allowed
+        let isDropAllowed = isDropAllowed(targetIndex: targetIndex)
+        return isDropAllowed ? .green : .red
+    }
+    
+    // Check if drop is allowed at target index
+    private func isDropAllowed(targetIndex: Int) -> Bool {
+        // Always allow if no drag is active or no specific layer is being dragged
+        guard let draggedIndex = draggedLayerIndex else { return true }
+        
+        // PROTECT CANVAS LAYER: Never allow Canvas layer (index 0) to be moved
+        if draggedIndex == 0 {
+            return false // Red indicator - Canvas cannot be moved
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow any layer to be moved to Canvas position (index 0)
+        if targetIndex == 0 {
+            return false // Red indicator - cannot drop below Canvas
+        }
+        
+        // Don't allow dropping on the same position
+        if draggedIndex == targetIndex {
+            return false // Red indicator - same position
+        }
+        
+        // Handle dropping above all layers (convert to actual position)
+        let actualTargetIndex = targetIndex == document.layers.count ? document.layers.count - 1 : targetIndex
+        
+        // Don't allow dropping on the same position (after conversion)
+        if draggedIndex == actualTargetIndex {
+            return false // Red indicator - same position after conversion
+        }
+        
+        // All other positions are allowed
+        return true // Green indicator
     }
     
     private func handleLayerDrop(draggedData: LayerDragData, targetIndex: Int) -> Bool {
@@ -264,11 +359,21 @@ struct LayersPanel: View {
             return false
         }
         
+        // Handle dropping above all layers (targetIndex == document.layers.count)
+        let actualTargetIndex: Int
+        if targetIndex == document.layers.count {
+            // Move to top (highest index)
+            actualTargetIndex = document.layers.count - 1
+            print("🔝 Moving to top position (index \(actualTargetIndex))")
+        } else {
+            actualTargetIndex = targetIndex
+        }
+        
         // Perform the layer move
         document.saveToUndoStack()
-        document.moveLayer(from: sourceIndex, to: targetIndex)
+        document.moveLayer(from: sourceIndex, to: actualTargetIndex)
         
-        print("✅ Successfully moved layer from \(sourceIndex) to \(targetIndex)")
+        print("✅ Successfully moved layer from \(sourceIndex) to \(actualTargetIndex)")
         document.debugLayerOrder()
         
         // Clear drop target
