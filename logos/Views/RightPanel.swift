@@ -312,7 +312,32 @@ struct LayersPanel: View {
     private var dropIndicatorColor: Color {
         guard let targetIndex = dropTargetIndex else { return .clear }
         
-        // Check if the drop would be allowed
+        // If we're dragging a layer, use layer drop logic
+        if let draggedIndex = draggedLayerIndex {
+            let isDropAllowed = isDropAllowed(targetIndex: targetIndex)
+            return isDropAllowed ? .green : .red
+        }
+        
+        // If we're dragging an object, check layer locks
+        if hoveredLayerIndex != nil {
+            // Determine the target layer for object drops
+            let targetLayerIndex: Int
+            if targetIndex == document.layers.count {
+                targetLayerIndex = document.layers.count - 1
+            } else {
+                targetLayerIndex = targetIndex
+            }
+            
+            // Check if target layer is locked or is Canvas layer
+            if targetLayerIndex == 0 || 
+               (targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked) {
+                return .red // Red indicator for locked layers or Canvas
+            }
+            
+            return .green // Green indicator for valid object drops
+        }
+        
+        // Default: check if layer drop is allowed
         let isDropAllowed = isDropAllowed(targetIndex: targetIndex)
         return isDropAllowed ? .green : .red
     }
@@ -383,6 +408,18 @@ struct LayersPanel: View {
         
         print("🔄 OBJECT DROP: Moving \(objectType) from layer \(sourceLayerIndex) to layer \(targetLayerIndex)")
         
+        // PROTECT LOCKED LAYERS: Check if source layer is locked
+        if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT LOCKED LAYERS: Check if target layer is locked
+        if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
+            return false
+        }
+        
         // Don't drop on same layer if it's the same object
         if sourceLayerIndex == targetLayerIndex {
             print("🚫 Object already in target layer")
@@ -420,13 +457,13 @@ struct LayersPanel: View {
                 }
             }
         } else if objectType == "text" {
-            // Find and move text object
+            // Find and move text object (text objects are global, but we associate them with layers conceptually)
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == objectId }) {
-                // Text objects are global but we can update selection to target layer
+                // Update selection to target layer (text objects remain global)
                 document.selectedLayerIndex = targetLayerIndex  
                 document.selectedTextIDs = [objectId]
                 
-                print("✅ Successfully moved text object to layer '\(document.layers[targetLayerIndex].name)'")
+                print("✅ Successfully associated text object with layer '\(document.layers[targetLayerIndex].name)'")
                 return true
             }
         }
@@ -686,6 +723,18 @@ struct ProfessionalLayerRow: View {
         let objectId = draggedData.objectId
         let objectType = draggedData.objectType
         
+        // PROTECT LOCKED LAYERS: Check if source layer is locked
+        if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT LOCKED LAYERS: Check if target layer is locked
+        if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
+            return false
+        }
+        
         // Don't drop on same layer if it's the same object
         if sourceLayerIndex == targetLayerIndex {
             return false
@@ -720,13 +769,13 @@ struct ProfessionalLayerRow: View {
                 }
             }
         } else if objectType == "text" {
-            // Find and move text object
+            // Find and move text object (text objects are global, but we associate them with layers conceptually)
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == objectId }) {
-                // Text objects are global but we can update selection to target layer
+                // Update selection to target layer (text objects remain global)
                 document.selectedLayerIndex = targetLayerIndex  
                 document.selectedTextIDs = [objectId]
                 
-                print("✅ Successfully moved text object to layer '\(document.layers[targetLayerIndex].name)'")
+                print("✅ Successfully associated text object with layer '\(document.layers[targetLayerIndex].name)'")
                 return true
             }
         }
@@ -799,10 +848,32 @@ struct ObjectRow: View {
         .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
         .contentShape(Rectangle())
         .onTapGesture {
+            // PROTECT LOCKED LAYERS: Don't allow selection of objects on locked layers
+            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                print("🚫 Cannot select objects on locked layer '\(document.layers[layerIndex].name)'")
+                return
+            }
             onSelect()
         }
         .draggable(ObjectDragData(objectType: objectType.rawValue, objectId: objectId, sourceLayerIndex: layerIndex)) {
-            objectDragPreview
+            // PROTECT LOCKED LAYERS: Show locked indicator for objects on locked layers
+            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.orange)
+                    Text("Locked")
+                        .font(.system(size: 11, weight: .medium))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.gray.opacity(0.8))
+                .foregroundColor(.white)
+                .cornerRadius(3)
+            } else {
+                objectDragPreview
+            }
         }
         .dropDestination(for: ObjectDragData.self) { items, location in
             guard let draggedData = items.first else { return false }
@@ -832,6 +903,18 @@ struct ObjectRow: View {
         let sourceLayerIndex = draggedData.sourceLayerIndex
         let draggedObjectId = draggedData.objectId
         let objectType = draggedData.objectType
+        
+        // PROTECT LOCKED LAYERS: Check if source layer is locked
+        if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
+            print("🚫 Cannot rearrange objects in locked layer '\(document.layers[sourceLayerIndex].name)'")
+            return false
+        }
+        
+        // PROTECT LOCKED LAYERS: Check if target layer is locked
+        if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
+            print("🚫 Cannot rearrange objects in locked layer '\(document.layers[targetLayerIndex].name)'")
+            return false
+        }
         
         // Don't rearrange if it's the same object
         if draggedObjectId == targetObjectId {
