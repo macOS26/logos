@@ -635,6 +635,12 @@ struct ProfessionalLayerRow: View {
                 // SAFE LAYER ACCESS: Check bounds before selection
                 guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
                 
+                // PROTECT CANVAS LAYER: Don't allow selection of Canvas layer when locked
+                if isCanvasLayer && layer.isLocked {
+                    print("🚫 Cannot select locked Canvas layer")
+                    return
+                }
+                
                 document.selectedLayerIndex = layerIndex
             }
             .dropDestination(for: ObjectDragData.self) { items, location in
@@ -924,10 +930,24 @@ struct ProfessionalLayerRow: View {
                 if let shapeIndex = document.layers[layerIdx].shapes.firstIndex(where: { $0.id == objectId }) {
                     let shape = document.layers[layerIdx].shapes.remove(at: shapeIndex)
                     
-                    // Calculate final insertion index
-                    let finalInsertionIndex = min(insertionIndex, document.layers[targetLayerIndex].shapes.count)
+                    // FIXED: Handle insertion index calculation for same-layer vs cross-layer moves
+                    let finalInsertionIndex: Int
                     
-                    // Insert at the specified position
+                    if layerIdx == targetLayerIndex {
+                        // SAME LAYER: Adjust insertion index if we removed an object before the insertion point
+                        if shapeIndex < insertionIndex {
+                            // Removed object was before insertion point, so insertion index decreases by 1
+                            finalInsertionIndex = max(0, insertionIndex - 1)
+                        } else {
+                            // Removed object was at or after insertion point, insertion index stays the same
+                            finalInsertionIndex = min(insertionIndex, document.layers[targetLayerIndex].shapes.count)
+                        }
+                    } else {
+                        // CROSS LAYER: Just ensure we don't exceed bounds
+                        finalInsertionIndex = min(insertionIndex, document.layers[targetLayerIndex].shapes.count)
+                    }
+                    
+                    // Insert at the calculated position
                     document.layers[targetLayerIndex].shapes.insert(shape, at: finalInsertionIndex)
                     
                     // Update selection to target layer
@@ -1173,26 +1193,32 @@ struct ObjectRow: View {
                     return false
                 }
                 
-                print("🔄 SAME LAYER REORDER: Moving shape from index \(draggedShapeIndex) to position relative to index \(targetShapeIndex)")
+                print("🔄 SAME LAYER REORDER: Moving shape from index \(draggedShapeIndex) to position above index \(targetShapeIndex)")
                 
                 // Remove the dragged shape first
                 let draggedShape = document.layers[sourceLayerIndex].shapes.remove(at: draggedShapeIndex)
                 
-                // Recalculate target index after removal
+                // FIXED: Calculate insertion index to place dragged object "above" target object in UI
+                // Since UI shows objects in reverse order (highest index at top), 
+                // placing "above" means inserting at targetIndex + 1 (after adjusting for removal)
                 let newTargetIndex: Int
                 if draggedShapeIndex < targetShapeIndex {
-                    // Dragging forward: target index shifts down by 1 after removal
-                    newTargetIndex = targetShapeIndex - 1
+                    // Dragging from lower index to higher index area
+                    // Target index shifts down by 1 after removal, but we want to insert ABOVE target
+                    newTargetIndex = targetShapeIndex  // This puts it above the target in UI
                 } else {
-                    // Dragging backward: target index stays the same
-                    newTargetIndex = targetShapeIndex
+                    // Dragging from higher index to lower index area
+                    // Target index unchanged after removal, insert above target
+                    newTargetIndex = targetShapeIndex + 1  // This puts it above the target in UI
                 }
                 
-                // Insert at the calculated position
-                // Since UI shows objects in reverse order, inserting "above" means lower index
-                document.layers[targetLayerIndex].shapes.insert(draggedShape, at: newTargetIndex)
+                // Ensure we don't go out of bounds
+                let finalIndex = min(newTargetIndex, document.layers[targetLayerIndex].shapes.count)
                 
-                print("✅ Rearranged shape '\(draggedShape.name)' within layer '\(document.layers[targetLayerIndex].name)' at index \(newTargetIndex)")
+                // Insert at the calculated position
+                document.layers[targetLayerIndex].shapes.insert(draggedShape, at: finalIndex)
+                
+                print("✅ Rearranged shape '\(draggedShape.name)' within layer '\(document.layers[targetLayerIndex].name)' to index \(finalIndex) (above target)")
                 return true
             } else {
                 // CROSS LAYER: Move object to different layer, place it near target object
@@ -1206,14 +1232,15 @@ struct ObjectRow: View {
                     if let shapeIndex = document.layers[layerIdx].shapes.firstIndex(where: { $0.id == draggedObjectId }) {
                         let shape = document.layers[layerIdx].shapes.remove(at: shapeIndex)
                         
-                        // Insert next to target object
-                        document.layers[targetLayerIndex].shapes.insert(shape, at: targetShapeIndex)
+                        // Insert above target object (higher index in UI means higher index in array)
+                        let insertionIndex = min(targetShapeIndex + 1, document.layers[targetLayerIndex].shapes.count)
+                        document.layers[targetLayerIndex].shapes.insert(shape, at: insertionIndex)
                         
                         // Update selection to target layer
                         document.selectedLayerIndex = targetLayerIndex
                         document.selectedShapeIDs = [draggedObjectId]
                         
-                        print("✅ Moved shape '\(shape.name)' from '\(document.layers[layerIdx].name)' to '\(document.layers[targetLayerIndex].name)' at index \(targetShapeIndex)")
+                        print("✅ Moved shape '\(shape.name)' from '\(document.layers[layerIdx].name)' to '\(document.layers[targetLayerIndex].name)' at index \(insertionIndex)")
                         return true
                     }
                 }

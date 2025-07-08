@@ -853,6 +853,12 @@ struct DrawingCanvas: View {
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
+            // PROTECT ALL LOCKED LAYERS: Don't allow selection of objects on ANY locked layer
+            if document.layers[layerIndex].isLocked {
+                print("🚫 Cannot select objects on locked layer '\(document.layers[layerIndex].name)'")
+                return
+            }
+            
             // Hit a shape object
             document.selectedLayerIndex = layerIndex
             
@@ -1150,6 +1156,12 @@ struct DrawingCanvas: View {
         guard let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
         
+        // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
+        if document.layers[layerIndex].isLocked {
+            print("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'")
+            return
+        }
+        
         // Save initial transforms for all selected shapes
         dragStartTransforms.removeAll()
         for shapeID in document.selectedShapeIDs {
@@ -1162,6 +1174,11 @@ struct DrawingCanvas: View {
     private func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
+        
+        // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
+        if document.layers[layerIndex].isLocked {
+            return
+        }
         
         let delta = CGPoint(
             x: value.translation.width / document.zoomLevel,
@@ -1287,6 +1304,33 @@ struct DrawingCanvas: View {
     
     private func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
+        
+        // PROTECT LOCKED LAYERS: Don't allow editing points/handles on locked layers
+        for pointID in selectedPoints {
+            // Find which layer this point belongs to
+            for layerIndex in document.layers.indices {
+                if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == pointID.shapeID }) {
+                    if document.layers[layerIndex].isLocked {
+                        print("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'")
+                        return
+                    }
+                    break
+                }
+            }
+        }
+        
+        for handleID in selectedHandles {
+            // Find which layer this handle belongs to  
+            for layerIndex in document.layers.indices {
+                if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == handleID.shapeID }) {
+                    if document.layers[layerIndex].isLocked {
+                        print("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'")
+                        return
+                    }
+                    break
+                }
+            }
+        }
         
         if !isDraggingPoint && !isDraggingHandle {
             // Start dragging - capture initial positions
@@ -2039,8 +2083,15 @@ struct DrawingCanvas: View {
         // Search through all direct-selected shapes for individual anchor points and handles
         for shapeID in directSelectedShapeIDs {
             // Find the shape in the document
-            for layer in document.layers {
+            for layerIndex in document.layers.indices {
+                let layer = document.layers[layerIndex]
                 if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+                    
+                    // PROTECT LOCKED LAYERS: Don't allow selecting points/handles on locked layers
+                    if layer.isLocked {
+                        print("🚫 Cannot select points/handles on locked layer '\(layer.name)'")
+                        continue
+                    }
                     
                     // Check each path element for points and handles
                     for (elementIndex, element) in shape.path.elements.enumerated() {
@@ -2210,6 +2261,11 @@ struct DrawingCanvas: View {
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
+            
+            // PROTECT LOCKED LAYERS: Don't allow direct selection of shapes on locked layers
+            if layer.isLocked {
+                continue
+            }
             
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
@@ -2605,6 +2661,11 @@ struct DrawingCanvas: View {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
+            // PROTECT LOCKED LAYERS: Don't allow converting points on locked layers
+            if layer.isLocked {
+                continue
+            }
+            
             for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
                 if !shape.isVisible { continue }
                 
@@ -2684,6 +2745,11 @@ struct DrawingCanvas: View {
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
+            
+            // PROTECT LOCKED LAYERS: Don't allow selecting shapes on locked layers for convert tool
+            if layer.isLocked {
+                continue
+            }
             
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }

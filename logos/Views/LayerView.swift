@@ -14,6 +14,11 @@ struct LayerView: View {
     let selectedShapeIDs: Set<UUID>
     let viewMode: ViewMode
     
+    // CANVAS LAYER PROTECTION: Check if this is the Canvas layer
+    private var isCanvasLayer: Bool {
+        return layer.name == "Canvas"
+    }
+    
     var body: some View {
         ZStack {
             ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
@@ -22,7 +27,8 @@ struct LayerView: View {
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset,
                     isSelected: selectedShapeIDs.contains(layer.shapes[shapeIndex].id),
-                    viewMode: viewMode
+                    viewMode: viewMode,
+                    isCanvasLayer: isCanvasLayer  // Pass Canvas layer info
                 )
             }
         }
@@ -36,11 +42,17 @@ struct ShapeView: View {
     let canvasOffset: CGPoint
     let isSelected: Bool
     let viewMode: ViewMode
+    let isCanvasLayer: Bool  // NEW: Canvas layer protection
+    
+    // CANVAS LAYER PROTECTION: Canvas objects never go to keyline view
+    private var effectiveViewMode: ViewMode {
+        return isCanvasLayer ? .color : viewMode
+    }
     
     var body: some View {
         ZStack {
-            // Fill - only show in color view mode
-            if viewMode == .color,
+            // Fill - only show in color view mode (or always for Canvas)
+            if effectiveViewMode == .color,
                let fillStyle = shape.fillStyle, 
                fillStyle.color != .clear {
                 Path { path in
@@ -52,15 +64,16 @@ struct ShapeView: View {
             }
             
             // Stroke rendering - improved for keyline mode and placement
-            if viewMode == .keyline {
+            if effectiveViewMode == .keyline {
                 // In keyline mode, always show a stroke regardless of original stroke style
+                // (Canvas objects will never reach this branch)
                 Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }
                 .stroke(Color.black, lineWidth: 1.0)
             } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
                 // In color mode, show the actual stroke with proper placement and transparency
-                renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: viewMode)
+                renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
                     // CRITICAL FIX: Don't apply opacity here for outside strokes - handled internally
                     .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
                     .blendMode(strokeStyle.blendMode.swiftUIBlendMode) // PROFESSIONAL STROKE BLEND MODES
