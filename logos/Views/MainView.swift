@@ -1080,8 +1080,8 @@ struct StatusBar: View {
             
             Spacer()
             
-            // Document Info
-            Text("Size: \(Int(document.settings.width))×\(Int(document.settings.height)) \(document.settings.unit.abbreviation)")
+            // Document Info - FIXED: Show proper decimals for dimensions
+            Text("Size: \(formatDimension(document.settings.width))×\(formatDimension(document.settings.height)) \(document.settings.unit.abbreviation)")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
@@ -1100,6 +1100,15 @@ struct StatusBar: View {
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
             alignment: .top
         )
+    }
+    
+    /// Format dimension values to show decimals only when needed
+    private func formatDimension(_ value: Double) -> String {
+        if value == floor(value) {
+            return String(format: "%.0f", value)  // Show as integer if no decimal
+        } else {
+            return String(format: "%.1f", value)  // Show one decimal place
+        }
     }
 }
 

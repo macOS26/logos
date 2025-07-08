@@ -16,14 +16,16 @@ struct RulersView: View {
     var body: some View {
         if document.showRulers {
             ZStack {
-                // Horizontal Ruler (Top)
+                // Horizontal Ruler (Top) - FIXED ALIGNMENT: Account for canvas offset
                 HorizontalRuler(document: document, geometry: geometry)
                     .frame(height: rulerThickness)
+                    .offset(x: rulerThickness, y: 0)  // Offset to align with canvas
                     .position(x: geometry.size.width / 2, y: rulerThickness / 2)
                 
-                // Vertical Ruler (Left)
+                // Vertical Ruler (Left) - FIXED ALIGNMENT: Account for canvas offset  
                 VerticalRuler(document: document, geometry: geometry)
                     .frame(width: rulerThickness)
+                    .offset(x: 0, y: rulerThickness)  // Offset to align with canvas
                     .position(x: rulerThickness / 2, y: geometry.size.height / 2)
                 
                 // Corner Square
@@ -74,9 +76,10 @@ struct HorizontalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // Calculate the visible range in canvas coordinates
-        let startX = (-canvasOffset.x) / zoomLevel
-        let endX = (size.width - canvasOffset.x) / zoomLevel
+        // FIXED RULER ALIGNMENT: Calculate ruler range starting from canvas origin (0,0)
+        // The canvas coordinate 0 should appear at canvasOffset.x on screen
+        let startX = (-canvasOffset.x) / zoomLevel  // Canvas coordinate at left edge of ruler
+        let endX = (size.width - canvasOffset.x) / zoomLevel  // Canvas coordinate at right edge of ruler
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -151,9 +154,10 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // Calculate the visible range in canvas coordinates
-        let startY = (-canvasOffset.y) / zoomLevel
-        let endY = (size.height - canvasOffset.y) / zoomLevel
+        // FIXED RULER ALIGNMENT: Calculate ruler range starting from canvas origin (0,0)
+        // The canvas coordinate 0 should appear at canvasOffset.y on screen
+        let startY = (-canvasOffset.y) / zoomLevel  // Canvas coordinate at top edge of ruler
+        let endY = (size.height - canvasOffset.y) / zoomLevel  // Canvas coordinate at bottom edge of ruler
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)

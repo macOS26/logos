@@ -125,16 +125,6 @@ struct LayersPanel: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Add Layer")
-                
-                // DEBUG: Temporary debug button
-                Button {
-                    document.debugCurrentState()
-                } label: {
-                    Image(systemName: "ladybug")
-                        .font(.system(size: 12))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Debug Document State")
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)

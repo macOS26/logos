@@ -53,7 +53,7 @@ struct DocumentSettings: Codable, Hashable {
     var gridSpacing: Double
     var backgroundColor: VectorColor
     
-    init(width: Double = 8.5, height: Double = 11.0, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white) {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white) {
         self.width = width
         self.height = height
         self.unit = unit

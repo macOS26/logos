@@ -123,24 +123,24 @@ class TemplateManager {
     private func loadAvailableTemplates() {
         print("📄 Loading professional document templates...")
         
-        // BLANK DOCUMENT (Truly Empty)
+        // BLANK DOCUMENT (11" × 8.5" Landscape)
         availableTemplates[.blank] = TemplateConfiguration(
             type: .blank,
             settings: DocumentSettings(
-                width: 800,
-                height: 600,
-                unit: .pixels,
+                width: 11.0,
+                height: 8.5,
+                unit: .inches,
                 colorMode: .rgb,
                 resolution: 72,
-                showRulers: false,
+                showRulers: true,
                 showGrid: false,
                 snapToGrid: false,
-                gridSpacing: 10,
+                gridSpacing: 0.125,
                 backgroundColor: VectorColor.white
             ),
             metadata: TemplateMetadata(
-                description: "Completely blank document with no content",
-                tags: ["blank", "empty", "default"]
+                description: "11\" × 8.5\" landscape document with rulers",
+                tags: ["blank", "empty", "default", "landscape"]
             )
         )
         
@@ -506,15 +506,15 @@ class TemplateManager {
         print("📄 Creating truly blank document...")
         
         let blankSettings = DocumentSettings(
-            width: 800,
-            height: 600,
-            unit: .pixels,
+            width: 11.0,
+            height: 8.5,
+            unit: .inches,
             colorMode: .rgb,
             resolution: 72,
-            showRulers: false,
+            showRulers: true,
             showGrid: false,
             snapToGrid: false,
-            gridSpacing: 10,
+            gridSpacing: 0.125,
             backgroundColor: VectorColor.white
         )
         
