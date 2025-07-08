@@ -536,7 +536,7 @@ class VectorDocument: ObservableObject, Codable {
     /// Move a layer from one index to another
     func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
         guard sourceIndex >= 0 && sourceIndex < layers.count,
-              targetIndex >= 0 && targetIndex < layers.count,
+              targetIndex >= 0 && targetIndex <= layers.count,  // Allow targetIndex == layers.count for "move to top"
               sourceIndex != targetIndex else {
             print("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)")
             return
@@ -558,8 +558,19 @@ class VectorDocument: ObservableObject, Codable {
         
         let movingLayer = layers.remove(at: sourceIndex)
         
-        // Adjust target index if we removed from before it
-        let adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+        // Handle insertion logic
+        let adjustedTargetIndex: Int
+        if targetIndex == layers.count {
+            // Special case: move to top (append to end after removal)
+            adjustedTargetIndex = layers.count
+            print("🔝 Moving to top position (will be index \(adjustedTargetIndex))")
+        } else if sourceIndex < targetIndex {
+            // Moving forward in the array - adjust for removal
+            adjustedTargetIndex = targetIndex - 1
+        } else {
+            // Moving backward in the array - no adjustment needed
+            adjustedTargetIndex = targetIndex
+        }
         
         layers.insert(movingLayer, at: adjustedTargetIndex)
         

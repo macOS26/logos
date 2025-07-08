@@ -319,17 +319,14 @@ struct LayersPanel: View {
             return false // Red indicator - cannot drop below Canvas
         }
         
+        // Special case: dropping above all layers (move to top) is always allowed
+        if targetIndex == document.layers.count {
+            return true // Green indicator - move to top
+        }
+        
         // Don't allow dropping on the same position
         if draggedIndex == targetIndex {
             return false // Red indicator - same position
-        }
-        
-        // Handle dropping above all layers (convert to actual position)
-        let actualTargetIndex = targetIndex == document.layers.count ? document.layers.count - 1 : targetIndex
-        
-        // Don't allow dropping on the same position (after conversion)
-        if draggedIndex == actualTargetIndex {
-            return false // Red indicator - same position after conversion
         }
         
         // All other positions are allowed
@@ -341,8 +338,8 @@ struct LayersPanel: View {
         
         print("🔄 LAYER DROP: Moving layer from index \(sourceIndex) to \(targetIndex)")
         
-        // Don't drop on same layer
-        if sourceIndex == targetIndex {
+        // Don't drop on same layer (but allow dropping above all layers even if source is top layer)
+        if sourceIndex == targetIndex && targetIndex != document.layers.count {
             print("🚫 Source and target are the same")
             return false
         }
@@ -359,21 +356,11 @@ struct LayersPanel: View {
             return false
         }
         
-        // Handle dropping above all layers (targetIndex == document.layers.count)
-        let actualTargetIndex: Int
-        if targetIndex == document.layers.count {
-            // Move to top (highest index)
-            actualTargetIndex = document.layers.count - 1
-            print("🔝 Moving to top position (index \(actualTargetIndex))")
-        } else {
-            actualTargetIndex = targetIndex
-        }
-        
-        // Perform the layer move
+        // Perform the layer move - let moveLayer handle all index logic
         document.saveToUndoStack()
-        document.moveLayer(from: sourceIndex, to: actualTargetIndex)
+        document.moveLayer(from: sourceIndex, to: targetIndex)
         
-        print("✅ Successfully moved layer from \(sourceIndex) to \(actualTargetIndex)")
+        print("✅ Successfully moved layer from \(sourceIndex) to \(targetIndex)")
         document.debugLayerOrder()
         
         // Clear drop target
