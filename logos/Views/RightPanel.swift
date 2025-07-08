@@ -93,8 +93,11 @@ struct PanelTabBar: View {
 
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
-    @State private var expandedLayers: Set<Int> = Set([0]) // Layer 1 expanded by default
+    @State private var expandedLayers: Set<Int> = Set([1]) // Layer 1 expanded by default (not Canvas)
     @State private var draggedObject: DraggedObject?
+    @State private var draggedLayer: DraggedLayer?
+    @State private var renamingLayerIndex: Int?
+    @State private var newLayerName: String = ""
     
     struct DraggedObject {
         let type: ObjectType
@@ -105,6 +108,11 @@ struct LayersPanel: View {
             case shape
             case text
         }
+    }
+    
+    struct DraggedLayer {
+        let layerIndex: Int
+        let layerName: String
     }
     
     var body: some View {
@@ -139,12 +147,29 @@ struct LayersPanel: View {
                             document: document,
                             layerIndex: layerIndex,
                             isExpanded: expandedLayers.contains(layerIndex),
+                            isRenaming: renamingLayerIndex == layerIndex,
+                            newLayerName: $newLayerName,
                             onToggleExpanded: {
                                 if expandedLayers.contains(layerIndex) {
                                     expandedLayers.remove(layerIndex)
                                 } else {
                                     expandedLayers.insert(layerIndex)
                                 }
+                            },
+                            onStartRename: {
+                                renamingLayerIndex = layerIndex
+                                newLayerName = document.layers[layerIndex].name
+                            },
+                            onFinishRename: {
+                                if !newLayerName.isEmpty {
+                                    document.renameLayer(at: layerIndex, to: newLayerName)
+                                }
+                                renamingLayerIndex = nil
+                                newLayerName = ""
+                            },
+                            onCancelRename: {
+                                renamingLayerIndex = nil
+                                newLayerName = ""
                             },
                             onObjectDrag: { objectType, objectId in
                                 draggedObject = DraggedObject(
@@ -154,10 +179,19 @@ struct LayersPanel: View {
                                 )
                             }
                         )
-                        .onDrop(of: [.text], delegate: LayerDropDelegate(
+                        .onDrag {
+                            draggedLayer = DraggedLayer(
+                                layerIndex: layerIndex,
+                                layerName: document.layers[layerIndex].name
+                            )
+                            print("🔄 Starting drag for layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
+                            return NSItemProvider(object: "layer-\(layerIndex)" as NSString)
+                        }
+                        .onDrop(of: [.plainText], delegate: LayerDropDelegate(
                             document: document,
                             targetLayerIndex: layerIndex,
-                            draggedObject: $draggedObject
+                            draggedObject: $draggedObject,
+                            draggedLayer: $draggedLayer
                         ))
                     }
                 }
@@ -174,7 +208,12 @@ struct ProfessionalLayerRow: View {
     @ObservedObject var document: VectorDocument
     let layerIndex: Int
     let isExpanded: Bool
+    let isRenaming: Bool
+    @Binding var newLayerName: String
     let onToggleExpanded: () -> Void
+    let onStartRename: () -> Void
+    let onFinishRename: () -> Void
+    let onCancelRename: () -> Void
     let onObjectDrag: (LayersPanel.DraggedObject.ObjectType, UUID) -> Void
     
     private var layer: VectorLayer {
@@ -190,7 +229,9 @@ struct ProfessionalLayerRow: View {
         document.selectedLayerIndex == layerIndex
     }
     
-
+    private var isCanvasLayer: Bool {
+        return layerIndex == 0 && layer.name == "Canvas"
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -239,11 +280,31 @@ struct ProfessionalLayerRow: View {
                     .fill(layerColor(for: layerIndex))
                     .frame(width: 12, height: 12)
             
-            // Layer Name
-            Text(layer.name)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Layer Name - Editable or Static
+            if isRenaming {
+                TextField("Layer Name", text: $newLayerName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.system(size: 12, weight: .medium))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onSubmit {
+                        onFinishRename()
+                    }
+                    .onKeyPress(.escape) {
+                        onCancelRename()
+                        return .handled
+                    }
+            } else {
+                Text(layer.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isCanvasLayer ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .onTapGesture(count: 2) {
+                        // Double-click to rename (only if not Canvas)
+                        if !isCanvasLayer {
+                            onStartRename()
+                        }
+                    }
+            }
             
                 // Object Count
                 Text("\(layer.shapes.count + objectCountInLayer(layerIndex))")
@@ -262,6 +323,35 @@ struct ProfessionalLayerRow: View {
                 guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
                 
                 document.selectedLayerIndex = layerIndex
+            }
+            .contextMenu {
+                // Context menu for layer operations
+                if !isCanvasLayer {
+                    Button("Rename Layer") {
+                        onStartRename()
+                    }
+                    
+                    Divider()
+                    
+                    Button("Duplicate Layer") {
+                        document.duplicateLayer(at: layerIndex)
+                    }
+                    
+                    Button("Delete Layer") {
+                        document.removeLayer(at: layerIndex)
+                    }
+                    .disabled(document.layers.count <= 1)
+                }
+                
+                Divider()
+                
+                Button(layer.isVisible ? "Hide Layer" : "Show Layer") {
+                    document.layers[layerIndex].isVisible.toggle()
+                }
+                
+                Button(layer.isLocked ? "Unlock Layer" : "Lock Layer") {
+                    document.layers[layerIndex].isLocked.toggle()
+                }
             }
             
             // Expanded Object List (Adobe Illustrator Style)
@@ -316,7 +406,7 @@ struct ProfessionalLayerRow: View {
     }
     
     private func layerColor(for index: Int) -> Color {
-        let colors: [Color] = [.blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
+        let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         return colors[index % colors.count]
     }
     
@@ -409,10 +499,68 @@ struct LayerDropDelegate: DropDelegate {
     @ObservedObject var document: VectorDocument
     let targetLayerIndex: Int
     @Binding var draggedObject: LayersPanel.DraggedObject?
+    @Binding var draggedLayer: LayersPanel.DraggedLayer?
     
     func performDrop(info: DropInfo) -> Bool {
-        guard let draggedObj = draggedObject else { return false }
+        print("🎯 DROP DETECTED at target layer index: \(targetLayerIndex)")
+        print("   - Has draggedLayer: \(draggedLayer != nil)")
+        print("   - Has draggedObject: \(draggedObject != nil)")
         
+        // Handle layer reordering FIRST (higher priority)
+        if let draggedLayerInfo = draggedLayer {
+            print("🔄 Processing layer drop...")
+            return handleLayerDrop(draggedLayerInfo: draggedLayerInfo)
+        }
+        
+        // Handle object movement between layers
+        if let draggedObj = draggedObject {
+            print("🔄 Processing object drop...")
+            return handleObjectDrop(draggedObj: draggedObj)
+        }
+        
+        print("❌ No valid drop data found")
+        return false
+    }
+    
+    private func handleLayerDrop(draggedLayerInfo: LayersPanel.DraggedLayer) -> Bool {
+        let sourceIndex = draggedLayerInfo.layerIndex
+        
+        print("🔄 LAYER DROP: Moving '\(draggedLayerInfo.layerName)' from index \(sourceIndex) to \(targetLayerIndex)")
+        
+        // Don't drop on same layer
+        if sourceIndex == targetLayerIndex {
+            print("🚫 Source and target are the same")
+            draggedLayer = nil
+            return false
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow Canvas layer (index 0) to be moved
+        if sourceIndex == 0 {
+            print("🚫 Cannot move Canvas layer - it must remain at the bottom")
+            draggedLayer = nil
+            return false
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow any layer to be moved to Canvas position (index 0)
+        if targetLayerIndex == 0 {
+            print("🚫 Cannot move layers below Canvas layer")
+            draggedLayer = nil
+            return false
+        }
+        
+        // Perform the layer move
+        document.saveToUndoStack()
+        document.moveLayer(from: sourceIndex, to: targetLayerIndex)
+        
+        draggedLayer = nil
+        print("✅ Successfully moved layer from \(sourceIndex) to \(targetLayerIndex)")
+        
+        // Debug the new layer order
+        document.debugLayerOrder()
+        return true
+    }
+    
+    private func handleObjectDrop(draggedObj: LayersPanel.DraggedObject) -> Bool {
         // Don't drop on same layer
         if draggedObj.sourceLayerIndex == targetLayerIndex {
             draggedObject = nil
@@ -442,11 +590,17 @@ struct LayerDropDelegate: DropDelegate {
     }
     
     func dropEntered(info: DropInfo) {
-        // Visual feedback could be added here
+        print("👆 Drop entered target layer: \(targetLayerIndex)")
     }
     
     func dropExited(info: DropInfo) {
-        // Visual feedback cleanup could be added here
+        print("👋 Drop exited target layer: \(targetLayerIndex)")
+    }
+    
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        print("🔄 Drop updated at target layer: \(targetLayerIndex)")
+        // Allow all drops - we'll validate in performDrop
+        return DropProposal(operation: .move)
     }
     
     private func moveShapeBetweenLayers(shapeId: UUID, from sourceIndex: Int, to targetIndex: Int) {

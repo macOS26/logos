@@ -159,6 +159,9 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Creates both Canvas layer and working layer for normal startup
     private func createCanvasAndWorkingLayers() {
+        // CRITICAL DEBUG: Clear any existing layers first to ensure proper order
+        layers.removeAll()
+        
         // Create Canvas layer FIRST (index 0) - background layer, treated like any other layer
         var canvasLayer = VectorLayer(name: "Canvas")
         let canvasRect = VectorShape.rectangle(
@@ -176,6 +179,18 @@ class VectorDocument: ObservableObject, Codable {
         // Create working layer SECOND (index 1) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
         print("📋 CREATED WORKING LAYER: Layer 1 (index 1)")
+        
+        // DEBUG: Print actual layer order to verify
+        debugLayerOrder()
+    }
+    
+    /// Debug function to print current layer order
+    func debugLayerOrder() {
+        print("🔍 CURRENT LAYER ORDER:")
+        for (index, layer) in layers.enumerated() {
+            print("   Index \(index): '\(layer.name)' - shapes: \(layer.shapes.count)")
+        }
+        print("   Layers panel shows these REVERSED (index \(layers.count-1) at top)")
     }
     
 
@@ -458,6 +473,111 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     // MARK: - Layer Management
+    
+    /// Rename a layer at the specified index
+    func renameLayer(at index: Int, to newName: String) {
+        guard index >= 0 && index < layers.count else {
+            print("❌ Invalid layer index for rename: \(index)")
+            return
+        }
+        
+        // Don't allow renaming Canvas layer
+        if index == 0 && layers[index].name == "Canvas" {
+            print("🚫 Cannot rename Canvas layer")
+            return
+        }
+        
+        let oldName = layers[index].name
+        layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        saveToUndoStack()
+        print("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'")
+    }
+    
+    /// Duplicate a layer at the specified index
+    func duplicateLayer(at index: Int) {
+        guard index >= 0 && index < layers.count else {
+            print("❌ Invalid layer index for duplicate: \(index)")
+            return
+        }
+        
+        // Don't allow duplicating Canvas layer
+        if index == 0 && layers[index].name == "Canvas" {
+            print("🚫 Cannot duplicate Canvas layer")
+            return
+        }
+        
+        saveToUndoStack()
+        
+        let originalLayer = layers[index]
+        var duplicatedLayer = VectorLayer(name: "\(originalLayer.name) Copy")
+        
+        // Copy all properties
+        duplicatedLayer.isVisible = originalLayer.isVisible
+        duplicatedLayer.isLocked = originalLayer.isLocked
+        duplicatedLayer.opacity = originalLayer.opacity
+        
+        // Deep copy all shapes with new IDs
+        for shape in originalLayer.shapes {
+            var duplicatedShape = shape
+            duplicatedShape.id = UUID() // New unique ID
+            duplicatedLayer.shapes.append(duplicatedShape)
+        }
+        
+        // Insert the duplicated layer right after the original
+        layers.insert(duplicatedLayer, at: index + 1)
+        
+        // Select the new layer
+        selectedLayerIndex = index + 1
+        
+        print("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'")
+    }
+    
+    /// Move a layer from one index to another
+    func moveLayer(from sourceIndex: Int, to targetIndex: Int) {
+        guard sourceIndex >= 0 && sourceIndex < layers.count,
+              targetIndex >= 0 && targetIndex < layers.count,
+              sourceIndex != targetIndex else {
+            print("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)")
+            return
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
+        if sourceIndex == 0 && layers[sourceIndex].name == "Canvas" {
+            print("🚫 Cannot move Canvas layer - it must remain at the bottom")
+            return
+        }
+        
+        // PROTECT CANVAS LAYER: Never allow moving to Canvas position
+        if targetIndex == 0 {
+            print("🚫 Cannot move layers to Canvas position (index 0)")
+            return
+        }
+        
+        saveToUndoStack()
+        
+        let movingLayer = layers.remove(at: sourceIndex)
+        
+        // Adjust target index if we removed from before it
+        let adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+        
+        layers.insert(movingLayer, at: adjustedTargetIndex)
+        
+        // Update selected layer index to follow the moved layer
+        if selectedLayerIndex == sourceIndex {
+            selectedLayerIndex = adjustedTargetIndex
+        } else if let selectedIndex = selectedLayerIndex {
+            // Adjust selection if it was affected by the move
+            if sourceIndex < selectedIndex && adjustedTargetIndex >= selectedIndex {
+                selectedLayerIndex = selectedIndex - 1
+            } else if sourceIndex > selectedIndex && adjustedTargetIndex <= selectedIndex {
+                selectedLayerIndex = selectedIndex + 1
+            }
+        }
+        
+        print("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)")
+    }
+    
     func addLayer(name: String = "New Layer") {
         layers.append(VectorLayer(name: name))
         selectedLayerIndex = layers.count - 1
@@ -477,11 +597,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    func moveLayer(from: Int, to: Int) {
-        let layer = layers.remove(at: from)
-        layers.insert(layer, at: to)
-        selectedLayerIndex = to
-    }
+
     
 
 
