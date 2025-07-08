@@ -151,49 +151,51 @@ struct LayersPanel: View {
     
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
-            LazyVStack(spacing: 2) {
-                topDropIndicator
-                layersList
-            }
-            .padding(.horizontal, 4)
-            .dropDestination(for: LayerDragData.self) { items, location in
-                guard let draggedData = items.first else { return false }
-                let result = handleLayerDrop(draggedData: draggedData, targetIndex: document.layers.count)
-                // Clear drag state after drop
-                draggedLayerIndex = nil
-                return result
-            } isTargeted: { isTargeted in
-                if isTargeted {
-                    dropTargetIndex = document.layers.count
-                } else {
-                    dropTargetIndex = nil
+            LazyVStack(spacing: 1) {
+                // Layer rows with built-in drop zones
+                ForEach(Array(document.layers.indices.reversed().enumerated()), id: \.element) { visualIndex, layerIndex in
+                    VStack(spacing: 0) {
+                        // Top drop zone (only for the first visual layer)
+                        if visualIndex == 0 {
+                            dropZone(targetIndex: document.layers.count, height: 16)
+                        }
+                        
+                        // The layer row itself
+                        layerRowContent(for: layerIndex)
+                        
+                        // Bottom drop zone (after each layer)
+                        dropZone(targetIndex: layerIndex, height: 8)
+                    }
                 }
             }
+            .padding(.horizontal, 4)
         }
     }
     
     @ViewBuilder
-    private var topDropIndicator: some View {
-        if dropTargetIndex == document.layers.count {
-            Rectangle()
-                .fill(dropIndicatorColor)
-                .frame(height: 2)
-                .padding(.horizontal, 8)
-        }
-    }
-    
-    private var layersList: some View {
-        ForEach(document.layers.indices.reversed(), id: \.self) { layerIndex in
-            createLayerRow(for: layerIndex)
-        }
-    }
-    
-    @ViewBuilder
-    private func createLayerRow(for layerIndex: Int) -> some View {
-        VStack(spacing: 0) {
-            layerRowContent(for: layerIndex)
-            bottomDropIndicator(for: layerIndex)
-        }
+    private func dropZone(targetIndex: Int, height: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(height: height)
+            .overlay(
+                Group {
+                    if dropTargetIndex == targetIndex {
+                        Rectangle()
+                            .fill(dropIndicatorColor)
+                            .frame(height: 3)
+                            .padding(.horizontal, 8)
+                            .animation(.easeInOut(duration: 0.15), value: dropTargetIndex)
+                    }
+                }
+            )
+            .dropDestination(for: LayerDragData.self) { items, location in
+                guard let draggedData = items.first else { return false }
+                let result = handleLayerDrop(draggedData: draggedData, targetIndex: targetIndex)
+                clearDragState()
+                return result
+            } isTargeted: { isTargeted in
+                dropTargetIndex = isTargeted ? targetIndex : nil
+            }
     }
     
     private func layerRowContent(for layerIndex: Int) -> some View {
@@ -236,40 +238,24 @@ struct LayersPanel: View {
         .draggable(LayerDragData(layerIndex: layerIndex)) {
             dragPreview(for: layerIndex)
         }
-        .dropDestination(for: LayerDragData.self) { items, location in
-            guard let draggedData = items.first else { return false }
-            let result = handleLayerDrop(draggedData: draggedData, targetIndex: layerIndex)
-            // Clear drag state after drop
-            draggedLayerIndex = nil
-            return result
-        } isTargeted: { isTargeted in
-            if isTargeted {
-                dropTargetIndex = layerIndex
-                // Track which layer is being dragged when hovering
-                if draggedLayerIndex == nil {
-                    // We need to infer this from the drop context
-                    // For now, we'll handle this in the drop indicator color logic
-                }
-            } else {
-                dropTargetIndex = nil
-            }
-        }
         .simultaneousGesture(
             DragGesture()
                 .onChanged { _ in
-                    // Track which layer started dragging
                     draggedLayerIndex = layerIndex
                     print("🔄 Started dragging layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
                 }
                 .onEnded { _ in
-                    // Clear drag tracking when gesture ends
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        draggedLayerIndex = nil
-                        dropTargetIndex = nil
-                        print("🏁 Finished dragging")
-                    }
+                    clearDragState()
                 }
         )
+    }
+    
+    private func clearDragState() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            draggedLayerIndex = nil
+            dropTargetIndex = nil
+            print("🏁 Finished dragging")
+        }
     }
     
     private func dragPreview(for layerIndex: Int) -> some View {
@@ -285,16 +271,6 @@ struct LayersPanel: View {
         .cornerRadius(4)
     }
     
-    @ViewBuilder
-    private func bottomDropIndicator(for layerIndex: Int) -> some View {
-        if dropTargetIndex == layerIndex {
-            Rectangle()
-                .fill(dropIndicatorColor)
-                .frame(height: 2)
-                .padding(.horizontal, 8)
-        }
-    }
-    
     // Computed property for drop indicator color
     private var dropIndicatorColor: Color {
         guard let targetIndex = dropTargetIndex else { return .clear }
@@ -306,7 +282,6 @@ struct LayersPanel: View {
     
     // Check if drop is allowed at target index
     private func isDropAllowed(targetIndex: Int) -> Bool {
-        // Always allow if no drag is active or no specific layer is being dragged
         guard let draggedIndex = draggedLayerIndex else { return true }
         
         // PROTECT CANVAS LAYER: Never allow Canvas layer (index 0) to be moved
@@ -319,18 +294,13 @@ struct LayersPanel: View {
             return false // Red indicator - cannot drop below Canvas
         }
         
-        // Special case: dropping above all layers (move to top) is always allowed
-        if targetIndex == document.layers.count {
-            return true // Green indicator - move to top
-        }
-        
         // Don't allow dropping on the same position
         if draggedIndex == targetIndex {
             return false // Red indicator - same position
         }
         
-        // All other positions are allowed
-        return true // Green indicator
+        // All other positions are valid
+        return true // Green indicator - valid drop
     }
     
     private func handleLayerDrop(draggedData: LayerDragData, targetIndex: Int) -> Bool {
