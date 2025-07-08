@@ -143,11 +143,11 @@ class VectorDocument: ObservableObject, Codable {
         // Add notification observers for scaling operations
         setupNotificationObservers()
         
-        // Create default working layer
-        createDefaultLayer()
+        // Create canvas layer + default working layer
+        createCanvasAndWorkingLayers()
         
-        // Set the selected layer index
-        self.selectedLayerIndex = 0 // First (and only) layer is the working layer
+        // Set the selected layer index to working layer (not canvas)
+        self.selectedLayerIndex = 1 // Working layer (Canvas is at index 0)
         print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
         print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
         print("=" + String(repeating: "=", count: 50))
@@ -157,10 +157,25 @@ class VectorDocument: ObservableObject, Codable {
     
 
     
-    /// Creates the default working layer (Layer 1)
-    private func createDefaultLayer() {
+    /// Creates both Canvas layer and working layer for normal startup
+    private func createCanvasAndWorkingLayers() {
+        // Create Canvas layer (index 0) - background layer, treated like any other layer
+        var canvasLayer = VectorLayer(name: "Canvas")
+        let canvasRect = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 0),
+            size: settings.sizeInPoints
+        )
+        var backgroundShape = canvasRect
+        backgroundShape.fillStyle = FillStyle(color: settings.backgroundColor, opacity: 1.0)
+        backgroundShape.strokeStyle = nil
+        backgroundShape.name = "Canvas Background"
+        canvasLayer.addShape(backgroundShape)
+        layers.append(canvasLayer)
+        print("📋 CREATED CANVAS LAYER: Canvas (index 0)")
+        
+        // Create working layer (index 1) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
-        print("📋 CREATED DEFAULT LAYER: Layer 1 (index \(layers.count - 1))")
+        print("📋 CREATED WORKING LAYER: Layer 1 (index 1)")
     }
     
 

@@ -464,36 +464,33 @@ class TemplateManager {
         
         let document = VectorDocument(settings: template.settings)
         
-        // PRESERVE CANVAS LAYER: Don't remove Canvas layer (index 0)
-        // Only clear working layers (index 1+) and add template layers
-        if document.layers.count > 1 {
-            document.layers.removeSubrange(1...)
-        }
+        // VectorDocument.init() creates 1 "Layer 1" - clear it and add template layers
+        document.layers.removeAll()
         
+        // Add template layers
         for layer in template.initialLayers {
             document.layers.append(layer)
         }
         
         // Add template shapes to appropriate layers
         if !template.initialShapes.isEmpty {
-            // Add to first working layer (index 1+), not Canvas layer
-            let targetLayerIndex = document.layers.count > 1 ? 1 : 0
-            if document.layers.count <= targetLayerIndex {
+            // Add to first layer, create one if none exist
+            if document.layers.isEmpty {
                 document.layers.append(VectorLayer(name: "Layer 1"))
             }
             
             for shape in template.initialShapes {
-                document.layers[targetLayerIndex].shapes.append(shape)
+                document.layers[0].shapes.append(shape)
             }
         }
         
-        // Ensure we have at least one working layer
-        if document.layers.count < 2 {
+        // Ensure we have at least one layer
+        if document.layers.isEmpty {
             document.layers.append(VectorLayer(name: "Layer 1"))
         }
         
-        // Select the first working layer (not Canvas layer)
-        document.selectedLayerIndex = 1
+        // Select the first layer
+        document.selectedLayerIndex = 0
         
         print("✅ Created document from template: \(type.displayName)")
         print("📊 Document: \(document.layers.count) layers, \(document.getTotalShapeCount()) shapes")
@@ -520,24 +517,16 @@ class TemplateManager {
         
         let document = VectorDocument(settings: blankSettings)
         
-        // PRESERVE CANVAS LAYER: Don't remove Canvas layer (index 0)
-        // Only clear working layers (index 1+)
-        if document.layers.count > 1 {
-            document.layers.removeSubrange(1...)
-        }
+        // VectorDocument.init() already creates exactly 1 "Layer 1" - no duplicates needed
+        // Just use the single layer that was created
         
-        // Ensure we have a working layer
-        if document.layers.count < 2 {
-            document.layers.append(VectorLayer(name: "Layer 1"))
-        }
-        
-        // Select the working layer (not the Canvas layer)
-        document.selectedLayerIndex = 1
+        // Select the working layer
+        document.selectedLayerIndex = 0
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.textObjects.removeAll()
         
-        print("✅ Created truly blank document - Canvas layer preserved!")
+        print("✅ Created truly blank document - single layer!")
         return document
     }
     

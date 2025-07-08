@@ -4263,8 +4263,23 @@ class FileOperations {
         print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
-        // Clear existing layers and create new layer for imported shapes
+        // Clear existing layers and create canvas + imported layers
         document.layers.removeAll()
+        
+        // Create canvas layer (normal layer, just happens to be a background)
+        var canvasLayer = VectorLayer(name: "Canvas")
+        let canvasRect = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 0),
+            size: CGSize(width: canvasWidth, height: canvasHeight)
+        )
+        var backgroundShape = canvasRect
+        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
+        backgroundShape.strokeStyle = nil
+        backgroundShape.name = "Canvas Background"
+        canvasLayer.addShape(backgroundShape)
+        document.layers.append(canvasLayer)
+        
+        // Create imported layer
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
@@ -4293,8 +4308,8 @@ class FileOperations {
             document.layers[importedIndex] = importedLayer
         }
         
-        // Select the imported layer
-        document.selectedLayerIndex = 0 // Index 0 since it's the only layer
+        // Select the imported layer (not canvas)
+        document.selectedLayerIndex = 1 // Index 1 since Canvas is at index 0
         
         // Log warnings if any
         for warning in result.warnings {
