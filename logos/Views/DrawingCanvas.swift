@@ -168,7 +168,7 @@ struct DrawingCanvas: View {
             .onTapGesture(count: 2) { location in
                 fitToPage(geometry: geometry)
             }
-            .onChange(of: document.zoomRequest) { _ in
+            .onChange(of: document.zoomRequest) {
                 if let request = document.zoomRequest {
                     handleZoomRequest(request, geometry: geometry)
                 }
@@ -853,9 +853,13 @@ struct DrawingCanvas: View {
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
-            // PROTECT ALL LOCKED LAYERS: Don't allow selection of objects on ANY locked layer
-            if document.layers[layerIndex].isLocked {
-                print("🚫 Cannot select objects on locked layer '\(document.layers[layerIndex].name)'")
+            // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
+            if document.layers[layerIndex].isLocked || shape.isLocked {
+                let lockType = document.layers[layerIndex].isLocked ? "locked layer" : "locked object"
+                print("🚫 Clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+                document.objectWillChange.send()
                 return
             }
             
@@ -1180,9 +1184,14 @@ struct DrawingCanvas: View {
             return
         }
         
+        // STABLE COORDINATE CALCULATION: Use high precision to prevent drift
+        let preciseZoom = Double(document.zoomLevel)
+        let preciseTranslationX = Double(value.translation.width)
+        let preciseTranslationY = Double(value.translation.height)
+        
         let delta = CGPoint(
-            x: value.translation.width / document.zoomLevel,
-            y: value.translation.height / document.zoomLevel
+            x: preciseTranslationX / preciseZoom,
+            y: preciseTranslationY / preciseZoom
         )
         
         // Move selected shapes by directly modifying their transforms
@@ -1190,7 +1199,7 @@ struct DrawingCanvas: View {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
                let initialTransform = dragStartTransforms[shapeID] {
                 
-                // Apply translation to the transform
+                // Apply translation to the transform with high precision
                 let translation = CGAffineTransform(translationX: delta.x, y: delta.y)
                 let newTransform = initialTransform.concatenating(translation)
                 
@@ -1342,9 +1351,14 @@ struct DrawingCanvas: View {
             captureOriginalPositions()
         }
         
+        // STABLE COORDINATE CALCULATION: Use high precision to prevent drift
+        let preciseZoom = Double(document.zoomLevel)
+        let preciseTranslationX = Double(value.translation.width)
+        let preciseTranslationY = Double(value.translation.height)
+        
         let delta = CGPoint(
-            x: value.translation.width / document.zoomLevel,
-            y: value.translation.height / document.zoomLevel
+            x: preciseTranslationX / preciseZoom,
+            y: preciseTranslationY / preciseZoom
         )
         
         // Move selected points to absolute positions
@@ -1744,38 +1758,36 @@ struct DrawingCanvas: View {
         // Only proceed if zoom level actually changes
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
         
-        // PERFECT ZOOM SYNCHRONIZATION: Keep the view center pointing to the same canvas coordinate
-        // This approach works perfectly with .scaleEffect(zoomLevel, anchor: .topLeading)
+        // STABLE ZOOM SYSTEM: Use document center as fixed reference point
+        // This prevents coordinate drift by always using the same reference
+        let documentBounds = document.documentBounds
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
+        )
         
-        // Calculate what canvas point is currently at the view center
+        // Calculate view center
         let viewCenter = CGPoint(
             x: geometry.size.width / 2.0,
             y: geometry.size.height / 2.0
         )
         
-        // Find the canvas coordinate that's currently at the view center
-        let canvasPointAtViewCenter = CGPoint(
-            x: (viewCenter.x - document.canvasOffset.x) / oldZoomLevel,
-            y: (viewCenter.y - document.canvasOffset.y) / oldZoomLevel
-        )
-        
         // Update zoom level
         document.zoomLevel = newZoomLevel
         
-        // Calculate what the new offset should be to keep the same canvas point at the view center
-        // Using the inverse of the coordinate transformation: screen = (canvas * zoom) + offset
-        // So: offset = screen - (canvas * zoom)
+        // Calculate offset to keep document center at view center
+        // This approach is stable and prevents drift
         let newOffset = CGPoint(
-            x: viewCenter.x - (canvasPointAtViewCenter.x * newZoomLevel),
-            y: viewCenter.y - (canvasPointAtViewCenter.y * newZoomLevel)
+            x: viewCenter.x - (documentCenter.x * newZoomLevel),
+            y: viewCenter.y - (documentCenter.y * newZoomLevel)
         )
         
         document.canvasOffset = newOffset
         
-        print("🔍 PERFECT ZOOM SYNC: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        print("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
         print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   Canvas point at view center: (\(String(format: "%.1f", canvasPointAtViewCenter.x)), \(String(format: "%.1f", canvasPointAtViewCenter.y)))")
-        print("   New offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+        print("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
     
     private func handleZoomToLevel(newZoomLevel: CGFloat, geometry: GeometryProxy) {
@@ -1814,7 +1826,6 @@ struct DrawingCanvas: View {
     
     /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
     private func actualSize(geometry: GeometryProxy) {
-        let oldZoomLevel = document.zoomLevel
         let newZoomLevel: Double = 1.0 // 100% actual size
         
         // Calculate what canvas point is currently at the view center
@@ -1848,17 +1859,25 @@ struct DrawingCanvas: View {
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
     
-    /// Zoom at a specific point (Adobe Illustrator standard)
+    /// Zoom at a specific point (stable version to prevent drift)
     private func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy) {
         let oldZoomLevel = document.zoomLevel
         
         // Only proceed if zoom level actually changes
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
         
+        // Use high precision arithmetic to prevent floating-point drift
+        let preciseOldZoom = Double(oldZoomLevel)
+        let preciseNewZoom = Double(newZoomLevel)
+        let preciseFocalX = Double(focalPoint.x)
+        let preciseFocalY = Double(focalPoint.y)
+        let preciseOffsetX = Double(document.canvasOffset.x)
+        let preciseOffsetY = Double(document.canvasOffset.y)
+        
         // Find the canvas coordinate at the focal point
         let canvasPointAtFocus = CGPoint(
-            x: (focalPoint.x - document.canvasOffset.x) / oldZoomLevel,
-            y: (focalPoint.y - document.canvasOffset.y) / oldZoomLevel
+            x: (preciseFocalX - preciseOffsetX) / preciseOldZoom,
+            y: (preciseFocalY - preciseOffsetY) / preciseOldZoom
         )
         
         // Update zoom level
@@ -1866,8 +1885,8 @@ struct DrawingCanvas: View {
         
         // Calculate what the new offset should be to keep the same canvas point at the focal point
         let newOffset = CGPoint(
-            x: focalPoint.x - (canvasPointAtFocus.x * newZoomLevel),
-            y: focalPoint.y - (canvasPointAtFocus.y * newZoomLevel)
+            x: preciseFocalX - (Double(canvasPointAtFocus.x) * preciseNewZoom),
+            y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
         )
         
         document.canvasOffset = newOffset
@@ -1875,7 +1894,7 @@ struct DrawingCanvas: View {
         print("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
         print("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))")
         print("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))")
-        print("   New offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+        print("   Stable offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
     
     private func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
@@ -2087,10 +2106,15 @@ struct DrawingCanvas: View {
                 let layer = document.layers[layerIndex]
                 if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
                     
-                    // PROTECT LOCKED LAYERS: Don't allow selecting points/handles on locked layers
-                    if layer.isLocked {
-                        print("🚫 Cannot select points/handles on locked layer '\(layer.name)'")
-                        continue
+                    // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
+                    if layer.isLocked || shape.isLocked {
+                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        print("🚫 Clicked on points/handles of \(lockType) '\(shape.name)' - deselecting current selection")
+                        directSelectedShapeIDs.removeAll()
+                        selectedPoints.removeAll()
+                        selectedHandles.removeAll()
+                        document.objectWillChange.send()
+                        return true
                     }
                     
                     // Check each path element for points and handles
@@ -2131,7 +2155,7 @@ struct DrawingCanvas: View {
                                 }
                             }
                             
-                        case .curve(let to, let control1, let control2):
+                        case .curve(let to, _, let control2):
                             point = to
                             
                             // FIRST: Check control handles (higher priority than anchor points)
@@ -2262,11 +2286,6 @@ struct DrawingCanvas: View {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            // PROTECT LOCKED LAYERS: Don't allow direct selection of shapes on locked layers
-            if layer.isLocked {
-                continue
-            }
-            
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
@@ -2296,6 +2315,17 @@ struct DrawingCanvas: View {
                 }
                 
                 if isHit {
+                    // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
+                    if layer.isLocked || shape.isLocked {
+                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        print("🚫 Direct-clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                        directSelectedShapeIDs.removeAll()
+                        selectedPoints.removeAll()
+                        selectedHandles.removeAll()
+                        document.objectWillChange.send()
+                        return true
+                    }
+                    
                     // PROFESSIONAL: Direct-select the whole shape
                     directSelectedShapeIDs.removeAll()
                     directSelectedShapeIDs.insert(shape.id)
@@ -2682,7 +2712,7 @@ struct DrawingCanvas: View {
                             enableDirectSelectionForConvertedPoint(shapeID: shape.id, elementIndex: elementIndex)
                             return
                         }
-                    case .curve(let to, let control1, let control2):
+                    case .curve(let to, _, let control2):
                         let pointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, pointLocation) <= tolerance {
                             // CRITICAL FIX: Proper corner point detection

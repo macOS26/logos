@@ -1082,7 +1082,8 @@ struct ObjectRow: View {
         .simultaneousGesture(
             DragGesture()
                 .onChanged { _ in
-                    // Object drag started - this will be handled by the parent
+                    // FIXED: Call onDrag to trigger isDraggingObject = true and show insertion zones
+                    onDrag()
                 }
                 .onEnded { _ in
                     onInsertionTargetChanged(nil) // Clear insertion target when drag ends
