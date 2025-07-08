@@ -885,42 +885,20 @@ struct DrawingCanvas: View {
                 print("🎯 REGULAR CLICK: Selected \(shape.name) only (cleared previous selection)")
             }
         } else {
-            // Check if clicking outside the document bounds (dead area)
+            // NO OBJECT HIT: Clicking on background or empty space
             let documentBounds = document.documentBounds
             let isOutsideDocument = !documentBounds.contains(location)
             
-            // IMPROVED: Handle large objects that cover the entire page
             if isOutsideDocument {
-                // Clicking in dead space outside document always deselects
+                // Clicking in gray background area outside document always deselects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-                print("🎯 Clicked dead space (outside document): Cleared all selections")
+                print("🎯 Clicked gray background (outside document): Cleared all selections")
             } else if !isShiftPressed && !isCommandPressed {
-                // Clicking inside document without modifiers: check for large object deselection
-                let hasLargeSelectedObject = document.selectedShapeIDs.contains { shapeID in
-                    for layer in document.layers {
-                        if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
-                            let shapeBounds = shape.bounds.applying(shape.transform)
-                            let documentBounds = document.documentBounds
-                            // Consider "large" if object covers more than 80% of the document
-                            let coverageRatio = (shapeBounds.width * shapeBounds.height) / (documentBounds.width * documentBounds.height)
-                            return coverageRatio > 0.8
-                        }
-                    }
-                    return false
-                }
-                
-                if hasLargeSelectedObject {
-                    // For large objects, allow deselection by clicking anywhere on empty space
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
-                    print("🎯 Clicked empty space with large object selected: Deselected large object")
-                } else {
-                    // Regular behavior for normal-sized objects
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
-                    print("🎯 Clicked empty space: Cleared all selections")
-                }
+                // Clicking inside document bounds on empty space or locked Canvas deselects
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+                print("🎯 Clicked empty space or locked Canvas: Cleared all selections")
             } else {
                 print("🎯 Clicked empty space with modifiers: Keeping existing selection")
             }

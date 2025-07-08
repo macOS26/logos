@@ -74,10 +74,10 @@ struct HorizontalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // FIXED RULER ALIGNMENT: Calculate ruler range starting from canvas origin (0,0)
-        // The canvas coordinate 0 should appear at canvasOffset.x on screen
-        let startX = (-canvasOffset.x) / zoomLevel  // Canvas coordinate at left edge of ruler
-        let endX = (size.width - canvasOffset.x) / zoomLevel  // Canvas coordinate at right edge of ruler
+        // FIXED RULER ALIGNMENT: Calculate ruler range accounting for canvas padding
+        // The canvas coordinate 0 should appear at canvasOffset.x + 20 on screen (due to ruler thickness)
+        let startX = (-canvasOffset.x - 20) / zoomLevel  // Canvas coordinate at left edge of ruler
+        let endX = (size.width - canvasOffset.x - 20) / zoomLevel  // Canvas coordinate at right edge of ruler
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -86,7 +86,7 @@ struct HorizontalRuler: View {
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
-            // FIXED: Proper horizontal ruler alignment with offset for ruler thickness
+            // FIXED: Proper horizontal ruler alignment - account for canvas padding due to ruler thickness
             let screenX = x * zoomLevel + canvasOffset.x + 20
             
             if screenX >= 0 && screenX <= size.width {
@@ -153,10 +153,10 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // FIXED RULER ALIGNMENT: Calculate ruler range starting from canvas origin (0,0)
-        // The canvas coordinate 0 should appear at canvasOffset.y on screen
-        let startY = (-canvasOffset.y) / zoomLevel  // Canvas coordinate at top edge of ruler
-        let endY = (size.height - canvasOffset.y) / zoomLevel  // Canvas coordinate at bottom edge of ruler
+        // FIXED RULER ALIGNMENT: Calculate ruler range accounting for canvas padding
+        // The canvas coordinate 0 should appear at canvasOffset.y + 20 on screen (due to ruler thickness)
+        let startY = (-canvasOffset.y - 20) / zoomLevel  // Canvas coordinate at top edge of ruler
+        let endY = (size.height - canvasOffset.y - 20) / zoomLevel  // Canvas coordinate at bottom edge of ruler
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -165,7 +165,7 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            // FIXED: Proper vertical ruler alignment with offset for ruler thickness
+            // FIXED: Proper vertical ruler alignment - account for canvas padding due to ruler thickness
             let screenY = y * zoomLevel + canvasOffset.y + 20
             
             if screenY >= 0 && screenY <= size.height {

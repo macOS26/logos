@@ -162,8 +162,9 @@ class VectorDocument: ObservableObject, Codable {
         // CRITICAL DEBUG: Clear any existing layers first to ensure proper order
         layers.removeAll()
         
-        // Create Canvas layer FIRST (index 0) - background layer, treated like any other layer
+        // Create Canvas layer FIRST (index 0) - background layer, LOCKED by default
         var canvasLayer = VectorLayer(name: "Canvas")
+        canvasLayer.isLocked = true  // Canvas should be locked by default
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
             size: settings.sizeInPoints
