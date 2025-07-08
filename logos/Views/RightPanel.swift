@@ -125,6 +125,16 @@ struct LayersPanel: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Add Layer")
+                
+                // DEBUG: Temporary debug button
+                Button {
+                    document.debugCurrentState()
+                } label: {
+                    Image(systemName: "ladybug")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Debug Document State")
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
@@ -243,6 +253,11 @@ struct ProfessionalLayerRow: View {
             .padding(.vertical, 4)
             .background(isSelected ? Color.blue.opacity(0.15) : Color.clear)
             .onTapGesture {
+                // PREVENT SELECTING CANVAS LAYER: Canvas layer should not be selectable
+                if layerIndex == 0 && document.layers[layerIndex].name == "Canvas" {
+                    print("🚫 Cannot select Canvas layer - it's locked for editing")
+                    return
+                }
                 document.selectedLayerIndex = layerIndex
             }
             

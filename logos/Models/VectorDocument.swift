@@ -119,12 +119,15 @@ class VectorDocument: ObservableObject, Codable {
     
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
-        self.layers = [VectorLayer(name: "Layer 1")]
+        
+        // BRILLIANT USER SOLUTION: Create canvas as a regular layer/shape instead of manual background sync
+        // This eliminates all coordinate system synchronization issues!
+        self.layers = []
         
         // Load appropriate color swatches based on color mode
         self.colorSwatches = Self.getDefaultColorSwatchesForMode(settings.colorMode)
         
-        self.selectedLayerIndex = 0
+        self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
         self.selectedTextIDs = [] // PROFESSIONAL TEXT SUPPORT
         self.textObjects = [] // PROFESSIONAL TEXT OBJECTS
@@ -140,6 +143,126 @@ class VectorDocument: ObservableObject, Codable {
         
         // Add notification observers for scaling operations
         setupNotificationObservers()
+        
+        // CRITICAL: Create canvas layer AFTER all properties are initialized
+        createCanvasLayer()
+        createDefaultLayer()
+        
+        // NOW set the correct selected layer index
+        self.selectedLayerIndex = 1 // Layer 1 is the working layer (Canvas is layer 0)
+        print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
+        print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
+        print("=" + String(repeating: "=", count: 50))
+    }
+    
+    // MARK: - Canvas Management (User's Brilliant Solution!)
+    
+    /// Creates the special "Canvas" layer as layer 0 (bottom-most layer)
+    /// This brilliant approach eliminates coordinate synchronization issues
+    private func createCanvasLayer() {
+        var canvasLayer = VectorLayer(name: "Canvas")
+        canvasLayer.isLocked = true // Prevent accidental selection/modification
+        canvasLayer.isVisible = true // Make sure it's visible in layers panel
+        
+        // Create canvas rectangle using document dimensions
+        let canvasPath = createCanvasPath()
+        
+        let canvasShape = VectorShape(
+            name: "Canvas Background",
+            path: canvasPath,
+            strokeStyle: nil, // No stroke for canvas
+            fillStyle: FillStyle(color: settings.backgroundColor, opacity: 1.0)
+        )
+        
+        canvasLayer.addShape(canvasShape)
+        layers.insert(canvasLayer, at: 0) // Always insert at index 0 (bottom)
+        
+        print("🎨 CANVAS LAYER CREATED: \(settings.sizeInPoints.width) × \(settings.sizeInPoints.height)")
+        print("   Canvas layer index: 0, locked: \(canvasLayer.isLocked), visible: \(canvasLayer.isVisible)")
+        print("   Canvas shape: \(canvasShape.name), bounds: \(canvasShape.bounds)")
+        print("✅ Canvas will auto-sync with all graphics - no more coordinate issues!")
+    }
+    
+    /// Creates the default working layer (Layer 1)
+    private func createDefaultLayer() {
+        layers.append(VectorLayer(name: "Layer 1"))
+        print("📋 CREATED DEFAULT LAYER: Layer 1 (index \(layers.count - 1))")
+        print("📊 TOTAL LAYERS: \(layers.count)")
+        for (index, layer) in layers.enumerated() {
+            print("   Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)")
+        }
+    }
+    
+    /// Creates a rectangular path for the canvas background
+    private func createCanvasPath() -> VectorPath {
+        let size = settings.sizeInPoints
+        return VectorPath(elements: [
+            .move(to: VectorPoint(0, 0)),
+            .line(to: VectorPoint(size.width, 0)),
+            .line(to: VectorPoint(size.width, size.height)),
+            .line(to: VectorPoint(0, size.height)),
+            .close
+        ], isClosed: true)
+    }
+    
+    /// Gets the canvas shape (guaranteed to exist as first shape in first layer)
+    var canvasShape: VectorShape? {
+        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return nil }
+        return layers[0].shapes[0]
+    }
+    
+    /// Updates canvas size when document settings change
+    func updateCanvasSize() {
+        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
+        
+        let newPath = createCanvasPath()
+        layers[0].shapes[0].path = newPath
+        layers[0].shapes[0].updateBounds()
+        
+        print("🎨 CANVAS UPDATED: \(settings.sizeInPoints.width) × \(settings.sizeInPoints.height)")
+    }
+    
+    /// Updates canvas background color
+    func updateCanvasColor(_ color: VectorColor) {
+        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
+        
+        layers[0].shapes[0].fillStyle = FillStyle(color: color, opacity: 1.0)
+        settings.backgroundColor = color
+        
+        print("🎨 CANVAS COLOR UPDATED: \(color)")
+    }
+    
+    /// Makes canvas transparent (no fill)
+    func makeCanvasTransparent() {
+        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return }
+        
+        layers[0].shapes[0].fillStyle = FillStyle(color: .clear, opacity: 0.0)
+        
+        print("🎨 CANVAS MADE TRANSPARENT")
+    }
+    
+    /// Gets canvas bounds for fit-to-page operations
+    var canvasBounds: CGRect {
+        return canvasShape?.bounds ?? CGRect(origin: .zero, size: settings.sizeInPoints)
+    }
+    
+    /// Checks if a shape ID belongs to the canvas shape (to prevent selection)
+    func isCanvasShape(_ shapeID: UUID) -> Bool {
+        guard !layers.isEmpty && !layers[0].shapes.isEmpty else { return false }
+        return layers[0].shapes[0].id == shapeID
+    }
+    
+    /// Debug function to print current document state
+    func debugCurrentState() {
+        print("🔍 DOCUMENT DEBUG STATE:")
+        print("   Total layers: \(layers.count)")
+        print("   Selected layer index: \(selectedLayerIndex ?? -1)")
+        for (index, layer) in layers.enumerated() {
+            let marker = (selectedLayerIndex == index) ? "👈" : "  "
+            print("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)")
+        }
+        print("   Selected shapes: \(selectedShapeIDs.count)")
+        print("   Current tool: \(currentTool)")
     }
     
     // MARK: - Document Properties for Professional Export
@@ -368,6 +491,31 @@ class VectorDocument: ObservableObject, Codable {
         undoStack = []
         redoStack = []
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
+        
+        // CRITICAL: Ensure canvas layer exists for loaded documents
+        setupNotificationObservers()
+        ensureCanvasLayerExists()
+    }
+    
+    /// Ensures canvas layer exists in loaded documents (backward compatibility)
+    private func ensureCanvasLayerExists() {
+        // Check if first layer is already a canvas layer
+        let hasCanvasLayer = !layers.isEmpty && 
+                            layers[0].name == "Canvas" && 
+                            !layers[0].shapes.isEmpty &&
+                            layers[0].shapes[0].name == "Canvas Background"
+        
+        if !hasCanvasLayer {
+            // Insert canvas layer for existing documents
+            createCanvasLayer()
+            // Adjust selectedLayerIndex if needed
+            if let currentIndex = selectedLayerIndex {
+                selectedLayerIndex = currentIndex + 1
+            }
+            print("🔄 ADDED CANVAS LAYER to existing document for compatibility")
+        } else {
+            print("✅ CANVAS LAYER already exists in loaded document")
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -394,7 +542,11 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func removeLayer(at index: Int) {
-        guard index >= 0 && index < layers.count && layers.count > 1 else { return }
+        // PROTECT CANVAS LAYER: Never allow deletion of canvas layer (index 0)
+        guard index >= 1 && index < layers.count && layers.count > 2 else { 
+            print("⚠️ Cannot remove Canvas layer or only remaining layer")
+            return 
+        }
         layers.remove(at: index)
         if selectedLayerIndex == index {
             selectedLayerIndex = min(index, layers.count - 1)

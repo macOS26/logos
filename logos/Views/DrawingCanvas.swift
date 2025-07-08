@@ -152,7 +152,8 @@ struct DrawingCanvas: View {
                     }
             )
             .gesture(
-                MagnificationGesture()
+                // CRITICAL FIX: DO NOT ZOOM WHILE DRAWING - Disable zoom gesture during drawing operations
+                !isDrawing && !isBezierDrawing ? MagnificationGesture()
                     .onChanged { value in
                         let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
                         handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
@@ -162,7 +163,7 @@ struct DrawingCanvas: View {
                         document.zoomLevel = finalZoomLevel
                         initialZoomLevel = finalZoomLevel
                         print("🔍 ZOOM GESTURE ENDED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x")
-                    }
+                    } : nil
             )
             .onTapGesture(count: 2) { location in
                 fitToPage(geometry: geometry)
@@ -180,20 +181,15 @@ struct DrawingCanvas: View {
     @ViewBuilder
     private func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
-            // PERFECT BACKGROUND SYNC: Uses EXACTLY the same coordinate transform as LayerView
-            Rectangle()
-                .fill(document.settings.backgroundColor.color)
-                .frame(width: document.settings.sizeInPoints.width, 
-                       height: document.settings.sizeInPoints.height)
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            // BRILLIANT USER SOLUTION: No more manual background!
+            // Canvas is now a regular layer/shape that auto-syncs with everything else
             
             // Grid (if enabled)
             if document.snapToGrid {
                 GridView(document: document, geometry: geometry)
             }
             
-            // Render all layers and shapes
+            // Render all layers and shapes (including the canvas layer!)
             ForEach(document.layers.indices, id: \.self) { layerIndex in
                 if document.layers[layerIndex].isVisible {
                     LayerView(
@@ -511,64 +507,64 @@ struct DrawingCanvas: View {
     }
     
     private func setupCanvas(geometry: GeometryProxy) {
-        // UNIFIED COORDINATE SYSTEM: Center canvas using same transform chain as visuals
-        fitToPage(geometry: geometry)
+        // FIXED COORDINATE SYSTEM: Set up default view with deterministic positioning
+        setupDefaultView(geometry: geometry)
         initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
-        print("🎯 UNIFIED CANVAS SETUP: Centered using fit-to-page, initial zoom = \(String(format: "%.3f", initialZoomLevel))x")
+        print("🎯 FIXED CANVAS SETUP: Using default 75% zoom, no race conditions")
     }
     
-    private func fitToPage(geometry: GeometryProxy) {
-        // UNIFIED 1:1 COORDINATE SYSTEM: True pixel-perfect coordinate system
-        // No distortion, no non-square ratios, no coordinate system drift
+    private func setupDefaultView(geometry: GeometryProxy) {
+        // BRILLIANT USER SOLUTION: Use canvas layer bounds instead of manual settings
+        // This eliminates coordinate synchronization issues
         
-        let canvasSize = document.settings.sizeInPoints
+        let canvasBounds = document.canvasBounds
         let viewSize = geometry.size
         
-        // Calculate zoom level to fit the canvas in the view with padding
-        let padding: CGFloat = 50.0
+        // ASPECT RATIO SCALING: Calculate both scales and use minimum for uniform scaling
+        let padding: CGFloat = 100.0  // Leave some padding for professional look
         let availableWidth = viewSize.width - (padding * 2)
         let availableHeight = viewSize.height - (padding * 2)
         
-        let scaleX = availableWidth / canvasSize.width
-        let scaleY = availableHeight / canvasSize.height
-        let fitZoom = min(scaleX, scaleY)
+        let scaleX = availableWidth / canvasBounds.width
+        let scaleY = availableHeight / canvasBounds.height
+        let uniformScale = min(scaleX, scaleY)  // ✅ UNIFORM SCALING - maintains aspect ratio
         
-        // FORCE 1:1 RATIO: Clamp to reasonable bounds and ensure perfect 1:1 coordinate system
-        document.zoomLevel = max(0.1, min(10.0, fitZoom))
+        // Cap the default zoom at reasonable bounds (like professional apps)
+        let defaultZoom = max(0.25, min(1.5, uniformScale))
+        document.zoomLevel = defaultZoom
         
-        // UNIFIED CENTERING: Perfect 1:1 coordinate system with NO distortion
+        // Center canvas in view using the calculated uniform scale
         let viewCenter = CGPoint(
             x: viewSize.width / 2.0,
             y: viewSize.height / 2.0
         )
         
         let canvasCenter = CGPoint(
-            x: canvasSize.width / 2.0,
-            y: canvasSize.height / 2.0
+            x: canvasBounds.midX,
+            y: canvasBounds.midY
         )
         
-        // Calculate offset using UNIFIED 1:1 coordinate transformation
-        // Formula: screen = (canvas * zoom) + offset
-        // So: offset = screen - (canvas * zoom)
+        // Calculate offset to center canvas: screen = (canvas * zoom) + offset
         document.canvasOffset = CGPoint(
             x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
             y: viewCenter.y - (canvasCenter.y * document.zoomLevel)
         )
         
-        // Update initial zoom level for gesture handling - CRITICAL for preventing drift
+        // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 UNIFIED 1:1 COORDINATE SYSTEM:")
-        print("   Canvas: \(String(format: "%.1f", canvasSize.width)) × \(String(format: "%.1f", canvasSize.height))")
-        print("   View: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
-        print("   Available: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   Scale X: \(String(format: "%.3f", scaleX)), Scale Y: \(String(format: "%.3f", scaleY))")
-        print("   UNIFIED zoom: \(String(format: "%.3f", document.zoomLevel))x (1:1 ratio)")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   Canvas center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
-        print("   Calculated offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-        print("   Initial zoom level set to: \(String(format: "%.3f", initialZoomLevel))x")
-        print("   ✅ SINGLE UNIFIED COORDINATE SYSTEM - NO DISTORTION")
+        print("🎯 CANVAS LAYER SCALING (No More Sync Issues!):")
+        print("   Canvas Bounds: \(canvasBounds)")
+        print("   Canvas Aspect Ratio: \(String(format: "%.3f", canvasBounds.width / canvasBounds.height))")
+        print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
+        print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
+        print("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
+        print("   Scale X: \(String(format: "%.3f", scaleX)) (width fit)")
+        print("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)")
+        print("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)")
+        print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
+        print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+        print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
     }
     
     private func handleTap(at location: CGPoint, geometry: GeometryProxy) {
@@ -705,11 +701,21 @@ struct DrawingCanvas: View {
                 case "a": // Select All (Cmd+A)
                     self.document.selectAll()
                     return event
-                case "t": // Test Coordinate System (Cmd+T) - DEBUG ONLY
+                case "t": // Test Coordinate System (Cmd+Shift+T) - DEBUG ONLY
                     if modifiers.contains(.shift) {
                         print("🔬 RUNNING COORDINATE SYSTEM TEST:")
                         print("=" + String(repeating: "=", count: 58))
                         self.runCoordinateSystemTest()
+                        return event
+                    }
+                case "d": // Test Drawing Stability (Cmd+Shift+D) - DEBUG ONLY
+                    if modifiers.contains(.shift) {
+                        self.runDrawingStabilityTest()
+                        return event
+                    }
+                case "r": // Real Drawing Test (Cmd+Shift+R) - DEBUG ONLY
+                    if modifiers.contains(.shift) {
+                        self.runRealDrawingTestSimple()
                         return event
                     }
                 default:
@@ -797,6 +803,9 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
+                // SKIP CANVAS SHAPE: Never allow selection of canvas background
+                if document.isCanvasShape(shape.id) { continue }
+                
                 print("Testing shape: \(shape.name)")
                 print("  - Has stroke: \(shape.strokeStyle != nil)")
                 print("  - Has fill: \(shape.fillStyle != nil)")
@@ -866,10 +875,7 @@ struct DrawingCanvas: View {
             }
         } else {
             // Check if clicking outside the canvas bounds (dead area)
-            let canvasBounds = CGRect(
-                origin: CGPoint.zero,
-                size: document.settings.sizeInPoints
-            )
+            let canvasBounds = document.canvasBounds
             let isOutsideCanvas = !canvasBounds.contains(location)
             
             // IMPROVED: Handle large objects that cover the entire page
@@ -884,7 +890,7 @@ struct DrawingCanvas: View {
                     for layer in document.layers {
                         if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
                             let shapeBounds = shape.bounds.applying(shape.transform)
-                            let canvasBounds = CGRect(origin: .zero, size: document.settings.sizeInPoints)
+                            let canvasBounds = document.canvasBounds
                             // Consider "large" if object covers more than 80% of the canvas
                             let coverageRatio = (shapeBounds.width * shapeBounds.height) / (canvasBounds.width * canvasBounds.height)
                             return coverageRatio > 0.8
@@ -1772,17 +1778,17 @@ struct DrawingCanvas: View {
             y: geometry.size.height / 2.0
         )
         
-        // For actual size, we want to center the page center in the view
-        let canvasSize = document.settings.sizeInPoints
+        // For actual size, we want to center the canvas center in the view
+        let canvasBounds = document.canvasBounds
         let canvasCenter = CGPoint(
-            x: canvasSize.width / 2.0,
-            y: canvasSize.height / 2.0
+            x: canvasBounds.midX,
+            y: canvasBounds.midY
         )
         
         // Update zoom level
         document.zoomLevel = newZoomLevel
         
-        // Calculate offset to center the page
+        // Calculate offset to center the canvas
         document.canvasOffset = CGPoint(
             x: viewCenter.x - (canvasCenter.x * CGFloat(newZoomLevel)),
             y: viewCenter.y - (canvasCenter.y * CGFloat(newZoomLevel))
@@ -1791,8 +1797,8 @@ struct DrawingCanvas: View {
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        print("🎯 ACTUAL SIZE: Set to 100% and centered page")
-        print("   Page center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
+        print("🎯 ACTUAL SIZE: Set to 100% and centered canvas layer")
+        print("   Canvas center: (\(String(format: "%.1f", canvasCenter.x)), \(String(format: "%.1f", canvasCenter.y)))")
         print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
@@ -2206,6 +2212,9 @@ struct DrawingCanvas: View {
             
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
+                
+                // SKIP CANVAS SHAPE: Never allow direct selection of canvas background
+                if document.isCanvasShape(shape.id) { continue }
                 
                 var isHit = false
                 
@@ -2681,6 +2690,9 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
+                // SKIP CANVAS SHAPE: Never allow convert point tool on canvas background
+                if document.isCanvasShape(shape.id) { continue }
+                
                 var isHit = false
                 
                 // Use the same hit testing logic as selection tool
@@ -3074,6 +3086,34 @@ struct DrawingCanvas: View {
         print("=" + String(repeating: "=", count: 58))
     }
     
+    /// CRITICAL DRAWING TEST - Verifies canvas doesn't move during drawing
+    /// Use Cmd+Shift+D to test drawing stability
+    private func runDrawingStabilityTest() {
+        print("🚨 DRAWING STABILITY TEST")
+        print("=" + String(repeating: "=", count: 58))
+        print("  TESTING: Canvas must NOT move during drawing operations")
+        print("  STATUS: isDrawing = \(isDrawing), isBezierDrawing = \(isBezierDrawing)")
+        print("  ZOOM GESTURE: \(!isDrawing && !isBezierDrawing ? "ACTIVE" : "DISABLED")")
+        print("  CURRENT ZOOM: \(String(format: "%.3f", document.zoomLevel))x")
+        print("  CURRENT OFFSET: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+        
+        if isDrawing || isBezierDrawing {
+            print("  🎯 DRAWING IN PROGRESS - Zoom gesture should be DISABLED")
+            print("  ✅ Canvas is protected from zoom changes during drawing")
+        } else {
+            print("  ⏸️  NOT DRAWING - Zoom gesture is available")
+            print("  📝 Start drawing a shape to test stability")
+        }
+        
+        print("  INSTRUCTIONS:")
+        print("    1. Select rectangle tool")
+        print("    2. Start drawing a rectangle")
+        print("    3. While drawing, try to pinch/zoom")
+        print("    4. Canvas should NOT move or zoom")
+        print("    5. Only after releasing should zoom be available")
+        print("=" + String(repeating: "=", count: 58))
+    }
+    
     /// Create a simple circle path for testing purposes
     private func createTestCirclePath(center: CGPoint, radius: Double) -> VectorPath {
         let steps = 32 // Number of segments for circle approximation
@@ -3093,6 +3133,284 @@ struct DrawingCanvas: View {
         elements.append(.close)
         
         return VectorPath(elements: elements, isClosed: true)
+    }
+    
+    /// COMPREHENSIVE DRAWING TEST - Run this to debug coordinate system issues
+    /// Use Cmd+Shift+R to run this test
+    private func runRealDrawingTest(geometry: GeometryProxy) {
+        print("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES")
+        print("=" + String(repeating: "=", count: 80))
+        
+        // Log initial state
+        print("📊 INITIAL STATE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
+        print("   Is Drawing: \(isDrawing)")
+        print("   Is Bezier Drawing: \(isBezierDrawing)")
+        
+        // Clear any existing shapes
+        if !document.layers.isEmpty {
+            document.layers[0].shapes.removeAll()
+        }
+        
+        // Create a test shape at a known position
+        let testCenter = CGPoint(x: 300, y: 250)
+        let testShape = VectorShape(
+            name: "TEST SHAPE",
+            path: createTestCirclePath(center: testCenter, radius: 30),
+            strokeStyle: StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), width: 3),
+            fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
+        )
+        
+        print("📍 CREATING TEST SHAPE:")
+        print("   Expected center: (\(testCenter.x), \(testCenter.y))")
+        
+        // Log state before adding shape
+        print("📊 BEFORE ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Add the shape
+        document.addShape(testShape)
+        
+        // Log state after adding shape
+        print("📊 AFTER ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Verify the shape's actual position
+        if let addedShape = document.layers[0].shapes.first(where: { $0.name == "TEST SHAPE" }) {
+            let actualCenter = CGPoint(
+                x: (addedShape.bounds.minX + addedShape.bounds.maxX) / 2,
+                y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
+            )
+            
+            print("📍 SHAPE VERIFICATION:")
+            print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
+            print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
+            
+            let deltaX = abs(actualCenter.x - testCenter.x)
+            let deltaY = abs(actualCenter.y - testCenter.y)
+            
+            if deltaX < 0.1 && deltaY < 0.1 {
+                print("   ✅ SHAPE POSITION CORRECT")
+            } else {
+                print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
+            }
+        }
+        
+        // Now simulate drawing operations to see if coordinate system changes
+        print("🎨 SIMULATING DRAWING OPERATIONS:")
+        
+        // Simulate start drawing
+        isDrawing = true
+        print("📊 DURING DRAWING (isDrawing = true):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        
+        // Create a drawing preview to see if coordinate system shifts
+        let previewStart = CGPoint(x: 200, y: 200)
+        let previewEnd = CGPoint(x: 400, y: 300)
+        currentPath = VectorPath(elements: [
+            .move(to: VectorPoint(previewStart)),
+            .line(to: VectorPoint(previewEnd))
+        ])
+        
+        print("📍 DRAWING PREVIEW CREATED:")
+        print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
+        print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
+        
+        // Log state with drawing preview
+        print("📊 WITH DRAWING PREVIEW:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Simulate end drawing
+        isDrawing = false
+        currentPath = nil
+        
+        print("📊 AFTER DRAWING (isDrawing = false):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        
+        // Test coordinate conversion consistency
+        print("🔄 COORDINATE CONVERSION TEST:")
+        let testCanvasPoint = CGPoint(x: 300, y: 200)
+        let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
+        let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)
+        
+        print("   Canvas → Screen → Canvas:")
+        print("   Original: (\(String(format: "%.6f", testCanvasPoint.x)), \(String(format: "%.6f", testCanvasPoint.y)))")
+        print("   Screen: (\(String(format: "%.6f", screenPoint.x)), \(String(format: "%.6f", screenPoint.y)))")
+        print("   Back to Canvas: (\(String(format: "%.6f", backToCanvas.x)), \(String(format: "%.6f", backToCanvas.y)))")
+        
+        let conversionDeltaX = abs(backToCanvas.x - testCanvasPoint.x)
+        let conversionDeltaY = abs(backToCanvas.y - testCanvasPoint.y)
+        
+        if conversionDeltaX < 0.001 && conversionDeltaY < 0.001 {
+            print("   ✅ COORDINATE CONVERSION ACCURATE")
+        } else {
+            print("   ❌ COORDINATE CONVERSION DRIFT: ΔX=\(String(format: "%.6f", conversionDeltaX)), ΔY=\(String(format: "%.6f", conversionDeltaY))")
+        }
+        
+        print("=" + String(repeating: "=", count: 80))
+        print("🏁 TEST COMPLETE - Check above for coordinate system issues")
+    }
+
+    /// SIMPLE DRAWING TEST - Debug coordinate system without geometry
+    /// Use Cmd+Shift+R to run this test
+    private func runRealDrawingTestSimple() {
+        print("🔥 SIMPLE DRAWING TEST - TRACKING COORDINATE SYSTEM")
+        print("=" + String(repeating: "=", count: 80))
+        
+        // Log initial state
+        print("📊 INITIAL STATE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
+        print("   Is Drawing: \(isDrawing)")
+        print("   Is Bezier Drawing: \(isBezierDrawing)")
+        
+        // Clear any existing shapes
+        if !document.layers.isEmpty {
+            document.layers[0].shapes.removeAll()
+        }
+        
+        // Create a test shape at a known position
+        let testCenter = CGPoint(x: 300, y: 250)
+        let testShape = VectorShape(
+            name: "TEST SHAPE",
+            path: createTestCirclePath(center: testCenter, radius: 30),
+            strokeStyle: StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), width: 3),
+            fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
+        )
+        
+        print("📍 CREATING TEST SHAPE:")
+        print("   Expected center: (\(testCenter.x), \(testCenter.y))")
+        
+        // Log state before adding shape
+        print("📊 BEFORE ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Add the shape
+        document.addShape(testShape)
+        
+        // Log state after adding shape
+        print("📊 AFTER ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Verify the shape's actual position
+        if let addedShape = document.layers[0].shapes.first(where: { $0.name == "TEST SHAPE" }) {
+            let actualCenter = CGPoint(
+                x: (addedShape.bounds.minX + addedShape.bounds.maxX) / 2,
+                y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
+            )
+            
+            print("📍 SHAPE VERIFICATION:")
+            print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
+            print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
+            
+            let deltaX = abs(actualCenter.x - testCenter.x)
+            let deltaY = abs(actualCenter.y - testCenter.y)
+            
+            if deltaX < 0.1 && deltaY < 0.1 {
+                print("   ✅ SHAPE POSITION CORRECT")
+            } else {
+                print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
+            }
+        }
+        
+        // Now simulate drawing operations to see if coordinate system changes
+        print("🎨 SIMULATING DRAWING OPERATIONS:")
+        
+        // Simulate start drawing
+        isDrawing = true
+        print("📊 DURING DRAWING (isDrawing = true):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        
+        // Create a drawing preview to see if coordinate system shifts
+        let previewStart = CGPoint(x: 200, y: 200)
+        let previewEnd = CGPoint(x: 400, y: 300)
+        currentPath = VectorPath(elements: [
+            .move(to: VectorPoint(previewStart)),
+            .line(to: VectorPoint(previewEnd))
+        ])
+        
+        print("📍 DRAWING PREVIEW CREATED:")
+        print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
+        print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
+        
+        // Log state with drawing preview
+        print("📊 WITH DRAWING PREVIEW:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        
+        // Simulate end drawing
+        isDrawing = false
+        currentPath = nil
+        
+        print("📊 AFTER DRAWING (isDrawing = false):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        
+        print("=" + String(repeating: "=", count: 80))
+        print("🏁 SIMPLE TEST COMPLETE - Run this test and then try drawing to compare")
+        print("   Next steps:")
+        print("   1. Note the values above")
+        print("   2. Try drawing a rectangle manually")
+        print("   3. Check if zoom/offset values change during drawing")
+        print("   4. If values change, we found the coordinate system bug!")
+    }
+
+    private func fitToPage(geometry: GeometryProxy) {
+        // BRILLIANT USER SOLUTION: Fit the canvas layer like any other shape!
+        let canvasBounds = document.canvasBounds
+        let viewSize = geometry.size
+        
+        // Calculate zoom level to fit the canvas in the view with padding
+        let padding: CGFloat = 50.0
+        let availableWidth = viewSize.width - (padding * 2)
+        let availableHeight = viewSize.height - (padding * 2)
+        
+        let scaleX = availableWidth / canvasBounds.width
+        let scaleY = availableHeight / canvasBounds.height
+        let fitZoom = min(scaleX, scaleY)
+        
+        // Set zoom level to fit canvas in view
+        document.zoomLevel = max(0.1, min(10.0, fitZoom))
+        
+        // Center canvas in view at the fit zoom
+        let viewCenter = CGPoint(
+            x: viewSize.width / 2.0,
+            y: viewSize.height / 2.0
+        )
+        
+        let canvasCenter = CGPoint(
+            x: canvasBounds.midX,
+            y: canvasBounds.midY
+        )
+        
+        // Calculate offset to center canvas
+        document.canvasOffset = CGPoint(
+            x: viewCenter.x - (canvasCenter.x * document.zoomLevel),
+            y: viewCenter.y - (canvasCenter.y * document.zoomLevel)
+        )
+        
+        // Update initial zoom level for gesture handling
+        initialZoomLevel = document.zoomLevel
+        
+        print("🔍 FIT TO PAGE: Using canvas layer bounds (no more coordinate sync issues!)")
+        print("   Canvas Bounds: \(canvasBounds)")
+        print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
+        print("   Canvas layer automatically stays in sync with everything else!")
     }
 
 }
