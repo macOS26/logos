@@ -175,16 +175,16 @@ struct ColorSwatchGrid: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Current Fill and Stroke Colors
-            HStack(spacing: 4) {
+            // Current Fill and Stroke Colors - FIXED: Match grid style but bigger
+            HStack(spacing: 4) {  // Tighter spacing as requested
                 Button {
                     applyFillColorToSelected(currentFillColor)
                 } label: {
                     Rectangle()
                         .fill(currentFillColor.color)
-                        .frame(width: 24, height: 24)
-                        .border(Color.gray, width: 1)
-                        .cornerRadius(4)
+                        .frame(width: 20, height: 20)  // 20x20 as requested
+                        .border(Color.gray, width: 0.5)  // Match grid border
+                        // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Current Fill Color (Click to apply to selected objects)")
@@ -194,14 +194,14 @@ struct ColorSwatchGrid: View {
                 } label: {
                     Rectangle()
                         .fill(currentStrokeColor.color)
-                        .frame(width: 24, height: 24)
-                        .border(Color.gray, width: 1)
-                        .cornerRadius(4)
+                        .frame(width: 20, height: 20)  // 20x20 as requested
+                        .border(Color.gray, width: 0.5)  // Match grid border
+                        // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Current Stroke Color (Click to apply to selected objects)")
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 4)  // Adjusted padding
             
             // Color Swatches
             LazyVGrid(columns: columns, spacing: 1) {
