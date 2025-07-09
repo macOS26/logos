@@ -74,10 +74,15 @@ struct HorizontalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // FIXED RULER ALIGNMENT: Calculate ruler range accounting for canvas padding
-        // The canvas coordinate 0 should appear at canvasOffset.x + 20 on screen (due to ruler thickness)
-        let startX = (-canvasOffset.x - 20) / zoomLevel  // Canvas coordinate at left edge of ruler
-        let endX = (size.width - canvasOffset.x - 20) / zoomLevel  // Canvas coordinate at right edge of ruler
+        // CORRECTED RULER ALIGNMENT: Match exactly how canvas content is positioned
+        // Canvas content position: x * zoomLevel + canvasOffset.x (in canvas coordinate space)
+        // But canvas is offset by 20px due to ruler padding in MainView
+        // So canvas coordinate 0 appears at: 0 * zoomLevel + canvasOffset.x + 20 in ruler space
+        
+        // Calculate what canvas coordinates are visible in the ruler
+        let canvasPaddingOffset = 20.0  // Canvas is padded 20px from ruler edge
+        let startX = (-canvasOffset.x - canvasPaddingOffset) / zoomLevel
+        let endX = (size.width - canvasOffset.x - canvasPaddingOffset) / zoomLevel
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -86,18 +91,18 @@ struct HorizontalRuler: View {
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
-            // FIXED: Proper horizontal ruler alignment - account for canvas padding due to ruler thickness
-            let screenX = x * zoomLevel + canvasOffset.x + 20
+            // CORRECTED: Canvas coordinate x appears at ruler position (x * zoom + offset + padding)
+            let rulerX = x * zoomLevel + canvasOffset.x + canvasPaddingOffset
             
-            if screenX >= 0 && screenX <= size.width {
+            if rulerX >= 0 && rulerX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 let tickHeight: CGFloat = isMajorTick ? 8 : 4
                 
                 // Draw tick
                 context.stroke(
                     Path { path in
-                        path.move(to: CGPoint(x: screenX, y: size.height - tickHeight))
-                        path.addLine(to: CGPoint(x: screenX, y: size.height))
+                        path.move(to: CGPoint(x: rulerX, y: size.height - tickHeight))
+                        path.addLine(to: CGPoint(x: rulerX, y: size.height))
                     },
                     with: .color(.primary),
                     lineWidth: 0.5
@@ -112,7 +117,7 @@ struct HorizontalRuler: View {
                         .font(.system(size: 8))
                         .foregroundColor(.primary)
                     
-                    context.draw(text, at: CGPoint(x: screenX + 2, y: size.height - 12))
+                    context.draw(text, at: CGPoint(x: rulerX + 2, y: size.height - 12))
                 }
             }
             
@@ -153,10 +158,15 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // FIXED RULER ALIGNMENT: Calculate ruler range accounting for canvas padding
-        // The canvas coordinate 0 should appear at canvasOffset.y + 20 on screen (due to ruler thickness)
-        let startY = (-canvasOffset.y - 20) / zoomLevel  // Canvas coordinate at top edge of ruler
-        let endY = (size.height - canvasOffset.y - 20) / zoomLevel  // Canvas coordinate at bottom edge of ruler
+        // CORRECTED RULER ALIGNMENT: Match exactly how canvas content is positioned
+        // Canvas content position: y * zoomLevel + canvasOffset.y (in canvas coordinate space)
+        // But canvas is offset by 20px due to ruler padding in MainView
+        // So canvas coordinate 0 appears at: 0 * zoomLevel + canvasOffset.y + 20 in ruler space
+        
+        // Calculate what canvas coordinates are visible in the ruler
+        let canvasPaddingOffset = 20.0  // Canvas is padded 20px from ruler edge
+        let startY = (-canvasOffset.y - canvasPaddingOffset) / zoomLevel
+        let endY = (size.height - canvasOffset.y - canvasPaddingOffset) / zoomLevel
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -165,18 +175,18 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            // FIXED: Proper vertical ruler alignment - account for canvas padding due to ruler thickness
-            let screenY = y * zoomLevel + canvasOffset.y + 20
+            // CORRECTED: Canvas coordinate y appears at ruler position (y * zoom + offset + padding)
+            let rulerY = y * zoomLevel + canvasOffset.y + canvasPaddingOffset
             
-            if screenY >= 0 && screenY <= size.height {
+            if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 let tickWidth: CGFloat = isMajorTick ? 8 : 4
                 
                 // Draw tick
                 context.stroke(
                     Path { path in
-                        path.move(to: CGPoint(x: size.width - tickWidth, y: screenY))
-                        path.addLine(to: CGPoint(x: size.width, y: screenY))
+                        path.move(to: CGPoint(x: size.width - tickWidth, y: rulerY))
+                        path.addLine(to: CGPoint(x: size.width, y: rulerY))
                     },
                     with: .color(.primary),
                     lineWidth: 0.5
@@ -194,7 +204,7 @@ struct VerticalRuler: View {
                     // Rotate text for vertical ruler
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -screenY - 8, y: size.width - 12))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 8, y: size.width - 12))
                 }
             }
             
