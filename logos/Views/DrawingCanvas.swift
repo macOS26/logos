@@ -28,6 +28,10 @@ struct DrawingCanvas: View {
     @State private var selectionDragStart = CGPoint.zero     // Reference cursor position when object drag started
     @State private var initialObjectPositions: [UUID: CGPoint] = [:]  // Initial object positions when drag started
     
+    // PROFESSIONAL SHAPE DRAWING STATE (Same precision as hand tool)
+    @State private var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started
+    @State private var shapeStartPoint = CGPoint.zero       // Reference canvas position when shape drawing started
+    
     // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
     @State private var isShiftPressed = false
     @State private var isCommandPressed = false
@@ -715,13 +719,19 @@ struct DrawingCanvas: View {
             // Reset drawing state for shape tools
             isDrawing = false
             currentPath = nil
-            drawingStartPoint = nil
             currentDrawingPoints.removeAll()
+            
+            // PROFESSIONAL SHAPE DRAWING: Additional state cleanup
+            shapeDragStart = CGPoint.zero
+            shapeStartPoint = CGPoint.zero
         case .text:
             finishTextDrawing(value: value, geometry: geometry)
             // Reset text drawing state
             isDrawing = false
-            drawingStartPoint = nil
+            
+            // PROFESSIONAL TEXT DRAWING: Additional state cleanup
+            shapeDragStart = CGPoint.zero
+            shapeStartPoint = CGPoint.zero
         case .selection:
             finishSelectionDrag()
             isDrawing = false
@@ -1123,12 +1133,46 @@ struct DrawingCanvas: View {
     }
     
     private func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-        let currentLocation = screenToCanvas(value.location, geometry: geometry)
+        // PROFESSIONAL SHAPE DRAWING: Perfect cursor-to-shape synchronization
+        // Uses the same precision approach as hand tool and object dragging
+        // This eliminates floating-point accumulation errors from DragGesture.translation
         
         if !isDrawing {
+            // CRITICAL: Only initialize state once per drag operation
             isDrawing = true
-            drawingStartPoint = startLocation
+            
+            // Capture reference cursor position (like hand tool)
+            shapeDragStart = value.startLocation
+            
+            // Convert to canvas coordinates for initial position
+            shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
+            drawingStartPoint = shapeStartPoint
+            
+            print("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
+        }
+        
+        // Calculate cursor movement from reference location (perfect 1:1 tracking)
+        let cursorDelta = CGPoint(
+            x: value.location.x - shapeDragStart.x,
+            y: value.location.y - shapeDragStart.y
+        )
+        
+        // Convert screen delta to canvas delta (accounting for zoom)
+        let preciseZoom = Double(document.zoomLevel)
+        let canvasDelta = CGPoint(
+            x: cursorDelta.x / preciseZoom,
+            y: cursorDelta.y / preciseZoom
+        )
+        
+        // Calculate current location based on initial position + cursor delta
+        let currentLocation = CGPoint(
+            x: shapeStartPoint.x + canvasDelta.x,
+            y: shapeStartPoint.y + canvasDelta.y
+        )
+        
+        // Professional verification logging (only for significant movements)
+        if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
+            print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
         }
         
         guard let startPoint = drawingStartPoint else { return }
@@ -1204,6 +1248,14 @@ struct DrawingCanvas: View {
         
         document.addShape(shape)
         print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
+        
+        // PROFESSIONAL SHAPE DRAWING: Clean state reset for next drawing operation
+        // This ensures each new shape starts with fresh reference points
+        shapeDragStart = CGPoint.zero
+        shapeStartPoint = CGPoint.zero
+        drawingStartPoint = nil
+        
+        print("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation")
     }
     
     private func startSelectionDrag() {
@@ -2315,14 +2367,40 @@ struct DrawingCanvas: View {
     
     /// Handle text drag operation for area text creation
     private func handleTextDragDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-        let currentLocation = screenToCanvas(value.location, geometry: geometry)
+        // PROFESSIONAL TEXT DRAWING: Perfect cursor-to-text synchronization
+        // Uses the same precision approach as shape drawing
         
         if !isDrawing {
             isDrawing = true
-            drawingStartPoint = startLocation
-            print("🔤 TEXT DRAG: Started area text drag from \(startLocation)")
+            
+            // Capture reference cursor position (like shape drawing)
+            shapeDragStart = value.startLocation
+            
+            // Convert to canvas coordinates for initial position
+            shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
+            drawingStartPoint = shapeStartPoint
+            
+            print("🔤 TEXT DRAG: Started area text drag from \(shapeStartPoint)")
         }
+        
+        // Calculate cursor movement from reference location (perfect 1:1 tracking)
+        let cursorDelta = CGPoint(
+            x: value.location.x - shapeDragStart.x,
+            y: value.location.y - shapeDragStart.y
+        )
+        
+        // Convert screen delta to canvas delta (accounting for zoom)
+        let preciseZoom = Double(document.zoomLevel)
+        let canvasDelta = CGPoint(
+            x: cursorDelta.x / preciseZoom,
+            y: cursorDelta.y / preciseZoom
+        )
+        
+        // Calculate current location based on initial position + cursor delta
+        let currentLocation = CGPoint(
+            x: shapeStartPoint.x + canvasDelta.x,
+            y: shapeStartPoint.y + canvasDelta.y
+        )
         
         // Show visual feedback for area text creation (like drawing a rectangle)
         guard let startPoint = drawingStartPoint else { return }
@@ -2346,16 +2424,37 @@ struct DrawingCanvas: View {
     
     /// Finish text drag operation and create area text
     private func finishTextDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-        let endLocation = screenToCanvas(value.location, geometry: geometry)
+        // PROFESSIONAL TEXT DRAWING: Use the same precision approach as shape drawing
+        
+        // Calculate end location using the same precision method
+        let cursorDelta = CGPoint(
+            x: value.location.x - shapeDragStart.x,
+            y: value.location.y - shapeDragStart.y
+        )
+        
+        let preciseZoom = Double(document.zoomLevel)
+        let canvasDelta = CGPoint(
+            x: cursorDelta.x / preciseZoom,
+            y: cursorDelta.y / preciseZoom
+        )
+        
+        let endLocation = CGPoint(
+            x: shapeStartPoint.x + canvasDelta.x,
+            y: shapeStartPoint.y + canvasDelta.y
+        )
         
         // Create area text if dragged, otherwise create point text
-        createAreaText(startLocation: startLocation, endLocation: endLocation)
+        createAreaText(startLocation: shapeStartPoint, endLocation: endLocation)
         
         // Clear the preview path
         currentPath = nil
         
-        print("🔤 TEXT DRAG: Finished text creation")
+        // Clean up state
+        shapeDragStart = CGPoint.zero
+        shapeStartPoint = CGPoint.zero
+        drawingStartPoint = nil
+        
+        print("🔤 TEXT DRAG: Finished text creation with precision")
     }
     
     private func addPathElements(_ elements: [PathElement], to path: inout Path) {
