@@ -1732,9 +1732,12 @@ struct DrawingCanvas: View {
     }
     
     private func handlePanGesture(value: DragGesture.Value) {
+        // PROFESSIONAL HAND TOOL: 33% speed for precise control (Adobe Illustrator standards)
+        let sensitivityFactor: CGFloat = 0.33
+        
         document.canvasOffset = CGPoint(
-            x: document.canvasOffset.x + value.translation.width,
-            y: document.canvasOffset.y + value.translation.height
+            x: document.canvasOffset.x + (value.translation.width * sensitivityFactor),
+            y: document.canvasOffset.y + (value.translation.height * sensitivityFactor)
         )
     }
     
