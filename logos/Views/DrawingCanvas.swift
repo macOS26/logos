@@ -206,6 +206,33 @@ struct DrawingCanvas: View {
                 }
             }
             
+            // CRITICAL FIX: Render text objects (they were missing!)
+            ForEach(document.textObjects.indices, id: \.self) { textIndex in
+                let textObject = document.textObjects[textIndex]
+                if textObject.isVisible {
+                    TextObjectView(
+                        textObject: textObject,
+                        isSelected: document.selectedTextIDs.contains(textObject.id),
+                        isEditing: textObject.isEditing,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        onTextChange: { newText in
+                            // Update the text object in the document
+                            if let index = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                                document.textObjects[index].content = newText
+                                document.textObjects[index].updateBounds()
+                            }
+                        },
+                        onEditingChanged: { isEditing in
+                            // Update editing state
+                            if let index = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                                document.textObjects[index].isEditing = isEditing
+                            }
+                        }
+                    )
+                }
+            }
+            
             canvasOverlays(geometry: geometry)
         }
     }
@@ -614,7 +641,7 @@ struct DrawingCanvas: View {
         switch document.currentTool {
         case .hand:
             handlePanGesture(value: value)
-        case .line, .rectangle, .circle, .star:
+        case .line, .rectangle, .circle, .star, .polygon:
             handleShapeDrawing(value: value, geometry: geometry)
         case .selection:
             if !isDrawing {
@@ -651,7 +678,7 @@ struct DrawingCanvas: View {
     
     private func handleDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         switch document.currentTool {
-        case .line, .rectangle, .circle, .star:
+        case .line, .rectangle, .circle, .star, .polygon:
             finishShapeDrawing(value: value, geometry: geometry)
             // Reset drawing state for shape tools
             isDrawing = false

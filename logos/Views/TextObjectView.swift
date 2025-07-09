@@ -40,7 +40,7 @@ struct TextObjectView: View {
                 selectionOutline
             }
         }
-        // CRITICAL FIX: Use unified coordinate system - apply scale/offset first, then transform
+        // PROFESSIONAL COORDINATE SYSTEM: Match exactly with shapes - same as VectorShape rendering
         .position(textObject.position)
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
