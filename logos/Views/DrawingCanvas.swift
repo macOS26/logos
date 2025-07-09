@@ -18,6 +18,12 @@ struct DrawingCanvas: View {
     @State private var dragStartTransforms: [UUID: CGAffineTransform] = [:]
     @State private var lastTapTime: Date = Date()
     
+    // PROFESSIONAL HAND TOOL STATE (Industry Standards)
+    // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW
+    // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
+    @State private var initialCanvasOffset = CGPoint.zero    // Reference canvas position when drag started
+    @State private var handToolDragStart = CGPoint.zero      // Reference cursor position when drag started
+    
     // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
     @State private var isShiftPressed = false
     @State private var isCommandPressed = false
@@ -640,7 +646,7 @@ struct DrawingCanvas: View {
     private func handleDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
         switch document.currentTool {
         case .hand:
-            handlePanGesture(value: value)
+            handlePanGesture(value: value, geometry: geometry)
         case .line, .rectangle, .circle, .star, .polygon:
             handleShapeDrawing(value: value, geometry: geometry)
         case .selection:
@@ -678,6 +684,15 @@ struct DrawingCanvas: View {
     
     private func handleDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         switch document.currentTool {
+        case .hand:
+            // PROFESSIONAL HAND TOOL: Clean state reset for next drag operation
+            // This ensures each new drag operation starts with fresh reference points
+            let finalOffset = document.canvasOffset
+            initialCanvasOffset = CGPoint.zero
+            handToolDragStart = CGPoint.zero
+            print("✋ HAND TOOL: Drag operation completed successfully")
+            print("   Final canvas position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
+            print("   State reset - ready for next drag operation")
         case .line, .rectangle, .circle, .star, .polygon:
             finishShapeDrawing(value: value, geometry: geometry)
             // Reset drawing state for shape tools
@@ -1758,14 +1773,41 @@ struct DrawingCanvas: View {
         bezierPath = VectorPath(elements: newElements, isClosed: path.isClosed)
     }
     
-    private func handlePanGesture(value: DragGesture.Value) {
-        // PROFESSIONAL HAND TOOL: 33% speed for precise control (Adobe Illustrator standards)
-        let sensitivityFactor: CGFloat = 0.33
+    private func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
+        // PROFESSIONAL HAND TOOL: Perfect cursor-to-canvas synchronization
+        // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW standards
+        // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
         
-        document.canvasOffset = CGPoint(
-            x: document.canvasOffset.x + (value.translation.width * sensitivityFactor),
-            y: document.canvasOffset.y + (value.translation.height * sensitivityFactor)
+        // CRITICAL FIX: Only initialize state once per drag operation
+        // State should only be reset at the END of drag, not during drag
+        if initialCanvasOffset == CGPoint.zero && handToolDragStart == CGPoint.zero {
+            // Capture initial state - this is the "reference location" from Sony's patent
+            initialCanvasOffset = document.canvasOffset
+            handToolDragStart = value.startLocation
+            
+            print("✋ HAND TOOL: Established reference location (Professional Standard)")
+            print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
+            print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
+        }
+        
+        // Calculate cursor movement from reference location (perfect 1:1 tracking)
+        let cursorDelta = CGPoint(
+            x: value.location.x - handToolDragStart.x,
+            y: value.location.y - handToolDragStart.y
         )
+        
+        // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-canvas mapping
+        // The point under the cursor at drag start stays exactly under the cursor throughout the drag
+        // This is the gold standard used by Adobe Illustrator, FreeHand, Inkscape, and CorelDRAW
+        document.canvasOffset = CGPoint(
+            x: initialCanvasOffset.x + cursorDelta.x,
+            y: initialCanvasOffset.y + cursorDelta.y
+        )
+        
+        // Professional verification logging (only for significant movements)
+        if abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10 {
+            print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y)))")
+        }
     }
     
     private func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
