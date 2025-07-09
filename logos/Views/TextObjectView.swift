@@ -41,9 +41,12 @@ struct TextObjectView: View {
             }
         }
         // PROFESSIONAL COORDINATE SYSTEM: Match exactly with shapes - same as VectorShape rendering
-        .position(textObject.position)
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
+        // Use the same coordinate system as shapes to prevent coordinate drift
+        .position(
+            x: textObject.position.x * zoomLevel + canvasOffset.x,
+            y: textObject.position.y * zoomLevel + canvasOffset.y
+        )
+        .scaleEffect(zoomLevel, anchor: .center)
         .transformEffect(textObject.transform)
         .onAppear {
             editingText = textObject.content
@@ -73,8 +76,8 @@ struct TextObjectView: View {
                         .stroke(Color.blue, lineWidth: 1.0)
                 )
                 .frame(
-                    width: max(textSize.width + 20, 100),
-                    height: textSize.height + 10
+                    width: editingFrameSize.width,
+                    height: editingFrameSize.height
                 )
             
             // Professional text field for editing
@@ -98,8 +101,8 @@ struct TextObjectView: View {
                     }
                 }
                 .frame(
-                    width: max(textSize.width + 16, 96),
-                    height: textSize.height + 6
+                    width: editingFrameSize.width - 4,
+                    height: editingFrameSize.height - 4
                 )
                 .padding(.horizontal, 2)
                 .padding(.vertical, 2)
@@ -120,8 +123,8 @@ struct TextObjectView: View {
             .lineSpacing(textObject.typography.lineHeight - textObject.typography.fontSize)
             .kerning(textObject.typography.letterSpacing)
             .frame(
-                width: textSize.width,
-                height: textSize.height,
+                width: displayFrameSize.width,
+                height: displayFrameSize.height,
                 alignment: textAlignment
             )
     }
@@ -132,8 +135,8 @@ struct TextObjectView: View {
             .stroke(Color.blue, lineWidth: 1.0) // Fixed line width for visibility
             .fill(Color.clear)
             .frame(
-                width: textSize.width + 4,
-                height: textSize.height + 4
+                width: displayFrameSize.width + 4,
+                height: displayFrameSize.height + 4
             )
     }
     
@@ -175,7 +178,16 @@ struct TextObjectView: View {
             ]
         )
         
-        let constraintSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        // PROFESSIONAL TEXT SIZING: Different behavior for point text vs area text
+        let constraintSize: CGSize
+        if textObject.isPointText {
+            // Point text: Unlimited width, calculates actual text size
+            constraintSize = CGSize(width: 10000, height: 10000)
+        } else {
+            // Area text: Constrained by area size
+            constraintSize = textObject.areaSize ?? CGSize(width: 200, height: 100)
+        }
+        
         let textRect = attributedString.boundingRect(
             with: constraintSize,
             options: [.usesLineFragmentOrigin, .usesFontLeading],
@@ -186,6 +198,33 @@ struct TextObjectView: View {
             width: max(textRect.width, 20), // Minimum width for empty text
             height: max(textRect.height, textObject.typography.fontSize) // Minimum height based on font size
         )
+    }
+    
+    private var editingFrameSize: CGSize {
+        if textObject.isPointText {
+            // Point text: Size based on content + padding
+            return CGSize(
+                width: max(textSize.width + 20, 100),
+                height: textSize.height + 10
+            )
+        } else {
+            // Area text: Size based on area bounds
+            let areaSize = textObject.areaSize ?? CGSize(width: 200, height: 100)
+            return CGSize(
+                width: areaSize.width + 4,
+                height: areaSize.height + 4
+            )
+        }
+    }
+    
+    private var displayFrameSize: CGSize {
+        if textObject.isPointText {
+            // Point text: Size based on actual text content
+            return textSize
+        } else {
+            // Area text: Size based on area bounds
+            return textObject.areaSize ?? CGSize(width: 200, height: 100)
+        }
     }
     
     private var textAlignment: Alignment {

@@ -649,6 +649,8 @@ struct DrawingCanvas: View {
             handlePanGesture(value: value, geometry: geometry)
         case .line, .rectangle, .circle, .star, .polygon:
             handleShapeDrawing(value: value, geometry: geometry)
+        case .text:
+            handleTextDragDrawing(value: value, geometry: geometry)
         case .selection:
             if !isDrawing {
                 // Check if we're starting a drag on a selected object
@@ -700,6 +702,11 @@ struct DrawingCanvas: View {
             currentPath = nil
             drawingStartPoint = nil
             currentDrawingPoints.removeAll()
+        case .text:
+            finishTextDrawing(value: value, geometry: geometry)
+            // Reset text drawing state
+            isDrawing = false
+            drawingStartPoint = nil
         case .selection:
             finishSelectionDrag()
             isDrawing = false
@@ -2064,11 +2071,90 @@ struct DrawingCanvas: View {
     }
     
     private func handleTextTap(at location: CGPoint) {
-        // PROFESSIONAL TEXT TOOL BEHAVIOR (FreeHand/Illustrator Style)
-        // Exit any existing text editing first
+        // PROFESSIONAL TEXT TOOL BEHAVIOR (Adobe Illustrator/FreeHand/Inkscape/CorelDRAW Standards)
+        print("🔤 TEXT TOOL: Professional text creation at location: \(location)")
+        
+        // Exit any existing text editing first (professional behavior)
         exitAllTextEditing()
         
-        // Create a new text object at the tap location with FreeHand-style typography
+        // Check if clicking on existing text for editing (Adobe Illustrator behavior)
+        if let existingText = findTextObjectAt(location) {
+            // PROFESSIONAL INLINE EDITING: Click-to-position cursor
+            startEditingExistingText(existingText, at: location)
+            return
+        }
+        
+        // PROFESSIONAL DUAL-MODE TEXT CREATION
+        // This is Point Text mode (click once to create text that expands as you type)
+        // Area Text mode would be implemented in drag handling
+        createPointText(at: location)
+    }
+    
+    /// Find text object at the specified location for editing
+    private func findTextObjectAt(_ location: CGPoint) -> VectorText? {
+        let tolerance: CGFloat = 5.0
+        
+        for textObject in document.textObjects {
+            if !textObject.isVisible { continue }
+            
+            let bounds = textObject.bounds
+            let expandedBounds = bounds.insetBy(dx: -tolerance, dy: -tolerance)
+            
+            if expandedBounds.contains(location) {
+                return textObject
+            }
+        }
+        
+        return nil
+    }
+    
+    /// Start editing existing text with cursor positioned at click location
+    private func startEditingExistingText(_ textObject: VectorText, at location: CGPoint) {
+        // PROFESSIONAL CURSOR POSITIONING (Adobe Illustrator/FreeHand standard)
+        print("🔤 PROFESSIONAL EDIT: Starting inline editing of existing text")
+        
+        // Clear other selections
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        
+        // Select and start editing the text object
+        document.selectedTextIDs.insert(textObject.id)
+        
+        // Update the text object to editing mode
+        if let index = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            document.textObjects[index].isEditing = true
+            
+            // Calculate cursor position based on click location (professional feature)
+            let cursorPosition = calculateCursorPosition(in: textObject, at: location)
+            document.textObjects[index].cursorPosition = cursorPosition
+            
+            print("✅ Started editing existing text - cursor at position: \(cursorPosition)")
+        }
+    }
+    
+    /// Calculate cursor position based on click location within text
+    private func calculateCursorPosition(in textObject: VectorText, at location: CGPoint) -> Int {
+        // PROFESSIONAL CURSOR POSITIONING (Adobe Illustrator standard)
+        // This is a simplified implementation - could be enhanced with Core Text for precise positioning
+        let content = textObject.content
+        guard !content.isEmpty else { return 0 }
+        
+        // Calculate relative position within text bounds
+        let bounds = textObject.bounds
+        let relativeX = location.x - bounds.minX
+        let relativeProgress = max(0, min(1, relativeX / bounds.width))
+        
+        // Convert to character position
+        let characterPosition = Int(round(relativeProgress * Double(content.count)))
+        return min(characterPosition, content.count)
+    }
+    
+    /// Create new point text at the specified location
+    private func createPointText(at location: CGPoint) {
+        // PROFESSIONAL POINT TEXT CREATION (Adobe Illustrator/FreeHand standard)
+        print("🔤 CREATING POINT TEXT: Professional point text at location: \(location)")
+        
+        // Create professional typography with default settings
         let typography = TypographyProperties(
             fontFamily: "Helvetica",
             fontWeight: .regular,
@@ -2085,33 +2171,142 @@ struct DrawingCanvas: View {
             fillOpacity: document.defaultFillOpacity
         )
         
-        // Create text object with empty content for immediate editing (FreeHand behavior)
+        // Create professional text object
         var textObject = VectorText(
             content: "",
             typography: typography,
-            position: location
+            position: location,
+            isPointText: true  // Mark as point text
         )
         
-        // PROFESSIONAL BEHAVIOR: Start in editing mode immediately (like FreeHand/Illustrator)
+        // PROFESSIONAL BEHAVIOR: Start in editing mode immediately (Adobe Illustrator/FreeHand)
         textObject.isEditing = true
+        textObject.cursorPosition = 0
         
         // Add to document
         document.addText(textObject)
         
-        // Select and focus the new text object for editing
+        // Select and focus for editing
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.selectedTextIDs.insert(textObject.id)
         
-        // Find the text object in the document and update its editing state
-        for i in document.textObjects.indices {
-            if document.textObjects[i].id == textObject.id {
-                document.textObjects[i].isEditing = true
-                break
-            }
+        // PROFESSIONAL CURSOR BEHAVIOR: Set I-beam cursor for text editing
+        NSCursor.iBeam.set()
+        
+        print("✅ Created professional point text - Ready for immediate typing")
+    }
+    
+    /// Handle text area creation for paragraph text (drag operation)
+    private func createAreaText(startLocation: CGPoint, endLocation: CGPoint) {
+        // PROFESSIONAL AREA TEXT CREATION (Adobe Illustrator/FreeHand standard)
+        print("🔤 CREATING AREA TEXT: Professional area text from \(startLocation) to \(endLocation)")
+        
+        let width = abs(endLocation.x - startLocation.x)
+        let height = abs(endLocation.y - startLocation.y)
+        
+        // Only create area text if the user dragged a meaningful area
+        guard width > 20 && height > 20 else {
+            // Fall back to point text for small drags
+            createPointText(at: startLocation)
+            return
         }
         
-        print("✅ Created text object at location: \(location) - Ready for typing (FreeHand style)")
+        // Calculate area text bounds
+        let bounds = CGRect(
+            x: min(startLocation.x, endLocation.x),
+            y: min(startLocation.y, endLocation.y),
+            width: width,
+            height: height
+        )
+        
+        // Create professional typography
+        let typography = TypographyProperties(
+            fontFamily: "Helvetica",
+            fontWeight: .regular,
+            fontStyle: .normal,
+            fontSize: 12.0,  // Smaller default for area text
+            lineHeight: 14.4,
+            letterSpacing: 0.0,
+            alignment: .left,
+            hasStroke: false,
+            strokeColor: document.defaultStrokeColor,
+            strokeWidth: 1.0,
+            strokeOpacity: document.defaultStrokeOpacity,
+            fillColor: document.defaultFillColor,
+            fillOpacity: document.defaultFillOpacity
+        )
+        
+        // Create area text object
+        var textObject = VectorText(
+            content: "",
+            typography: typography,
+            position: CGPoint(x: bounds.minX, y: bounds.minY),
+            isPointText: false,  // Mark as area text
+            areaSize: CGSize(width: bounds.width, height: bounds.height)
+        )
+        
+        // Start in editing mode
+        textObject.isEditing = true
+        textObject.cursorPosition = 0
+        
+        // Add to document
+        document.addText(textObject)
+        
+        // Select and focus for editing
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        document.selectedTextIDs.insert(textObject.id)
+        
+        // PROFESSIONAL CURSOR BEHAVIOR: Set I-beam cursor for text editing
+        NSCursor.iBeam.set()
+        
+        print("✅ Created professional area text - Ready for immediate typing")
+    }
+    
+    /// Handle text drag operation for area text creation
+    private func handleTextDragDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+        let currentLocation = screenToCanvas(value.location, geometry: geometry)
+        
+        if !isDrawing {
+            isDrawing = true
+            drawingStartPoint = startLocation
+            print("🔤 TEXT DRAG: Started area text drag from \(startLocation)")
+        }
+        
+        // Show visual feedback for area text creation (like drawing a rectangle)
+        guard let startPoint = drawingStartPoint else { return }
+        
+        let rect = CGRect(
+            x: min(startPoint.x, currentLocation.x),
+            y: min(startPoint.y, currentLocation.y),
+            width: abs(currentLocation.x - startPoint.x),
+            height: abs(currentLocation.y - startPoint.y)
+        )
+        
+        // Create preview path for visual feedback
+        currentPath = VectorPath(elements: [
+            .move(to: VectorPoint(rect.minX, rect.minY)),
+            .line(to: VectorPoint(rect.maxX, rect.minY)),
+            .line(to: VectorPoint(rect.maxX, rect.maxY)),
+            .line(to: VectorPoint(rect.minX, rect.maxY)),
+            .close
+        ], isClosed: true)
+    }
+    
+    /// Finish text drag operation and create area text
+    private func finishTextDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+        let endLocation = screenToCanvas(value.location, geometry: geometry)
+        
+        // Create area text if dragged, otherwise create point text
+        createAreaText(startLocation: startLocation, endLocation: endLocation)
+        
+        // Clear the preview path
+        currentPath = nil
+        
+        print("🔤 TEXT DRAG: Finished text creation")
     }
     
     private func addPathElements(_ elements: [PathElement], to path: inout Path) {

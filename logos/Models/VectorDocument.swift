@@ -116,10 +116,10 @@ class VectorDocument: ObservableObject, Codable {
     @Published var fontManager: FontManager = FontManager()
     
     // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
-    @Published var defaultFillColor: VectorColor = .white
+    @Published var defaultFillColor: VectorColor = .rgb(RGBColor(red: 1, green: 0, blue: 0)) // Red fill
     @Published var defaultStrokeColor: VectorColor = .black
-    @Published var defaultFillOpacity: Double = 1.0
-    @Published var defaultStrokeOpacity: Double = 1.0
+    @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
+    @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     
     private let maxUndoStackSize = 50
     
@@ -458,7 +458,7 @@ class VectorDocument: ObservableObject, Codable {
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
         // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
-        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .white
+        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .rgb(RGBColor(red: 1, green: 0, blue: 0))
         defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0

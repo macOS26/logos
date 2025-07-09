@@ -181,15 +181,35 @@ struct VectorText: Identifiable, Codable, Hashable {
     var isLocked: Bool
     var isEditing: Bool // For inline text editing
     
+    // PROFESSIONAL TEXT TOOL PROPERTIES (Adobe Illustrator/FreeHand Standards)
+    var isPointText: Bool // Point text (expands as you type) vs Area text (fixed area)
+    var cursorPosition: Int // Current cursor position for inline editing
+    var areaSize: CGSize? // Area size for area text (nil for point text)
+    
     // Professional text metrics
     var textBounds: CGRect {
-        let nsString = NSString(string: content)
-        let attributes = [
-            NSAttributedString.Key.font: typography.nsFont
+        let nsString = NSString(string: content.isEmpty ? "Text" : content)
+        let attributes: [NSAttributedString.Key: Any] = [
+            NSAttributedString.Key.font: typography.nsFont,
+            NSAttributedString.Key.kern: typography.letterSpacing
         ]
-        return nsString.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
-                                   options: .usesLineFragmentOrigin,
-                                   attributes: attributes)
+        
+        // PROFESSIONAL TEXT MEASUREMENT: Use reasonable maximum width for area text
+        let maxWidth: CGFloat = {
+            if !isPointText, let areaSize = areaSize {
+                return areaSize.width
+            } else {
+                return 10000  // Reasonable max width instead of .greatestFiniteMagnitude
+            }
+        }()
+        
+        let rect = nsString.boundingRect(
+            with: CGSize(width: maxWidth, height: 10000),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes
+        )
+        
+        return rect
     }
     
     init(
@@ -199,7 +219,10 @@ struct VectorText: Identifiable, Codable, Hashable {
         transform: CGAffineTransform = .identity,
         isVisible: Bool = true,
         isLocked: Bool = false,
-        isEditing: Bool = false
+        isEditing: Bool = false,
+        isPointText: Bool = true,
+        cursorPosition: Int = 0,
+        areaSize: CGSize? = nil
     ) {
         self.id = UUID()
         self.content = content
@@ -210,20 +233,36 @@ struct VectorText: Identifiable, Codable, Hashable {
         self.isVisible = isVisible
         self.isLocked = isLocked
         self.isEditing = isEditing
+        self.isPointText = isPointText
+        self.cursorPosition = cursorPosition
+        self.areaSize = areaSize
         updateBounds()
     }
     
     mutating func updateBounds() {
+        // PROFESSIONAL COORDINATE SYSTEM: Bounds should be relative to position, not include it
+        // This matches how Adobe Illustrator/FreeHand handle text bounds
         let textRect = textBounds
-        // DON'T apply transform to bounds - that causes double transformation!
-        // The bounds should represent the logical untransformed text size
-        bounds = CGRect(
-            x: position.x,
-            y: position.y,
-            width: textRect.width,
-            height: textRect.height
-        )
-        // Transform is applied separately during rendering via .transformEffect()
+        
+        // For area text, use the specified area size if available
+        if !isPointText, let areaSize = areaSize {
+            bounds = CGRect(
+                x: 0,  // Relative to position
+                y: 0,  // Relative to position
+                width: areaSize.width,
+                height: areaSize.height
+            )
+        } else {
+            // For point text, use the calculated text size
+            bounds = CGRect(
+                x: 0,  // Relative to position
+                y: 0,  // Relative to position
+                width: max(textRect.width, 20),  // Minimum width for empty text
+                height: max(textRect.height, typography.fontSize)  // Minimum height
+            )
+        }
+        
+        // Position is handled separately in rendering - never mix position into bounds!
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)

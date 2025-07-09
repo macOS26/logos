@@ -14,158 +14,50 @@ struct logosApp: App {
             ContentView()
         }
         .commands {
-            // PROFESSIONAL MENU BAR (Adobe Illustrator Standards)
-            ToolsMenuCommands()
-            SelectMenuCommands() 
+            // PROFESSIONAL MENU BAR (Adobe Illustrator/FreeHand/CorelDRAW Standards)
+            // Order: File (System), Edit (System), Object, Select, View, Window, Help (System)
+            
+            // Add essential tool commands to Edit menu (professional standard)
+            CommandGroup(after: .pasteboard) {
+                Divider()
+                
+                Group {
+                    Text("Tools")
+                        .font(.headline)
+                        .disabled(true)
+                    
+                    Button("Selection Tool") {
+                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.selection)
+                    }
+                    .keyboardShortcut("v")
+                    
+                    Button("Direct Selection Tool") {
+                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.directSelection)
+                    }
+                    .keyboardShortcut("a")
+                    
+                    Button("Pen Tool") {
+                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.bezierPen)
+                    }
+                    .keyboardShortcut("p")
+                    
+                    Button("Text Tool") {
+                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.text)
+                    }
+                    .keyboardShortcut("t")
+                    
+                    Button("Hand Tool") {
+                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.hand)
+                    }
+                    .keyboardShortcut("h")
+                }
+            }
+            
+            // Professional menu order: Object, Select, View, Window
             ObjectMenuCommands()
+            SelectMenuCommands()
             ViewMenuCommands()
             WindowMenuCommands()
-        }
-    }
-}
-
-// MARK: - Professional Tools Menu (Adobe Illustrator Style)
-struct ToolsMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("Tools") {
-            Group {
-                Text("Selection Tools")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Selection Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.selection)
-                }
-                .keyboardShortcut("v")
-                
-                Button("Direct Selection Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.directSelection)
-                }
-                .keyboardShortcut("a")
-                
-                Button("Convert Anchor Point Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.convertAnchorPoint)
-                }
-                .keyboardShortcut("c", modifiers: [.shift])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Drawing Tools")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Bezier Pen Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.bezierPen)
-                }
-                .keyboardShortcut("p")
-                
-                Button("Line Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.line)
-                }
-                .keyboardShortcut("l", modifiers: [.shift])
-                
-                Button("Rectangle Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.rectangle)
-                }
-                .keyboardShortcut("m")
-                
-                Button("Circle Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.circle)
-                }
-                .keyboardShortcut("l")
-                
-                Button("Star Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.star)
-                }
-                .keyboardShortcut("s", modifiers: [.shift])
-                
-                Button("Polygon Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.polygon)
-                }
-                .keyboardShortcut("p", modifiers: [.shift])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Text & Color Tools")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Text Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.text)
-                }
-                .keyboardShortcut("t")
-                
-                Button("Eyedropper Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.eyedropper)
-                }
-                .keyboardShortcut("i")
-            }
-            
-            Divider()
-            
-            Group {
-                Text("View Tools")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Hand Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.hand)
-                }
-                .keyboardShortcut("h")
-                
-                Button("Zoom Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.zoom)
-                }
-                .keyboardShortcut("z")
-            }
-        }
-    }
-}
-
-// MARK: - Professional Select Menu (Adobe Illustrator Style)
-struct SelectMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("Select") {
-            Button("All") {
-                NotificationCenter.default.post(name: .selectAll, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command])
-            
-            Button("Deselect") {
-                NotificationCenter.default.post(name: .deselectAll, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
-            
-            Divider()
-            
-            Button("Inverse") {
-                NotificationCenter.default.post(name: .selectInverse, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command, .option])
-            
-            Divider()
-            
-            Group {
-                Text("Same")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Same Fill Color") {
-                    NotificationCenter.default.post(name: .selectSameFill, object: nil)
-                }
-                
-                Button("Same Stroke Color") {
-                    NotificationCenter.default.post(name: .selectSameStroke, object: nil)
-                }
-                
-                Button("Same Stroke Weight") {
-                    NotificationCenter.default.post(name: .selectSameStrokeWeight, object: nil)
-                }
-            }
         }
     }
 }
@@ -283,6 +175,50 @@ struct ObjectMenuCommands: Commands {
                     NotificationCenter.default.post(name: .createOutlines, object: nil)
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
+            }
+        }
+    }
+}
+
+// MARK: - Professional Select Menu (Adobe Illustrator Style)
+struct SelectMenuCommands: Commands {
+    var body: some Commands {
+        CommandMenu("Select") {
+            Button("All") {
+                NotificationCenter.default.post(name: .selectAll, object: nil)
+            }
+            .keyboardShortcut("a", modifiers: [.command])
+            
+            Button("Deselect") {
+                NotificationCenter.default.post(name: .deselectAll, object: nil)
+            }
+            .keyboardShortcut("a", modifiers: [.command, .shift])
+            
+            Divider()
+            
+            Button("Inverse") {
+                NotificationCenter.default.post(name: .selectInverse, object: nil)
+            }
+            .keyboardShortcut("a", modifiers: [.command, .option])
+            
+            Divider()
+            
+            Group {
+                Text("Same")
+                    .font(.headline)
+                    .disabled(true)
+                
+                Button("Same Fill Color") {
+                    NotificationCenter.default.post(name: .selectSameFill, object: nil)
+                }
+                
+                Button("Same Stroke Color") {
+                    NotificationCenter.default.post(name: .selectSameStroke, object: nil)
+                }
+                
+                Button("Same Stroke Weight") {
+                    NotificationCenter.default.post(name: .selectSameStrokeWeight, object: nil)
+                }
             }
         }
     }
