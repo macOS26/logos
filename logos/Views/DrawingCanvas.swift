@@ -24,6 +24,11 @@ struct DrawingCanvas: View {
     @State private var initialCanvasOffset = CGPoint.zero    // Reference canvas position when drag started
     @State private var handToolDragStart = CGPoint.zero      // Reference cursor position when drag started
     
+    // PROFESSIONAL OBJECT DRAGGING STATE (Same precision as hand tool)
+    // Uses identical reference point system for perfect 1:1 cursor synchronization
+    @State private var objectDragStart = CGPoint.zero        // Reference cursor position when object drag started
+    @State private var objectDragInitialTransforms: [UUID: CGAffineTransform] = [:]  // Reference transforms when drag started
+    
     // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
     @State private var isShiftPressed = false
     @State private var isCommandPressed = false
@@ -660,17 +665,22 @@ struct DrawingCanvas: View {
             handleTextDragDrawing(value: value, geometry: geometry)
         case .selection:
             if !isDrawing {
-                // Check if we're starting a drag on a selected object
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                // PROFESSIONAL FIX: Use consistent coordinate system for hit testing
+                // Use the same screen coordinates for initial hit test - no conversion needed
+                let startLocation = value.startLocation
+                
+                // Convert to canvas coordinates for hit testing shapes
+                let canvasStartLocation = screenToCanvas(startLocation, geometry: geometry)
                 
                 // If nothing is selected, or if we're dragging on an unselected object, try to select it first
-                if document.selectedShapeIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
-                    selectObjectAt(startLocation)
+                if document.selectedShapeIDs.isEmpty || !isDraggingSelectedObject(at: canvasStartLocation) {
+                    selectObjectAt(canvasStartLocation)
                 }
                 
                 // Only start drag if we have something selected
                 if !document.selectedShapeIDs.isEmpty {
-                    startSelectionDrag()
+                    // PROFESSIONAL REFERENCE POINT SYSTEM: Initialize on first drag
+                    // The reference point will be established in handleSelectionDrag
                     isDrawing = true
                 }
             }
@@ -1209,12 +1219,42 @@ struct DrawingCanvas: View {
             return
         }
         
-        // Save initial transforms for all selected shapes
+        // Save initial transforms for all selected shapes (legacy support)
         dragStartTransforms.removeAll()
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 dragStartTransforms[shapeID] = document.layers[layerIndex].shapes[shapeIndex].transform
             }
+        }
+    }
+    
+    private func startSelectionDragWithReference(startLocation: CGPoint) {
+        guard let layerIndex = document.selectedLayerIndex,
+              !document.selectedShapeIDs.isEmpty else { return }
+        
+        // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
+        if document.layers[layerIndex].isLocked {
+            print("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'")
+            return
+        }
+        
+        // PROFESSIONAL REFERENCE POINT SYSTEM (Same as hand tool)
+        // Only initialize reference points once per drag operation
+        if objectDragStart == CGPoint.zero && objectDragInitialTransforms.isEmpty {
+            // Capture initial state - this is the "reference location" from Sony's patent
+            objectDragStart = startLocation
+            objectDragInitialTransforms.removeAll()
+            
+            // Store reference transforms for all selected shapes
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    objectDragInitialTransforms[shapeID] = document.layers[layerIndex].shapes[shapeIndex].transform
+                }
+            }
+            
+            print("🎯 OBJECT DRAG: Established reference location (Professional Standard)")
+            print("   Reference cursor location: (\(String(format: "%.1f", objectDragStart.x)), \(String(format: "%.1f", objectDragStart.y)))")
+            print("   Selected objects: \(document.selectedShapeIDs.count)")
         }
     }
     
@@ -1227,22 +1267,35 @@ struct DrawingCanvas: View {
             return
         }
         
-        // FAST DRAGGING: Use simple translation delta (original fast system)
-        let screenDelta = CGPoint(
-            x: value.translation.width,
-            y: value.translation.height
+        // PROFESSIONAL REFERENCE POINT SYSTEM (Same precision as hand tool)
+        // Initialize reference points once per drag operation
+        if objectDragStart == CGPoint.zero && objectDragInitialTransforms.isEmpty {
+            startSelectionDragWithReference(startLocation: value.startLocation)
+        }
+        
+        // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-object mapping (same as hand tool)
+        // The point under the cursor at drag start stays exactly under the cursor throughout the drag
+        let cursorDelta = CGPoint(
+            x: value.location.x - objectDragStart.x,
+            y: value.location.y - objectDragStart.y
         )
         
         // Convert screen delta to canvas delta by dividing by zoom level
+        // This matches exactly how shapes are rendered: (canvas * zoom) + offset = screen
         let canvasDelta = CGPoint(
-            x: screenDelta.x / document.zoomLevel,
-            y: screenDelta.y / document.zoomLevel
+            x: cursorDelta.x / document.zoomLevel,
+            y: cursorDelta.y / document.zoomLevel
         )
+        
+        // Professional verification logging (same as hand tool)
+        if abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10 {
+            print("🎯 OBJECT DRAG: Perfect sync maintained - cursor delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y))), canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+        }
         
         // Move selected shapes by directly modifying their transforms
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
-               let initialTransform = dragStartTransforms[shapeID] {
+               let initialTransform = objectDragInitialTransforms[shapeID] {
                 
                 // Apply translation to the transform with high precision
                 let translation = CGAffineTransform(translationX: canvasDelta.x, y: canvasDelta.y)
@@ -1250,6 +1303,9 @@ struct DrawingCanvas: View {
                 
                 // Update the shape's transform
                 document.layers[layerIndex].shapes[shapeIndex].transform = newTransform
+                
+                // Don't update bounds during movement - transformEffect() handles visual positioning
+                // and bounds should remain as original path bounds to avoid double transformation
             }
         }
         
@@ -1258,12 +1314,24 @@ struct DrawingCanvas: View {
     }
     
     private func finishSelectionDrag() {
-        if !dragStartTransforms.isEmpty {
+        // PROFESSIONAL STATE RESET (Same as hand tool)
+        // Only reset state at the end of drag operation
+        defer {
+            // Reset reference point state for next drag operation
+            objectDragStart = CGPoint.zero
+            objectDragInitialTransforms.removeAll()
+            
+            // Legacy support cleanup
+            dragStartTransforms.removeAll()
+            
+            print("🎯 OBJECT DRAG: Drag operation completed - state reset for next operation")
+        }
+        
+        if !objectDragInitialTransforms.isEmpty {
             // Only save to undo if we actually moved something
             var didMove = false
             
             guard let layerIndex = document.selectedLayerIndex else {
-                dragStartTransforms.removeAll()
                 return
             }
             
@@ -1271,14 +1339,14 @@ struct DrawingCanvas: View {
             // This ensures object origin moves with the object for proper direct selection and scaling
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
-                   let originalTransform = dragStartTransforms[shapeID] {
+                   let originalTransform = objectDragInitialTransforms[shapeID] {
                     let currentTransform = document.layers[layerIndex].shapes[shapeIndex].transform
                     
                     if currentTransform != originalTransform {
                         didMove = true
                         
-                        // FIXED: Apply the transform to the actual path coordinates using SAME coordinate system as dragging
-                        applyTransformToShapeCoordinatesFixed(layerIndex: layerIndex, shapeIndex: shapeIndex)
+                        // Apply the transform to the actual path coordinates
+                        applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
                     }
                 }
             }
@@ -1286,8 +1354,6 @@ struct DrawingCanvas: View {
             if didMove {
                 document.saveToUndoStack()
             }
-            
-            dragStartTransforms.removeAll()
         }
     }
     
@@ -1349,66 +1415,6 @@ struct DrawingCanvas: View {
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         print("✅ Shape coordinates updated - object origin now follows object position")
-    }
-    
-    /// FIXED VERSION: Apply transform exactly where the object was dragged to
-    /// Uses the same coordinate system as the dragging
-    private func applyTransformToShapeCoordinatesFixed(layerIndex: Int, shapeIndex: Int) {
-        let shape = document.layers[layerIndex].shapes[shapeIndex]
-        let transform = shape.transform
-        
-        // Don't apply identity transforms
-        if transform.isIdentity {
-            return
-        }
-        
-        print("🔧 FIXED: Applying transform to shape coordinates: \(shape.name)")
-        
-        // Transform all path elements using SAME coordinate system as dragging
-        var transformedElements: [PathElement] = []
-        
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
-                
-            case .line(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
-                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
-                
-            case .curve(let to, let control1, let control2):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
-                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
-                transformedElements.append(.curve(
-                    to: VectorPoint(transformedTo),
-                    control1: VectorPoint(transformedControl1),
-                    control2: VectorPoint(transformedControl2)
-                ))
-                
-            case .quadCurve(let to, let control):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
-                transformedElements.append(.quadCurve(
-                    to: VectorPoint(transformedTo),
-                    control: VectorPoint(transformedControl)
-                ))
-                
-            case .close:
-                transformedElements.append(.close)
-            }
-        }
-        
-        // Create new path with transformed coordinates
-        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
-        
-        // Update the shape with transformed path and reset transform to identity
-        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
-        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        
-        print("✅ FIXED: Object lands exactly where it was dragged to")
     }
     
     // MARK: - Direct Selection Drag Handling
