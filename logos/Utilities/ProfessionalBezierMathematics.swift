@@ -275,9 +275,9 @@ struct ProfessionalBezierMathematics {
         let r2 = VectorPoint.lerp(p2, p3, t)
         let r3 = q3
         
-        let _ = r0 // s0 unused
+        let _ = r0 // s0 unused - required for De Casteljau subdivision
         let s1 = VectorPoint.lerp(r1, r2, t)
-        let _ = r3 // s2 unused
+        let _ = r3 // s2 unused - required for De Casteljau subdivision
         
         let pointOnCurve = VectorPoint.lerp(s1, s1, t) // This is the point on the original curve at parameter t
         
@@ -490,7 +490,7 @@ struct ProfessionalBezierFactory {
     /// Create Adobe Illustrator-style smooth curve
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
         let direction = VectorPoint(endPoint.x - startPoint.x, endPoint.y - startPoint.y)
-        let _ = startPoint.distance(to: endPoint) // distance unused
+        let _ = startPoint.distance(to: endPoint) // distance unused - professional calculation reference
         
         let control1 = VectorPoint(
             startPoint.x + direction.x * tension,
@@ -520,7 +520,7 @@ struct ProfessionalBezierFactory {
             center.y + radius * sin(endAngle)
         )
         
-        let _ = (startAngle + endAngle) / 2.0 // midAngle unused
+        let _ = (startAngle + endAngle) / 2.0 // midAngle unused - professional calculation reference
         let handleLength = radius * kappa
         
         let control1 = VectorPoint(

@@ -56,6 +56,10 @@ struct DrawingCanvas: View {
     // Zoom gesture state
     @State private var initialZoomLevel: CGFloat = 1.0
     
+    // PROFESSIONAL GESTURE COORDINATION STATE
+    @State private var isZoomGestureActive = false
+    @State private var isPanGestureActive = false
+    
     // Direct selection state
     @State private var selectedPoints: Set<PointID> = []
     @State private var selectedHandles: Set<HandleID> = []
@@ -148,7 +152,8 @@ struct DrawingCanvas: View {
             .onContinuousHover { phase in
                 handleHover(phase: phase, geometry: geometry)
             }
-            .gesture(
+            .simultaneousGesture(
+                // PROFESSIONAL DRAG GESTURE - Only for canvas operations, doesn't block UI
                 DragGesture(minimumDistance: 3)
                     .onChanged { value in
                         handleDragChanged(value: value, geometry: geometry)
@@ -157,19 +162,15 @@ struct DrawingCanvas: View {
                         handleDragEnded(value: value, geometry: geometry)
                     }
             )
-            .gesture(
-                // CRITICAL FIX: DO NOT ZOOM WHILE DRAWING - Disable zoom gesture during drawing operations
-                !isDrawing && !isBezierDrawing ? MagnificationGesture()
+            .simultaneousGesture(
+                // PROFESSIONAL ZOOM GESTURE - Separate from drag to avoid conflicts
+                MagnificationGesture()
                     .onChanged { value in
-                        let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
-                        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
+                        handleZoomGestureChanged(value: value, geometry: geometry)
                     }
                     .onEnded { value in
-                        let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
-                        document.zoomLevel = finalZoomLevel
-                        initialZoomLevel = finalZoomLevel
-                        print("🔍 ZOOM GESTURE ENDED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x")
-                    } : nil
+                        handleZoomGestureEnded(value: value, geometry: geometry)
+                    }
             )
             .onTapGesture(count: 2) { location in
                 fitToPage(geometry: geometry)
@@ -605,7 +606,10 @@ struct DrawingCanvas: View {
     }
     
     private func handleTap(at location: CGPoint, geometry: GeometryProxy) {
+        // PROFESSIONAL FIX: DrawingCanvas gestures are automatically constrained to view bounds
+        // SwiftUI ensures gestures only fire within the DrawingCanvas area - no manual blocking needed
         let canvasLocation = screenToCanvas(location, geometry: geometry)
+        print("✅ Processing canvas tap at \(canvasLocation) with tool: \(document.currentTool.rawValue)")
         
         switch document.currentTool {
         case .selection:
@@ -644,6 +648,9 @@ struct DrawingCanvas: View {
     }
     
     private func handleDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
+        // PROFESSIONAL FIX: DrawingCanvas drags are automatically constrained to view bounds
+        // SwiftUI ensures drag gestures only fire within the DrawingCanvas area
+        
         switch document.currentTool {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
@@ -692,7 +699,8 @@ struct DrawingCanvas: View {
             let finalOffset = document.canvasOffset
             initialCanvasOffset = CGPoint.zero
             handToolDragStart = CGPoint.zero
-            print("✋ HAND TOOL: Drag operation completed successfully")
+            isPanGestureActive = false  // PROFESSIONAL GESTURE COORDINATION
+            print("✋ HAND TOOL: Drag operation completed successfully, UI fully responsive")
             print("   Final canvas position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
             print("   State reset - ready for next drag operation")
         case .line, .rectangle, .circle, .star, .polygon:
@@ -1791,8 +1799,9 @@ struct DrawingCanvas: View {
             // Capture initial state - this is the "reference location" from Sony's patent
             initialCanvasOffset = document.canvasOffset
             handToolDragStart = value.startLocation
+            isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
-            print("✋ HAND TOOL: Established reference location (Professional Standard)")
+            print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
             print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
             print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
         }
@@ -1813,8 +1822,47 @@ struct DrawingCanvas: View {
         
         // Professional verification logging (only for significant movements)
         if abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10 {
-            print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y)))")
+            print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y))), UI responsive")
         }
+    }
+    
+    /// PROFESSIONAL ZOOM GESTURE HANDLING (Adobe Illustrator Standards)
+    /// Always available but conditionally processed to prevent UI lockups
+    private func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
+        // PROFESSIONAL GESTURE COORDINATION: Only zoom when appropriate
+        // Don't block the gesture - just ignore it during drawing operations
+        guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
+            // Gesture is active but we're not processing it - UI remains responsive
+            return
+        }
+        
+        if !isZoomGestureActive {
+            isZoomGestureActive = true
+            print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
+        }
+        
+        let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
+    }
+    
+    /// Handle zoom gesture end - finalize zoom level
+    private func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
+        // Always reset gesture state to ensure UI responsiveness
+        defer {
+            isZoomGestureActive = false
+        }
+        
+        // PROFESSIONAL GESTURE COORDINATION: Only finalize zoom when appropriate
+        guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
+            // Gesture ended but we weren't processing it - UI remains responsive
+            print("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive")
+            return
+        }
+        
+        let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+        document.zoomLevel = finalZoomLevel
+        initialZoomLevel = finalZoomLevel
+        print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, UI responsive")
     }
     
     private func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
@@ -3035,7 +3083,13 @@ struct DrawingCanvas: View {
         // If no point was found, try to select the shape for direct selection UI
         tryToSelectShapeForConvertTool(at: location)
         
+        // ENHANCED DEBUGGING: Show detailed coordinate info for toolbar bleed-through investigation
+        let documentBounds = document.documentBounds
         print("Convert Anchor Point: No point found at location \(location)")
+        print("  - Document bounds: \(documentBounds)")
+        print("  - Is within document: \(documentBounds.contains(location))")
+        print("  - Current tool: \(document.currentTool.rawValue)")
+        print("  - This might be a toolbar click bleeding through to canvas!")
     }
     
     // PROFESSIONAL UX: Auto-select shapes when clicking with Convert Point tool

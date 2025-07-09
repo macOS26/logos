@@ -28,18 +28,28 @@ struct MainView: View {
         VStack(spacing: 0) {
             // Main Content Area
             HStack(spacing: 0) {
-                // Left Toolbar - Fixed width, hugs left
+                // Left Toolbar - Fixed width, hugs left - ISOLATED HIT TESTING
                 VerticalToolbar(document: document)
                     .frame(width: 48)
+                    .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
+                    .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
                 
-                // Center Drawing Area - Flexible width
+                                // Center Drawing Area - Flexible width - STRICTLY CONSTRAINED TO CENTER COLUMN
                 GeometryReader { geometry in
                     VStack(spacing: 0) {
-                        // Drawing canvas area
+                        // Drawing canvas area - CLIPPED AND CONSTRAINED
                         ZStack {
-                            // Main Drawing Canvas
+                            // DEBUGGING: Background to see exact bounds
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.1))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .allowsHitTesting(false) // Background doesn't capture gestures
+                            
+                            // Main Drawing Canvas - PROPERLY CLIPPED TO CENTER COLUMN ONLY
                             DrawingCanvas(document: document)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .clipped() // CRITICAL: Clip to view bounds - prevents extending under toolbar
+                                .background(Color.clear) // Ensure no background extension
                                 .padding(.top, document.showRulers ? 20 : 0)
                                 .padding(.leading, document.showRulers ? 20 : 0)
                             
@@ -47,6 +57,7 @@ struct MainView: View {
                             RulersView(document: document, geometry: geometry)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .clipped() // DOUBLE CLIP: Ensure entire ZStack is clipped
                         
                         // Status Bar at bottom
                         StatusBar(document: document)
@@ -54,6 +65,7 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
                 
                 // Right Panel - Fixed width, hugs right
                 RightPanel(document: document)
