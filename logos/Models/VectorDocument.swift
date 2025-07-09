@@ -1,6 +1,6 @@
 //
 //  VectorDocument.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //
@@ -114,6 +114,12 @@ class VectorDocument: ObservableObject, Codable {
     
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
+    
+    // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
+    @Published var defaultFillColor: VectorColor = .white
+    @Published var defaultStrokeColor: VectorColor = .black
+    @Published var defaultFillOpacity: Double = 1.0
+    @Published var defaultStrokeOpacity: Double = 1.0
     
     private let maxUndoStackSize = 50
     
@@ -429,7 +435,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, colorSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid
+        case settings, layers, colorSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
     }
     
     required init(from decoder: Decoder) throws {
@@ -451,6 +457,12 @@ class VectorDocument: ObservableObject, Codable {
         redoStack = []
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
+        // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
+        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .white
+        defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black
+        defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
+        defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
+        
         setupNotificationObservers()
     }
     
@@ -471,6 +483,10 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(canvasOffset, forKey: .canvasOffset)
         try container.encode(showRulers, forKey: .showRulers)
         try container.encode(snapToGrid, forKey: .snapToGrid)
+        try container.encode(defaultFillColor, forKey: .defaultFillColor)
+        try container.encode(defaultStrokeColor, forKey: .defaultStrokeColor)
+        try container.encode(defaultFillOpacity, forKey: .defaultFillOpacity)
+        try container.encode(defaultStrokeOpacity, forKey: .defaultStrokeOpacity)
     }
     
     // MARK: - Layer Management

@@ -12,23 +12,27 @@ struct StrokeFillPanel: View {
     @State private var showingStrokeColorPicker = false
     @State private var showingFillColorPicker = false
     
-    // Get current properties from selected shapes
+    // FIXED: Show current colors - from selected shapes or defaults for new shapes
     private var selectedStrokeColor: VectorColor {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return .black
+        // If shapes are selected, show their color, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let strokeColor = shape.strokeStyle?.color {
+            return strokeColor
         }
-        return shape.strokeStyle?.color ?? .black
+        return document.defaultStrokeColor  // Show default color for new shapes
     }
     
     private var selectedFillColor: VectorColor {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return .white
+        // If shapes are selected, show their color, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let fillColor = shape.fillStyle?.color {
+            return fillColor
         }
-        return shape.fillStyle?.color ?? .white
+        return document.defaultFillColor  // Show default color for new shapes
     }
     
     private var strokeWidth: Double {
@@ -50,22 +54,26 @@ struct StrokeFillPanel: View {
     }
     
     private var fillOpacity: Double {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return 1.0
+        // If shapes are selected, show their opacity, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.fillStyle?.opacity {
+            return opacity
         }
-        return shape.fillStyle?.opacity ?? 1.0
+        return document.defaultFillOpacity  // Show default opacity for new shapes
     }
     
     // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
     private var strokeOpacity: Double {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return 1.0
+        // If shapes are selected, show their opacity, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.strokeStyle?.opacity {
+            return opacity
         }
-        return shape.strokeStyle?.opacity ?? 1.0
+        return document.defaultStrokeOpacity  // Show default opacity for new shapes
     }
     
     // PROFESSIONAL DASH PATTERN SUPPORT (Adobe Illustrator Standard)
@@ -195,47 +203,65 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // Update methods
+    // FIXED: Update methods - update selected shapes AND set default for new shapes
     private func updateFillColor(_ color: VectorColor) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default color for new shapes
+        document.defaultFillColor = color
+        print("🎨 Set default fill color: \(color)")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: 1.0)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    }
                 }
             }
         }
     }
     
     private func updateFillOpacity(_ opacity: Double) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default opacity for new shapes
+        document.defaultFillOpacity = opacity
+        print("🎨 Set default fill opacity: \(Int(opacity * 100))%")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: .white, opacity: opacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+                    }
                 }
             }
         }
     }
     
     private func updateStrokeColor(_ color: VectorColor) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default color for new shapes
+        document.defaultStrokeColor = color
+        print("🎨 Set default stroke color: \(color)")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0, opacity: 1.0)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0, opacity: 1.0)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    }
                 }
             }
         }
@@ -273,15 +299,21 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
     private func updateStrokeOpacity(_ opacity: Double) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default opacity for new shapes
+        document.defaultStrokeOpacity = opacity
+        print("🎨 Set default stroke opacity: \(Int(opacity * 100))%")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: .black, width: 1.0, opacity: opacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: opacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
+                    }
                 }
             }
         }
@@ -354,44 +386,46 @@ struct CurrentColorsView: View {
     let onFillColorTap: () -> Void
     
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 30) {  // Increased spacing for better separation
             // Fill Color
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onFillColorTap) {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 4)  // Reduced radius for more square appearance
                         .fill(fillColor.color)
-                        .frame(width: 45, height: 45)
+                        .frame(width: 60, height: 60)  // Larger, more square
                         .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.gray, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.gray, lineWidth: 1.5)  // Slightly thicker border
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 Text("Fill")
-                    .font(.caption2)
+                    .font(.caption)  // Slightly larger font
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
             }
             
             // Stroke Color
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onStrokeColorTap) {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: 4)  // Reduced radius for more square appearance
                         .fill(strokeColor.color)
-                        .frame(width: 45, height: 45)
+                        .frame(width: 60, height: 60)  // Larger, more square
                         .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.gray, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.gray, lineWidth: 1.5)  // Slightly thicker border
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
                 
                 Text("Stroke")
-                    .font(.caption2)
+                    .font(.caption)  // Slightly larger font
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
             }
         }
-        .padding()
+        .padding(20)  // Increased padding for better breathing room
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(12)
     }

@@ -1,6 +1,6 @@
 //
 //  RightPanel.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //
@@ -113,7 +113,7 @@ struct LayersPanel: View {
     @State private var newLayerName: String = ""
     
     // Custom UTType for layer drag and drop
-    private static let layerUTType = "com.logos.layer"
+    private static let layerUTType = "com.logos-inkpen-io.layer"
     
     struct DraggedObject {
         enum ObjectType: String {

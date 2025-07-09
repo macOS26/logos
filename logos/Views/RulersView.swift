@@ -158,13 +158,13 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // CORRECTED RULER ALIGNMENT: Match exactly how canvas content is positioned
-        // Canvas content position: y * zoomLevel + canvasOffset.y (in canvas coordinate space)
-        // But canvas is offset by 20px due to ruler padding in MainView
-        // So canvas coordinate 0 appears at: 0 * zoomLevel + canvasOffset.y + 20 in ruler space
+        // PRECISE FIX: Vertical ruler alignment correction
+        // User reported ticks are 12 pixels too low (south)
+        // The vertical ruler needs to be shifted up by 12 pixels to align with canvas objects
         
         // Calculate what canvas coordinates are visible in the ruler
         let canvasPaddingOffset = 20.0  // Canvas is padded 20px from ruler edge
+        let verticalAlignmentCorrection = 12.0  // Correction for vertical ruler positioning
         let startY = (-canvasOffset.y - canvasPaddingOffset) / zoomLevel
         let endY = (size.height - canvasOffset.y - canvasPaddingOffset) / zoomLevel
         
@@ -175,8 +175,8 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            // CORRECTED: Canvas coordinate y appears at ruler position (y * zoom + offset + padding)
-            let rulerY = y * zoomLevel + canvasOffset.y + canvasPaddingOffset
+            // PRECISE FIX: Apply 12-pixel upward correction to align with canvas objects
+            let rulerY = y * zoomLevel + canvasOffset.y + canvasPaddingOffset - verticalAlignmentCorrection
             
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001

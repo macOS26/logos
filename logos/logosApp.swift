@@ -1,6 +1,6 @@
 //
 //  logosApp.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //

@@ -1,6 +1,6 @@
 //
 //  MainView.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //
@@ -138,6 +138,13 @@ struct MainView: View {
     private func setupDocument() {
         // Document starts completely empty - no default shapes
         print("✅ Document setup complete - starting with empty canvas")
+        
+        // PROFESSIONAL STARTUP BEHAVIOR: Auto-fit to page on launch (like Adobe Illustrator)
+        // Use a small delay to ensure the view is fully rendered before fitting
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+            print("🔍 AUTO-FIT TO PAGE: Applied on app launch for professional startup experience")
+        }
     }
     
     // MARK: - Document Save/Load Functionality
@@ -155,7 +162,7 @@ struct MainView: View {
     private func saveDocumentAs() {
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType.json]
-        panel.nameFieldStringValue = "Document.logos"
+        panel.nameFieldStringValue = "Document.logos inkpen.io"
         panel.title = "Save Document"
         
         panel.begin { response in
@@ -219,6 +226,13 @@ struct MainView: View {
         currentDocumentURL = nil
         
         print("✅ Created new document using TemplateManager - completely empty")
+        
+        // PROFESSIONAL NEW DOCUMENT BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
+        // Use a small delay to ensure the view is updated before fitting
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+            print("🔍 AUTO-FIT TO PAGE: Applied for new document creation")
+        }
     }
     
     private func openDocument() {
@@ -266,6 +280,13 @@ struct MainView: View {
                         
                         print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
+                        // PROFESSIONAL DOCUMENT OPEN BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
+                        // Use a small delay to ensure the view is updated before fitting
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+                            print("🔍 AUTO-FIT TO PAGE: Applied for opened document")
+                        }
+                        
                         // Show success notification
                         let alert = NSAlert()
                         alert.messageText = "Document Opened"
@@ -307,6 +328,13 @@ struct MainView: View {
                         document.addShape(shape)
                     }
                     print("✅ Import successful: \(result.shapes.count) shapes imported")
+                    
+                    // PROFESSIONAL IMPORT BEHAVIOR: Auto-fit to page after import (like Adobe Illustrator)
+                    // Use a small delay to ensure the shapes are added before fitting
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+                        print("🔍 AUTO-FIT TO PAGE: Applied after vector import")
+                    }
                 } else {
                     print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")
                 }

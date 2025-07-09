@@ -149,24 +149,28 @@ struct ColorSwatchGrid: View {
         GridItem(.fixed(10), spacing: 1)
     ]
     
-    // Get current fill color from selected objects
+    // FIXED: Show document's default colors (what will be used for new shapes)
     private var currentFillColor: VectorColor {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return selectedFillColor
+        // If shapes are selected, show their color, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let fillColor = shape.fillStyle?.color {
+            return fillColor
         }
-        return shape.fillStyle?.color ?? .clear
+        return document.defaultFillColor  // Show default color for new shapes
     }
     
-    // Get current stroke color from selected objects
+    // FIXED: Show document's default colors (what will be used for new shapes)
     private var currentStrokeColor: VectorColor {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return selectedStrokeColor
+        // If shapes are selected, show their color, otherwise show default
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let strokeColor = shape.strokeStyle?.color {
+            return strokeColor
         }
-        return shape.strokeStyle?.color ?? .black
+        return document.defaultStrokeColor  // Show default color for new shapes
     }
     
     var body: some View {
@@ -203,13 +207,17 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.colorSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        // Default to fill, hold Option/Alt for stroke
+                        // FIXED: Update default colors for future shapes AND apply to selected
                         if NSEvent.modifierFlags.contains(.option) {
                             selectedStrokeColor = color
+                            document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
+                            print("🎨 Set default stroke color: \(color)")
                         } else {
                             selectedFillColor = color
+                            document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
+                            print("🎨 Set default fill color: \(color)")
                         }
                     } label: {
                         Rectangle()

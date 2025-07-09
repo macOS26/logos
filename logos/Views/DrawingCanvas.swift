@@ -1,6 +1,6 @@
 //
 //  DrawingCanvas.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //
@@ -1120,9 +1120,16 @@ struct DrawingCanvas: View {
     private func finishShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let path = currentPath else { return }
         
-        // Create shapes with visible defaults
-        let strokeStyle = StrokeStyle(color: .black, width: 1.0)
-        let fillStyle = FillStyle(color: .white, opacity: 0.8)
+        // FIXED: Use document's default colors instead of hardcoded values!
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: 1.0,
+            opacity: document.defaultStrokeOpacity  // 100% opacity by default
+        )
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity  // 100% opacity by default
+        )
         
         let shape = VectorShape(
             name: document.currentTool.rawValue,
@@ -1132,6 +1139,7 @@ struct DrawingCanvas: View {
         )
         
         document.addShape(shape)
+        print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
     }
     
     private func startSelectionDrag() {
