@@ -1992,7 +1992,11 @@ struct DrawingCanvas: View {
     }
     
     private func handleTextTap(at location: CGPoint) {
-        // Create a new text object at the tap location
+        // PROFESSIONAL TEXT TOOL BEHAVIOR (FreeHand/Illustrator Style)
+        // Exit any existing text editing first
+        exitAllTextEditing()
+        
+        // Create a new text object at the tap location with FreeHand-style typography
         let typography = TypographyProperties(
             fontFamily: "Helvetica",
             fontWeight: .regular,
@@ -2002,28 +2006,40 @@ struct DrawingCanvas: View {
             letterSpacing: 0.0,
             alignment: .left,
             hasStroke: false,
-            strokeColor: .black,
+            strokeColor: document.defaultStrokeColor,
             strokeWidth: 1.0,
-            strokeOpacity: 1.0,
-            fillColor: .black,
-            fillOpacity: 1.0
+            strokeOpacity: document.defaultStrokeOpacity,
+            fillColor: document.defaultFillColor,
+            fillOpacity: document.defaultFillOpacity
         )
         
-        let textObject = VectorText(
-            content: "Text",
+        // Create text object with empty content for immediate editing (FreeHand behavior)
+        var textObject = VectorText(
+            content: "",
             typography: typography,
             position: location
         )
         
+        // PROFESSIONAL BEHAVIOR: Start in editing mode immediately (like FreeHand/Illustrator)
+        textObject.isEditing = true
+        
         // Add to document
         document.addText(textObject)
         
-        // Select the new text object
+        // Select and focus the new text object for editing
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.selectedTextIDs.insert(textObject.id)
         
-        print("✅ Created text object at location: \(location)")
+        // Find the text object in the document and update its editing state
+        for i in document.textObjects.indices {
+            if document.textObjects[i].id == textObject.id {
+                document.textObjects[i].isEditing = true
+                break
+            }
+        }
+        
+        print("✅ Created text object at location: \(location) - Ready for typing (FreeHand style)")
     }
     
     private func addPathElements(_ elements: [PathElement], to path: inout Path) {
