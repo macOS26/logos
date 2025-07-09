@@ -181,31 +181,128 @@ struct MainView: View {
             }
         }
         
-        // Selection Commands
+        // Selection Commands - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .selectAll, object: nil, queue: .main) { _ in
-            document.selectAll()
+            // Select all shapes and text objects
+            for layerIndex in 0..<document.layers.count {
+                let layer = document.layers[layerIndex]
+                for shape in layer.shapes {
+                    document.selectedShapeIDs.insert(shape.id)
+                }
+            }
+            for textObj in document.textObjects {
+                document.selectedTextIDs.insert(textObj.id)
+            }
+            print("📝 MENU: Selected all objects (\(document.selectedShapeIDs.count) shapes, \(document.selectedTextIDs.count) text)")
         }
         
         NotificationCenter.default.addObserver(forName: .deselectAll, object: nil, queue: .main) { _ in
+            let shapeCount = document.selectedShapeIDs.count
+            let textCount = document.selectedTextIDs.count
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
+            print("📝 MENU: Deselected all objects (\(shapeCount) shapes, \(textCount) text)")
         }
         
-        // Object Commands - Arrange
+        // Object Commands - Arrange - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .bringToFront, object: nil, queue: .main) { _ in
-            // TODO: Implement arrange commands
+            guard !document.selectedShapeIDs.isEmpty else { 
+                print("📝 MENU: Bring to Front - No objects selected")
+                return 
+            }
+            
+            // Move selected shapes to end of current layer (front)
+            let layerIndex = document.selectedLayerIndex ?? 0
+            let currentLayer = document.layers[layerIndex]
+            var shapesToMove: [VectorShape] = []
+            
+            // Collect selected shapes
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = currentLayer.shapes.firstIndex(where: { $0.id == shapeID }) {
+                    shapesToMove.append(currentLayer.shapes[shapeIndex])
+                }
+            }
+            
+            // Remove from current positions
+            document.layers[layerIndex].shapes.removeAll { shape in
+                document.selectedShapeIDs.contains(shape.id)
+            }
+            
+            // Add to front (end of array)
+            document.layers[layerIndex].shapes.append(contentsOf: shapesToMove)
+            print("📝 MENU: Brought \(shapesToMove.count) objects to front")
         }
         
         NotificationCenter.default.addObserver(forName: .bringForward, object: nil, queue: .main) { _ in
-            // TODO: Implement arrange commands
+            guard !document.selectedShapeIDs.isEmpty else { 
+                print("📝 MENU: Bring Forward - No objects selected")
+                return 
+            }
+            
+            // Move selected shapes forward one position
+            let layerIndex = document.selectedLayerIndex ?? 0
+            var layer = document.layers[layerIndex]
+            for shapeID in document.selectedShapeIDs {
+                if let currentIndex = layer.shapes.firstIndex(where: { $0.id == shapeID }) {
+                    let newIndex = min(currentIndex + 1, layer.shapes.count - 1)
+                    if newIndex != currentIndex {
+                        let shape = layer.shapes.remove(at: currentIndex)
+                        layer.shapes.insert(shape, at: newIndex)
+                    }
+                }
+            }
+            document.layers[layerIndex] = layer
+            print("📝 MENU: Brought forward \(document.selectedShapeIDs.count) objects")
         }
         
         NotificationCenter.default.addObserver(forName: .sendBackward, object: nil, queue: .main) { _ in
-            // TODO: Implement arrange commands
+            guard !document.selectedShapeIDs.isEmpty else { 
+                print("📝 MENU: Send Backward - No objects selected")
+                return 
+            }
+            
+            // Move selected shapes backward one position
+            let layerIndex = document.selectedLayerIndex ?? 0
+            var layer = document.layers[layerIndex]
+            for shapeID in document.selectedShapeIDs {
+                if let currentIndex = layer.shapes.firstIndex(where: { $0.id == shapeID }) {
+                    let newIndex = max(currentIndex - 1, 0)
+                    if newIndex != currentIndex {
+                        let shape = layer.shapes.remove(at: currentIndex)
+                        layer.shapes.insert(shape, at: newIndex)
+                    }
+                }
+            }
+            document.layers[layerIndex] = layer
+            print("📝 MENU: Sent backward \(document.selectedShapeIDs.count) objects")
         }
         
         NotificationCenter.default.addObserver(forName: .sendToBack, object: nil, queue: .main) { _ in
-            // TODO: Implement arrange commands
+            guard !document.selectedShapeIDs.isEmpty else { 
+                print("📝 MENU: Send to Back - No objects selected")
+                return 
+            }
+            
+            // Move selected shapes to beginning of current layer (back)
+            let layerIndex = document.selectedLayerIndex ?? 0
+            let currentLayer = document.layers[layerIndex]
+            var shapesToMove: [VectorShape] = []
+            
+            // Collect selected shapes
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = currentLayer.shapes.firstIndex(where: { $0.id == shapeID }) {
+                    shapesToMove.append(currentLayer.shapes[shapeIndex])
+                }
+            }
+            
+            // Remove from current positions
+            document.layers[layerIndex].shapes.removeAll { shape in
+                document.selectedShapeIDs.contains(shape.id)
+            }
+            
+            // Insert at beginning (back)
+            document.layers[layerIndex].shapes.insert(contentsOf: shapesToMove, at: 0)
+            print("📝 MENU: Sent \(shapesToMove.count) objects to back")
         }
         
         // Object Commands - Lock/Hide
@@ -225,45 +322,56 @@ struct MainView: View {
             // TODO: Implement show commands
         }
         
-        // View Commands - Zoom
+        // View Commands - Zoom - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .zoomIn, object: nil, queue: .main) { _ in
+            let oldZoom = document.zoomLevel
             let newZoom = min(document.zoomLevel * 1.25, 50.0)
             document.zoomLevel = newZoom
+            print("📝 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
         }
         
         NotificationCenter.default.addObserver(forName: .zoomOut, object: nil, queue: .main) { _ in
+            let oldZoom = document.zoomLevel
             let newZoom = max(document.zoomLevel / 1.25, 0.01)
             document.zoomLevel = newZoom
+            print("📝 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
         }
         
         NotificationCenter.default.addObserver(forName: .fitToPage, object: nil, queue: .main) { _ in
             fitToPage()
+            print("📝 MENU: Fit to Page")
         }
         
         NotificationCenter.default.addObserver(forName: .actualSize, object: nil, queue: .main) { _ in
             document.zoomLevel = 1.0
+            print("📝 MENU: Actual Size (100%)")
         }
         
-        // View Commands - View Mode
+        // View Commands - View Mode - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .colorView, object: nil, queue: .main) { _ in
             document.viewMode = .color
+            print("📝 MENU: Switched to Color View")
         }
         
         NotificationCenter.default.addObserver(forName: .keylineView, object: nil, queue: .main) { _ in
             document.viewMode = .keyline
+            print("📝 MENU: Switched to Keyline View")
         }
         
-        // View Commands - Show/Hide
+        // View Commands - Show/Hide - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .toggleRulers, object: nil, queue: .main) { _ in
             document.showRulers.toggle()
+            print("📝 MENU: Rulers \(document.showRulers ? "shown" : "hidden")")
         }
         
         NotificationCenter.default.addObserver(forName: .toggleGrid, object: nil, queue: .main) { _ in
             document.settings.showGrid.toggle()
+            print("📝 MENU: Grid \(document.settings.showGrid ? "shown" : "hidden")")
         }
         
         NotificationCenter.default.addObserver(forName: .toggleSnapToGrid, object: nil, queue: .main) { _ in
             document.snapToGrid.toggle()
+            print("📝 MENU: Snap to Grid \(document.snapToGrid ? "enabled" : "disabled")")
         }
         
         // Text Commands

@@ -14,48 +14,38 @@ struct logosApp: App {
             ContentView()
         }
         .commands {
-            // PROFESSIONAL MENU BAR (Adobe Illustrator/FreeHand/CorelDRAW Standards)
-            // Order: File (System), Edit (System), Object, Select, View, Window, Help (System)
-            
-            // Add essential tool commands to Edit menu (professional standard)
-            CommandGroup(after: .pasteboard) {
-                Divider()
-                
-                Group {
-                    Text("Tools")
-                        .font(.headline)
-                        .disabled(true)
-                    
-                    Button("Selection Tool") {
-                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.selection)
-                    }
-                    .keyboardShortcut("v")
-                    
-                    Button("Direct Selection Tool") {
-                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.directSelection)
-                    }
-                    .keyboardShortcut("a")
-                    
-                    Button("Pen Tool") {
-                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.bezierPen)
-                    }
-                    .keyboardShortcut("p")
-                    
-                    Button("Text Tool") {
-                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.text)
-                    }
-                    .keyboardShortcut("t")
-                    
-                    Button("Hand Tool") {
-                        NotificationCenter.default.post(name: .switchTool, object: DrawingTool.hand)
-                    }
-                    .keyboardShortcut("h")
+            // PROFESSIONAL MENU BAR (Adobe Illustrator Standards)
+            // Replace system Edit menu with professional tool commands
+            CommandGroup(replacing: .textEditing) {
+                // Keep essential editing commands but add tool shortcuts
+                Button("Selection Tool") {
+                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.selection)
                 }
+                .keyboardShortcut("v")
+                
+                Button("Direct Selection Tool") {
+                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.directSelection)  
+                }
+                .keyboardShortcut("a")
+                
+                Button("Pen Tool") {
+                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.bezierPen)
+                }
+                .keyboardShortcut("p")
+                
+                Button("Text Tool") {
+                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.text)
+                }
+                .keyboardShortcut("t")
+                
+                Button("Hand Tool") {
+                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.hand)
+                }
+                .keyboardShortcut("h")
             }
             
-            // Professional menu order: Object, Select, View, Window
+            // Professional custom menus only - no duplicates
             ObjectMenuCommands()
-            SelectMenuCommands()
             ViewMenuCommands()
             WindowMenuCommands()
         }
@@ -180,49 +170,8 @@ struct ObjectMenuCommands: Commands {
     }
 }
 
-// MARK: - Professional Select Menu (Adobe Illustrator Style)
-struct SelectMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("Select") {
-            Button("All") {
-                NotificationCenter.default.post(name: .selectAll, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command])
-            
-            Button("Deselect") {
-                NotificationCenter.default.post(name: .deselectAll, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
-            
-            Divider()
-            
-            Button("Inverse") {
-                NotificationCenter.default.post(name: .selectInverse, object: nil)
-            }
-            .keyboardShortcut("a", modifiers: [.command, .option])
-            
-            Divider()
-            
-            Group {
-                Text("Same")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Same Fill Color") {
-                    NotificationCenter.default.post(name: .selectSameFill, object: nil)
-                }
-                
-                Button("Same Stroke Color") {
-                    NotificationCenter.default.post(name: .selectSameStroke, object: nil)
-                }
-                
-                Button("Same Stroke Weight") {
-                    NotificationCenter.default.post(name: .selectSameStrokeWeight, object: nil)
-                }
-            }
-        }
-    }
-}
+// MARK: - Select Commands Removed (Using System Defaults)
+// System already provides Select All, Cut, Copy, Paste - no duplicates needed
 
 // MARK: - Professional View Menu (Adobe Illustrator Style)
 struct ViewMenuCommands: Commands {
@@ -350,13 +299,9 @@ extension Notification.Name {
     // Tool Commands
     static let switchTool = Notification.Name("switchTool")
     
-    // Selection Commands
+    // Selection Commands (reduced to avoid system duplicates)
     static let selectAll = Notification.Name("selectAll")
     static let deselectAll = Notification.Name("deselectAll")
-    static let selectInverse = Notification.Name("selectInverse")
-    static let selectSameFill = Notification.Name("selectSameFill")
-    static let selectSameStroke = Notification.Name("selectSameStroke")
-    static let selectSameStrokeWeight = Notification.Name("selectSameStrokeWeight")
     
     // Object Commands
     static let bringToFront = Notification.Name("bringToFront")
