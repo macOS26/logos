@@ -38,6 +38,18 @@ struct RightPanel: View {
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
             alignment: .leading
         )
+        .onAppear {
+            // PROFESSIONAL PANEL SWITCHING (Adobe Illustrator Standards)
+            NotificationCenter.default.addObserver(forName: .switchToPanel, object: nil, queue: .main) { notification in
+                if let panelTab = notification.object as? PanelTab {
+                    selectedTab = panelTab
+                    print("🎨 Menu: Switched to panel: \(panelTab.rawValue)")
+                }
+            }
+        }
+        .onDisappear {
+            NotificationCenter.default.removeObserver(self)
+        }
     }
 }
 

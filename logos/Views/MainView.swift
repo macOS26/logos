@@ -131,8 +131,168 @@ struct MainView: View {
         }
         .frame(minWidth: 1200, minHeight: 800)
         .onAppear {
+            // PROFESSIONAL MENU COMMAND HANDLING (Adobe Illustrator Standards)
+            setupMenuCommandObservers()
+            
             setupDocument()
+            
+            // Auto-fit to page on startup for professional presentation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // Use simplified fit-to-page without parameters
+                fitToPage()
+            }
         }
+        .onDisappear {
+            teardownMenuCommandObservers()
+        }
+    }
+    
+    // MARK: - Professional Menu Command System (Adobe Illustrator Standards)
+    
+    private func setupMenuCommandObservers() {
+        // Tool Commands
+        NotificationCenter.default.addObserver(forName: .switchTool, object: nil, queue: .main) { notification in
+            if let tool = notification.object as? DrawingTool {
+                // SAFE CURSOR MANAGEMENT
+                var popCount = 0
+                while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                    NSCursor.pop()
+                    popCount += 1
+                }
+                if NSCursor.current != NSCursor.arrow {
+                    NSCursor.arrow.set()
+                }
+                
+                document.currentTool = tool
+                tool.cursor.push()
+                print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
+            }
+        }
+        
+        // Selection Commands
+        NotificationCenter.default.addObserver(forName: .selectAll, object: nil, queue: .main) { _ in
+            document.selectAll()
+        }
+        
+        NotificationCenter.default.addObserver(forName: .deselectAll, object: nil, queue: .main) { _ in
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+        }
+        
+        // Object Commands - Arrange
+        NotificationCenter.default.addObserver(forName: .bringToFront, object: nil, queue: .main) { _ in
+            // TODO: Implement arrange commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .bringForward, object: nil, queue: .main) { _ in
+            // TODO: Implement arrange commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .sendBackward, object: nil, queue: .main) { _ in
+            // TODO: Implement arrange commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .sendToBack, object: nil, queue: .main) { _ in
+            // TODO: Implement arrange commands
+        }
+        
+        // Object Commands - Lock/Hide
+        NotificationCenter.default.addObserver(forName: .lockObjects, object: nil, queue: .main) { _ in
+            // TODO: Implement lock commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .unlockAll, object: nil, queue: .main) { _ in
+            // TODO: Implement lock commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .hideObjects, object: nil, queue: .main) { _ in
+            // TODO: Implement hide commands
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showAll, object: nil, queue: .main) { _ in
+            // TODO: Implement show commands
+        }
+        
+        // View Commands - Zoom
+        NotificationCenter.default.addObserver(forName: .zoomIn, object: nil, queue: .main) { _ in
+            let newZoom = min(document.zoomLevel * 1.25, 50.0)
+            document.zoomLevel = newZoom
+        }
+        
+        NotificationCenter.default.addObserver(forName: .zoomOut, object: nil, queue: .main) { _ in
+            let newZoom = max(document.zoomLevel / 1.25, 0.01)
+            document.zoomLevel = newZoom
+        }
+        
+        NotificationCenter.default.addObserver(forName: .fitToPage, object: nil, queue: .main) { _ in
+            fitToPage()
+        }
+        
+        NotificationCenter.default.addObserver(forName: .actualSize, object: nil, queue: .main) { _ in
+            document.zoomLevel = 1.0
+        }
+        
+        // View Commands - View Mode
+        NotificationCenter.default.addObserver(forName: .colorView, object: nil, queue: .main) { _ in
+            document.viewMode = .color
+        }
+        
+        NotificationCenter.default.addObserver(forName: .keylineView, object: nil, queue: .main) { _ in
+            document.viewMode = .keyline
+        }
+        
+        // View Commands - Show/Hide
+        NotificationCenter.default.addObserver(forName: .toggleRulers, object: nil, queue: .main) { _ in
+            document.showRulers.toggle()
+        }
+        
+        NotificationCenter.default.addObserver(forName: .toggleGrid, object: nil, queue: .main) { _ in
+            document.settings.showGrid.toggle()
+        }
+        
+        NotificationCenter.default.addObserver(forName: .toggleSnapToGrid, object: nil, queue: .main) { _ in
+            document.snapToGrid.toggle()
+        }
+        
+        // Text Commands
+        NotificationCenter.default.addObserver(forName: .createOutlines, object: nil, queue: .main) { _ in
+            if !document.selectedTextIDs.isEmpty {
+                document.convertSelectedTextToOutlines()
+            }
+        }
+        
+        // Window Commands - Panel Switching
+        NotificationCenter.default.addObserver(forName: .showLayersPanel, object: nil, queue: .main) { _ in
+            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.layers)
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showColorPanel, object: nil, queue: .main) { _ in
+            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.color)
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showStrokeFillPanel, object: nil, queue: .main) { _ in
+            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.properties)
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showTypographyPanel, object: nil, queue: .main) { _ in
+            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.typography)
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showPathOpsPanel, object: nil, queue: .main) { _ in
+            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.pathOps)
+        }
+    }
+    
+    private func teardownMenuCommandObservers() {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
+    
+    private func fitToPage() {
+        // Fit the entire page to the view (Adobe Illustrator standard)
+        document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
+        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
     }
     
     private func setupDocument() {
