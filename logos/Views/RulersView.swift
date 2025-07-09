@@ -216,18 +216,29 @@ struct VerticalRuler: View {
 // Helper functions
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
-    let baseSpacing = pointsPerUnit / 8 // 1/8 unit by default
+    
+    // PROFESSIONAL TICK SPACING: Reduce noise for pixels/points, normal for others
+    let baseSpacing: Double
+    
+    switch unit {
+    case .pixels, .points:
+        // LESS NOISY: Use larger base spacing for pixels/points to reduce visual clutter
+        baseSpacing = pointsPerUnit / 2 // 1/2 unit (instead of 1/8) - much less detailed
+    default:
+        // Normal spacing for inches, cm, mm, picas
+        baseSpacing = pointsPerUnit / 8 // 1/8 unit by default
+    }
     
     // Adjust spacing based on zoom level
     let scaledSpacing = baseSpacing * zoomLevel
     
     // Choose appropriate spacing to avoid overcrowding
     if scaledSpacing < 10 {
-        return baseSpacing * 4 // 1/2 unit
+        return baseSpacing * 4 // 1/2 unit (or 2 units for pixels/points)
     } else if scaledSpacing < 20 {
-        return baseSpacing * 2 // 1/4 unit
+        return baseSpacing * 2 // 1/4 unit (or 1 unit for pixels/points)
     } else {
-        return baseSpacing // 1/8 unit
+        return baseSpacing // 1/8 unit (or 1/2 unit for pixels/points)
     }
 }
 
@@ -236,12 +247,24 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
     case .inches:
         return String(format: "%.2f", value)
     case .centimeters:
-        return String(format: "%.1f", value)
+        // FIXED: Handle negative values properly for cm
+        if value < 0 {
+            return String(format: "-%.1f", abs(value))
+        } else {
+            return String(format: "%.1f", value)
+        }
     case .millimeters:
-        return String(format: "%.0f", value)
+        // FIXED: Handle negative values properly for mm
+        if value < 0 {
+            return String(format: "-%.0f", abs(value))
+        } else {
+            return String(format: "%.0f", value)
+        }
     case .points:
+        // LESS NOISY: Use cleaner formatting for points (no decimals but better spacing)
         return String(format: "%.0f", value)
     case .pixels:
+        // LESS NOISY: Use cleaner formatting for pixels (no decimals but better spacing)
         return String(format: "%.0f", value)
     case .picas:
         return String(format: "%.1f", value)
