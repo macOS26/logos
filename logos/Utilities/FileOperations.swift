@@ -1135,7 +1135,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Parse fill-rule for complex paths
         let fillRule = attributes["fill-rule"] ?? "nonzero"
         
-        var fillStyle = FillStyle(color: color, opacity: opacity)
+        let fillStyle = FillStyle(color: color, opacity: opacity)
         
         // Handle fill-rule property (critical for complex shapes)
         if fillRule == "evenodd" {
@@ -1299,7 +1299,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             if char.isNumber || char == "." || (char == "-" || char == "+") {
                 var numberStr = ""
                 var hasDecimal = false
-                var startIndex = i
+                let _ = i  // Track starting index for potential debugging
                 
                 // Handle sign only if it's at the start of a number
                 if char == "-" || char == "+" {
@@ -2814,7 +2814,7 @@ class VectorExportManager {
         var data = Data()
         
         switch entity {
-        case .drawingInfo(let _, let units, let scale, let author, let title, let description, let dwgVersion):
+        case .drawingInfo(_, let units, let scale, let author, let title, let description, let dwgVersion):
             let info = """
             999
             Drawing Info: \(title)
@@ -4419,7 +4419,7 @@ class FileOperations {
         
         // Collect unique styles for CSS generation
         var uniqueStyles: [String: (fill: String, stroke: String)] = [:]
-        var styleCounter = 1
+        let _ = 1  // Style counter - using uniqueStyles.enumerated() instead
         
         // Pre-analyze all shapes to generate CSS classes
         for layer in document.layers {
@@ -4445,7 +4445,7 @@ class FileOperations {
         """
         
         // Generate CSS classes for common styles
-        for (index, (styleKey, styleData)) in uniqueStyles.enumerated() {
+        for (index, (_, styleData)) in uniqueStyles.enumerated() {
             let className = "cls-\(index + 1)"
             svg += "      .\(className) {\n"
             
@@ -4631,6 +4631,8 @@ class FileOperations {
             strokeAttributes += " stroke-linecap=\"square\""
         case .butt:
             strokeAttributes += " stroke-linecap=\"butt\""
+        @unknown default:
+            strokeAttributes += " stroke-linecap=\"butt\""  // Default to butt cap for unknown values
         }
         
         // Handle line joins
@@ -4641,6 +4643,8 @@ class FileOperations {
             strokeAttributes += " stroke-linejoin=\"bevel\""
         case .miter:
             strokeAttributes += " stroke-linejoin=\"miter\""
+        @unknown default:
+            strokeAttributes += " stroke-linejoin=\"miter\""  // Default to miter join for unknown values
         }
         
         return strokeAttributes
