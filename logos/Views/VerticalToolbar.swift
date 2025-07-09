@@ -43,7 +43,6 @@ struct VerticalToolbar: View {
                                 : Color.clear
                             )
                             .cornerRadius(4)
-                            .contentShape(Rectangle()) // CRITICAL: Make entire 32x32 area clickable
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help(toolTooltip(for: tool))
@@ -129,7 +128,6 @@ struct ToolButton: View {
                 .frame(width: 32, height: 32)
                 .background(isSelected ? Color.blue : Color.clear)
                 .cornerRadius(6)
-                .contentShape(Rectangle()) // CRITICAL: Make entire 32x32 area clickable
         }
         .buttonStyle(PlainButtonStyle())
         .help(tool.rawValue)
@@ -186,7 +184,6 @@ struct ColorSwatchGrid: View {
                         .fill(currentFillColor.color)
                         .frame(width: 20, height: 20)  // 20x20 as requested
                         .border(Color.gray, width: 0.5)  // Match grid border
-                        .contentShape(Rectangle()) // CRITICAL: Make entire 20x20 area clickable
                         // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -199,7 +196,6 @@ struct ColorSwatchGrid: View {
                         .fill(currentStrokeColor.color)
                         .frame(width: 20, height: 20)  // 20x20 as requested
                         .border(Color.gray, width: 0.5)  // Match grid border
-                        .contentShape(Rectangle()) // CRITICAL: Make entire 20x20 area clickable
                         // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -228,7 +224,6 @@ struct ColorSwatchGrid: View {
                             .fill(color.color)
                             .frame(width: 10, height: 10)
                             .border(Color.gray, width: 0.5)
-                            .contentShape(Rectangle()) // CRITICAL: Make entire 10x10 area clickable
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("\(colorDescription(for: color)) (Click for fill, Option+Click for stroke)")
@@ -243,8 +238,6 @@ struct ColorSwatchGrid: View {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 14))
                     .foregroundColor(.secondary)
-                    .frame(width: 24, height: 24) // Give it a proper hit target
-                    .contentShape(Rectangle()) // CRITICAL: Make entire area clickable
             }
             .buttonStyle(PlainButtonStyle())
             .help("Add Custom Color")

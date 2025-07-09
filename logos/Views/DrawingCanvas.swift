@@ -1227,18 +1227,14 @@ struct DrawingCanvas: View {
             return
         }
         
-        // PROFESSIONAL FIX: Use same robust coordinate system as hand tool
-        // Calculate screen coordinate delta - this approach is zoom-independent and pin-point accurate
-        let screenDelta = CGPoint(
-            x: value.translation.width,
-            y: value.translation.height
-        )
+        // STABLE COORDINATE CALCULATION: Use high precision to prevent drift
+        let preciseZoom = Double(document.zoomLevel)
+        let preciseTranslationX = Double(value.translation.width)
+        let preciseTranslationY = Double(value.translation.height)
         
-        // Convert screen delta to canvas delta by dividing by zoom level
-        // This matches exactly how shapes are rendered: (canvas * zoom) + offset = screen
-        let canvasDelta = CGPoint(
-            x: screenDelta.x / document.zoomLevel,
-            y: screenDelta.y / document.zoomLevel
+        let delta = CGPoint(
+            x: preciseTranslationX / preciseZoom,
+            y: preciseTranslationY / preciseZoom
         )
         
         // Move selected shapes by directly modifying their transforms
@@ -1247,7 +1243,7 @@ struct DrawingCanvas: View {
                let initialTransform = dragStartTransforms[shapeID] {
                 
                 // Apply translation to the transform with high precision
-                let translation = CGAffineTransform(translationX: canvasDelta.x, y: canvasDelta.y)
+                let translation = CGAffineTransform(translationX: delta.x, y: delta.y)
                 let newTransform = initialTransform.concatenating(translation)
                 
                 // Update the shape's transform
@@ -1398,25 +1394,22 @@ struct DrawingCanvas: View {
             captureOriginalPositions()
         }
         
-        // PROFESSIONAL FIX: Use same robust coordinate system as hand tool
-        // Calculate screen coordinate delta - this approach is zoom-independent and pin-point accurate
-        let screenDelta = CGPoint(
-            x: value.translation.width,
-            y: value.translation.height
-        )
+        // STABLE COORDINATE CALCULATION: Use high precision to prevent drift
+        let preciseZoom = Double(document.zoomLevel)
+        let preciseTranslationX = Double(value.translation.width)
+        let preciseTranslationY = Double(value.translation.height)
         
-        // Convert screen delta to canvas delta by dividing by zoom level
-        let canvasDelta = CGPoint(
-            x: screenDelta.x / document.zoomLevel,
-            y: screenDelta.y / document.zoomLevel
+        let delta = CGPoint(
+            x: preciseTranslationX / preciseZoom,
+            y: preciseTranslationY / preciseZoom
         )
         
         // Move selected points to absolute positions
         for pointID in selectedPoints {
             if let originalPosition = originalPointPositions[pointID] {
                 movePointToAbsolutePosition(pointID, to: CGPoint(
-                    x: originalPosition.x + canvasDelta.x,
-                    y: originalPosition.y + canvasDelta.y
+                    x: originalPosition.x + delta.x,
+                    y: originalPosition.y + delta.y
                 ))
             }
         }
@@ -1425,8 +1418,8 @@ struct DrawingCanvas: View {
         for handleID in selectedHandles {
             if let originalPosition = originalHandlePositions[handleID] {
                 moveHandleToAbsolutePosition(handleID, to: CGPoint(
-                    x: originalPosition.x + canvasDelta.x,
-                    y: originalPosition.y + canvasDelta.y
+                    x: originalPosition.x + delta.x,
+                    y: originalPosition.y + delta.y
                 ))
             }
         }
@@ -1878,34 +1871,36 @@ struct DrawingCanvas: View {
         // Only proceed if zoom level actually changes
         guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
         
-        // PROFESSIONAL FIX: Zoom relative to current view center, maintaining pan offset
+        // STABLE ZOOM SYSTEM: Use document center as fixed reference point
+        // This prevents coordinate drift by always using the same reference
+        let documentBounds = document.documentBounds
+        let documentCenter = CGPoint(
+            x: documentBounds.midX,
+            y: documentBounds.midY
+        )
+        
         // Calculate view center
         let viewCenter = CGPoint(
             x: geometry.size.width / 2.0,
             y: geometry.size.height / 2.0
         )
         
-        // Find what canvas point is currently at view center
-        let canvasPointAtViewCenter = CGPoint(
-            x: (viewCenter.x - document.canvasOffset.x) / oldZoomLevel,
-            y: (viewCenter.y - document.canvasOffset.y) / oldZoomLevel
-        )
-        
         // Update zoom level
         document.zoomLevel = newZoomLevel
         
-        // Calculate new offset to keep the same canvas point at view center
+        // Calculate offset to keep document center at view center
+        // This approach is stable and prevents drift
         let newOffset = CGPoint(
-            x: viewCenter.x - (canvasPointAtViewCenter.x * newZoomLevel),
-            y: viewCenter.y - (canvasPointAtViewCenter.y * newZoomLevel)
+            x: viewCenter.x - (documentCenter.x * newZoomLevel),
+            y: viewCenter.y - (documentCenter.y * newZoomLevel)
         )
         
         document.canvasOffset = newOffset
         
-        print("🔍 PROFESSIONAL ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x (maintains view position)")
+        print("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
         print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   Canvas point at view center: (\(String(format: "%.1f", canvasPointAtViewCenter.x)), \(String(format: "%.1f", canvasPointAtViewCenter.y)))")
-        print("   New offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+        print("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
     
     private func handleZoomToLevel(newZoomLevel: CGFloat, geometry: GeometryProxy) {
