@@ -52,6 +52,9 @@ struct DrawingCanvas: View {
     @State private var showClosePathHint = false
     @State private var closePathHintLocation: CGPoint = .zero
     
+    // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
+    @State private var activeBezierShape: VectorShape? = nil // Real shape being built
+    
     // Professional bezier handle information
     struct BezierHandleInfo {
         var control1: VectorPoint?
@@ -328,8 +331,8 @@ struct DrawingCanvas: View {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
         
-        // PROFESSIONAL BEZIER PATH PREVIEW (Adobe Illustrator style with scale-independent rendering)
-        bezierPathPreview()
+        // PROFESSIONAL REAL-TIME BEZIER PATH (Adobe Illustrator style - shows actual path with real colors)
+        // Note: Real bezier shapes are now shown as actual VectorShapes in the document
         
         // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
         rubberBandPreview(geometry: geometry)
@@ -484,46 +487,8 @@ struct DrawingCanvas: View {
     
     // MARK: - Professional Preview Functions (Adobe Illustrator Standards)
     
-    @ViewBuilder
-    private func bezierPathPreview() -> some View {
-        // PROFESSIONAL BEZIER PATH PREVIEW (Adobe Illustrator style with scale-independent rendering)
-        if let bezierPath = bezierPath {
-            // PROFESSIONAL SCALE-INDEPENDENT PATH RENDERING
-            let strokeWidth = 2.0 / document.zoomLevel  // Scale-independent stroke width
-            
-            // Show current path with professional scaling
-            Path { path in
-                addPathElements(bezierPath.elements, to: &path)
-            }
-            .stroke(Color.orange, lineWidth: strokeWidth)
-            .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
-            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            
-            // ADOBE ILLUSTRATOR-STYLE CLOSING PREVIEW
-            // Show what the closed path will look like when hovering near first point
-            if showClosePathHint && bezierPoints.count >= 3 {
-                let dashLength = 5.0 / document.zoomLevel  // Scale-independent dash
-                let gapLength = 3.0 / document.zoomLevel   // Scale-independent gap
-                
-                let closingPreviewElements: [PathElement] = {
-                    var elements = bezierPath.elements
-                    elements.append(.close)
-                    return elements
-                }()
-                
-                Path { path in
-                    addPathElements(closingPreviewElements, to: &path)
-                }
-                .stroke(Color.green.opacity(0.8), style: SwiftUI.StrokeStyle(
-                    lineWidth: strokeWidth, 
-                    lineCap: .round, 
-                    dash: [dashLength, gapLength]
-                ))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
-                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-            }
-        }
-    }
+    // REMOVED: bezierPathPreview() - Now using real VectorShapes with actual document colors
+    // Professional vector apps (Illustrator, FreeHand, CorelDraw) show the actual path being built, not a preview
     
     @ViewBuilder
     private func rubberBandPreview(geometry: GeometryProxy) -> some View {
@@ -1085,6 +1050,7 @@ struct DrawingCanvas: View {
         bezierHandles.removeAll()
         currentMouseLocation = nil
         showClosePathHint = false
+        activeBezierShape = nil // Clear the real shape reference
     }
     
     private func handleBezierPenTap(at location: CGPoint) {
@@ -1109,13 +1075,35 @@ struct DrawingCanvas: View {
         }
         
         if !isBezierDrawing {
-            // Start new bezier path with first point
+            // PROFESSIONAL REAL-TIME PATH CREATION: Create actual VectorShape from the start
+            // Like Adobe Illustrator, FreeHand, CorelDraw - show real path with document default colors
             bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
             bezierPoints = [VectorPoint(location)]
             isBezierDrawing = true
             activeBezierPointIndex = 0 // First point is active (solid)
             bezierHandles.removeAll()
-            print("🎯 STARTED: New bezier path with first point at \(location)")
+            
+            // Create real VectorShape with document default colors (no fake orange preview!)
+            let strokeStyle = StrokeStyle(
+                color: document.defaultStrokeColor,
+                width: 1.0,
+                opacity: document.defaultStrokeOpacity
+            )
+            let fillStyle = FillStyle(
+                color: .clear, // Bezier paths start with no fill
+                opacity: document.defaultFillOpacity
+            )
+            
+            activeBezierShape = VectorShape(
+                name: "Bezier Path",
+                path: bezierPath!,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            // Add the real shape to the document immediately
+            document.addShape(activeBezierShape!)
+            print("🎯 STARTED: Real bezier shape with document default colors at \(location)")
         } else {
             // PURE CLICK: Add corner point (no handles)
             // Make previous point inactive (hollow)
@@ -1128,6 +1116,9 @@ struct DrawingCanvas: View {
             
             // Create line to the new point (corner point - no handles)
             bezierPath?.addElement(.line(to: newPoint))
+            
+            // Update the real shape in the document immediately
+            updateActiveBezierShapeInDocument()
             
             print("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)")
             print("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
@@ -1204,6 +1195,9 @@ struct DrawingCanvas: View {
             // Update the path elements to use curves where handles exist
             updatePathWithHandles()
             
+            // Update the real shape in the document immediately
+            updateActiveBezierShapeInDocument()
+            
         } else {
             // NEW POINT: User is creating a new point with drag
             if !isDraggingBezierHandle {
@@ -1250,7 +1244,33 @@ struct DrawingCanvas: View {
             )
             
             updatePathWithHandles()
+            
+            // Update the real shape in the document immediately
+            updateActiveBezierShapeInDocument()
         }
+    }
+    
+    // MARK: - Professional Real-Time Path Updates (Adobe Illustrator Style)
+    
+    /// Updates the active bezier shape in the document with the current path
+    /// This gives real-time visual feedback like professional vector apps
+    private func updateActiveBezierShapeInDocument() {
+        guard let activeBezierShape = activeBezierShape,
+              let updatedPath = bezierPath,
+              let layerIndex = document.selectedLayerIndex else { return }
+        
+        // Find the shape in the document and update it
+        for shapeIndex in document.layers[layerIndex].shapes.indices {
+            if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+                // Update the path with the latest bezier path data
+                document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                break
+            }
+        }
+        
+        // Force UI update for real-time visual feedback
+        document.objectWillChange.send()
     }
     
     private func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -1916,33 +1936,22 @@ struct DrawingCanvas: View {
     }
     
     private func finishBezierPath() {
-        guard let path = bezierPath, bezierPoints.count >= 2 else { 
-            print("Cannot finish bezier path - insufficient points or no path")
+        guard let activeBezierShape = activeBezierShape, bezierPoints.count >= 2 else { 
+            print("Cannot finish bezier path - insufficient points or no active shape")
             cancelBezierDrawing()
             return 
         }
         
-        // Create bezier curve with orange stroke (more visible than black)
-        let strokeStyle = StrokeStyle(color: .rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), width: 2.0)
-        let fillStyle = FillStyle(color: .clear) // No fill for bezier curves
+        // PROFESSIONAL REAL-TIME PATH COMPLETION: The shape is already in the document with real colors!
+        // No need to create a new shape or change colors - just finalize the existing one
         
-        let shape = VectorShape(
-            name: "Bezier Path \(bezierPoints.count) points",
-            path: path,
-            strokeStyle: strokeStyle,
-            fillStyle: fillStyle
-        )
+        print("✅ Finished bezier path with \(bezierPoints.count) points using document default colors")
+        print("Path elements: \(activeBezierShape.path.elements.count)")
+        print("Shape bounds: \(activeBezierShape.bounds)")
+        print("Stroke color: \(activeBezierShape.strokeStyle?.color ?? .clear)")
         
-        print("✅ Finished bezier path with \(bezierPoints.count) points")
-        print("Path elements: \(path.elements.count)")
-        print("Shape bounds: \(shape.bounds)")
-        print("Stroke color: \(strokeStyle.color)")
-        
-        // Add shape to document
-        document.addShape(shape)
-        
-        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select new path
-        let newShapeID = shape.id
+        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select the path
+        let finishedShapeID = activeBezierShape.id
         
         // Reset bezier state BEFORE switching tools
         cancelBezierDrawing()
@@ -1950,13 +1959,13 @@ struct DrawingCanvas: View {
         // Switch to direct selection tool
         document.currentTool = .directSelection
         
-        // Direct-select the newly created shape
+        // Direct-select the finished shape
         directSelectedShapeIDs.removeAll()
-        directSelectedShapeIDs.insert(newShapeID)
+        directSelectedShapeIDs.insert(finishedShapeID)
         selectedPoints.removeAll() // Clear any existing point selections
         selectedHandles.removeAll() // Clear any existing handle selections
         
-        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected new path")
+        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected finished path")
     }
     
     private func finishBezierPenDrag() {
@@ -3180,7 +3189,9 @@ struct DrawingCanvas: View {
     }
     
     private func closeBezierPath() {
-        guard let _ = bezierPath, bezierPoints.count >= 3 else {
+        guard let _ = bezierPath, 
+              let activeShape = activeBezierShape,
+              bezierPoints.count >= 3 else {
             print("Cannot close bezier path - insufficient points or no path")
             cancelBezierDrawing()
             return
@@ -3231,27 +3242,30 @@ struct DrawingCanvas: View {
         // Create final closed path preserving all curve data
         let closedPath = VectorPath(elements: finalElements, isClosed: true)
         
-        // PROFESSIONAL ADOBE ILLUSTRATOR-STYLE CLOSED SHAPE
-        // Closed paths get both stroke AND fill by default
-        let strokeStyle = StrokeStyle(color: .black, width: 1.0) // Black stroke like Illustrator
-        let fillStyle = FillStyle(color: .rgb(RGBColor(red: 0.9, green: 0.9, blue: 0.9)), opacity: 0.8) // Light gray fill
+        // PROFESSIONAL REAL-TIME CLOSED PATH: Update the existing shape with closed path and default fill
+        // Closed paths get both stroke AND fill using document defaults
+        if let layerIndex = document.selectedLayerIndex {
+            for shapeIndex in document.layers[layerIndex].shapes.indices {
+                if document.layers[layerIndex].shapes[shapeIndex].id == activeShape.id {
+                    // Update the existing shape to be closed with fill
+                    document.layers[layerIndex].shapes[shapeIndex].path = closedPath
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                        color: document.defaultFillColor,
+                        opacity: document.defaultFillOpacity
+                    )
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    break
+                }
+            }
+        }
         
-        let shape = VectorShape(
-            name: "Closed Bezier Path",
-            path: closedPath,
-            strokeStyle: strokeStyle,
-            fillStyle: fillStyle
-        )
-        
-        print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points")
+        print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
         print("Path elements: \(closedPath.elements.count) (including close)")
         print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
+        print("Fill color: \(document.defaultFillColor)")
         
-        // Add to document
-        document.addShape(shape)
-        
-        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select new closed path
-        let newShapeID = shape.id
+        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select closed path
+        let closedShapeID = activeShape.id
         
         // Clear bezier state BEFORE switching tools
         cancelBezierDrawing()
@@ -3262,13 +3276,13 @@ struct DrawingCanvas: View {
         // Switch to direct selection tool
         document.currentTool = .directSelection
         
-        // Direct-select the newly created closed shape
+        // Direct-select the closed shape
         directSelectedShapeIDs.removeAll()
-        directSelectedShapeIDs.insert(newShapeID)
+        directSelectedShapeIDs.insert(closedShapeID)
         selectedPoints.removeAll() // Clear any existing point selections
         selectedHandles.removeAll() // Clear any existing handle selections
         
-        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected new closed path")
+        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected closed path")
     }
     
     private func handleConvertAnchorPointTap(at location: CGPoint) {
