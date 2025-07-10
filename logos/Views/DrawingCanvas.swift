@@ -666,6 +666,13 @@ struct DrawingCanvas: View {
                 cancelBezierDrawing()
             }
             handleTextTap(at: canvasLocation)
+        case .line, .rectangle, .circle, .star, .polygon:
+            // SHAPE TOOLS: Do nothing on click - they are drag-only tools
+            // Cancel bezier drawing if switching to shape tools
+            if isBezierDrawing {
+                cancelBezierDrawing()
+            }
+            print("🎨 SHAPE TOOL CLICK: Ignored - shape tools (\(document.currentTool.rawValue)) only work with click and drag")
         default:
             // Cancel bezier drawing if switching to other tools
             if isBezierDrawing {
@@ -1247,6 +1254,17 @@ struct DrawingCanvas: View {
         // Uses the same precision approach as hand tool and object dragging
         // This eliminates floating-point accumulation errors from DragGesture.translation
         
+        // CRITICAL FIX: Shape tools should only work on DRAG, not click
+        // Calculate actual drag distance to distinguish click vs drag
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        let minimumDragThreshold: Double = 12.0 // Must drag at least 12 pixels to start drawing shapes
+        
+        // Only proceed with shape creation if user has dragged significantly
+        if dragDistance < minimumDragThreshold {
+            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)")
+            return
+        }
+        
         if !isDrawing {
             // CRITICAL: Only initialize state once per drag operation
             isDrawing = true
@@ -1259,6 +1277,7 @@ struct DrawingCanvas: View {
             drawingStartPoint = shapeStartPoint
             
             print("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
+            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation")
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
