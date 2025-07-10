@@ -1182,14 +1182,16 @@ struct DrawingCanvas: View {
                 y: currentLocation.y - pointLocation.y
             )
             
-            // Create symmetric handles (professional behavior)
+            // FIXED: Create symmetric handles with correct assignment (professional behavior)
+            // control1 = INCOMING handle (opposite to drag direction) 
+            // control2 = OUTGOING handle (follows drag direction)
             let control1 = VectorPoint(
-                pointLocation.x + dragVector.x,
-                pointLocation.y + dragVector.y
-            )
-            let control2 = VectorPoint(
                 pointLocation.x - dragVector.x,
                 pointLocation.y - dragVector.y
+            )
+            let control2 = VectorPoint(
+                pointLocation.x + dragVector.x,
+                pointLocation.y + dragVector.y
             )
             
             // Store handle information
@@ -1229,7 +1231,9 @@ struct DrawingCanvas: View {
                 y: currentLocation.y - activeLocation.y
             )
             
-            // Create handles based on drag direction from the new anchor point
+            // FIXED: Correct handle assignment for intuitive UX  
+            // control1 = INCOMING handle (opposite to drag direction)
+            // control2 = OUTGOING handle (follows drag direction - this is what user sees)
             let control1 = VectorPoint(
                 activeLocation.x - dragVector.x * 0.5,
                 activeLocation.y - dragVector.y * 0.5
