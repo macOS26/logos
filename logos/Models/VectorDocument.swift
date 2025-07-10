@@ -1751,6 +1751,93 @@ class VectorDocument: ObservableObject, Codable {
         // Fallback: use the first shape
         return originalShapes.first!
     }
+
+    // MARK: - Drag and Drop Object Movement Between Layers
+    
+    /// Move a shape from one layer to another
+    func moveShapeToLayer(shapeId: UUID, fromLayerIndex: Int, toLayerIndex: Int) {
+        guard fromLayerIndex >= 0 && fromLayerIndex < layers.count,
+              toLayerIndex >= 0 && toLayerIndex < layers.count,
+              fromLayerIndex != toLayerIndex else {
+            print("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)")
+            return
+        }
+        
+        // Don't allow moving to locked layers
+        if layers[toLayerIndex].isLocked {
+            print("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'")
+            return
+        }
+        
+        // Don't allow moving from locked layers unless it's a selection operation
+        if layers[fromLayerIndex].isLocked {
+            print("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'")
+            return
+        }
+        
+        // Find and remove the shape from source layer
+        guard let shapeIndex = layers[fromLayerIndex].shapes.firstIndex(where: { $0.id == shapeId }) else {
+            print("❌ Shape not found in source layer \(fromLayerIndex)")
+            return
+        }
+        
+        saveToUndoStack()
+        
+        let shape = layers[fromLayerIndex].shapes.remove(at: shapeIndex)
+        layers[toLayerIndex].shapes.append(shape)
+        
+        // Update selection to follow the moved shape
+        selectedShapeIDs = [shapeId]
+        selectedLayerIndex = toLayerIndex
+        
+        print("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'")
+    }
+    
+    /// Move a text object to a specific layer (conceptually)
+    func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
+        guard toLayerIndex >= 0 && toLayerIndex < layers.count else {
+            print("❌ Invalid layer index for text move: \(toLayerIndex)")
+            return
+        }
+        
+        // Don't allow moving to locked layers
+        if layers[toLayerIndex].isLocked {
+            print("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'")
+            return
+        }
+        
+        guard let textIndex = textObjects.firstIndex(where: { $0.id == textId }) else {
+            print("❌ Text object not found")
+            return
+        }
+        
+        saveToUndoStack()
+        
+        // Text objects are global but we track which layer they "belong" to for organization
+        // Update selection to the target layer
+        selectedTextIDs = [textId]
+        selectedShapeIDs.removeAll()
+        selectedLayerIndex = toLayerIndex
+        
+        print("✅ Moved text object to layer '\(layers[toLayerIndex].name)'")
+    }
+    
+    /// Handle dropping a draggable object onto a layer
+    func handleObjectDrop(_ draggableObject: DraggableVectorObject, ontoLayerIndex: Int) {
+        switch draggableObject.objectType {
+        case .shape:
+            moveShapeToLayer(
+                shapeId: draggableObject.objectId,
+                fromLayerIndex: draggableObject.sourceLayerIndex,
+                toLayerIndex: ontoLayerIndex
+            )
+        case .text:
+            moveTextToLayer(
+                textId: draggableObject.objectId,
+                toLayerIndex: ontoLayerIndex
+            )
+        }
+    }
 }
 
 // MARK: - Drawing Tools

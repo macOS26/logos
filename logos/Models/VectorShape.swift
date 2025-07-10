@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - Codable Extensions for Core Graphics Types
 extension CGLineCap: Codable {
@@ -265,5 +266,35 @@ struct VectorLayer: Codable, Hashable, Identifiable {
     
     mutating func removeShape(_ shape: VectorShape) {
         shapes.removeAll { $0.id == shape.id }
+    }
+}
+
+// MARK: - Drag and Drop Support for Moving Objects Between Layers
+
+/// Transferable wrapper for objects that can be moved between layers
+struct DraggableVectorObject: Codable, Transferable {
+    enum ObjectType: String, Codable {
+        case shape = "shape"
+        case text = "text"
+    }
+    
+    let objectType: ObjectType
+    let objectId: UUID
+    let sourceLayerIndex: Int
+    
+    init(objectType: ObjectType, objectId: UUID, sourceLayerIndex: Int) {
+        self.objectType = objectType
+        self.objectId = objectId
+        self.sourceLayerIndex = sourceLayerIndex
+    }
+    
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .draggableVectorObject)
+    }
+}
+
+extension UTType {
+    static var draggableVectorObject: UTType {
+        UTType(exportedAs: "com.toddbruss.logos.draggableVectorObject")
     }
 }

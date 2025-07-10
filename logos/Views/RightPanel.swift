@@ -199,6 +199,8 @@ struct ProfessionalLayerRow: View {
     let onFinishRename: () -> Void
     let onCancelRename: () -> Void
     
+    @State private var isDropTargeted = false
+    
     private var layer: VectorLayer {
         // SAFE LAYER ACCESS: Prevent crash during SVG import or layer changes
         guard layerIndex >= 0 && layerIndex < document.layers.count else {
@@ -263,7 +265,7 @@ struct ProfessionalLayerRow: View {
                     .fill(layerColor(for: layerIndex))
                     .frame(width: 12, height: 12)
             
-            // Layer Name - Editable or Static
+            
             if isRenaming {
                 TextField("Layer Name", text: $newLayerName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -304,11 +306,15 @@ struct ProfessionalLayerRow: View {
                 Group {
                     if isSelected {
                         Color.blue.opacity(0.15)
+                    } else if isDropTargeted {
+                        Color.green.opacity(0.2)
                     } else {
                         Color.clear
                     }
                 }
             )
+            .scaleEffect(isDropTargeted ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isDropTargeted)
             .onTapGesture {
                 // SAFE LAYER ACCESS: Check bounds before selection
                 guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
@@ -320,6 +326,14 @@ struct ProfessionalLayerRow: View {
                 }
                 
                 document.selectedLayerIndex = layerIndex
+            }
+            .dropDestination(for: DraggableVectorObject.self) { droppedObjects, location in
+                for droppedObject in droppedObjects {
+                    document.handleObjectDrop(droppedObject, ontoLayerIndex: layerIndex)
+                }
+                return true
+            } isTargeted: { isTargeted in
+                isDropTargeted = isTargeted
             }
             .contextMenu {
                 // Context menu for layer operations
@@ -413,6 +427,8 @@ struct ProfessionalLayerRow: View {
     }
 }
 
+
+
 // PROFESSIONAL OBJECT ROW (Individual objects within layers)
 struct ObjectRow: View {
     enum ObjectType: String {
@@ -429,6 +445,8 @@ struct ObjectRow: View {
     let onSelect: () -> Void
     let layerIndex: Int
     let document: VectorDocument
+    
+    @State private var isDragging = false
     
     var body: some View {
         HStack(spacing: 6) {
@@ -468,39 +486,88 @@ struct ObjectRow: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
         .background(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+        .opacity(isDragging ? 0.5 : 1.0)
+        .scaleEffect(isDragging ? 0.95 : 1.0)
+        .animation(.easeInOut(duration: 0.15), value: isDragging)
         .contentShape(Rectangle())
         .onTapGesture {
-            // PROTECT LOCKED LAYERS: Don't allow selection of objects on locked layers
-            if layerIndex < document.layers.count && document.layers[layerIndex].isLocked {
-                print("🚫 Cannot select objects on locked layer '\(document.layers[layerIndex].name)'")
-                return
-            }
-            
-            // PROTECT LOCKED OBJECTS: Don't allow selection of locked objects
-            if isLocked {
-                print("🚫 Cannot select locked object '\(name)'")
-                return
-            }
-            
             onSelect()
+        }
+        .draggable(DraggableVectorObject(
+            objectType: objectType == .shape ? .shape : .text,
+            objectId: objectId,
+            sourceLayerIndex: layerIndex
+        )) {
+            // Custom drag preview
+            HStack(spacing: 4) {
+                Image(systemName: objectIcon)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white)
+                Text(name)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.blue.opacity(0.8))
+            .cornerRadius(6)
+        }
+        .onChange(of: isDragging) { oldValue, newValue in
+            // Visual feedback during drag
+            if newValue {
+                print("🎯 Dragging \(objectType.rawValue): \(name)")
+            }
+        }
+        .contextMenu {
+            // Context menu for object operations
+            Button("Select") {
+                onSelect()
+            }
+            
+            Divider()
+            
+            if objectType == .shape {
+                Button("Duplicate Shape") {
+                    // Future implementation
+                }
+                Button("Delete Shape") {
+                    document.selectedShapeIDs = [objectId]
+                    document.removeSelectedShapes()
+                }
+            } else {
+                Button("Duplicate Text") {
+                    // Future implementation
+                }
+                Button("Delete Text") {
+                    document.selectedTextIDs = [objectId]
+                    document.removeSelectedText()
+                }
+            }
+            
+            Divider()
+            
+            Button(isVisible ? "Hide" : "Show") {
+                // Toggle visibility - future implementation
+            }
+            
+            Button(isLocked ? "Unlock" : "Lock") {
+                // Toggle lock - future implementation
+            }
         }
     }
     
     private var objectIcon: String {
         switch objectType {
-        case .shape:
-            return "square.on.circle"
-        case .text:
-            return "textformat"
+        case .shape: return "square"
+        case .text: return "textformat"
         }
     }
     
     private var objectIconColor: Color {
         switch objectType {
-        case .shape:
-            return .blue
-        case .text:
-            return .green
+        case .shape: return .blue
+        case .text: return .green
         }
     }
 }
