@@ -19,6 +19,11 @@ struct LayerView: View {
         return layer.name == "Canvas"
     }
     
+    // PASTEBOARD LAYER RECOGNITION: Check if this is the Pasteboard layer
+    private var isPasteboardLayer: Bool {
+        return layer.name == "Pasteboard"
+    }
+    
     var body: some View {
         ZStack {
             ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
@@ -28,7 +33,8 @@ struct LayerView: View {
                     canvasOffset: canvasOffset,
                     isSelected: selectedShapeIDs.contains(layer.shapes[shapeIndex].id),
                     viewMode: viewMode,
-                    isCanvasLayer: isCanvasLayer  // Pass Canvas layer info
+                    isCanvasLayer: isCanvasLayer,  // Pass Canvas layer info
+                    isPasteboardLayer: isPasteboardLayer  // Pass Pasteboard layer info
                 )
             }
         }
@@ -43,10 +49,11 @@ struct ShapeView: View {
     let isSelected: Bool
     let viewMode: ViewMode
     let isCanvasLayer: Bool  // NEW: Canvas layer protection
+    let isPasteboardLayer: Bool  // NEW: Pasteboard layer recognition
     
-    // CANVAS LAYER PROTECTION: Canvas objects never go to keyline view
+    // CANVAS AND PASTEBOARD LAYER PROTECTION: Canvas and Pasteboard objects never go to keyline view
     private var effectiveViewMode: ViewMode {
-        return isCanvasLayer ? .color : viewMode
+        return (isCanvasLayer || isPasteboardLayer) ? .color : viewMode
     }
     
     var body: some View {
@@ -66,7 +73,7 @@ struct ShapeView: View {
             // Stroke rendering - improved for keyline mode and placement
             if effectiveViewMode == .keyline {
                 // In keyline mode, always show a stroke regardless of original stroke style
-                // (Canvas objects will never reach this branch)
+                // (Canvas and Pasteboard objects will never reach this branch)
                 Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }

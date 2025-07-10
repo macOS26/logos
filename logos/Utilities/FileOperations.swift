@@ -4263,11 +4263,36 @@ class FileOperations {
         print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
-        // Clear existing layers and create canvas + imported layers  
+        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
         document.layers.removeAll()
         
-        // Create canvas layer FIRST (index 0) so it's in the background
+        // Create pasteboard layer FIRST (index 0) - working area behind everything
+        var pasteboardLayer = VectorLayer(name: "Pasteboard")
+        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
+        
+        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
+        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
+        
+        // Calculate pasteboard position (centered on canvas)
+        let pasteboardOrigin = CGPoint(
+            x: (canvasWidth - pasteboardSize.width) / 2,
+            y: (canvasHeight - pasteboardSize.height) / 2
+        )
+        
+        let pasteboardRect = VectorShape.rectangle(
+            at: pasteboardOrigin,
+            size: pasteboardSize
+        )
+        var pasteboardShape = pasteboardRect
+        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+        pasteboardShape.strokeStyle = nil
+        pasteboardShape.name = "Pasteboard Background"
+        pasteboardLayer.addShape(pasteboardShape)
+        document.layers.append(pasteboardLayer)
+        
+        // Create canvas layer SECOND (index 1) so it's above pasteboard
         var canvasLayer = VectorLayer(name: "Canvas")
+        canvasLayer.isLocked = true
         let canvasRect = VectorShape.rectangle(
             at: CGPoint(x: 0, y: 0),
             size: CGSize(width: canvasWidth, height: canvasHeight)
@@ -4279,7 +4304,7 @@ class FileOperations {
         canvasLayer.addShape(backgroundShape)
         document.layers.append(canvasLayer)
         
-        // Create imported layer SECOND (index 1) so it's on top
+        // Create imported layer THIRD (index 2) so it's on top
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
@@ -4322,7 +4347,7 @@ class FileOperations {
         }
         
         // Select the imported layer (not canvas)
-        document.selectedLayerIndex = 1 // Index 1 since Canvas is at index 0
+        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
         
         // Log warnings if any
         for warning in result.warnings {

@@ -519,7 +519,7 @@ class TemplateManager {
         
         // VectorDocument.init() now creates Canvas (index 0) + Layer 1 (index 1)
         // Select the working layer (not the Canvas)
-        document.selectedLayerIndex = 1
+        document.selectedLayerIndex = 2  // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.textObjects.removeAll()

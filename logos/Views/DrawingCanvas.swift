@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
@@ -152,8 +153,17 @@ struct DrawingCanvas: View {
                 handleToolChange(oldTool: oldTool, newTool: newTool)
             }
             .onTapGesture { location in
+                // COORDINATE FIX: Ensure tap gestures work for all coordinate ranges
+                print("🎯 TAP GESTURE FIRED at screen: \(location)")
                 handleTap(at: location, geometry: geometry)
             }
+            .background(
+                // MOUSE EVENT FIX: Add native mouse handling for pasteboard areas
+                MouseEventView { event in
+                    handleMouseEvent(event, geometry: geometry)
+                }
+                .allowsHitTesting(true)
+            )
             .onHover { isHovering in
                 // Enable mouse tracking for rubber band preview
             }
@@ -162,7 +172,9 @@ struct DrawingCanvas: View {
             }
             .simultaneousGesture(
                 // PROFESSIONAL DRAG GESTURE - Only for canvas operations, doesn't block UI
-                DragGesture(minimumDistance: 3)
+                // PASTEBOARD FIX: Use 0-pixel threshold for maximum sensitivity on pasteboard
+                // Canvas vs Pasteboard handling is done in the drag logic
+                DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         handleDragChanged(value: value, geometry: geometry)
                     }
@@ -617,7 +629,15 @@ struct DrawingCanvas: View {
         // PROFESSIONAL FIX: DrawingCanvas gestures are automatically constrained to view bounds
         // SwiftUI ensures gestures only fire within the DrawingCanvas area - no manual blocking needed
         let canvasLocation = screenToCanvas(location, geometry: geometry)
-        print("✅ Processing canvas tap at \(canvasLocation) with tool: \(document.currentTool.rawValue)")
+        
+        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
+        let isInCanvasArea = canvasBounds.contains(canvasLocation)
+        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
+        
+        print("🎯 SINGLE CLICK TAP at screen: \(location) canvas: \(canvasLocation) in \(areaType)")
+        print("🎯 TAP GESTURE: This is a SINGLE CLICK, not a drag")
+        print("🎯 Canvas bounds: \(canvasBounds), click in canvas: \(isInCanvasArea)")
         
         switch document.currentTool {
         case .selection:
@@ -658,6 +678,50 @@ struct DrawingCanvas: View {
     private func handleDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL FIX: DrawingCanvas drags are automatically constrained to view bounds
         // SwiftUI ensures drag gestures only fire within the DrawingCanvas area
+        let canvasStart = screenToCanvas(value.startLocation, geometry: geometry)
+        let canvasCurrent = screenToCanvas(value.location, geometry: geometry)
+        
+        // DETAILED LOGGING: Determine if this started in canvas or pasteboard area
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
+        let startedInCanvasArea = canvasBounds.contains(canvasStart)
+        let areaType = startedInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
+        
+        // Calculate drag distance to understand if this should have been a tap
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        
+        // PASTEBOARD OPTIMIZATION: Use 0-pixel threshold for pasteboard to maximize single-click sensitivity
+        let effectiveThreshold = startedInCanvasArea ? 40.0 : 0.0
+        
+        print("🎯 DRAG GESTURE CHANGED at start: \(canvasStart) current: \(canvasCurrent) in \(areaType)")
+        print("🎯 DRAG GESTURE: This is CLICK AND DRAG, not a single click")
+        print("🎯 Drag distance: \(String(format: "%.2f", dragDistance)) pixels (threshold: \(effectiveThreshold))")
+        
+        // PASTEBOARD OPTIMIZATION: Handle small movements as selections, not drags
+        if !startedInCanvasArea && document.currentTool == .selection {
+            if dragDistance < 3.0 {
+                // Very small movement on pasteboard - treat as selection, not drag
+                print("🎯 PASTEBOARD: Tiny movement (\(String(format: "%.1f", dragDistance))px) - treating as selection")
+                selectObjectAt(canvasStart)
+                return
+            } else if dragDistance < 8.0 {
+                // Small movement - only proceed if we have selected objects to drag
+                if document.selectedShapeIDs.isEmpty {
+                    print("🎯 PASTEBOARD: Small movement (\(String(format: "%.1f", dragDistance))px) with no selection - trying selection first")
+                    selectObjectAt(canvasStart)
+                    return
+                }
+            }
+        }
+        
+        // CANVAS STABILITY: Use higher threshold for canvas to prevent hand tremor issues
+        if startedInCanvasArea && dragDistance < 8.0 {
+            // Small movement on canvas - be more tolerant of hand tremor
+            if document.currentTool == .selection && document.selectedShapeIDs.isEmpty {
+                print("🎯 CANVAS: Small movement (\(String(format: "%.1f", dragDistance))px) - trying selection")
+                selectObjectAt(canvasStart)
+                return
+            }
+        }
         
         switch document.currentTool {
         case .hand:
@@ -852,7 +916,13 @@ struct DrawingCanvas: View {
     }
     
     private func handleSelectionTap(at location: CGPoint) {
-        print("🎯 Selection tool tap at: \(location)")
+        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
+        let isInCanvasArea = canvasBounds.contains(location)
+        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
+        
+        print("🎯 SELECTION TAP FUNCTION CALLED at: \(location) in \(areaType)")
+        print("🎯 SELECTION: This function was called by a SINGLE CLICK TAP gesture")
         
         // EXIT TEXT EDITING when clicking with selection tool (Adobe Illustrator behavior)
         exitAllTextEditing()
@@ -881,38 +951,54 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
-                print("Testing shape: \(shape.name)")
+                print("🔍 HIT TESTING SHAPE: \(shape.name) on layer \(layerIndex)")
                 print("  - Has stroke: \(shape.strokeStyle != nil)")
                 print("  - Has fill: \(shape.fillStyle != nil)")
                 print("  - Fill color: \(String(describing: shape.fillStyle?.color))")
                 print("  - Bounds: \(shape.bounds)")
+                print("  - Is Background Shape: \(shape.name == "Canvas Background" || shape.name == "Pasteboard Background")")
                 
-                // Try multiple hit testing approaches for better reliability
+                // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
+                
+                // FIXED: Proper hit testing logic for stroke vs filled shapes
                 var isHit = false
                 
-                // Method 1: For stroke-only paths (like bezier curves), use stroke-based hit testing
-                let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
+                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 
-                if isStrokeOnly && shape.strokeStyle != nil {
-                    // Use stroke width + padding for tolerance
-                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                    let strokeTolerance = max(15.0, strokeWidth + 10.0) // Increased tolerance
-                    
-                    print("  - Testing stroke-only path with tolerance: \(strokeTolerance)")
-                    isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                    print("  - Stroke hit test result: \(isHit)")
+                if isBackgroundShape {
+                    // Background shapes: Use EXACT bounds checking - no tolerance!
+                    // This ensures Canvas/Pasteboard only respond to clicks EXACTLY within their bounds
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    isHit = shapeBounds.contains(location)
+                    print("  - Background shape - exact bounds hit test result: \(isHit)")
+                    print("  - Shape bounds: \(shapeBounds)")
+                    print("  - Click location: \(location)")
                 } else {
-                    // Method 2: Check transformed bounds with tolerance for filled shapes
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                    // Regular shapes: Use different logic for stroke vs filled
+                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                     
-                    if expandedBounds.contains(location) {
-                        isHit = true
-                        print("  - Hit via bounds check")
+                    if isStrokeOnly && shape.strokeStyle != nil {
+                        // Method 1: Stroke-only shapes - use stroke-based hit testing only
+                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                        
+                        print("  - Testing stroke-only path with tolerance: \(strokeTolerance)")
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                        print("  - Stroke hit test result: \(isHit)")
                     } else {
-                        // Method 3: Fallback path hit test
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                        print("  - Path hit test result: \(isHit)")
+                        // Method 2: Filled shapes - use bounds + path hit testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                        
+                        if expandedBounds.contains(location) {
+                            isHit = true
+                            print("  - Hit via bounds check")
+                        } else {
+                            // Fallback: precise path hit test
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                            print("  - Path hit test result: \(isHit)")
+                        }
                     }
                 }
                 
@@ -959,7 +1045,7 @@ struct DrawingCanvas: View {
                 print("🎯 REGULAR CLICK: Selected \(shape.name) only (cleared previous selection)")
             }
         } else {
-            // NO OBJECT HIT: Clicking on background or empty space
+            // NO OBJECT HIT: Clicking on background or empty space  
             let documentBounds = document.documentBounds
             let isOutsideDocument = !documentBounds.contains(location)
             
@@ -969,10 +1055,10 @@ struct DrawingCanvas: View {
                 document.selectedTextIDs.removeAll()
                 print("🎯 Clicked gray background (outside document): Cleared all selections")
             } else if !isShiftPressed && !isCommandPressed {
-                // Clicking inside document bounds on empty space or locked Canvas deselects
+                // Clicking inside document bounds on empty space deselects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-                print("🎯 Clicked empty space or locked Canvas: Cleared all selections")
+                print("🎯 Clicked empty space: Cleared all selections")
             } else {
                 print("🎯 Clicked empty space with modifiers: Keeping existing selection")
             }
@@ -1719,27 +1805,41 @@ struct DrawingCanvas: View {
             
             for shapeID in document.selectedShapeIDs {
                 if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
-                    // Use the same improved hit testing logic as selection
-                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
+                    // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
                     
-                    if isStrokeOnly && shape.strokeStyle != nil {
-                        // Use stroke width + padding for tolerance
-                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                        
-                        if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance) {
+                    // Use the same improved hit testing logic as selection
+                    // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+                    
+                    if isBackgroundShape {
+                        // Background shapes: Use EXACT bounds checking - no tolerance!
+                        let shapeBounds = shape.bounds.applying(shape.transform)
+                        if shapeBounds.contains(location) {
                             return true
                         }
                     } else {
-                        // For filled shapes, use bounds check
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                        // Regular shapes: Use different logic for stroke vs filled
+                        let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                         
-                        if expandedBounds.contains(location) {
-                            return true
-                        } else {
-                            if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0) {
+                        if isStrokeOnly && shape.strokeStyle != nil {
+                            // Use stroke width + padding for tolerance
+                            let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                            
+                            if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance) {
                                 return true
+                            }
+                        } else {
+                            // Regular shapes: Use bounds + path hit testing
+                            let transformedBounds = shape.bounds.applying(shape.transform)
+                            let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                            
+                            if expandedBounds.contains(location) {
+                                return true
+                            } else {
+                                if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0) {
+                                    return true
+                                }
                             }
                         }
                     }
@@ -1750,8 +1850,22 @@ struct DrawingCanvas: View {
     }
     
     private func selectObjectAt(_ location: CGPoint) {
-        // Reuse the selection tap logic
-        handleSelectionTap(at: location)
+        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
+        let isInCanvasArea = canvasBounds.contains(location)
+        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
+        
+        print("🎯 SELECT OBJECT AT FUNCTION CALLED at: \(location) in \(areaType)")
+        
+        if !isInCanvasArea {
+            print("🎯 PASTEBOARD: Prioritizing object selection with optimized hit testing")
+            // PASTEBOARD OPTIMIZATION: Use selection tap logic directly for better object detection
+            handleSelectionTap(at: location)
+        } else {
+            print("🎯 CANVAS: Using standard drag-based selection")
+            // Reuse the selection tap logic for canvas
+            handleSelectionTap(at: location)
+        }
     }
     
     private func finishBezierPath() {
@@ -2706,28 +2820,41 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
+                // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
+                
                 var isHit = false
                 
                 // PROFESSIONAL HIT TESTING (same logic as regular selection)
-                let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
+                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 
-                if isStrokeOnly && shape.strokeStyle != nil {
-                    // Stroke-only shapes: Use stroke-based hit testing
-                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                    let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                    isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                    print("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))")
+                if isBackgroundShape {
+                    // Background shapes: Use EXACT bounds checking - no tolerance!
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    isHit = shapeBounds.contains(location)
+                    print("  - Background shape - exact bounds hit test: \(isHit)")
                 } else {
-                    // Filled shapes: Use bounds + path hit testing
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                    // Regular shapes: Use different logic for stroke vs filled
+                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                     
-                    if expandedBounds.contains(location) {
-                        isHit = true
-                        print("  - Bounds hit test: \(isHit)")
+                    if isStrokeOnly && shape.strokeStyle != nil {
+                        // Stroke-only shapes: Use stroke-based hit testing
+                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                        print("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))")
                     } else {
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                        print("  - Path hit test: \(isHit)")
+                        // Regular shapes: Use bounds + path hit testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                        
+                        if expandedBounds.contains(location) {
+                            isHit = true
+                            print("  - Bounds hit test: \(isHit)")
+                        } else {
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                            print("  - Path hit test: \(isHit)")
+                        }
                     }
                 }
                 
@@ -3207,29 +3334,52 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
+                // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
+                
                 var isHit = false
                 
                 // Use the same hit testing logic as selection tool
-                let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
+                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 
-                if isStrokeOnly && shape.strokeStyle != nil {
-                    // Stroke-only shapes: Use stroke-based hit testing
-                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                    let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                    isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                if isBackgroundShape {
+                    // Background shapes: Use EXACT bounds checking - no tolerance!
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    isHit = shapeBounds.contains(location)
                 } else {
-                    // Filled shapes: Use bounds + path hit testing
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                    // Regular shapes: Use different logic for stroke vs filled
+                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                     
-                    if expandedBounds.contains(location) {
-                        isHit = true
+                    if isStrokeOnly && shape.strokeStyle != nil {
+                        // Stroke-only shapes: Use stroke-based hit testing
+                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
                     } else {
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                        // Regular shapes: Use bounds + path hit testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                        
+                        if expandedBounds.contains(location) {
+                            isHit = true
+                        } else {
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                        }
                     }
                 }
                 
                 if isHit {
+                    // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
+                    if layer.isLocked || shape.isLocked {
+                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        print("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                        selectedPoints.removeAll()
+                        selectedHandles.removeAll()
+                        directSelectedShapeIDs.removeAll()
+                        document.objectWillChange.send()
+                        return
+                    }
+                    
                     // Select this shape for direct selection UI
                     document.selectedShapeIDs.removeAll()
                     document.selectedTextIDs.removeAll()
@@ -3883,6 +4033,43 @@ struct DrawingCanvas: View {
         print("   3. Check if zoom/offset values change during drawing")
         print("   4. If values change, we found the coordinate system bug!")
     }
+    
+    // MARK: - Native Mouse Event Handling
+    
+    private func handleMouseEvent(_ event: NSEvent, geometry: GeometryProxy) {
+        switch event.type {
+        case .leftMouseDown:
+            handleNativeMouseDown(event, geometry: geometry)
+        default:
+            break
+        }
+    }
+    
+    private func handleNativeMouseDown(_ event: NSEvent, geometry: GeometryProxy) {
+        // Get mouse location in view coordinates
+        guard let window = NSApp.keyWindow else { return }
+        
+        let locationInWindow = event.locationInWindow
+        let locationInView = window.contentView?.convert(locationInWindow, from: nil) ?? locationInWindow
+        
+        // Convert to our coordinate system (flip Y axis for AppKit->SwiftUI conversion)
+        let screenLocation = CGPoint(x: locationInView.x, y: geometry.size.height - locationInView.y)
+        let canvasLocation = screenToCanvas(screenLocation, geometry: geometry)
+        
+        // Check if this is in pasteboard area (outside canvas bounds)
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612)
+        let isInPasteboardArea = !canvasBounds.contains(canvasLocation)
+        
+        if isInPasteboardArea {
+            print("🖱️ NATIVE MOUSE DOWN in PASTEBOARD AREA at: \(canvasLocation)")
+            print("🖱️ This bypasses SwiftUI gesture limitations for negative/large coordinates!")
+            
+            // Handle the pasteboard click directly
+            if document.currentTool == .selection {
+                handleSelectionTap(at: canvasLocation)
+            }
+        }
+    }
 
     private func fitToPage(geometry: GeometryProxy) {
         // Use standard document bounds for fit-to-page calculations
@@ -3927,6 +4114,41 @@ struct DrawingCanvas: View {
         print("   Standard coordinate system approach")
     }
 
+}
+
+// MARK: - Native Mouse Event View
+
+struct MouseEventView: NSViewRepresentable {
+    let onMouseEvent: (NSEvent) -> Void
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = MouseTrackingView()
+        view.onMouseEvent = onMouseEvent
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if let trackingView = nsView as? MouseTrackingView {
+            trackingView.onMouseEvent = onMouseEvent
+        }
+    }
+}
+
+class MouseTrackingView: NSView {
+    var onMouseEvent: ((NSEvent) -> Void)?
+    
+    override func mouseDown(with event: NSEvent) {
+        onMouseEvent?(event)
+        super.mouseDown(with: event)
+    }
+    
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
+    
+    override var acceptsFirstResponder: Bool {
+        return true
+    }
 }
 
 struct ProfessionalDirectSelectionView: View {

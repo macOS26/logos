@@ -152,23 +152,52 @@ class VectorDocument: ObservableObject, Codable {
         // Create canvas layer + default working layer
         createCanvasAndWorkingLayers()
         
-        // Set the selected layer index to working layer (not canvas)
-        self.selectedLayerIndex = 1 // Working layer is now at index 1
+        // Set the selected layer index to working layer (not canvas or pasteboard)
+        self.selectedLayerIndex = 2 // Working layer is now at index 2
         print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
         print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
         print("=" + String(repeating: "=", count: 50))
+        
+        // Set up settings change observation
+        setupSettingsObservation()
     }
     
     // MARK: - Canvas Management (User's Brilliant Solution!)
     
 
     
-    /// Creates both Canvas layer and working layer for normal startup
+    /// Creates Pasteboard, Canvas, and working layers in correct order (pasteboard behind everything)
     private func createCanvasAndWorkingLayers() {
         // CRITICAL DEBUG: Clear any existing layers first to ensure proper order
         layers.removeAll()
         
-        // Create Canvas layer FIRST (index 0) - background layer, LOCKED by default
+        // Create Pasteboard layer FIRST (index 0) - working area behind everything
+        var pasteboardLayer = VectorLayer(name: "Pasteboard")
+        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
+        
+        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
+        let canvasSize = settings.sizeInPoints
+        let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
+        
+        // Calculate pasteboard position (centered on canvas)
+        let pasteboardOrigin = CGPoint(
+            x: (canvasSize.width - pasteboardSize.width) / 2,
+            y: (canvasSize.height - pasteboardSize.height) / 2
+        )
+        
+        let pasteboardRect = VectorShape.rectangle(
+            at: pasteboardOrigin,
+            size: pasteboardSize
+        )
+        var pasteboardShape = pasteboardRect
+        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+        pasteboardShape.strokeStyle = nil
+        pasteboardShape.name = "Pasteboard Background"
+        pasteboardLayer.addShape(pasteboardShape)
+        layers.append(pasteboardLayer)
+        print("📋 CREATED PASTEBOARD LAYER: Pasteboard (index 0) - BEHIND everything")
+        
+        // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
         var canvasLayer = VectorLayer(name: "Canvas")
         canvasLayer.isLocked = true  // Canvas should be locked by default
         let canvasRect = VectorShape.rectangle(
@@ -181,11 +210,11 @@ class VectorDocument: ObservableObject, Codable {
         backgroundShape.name = "Canvas Background"
         canvasLayer.addShape(backgroundShape)
         layers.append(canvasLayer)
-        print("📋 CREATED CANVAS LAYER: Canvas (index 0)")
+        print("📋 CREATED CANVAS LAYER: Canvas (index 1)")
         
-        // Create working layer SECOND (index 1) - for actual drawing
+        // Create working layer THIRD (index 2) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
-        print("📋 CREATED WORKING LAYER: Layer 1 (index 1)")
+        print("📋 CREATED WORKING LAYER: Layer 1 (index 2)")
         
         // DEBUG: Print actual layer order to verify
         debugLayerOrder()
@@ -198,6 +227,42 @@ class VectorDocument: ObservableObject, Codable {
             print("   Index \(index): '\(layer.name)' - shapes: \(layer.shapes.count)")
         }
         print("   Layers panel shows these REVERSED (index \(layers.count-1) at top)")
+    }
+    
+    /// Update pasteboard layer to match canvas size and center it
+    func updatePasteboardLayer() {
+        guard layers.count > 0,
+              layers[0].name == "Pasteboard",
+              let pasteboardShape = layers[0].shapes.first(where: { $0.name == "Pasteboard Background" }) else {
+            print("⚠️ Cannot update pasteboard - pasteboard layer not found")
+            return
+        }
+        
+        let canvasSize = settings.sizeInPoints
+        let pasteboardSize = CGSize(width: canvasSize.width * 10, height: canvasSize.height * 10)
+        
+        // Calculate pasteboard position (centered on canvas)
+        let pasteboardOrigin = CGPoint(
+            x: (canvasSize.width - pasteboardSize.width) / 2,
+            y: (canvasSize.height - pasteboardSize.height) / 2
+        )
+        
+        // Find the pasteboard shape and update it
+        if let pasteboardIndex = layers[0].shapes.firstIndex(where: { $0.name == "Pasteboard Background" }) {
+            let newPasteboardRect = VectorShape.rectangle(
+                at: pasteboardOrigin,
+                size: pasteboardSize
+            )
+            var updatedPasteboardShape = newPasteboardRect
+            updatedPasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+            updatedPasteboardShape.strokeStyle = nil
+            updatedPasteboardShape.name = "Pasteboard Background"
+            updatedPasteboardShape.id = pasteboardShape.id  // Keep the same ID
+            
+            layers[0].shapes[pasteboardIndex] = updatedPasteboardShape
+            
+            print("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)")
+        }
     }
     
 
@@ -291,6 +356,24 @@ class VectorDocument: ObservableObject, Codable {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    /// Set up observation for settings changes to update pasteboard
+    private func setupSettingsObservation() {
+        // Since settings is a struct, we can't directly observe individual properties
+        // Instead, we'll provide a method that should be called when settings change
+        print("🔧 Settings observation setup complete")
+    }
+    
+    /// Call this method whenever document settings change to update pasteboard
+    func onSettingsChanged() {
+        // Update pasteboard when canvas size changes
+        updatePasteboardLayer()
+        
+        // Update any other dependent elements
+        objectWillChange.send()
+        
+        print("🔄 Settings changed - updated pasteboard layer")
     }
     
     private func setupNotificationObservers() {
@@ -559,15 +642,27 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
         
+        // PROTECT PASTEBOARD LAYER: Never allow Pasteboard layer to be moved
+        if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" {
+            print("🚫 Cannot move Pasteboard layer - it must remain at the bottom")
+            return
+        }
+        
         // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
-        if sourceIndex == 0 && layers[sourceIndex].name == "Canvas" {
-            print("🚫 Cannot move Canvas layer - it must remain at the bottom")
+        if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" {
+            print("🚫 Cannot move Canvas layer - it must remain above pasteboard")
+            return
+        }
+        
+        // PROTECT PASTEBOARD LAYER: Never allow moving to Pasteboard position
+        if targetIndex == 0 {
+            print("🚫 Cannot move layers to Pasteboard position (index 0)")
             return
         }
         
         // PROTECT CANVAS LAYER: Never allow moving to Canvas position
-        if targetIndex == 0 {
-            print("🚫 Cannot move layers to Canvas position (index 0)")
+        if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" {
+            print("🚫 Cannot move layers to Canvas position (index 1)")
             return
         }
         

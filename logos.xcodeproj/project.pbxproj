@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		EAF054D52E19B78C009DFB2F /* logos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = logos.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAF054D52E19B78C009DFB2F /* logos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = logos.app; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAF054E32E19B78D009DFB2F /* logosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAF054ED2E19B78D009DFB2F /* logosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -404,7 +404,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io";
 				PRODUCT_NAME = "logos inkpen.io";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -429,7 +429,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io";
 				PRODUCT_NAME = "logos inkpen.io";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -446,7 +446,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io-Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-Tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -463,7 +463,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io-Tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-Tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -478,7 +478,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io-UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -493,7 +493,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.toddbruss.logos-inkpen-io-UITests;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-UITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;

@@ -88,7 +88,8 @@ struct MainView: View {
             importResult: $importResult,
             showingImportProgress: $showingImportProgress,
             showingDWFExportDialog: $showingDWFExportDialog,
-            showingDWGExportDialog: $showingDWGExportDialog
+            showingDWGExportDialog: $showingDWGExportDialog,
+            onRunDiagnostics: runPasteboardDiagnostics
         )
         }
         .sheet(isPresented: $showingDocumentSettings) {
@@ -665,6 +666,25 @@ struct MainView: View {
         }
     }
     
+    // MARK: - Debug Functions
+    
+    private func runPasteboardDiagnostics() {
+        print("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI")
+        let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
+        report.printSummary()
+        
+        // Show results in an alert
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Pasteboard Diagnostics Complete"
+            alert.informativeText = report.overallPassed ? 
+                "✅ All tests PASSED! Pasteboard is working correctly." :
+                "❌ Some tests FAILED. Check the console for detailed results."
+            alert.alertStyle = report.overallPassed ? .informational : .warning
+            alert.runModal()
+        }
+    }
+    
     // MARK: - Professional DWG Export
     
     private func exportToDWG(with options: DWGExportOptions) {
@@ -721,6 +741,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingImportProgress: Bool
     @Binding var showingDWFExportDialog: Bool
     @Binding var showingDWGExportDialog: Bool
+    let onRunDiagnostics: () -> Void
     
     // MARK: - Path Closing Support Functions
     private func hasOpenPaths() -> Bool {
@@ -1141,6 +1162,14 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Import SVG, PDF, Adobe Illustrator (.ai), EPS, PostScript (.ps), and DWF files")
             
+            // Debug: Run Pasteboard Diagnostics
+            Button {
+                onRunDiagnostics()
+            } label: {
+                Image(systemName: "wrench.and.screwdriver")
+            }
+            .help("Run Pasteboard Diagnostics (Debug)")
+            
             if showingImportProgress {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .blue))
@@ -1432,18 +1461,27 @@ struct DocumentSettingsView: View {
                         Text("Width:")
                         TextField("Width", value: $document.settings.width, format: .number)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .onChange(of: document.settings.width) { _ in
+                                document.onSettingsChanged()
+                            }
                     }
                     
                     HStack {
                         Text("Height:")
                         TextField("Height", value: $document.settings.height, format: .number)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .onChange(of: document.settings.height) { _ in
+                                document.onSettingsChanged()
+                            }
                     }
                     
                     Picker("Unit", selection: $document.settings.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
                             Text(unit.rawValue).tag(unit)
                         }
+                    }
+                    .onChange(of: document.settings.unit) { _ in
+                        document.onSettingsChanged()
                     }
                 }
                 
