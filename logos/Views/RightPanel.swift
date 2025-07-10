@@ -124,11 +124,6 @@ struct LayersPanel: View {
     @State private var renamingLayerIndex: Int?
     @State private var newLayerName: String = ""
     
-    // PROFESSIONAL LAYER DRAG PRECISION STATE (Same approach as hand tool, object dragging, and shape drawing)
-    @State private var layerDragStart = CGPoint.zero         // Reference cursor position when layer drag started
-    @State private var layerDragInitialPosition = CGPoint.zero // Reference layer position when drag started
-    @State private var isLayerDragActive = false             // Track when precision layer drag is active
-    
     // Custom UTType for layer drag and drop
     private static let layerUTType = "com.logos-inkpen-io.layer"
     
@@ -193,14 +188,6 @@ struct LayersPanel: View {
                         dropZone(targetIndex: layerIndex, height: 6)
                     }
                 }
-                
-                // CRITICAL: Special bottom drop zone for dropping below the last object
-                // This ensures users can always drag objects to the very bottom position
-                // Using -1 as a special target index to indicate bottom position
-                VStack(spacing: 0) {
-                    dropZone(targetIndex: -1, height: 12) // Special bottom drop zone with more height
-                    Color.clear.frame(height: 20) // Extra space for easier scrolling
-                }
             }
             .padding(.horizontal, 4)
         }
@@ -214,18 +201,11 @@ struct LayersPanel: View {
             .overlay(
                 Group {
                     if dropTargetIndex == targetIndex {
-                        // PROFESSIONAL DROP INDICATOR: Always visible during drag operations
                         Rectangle()
                             .fill(dropIndicatorColor)
-                            .frame(height: 3) // Thicker for better visibility like Adobe Illustrator
-                            .padding(.horizontal, 4)
-                            .animation(.easeInOut(duration: 0.05), value: dropTargetIndex) // Very fast for responsiveness
-                    } else if isDraggingObject || isLayerDragActive {
-                        // SUBTLE HINT INDICATORS: Show potential drop zones during any drag
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 1)
-                            .padding(.horizontal, 8)
+                            .frame(height: 2) // Slightly thicker for better visibility
+                            .padding(.horizontal, 6)
+                            .animation(.easeInOut(duration: 0.1), value: dropTargetIndex) // Faster animation
                     }
                 }
             )
@@ -248,9 +228,6 @@ struct LayersPanel: View {
                 if targetIndex == document.layers.count {
                     // Dropped above all layers - move to topmost layer (highest index)
                     targetLayerIndex = document.layers.count - 1
-                } else if targetIndex == -1 {
-                    // SPECIAL BOTTOM DROP ZONE: Move to the bottom-most layer (index 1, since Canvas is 0)
-                    targetLayerIndex = max(1, 0) // Never drop to Canvas (index 0)
                 } else {
                     // Dropped below a specific layer - move to that layer
                     targetLayerIndex = targetIndex
@@ -266,9 +243,6 @@ struct LayersPanel: View {
                     // For object drops, highlight the target layer and show divider
                     if targetIndex == document.layers.count {
                         hoveredLayerIndex = document.layers.count - 1
-                    } else if targetIndex == -1 {
-                        // SPECIAL BOTTOM DROP ZONE: Highlight the bottom-most layer (index 1)
-                        hoveredLayerIndex = max(1, 0)
                     } else {
                         hoveredLayerIndex = targetIndex
                     }
@@ -337,39 +311,14 @@ struct LayersPanel: View {
             dragPreview(for: layerIndex)
         }
         .simultaneousGesture(
-            // PROFESSIONAL LAYER DRAG: Perfect cursor-to-layer synchronization
-            // Uses the same precision approach as hand tool, object dragging, and shape drawing
-            // This eliminates floating-point accumulation errors from SwiftUI DragGesture
             DragGesture()
-                .onChanged { value in
-                    if !isLayerDragActive {
-                        // CRITICAL: Only initialize state once per drag operation
-                        isLayerDragActive = true
-                        draggedLayerIndex = layerIndex
-                        
-                        // PRECISION REFERENCE POINTS: Capture exact cursor and layer positions
-                        layerDragStart = value.startLocation
-                        layerDragInitialPosition = CGPoint(x: 0, y: 0) // Layer visual position reference
-                        
-                        print("🎯 LAYER DRAG: Established reference positions for layer '\(document.layers[layerIndex].name)'")
-                        print("   Reference cursor: (\(String(format: "%.1f", layerDragStart.x)), \(String(format: "%.1f", layerDragStart.y)))")
-                    }
-                    
-                    // PRECISION CURSOR TRACKING: Calculate exact cursor delta like hand tool
-                    let cursorDelta = CGPoint(
-                        x: value.location.x - layerDragStart.x,
-                        y: value.location.y - layerDragStart.y
-                    )
-                    
-                    // UPDATE DROP ZONE INDICATORS: Use cursor position for precise drop targeting
-                    updateDropZoneIndicators(cursorPosition: value.location, cursorDelta: cursorDelta)
+                .onChanged { _ in
+                    draggedLayerIndex = layerIndex
+                    // Reduced logging for better performance
+                    // print("🔄 Started dragging layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
                 }
-                .onEnded { value in
-                    if isLayerDragActive {
-                        print("🎯 LAYER DRAG: Completed successfully - moved layer '\(document.layers[layerIndex].name)'")
-                        print("   State reset - ready for next drag operation")
-                    }
-                    clearPrecisionDragState()
+                .onEnded { _ in
+                    clearDragState()
                 }
         )
     }
@@ -385,51 +334,6 @@ struct LayersPanel: View {
         
         // Only log significant state changes to reduce console noise
         // print("🏁 Finished dragging - cleared all drag states")
-    }
-    
-    private func clearPrecisionDragState() {
-        // PROFESSIONAL PRECISION DRAG STATE MANAGEMENT: Clean reset for next operation
-        isLayerDragActive = false
-        layerDragStart = CGPoint.zero
-        layerDragInitialPosition = CGPoint.zero
-        clearDragState()
-    }
-    
-    private func updateDropZoneIndicators(cursorPosition: CGPoint, cursorDelta: CGPoint) {
-        // PROFESSIONAL DROP ZONE INDICATORS: Use precise cursor position for drop targeting
-        // This ensures consistent drop zone highlighting based on actual mouse position
-        // Following Adobe Illustrator, FreeHand, CorelDraw, and Inkscape precision standards
-        
-        guard let draggedIndex = draggedLayerIndex else { return }
-        
-        // Calculate drag magnitude for minimum movement threshold
-        let dragMagnitude = sqrt(cursorDelta.x * cursorDelta.x + cursorDelta.y * cursorDelta.y)
-        
-        // Only show indicators for significant movement (prevents jittery behavior)
-        if dragMagnitude > 5 { // Lowered threshold for better responsiveness
-            // PRECISION CURSOR TRACKING: Use vertical delta for more precise drop zone detection
-            let verticalDelta = cursorDelta.y
-            
-            if verticalDelta < -30 {
-                // Dragging UP: Move to higher index (above current position)
-                dropTargetIndex = min(draggedIndex + 1, document.layers.count)
-            } else if verticalDelta > 30 {
-                // Dragging DOWN: Move to lower index or special bottom position
-                let targetIndex = max(draggedIndex - 1, 1) // Never go below index 1 (Canvas protection)
-                if targetIndex == 1 && draggedIndex > 1 {
-                    // If trying to move to bottom position, use special bottom drop zone
-                    dropTargetIndex = -1
-                } else {
-                    dropTargetIndex = targetIndex
-                }
-            } else {
-                // Small movements: Clear drop target to prevent flickering
-                dropTargetIndex = nil
-            }
-        } else {
-            // Very small movements: Clear drop target
-            dropTargetIndex = nil
-        }
     }
     
     private func dragPreview(for layerIndex: Int) -> some View {
@@ -475,18 +379,13 @@ struct LayersPanel: View {
             return false // Red indicator - cannot drop below Canvas
         }
         
-        // SPECIAL BOTTOM DROP ZONE: Allow dropping to bottom position (except Canvas)
-        if targetIndex == -1 {
-            return draggedIndex != 0 // Valid unless trying to move Canvas
-        }
-        
         // Don't allow dropping on the same position (except for "move to top" case)
         if draggedIndex == targetIndex && targetIndex != document.layers.count {
             return false // Red indicator - same position
         }
         
         // All other drops are valid
-        return true // Blue indicator
+        return true // Green indicator
     }
     
     private func handleLayerDrop(draggedData: LayerDragData, targetIndex: Int) -> Bool {
@@ -495,17 +394,8 @@ struct LayersPanel: View {
         // Reduced logging for better performance
         // print("🔄 LAYER DROP: Moving layer from index \(sourceIndex) to \(targetIndex)")
         
-        // SPECIAL BOTTOM DROP ZONE: Convert -1 to proper target index
-        let actualTargetIndex: Int
-        if targetIndex == -1 {
-            // Move to bottom position (index 1, since Canvas is always at index 0)
-            actualTargetIndex = 1
-        } else {
-            actualTargetIndex = targetIndex
-        }
-        
         // Don't drop on same layer (but allow dropping above all layers even if source is top layer)
-        if sourceIndex == actualTargetIndex && actualTargetIndex != document.layers.count {
+        if sourceIndex == targetIndex && targetIndex != document.layers.count {
             // print("🚫 Source and target are the same")
             return false
         }
@@ -517,17 +407,17 @@ struct LayersPanel: View {
         }
         
         // PROTECT CANVAS LAYER: Never allow any layer to be moved to Canvas position (index 0)
-        if actualTargetIndex == 0 {
+        if targetIndex == 0 {
             // print("🚫 Cannot move layers below Canvas layer")
             return false
         }
         
         // Perform the layer move - let moveLayer handle all index logic
         document.saveToUndoStack()
-        document.moveLayer(from: sourceIndex, to: actualTargetIndex)
+        document.moveLayer(from: sourceIndex, to: targetIndex)
         
         // Only log successful moves
-        print("✅ Successfully moved layer from \(sourceIndex) to \(actualTargetIndex)")
+        print("✅ Successfully moved layer from \(sourceIndex) to \(targetIndex)")
         document.debugLayerOrder()
         
         // Clear drop target
