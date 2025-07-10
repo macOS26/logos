@@ -1102,27 +1102,28 @@ struct DrawingCanvas: View {
         }
         
         if !isBezierDrawing {
-            // Start new bezier path
+            // Start new bezier path with first point
             bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
             bezierPoints = [VectorPoint(location)]
             isBezierDrawing = true
             activeBezierPointIndex = 0 // First point is active (solid)
             bezierHandles.removeAll()
-            print("Started bezier path at \(location)")
+            print("🎯 STARTED: New bezier path with first point at \(location)")
         } else {
+            // PURE CLICK: Add corner point (no handles)
             // Make previous point inactive (hollow)
             let previousActiveIndex = activeBezierPointIndex
             
-            // Add new point and make it active (solid)
+            // Add new corner point and make it active (solid)
             let newPoint = VectorPoint(location)
             bezierPoints.append(newPoint)
             activeBezierPointIndex = bezierPoints.count - 1
             
-            // Create line to the new point (will be converted to curve if handles are added)
+            // Create line to the new point (corner point - no handles)
             bezierPath?.addElement(.line(to: newPoint))
             
-            print("Added bezier point \(bezierPoints.count): \(location)")
-            print("Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
+            print("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)")
+            print("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
         }
     }
     
@@ -1132,7 +1133,19 @@ struct DrawingCanvas: View {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let currentLocation = screenToCanvas(value.location, geometry: geometry)
         
-        // Check if we're dragging from an existing anchor point (Option+drag behavior)
+        // Calculate actual drag distance to distinguish click vs drag
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
+        
+        // Only proceed with handle creation if user has dragged significantly
+        if dragDistance < minimumDragThreshold {
+            print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - treating as CLICK, no handles created")
+            return
+        }
+        
+        print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - FIRST plotting new point, THEN creating handles")
+        
+        // Check if we're dragging from an existing anchor point (editing existing handles)
         let tolerance: Double = 8.0
         var draggedPointIndex: Int? = nil
         
@@ -1145,13 +1158,14 @@ struct DrawingCanvas: View {
         }
         
         if let pointIndex = draggedPointIndex {
+            // EXISTING POINT: User is dragging from an existing anchor point to edit its handles
             if !isDraggingBezierHandle {
                 isDraggingBezierHandle = true
                 isDraggingBezierPoint = true
-                print("Started dragging handle from point \(pointIndex)")
+                print("📝 EDITING: Dragging handles from existing point \(pointIndex)")
             }
             
-            // Create/update bezier handles for this point (Option+drag behavior)
+            // Create/update bezier handles for this existing point
             let point = bezierPoints[pointIndex]
             let pointLocation = CGPoint(x: point.x, y: point.y)
             
@@ -1181,14 +1195,24 @@ struct DrawingCanvas: View {
             // Update the path elements to use curves where handles exist
             updatePathWithHandles()
             
-        } else if activeBezierPointIndex == bezierPoints.count - 1 && bezierPoints.count >= 2 {
-            // Dragging the active (most recent) point creates handles automatically
+        } else {
+            // NEW POINT: User is creating a new point with drag
             if !isDraggingBezierHandle {
                 isDraggingBezierHandle = true
-                print("Creating handles for active point while placing")
+                
+                // ✨ NEW BEHAVIOR: First plot the new anchor point at click location
+                let newPoint = VectorPoint(startLocation)
+                bezierPoints.append(newPoint)
+                activeBezierPointIndex = bezierPoints.count - 1
+                
+                // Add the new point to the path as a line segment initially
+                bezierPath?.addElement(.line(to: newPoint))
+                
+                print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
+                print("📏 Now creating smooth curve handles as user drags...")
             }
             
-            // Create handles for the active point based on drag direction
+            // Create handles for the newly placed point based on drag direction
             let activeIndex = bezierPoints.count - 1
             let activePoint = bezierPoints[activeIndex]
             let activeLocation = CGPoint(x: activePoint.x, y: activePoint.y)
@@ -1198,7 +1222,7 @@ struct DrawingCanvas: View {
                 y: currentLocation.y - activeLocation.y
             )
             
-            // Create handles based on drag direction (logos2 working version)
+            // Create handles based on drag direction from the new anchor point
             let control1 = VectorPoint(
                 activeLocation.x - dragVector.x * 0.5,
                 activeLocation.y - dragVector.y * 0.5
