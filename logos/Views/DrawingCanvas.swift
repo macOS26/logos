@@ -1170,11 +1170,10 @@ struct DrawingCanvas: View {
             y: shapeStartPoint.y + canvasDelta.y
         )
         
-        // Professional verification logging (disabled for performance)
-        // Only log when debugging is needed
-        // if abs(canvasDelta.x) > 10 || abs(canvasDelta.y) > 10 {
-        //     print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
-        // }
+        // Professional verification logging (only for significant movements)
+        if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
+            print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+        }
         
         guard let startPoint = drawingStartPoint else { return }
         
@@ -1375,11 +1374,10 @@ struct DrawingCanvas: View {
             }
         }
         
-        // Professional verification logging (disabled for performance)
-        // Only log when debugging is needed
-        // if abs(canvasDelta.x) > 10 || abs(canvasDelta.y) > 10 {
-        //     print("🎯 SELECTION DRAG: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
-        // }
+        // Professional verification logging (only for significant movements)
+        if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
+            print("🎯 SELECTION DRAG: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+        }
         
         // Force UI update
         document.objectWillChange.send()
@@ -1847,7 +1845,7 @@ struct DrawingCanvas: View {
         // PROFESSIONAL HAND TOOL: Perfect cursor-to-canvas synchronization
         // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW standards
         // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
-        // // https://patents.google.com/patent/US6097387A/en
+        
         // CRITICAL FIX: Only initialize state once per drag operation
         // State should only be reset at the END of drag, not during drag
         if initialCanvasOffset == CGPoint.zero && handToolDragStart == CGPoint.zero {

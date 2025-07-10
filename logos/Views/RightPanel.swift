@@ -174,18 +174,19 @@ struct LayersPanel: View {
     private var layersScrollContent: some View {
         ScrollView(.vertical, showsIndicators: true) {
             LazyVStack(spacing: 0) {
-                // PROFESSIONAL LAYER PANEL: Improved drop zone structure
-                // Top drop zone for dropping above all layers
-                dropZone(targetIndex: document.layers.count, height: 8)
-                
-                // Layer rows with consistent drop zones
+                // Layer rows with built-in drop zones
                 ForEach(Array(document.layers.indices.reversed().enumerated()), id: \.element) { visualIndex, layerIndex in
                     VStack(spacing: 0) {
+                        // Top drop zone (only for the first visual layer)
+                        if visualIndex == 0 {
+                            dropZone(targetIndex: document.layers.count, height: 8)
+                        }
+                        
                         // The layer row itself
                         layerRowContent(for: layerIndex)
                         
-                        // Drop zone after each layer (including the bottom-most layer)
-                        dropZone(targetIndex: layerIndex, height: 6)
+                        // Bottom drop zone (after each layer)
+                        dropZone(targetIndex: layerIndex, height: 4)
                     }
                 }
             }
@@ -203,9 +204,9 @@ struct LayersPanel: View {
                     if dropTargetIndex == targetIndex {
                         Rectangle()
                             .fill(dropIndicatorColor)
-                            .frame(height: 2) // Slightly thicker for better visibility
-                            .padding(.horizontal, 6)
-                            .animation(.easeInOut(duration: 0.1), value: dropTargetIndex) // Faster animation
+                            .frame(height: 1)
+                            .padding(.horizontal, 8)
+                            .animation(.easeInOut(duration: 0.15), value: dropTargetIndex)
                     }
                 }
             )
@@ -233,8 +234,7 @@ struct LayersPanel: View {
                     targetLayerIndex = targetIndex
                 }
                 
-                // Reduced logging for better performance
-                // print("🎯 DIVIDER DROP: Object drop on divider, targeting layer \(targetLayerIndex)")
+                print("🎯 DIVIDER DROP: Object drop on divider, targeting layer \(targetLayerIndex)")
                 let result = handleObjectDrop(draggedData: draggedData, targetLayerIndex: targetLayerIndex)
                 clearDragState()
                 return result
@@ -248,8 +248,7 @@ struct LayersPanel: View {
                     }
                     // Also show drop indicator for visual feedback
                     dropTargetIndex = targetIndex
-                    // Reduced logging for better performance
-                    // print("🎯 DIVIDER HOVER: Object hovering over divider, highlighting layer \(hoveredLayerIndex ?? -1)")
+                    print("🎯 DIVIDER HOVER: Object hovering over divider, highlighting layer \(hoveredLayerIndex ?? -1)")
                 } else {
                     // Clear hover states when not targeted
                     if draggedLayerIndex == nil { // Only clear if not dragging a layer
@@ -314,8 +313,7 @@ struct LayersPanel: View {
             DragGesture()
                 .onChanged { _ in
                     draggedLayerIndex = layerIndex
-                    // Reduced logging for better performance
-                    // print("🔄 Started dragging layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
+                    print("🔄 Started dragging layer: \(document.layers[layerIndex].name) at index \(layerIndex)")
                 }
                 .onEnded { _ in
                     clearDragState()
@@ -324,16 +322,14 @@ struct LayersPanel: View {
     }
     
     private func clearDragState() {
-        // PROFESSIONAL DRAG STATE MANAGEMENT: Immediate cleanup for better UX
-        // No delay to prevent flickering and inconsistent visual feedback
-        draggedLayerIndex = nil
-        dropTargetIndex = nil
-        hoveredLayerIndex = nil
-        isDraggingObject = false
-        objectDropTargetInfo = nil
-        
-        // Only log significant state changes to reduce console noise
-        // print("🏁 Finished dragging - cleared all drag states")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            draggedLayerIndex = nil
+            dropTargetIndex = nil
+            hoveredLayerIndex = nil
+            isDraggingObject = false
+            objectDropTargetInfo = nil
+            print("🏁 Finished dragging - cleared all drag states")
+        }
     }
     
     private func dragPreview(for layerIndex: Int) -> some View {
@@ -349,7 +345,7 @@ struct LayersPanel: View {
         .cornerRadius(4)
     }
     
-    // PROFESSIONAL DROP INDICATOR COLOR (Adobe Illustrator Style)
+    // Computed property for drop indicator color - SIMPLIFIED
     private var dropIndicatorColor: Color {
         guard let targetIndex = dropTargetIndex else { return .clear }
         
@@ -357,12 +353,13 @@ struct LayersPanel: View {
         if draggedLayerIndex != nil {
             // Validate layer drop
             let isValid = isDropAllowed(targetIndex: targetIndex)
-            return isValid ? .blue : .red // Blue for valid, red for invalid
+            return isValid ? .green : .red
         }
         
         // OBJECT DROP INDICATORS  
-        // For object drops, use consistent blue color for valid drops
-        return .blue
+        // For object drops, we assume they're valid unless there's a specific reason they're not
+        // This will be refined based on actual drop validation in the drop handlers
+        return .green
     }
     
     // Check if layer drop is allowed at target index
@@ -391,24 +388,23 @@ struct LayersPanel: View {
     private func handleLayerDrop(draggedData: LayerDragData, targetIndex: Int) -> Bool {
         let sourceIndex = draggedData.layerIndex
         
-        // Reduced logging for better performance
-        // print("🔄 LAYER DROP: Moving layer from index \(sourceIndex) to \(targetIndex)")
+        print("🔄 LAYER DROP: Moving layer from index \(sourceIndex) to \(targetIndex)")
         
         // Don't drop on same layer (but allow dropping above all layers even if source is top layer)
         if sourceIndex == targetIndex && targetIndex != document.layers.count {
-            // print("🚫 Source and target are the same")
+            print("🚫 Source and target are the same")
             return false
         }
         
         // PROTECT CANVAS LAYER: Never allow Canvas layer (index 0) to be moved
         if sourceIndex == 0 {
-            // print("🚫 Cannot move Canvas layer - it must remain at the bottom")
+            print("🚫 Cannot move Canvas layer - it must remain at the bottom")
             return false
         }
         
         // PROTECT CANVAS LAYER: Never allow any layer to be moved to Canvas position (index 0)
         if targetIndex == 0 {
-            // print("🚫 Cannot move layers below Canvas layer")
+            print("🚫 Cannot move layers below Canvas layer")
             return false
         }
         
@@ -416,7 +412,6 @@ struct LayersPanel: View {
         document.saveToUndoStack()
         document.moveLayer(from: sourceIndex, to: targetIndex)
         
-        // Only log successful moves
         print("✅ Successfully moved layer from \(sourceIndex) to \(targetIndex)")
         document.debugLayerOrder()
         
@@ -431,36 +426,35 @@ struct LayersPanel: View {
         let objectId = draggedData.objectId
         let objectType = draggedData.objectType
         
-        // Reduced logging for better performance
-        // print("🔄 OBJECT DROP: Moving \(objectType) from layer \(sourceLayerIndex) to layer \(targetLayerIndex)")
+        print("🔄 OBJECT DROP: Moving \(objectType) from layer \(sourceLayerIndex) to layer \(targetLayerIndex)")
         
         // PROTECT LOCKED LAYERS: Check if source layer is locked
         if sourceLayerIndex < document.layers.count && document.layers[sourceLayerIndex].isLocked {
-            // print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
+            print("🚫 Cannot move objects from locked layer '\(document.layers[sourceLayerIndex].name)'")
             return false
         }
         
         // PROTECT LOCKED LAYERS: Check if target layer is locked
         if targetLayerIndex < document.layers.count && document.layers[targetLayerIndex].isLocked {
-            // print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
+            print("🚫 Cannot move objects to locked layer '\(document.layers[targetLayerIndex].name)'")
             return false
         }
         
         // Don't drop on same layer if it's the same object
         if sourceLayerIndex == targetLayerIndex {
-            // print("🚫 Object already in target layer")
+            print("🚫 Object already in target layer")
             return false
         }
         
         // PROTECT CANVAS LAYER: Never allow objects to be moved to Canvas layer (index 0)
         if targetLayerIndex == 0 {
-            // print("🚫 Cannot move objects to Canvas layer")
+            print("🚫 Cannot move objects to Canvas layer")
             return false
         }
         
         // Ensure target layer exists
         guard targetLayerIndex < document.layers.count else {
-            // print("❌ Target layer index out of bounds")
+            print("❌ Target layer index out of bounds")
             return false
         }
         
