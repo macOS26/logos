@@ -1246,11 +1246,12 @@ struct DrawingCanvas: View {
         }
         
         if !isBezierDrawing {
-            // NEW BEHAVIOR: Don't create first point immediately - wait to see if user drags
-            // This allows click = corner point, click+drag = smooth point for first point
+            // FIXED: Don't set up pending first point - let drag handler create first point directly
+            // This allows click-and-drag in one shot to create smooth first point
+            // If this tap is NOT followed by a drag, finishBezierPenDrag will handle corner point creation
             pendingFirstPoint = location
             isCreatingFirstPoint = true
-            print("🎯 PENDING FIRST POINT: Set up at \(location) - waiting to detect click vs drag")
+            print("🎯 PENDING FIRST POINT: Set up at \(location) - ready for immediate drag or corner point creation")
             return
         } else {
             // PURE CLICK: Add corner point (no handles)
@@ -1367,6 +1368,77 @@ struct DrawingCanvas: View {
             isDraggingBezierHandle = true
             
             print("✅ CREATED SMOOTH FIRST POINT with handles at \(firstPointLocation)")
+            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            return
+        }
+        
+        // IMMEDIATE FIRST POINT CREATION: Handle case where user starts dragging without prior tap
+        // This enables click-and-drag in one shot to create smooth first point
+        if !isBezierDrawing && !isCreatingFirstPoint {
+            // Only proceed with first point creation if user has dragged significantly
+            if dragDistance < minimumDragThreshold {
+                print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - ignoring small movement")
+                return
+            }
+            
+            // User dragged significantly - create SMOOTH first point with handles immediately
+            print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point immediately")
+            
+            // Create the bezier path and add the first point
+            bezierPath = VectorPath(elements: [.move(to: VectorPoint(startLocation))])
+            bezierPoints = [VectorPoint(startLocation)]
+            isBezierDrawing = true
+            activeBezierPointIndex = 0 // First point is active (solid)
+            bezierHandles.removeAll()
+            
+            // Create real VectorShape with document default colors
+            let strokeStyle = StrokeStyle(
+                color: document.defaultStrokeColor,
+                width: 1.0,
+                opacity: document.defaultStrokeOpacity
+            )
+            let fillStyle = FillStyle(
+                color: .clear, // Bezier paths start with no fill
+                opacity: document.defaultFillOpacity
+            )
+            
+            activeBezierShape = VectorShape(
+                name: "Bezier Path",
+                path: bezierPath!,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            // Add the real shape to the document immediately
+            document.addShape(activeBezierShape!)
+            
+            // Create smooth handles for the first point based on drag direction
+            let dragVector = CGPoint(
+                x: currentLocation.x - startLocation.x,
+                y: currentLocation.y - startLocation.y
+            )
+            
+            let control1 = VectorPoint(
+                startLocation.x - dragVector.x * 0.5,
+                startLocation.y - dragVector.y * 0.5
+            )
+            let control2 = VectorPoint(
+                startLocation.x + dragVector.x * 0.5,
+                startLocation.y + dragVector.y * 0.5
+            )
+            
+            bezierHandles[0] = BezierHandleInfo(
+                control1: control1,
+                control2: control2,
+                hasHandles: true
+            )
+            
+            // Clear any pending first point state
+            pendingFirstPoint = nil
+            isCreatingFirstPoint = false
+            isDraggingBezierHandle = true
+            
+            print("✅ CREATED IMMEDIATE SMOOTH FIRST POINT with handles at \(startLocation)")
             print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
             return
         }
