@@ -897,9 +897,8 @@ struct DrawingCanvas: View {
             handleDirectSelectionDrag(value: value, geometry: geometry)
         case .bezierPen:
             // Handle bezier pen dragging for creating handles or moving points
-            if isBezierDrawing {
-                handleBezierPenDrag(value: value, geometry: geometry)
-            }
+            // FIXED: Always call drag handler to support first point creation
+            handleBezierPenDrag(value: value, geometry: geometry)
         default:
             break
         }
