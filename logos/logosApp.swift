@@ -70,63 +70,63 @@ struct logosApp: App {
                 Divider()
                 
                 Menu("Object") {
-                    Group {
-                        Text("Arrange")
-                            .font(.headline)
-                            .disabled(true)
-                        
-                        Button("Bring to Front") {
+            Group {
+                Text("Arrange")
+                    .font(.headline)
+                    .disabled(true)
+                
+                Button("Bring to Front") {
                             menuHandler.bringToFront()
-                        }
-                        .keyboardShortcut("]", modifiers: [.command, .shift])
+                }
+                .keyboardShortcut("]", modifiers: [.command, .shift])
                         .disabled(!menuHandler.hasSelection)
-                        
-                        Button("Bring Forward") {
+                
+                Button("Bring Forward") {
                             menuHandler.bringForward()
-                        }
-                        .keyboardShortcut("]", modifiers: [.command])
+                }
+                .keyboardShortcut("]", modifiers: [.command])
                         .disabled(!menuHandler.hasSelection)
-                        
-                        Button("Send Backward") {
+                
+                Button("Send Backward") {
                             menuHandler.sendBackward()
-                        }
-                        .keyboardShortcut("[", modifiers: [.command])
+                }
+                .keyboardShortcut("[", modifiers: [.command])
                         .disabled(!menuHandler.hasSelection)
-                        
-                        Button("Send to Back") {
+                
+                Button("Send to Back") {
                             menuHandler.sendToBack()
-                        }
-                        .keyboardShortcut("[", modifiers: [.command, .shift])
+                }
+                .keyboardShortcut("[", modifiers: [.command, .shift])
                         .disabled(!menuHandler.hasSelection)
-                    }
-                    
-                    Divider()
-                    
-                    Group {
-                        Text("Group")
-                            .font(.headline)
-                            .disabled(true)
-                        
-                        Button("Group") {
+            }
+            
+            Divider()
+            
+            Group {
+                Text("Group")
+                    .font(.headline)
+                    .disabled(true)
+                
+                Button("Group") {
                             menuHandler.groupObjects()
-                        }
-                        .keyboardShortcut("g", modifiers: [.command])
+                }
+                .keyboardShortcut("g", modifiers: [.command])
                         .disabled(!menuHandler.canGroup)
-                        
-                        Button("Ungroup") {
+                
+                Button("Ungroup") {
                             menuHandler.ungroupObjects()
-                        }
-                        .keyboardShortcut("g", modifiers: [.command, .shift])
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
                         .disabled(!menuHandler.canUngroup)
-                    }
-                    
-                    Divider()
-                    
-                    Group {
+            }
+            
+            Divider()
+            
+            Group {
                         Text("Transform")
-                            .font(.headline)
-                            .disabled(true)
-                        
+                    .font(.headline)
+                    .disabled(true)
+                
                         Button("Duplicate") {
                             menuHandler.duplicate()
                         }

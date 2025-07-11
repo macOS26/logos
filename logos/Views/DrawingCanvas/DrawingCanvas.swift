@@ -55,12 +55,7 @@ struct DrawingCanvas: View {
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
     @State private var activeBezierShape: VectorShape? = nil // Real shape being built
     
-    // Professional bezier handle information
-    struct BezierHandleInfo {
-        var control1: VectorPoint?
-        var control2: VectorPoint?
-        var hasHandles: Bool = false
-    }
+
     
     // Track previous tool to detect changes
     @State private var previousTool: DrawingTool = .selection
@@ -1452,6 +1447,14 @@ struct DrawingCanvas: View {
             if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
                 // Update the path with the latest bezier path data
                 document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+                
+                // Update stroke color to match current toolbar selection (real-time)
+                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                    color: document.defaultStrokeColor,
+                    width: 1.0,
+                    opacity: document.defaultStrokeOpacity
+                )
+                
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 break
             }
@@ -2130,13 +2133,32 @@ struct DrawingCanvas: View {
             return 
         }
         
-        // PROFESSIONAL REAL-TIME PATH COMPLETION: The shape is already in the document with real colors!
-        // No need to create a new shape or change colors - just finalize the existing one
+        // PROFESSIONAL REAL-TIME PATH COMPLETION: Apply final colors like Adobe Illustrator
+        // Open paths should get both stroke AND fill using document defaults (toolbar selection)
+        if let layerIndex = document.selectedLayerIndex {
+            for shapeIndex in document.layers[layerIndex].shapes.indices {
+                if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+                    // Update the existing shape to have proper fill and stroke from toolbar
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                        color: document.defaultStrokeColor,
+                        width: 1.0,
+                        opacity: document.defaultStrokeOpacity
+                    )
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                        color: document.defaultFillColor,
+                        opacity: document.defaultFillOpacity
+                    )
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    break
+                }
+            }
+        }
         
-        print("✅ Finished bezier path with \(bezierPoints.count) points using document default colors")
+        print("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors")
         print("Path elements: \(activeBezierShape.path.elements.count)")
         print("Shape bounds: \(activeBezierShape.bounds)")
-        print("Stroke color: \(activeBezierShape.strokeStyle?.color ?? .clear)")
+        print("Final stroke color: \(document.defaultStrokeColor)")
+        print("Final fill color: \(document.defaultFillColor)")
         
         // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select the path
         let finishedShapeID = activeBezierShape.id
