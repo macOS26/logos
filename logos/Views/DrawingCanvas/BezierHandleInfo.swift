@@ -13,20 +13,3 @@ struct BezierHandleInfo {
     var hasHandles: Bool = false
 }
 
-// Point and handle identification
-struct PointID: Hashable {
-    let shapeID: UUID
-    let pathIndex: Int
-    let elementIndex: Int
-}
-
-struct HandleID: Hashable {
-    let shapeID: UUID
-    let pathIndex: Int
-    let elementIndex: Int
-    let handleType: HandleType
-}
-
-enum HandleType {
-    case control1, control2
-}
