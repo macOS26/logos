@@ -141,7 +141,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var blendMode: BlendMode
     var bounds: CGRect
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    // MARK: - Group Properties (Adobe Illustrator Standards)
+    var isGroup: Bool
+    var groupedShapes: [VectorShape]
+    var groupTransform: CGAffineTransform
+    
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -154,6 +159,9 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.opacity = opacity
         self.blendMode = blendMode
         self.bounds = path.cgPath.boundingBoxOfPath
+        self.isGroup = isGroup
+        self.groupedShapes = groupedShapes
+        self.groupTransform = groupTransform
     }
     
     var transformedPath: CGPath {
@@ -166,6 +174,52 @@ struct VectorShape: Codable, Hashable, Identifiable {
         // This prevents double transformation issues during rendering
         bounds = path.cgPath.boundingBoxOfPath
         // Transform is applied separately during rendering via .transformEffect()
+    }
+    
+    // MARK: - Group Methods (Adobe Illustrator Standards)
+    
+    /// Create a group from multiple shapes
+    static func group(from shapes: [VectorShape], name: String = "Group") -> VectorShape {
+        // Calculate group bounds
+        var groupBounds = CGRect.null
+        for shape in shapes {
+            groupBounds = groupBounds.union(shape.bounds)
+        }
+        
+        // Create empty path for group container
+        let groupPath = VectorPath(elements: [], isClosed: false)
+        
+        return VectorShape(
+            name: name,
+            path: groupPath,
+            geometricType: nil,
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: .identity,
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            isGroup: true,
+            groupedShapes: shapes,
+            groupTransform: .identity
+        )
+    }
+    
+    /// Check if this shape is a group
+    var isGroupContainer: Bool {
+        return isGroup && !groupedShapes.isEmpty
+    }
+    
+    /// Get bounds of group (union of all child shapes)
+    var groupBounds: CGRect {
+        guard isGroupContainer else { return bounds }
+        
+        var groupBounds = CGRect.null
+        for shape in groupedShapes {
+            groupBounds = groupBounds.union(shape.bounds)
+        }
+        return groupBounds
     }
     
     // Factory methods for common shapes

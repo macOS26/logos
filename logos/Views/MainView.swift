@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
 struct MainView: View {
     @StateObject private var document = TemplateManager.shared.createBlankDocument()
+    @EnvironmentObject var menuHandler: MenuCommandHandler
     @State private var showingDocumentSettings = false
     @State private var showingExportDialog = false
     @State private var showingColorPicker = false
@@ -126,9 +127,12 @@ struct MainView: View {
             }
         }
         .sheet(item: $importResult) { result in
-            ImportResultView(result: result) {
+            ImportResultView(result: result, onDismiss: {
                 importResult = nil
-            }
+            }, onRetry: {
+                importResult = nil
+                showingImportDialog = true
+            })
         }
         .sheet(isPresented: $showingDWFExportDialog) {
             DWFExportView(document: document, options: $dwfExportOptions) { finalOptions in
@@ -144,8 +148,8 @@ struct MainView: View {
         }
         .frame(minWidth: 1200, minHeight: 800)
         .onAppear {
-            // PROFESSIONAL MENU COMMAND HANDLING (Adobe Illustrator Standards)
-            setupMenuCommandObservers()
+            // SOLUTION: Connect document to menu system
+            menuHandler.setDocument(document)
             
             setupDocument()
             
@@ -155,8 +159,21 @@ struct MainView: View {
                 fitToPage()
             }
         }
-        .onDisappear {
-            teardownMenuCommandObservers()
+        .onChange(of: document.selectedShapeIDs) { _ in
+            // Update menu states when selection changes
+            menuHandler.updateMenuStates()
+        }
+        .onChange(of: document.selectedTextIDs) { _ in
+            // Update menu states when selection changes
+            menuHandler.updateMenuStates()
+        }
+        .onChange(of: document.undoStack.count) { _ in
+            // Update menu states when undo stack changes
+            menuHandler.updateMenuStates()
+        }
+        .onChange(of: document.redoStack.count) { _ in
+            // Update menu states when redo stack changes
+            menuHandler.updateMenuStates()
         }
     }
     
@@ -308,19 +325,23 @@ struct MainView: View {
         
         // Object Commands - Lock/Hide
         NotificationCenter.default.addObserver(forName: .lockObjects, object: nil, queue: .main) { _ in
-            // TODO: Implement lock commands
+            document.lockSelectedObjects()
+            print("📝 MENU: Lock Objects")
         }
         
         NotificationCenter.default.addObserver(forName: .unlockAll, object: nil, queue: .main) { _ in
-            // TODO: Implement lock commands
+            document.unlockAllObjects()
+            print("📝 MENU: Unlock All")
         }
         
         NotificationCenter.default.addObserver(forName: .hideObjects, object: nil, queue: .main) { _ in
-            // TODO: Implement hide commands
+            document.hideSelectedObjects()
+            print("📝 MENU: Hide Objects")
         }
         
         NotificationCenter.default.addObserver(forName: .showAll, object: nil, queue: .main) { _ in
-            // TODO: Implement show commands
+            document.showAllObjects()
+            print("📝 MENU: Show All")
         }
         
         // View Commands - Zoom - PROPERLY IMPLEMENTED
@@ -926,158 +947,9 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("File Operations")
             
-            // Edit Operations
-            Menu {
-                Button("Undo") {
-                    document.undo()
-                }
-                .keyboardShortcut("z", modifiers: [.command])
-                .disabled(document.undoStack.isEmpty)
-                
-                Button("Redo") {
-                    document.redo()
-                }
-                .keyboardShortcut("z", modifiers: [.command, .shift])
-                .disabled(document.redoStack.isEmpty)
-                
-                Divider()
-                
-                Button("Select All") {
-                    document.selectAll()
-                }
-                .keyboardShortcut("a", modifiers: [.command])
-                
-                Button("Deselect All") {
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
-                }
-                .keyboardShortcut("a", modifiers: [.command, .shift])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Divider()
-                
-                Button("Copy") {
-                    // TODO: Implement copy functionality
-                }
-                .keyboardShortcut("c", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Button("Paste") {
-                    // TODO: Implement paste functionality
-                }
-                .keyboardShortcut("v", modifiers: [.command])
-                
-                Button("Duplicate") {
-                    if !document.selectedShapeIDs.isEmpty {
-                        document.duplicateSelectedShapes()
-                    } else if !document.selectedTextIDs.isEmpty {
-                        document.duplicateSelectedText()
-                    }
-                }
-                .keyboardShortcut("d", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Button("Delete") {
-                    if !document.selectedShapeIDs.isEmpty {
-                        document.removeSelectedShapes()
-                    } else if !document.selectedTextIDs.isEmpty {
-                        document.removeSelectedText()
-                    }
-                }
-                .keyboardShortcut(.delete, modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Divider()
-                
-                Button("Close Open Paths") {
-                    if document.currentTool == .directSelection {
-                        // Close selected paths (direct selection mode)
-                        closeSelectedPaths()
-                    } else {
-                        // Close all open paths (global mode)
-                        closeOpenPaths()
-                    }
-                }
-                .keyboardShortcut("j", modifiers: [.command, .shift]) // Adobe Illustrator standard
-                .disabled(!hasOpenPaths() && !hasSelectedPathsToClose())
-                
-            } label: {
-                Image(systemName: "pencil.circle")
-            }
-            .help("Edit Operations")
-            
-            // Object Operations (Adobe Illustrator Style)
-            Menu {
-                Button("Arrange") { }
-                    .disabled(true) // Header item
-                
-                Button("Bring to Front") {
-                    // Implemented in DrawingCanvas - need to call it
-                    bringSelectedToFront()
-                }
-                .keyboardShortcut("]", modifiers: [.command, .shift])
-                .disabled(document.selectedShapeIDs.isEmpty)
-                
-                Button("Bring Forward") {
-                    bringSelectedForward()
-                }
-                .keyboardShortcut("]", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty)
-                
-                Button("Send Backward") {
-                    sendSelectedBackward()
-                }
-                .keyboardShortcut("[", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty)
-                
-                Button("Send to Back") {
-                    sendSelectedToBack()
-                }
-                .keyboardShortcut("[", modifiers: [.command, .shift])
-                .disabled(document.selectedShapeIDs.isEmpty)
-                
-                Divider()
-                
-                Button("Group") {
-                    // TODO: Implement grouping
-                }
-                .keyboardShortcut("g", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.count < 2)
-                
-                Button("Ungroup") {
-                    // TODO: Implement ungrouping
-                }
-                .keyboardShortcut("g", modifiers: [.command, .shift])
-                .disabled(document.selectedShapeIDs.isEmpty)
-                
-                Divider()
-                
-                Button("Lock") {
-                    lockSelectedObjects()
-                }
-                .keyboardShortcut("2", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Button("Unlock All") {
-                    unlockAllObjects()
-                }
-                .keyboardShortcut("2", modifiers: [.command, .option])
-                
-                Button("Hide") {
-                    hideSelectedObjects()
-                }
-                .keyboardShortcut("3", modifiers: [.command])
-                .disabled(document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty)
-                
-                Button("Show All") {
-                    showAllObjects()
-                }
-                .keyboardShortcut("3", modifiers: [.command, .option])
-                
-            } label: {
-                Image(systemName: "square.stack.3d.down.right")
-            }
-            .help("Object Operations")
+            // SOLUTION: Removed duplicate Edit and Object menus
+            // These are now properly handled by the menu bar Edit and Object menus
+            // This eliminates duplicate functionality and prevents menu confusion
             
             // Close Path button (context-sensitive)
             Button {
@@ -1810,6 +1682,7 @@ extension Color {
 struct ImportResultView: View {
     let result: VectorImportResult
     let onDismiss: () -> Void
+    let onRetry: () -> Void
     
     var body: some View {
         VStack(spacing: 20) {
@@ -1891,8 +1764,7 @@ struct ImportResultView: View {
             HStack {
                 if !result.success {
                     Button("Try Again") {
-                        onDismiss()
-                        // TODO: Reopen import dialog
+                        onRetry()
                     }
                 }
                 
@@ -1913,5 +1785,6 @@ struct ImportResultView: View {
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()
+            .environmentObject(MenuCommandHandler.shared)
     }
 }

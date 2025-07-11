@@ -294,6 +294,12 @@ struct SelectionHandles: View {
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     
+    // Professional rotation state management
+    @State private var isRotating = false
+    @State private var rotationStarted = false
+    @State private var initialRotation: CGFloat = 0
+    @State private var rotationStartLocation: CGPoint = .zero
+    
     var body: some View {
         // PROFESSIONAL SCALING: Use original bounds for consistent scaling
         let bounds = shape.bounds
@@ -366,7 +372,10 @@ struct SelectionHandles: View {
                 .gesture(
                     DragGesture()
                         .onChanged { value in
-                            // TODO: Implement rotation
+                            handleRotation(dragValue: value, bounds: bounds, center: center)
+                        }
+                        .onEnded { _ in
+                            finishRotation()
                         }
                 )
             
@@ -492,6 +501,88 @@ struct SelectionHandles: View {
         }
     }
     
+    // MARK: - Professional Rotation Methods (Adobe Illustrator Standards)
+    
+    private func handleRotation(dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !rotationStarted {
+            rotationStarted = true
+            isRotating = true
+            initialBounds = bounds
+            initialTransform = shape.transform
+            rotationStartLocation = dragValue.startLocation
+            
+            // Calculate initial rotation from transform
+            initialRotation = atan2(initialTransform.b, initialTransform.a)
+            
+            document.saveToUndoStack()
+        }
+        
+        // Calculate rotation center in screen coordinates
+        let rotationCenter = CGPoint(
+            x: center.x * zoomLevel + canvasOffset.x,
+            y: center.y * zoomLevel + canvasOffset.y
+        )
+        
+        // Calculate angles
+        let startAngle = atan2(
+            rotationStartLocation.y - rotationCenter.y,
+            rotationStartLocation.x - rotationCenter.x
+        )
+        
+        let currentLocation = CGPoint(
+            x: rotationStartLocation.x + dragValue.translation.width,
+            y: rotationStartLocation.y + dragValue.translation.height
+        )
+        
+        let currentAngle = atan2(
+            currentLocation.y - rotationCenter.y,
+            currentLocation.x - rotationCenter.x
+        )
+        
+        // Calculate rotation delta
+        let rotationDelta = currentAngle - startAngle
+        
+        // Apply rotation
+        applyRotation(delta: rotationDelta, center: center)
+    }
+    
+    private func applyRotation(delta: CGFloat, center: CGPoint) {
+        guard let layerIndex = document.selectedLayerIndex,
+              let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else {
+            return
+        }
+        
+        // Calculate rotation center
+        let centerX = initialBounds.midX
+        let centerY = initialBounds.midY
+        
+        // Create rotation transform around center
+        let rotationTransform = CGAffineTransform.identity
+            .translatedBy(x: centerX, y: centerY)
+            .rotated(by: delta)
+            .translatedBy(x: -centerX, y: -centerY)
+        
+        // Combine with initial transform
+        let newTransform = initialTransform.concatenating(rotationTransform)
+        
+        // Apply to shape
+        document.layers[layerIndex].shapes[shapeIndex].transform = newTransform
+        
+        // Force UI update
+        document.objectWillChange.send()
+    }
+    
+    private func finishRotation() {
+        rotationStarted = false
+        isRotating = false
+        
+        // Apply rotation to actual coordinates (Adobe Illustrator behavior)
+        if let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
+        }
+    }
+    
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Adobe Illustrator behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
@@ -599,6 +690,12 @@ struct TextSelectionHandles: View {
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     
+    // Professional text rotation state management
+    @State private var isTextRotating = false
+    @State private var textRotationStarted = false
+    @State private var textInitialRotation: CGFloat = 0
+    @State private var textRotationStartLocation: CGPoint = .zero
+    
     var body: some View {
         // PROFESSIONAL TEXT SCALING: Use text bounds for transformation
         let bounds = textObject.bounds
@@ -666,7 +763,10 @@ struct TextSelectionHandles: View {
                 .gesture(
                     DragGesture()
                         .onChanged { value in
-                            // TODO: Implement text rotation
+                            handleTextRotation(dragValue: value, bounds: bounds, center: center)
+                        }
+                        .onEnded { _ in
+                            finishTextRotation()
                         }
                 )
             
@@ -716,14 +816,100 @@ struct TextSelectionHandles: View {
     
     private func handleTextCornerScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         // PROFESSIONAL TEXT SCALING: Maintain proportions for corner scaling
-        // TODO: Implement proportional text scaling like Adobe Illustrator
+        if !scalingStarted {
+            scalingStarted = true
+            isScaling = true
+            initialBounds = bounds
+            initialTransform = textObject.transform
+            startLocation = dragValue.startLocation
+            document.saveToUndoStack()
+        }
+        
+        // Calculate scale based on distance from center (proportional scaling)
+        let initialCenter = CGPoint(
+            x: center.x * zoomLevel + canvasOffset.x,
+            y: center.y * zoomLevel + canvasOffset.y
+        )
+        
+        let initialDistance = distance(startLocation, initialCenter)
+        let currentDistance = distance(
+            CGPoint(
+                x: startLocation.x + dragValue.translation.width,
+                y: startLocation.y + dragValue.translation.height
+            ),
+            initialCenter
+        )
+        
+        let scaleFactor = max(0.1, currentDistance / max(initialDistance, 1.0))
+        
+        // Apply uniform scaling for text (Adobe Illustrator behavior)
+        applyTextScaling(scaleX: scaleFactor, scaleY: scaleFactor)
+        
         print("🔤 Text corner scaling - maintaining proportions (professional standard)")
     }
     
     private func handleTextEdgeScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         // PROFESSIONAL TEXT SCALING: Non-proportional scaling for edge handles
-        // TODO: Implement edge-based text scaling
+        if !scalingStarted {
+            scalingStarted = true
+            isScaling = true
+            initialBounds = bounds
+            initialTransform = textObject.transform
+            startLocation = dragValue.startLocation
+            document.saveToUndoStack()
+        }
+        
+        // Calculate edge-based scaling (non-proportional)
+        let translation = CGPoint(
+            x: dragValue.translation.width / zoomLevel,
+            y: dragValue.translation.height / zoomLevel
+        )
+        
+        var scaleX: CGFloat = 1.0
+        var scaleY: CGFloat = 1.0
+        
+        switch index {
+        case 0: // Top edge
+            scaleY = max(0.1, (bounds.height - translation.y) / bounds.height)
+        case 1: // Right edge
+            scaleX = max(0.1, (bounds.width + translation.x) / bounds.width)
+        case 2: // Bottom edge
+            scaleY = max(0.1, (bounds.height + translation.y) / bounds.height)
+        case 3: // Left edge
+            scaleX = max(0.1, (bounds.width - translation.x) / bounds.width)
+        default:
+            break
+        }
+        
+        // Apply non-proportional scaling for text
+        applyTextScaling(scaleX: scaleX, scaleY: scaleY)
+        
         print("🔤 Text edge scaling - non-proportional (professional standard)")
+    }
+    
+    private func applyTextScaling(scaleX: CGFloat, scaleY: CGFloat) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else {
+            return
+        }
+        
+        // Calculate scaling center
+        let centerX = initialBounds.midX
+        let centerY = initialBounds.midY
+        
+        // Create scaling transform around center
+        let scaleTransform = CGAffineTransform.identity
+            .translatedBy(x: centerX, y: centerY)
+            .scaledBy(x: scaleX, y: scaleY)
+            .translatedBy(x: -centerX, y: -centerY)
+        
+        // Combine with initial transform
+        let newTransform = initialTransform.concatenating(scaleTransform)
+        
+        // Apply to text object
+        document.textObjects[textIndex].transform = newTransform
+        
+        // Force UI update
+        document.objectWillChange.send()
     }
     
     private func finishTextScaling() {
@@ -737,6 +923,93 @@ struct TextSelectionHandles: View {
         
         // Save to undo stack after finishing the scaling operation
         document.saveToUndoStack()
+    }
+    
+    // Distance calculation helper for text
+    private func distance(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
+        return sqrt(pow(point2.x - point1.x, 2) + pow(point2.y - point1.y, 2))
+    }
+    
+    // MARK: - Professional Text Rotation Methods (Adobe Illustrator Standards)
+    
+    private func handleTextRotation(dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !textRotationStarted {
+            textRotationStarted = true
+            isTextRotating = true
+            initialBounds = bounds
+            initialTransform = textObject.transform
+            textRotationStartLocation = dragValue.startLocation
+            
+            // Calculate initial rotation from transform
+            textInitialRotation = atan2(initialTransform.b, initialTransform.a)
+            
+            document.saveToUndoStack()
+        }
+        
+        // Calculate rotation center in screen coordinates
+        let rotationCenter = CGPoint(
+            x: center.x * zoomLevel + canvasOffset.x,
+            y: center.y * zoomLevel + canvasOffset.y
+        )
+        
+        // Calculate angles
+        let startAngle = atan2(
+            textRotationStartLocation.y - rotationCenter.y,
+            textRotationStartLocation.x - rotationCenter.x
+        )
+        
+        let currentLocation = CGPoint(
+            x: textRotationStartLocation.x + dragValue.translation.width,
+            y: textRotationStartLocation.y + dragValue.translation.height
+        )
+        
+        let currentAngle = atan2(
+            currentLocation.y - rotationCenter.y,
+            currentLocation.x - rotationCenter.x
+        )
+        
+        // Calculate rotation delta
+        let rotationDelta = currentAngle - startAngle
+        
+        // Apply rotation to text
+        applyTextRotation(delta: rotationDelta, center: center)
+    }
+    
+    private func applyTextRotation(delta: CGFloat, center: CGPoint) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else {
+            return
+        }
+        
+        // Calculate rotation center
+        let centerX = initialBounds.midX
+        let centerY = initialBounds.midY
+        
+        // Create rotation transform around center
+        let rotationTransform = CGAffineTransform.identity
+            .translatedBy(x: centerX, y: centerY)
+            .rotated(by: delta)
+            .translatedBy(x: -centerX, y: -centerY)
+        
+        // Combine with initial transform
+        let newTransform = initialTransform.concatenating(rotationTransform)
+        
+        // Apply to text object
+        document.textObjects[textIndex].transform = newTransform
+        
+        // Force UI update
+        document.objectWillChange.send()
+    }
+    
+    private func finishTextRotation() {
+        textRotationStarted = false
+        isTextRotating = false
+        
+        // Update text bounds after rotation
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            document.textObjects[textIndex].updateBounds()
+        }
+        
+        print("🔄 Text rotation completed")
     }
 }
 

@@ -9,332 +9,472 @@ import SwiftUI
 
 @main
 struct logosApp: App {
+    @StateObject private var menuHandler = MenuCommandHandler.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(menuHandler)
         }
         .commands {
-            // PROFESSIONAL MENU BAR (Adobe Illustrator Standards)
-            // Replace system Edit menu with professional tool commands
+            // SOLUTION: Consolidated Menu System - NO DUPLICATES!
+            
+            // 1. REPLACE Edit Menu with Proper Implementation
             CommandGroup(replacing: .textEditing) {
-                // Keep essential editing commands but add tool shortcuts
-                Button("Selection Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.selection)
+                Button("Undo") {
+                    menuHandler.undo()
                 }
-                .keyboardShortcut("v")
+                .keyboardShortcut("z", modifiers: [.command])
+                .disabled(!menuHandler.canUndo)
                 
-                Button("Direct Selection Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.directSelection)  
+                Button("Redo") {
+                    menuHandler.redo()
                 }
-                .keyboardShortcut("a")
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+                .disabled(!menuHandler.canRedo)
                 
-                Button("Pen Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.bezierPen)
-                }
-                .keyboardShortcut("p")
+                Divider()
                 
-                Button("Text Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.text)
+                Button("Cut") {
+                    menuHandler.cut()
                 }
-                .keyboardShortcut("t")
+                .keyboardShortcut("x", modifiers: [.command])
+                .disabled(!menuHandler.canCut)
                 
-                Button("Hand Tool") {
-                    NotificationCenter.default.post(name: .switchTool, object: DrawingTool.hand)
+                Button("Copy") {
+                    menuHandler.copy()
                 }
-                .keyboardShortcut("h")
+                .keyboardShortcut("c", modifiers: [.command])
+                .disabled(!menuHandler.canCopy)
+                
+                Button("Paste") {
+                    menuHandler.paste()
+                }
+                .keyboardShortcut("v", modifiers: [.command])
+                .disabled(!menuHandler.canPaste)
+                
+                Button("Select All") {
+                    menuHandler.selectAll()
+                }
+                .keyboardShortcut("a", modifiers: [.command])
+                
+                Button("Deselect All") {
+                    menuHandler.deselectAll()
+                }
+                .keyboardShortcut("a", modifiers: [.command, .shift])
+                .disabled(!menuHandler.hasSelection)
             }
             
-            // Professional custom menus only - no duplicates
-            ObjectMenuCommands()
-            ViewMenuCommands()
-            WindowMenuCommands()
-        }
-    }
-}
-
-// MARK: - Professional Object Menu (Adobe Illustrator Style)
-struct ObjectMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("Object") {
-            Group {
-                Text("Arrange")
-                    .font(.headline)
-                    .disabled(true)
+            // 2. ADD Object Menu AFTER Edit Menu (not as separate CommandMenu)
+            CommandGroup(after: .undoRedo) {
+                Divider()
                 
-                Button("Bring to Front") {
-                    NotificationCenter.default.post(name: .bringToFront, object: nil)
+                Menu("Object") {
+                    Group {
+                        Text("Arrange")
+                            .font(.headline)
+                            .disabled(true)
+                        
+                        Button("Bring to Front") {
+                            menuHandler.bringToFront()
+                        }
+                        .keyboardShortcut("]", modifiers: [.command, .shift])
+                        .disabled(!menuHandler.hasSelection)
+                        
+                        Button("Bring Forward") {
+                            menuHandler.bringForward()
+                        }
+                        .keyboardShortcut("]", modifiers: [.command])
+                        .disabled(!menuHandler.hasSelection)
+                        
+                        Button("Send Backward") {
+                            menuHandler.sendBackward()
+                        }
+                        .keyboardShortcut("[", modifiers: [.command])
+                        .disabled(!menuHandler.hasSelection)
+                        
+                        Button("Send to Back") {
+                            menuHandler.sendToBack()
+                        }
+                        .keyboardShortcut("[", modifiers: [.command, .shift])
+                        .disabled(!menuHandler.hasSelection)
+                    }
+                    
+                    Divider()
+                    
+                    Group {
+                        Text("Group")
+                            .font(.headline)
+                            .disabled(true)
+                        
+                        Button("Group") {
+                            menuHandler.groupObjects()
+                        }
+                        .keyboardShortcut("g", modifiers: [.command])
+                        .disabled(!menuHandler.canGroup)
+                        
+                        Button("Ungroup") {
+                            menuHandler.ungroupObjects()
+                        }
+                        .keyboardShortcut("g", modifiers: [.command, .shift])
+                        .disabled(!menuHandler.canUngroup)
+                    }
+                    
+                    Divider()
+                    
+                    Group {
+                        Text("Transform")
+                            .font(.headline)
+                            .disabled(true)
+                        
+                        Button("Duplicate") {
+                            menuHandler.duplicate()
+                        }
+                        .keyboardShortcut("d", modifiers: [.command])
+                        .disabled(!menuHandler.hasSelection)
+                        
+                        Button("Delete") {
+                            menuHandler.delete()
+                        }
+                        .keyboardShortcut(.delete)
+                        .disabled(!menuHandler.hasSelection)
+                    }
                 }
-                .keyboardShortcut("]", modifiers: [.command, .shift])
-                
-                Button("Bring Forward") {
-                    NotificationCenter.default.post(name: .bringForward, object: nil)
-                }
-                .keyboardShortcut("]", modifiers: [.command])
-                
-                Button("Send Backward") {
-                    NotificationCenter.default.post(name: .sendBackward, object: nil)
-                }
-                .keyboardShortcut("[", modifiers: [.command])
-                
-                Button("Send to Back") {
-                    NotificationCenter.default.post(name: .sendToBack, object: nil)
-                }
-                .keyboardShortcut("[", modifiers: [.command, .shift])
             }
             
-            Divider()
+            // 3. KEEP System View Menu (NO CUSTOM VIEW MENU - eliminates duplicate!)
+            // System provides: Show/Hide Toolbar, Show/Hide Sidebar, etc.
             
-            Group {
-                Text("Group")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Group") {
-                    NotificationCenter.default.post(name: .groupObjects, object: nil)
-                }
-                .keyboardShortcut("g", modifiers: [.command])
-                
-                Button("Ungroup") {
-                    NotificationCenter.default.post(name: .ungroupObjects, object: nil)
-                }
-                .keyboardShortcut("g", modifiers: [.command, .shift])
-            }
+            // 4. KEEP System Window Menu (NO CUSTOM WINDOW MENU - eliminates duplicate!)
+            // System provides: Minimize, Zoom, Bring All to Front, etc.
             
-            Divider()
-            
-            Group {
-                Text("Lock")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Lock") {
-                    NotificationCenter.default.post(name: .lockObjects, object: nil)
+            // 5. ADD Tool Selection Commands
+            CommandGroup(after: .toolbar) {
+                Menu("Tools") {
+                    Button("Selection Tool") {
+                        menuHandler.selectTool(.selection)
+                    }
+                    .keyboardShortcut("v")
+                    
+                    Button("Direct Selection Tool") {
+                        menuHandler.selectTool(.directSelection)
+                    }
+                    .keyboardShortcut("a")
+                    
+                    Button("Pen Tool") {
+                        menuHandler.selectTool(.bezierPen)
+                    }
+                    .keyboardShortcut("p")
+                    
+                    Button("Text Tool") {
+                        menuHandler.selectTool(.text)
+                    }
+                    .keyboardShortcut("t")
+                    
+                    Button("Hand Tool") {
+                        menuHandler.selectTool(.hand)
+                    }
+                    .keyboardShortcut("h")
                 }
-                .keyboardShortcut("2", modifiers: [.command])
-                
-                Button("Unlock All") {
-                    NotificationCenter.default.post(name: .unlockAll, object: nil)
-                }
-                .keyboardShortcut("2", modifiers: [.command, .option])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Hide")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Hide") {
-                    NotificationCenter.default.post(name: .hideObjects, object: nil)
-                }
-                .keyboardShortcut("3", modifiers: [.command])
-                
-                Button("Show All") {
-                    NotificationCenter.default.post(name: .showAll, object: nil)
-                }
-                .keyboardShortcut("3", modifiers: [.command, .option])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Path")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Close Path") {
-                    NotificationCenter.default.post(name: .closePath, object: nil)
-                }
-                .keyboardShortcut("j", modifiers: [.command, .shift])
-                
-                Button("Join") {
-                    NotificationCenter.default.post(name: .joinPaths, object: nil)
-                }
-                .keyboardShortcut("j", modifiers: [.command])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Text")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Create Outlines") {
-                    NotificationCenter.default.post(name: .createOutlines, object: nil)
-                }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
-            }
-        }
-    }
-}
-
-// MARK: - Select Commands Removed (Using System Defaults)
-// System already provides Select All, Cut, Copy, Paste - no duplicates needed
-
-// MARK: - Professional View Menu (Adobe Illustrator Style)
-struct ViewMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("View") {
-            Group {
-                Text("Zoom")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Zoom In") {
-                    NotificationCenter.default.post(name: .zoomIn, object: nil)
-                }
-                .keyboardShortcut("=", modifiers: [.command])
-                
-                Button("Zoom Out") {
-                    NotificationCenter.default.post(name: .zoomOut, object: nil)
-                }
-                .keyboardShortcut("-", modifiers: [.command])
-                
-                Button("Fit to Page") {
-                    NotificationCenter.default.post(name: .fitToPage, object: nil)
-                }
-                .keyboardShortcut("0", modifiers: [.command])
-                
-                Button("Actual Size") {
-                    NotificationCenter.default.post(name: .actualSize, object: nil)
-                }
-                .keyboardShortcut("1", modifiers: [.command])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("View Mode")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Color View") {
-                    NotificationCenter.default.post(name: .colorView, object: nil)
-                }
-                .keyboardShortcut("y", modifiers: [.command])
-                
-                Button("Keyline View") {
-                    NotificationCenter.default.post(name: .keylineView, object: nil)
-                }
-                .keyboardShortcut("y", modifiers: [.command, .shift])
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Show/Hide")
-                    .font(.headline)
-                    .disabled(true)
-                
-                Button("Show/Hide Rulers") {
-                    NotificationCenter.default.post(name: .toggleRulers, object: nil)
-                }
-                .keyboardShortcut("r", modifiers: [.command])
-                
-                Button("Show/Hide Grid") {
-                    NotificationCenter.default.post(name: .toggleGrid, object: nil)
-                }
-                .keyboardShortcut("'", modifiers: [.command])
-                
-                Button("Snap to Grid") {
-                    NotificationCenter.default.post(name: .toggleSnapToGrid, object: nil)
-                }
-                .keyboardShortcut("'", modifiers: [.command, .shift])
             }
         }
     }
 }
 
-// MARK: - Professional Window Menu (Adobe Illustrator Style)
-struct WindowMenuCommands: Commands {
-    var body: some Commands {
-        CommandMenu("Window") {
-            Text("Panels")
-                .font(.headline)
-                .disabled(true)
-            
-            Button("Layers") {
-                NotificationCenter.default.post(name: .showLayersPanel, object: nil)
-            }
-            // Note: F7 shortcut - handled via system
-            
-            Button("Color") {
-                NotificationCenter.default.post(name: .showColorPanel, object: nil)
-            }
-            // Note: F6 shortcut - handled via system
-            
-            Button("Stroke/Fill") {
-                NotificationCenter.default.post(name: .showStrokeFillPanel, object: nil)
-            }
-            // Note: F10 shortcut - handled via system
-            
-            Button("Typography") {
-                NotificationCenter.default.post(name: .showTypographyPanel, object: nil)
-            }
-            .keyboardShortcut("t", modifiers: [.command, .shift])
-            
-            Button("Path Operations") {
-                NotificationCenter.default.post(name: .showPathOpsPanel, object: nil)
-            }
-            // Note: F9 shortcut - handled via system
-            
-            Divider()
-            
-            Text("Tool Palettes")
-                .font(.headline)
-                .disabled(true)
-            
-            Button("Tools") {
-                NotificationCenter.default.post(name: .showToolsPanel, object: nil)
-            }
-            // Note: F1 shortcut - handled via system
+// MARK: - Centralized Menu Command Handler
+class MenuCommandHandler: ObservableObject {
+    static let shared = MenuCommandHandler()
+    
+    @Published var canUndo = false
+    @Published var canRedo = false
+    @Published var canCut = false
+    @Published var canCopy = false
+    @Published var canPaste = false
+    @Published var hasSelection = false
+    @Published var canGroup = false
+    @Published var canUngroup = false
+    
+    private var currentDocument: VectorDocument?
+    
+    init() {
+        // Initialize with default states - menu items start disabled
+        canUndo = false
+        canRedo = false
+        canCut = false
+        canCopy = false
+        canPaste = false
+        hasSelection = false
+        canGroup = false
+        canUngroup = false
+        
+        print("🎯 MenuCommandHandler initialized")
+    }
+    
+    func setDocument(_ document: VectorDocument) {
+        currentDocument = document
+        updateMenuStates()
+    }
+    
+    func updateMenuStates() {
+        guard let document = currentDocument else { return }
+        
+        canUndo = !document.undoStack.isEmpty
+        canRedo = !document.redoStack.isEmpty
+        hasSelection = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+        canCut = hasSelection
+        canCopy = hasSelection
+        canPaste = ClipboardManager.shared.canPaste()
+        canGroup = document.selectedShapeIDs.count > 1
+        canUngroup = document.selectedShapeIDs.contains { shapeID in
+            // Check if any selected shape is a group
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
         }
+    }
+    
+    // MARK: - Edit Commands
+    func undo() {
+        currentDocument?.undo()
+        updateMenuStates()
+    }
+    
+    func redo() {
+        currentDocument?.redo()
+        updateMenuStates()
+    }
+    
+    func cut() {
+        guard let document = currentDocument else { return }
+        ClipboardManager.shared.cut(from: document)
+        updateMenuStates()
+    }
+    
+    func copy() {
+        guard let document = currentDocument else { return }
+        ClipboardManager.shared.copy(from: document)
+        updateMenuStates()
+    }
+    
+    func paste() {
+        guard let document = currentDocument else { return }
+        ClipboardManager.shared.paste(to: document)
+        updateMenuStates()
+    }
+    
+    func selectAll() {
+        guard let document = currentDocument else { return }
+        document.selectAll()
+        updateMenuStates()
+    }
+    
+    func deselectAll() {
+        guard let document = currentDocument else { return }
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        updateMenuStates()
+    }
+    
+    // MARK: - Object Commands
+    func bringToFront() {
+        guard let document = currentDocument else { return }
+        document.bringSelectedToFront()
+        updateMenuStates()
+    }
+    
+    func bringForward() {
+        guard let document = currentDocument else { return }
+        document.bringSelectedForward()
+        updateMenuStates()
+    }
+    
+    func sendBackward() {
+        guard let document = currentDocument else { return }
+        document.sendSelectedBackward()
+        updateMenuStates()
+    }
+    
+    func sendToBack() {
+        guard let document = currentDocument else { return }
+        document.sendSelectedToBack()
+        updateMenuStates()
+    }
+    
+    func groupObjects() {
+        guard let document = currentDocument else { return }
+        document.groupSelectedObjects()
+        updateMenuStates()
+    }
+    
+    func ungroupObjects() {
+        guard let document = currentDocument else { return }
+        document.ungroupSelectedObjects()
+        updateMenuStates()
+    }
+    
+    func duplicate() {
+        guard let document = currentDocument else { return }
+        if !document.selectedShapeIDs.isEmpty {
+            document.duplicateSelectedShapes()
+        } else if !document.selectedTextIDs.isEmpty {
+            document.duplicateSelectedText()
+        }
+        updateMenuStates()
+    }
+    
+    func delete() {
+        guard let document = currentDocument else { return }
+        if !document.selectedShapeIDs.isEmpty {
+            document.removeSelectedShapes()
+        } else if !document.selectedTextIDs.isEmpty {
+            document.removeSelectedText()
+        }
+        updateMenuStates()
+    }
+    
+    // MARK: - Tool Commands
+    func selectTool(_ tool: DrawingTool) {
+        guard let document = currentDocument else { return }
+        
+        // Safe cursor management
+        var popCount = 0
+        while NSCursor.current != NSCursor.arrow && popCount < 10 {
+            NSCursor.pop()
+            popCount += 1
+        }
+        if NSCursor.current != NSCursor.arrow {
+            NSCursor.arrow.set()
+        }
+        
+        document.currentTool = tool
+        tool.cursor.push()
+        print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
     }
 }
 
-// MARK: - Notification Names for Menu Commands
-extension Notification.Name {
-    // Tool Commands
-    static let switchTool = Notification.Name("switchTool")
+// MARK: - Clipboard Manager
+class ClipboardManager {
+    static let shared = ClipboardManager()
     
-    // Selection Commands (reduced to avoid system duplicates)
-    static let selectAll = Notification.Name("selectAll")
-    static let deselectAll = Notification.Name("deselectAll")
+    private let pasteboard = NSPasteboard.general
+    private let vectorObjectsType = NSPasteboard.PasteboardType("com.logos.vectorobjects")
     
-    // Object Commands
-    static let bringToFront = Notification.Name("bringToFront")
-    static let bringForward = Notification.Name("bringForward")
-    static let sendBackward = Notification.Name("sendBackward")
-    static let sendToBack = Notification.Name("sendToBack")
-    static let groupObjects = Notification.Name("groupObjects")
-    static let ungroupObjects = Notification.Name("ungroupObjects")
-    static let lockObjects = Notification.Name("lockObjects")
-    static let unlockAll = Notification.Name("unlockAll")
-    static let hideObjects = Notification.Name("hideObjects")
-    static let showAll = Notification.Name("showAll")
-    static let closePath = Notification.Name("closePath")
-    static let joinPaths = Notification.Name("joinPaths")
-    static let createOutlines = Notification.Name("createOutlines")
+    func canPaste() -> Bool {
+        return pasteboard.canReadItem(withDataConformingToTypes: [vectorObjectsType.rawValue])
+    }
     
-    // View Commands
-    static let zoomIn = Notification.Name("zoomIn")
-    static let zoomOut = Notification.Name("zoomOut")
-    static let fitToPage = Notification.Name("fitToPage")
-    static let actualSize = Notification.Name("actualSize")
-    static let colorView = Notification.Name("colorView")
-    static let keylineView = Notification.Name("keylineView")
-    static let toggleRulers = Notification.Name("toggleRulers")
-    static let toggleGrid = Notification.Name("toggleGrid")
-    static let toggleSnapToGrid = Notification.Name("toggleSnapToGrid")
+    func cut(from document: VectorDocument) {
+        copy(from: document)
+        // Remove selected objects after copying
+        if !document.selectedShapeIDs.isEmpty {
+            document.removeSelectedShapes()
+        } else if !document.selectedTextIDs.isEmpty {
+            document.removeSelectedText()
+        }
+    }
     
-    // Window Commands
-    static let showLayersPanel = Notification.Name("showLayersPanel")
-    static let showColorPanel = Notification.Name("showColorPanel")
-    static let showStrokeFillPanel = Notification.Name("showStrokeFillPanel")
-    static let showTypographyPanel = Notification.Name("showTypographyPanel")
-    static let showPathOpsPanel = Notification.Name("showPathOpsPanel")
-    static let showToolsPanel = Notification.Name("showToolsPanel")
-    static let switchToPanel = Notification.Name("switchToPanel")
+    func copy(from document: VectorDocument) {
+        // Get selected objects
+        var shapesToCopy: [VectorShape] = []
+        var textToCopy: [VectorText] = []
+        
+        // Collect selected shapes
+        if let layerIndex = document.selectedLayerIndex {
+            let layer = document.layers[layerIndex]
+            shapesToCopy = layer.shapes.filter { document.selectedShapeIDs.contains($0.id) }
+        }
+        
+        // Collect selected text
+        textToCopy = document.textObjects.filter { document.selectedTextIDs.contains($0.id) }
+        
+        // Create clipboard data
+        let clipboardData = ClipboardData(shapes: shapesToCopy, texts: textToCopy)
+        
+        // Encode and write to pasteboard
+        do {
+            let data = try JSONEncoder().encode(clipboardData)
+            pasteboard.clearContents()
+            pasteboard.setData(data, forType: vectorObjectsType)
+            print("📋 Copied \(shapesToCopy.count) shapes and \(textToCopy.count) text objects")
+        } catch {
+            print("❌ Failed to copy objects: \(error)")
+        }
+    }
+    
+    func paste(to document: VectorDocument) {
+        guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
+        
+        do {
+            let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
+            
+            document.saveToUndoStack()
+            
+            // Clear current selection
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+            
+            // Add shapes to current layer
+            if let layerIndex = document.selectedLayerIndex {
+                for shape in clipboardData.shapes {
+                    var newShape = shape
+                    newShape.id = UUID()
+                    // Offset pasted objects slightly
+                    newShape.path = offsetPath(newShape.path, by: CGPoint(x: 20, y: 20))
+                    document.layers[layerIndex].shapes.append(newShape)
+                    document.selectedShapeIDs.insert(newShape.id)
+                }
+            }
+            
+            // Add text objects
+            for text in clipboardData.texts {
+                var newText = text
+                newText.id = UUID()
+                // Offset pasted text slightly
+                newText.position = CGPoint(
+                    x: newText.position.x + 20,
+                    y: newText.position.y + 20
+                )
+                document.textObjects.append(newText)
+                document.selectedTextIDs.insert(newText.id)
+            }
+            
+            print("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects")
+        } catch {
+            print("❌ Failed to paste objects: \(error)")
+        }
+    }
+    
+    private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
+        var newElements: [PathElement] = []
+        
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                newElements.append(.move(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
+            case .line(let to):
+                newElements.append(.line(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
+            case .curve(let to, let control1, let control2):
+                newElements.append(.curve(
+                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
+                    control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
+                    control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
+                ))
+            case .quadCurve(let to, let control):
+                newElements.append(.quadCurve(
+                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
+                    control: VectorPoint(control.x + offset.x, control.y + offset.y)
+                ))
+            case .close:
+                newElements.append(.close)
+            }
+        }
+        
+        return VectorPath(elements: newElements)
+    }
 }
+
+// MARK: - Clipboard Data Structure
+struct ClipboardData: Codable {
+    let shapes: [VectorShape]
+    let texts: [VectorText]
+}
+
+// MARK: - Vector Shape Group Extension removed - group properties now in VectorShape struct

@@ -283,7 +283,7 @@ class VectorImportManager {
                 dpi: svgContent.dpi,
                 layerCount: 1, // SVG doesn't have layers like AI
                 shapeCount: shapes.count,
-                textObjectCount: 0, // TODO: Implement text object detection
+                textObjectCount: svgContent.textObjects.count,
                 importDate: Date(),
                 sourceApplication: svgContent.creator,
                 documentVersion: svgContent.version
@@ -593,6 +593,7 @@ class VectorImportManager {
 
 private struct SVGContent {
     let shapes: [VectorShape]
+    let textObjects: [VectorText]
     let documentSize: CGSize
     let colorSpace: String
     let units: VectorUnit
@@ -653,6 +654,7 @@ private func parseSVGContent(_ data: Data) throws -> SVGContent {
     
     return SVGContent(
         shapes: result.shapes,
+        textObjects: result.textObjects,
         documentSize: result.documentSize,
         colorSpace: "RGB",
         units: .points,
@@ -666,6 +668,7 @@ private func parseSVGContent(_ data: Data) throws -> SVGContent {
 // MARK: - PROFESSIONAL SVG PARSER
 class SVGParser: NSObject, XMLParserDelegate {
     private var shapes: [VectorShape] = []
+    private var textObjects: [VectorText] = []
     private var currentPath: VectorPath?
     private var currentStroke: StrokeStyle?
     private var currentFill: FillStyle?
@@ -677,9 +680,12 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentElementName = ""
     private var cssStyles: [String: [String: String]] = [:]
     private var currentStyleContent = ""
+    private var currentTextContent = ""
+    private var currentTextAttributes: [String: String] = [:]
     
     struct ParseResult {
         let shapes: [VectorShape]
+        let textObjects: [VectorText]
         let documentSize: CGSize
         let creator: String?
         let version: String?
@@ -703,6 +709,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         return ParseResult(
             shapes: shapes,
+            textObjects: textObjects,
             documentSize: documentSize,
             creator: creator,
             version: version
@@ -747,8 +754,15 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "polyline", "polygon":
             parsePolyline(attributes: attributeDict, closed: elementName == "polygon")
             
+        case "text":
+            parseText(attributes: attributeDict)
+            
+        case "tspan":
+            // Text span within text element
+            break
+            
         default:
-                    break
+            break
         }
     }
     
@@ -766,6 +780,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseCSSStyles(currentStyleContent)
             currentStyleContent = ""
             
+        case "text":
+            // Finish parsing text element
+            finishTextElement()
+            
         default:
             break
         }
@@ -774,6 +792,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         if currentElementName == "style" {
             currentStyleContent += string
+        } else if currentElementName == "text" || currentElementName == "tspan" {
+            currentTextContent += string
         }
     }
     
@@ -814,6 +834,41 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     // MARK: - SVG Element Parsers
+    
+    private func parseText(attributes: [String: String]) {
+        currentTextContent = ""
+        currentTextAttributes = attributes
+        print("🔤 Starting text element parsing")
+    }
+    
+    private func finishTextElement() {
+        guard !currentTextContent.isEmpty else { return }
+        
+        let x = parseLength(currentTextAttributes["x"]) ?? 0
+        let y = parseLength(currentTextAttributes["y"]) ?? 0
+        let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
+        let fontFamily = currentTextAttributes["font-family"] ?? "Arial"
+        let fill = currentTextAttributes["fill"] ?? "black"
+        
+        let typography = TypographyProperties(
+            fontFamily: fontFamily,
+            fontSize: fontSize,
+            fillColor: parseColor(fill) ?? .black
+        )
+        
+        let textObject = VectorText(
+            content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
+            typography: typography,
+            position: CGPoint(x: x, y: y),
+            transform: currentTransform
+        )
+        
+        textObjects.append(textObject)
+        currentTextContent = ""
+        currentTextAttributes = [:]
+        
+        print("📝 Created text object: '\(textObject.content)'")
+    }
     
     private func parseSVGRoot(attributes: [String: String]) {
         if let width = attributes["width"], let height = attributes["height"] {
@@ -4856,20 +4911,290 @@ class FileOperations {
     }
     
     static func exportToPDF(_ document: VectorDocument, url: URL) throws {
-        // TODO: Implement PDF export
-        print("🔧 PDF export implementation required")
-        throw VectorImportError.parsingError("PDF export not yet implemented", line: nil)
+        print("📄 Exporting document to PDF: \(url.path)")
+        
+        // Create PDF context
+        let pageSize = document.settings.sizeInPoints
+        var mediaBox = CGRect(origin: .zero, size: pageSize)
+        let pdfContext = CGContext(url as CFURL, mediaBox: &mediaBox, nil)
+        
+        guard let context = pdfContext else {
+            throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
+        }
+        
+        // Begin PDF page
+        var pageRect = CGRect(origin: .zero, size: pageSize)
+        context.beginPage(mediaBox: &pageRect)
+        
+        // Set coordinate system to match our canvas (flip Y axis)
+        context.translateBy(x: 0, y: pageSize.height)
+        context.scaleBy(x: 1, y: -1)
+        
+        // Draw background
+        context.setFillColor(document.settings.backgroundColor.cgColor)
+        context.fill(CGRect(origin: .zero, size: pageSize))
+        
+        // Draw each layer
+        for layer in document.layers {
+            if !layer.isVisible { continue }
+            
+            // Apply layer opacity
+            context.saveGState()
+            context.setAlpha(layer.opacity)
+            
+            // Draw shapes in layer
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                drawShapeInPDF(shape, context: context)
+            }
+            
+            context.restoreGState()
+        }
+        
+        // Draw text objects
+        for text in document.textObjects {
+            if !text.isVisible { continue }
+            
+            drawTextInPDF(text, context: context)
+        }
+        
+        // End PDF page
+        context.endPage()
+        
+        // Close PDF context
+        context.closePDF()
+        
+        print("✅ Successfully exported PDF document")
+    }
+    
+    private static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
+        context.saveGState()
+        
+        // Apply shape opacity
+        context.setAlpha(shape.opacity)
+        
+        // Apply transform
+        if !shape.transform.isIdentity {
+            context.concatenate(shape.transform)
+        }
+        
+        // Create path from shape
+        let path = shape.path.cgPath
+        context.addPath(path)
+        
+        // Apply fill
+        if let fillStyle = shape.fillStyle {
+            context.setFillColor(fillStyle.color.cgColor)
+            context.setAlpha(fillStyle.opacity)
+            
+            if shape.strokeStyle != nil {
+                context.drawPath(using: .fillStroke)
+            } else {
+                context.fillPath()
+            }
+        } else if let strokeStyle = shape.strokeStyle {
+            // Only stroke, no fill
+            context.setStrokeColor(strokeStyle.color.cgColor)
+            context.setLineWidth(strokeStyle.width)
+            context.setAlpha(strokeStyle.opacity)
+            context.setLineCap(strokeStyle.lineCap)
+            context.setLineJoin(strokeStyle.lineJoin)
+            
+            if !strokeStyle.dashPattern.isEmpty {
+                let dashPatternCGFloat = strokeStyle.dashPattern.map { CGFloat($0) }
+                context.setLineDash(phase: 0, lengths: dashPatternCGFloat)
+            }
+            
+            context.strokePath()
+        }
+        
+        context.restoreGState()
+    }
+    
+    private static func drawTextInPDF(_ text: VectorText, context: CGContext) {
+        context.saveGState()
+        
+        // Apply text opacity
+        context.setAlpha(text.isVisible ? 1.0 : 0.0)
+        
+        // Apply transform
+        if !text.transform.isIdentity {
+            context.concatenate(text.transform)
+        }
+        
+        // Create attributed string
+        let font = text.typography.nsFont
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor(cgColor: text.typography.fillColor.cgColor) ?? NSColor.black,
+            .kern: text.typography.letterSpacing
+        ]
+        
+        let attributedString = NSAttributedString(string: text.content, attributes: attributes)
+        
+        // Calculate text position (PDF coordinates)
+        let textPosition = CGPoint(x: text.position.x, y: text.position.y)
+        
+        // Draw text
+        let line = CTLineCreateWithAttributedString(attributedString)
+        context.textPosition = textPosition
+        CTLineDraw(line, context)
+        
+        context.restoreGState()
     }
     
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat) throws {
-        // TODO: Implement PNG export
-        print("🔧 PNG export implementation required")
-        throw VectorImportError.parsingError("PNG export not yet implemented", line: nil)
+        print("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale")
+        
+        // Calculate output size
+        let pageSize = document.settings.sizeInPoints
+        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+        
+        // Create bitmap context
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+        
+        guard let context = CGContext(
+            data: nil,
+            width: Int(outputSize.width),
+            height: Int(outputSize.height),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
+        }
+        
+        // Set coordinate system to match our canvas (flip Y axis)
+        context.translateBy(x: 0, y: outputSize.height)
+        context.scaleBy(x: scale, y: -scale)
+        
+        // Draw background
+        context.setFillColor(document.settings.backgroundColor.cgColor)
+        context.fill(CGRect(origin: .zero, size: pageSize))
+        
+        // Draw each layer
+        for layer in document.layers {
+            if !layer.isVisible { continue }
+            
+            // Apply layer opacity
+            context.saveGState()
+            context.setAlpha(layer.opacity)
+            
+            // Draw shapes in layer
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                drawShapeInPDF(shape, context: context)
+            }
+            
+            context.restoreGState()
+        }
+        
+        // Draw text objects
+        for text in document.textObjects {
+            if !text.isVisible { continue }
+            
+            drawTextInPDF(text, context: context)
+        }
+        
+        // Create image from context
+        guard let image = context.makeImage() else {
+            throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+        }
+        
+        // Save PNG
+        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
+        guard let dest = destination else {
+            throw VectorImportError.parsingError("Failed to create PNG destination", line: nil)
+        }
+        
+        CGImageDestinationAddImage(dest, image, nil)
+        
+        if !CGImageDestinationFinalize(dest) {
+            throw VectorImportError.parsingError("Failed to finalize PNG export", line: nil)
+        }
+        
+        print("✅ Successfully exported PNG document")
     }
     
     static func exportToJPEG(_ document: VectorDocument, url: URL, scale: CGFloat, quality: Double) throws {
-        // TODO: Implement JPEG export
-        print("🔧 JPEG export implementation required")
-        throw VectorImportError.parsingError("JPEG export not yet implemented", line: nil)
+        print("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality")
+        
+        // Calculate output size
+        let pageSize = document.settings.sizeInPoints
+        let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+        
+        // Create bitmap context
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.noneSkipLast.rawValue // JPEG doesn't support alpha
+        
+        guard let context = CGContext(
+            data: nil,
+            width: Int(outputSize.width),
+            height: Int(outputSize.height),
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            throw VectorImportError.parsingError("Failed to create bitmap context", line: nil)
+        }
+        
+        // Set coordinate system to match our canvas (flip Y axis)
+        context.translateBy(x: 0, y: outputSize.height)
+        context.scaleBy(x: scale, y: -scale)
+        
+        // Draw background (important for JPEG since it doesn't support transparency)
+        context.setFillColor(document.settings.backgroundColor.cgColor)
+        context.fill(CGRect(origin: .zero, size: pageSize))
+        
+        // Draw each layer
+        for layer in document.layers {
+            if !layer.isVisible { continue }
+            
+            // Apply layer opacity
+            context.saveGState()
+            context.setAlpha(layer.opacity)
+            
+            // Draw shapes in layer
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                drawShapeInPDF(shape, context: context)
+            }
+            
+            context.restoreGState()
+        }
+        
+        // Draw text objects
+        for text in document.textObjects {
+            if !text.isVisible { continue }
+            
+            drawTextInPDF(text, context: context)
+        }
+        
+        // Create image from context
+        guard let image = context.makeImage() else {
+            throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+        }
+        
+        // Save JPEG with quality setting
+        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
+        guard let dest = destination else {
+            throw VectorImportError.parsingError("Failed to create JPEG destination", line: nil)
+        }
+        
+        // Set JPEG compression quality
+        let options = [kCGImageDestinationLossyCompressionQuality: quality]
+        CGImageDestinationAddImage(dest, image, options as CFDictionary)
+        
+        if !CGImageDestinationFinalize(dest) {
+            throw VectorImportError.parsingError("Failed to finalize JPEG export", line: nil)
+        }
+        
+        print("✅ Successfully exported JPEG document")
     }
 }

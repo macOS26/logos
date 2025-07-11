@@ -1806,7 +1806,7 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
         
-        guard let textIndex = textObjects.firstIndex(where: { $0.id == textId }) else {
+        guard textObjects.firstIndex(where: { $0.id == textId }) != nil else {
             print("❌ Text object not found")
             return
         }
@@ -1837,6 +1837,280 @@ class VectorDocument: ObservableObject, Codable {
                 toLayerIndex: ontoLayerIndex
             )
         }
+    }
+    
+    // MARK: - Object Arrangement Methods (Adobe Illustrator Standards)
+    
+    /// Bring selected shapes to front
+    func bringSelectedToFront() {
+        guard let layerIndex = selectedLayerIndex,
+              !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes and remove them from current positions
+        var shapes = layers[layerIndex].shapes
+        let selectedShapes = shapes.filter { selectedShapeIDs.contains($0.id) }
+        shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        
+        // Add selected shapes to the end (front)
+        shapes.append(contentsOf: selectedShapes)
+        
+        layers[layerIndex].shapes = shapes
+        print("⬆️⬆️ Brought to front \(selectedShapeIDs.count) objects")
+    }
+    
+    /// Bring selected shapes forward
+    func bringSelectedForward() {
+        guard let layerIndex = selectedLayerIndex,
+              !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Move each selected shape forward by one position
+        var shapes = layers[layerIndex].shapes
+        
+        // Process from back to front to avoid index conflicts
+        for i in (0..<shapes.count).reversed() {
+            if selectedShapeIDs.contains(shapes[i].id) && i < shapes.count - 1 {
+                shapes.swapAt(i, i + 1)
+            }
+        }
+        
+        layers[layerIndex].shapes = shapes
+        print("⬆️ Brought forward \(selectedShapeIDs.count) objects")
+    }
+    
+    /// Send selected shapes backward
+    func sendSelectedBackward() {
+        guard let layerIndex = selectedLayerIndex,
+              !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Move each selected shape backward by one position
+        var shapes = layers[layerIndex].shapes
+        
+        // Process from front to back to avoid index conflicts
+        for i in 0..<shapes.count {
+            if selectedShapeIDs.contains(shapes[i].id) && i > 0 {
+                shapes.swapAt(i, i - 1)
+            }
+        }
+        
+        layers[layerIndex].shapes = shapes
+        print("⬇️ Sent backward \(selectedShapeIDs.count) objects")
+    }
+    
+    /// Send selected shapes to back
+    func sendSelectedToBack() {
+        guard let layerIndex = selectedLayerIndex,
+              !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes and remove them from current positions
+        var shapes = layers[layerIndex].shapes
+        let selectedShapes = shapes.filter { selectedShapeIDs.contains($0.id) }
+        shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        
+        // Insert selected shapes at the beginning (back)
+        shapes.insert(contentsOf: selectedShapes, at: 0)
+        
+        layers[layerIndex].shapes = shapes
+        print("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects")
+    }
+    
+    // MARK: - Object Grouping Methods (Adobe Illustrator Standards)
+    
+    /// Group selected objects
+    func groupSelectedObjects() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count > 1 else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes
+        let selectedShapes = layers[layerIndex].shapes.filter { selectedShapeIDs.contains($0.id) }
+        
+        // Create group from selected shapes
+        let groupShape = VectorShape.group(from: selectedShapes, name: "Group")
+        
+        // Remove individual shapes
+        layers[layerIndex].shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        
+        // Add group
+        layers[layerIndex].shapes.append(groupShape)
+        selectedShapeIDs = [groupShape.id]
+        
+        print("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'")
+    }
+    
+    /// Ungroup selected objects
+    func ungroupSelectedObjects() {
+        guard let layerIndex = selectedLayerIndex,
+              !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        var newSelectedShapeIDs: Set<UUID> = []
+        var shapesToRemove: [UUID] = []
+        var shapesToAdd: [VectorShape] = []
+        
+        // Process each selected shape
+        for shapeID in selectedShapeIDs {
+            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                let shape = layers[layerIndex].shapes[shapeIndex]
+                
+                // Check if this shape is a group
+                if shape.isGroupContainer {
+                    // Extract grouped shapes
+                    for groupedShape in shape.groupedShapes {
+                        shapesToAdd.append(groupedShape)
+                        newSelectedShapeIDs.insert(groupedShape.id)
+                    }
+                    
+                    // Mark group for removal
+                    shapesToRemove.append(shapeID)
+                    
+                    print("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects")
+                } else {
+                    // Not a group, keep it selected
+                    newSelectedShapeIDs.insert(shapeID)
+                }
+            }
+        }
+        
+        // Remove groups
+        layers[layerIndex].shapes.removeAll { shapesToRemove.contains($0.id) }
+        
+        // Add ungrouped shapes
+        layers[layerIndex].shapes.append(contentsOf: shapesToAdd)
+        
+        // Update selection
+        selectedShapeIDs = newSelectedShapeIDs
+        
+        if !shapesToRemove.isEmpty {
+            print("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects")
+        } else {
+            print("📦 No groups found in selection")
+        }
+    }
+    
+    // MARK: - Lock/Unlock Methods (Adobe Illustrator Standards)
+    
+    /// Lock selected objects
+    func lockSelectedObjects() {
+        guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Lock selected shapes
+        for layerIndex in layers.indices {
+            for shapeIndex in layers[layerIndex].shapes.indices {
+                if selectedShapeIDs.contains(layers[layerIndex].shapes[shapeIndex].id) {
+                    layers[layerIndex].shapes[shapeIndex].isLocked = true
+                }
+            }
+        }
+        
+        // Lock selected text objects
+        for textIndex in textObjects.indices {
+            if selectedTextIDs.contains(textObjects[textIndex].id) {
+                textObjects[textIndex].isLocked = true
+            }
+        }
+        
+        print("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
+        
+        // Clear selection since locked objects can't be selected
+        selectedShapeIDs.removeAll()
+        selectedTextIDs.removeAll()
+    }
+    
+    /// Unlock all objects on current layer
+    func unlockAllObjects() {
+        guard let layerIndex = selectedLayerIndex else { return }
+        
+        saveToUndoStack()
+        
+        var unlockedCount = 0
+        
+        // Unlock all shapes on current layer
+        for shapeIndex in layers[layerIndex].shapes.indices {
+            if layers[layerIndex].shapes[shapeIndex].isLocked {
+                layers[layerIndex].shapes[shapeIndex].isLocked = false
+                unlockedCount += 1
+            }
+        }
+        
+        // Unlock all text objects (they're global)
+        for textIndex in textObjects.indices {
+            if textObjects[textIndex].isLocked {
+                textObjects[textIndex].isLocked = false
+                unlockedCount += 1
+            }
+        }
+        
+        print("🔓 Unlocked \(unlockedCount) objects")
+    }
+    
+    // MARK: - Hide/Show Methods (Adobe Illustrator Standards)
+    
+    /// Hide selected objects
+    func hideSelectedObjects() {
+        guard !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Hide selected shapes
+        for layerIndex in layers.indices {
+            for shapeIndex in layers[layerIndex].shapes.indices {
+                if selectedShapeIDs.contains(layers[layerIndex].shapes[shapeIndex].id) {
+                    layers[layerIndex].shapes[shapeIndex].isVisible = false
+                }
+            }
+        }
+        
+        // Hide selected text objects
+        for textIndex in textObjects.indices {
+            if selectedTextIDs.contains(textObjects[textIndex].id) {
+                textObjects[textIndex].isVisible = false
+            }
+        }
+        
+        print("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
+        
+        // Clear selection since hidden objects can't be selected
+        selectedShapeIDs.removeAll()
+        selectedTextIDs.removeAll()
+    }
+    
+    /// Show all objects on current layer
+    func showAllObjects() {
+        guard let layerIndex = selectedLayerIndex else { return }
+        
+        saveToUndoStack()
+        
+        var shownCount = 0
+        
+        // Show all shapes on current layer
+        for shapeIndex in layers[layerIndex].shapes.indices {
+            if !layers[layerIndex].shapes[shapeIndex].isVisible {
+                layers[layerIndex].shapes[shapeIndex].isVisible = true
+                shownCount += 1
+            }
+        }
+        
+        // Show all text objects (they're global)
+        for textIndex in textObjects.indices {
+            if !textObjects[textIndex].isVisible {
+                textObjects[textIndex].isVisible = true
+                shownCount += 1
+            }
+        }
+        
+        print("👁️ Shown \(shownCount) objects")
     }
 }
 
