@@ -668,13 +668,18 @@ struct DrawingCanvas: View {
                         // Show curve tangent to the existing outgoing handle (like Adobe Illustrator)
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         
-                        // Simple curve calculation: use outgoing handle as control1, 
-                        // and mouse position as control2 (no complex incoming handle calculation needed)
+                        print("🔧 DEBUG STEP 1: Rubber band preview - CURVE")
+                        print("   Last point \(lastPointIndex) has outgoing handle at: (\(lastControl2.x), \(lastControl2.y))")
+                        
+                        // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
+                        // Step 3 uses: control1: lastControl2, control2: targetPoint
+                        // This creates natural curves without hooks
                         path.addCurve(
                             to: canvasMouseLocation,
                             control1: lastControl2Location,
                             control2: canvasMouseLocation
                         )
+                        print("   ✅ Rubber band curve uses SAME math as step 2")
                         
                     } else {
                         // STRAIGHT RUBBER BAND: Previous point is corner point (no outgoing handle)
@@ -1277,8 +1282,28 @@ struct DrawingCanvas: View {
             bezierPoints.append(newPoint)
             activeBezierPointIndex = bezierPoints.count - 1
             
-            // Create line to the new point (corner point - no handles)
-            bezierPath?.addElement(.line(to: newPoint))
+            // CRITICAL FIX: Check if previous point has handles and create curve accordingly
+            // This ensures intermediate path matches rubber band preview
+            
+            let previousPointIndex = bezierPoints.count - 2 // Previous point (before the new one)
+            
+            if previousPointIndex >= 0,
+               let previousHandles = bezierHandles[previousPointIndex],
+               let previousControl2 = previousHandles.control2 {
+                // CURVE: Previous point has outgoing handle, create curve like rubber band preview
+                print("🔧 DEBUG STEP 2: Creating CURVE (matches rubber band preview)")
+                print("   Previous point \(previousPointIndex) has outgoing handle at: (\(previousControl2.x), \(previousControl2.y))")
+                
+                // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
+                // Step 3 uses: control1: previousControl2, control2: targetPoint
+                // This creates natural curves without hooks
+                bezierPath?.addElement(.curve(to: newPoint, control1: previousControl2, control2: newPoint))
+                print("   ✅ Added CURVE element (matches rubber band preview)")
+            } else {
+                // STRAIGHT LINE: Previous point has no handles or is first point
+                print("🔧 DEBUG STEP 2: Creating straight line - previous point has no handles")
+                bezierPath?.addElement(.line(to: newPoint))
+            }
             
             // Update the real shape in the document immediately
             updateActiveBezierShapeInDocument()
@@ -1388,70 +1413,23 @@ struct DrawingCanvas: View {
                 y: currentLocation.y - activeLocation.y
             )
             
-            // CRITICAL FIX: Match the rubber band preview calculation exactly!
-            // The rubber band preview shows the correct curve, so use the same calculation
-            // First get the outgoing handle from the previous point
-            let previousIndex = activeIndex - 1
-            let lastControl2 = previousIndex >= 0 ? bezierHandles[previousIndex]?.control2 : nil
+            // FIXED: Correct handle assignment for intuitive UX  
+            // control1 = INCOMING handle (opposite to drag direction)
+            // control2 = OUTGOING handle (follows drag direction - this is what user sees)
+            let control1 = VectorPoint(
+                activeLocation.x - dragVector.x * 0.5,
+                activeLocation.y - dragVector.y * 0.5
+            )
+            let control2 = VectorPoint(
+                activeLocation.x + dragVector.x * 0.5,
+                activeLocation.y + dragVector.y * 0.5
+            )
             
-            if let lastControl2 = lastControl2 {
-                // Calculate the EXACT same incoming handle as the rubber band preview
-                let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
-                let lastPointLocation = previousIndex >= 0 ? CGPoint(x: bezierPoints[previousIndex].x, y: bezierPoints[previousIndex].y) : activeLocation
-                
-                // Calculate distance for handle length (same as rubber band preview)
-                let distance = sqrt(pow(activeLocation.x - lastPointLocation.x, 2) + pow(activeLocation.y - lastPointLocation.y, 2))
-                let handleLength = distance * 0.3 // Same as rubber band preview
-                
-                // Direction from current point toward the natural curve flow (same as rubber band preview)
-                let outgoingDirection = CGPoint(
-                    x: lastControl2Location.x - lastPointLocation.x,
-                    y: lastControl2Location.y - lastPointLocation.y
-                )
-                let outgoingLength = sqrt(pow(outgoingDirection.x, 2) + pow(outgoingDirection.y, 2))
-                
-                let incomingHandle = if outgoingLength > 0 {
-                    CGPoint(
-                        x: activeLocation.x - (outgoingDirection.x / outgoingLength) * handleLength,
-                        y: activeLocation.y - (outgoingDirection.y / outgoingLength) * handleLength
-                    )
-                } else {
-                    // Fallback to drag direction if no previous handle
-                    CGPoint(
-                        x: activeLocation.x - dragVector.x * 0.3,
-                        y: activeLocation.y - dragVector.y * 0.3
-                    )
-                }
-                
-                // Store handles to match updatePathWithHandles() expectations
-                let control1 = VectorPoint(incomingHandle.x, incomingHandle.y) // INCOMING handle
-                let control2 = VectorPoint(
-                    activeLocation.x + dragVector.x * 0.5,  // OUTGOING handle
-                    activeLocation.y + dragVector.y * 0.5
-                )
-                
-                bezierHandles[activeIndex] = BezierHandleInfo(
-                    control1: control1,
-                    control2: control2,
-                    hasHandles: true
-                )
-            } else {
-                // No previous handle - use simple symmetric handles
-                let control1 = VectorPoint(
-                    activeLocation.x - dragVector.x * 0.5,  // INCOMING
-                    activeLocation.y - dragVector.y * 0.5
-                )
-                let control2 = VectorPoint(
-                    activeLocation.x + dragVector.x * 0.5,  // OUTGOING  
-                    activeLocation.y + dragVector.y * 0.5
-                )
-                
-                bezierHandles[activeIndex] = BezierHandleInfo(
-                    control1: control1,
-                    control2: control2,
-                    hasHandles: true
-                )
-                         }
+            bezierHandles[activeIndex] = BezierHandleInfo(
+                control1: control1,
+                control2: control2,
+                hasHandles: true
+            )
             
             updatePathWithHandles()
             
@@ -3469,6 +3447,7 @@ struct DrawingCanvas: View {
             }
         }
         
+        print("🔧 DEBUG STEP 3: Path CLOSED - final curve creation")
         print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
         print("Path elements: \(closedPath.elements.count) (including close)")
         print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
