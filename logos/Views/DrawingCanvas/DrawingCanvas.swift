@@ -55,6 +55,10 @@ struct DrawingCanvas: View {
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
     @State private var activeBezierShape: VectorShape? = nil // Real shape being built
     
+    // First point creation state for smooth/corner point detection
+    @State private var pendingFirstPoint: CGPoint? = nil // Location where first point will be created
+    @State private var isCreatingFirstPoint = false // True when we're deciding if first point should be smooth or corner
+    
 
     
     // Track previous tool to detect changes
@@ -1214,6 +1218,10 @@ struct DrawingCanvas: View {
         currentMouseLocation = nil
         showClosePathHint = false
         activeBezierShape = nil // Clear the real shape reference
+        
+        // Clear first point creation state
+        pendingFirstPoint = nil
+        isCreatingFirstPoint = false
     }
     
     private func handleBezierPenTap(at location: CGPoint) {
@@ -1238,36 +1246,12 @@ struct DrawingCanvas: View {
         }
         
         if !isBezierDrawing {
-            // PROFESSIONAL REAL-TIME PATH CREATION: Create actual VectorShape from the start
-            // Like Adobe Illustrator, FreeHand, CorelDraw - show real path with document default colors
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
-            bezierPoints = [VectorPoint(location)]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0 // First point is active (solid)
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors (no fake orange preview!)
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: 1.0,
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: .clear, // Bezier paths start with no fill
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            print("🎯 STARTED: Real bezier shape with document default colors at \(location)")
-            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            // NEW BEHAVIOR: Don't create first point immediately - wait to see if user drags
+            // This allows click = corner point, click+drag = smooth point for first point
+            pendingFirstPoint = location
+            isCreatingFirstPoint = true
+            print("🎯 PENDING FIRST POINT: Set up at \(location) - waiting to detect click vs drag")
+            return
         } else {
             // PURE CLICK: Add corner point (no handles)
             // Make previous point inactive (hollow)
@@ -1310,14 +1294,85 @@ struct DrawingCanvas: View {
     }
     
     private func handleBezierPenDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        guard isBezierDrawing else { return }
-        
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let currentLocation = screenToCanvas(value.location, geometry: geometry)
         
         // Calculate actual drag distance to distinguish click vs drag
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
+        
+        // FIRST POINT CREATION: Handle initial bezier path creation with drag detection
+        if isCreatingFirstPoint, let firstPointLocation = pendingFirstPoint {
+            // Only proceed with handle creation if user has dragged significantly
+            if dragDistance < minimumDragThreshold {
+                print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - will create corner point on drag end")
+                return
+            }
+            
+            // User dragged significantly - create SMOOTH first point with handles
+            print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point")
+            
+            // Create the bezier path and add the first point
+            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
+            bezierPoints = [VectorPoint(firstPointLocation)]
+            isBezierDrawing = true
+            activeBezierPointIndex = 0 // First point is active (solid)
+            bezierHandles.removeAll()
+            
+            // Create real VectorShape with document default colors
+            let strokeStyle = StrokeStyle(
+                color: document.defaultStrokeColor,
+                width: 1.0,
+                opacity: document.defaultStrokeOpacity
+            )
+            let fillStyle = FillStyle(
+                color: .clear, // Bezier paths start with no fill
+                opacity: document.defaultFillOpacity
+            )
+            
+            activeBezierShape = VectorShape(
+                name: "Bezier Path",
+                path: bezierPath!,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            // Add the real shape to the document immediately
+            document.addShape(activeBezierShape!)
+            
+            // Create smooth handles for the first point based on drag direction
+            let dragVector = CGPoint(
+                x: currentLocation.x - firstPointLocation.x,
+                y: currentLocation.y - firstPointLocation.y
+            )
+            
+            let control1 = VectorPoint(
+                firstPointLocation.x - dragVector.x * 0.5,
+                firstPointLocation.y - dragVector.y * 0.5
+            )
+            let control2 = VectorPoint(
+                firstPointLocation.x + dragVector.x * 0.5,
+                firstPointLocation.y + dragVector.y * 0.5
+            )
+            
+            bezierHandles[0] = BezierHandleInfo(
+                control1: control1,
+                control2: control2,
+                hasHandles: true
+            )
+            
+            // Clear first point creation state
+            pendingFirstPoint = nil
+            isCreatingFirstPoint = false
+            isDraggingBezierHandle = true
+            
+            print("✅ CREATED SMOOTH FIRST POINT with handles at \(firstPointLocation)")
+            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            return
+        }
+        
+        // Regular bezier pen drag handling (for existing paths)
+        guard isBezierDrawing else { return }
         
         // Only proceed with handle creation if user has dragged significantly
         if dragDistance < minimumDragThreshold {
@@ -2184,6 +2239,47 @@ struct DrawingCanvas: View {
     }
     
     private func finishBezierPenDrag() {
+        // FIRST POINT CORNER CREATION: Handle case where user clicked (no significant drag) for first point
+        if isCreatingFirstPoint, let firstPointLocation = pendingFirstPoint {
+            // User clicked without significant drag - create CORNER first point
+            print("🎯 FIRST POINT: No significant drag detected - creating CORNER first point")
+            
+            // Create the bezier path and add the first point
+            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
+            bezierPoints = [VectorPoint(firstPointLocation)]
+            isBezierDrawing = true
+            activeBezierPointIndex = 0 // First point is active (solid)
+            bezierHandles.removeAll()
+            
+            // Create real VectorShape with document default colors
+            let strokeStyle = StrokeStyle(
+                color: document.defaultStrokeColor,
+                width: 1.0,
+                opacity: document.defaultStrokeOpacity
+            )
+            let fillStyle = FillStyle(
+                color: .clear, // Bezier paths start with no fill
+                opacity: document.defaultFillOpacity
+            )
+            
+            activeBezierShape = VectorShape(
+                name: "Bezier Path",
+                path: bezierPath!,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            // Add the real shape to the document immediately
+            document.addShape(activeBezierShape!)
+            
+            // Clear first point creation state
+            pendingFirstPoint = nil
+            isCreatingFirstPoint = false
+            
+            print("✅ CREATED CORNER FIRST POINT (no handles) at \(firstPointLocation)")
+            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+        }
+        
         // Finalize bezier curve drag
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
