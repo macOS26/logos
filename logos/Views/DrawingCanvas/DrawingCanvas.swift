@@ -1374,7 +1374,8 @@ struct DrawingCanvas: View {
         
         // IMMEDIATE FIRST POINT CREATION: Handle case where user starts dragging without prior tap
         // This enables click-and-drag in one shot to create smooth first point
-        if !isBezierDrawing && !isCreatingFirstPoint {
+        // NOTE: This also handles the case where SwiftUI fires both tap and drag gestures
+        if !isBezierDrawing {
             // Only proceed with first point creation if user has dragged significantly
             if dragDistance < minimumDragThreshold {
                 print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - ignoring small movement")
@@ -1384,9 +1385,12 @@ struct DrawingCanvas: View {
             // User dragged significantly - create SMOOTH first point with handles immediately
             print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point immediately")
             
+            // Use the pending first point location if available (from tap gesture), otherwise use drag start location
+            let firstPointLocation = pendingFirstPoint ?? startLocation
+            
             // Create the bezier path and add the first point
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(startLocation))])
-            bezierPoints = [VectorPoint(startLocation)]
+            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
+            bezierPoints = [VectorPoint(firstPointLocation)]
             isBezierDrawing = true
             activeBezierPointIndex = 0 // First point is active (solid)
             bezierHandles.removeAll()
@@ -1414,17 +1418,17 @@ struct DrawingCanvas: View {
             
             // Create smooth handles for the first point based on drag direction
             let dragVector = CGPoint(
-                x: currentLocation.x - startLocation.x,
-                y: currentLocation.y - startLocation.y
+                x: currentLocation.x - firstPointLocation.x,
+                y: currentLocation.y - firstPointLocation.y
             )
             
             let control1 = VectorPoint(
-                startLocation.x - dragVector.x * 0.5,
-                startLocation.y - dragVector.y * 0.5
+                firstPointLocation.x - dragVector.x * 0.5,
+                firstPointLocation.y - dragVector.y * 0.5
             )
             let control2 = VectorPoint(
-                startLocation.x + dragVector.x * 0.5,
-                startLocation.y + dragVector.y * 0.5
+                firstPointLocation.x + dragVector.x * 0.5,
+                firstPointLocation.y + dragVector.y * 0.5
             )
             
             bezierHandles[0] = BezierHandleInfo(
@@ -1438,7 +1442,7 @@ struct DrawingCanvas: View {
             isCreatingFirstPoint = false
             isDraggingBezierHandle = true
             
-            print("✅ CREATED IMMEDIATE SMOOTH FIRST POINT with handles at \(startLocation)")
+            print("✅ CREATED IMMEDIATE SMOOTH FIRST POINT with handles at \(firstPointLocation)")
             print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
             return
         }
