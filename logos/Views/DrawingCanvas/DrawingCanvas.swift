@@ -1267,6 +1267,7 @@ struct DrawingCanvas: View {
             // Add the real shape to the document immediately
             document.addShape(activeBezierShape!)
             print("🎯 STARTED: Real bezier shape with document default colors at \(location)")
+            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
         } else {
             // PURE CLICK: Add corner point (no handles)
             // Make previous point inactive (hollow)
@@ -1454,6 +1455,9 @@ struct DrawingCanvas: View {
                     width: 1.0,
                     opacity: document.defaultStrokeOpacity
                 )
+                
+                // Also update fill if user has changed it (but keep .clear for open paths during drawing)
+                // Fill will be applied when path is finished
                 
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 break
@@ -2157,8 +2161,9 @@ struct DrawingCanvas: View {
         print("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors")
         print("Path elements: \(activeBezierShape.path.elements.count)")
         print("Shape bounds: \(activeBezierShape.bounds)")
-        print("Final stroke color: \(document.defaultStrokeColor)")
-        print("Final fill color: \(document.defaultFillColor)")
+        print("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+        print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
+        print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: document.defaultStrokeOpacity))")
         
         // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select the path
         let finishedShapeID = activeBezierShape.id
@@ -3569,7 +3574,7 @@ struct DrawingCanvas: View {
         print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
         print("Path elements: \(closedPath.elements.count) (including close)")
         print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
-        print("Fill color: \(document.defaultFillColor)")
+        print("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
         
         // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select closed path
         let closedShapeID = activeShape.id

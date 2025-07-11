@@ -187,7 +187,7 @@ struct ColorSwatchGrid: View {
                         // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Current Fill Color (Click to apply to selected objects)")
+                .help("Current Fill Color: \(currentFillColor) (Used by pen tool and all shape tools)")
                 
                 Button {
                     applyStrokeColorToSelected(currentStrokeColor)
@@ -199,7 +199,7 @@ struct ColorSwatchGrid: View {
                         // NO cornerRadius - completely square like grid
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Current Stroke Color (Click to apply to selected objects)")
+                .help("Current Stroke Color: \(currentStrokeColor) (Used by pen tool and all shape tools)")
             }
             .padding(.horizontal, 4)  // Adjusted padding
             
@@ -212,12 +212,12 @@ struct ColorSwatchGrid: View {
                             selectedStrokeColor = color
                             document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
-                            print("🎨 Set default stroke color: \(color)")
+                            print("🎨 TOOLBAR: Set default stroke color: \(color) - pen tool will now use this")
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
-                            print("🎨 Set default fill color: \(color)")
+                            print("🎨 TOOLBAR: Set default fill color: \(color) - pen tool will now use this")
                         }
                     } label: {
                         Rectangle()

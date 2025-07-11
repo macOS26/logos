@@ -116,8 +116,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var fontManager: FontManager = FontManager()
     
     // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
-    @Published var defaultFillColor: VectorColor = .rgb(RGBColor(red: 1, green: 0, blue: 0)) // Red fill
-    @Published var defaultStrokeColor: VectorColor = .black
+    @Published var defaultFillColor: VectorColor = .white // Professional default: white fill
+    @Published var defaultStrokeColor: VectorColor = .black // Professional default: black stroke
     @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     
@@ -541,8 +541,8 @@ class VectorDocument: ObservableObject, Codable {
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
         // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
-        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .rgb(RGBColor(red: 1, green: 0, blue: 0))
-        defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black
+        defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .white // Professional default
+        defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black // Professional default
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
         
