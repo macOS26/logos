@@ -151,6 +151,9 @@ struct MainView: View {
             // SOLUTION: Connect document to menu system
             menuHandler.setDocument(document)
             
+            // Set up notification observers for menu commands
+            setupMenuCommandObservers()
+            
             setupDocument()
             
             // Auto-fit to page on startup for professional presentation
@@ -174,6 +177,10 @@ struct MainView: View {
         .onChange(of: document.redoStack.count) { _ in
             // Update menu states when redo stack changes
             menuHandler.updateMenuStates()
+        }
+        .onDisappear {
+            // Clean up notification observers
+            teardownMenuCommandObservers()
         }
     }
     
@@ -401,6 +408,31 @@ struct MainView: View {
             if !document.selectedTextIDs.isEmpty {
                 document.convertSelectedTextToOutlines()
             }
+        }
+        
+        // MARK: - Path Cleanup Commands (Professional Tools)
+        
+        // Clean up duplicate points in selected shapes
+        NotificationCenter.default.addObserver(forName: .cleanupDuplicatePoints, object: nil, queue: .main) { _ in
+            if !document.selectedShapeIDs.isEmpty {
+                ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+                print("🧹 MENU: Cleaned duplicate points in selected shapes")
+            } else {
+                ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+                print("🧹 MENU: Cleaned duplicate points in all shapes")
+            }
+        }
+        
+        // Clean up duplicate points in all shapes
+        NotificationCenter.default.addObserver(forName: .cleanupAllDuplicatePoints, object: nil, queue: .main) { _ in
+            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+            print("🧹 MENU: Cleaned duplicate points in all document shapes")
+        }
+        
+        // Test duplicate point merger (for verification)
+        NotificationCenter.default.addObserver(forName: .testDuplicatePointMerger, object: nil, queue: .main) { _ in
+            ProfessionalPathOperations.testDuplicatePointMerger()
+            print("🧪 MENU: Ran duplicate point merger test")
         }
         
         // Window Commands - Panel Switching

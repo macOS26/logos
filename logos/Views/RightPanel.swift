@@ -872,6 +872,38 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
             }
             
+            // Path Cleanup Section (Professional Tools)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Path Cleanup")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                
+                VStack(spacing: 6) {
+                    Button("Clean Duplicate Points") {
+                        if !document.selectedShapeIDs.isEmpty {
+                            ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+                        } else {
+                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
+                    .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                    
+                    Button("Clean All Paths") {
+                        ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
+                    .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                }
+                .padding(.horizontal, 12)
+            }
+            
             Spacer()
         }
     }

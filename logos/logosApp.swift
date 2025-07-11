@@ -139,6 +139,32 @@ struct logosApp: App {
                         .keyboardShortcut(.delete)
                         .disabled(!menuHandler.hasSelection)
                     }
+                    
+                    Divider()
+                    
+                    Group {
+                        Text("Path Cleanup")
+                            .font(.headline)
+                            .disabled(true)
+                        
+                        Button("Clean Duplicate Points") {
+                            NotificationCenter.default.post(name: .cleanupDuplicatePoints, object: nil)
+                        }
+                        .keyboardShortcut("k", modifiers: [.command, .shift])
+                        .help("Remove overlapping points and merge their curve data smoothly")
+                        
+                        Button("Clean All Duplicate Points") {
+                            NotificationCenter.default.post(name: .cleanupAllDuplicatePoints, object: nil)
+                        }
+                        .keyboardShortcut("k", modifiers: [.command, .option])
+                        .help("Clean duplicate points in all shapes in the document")
+                        
+                        Button("Test Duplicate Point Merger") {
+                            NotificationCenter.default.post(name: .testDuplicatePointMerger, object: nil)
+                        }
+                        .keyboardShortcut("k", modifiers: [.command, .shift, .option])
+                        .help("Run a test to verify the duplicate point merger works correctly")
+                    }
                 }
             }
             

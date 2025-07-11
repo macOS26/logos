@@ -45,6 +45,11 @@ extension NSNotification.Name {
     // MARK: - Text Commands
     static let createOutlines = NSNotification.Name("CreateOutlines")
     
+    // MARK: - Path Cleanup Commands (Professional Tools)
+    static let cleanupDuplicatePoints = NSNotification.Name("CleanupDuplicatePoints")
+    static let cleanupAllDuplicatePoints = NSNotification.Name("CleanupAllDuplicatePoints")
+    static let testDuplicatePointMerger = NSNotification.Name("TestDuplicatePointMerger")
+    
     // MARK: - Panel Commands
     static let showLayersPanel = NSNotification.Name("ShowLayersPanel")
     static let showColorPanel = NSNotification.Name("ShowColorPanel")
