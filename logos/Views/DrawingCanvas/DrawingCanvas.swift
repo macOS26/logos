@@ -1301,15 +1301,18 @@ struct DrawingCanvas: View {
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
         
-        // FIRST POINT CREATION: Handle initial bezier path creation with drag detection
-        if isCreatingFirstPoint, let firstPointLocation = pendingFirstPoint {
-            // Only proceed with handle creation if user has dragged significantly
+        // UNIFIED FIRST POINT CREATION: Handle both click and click-and-drag for first point
+        if !isBezierDrawing {
+            // Use the pending first point location if available (from tap gesture), otherwise use drag start location
+            let firstPointLocation = pendingFirstPoint ?? startLocation
+            
+            // Determine if this should be a corner point (small/no drag) or smooth point (significant drag)
             if dragDistance < minimumDragThreshold {
                 print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - will create corner point on drag end")
                 return
             }
             
-            // User dragged significantly - create SMOOTH first point with handles
+            // User dragged significantly - create SMOOTH first point with handles immediately
             print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point")
             
             // Create the bezier path and add the first point
@@ -1367,81 +1370,6 @@ struct DrawingCanvas: View {
             isDraggingBezierHandle = true
             
             print("✅ CREATED SMOOTH FIRST POINT with handles at \(firstPointLocation)")
-            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
-            return
-        }
-        
-        // IMMEDIATE FIRST POINT CREATION: Handle case where user starts dragging without prior tap
-        // This enables click-and-drag in one shot to create smooth first point
-        // NOTE: This also handles the case where SwiftUI fires both tap and drag gestures
-        if !isBezierDrawing {
-            // Only proceed with first point creation if user has dragged significantly
-            if dragDistance < minimumDragThreshold {
-                print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - ignoring small movement")
-                return
-            }
-            
-            // User dragged significantly - create SMOOTH first point with handles immediately
-            print("🎯 IMMEDIATE FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point immediately")
-            
-            // Use the pending first point location if available (from tap gesture), otherwise use drag start location
-            let firstPointLocation = pendingFirstPoint ?? startLocation
-            
-            // Create the bezier path and add the first point
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
-            bezierPoints = [VectorPoint(firstPointLocation)]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0 // First point is active (solid)
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: 1.0,
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: .clear, // Bezier paths start with no fill
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            
-            // Create smooth handles for the first point based on drag direction
-            let dragVector = CGPoint(
-                x: currentLocation.x - firstPointLocation.x,
-                y: currentLocation.y - firstPointLocation.y
-            )
-            
-            let control1 = VectorPoint(
-                firstPointLocation.x - dragVector.x * 0.5,
-                firstPointLocation.y - dragVector.y * 0.5
-            )
-            let control2 = VectorPoint(
-                firstPointLocation.x + dragVector.x * 0.5,
-                firstPointLocation.y + dragVector.y * 0.5
-            )
-            
-            bezierHandles[0] = BezierHandleInfo(
-                control1: control1,
-                control2: control2,
-                hasHandles: true
-            )
-            
-            // Clear any pending first point state
-            pendingFirstPoint = nil
-            isCreatingFirstPoint = false
-            isDraggingBezierHandle = true
-            
-            print("✅ CREATED IMMEDIATE SMOOTH FIRST POINT with handles at \(firstPointLocation)")
             print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
             return
         }
