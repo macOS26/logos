@@ -297,18 +297,31 @@ struct DrawingCanvas: View {
         if case .active(let location) = phase {
             currentMouseLocation = location
             
-            // PROFESSIONAL CLOSE PATH VISUAL FEEDBACK
-            if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count >= 3 {
+            // PROFESSIONAL REAL-TIME PATH UPDATES (Adobe Illustrator/FreeHand/CorelDraw Style)
+            if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
-                let firstPoint = bezierPoints[0]
-                let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                let closeTolerance: Double = 25.0
                 
-                if distance(canvasLocation, firstPointLocation) <= closeTolerance {
-                    showClosePathHint = true
-                    closePathHintLocation = firstPointLocation
+                // PROFESSIONAL CLOSE PATH VISUAL FEEDBACK
+                if bezierPoints.count >= 3 {
+                    let firstPoint = bezierPoints[0]
+                    let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+                    let closeTolerance: Double = 25.0
+                    
+                    if distance(canvasLocation, firstPointLocation) <= closeTolerance {
+                        showClosePathHint = true
+                        closePathHintLocation = firstPointLocation
+                        
+                        // Update path with live closing preview
+                        updateLivePathWithClosingPreview(mouseLocation: canvasLocation)
+                    } else {
+                        showClosePathHint = false
+                        
+                        // Update path with live rubber band preview
+                        updateLivePathWithRubberBand(mouseLocation: canvasLocation)
+                    }
                 } else {
-                    showClosePathHint = false
+                    // First point - just update rubber band
+                    updateLivePathWithRubberBand(mouseLocation: canvasLocation)
                 }
             } else {
                 showClosePathHint = false
@@ -316,7 +329,99 @@ struct DrawingCanvas: View {
         } else {
             currentMouseLocation = nil
             showClosePathHint = false
+            
+            // Restore path to its current state without preview
+            if isBezierDrawing {
+                updatePathWithHandles()
+                updateActiveBezierShapeInDocument()
+            }
         }
+    }
+    
+    /// Updates the live path with a rubber band preview to the mouse location
+    private func updateLivePathWithRubberBand(mouseLocation: CGPoint) {
+        guard let currentBezierPath = bezierPath else { return }
+        
+        var liveElements = currentBezierPath.elements
+        let lastPointIndex = bezierPoints.count - 1
+        let lastPoint = bezierPoints[lastPointIndex]
+        let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+        
+        // Check if the last point has an outgoing handle (control2)
+        if let lastPointHandles = bezierHandles[lastPointIndex],
+           let lastControl2 = lastPointHandles.control2 {
+            // CURVE RUBBER BAND: Add live curve preview
+            let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+            
+            // Create symmetric incoming handle for smooth curve
+            let incomingHandle = VectorPoint(
+                mouseLocation.x - (lastControl2Location.x - lastPointLocation.x) * 0.5,
+                mouseLocation.y - (lastControl2Location.y - lastPointLocation.y) * 0.5
+            )
+            
+            liveElements.append(.curve(
+                to: VectorPoint(mouseLocation),
+                control1: lastControl2,
+                control2: incomingHandle
+            ))
+        } else {
+            // STRAIGHT RUBBER BAND: Add live line preview
+            liveElements.append(.line(to: VectorPoint(mouseLocation)))
+        }
+        
+        // Update the live path
+        let livePath = VectorPath(elements: liveElements, isClosed: false)
+        updateActiveBezierShapeWithPath(livePath)
+    }
+    
+    /// Updates the live path with a closing preview
+    private func updateLivePathWithClosingPreview(mouseLocation: CGPoint) {
+        guard let currentBezierPath = bezierPath else { return }
+        
+        var liveElements = currentBezierPath.elements
+        let lastPointIndex = bezierPoints.count - 1
+        let firstPoint = bezierPoints[0]
+        
+        // Check for handles to create appropriate closing curve
+        let lastPointHandles = bezierHandles[lastPointIndex]
+        let firstPointHandles = bezierHandles[0]
+        
+        if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
+            // Both points have handles - smooth closing curve
+            liveElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstControl1))
+        } else if let lastControl2 = lastPointHandles?.control2 {
+            // Only last point has handle - asymmetric curve
+            liveElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstPoint))
+        } else {
+            // Straight line close
+            liveElements.append(.line(to: firstPoint))
+        }
+        
+        // Add close element for preview
+        liveElements.append(.close)
+        
+        // Update the live path
+        let livePath = VectorPath(elements: liveElements, isClosed: true)
+        updateActiveBezierShapeWithPath(livePath)
+    }
+    
+    /// Updates the active bezier shape with a specific path (used for live previews)
+    private func updateActiveBezierShapeWithPath(_ path: VectorPath) {
+        guard let activeBezierShape = activeBezierShape,
+              let layerIndex = document.selectedLayerIndex else { return }
+        
+        // Find the shape in the document and update it
+        for shapeIndex in document.layers[layerIndex].shapes.indices {
+            if document.layers[layerIndex].shapes[shapeIndex].id == activeBezierShape.id {
+                // Update the path with the live preview path
+                document.layers[layerIndex].shapes[shapeIndex].path = path
+                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                break
+            }
+        }
+        
+        // Force UI update for real-time visual feedback
+        document.objectWillChange.send()
     }
     
     @ViewBuilder
@@ -496,7 +601,8 @@ struct DrawingCanvas: View {
            let mouseLocation = currentMouseLocation,
            bezierPoints.count > 0 {
             let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
-            let lastPoint = bezierPoints[bezierPoints.count - 1]
+            let lastPointIndex = bezierPoints.count - 1
+            let lastPoint = bezierPoints[lastPointIndex]
             let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
             
             // PROFESSIONAL SCALE-INDEPENDENT RUBBER BAND (Adobe Illustrator Standards)
@@ -505,26 +611,104 @@ struct DrawingCanvas: View {
             
             // PROFESSIONAL CLOSING STROKE PREVIEW
             if showClosePathHint && bezierPoints.count >= 3 {
-                // Show the closing stroke back to first point (GREEN)
+                // Show the closing stroke back to first point (GREEN) with curve preview
                 let firstPoint = bezierPoints[0]
                 let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
                 
+                // Check if we have handles for closing curve preview
+                let lastPointHandles = bezierHandles[lastPointIndex]
+                let firstPointHandles = bezierHandles[0]
+                
                 Path { path in
                     path.move(to: lastPointLocation)
-                    path.addLine(to: firstPointLocation)
+                    
+                    // Create preview of closing curve
+                    if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
+                        // Both points have handles - show smooth closing curve preview
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
+                    } else if let lastControl2 = lastPointHandles?.control2 {
+                        // Only last point has handle - asymmetric curve preview
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                        path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
+                    } else {
+                        // Straight line close
+                        path.addLine(to: firstPointLocation)
+                    }
                 }
                 .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: strokeWidth, lineCap: .round))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             } else {
-                // PROFESSIONAL RUBBER BAND LINE (Adobe Illustrator style)
+                // PROFESSIONAL ADOBE ILLUSTRATOR RUBBER BAND WITH CURVE PREVIEW
                 Path { path in
                     path.move(to: lastPointLocation)
-                    path.addLine(to: canvasMouseLocation)
+                    
+                    // Check if the last point has an outgoing handle (control2)
+                    if let lastPointHandles = bezierHandles[lastPointIndex],
+                       let lastControl2 = lastPointHandles.control2 {
+                        // CURVE RUBBER BAND: Show live curve preview from last point's outgoing handle
+                        let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                        
+                        // Create a preview curve using the existing outgoing handle
+                        // The curve goes from lastPoint to mouseLocation, 
+                        // using the existing outgoing handle and a symmetric incoming handle
+                        let incomingHandle = CGPoint(
+                            x: canvasMouseLocation.x - (lastControl2Location.x - lastPointLocation.x) * 0.5,
+                            y: canvasMouseLocation.y - (lastControl2Location.y - lastPointLocation.y) * 0.5
+                        )
+                        
+                        path.addCurve(
+                            to: canvasMouseLocation,
+                            control1: lastControl2Location,
+                            control2: incomingHandle
+                        )
+                        
+                        // PROFESSIONAL HANDLE PREVIEW: Show what the handles would look like
+                        // Show outgoing handle from last point (already exists)
+                        // This is already rendered by bezierControlHandles()
+                        
+                        // Show preview of incoming handle at mouse location
+                        // This will be rendered as a separate overlay
+                        
+                    } else {
+                        // STRAIGHT RUBBER BAND: No handles on last point
+                        path.addLine(to: canvasMouseLocation)
+                    }
                 }
                 .stroke(Color.gray.opacity(0.7), style: SwiftUI.StrokeStyle(lineWidth: rubberBandWidth, lineCap: .round))
-                .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                
+                // PROFESSIONAL HANDLE PREVIEW: Show potential handle at mouse location
+                if let lastPointHandles = bezierHandles[lastPointIndex],
+                   let lastControl2 = lastPointHandles.control2 {
+                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                    
+                    // Calculate preview handle position (symmetric to outgoing handle)
+                    let incomingHandle = CGPoint(
+                        x: canvasMouseLocation.x - (lastControl2Location.x - lastPointLocation.x) * 0.5,
+                        y: canvasMouseLocation.y - (lastControl2Location.y - lastPointLocation.y) * 0.5
+                    )
+                    
+                    // Preview handle line
+                    Path { path in
+                        path.move(to: canvasMouseLocation)
+                        path.addLine(to: incomingHandle)
+                    }
+                    .stroke(Color.gray.opacity(0.5), lineWidth: rubberBandWidth)
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                    
+                    // Preview handle circle
+                    Circle()
+                        .fill(Color.gray.opacity(0.5))
+                        .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel)
+                        .position(incomingHandle)
+                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                }
             }
         }
     }
