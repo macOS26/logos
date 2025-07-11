@@ -1388,23 +1388,70 @@ struct DrawingCanvas: View {
                 y: currentLocation.y - activeLocation.y
             )
             
-            // FIXED: Correct handle assignment for intuitive UX  
-            // control1 = INCOMING handle (opposite to drag direction)
-            // control2 = OUTGOING handle (follows drag direction - this is what user sees)
-            let control1 = VectorPoint(
-                activeLocation.x - dragVector.x * 0.5,
-                activeLocation.y - dragVector.y * 0.5
-            )
-            let control2 = VectorPoint(
-                activeLocation.x + dragVector.x * 0.5,
-                activeLocation.y + dragVector.y * 0.5
-            )
+            // CRITICAL FIX: Match the rubber band preview calculation exactly!
+            // The rubber band preview shows the correct curve, so use the same calculation
+            // First get the outgoing handle from the previous point
+            let previousIndex = activeIndex - 1
+            let lastControl2 = previousIndex >= 0 ? bezierHandles[previousIndex]?.control2 : nil
             
-            bezierHandles[activeIndex] = BezierHandleInfo(
-                control1: control1,
-                control2: control2,
-                hasHandles: true
-            )
+            if let lastControl2 = lastControl2 {
+                // Calculate the EXACT same incoming handle as the rubber band preview
+                let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                let lastPointLocation = previousIndex >= 0 ? CGPoint(x: bezierPoints[previousIndex].x, y: bezierPoints[previousIndex].y) : activeLocation
+                
+                // Calculate distance for handle length (same as rubber band preview)
+                let distance = sqrt(pow(activeLocation.x - lastPointLocation.x, 2) + pow(activeLocation.y - lastPointLocation.y, 2))
+                let handleLength = distance * 0.3 // Same as rubber band preview
+                
+                // Direction from current point toward the natural curve flow (same as rubber band preview)
+                let outgoingDirection = CGPoint(
+                    x: lastControl2Location.x - lastPointLocation.x,
+                    y: lastControl2Location.y - lastPointLocation.y
+                )
+                let outgoingLength = sqrt(pow(outgoingDirection.x, 2) + pow(outgoingDirection.y, 2))
+                
+                let incomingHandle = if outgoingLength > 0 {
+                    CGPoint(
+                        x: activeLocation.x - (outgoingDirection.x / outgoingLength) * handleLength,
+                        y: activeLocation.y - (outgoingDirection.y / outgoingLength) * handleLength
+                    )
+                } else {
+                    // Fallback to drag direction if no previous handle
+                    CGPoint(
+                        x: activeLocation.x - dragVector.x * 0.3,
+                        y: activeLocation.y - dragVector.y * 0.3
+                    )
+                }
+                
+                // Store handles to match updatePathWithHandles() expectations
+                let control1 = VectorPoint(incomingHandle.x, incomingHandle.y) // INCOMING handle
+                let control2 = VectorPoint(
+                    activeLocation.x + dragVector.x * 0.5,  // OUTGOING handle
+                    activeLocation.y + dragVector.y * 0.5
+                )
+                
+                bezierHandles[activeIndex] = BezierHandleInfo(
+                    control1: control1,
+                    control2: control2,
+                    hasHandles: true
+                )
+            } else {
+                // No previous handle - use simple symmetric handles
+                let control1 = VectorPoint(
+                    activeLocation.x - dragVector.x * 0.5,  // INCOMING
+                    activeLocation.y - dragVector.y * 0.5
+                )
+                let control2 = VectorPoint(
+                    activeLocation.x + dragVector.x * 0.5,  // OUTGOING  
+                    activeLocation.y + dragVector.y * 0.5
+                )
+                
+                bezierHandles[activeIndex] = BezierHandleInfo(
+                    control1: control1,
+                    control2: control2,
+                    hasHandles: true
+                )
+                         }
             
             updatePathWithHandles()
             
