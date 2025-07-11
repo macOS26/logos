@@ -1245,11 +1245,12 @@ struct DrawingCanvas: View {
         }
         
         if !isBezierDrawing {
-            // SIMPLIFIED: Just mark that we tapped for first point - don't create anything yet
-            // Let the drag/drag-end handlers decide what to create based on actual user gesture
+            // FIXED: Don't set up pending first point - let drag handler create first point directly
+            // This allows click-and-drag in one shot to create smooth first point
+            // If this tap is NOT followed by a drag, finishBezierPenDrag will handle corner point creation
             pendingFirstPoint = location
             isCreatingFirstPoint = true
-            print("🎯 PENDING FIRST POINT: Tap detected at \(location) - waiting to see if user drags or lifts")
+            print("🎯 PENDING FIRST POINT: Set up at \(location) - ready for immediate drag or corner point creation")
             return
         } else {
             // PURE CLICK: Add corner point (no handles)
@@ -1300,18 +1301,19 @@ struct DrawingCanvas: View {
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
         
-        // FIRST POINT CREATION: Only create smooth point if user drags significantly
-        if !isBezierDrawing && isCreatingFirstPoint && pendingFirstPoint != nil {
-            let firstPointLocation = pendingFirstPoint!
+        // UNIFIED FIRST POINT CREATION: Handle both click and click-and-drag for first point
+        if !isBezierDrawing {
+            // Use the pending first point location if available (from tap gesture), otherwise use drag start location
+            let firstPointLocation = pendingFirstPoint ?? startLocation
             
-            // Check if user has dragged significantly from the tap location
+            // Determine if this should be a corner point (small/no drag) or smooth point (significant drag)
             if dragDistance < minimumDragThreshold {
                 print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - will create corner point on drag end")
                 return
             }
             
-            // User dragged significantly - create SMOOTH first point with handles
-            print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point with handles")
+            // User dragged significantly - create SMOOTH first point with handles immediately
+            print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point")
             
             // Create the bezier path and add the first point
             bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
@@ -1362,7 +1364,7 @@ struct DrawingCanvas: View {
                 hasHandles: true
             )
             
-            // Clear first point creation state - important to prevent duplicate creation
+            // Clear first point creation state
             pendingFirstPoint = nil
             isCreatingFirstPoint = false
             isDraggingBezierHandle = true
