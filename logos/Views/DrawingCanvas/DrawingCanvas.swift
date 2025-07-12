@@ -166,17 +166,11 @@ struct DrawingCanvas: View {
                 handleToolChange(oldTool: oldTool, newTool: newTool)
             }
             .onTapGesture { location in
-                // COORDINATE FIX: Ensure tap gestures work for all coordinate ranges
-                print("🎯 TAP GESTURE FIRED at screen: \(location)")
+                // UNIFIED COORDINATE SYSTEM: Handle ALL clicks (canvas + pasteboard) with SwiftUI
+                // This gives perfect accuracy everywhere using the same coordinate system
+                print("🎯 UNIFIED TAP GESTURE at screen: \(location)")
                 handleTap(at: location, geometry: geometry)
             }
-            .background(
-                // MOUSE EVENT FIX: Add native mouse handling for pasteboard areas
-                MouseEventView { event in
-                    handleMouseEvent(event, geometry: geometry)
-                }
-                .allowsHitTesting(true)
-            )
             .onHover { isHovering in
                 // Enable mouse tracking for rubber band preview
             }
@@ -916,6 +910,52 @@ struct DrawingCanvas: View {
     }
     
     private func handleDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
+        // PASTEBOARD TAP SIMULATION: Convert zero-distance drags to taps for tools that need it
+        // This fixes the issue where .onTapGesture doesn't work for pasteboard coordinates
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        let tapThreshold: Double = 3.0 // Very small movement counts as a tap
+        
+        if dragDistance <= tapThreshold {
+            // This was essentially a tap (zero or minimal drag distance)
+            let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
+            let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612)
+            let isInPasteboardArea = !canvasBounds.contains(canvasLocation)
+            
+            if isInPasteboardArea {
+                // PASTEBOARD TAP: Convert zero-distance drag to tap
+                print("🎯 PASTEBOARD TAP SIMULATION: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) converted to tap")
+                print("🎯 PASTEBOARD CLICK at canvas: \(canvasLocation)")
+                
+                // Call the appropriate tap handler based on current tool
+                switch document.currentTool {
+                case .selection:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleSelectionTap(at: canvasLocation)
+                case .directSelection:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleDirectSelectionTap(at: canvasLocation)
+                case .convertAnchorPoint:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleConvertAnchorPointTap(at: canvasLocation)
+                case .bezierPen:
+                    // ✅ PASTEBOARD PEN TOOL FIX: Handle pen tool taps on pasteboard
+                    handleBezierPenTap(at: canvasLocation)
+                    // CRITICAL: Also call finishBezierPenDrag to actually create the point
+                    // On canvas, the drag system handles this, but for pasteboard we need to do it manually
+                    finishBezierPenDrag()
+                case .text:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleTextTap(at: canvasLocation)
+                default:
+                    break
+                }
+                
+                // Early return - don't process as regular drag end
+                return
+            }
+        }
+        
+        // Regular drag end processing for actual drags (not taps)
         switch document.currentTool {
         case .hand:
             // PROFESSIONAL HAND TOOL: Clean state reset for next drag operation
@@ -4633,42 +4673,8 @@ struct DrawingCanvas: View {
         print("   4. If values change, we found the coordinate system bug!")
     }
     
-    // MARK: - Native Mouse Event Handling
+            // MARK: - Canvas Utilities
     
-    private func handleMouseEvent(_ event: NSEvent, geometry: GeometryProxy) {
-        switch event.type {
-        case .leftMouseDown:
-            handleNativeMouseDown(event, geometry: geometry)
-        default:
-            break
-        }
-    }
-    
-    private func handleNativeMouseDown(_ event: NSEvent, geometry: GeometryProxy) {
-        // Get mouse location in view coordinates
-        guard let window = NSApp.keyWindow else { return }
-        
-        let locationInWindow = event.locationInWindow
-        let locationInView = window.contentView?.convert(locationInWindow, from: nil) ?? locationInWindow
-        
-        // Convert to our coordinate system (flip Y axis for AppKit->SwiftUI conversion)
-        let screenLocation = CGPoint(x: locationInView.x, y: geometry.size.height - locationInView.y)
-        let canvasLocation = screenToCanvas(screenLocation, geometry: geometry)
-        
-        // Check if this is in pasteboard area (outside canvas bounds)
-        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612)
-        let isInPasteboardArea = !canvasBounds.contains(canvasLocation)
-        
-        if isInPasteboardArea {
-            print("🖱️ NATIVE MOUSE DOWN in PASTEBOARD AREA at: \(canvasLocation)")
-            print("🖱️ This bypasses SwiftUI gesture limitations for negative/large coordinates!")
-            
-            // Handle the pasteboard click directly
-            if document.currentTool == .selection {
-                handleSelectionTap(at: canvasLocation)
-            }
-        }
-    }
 
     private func fitToPage(geometry: GeometryProxy) {
         // Use standard document bounds for fit-to-page calculations
@@ -4989,40 +4995,7 @@ extension DrawingCanvas {
     }
 }
 
-// MARK: - Native Mouse Event View
 
-struct MouseEventView: NSViewRepresentable {
-    let onMouseEvent: (NSEvent) -> Void
-    
-    func makeNSView(context: Context) -> NSView {
-        let view = MouseTrackingView()
-        view.onMouseEvent = onMouseEvent
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSView, context: Context) {
-        if let trackingView = nsView as? MouseTrackingView {
-            trackingView.onMouseEvent = onMouseEvent
-        }
-    }
-}
-
-class MouseTrackingView: NSView {
-    var onMouseEvent: ((NSEvent) -> Void)?
-    
-    override func mouseDown(with event: NSEvent) {
-        onMouseEvent?(event)
-        super.mouseDown(with: event)
-    }
-    
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        return true
-    }
-    
-    override var acceptsFirstResponder: Bool {
-        return true
-    }
-}
 
 struct ProfessionalDirectSelectionView: View {
     let document: VectorDocument
