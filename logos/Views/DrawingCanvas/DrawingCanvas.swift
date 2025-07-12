@@ -2036,7 +2036,13 @@ struct DrawingCanvas: View {
     
     /// Updates the opposite handle of the SAME anchor point to maintain smooth curves
     /// PROFESSIONAL BEHAVIOR: Smooth points work like a teeter-totter - both handles move together in a straight line
+    /// ENHANCED: Also handles coincident points (first/last in closed paths) as smooth points
     private func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
+        
+        // FIRST: Check for coincident points (exact same X,Y coordinates)
+        if handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
+            return // Handled by coincident point logic
+        }
         
         if draggedHandleID.handleType == .control2 {
             // Dragging INCOMING handle (control2) of current curve element
@@ -2124,8 +2130,112 @@ struct DrawingCanvas: View {
         return linkedHandle
     }
     
-
+    /// Handles smooth curve behavior for coincident points (first/last in closed paths)
+    /// Uses EXACT coordinate matching (no tolerance) and applies smooth point logic
+    private func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {
+        guard elements.count >= 2 else { return false }
+        
+        // Get first and last point positions (exact coordinates)
+        let firstPoint: CGPoint?
+        let lastPoint: CGPoint?
+        
+        if case .move(let firstTo) = elements[0] {
+            firstPoint = CGPoint(x: firstTo.x, y: firstTo.y)
+        } else {
+            firstPoint = nil
+        }
+        
+        // Find last point (before any close element)
+        var lastElementIndex = elements.count - 1
+        if lastElementIndex >= 0 {
+            if case .close = elements[lastElementIndex] {
+                lastElementIndex -= 1 // Skip close element
+            }
+        }
+        
+        if lastElementIndex >= 0 {
+            switch elements[lastElementIndex] {
+            case .curve(let lastTo, _, _), .line(let lastTo), .quadCurve(let lastTo, _):
+                lastPoint = CGPoint(x: lastTo.x, y: lastTo.y)
+            default:
+                lastPoint = nil
+            }
+        } else {
+            lastPoint = nil
+        }
+        
+        // Check if first and last points are EXACTLY coincident (no tolerance)
+        guard let first = firstPoint, let last = lastPoint,
+              abs(first.x - last.x) < 0.001 && abs(first.y - last.y) < 0.001 else {
+            return false // Not coincident points
+        }
+        
+        let anchorPoint = first // Use first point as anchor (they're the same)
+        
+        // Handle coincident smooth point behavior based on which handle is being dragged
+        if draggedHandleID.handleType == .control1 && draggedHandleID.elementIndex == 1 {
+            // Dragging OUTGOING handle from first point (control1 of second element)
+            // Update INCOMING handle of last point (control2 of last element)
+            
+            if case .curve(let lastTo, let lastControl1, _) = elements[lastElementIndex] {
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newDraggedPosition,
+                    originalOppositeHandle: CGPoint(x: lastControl1.x, y: lastControl1.y) // Keep original length
+                )
+                
+                // Update both handles
+                elements[draggedHandleID.elementIndex] = updateElementControl1(elements[draggedHandleID.elementIndex], newControl1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
+                elements[lastElementIndex] = .curve(to: lastTo, control1: lastControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
+                
+                print("🔗 COINCIDENT SMOOTH: Updated first→last handles")
+                return true
+            }
+            
+        } else if draggedHandleID.handleType == .control2 && draggedHandleID.elementIndex == lastElementIndex {
+            // Dragging INCOMING handle to last point (control2 of last element)
+            // Update OUTGOING handle from first point (control1 of second element)
+            
+            if elements.count > 1, case .curve(let secondTo, _, let secondControl2) = elements[1] {
+                let oppositeHandle = calculateLinkedHandle(
+                    anchorPoint: anchorPoint,
+                    draggedHandle: newDraggedPosition,
+                    originalOppositeHandle: CGPoint(x: secondControl2.x, y: secondControl2.y) // Keep original length
+                )
+                
+                // Update both handles
+                elements[draggedHandleID.elementIndex] = updateElementControl2(elements[draggedHandleID.elementIndex], newControl2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
+                elements[1] = .curve(to: secondTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: secondControl2)
+                
+                print("🔗 COINCIDENT SMOOTH: Updated last→first handles")
+                return true
+            }
+        }
+        
+        return false // Not a coincident smooth point case
+    }
     
+    /// Helper to update control1 of a path element
+    private func updateElementControl1(_ element: PathElement, newControl1: VectorPoint) -> PathElement {
+        switch element {
+        case .curve(let to, _, let control2):
+            return .curve(to: to, control1: newControl1, control2: control2)
+        case .quadCurve(let to, _):
+            return .quadCurve(to: to, control: newControl1)
+        default:
+            return element
+        }
+    }
+    
+    /// Helper to update control2 of a path element
+    private func updateElementControl2(_ element: PathElement, newControl2: VectorPoint) -> PathElement {
+        switch element {
+        case .curve(let to, let control1, _):
+            return .curve(to: to, control1: control1, control2: newControl2)
+        default:
+            return element
+        }
+    }
 
     
     private func isDraggingSelectedObject(at location: CGPoint) -> Bool {
