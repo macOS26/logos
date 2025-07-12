@@ -81,6 +81,11 @@ struct DrawingCanvas: View {
     @State private var originalPointPositions: [PointID: VectorPoint] = [:]
     @State private var originalHandlePositions: [HandleID: VectorPoint] = [:]
     
+    // PROFESSIONAL COINCIDENT POINT MANAGEMENT
+    // This handles the case where multiple points exist at the same X,Y coordinates
+    // Essential for maintaining continuity in closed paths (circles, etc.)
+    @State private var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
+    
     // Point and handle identification
     struct PointID: Hashable {
         let shapeID: UUID
@@ -129,6 +134,12 @@ struct DrawingCanvas: View {
                 deleteSelectedPoints()
             }
             .keyboardShortcut(.delete)
+            
+            Divider()
+            
+            Button("Analyze Coincident Points") {
+                analyzeCoincidentPoints()
+            }
         }
     }
     
@@ -831,9 +842,9 @@ struct DrawingCanvas: View {
         // PASTEBOARD OPTIMIZATION: Use 0-pixel threshold for pasteboard to maximize single-click sensitivity
         let effectiveThreshold = startedInCanvasArea ? 40.0 : 0.0
         
-        print("🎯 DRAG GESTURE CHANGED at start: \(canvasStart) current: \(canvasCurrent) in \(areaType)")
-        print("🎯 DRAG GESTURE: This is CLICK AND DRAG, not a single click")
-        print("🎯 Drag distance: \(String(format: "%.2f", dragDistance)) pixels (threshold: \(effectiveThreshold))")
+        //print("🎯 DRAG GESTURE CHANGED at start: \(canvasStart) current: \(canvasCurrent) in \(areaType)")
+        //print("🎯 DRAG GESTURE: This is CLICK AND DRAG, not a single click")
+        //print("🎯 Drag distance: \(String(format: "%.2f", dragDistance)) pixels (threshold: \(effectiveThreshold))")
         
         // PASTEBOARD OPTIMIZATION: Handle small movements as selections, not drags
         if !startedInCanvasArea && document.currentTool == .selection {
@@ -3159,16 +3170,17 @@ struct DrawingCanvas: View {
                             )
                             
                             if isShiftPressed && selectedPoints.contains(pointID) {
-                                // Shift+Click on selected point: deselect it
+                                // Shift+Click on selected point: deselect it and all coincident points
+                                let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
                                 selectedPoints.remove(pointID)
-                                print("🎯 Deselected anchor point")
-                            } else {
-                                if !isShiftPressed {
-                                    selectedPoints.removeAll()
-                                    selectedHandles.removeAll()
+                                for coincidentPoint in coincidentPoints {
+                                    selectedPoints.remove(coincidentPoint)
                                 }
-                                selectedPoints.insert(pointID)
-                                print("🎯 Selected anchor point")
+                                print("🎯 Deselected anchor point and \(coincidentPoints.count) coincident points")
+                            } else {
+                                // Select point with all coincident points for unified movement
+                                selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
+                                print("🎯 Selected anchor point with coincident points")
                             }
                             return true
                         }
@@ -3400,12 +3412,17 @@ struct DrawingCanvas: View {
                         )
                         
                         if isShiftPressed && selectedPoints.contains(pointID) {
-                            // Shift+Click on selected point: deselect it
+                            // Shift+Click on selected point: deselect it and all coincident points
+                            let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
                             selectedPoints.remove(pointID)
-                            print("Deselected point")
+                            for coincidentPoint in coincidentPoints {
+                                selectedPoints.remove(coincidentPoint)
+                            }
+                            print("Deselected point and \(coincidentPoints.count) coincident points")
                         } else {
-                            selectedPoints.insert(pointID)
-                            print("Selected point")
+                            // Select point with all coincident points for unified movement
+                            selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
+                            print("Selected point with coincident points")
                         }
                         foundPoint = true
                         break
@@ -4586,6 +4603,280 @@ struct DrawingCanvas: View {
         print("   Standard coordinate system approach")
     }
 
+    // MARK: - PROFESSIONAL COINCIDENT POINT HANDLING
+    
+    /// Finds all points that are coincident (at the same coordinates) with the given point
+    /// This is essential for closed paths where moveTo and close points must stay together
+    private func findCoincidentPoints(to targetPointID: PointID, tolerance: Double = 1.0) -> Set<PointID> {
+        guard let targetPosition = getPointPosition(targetPointID) else { return [] }
+        
+        var coincidentPoints: Set<PointID> = []
+        let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
+        
+        // Search through all layers and shapes for points at the same location
+        for layerIndex in document.layers.indices {
+            let layer = document.layers[layerIndex]
+            if !layer.isVisible { continue }
+            
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                // Check each path element for coincident points
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    let pointID = PointID(
+                        shapeID: shape.id,
+                        pathIndex: 0,
+                        elementIndex: elementIndex
+                    )
+                    
+                    // Skip the original point itself
+                    if pointID == targetPointID { continue }
+                    
+                    // Extract point location from element
+                    let elementPoint: CGPoint?
+                    switch element {
+                    case .move(let to), .line(let to):
+                        elementPoint = CGPoint(x: to.x, y: to.y)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        elementPoint = CGPoint(x: to.x, y: to.y)
+                    case .close:
+                        elementPoint = nil
+                    }
+                    
+                    // Check if this point is coincident with the target
+                    if let checkPoint = elementPoint {
+                        let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
+                        if distance <= tolerance {
+                            coincidentPoints.insert(pointID)
+                            print("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target")
+                            print("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)")
+                        }
+                    }
+                }
+            }
+        }
+        
+        return coincidentPoints
+    }
+    
+    /// Enhanced point selection that automatically includes coincident points
+    /// This ensures points at the same coordinates move together to maintain continuity
+    private func selectPointWithCoincidents(_ pointID: PointID, addToSelection: Bool = false) {
+        // Clear selection if not adding to it
+        if !addToSelection {
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+        }
+        
+        // Add the primary point
+        selectedPoints.insert(pointID)
+        
+        // Find and add all coincident points
+        let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+        for coincidentPoint in coincidentPoints {
+            selectedPoints.insert(coincidentPoint)
+        }
+        
+        if !coincidentPoints.isEmpty {
+            print("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points")
+            print("   Primary point: \(pointID)")
+            print("   Coincident points: \(coincidentPoints)")
+        }
+    }
+    
+    /// Checks if a point is part of a closed path and finds its corresponding endpoint
+    /// For closed paths, the moveTo start point and the point before close should be coincident
+    private func findClosedPathEndpoints(for pointID: PointID) -> Set<PointID> {
+        var endpointPairs: Set<PointID> = []
+        
+        // Find the shape containing this point
+        for layerIndex in document.layers.indices {
+            let layer = document.layers[layerIndex]
+            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+                
+                // Check if this is a closed path
+                let hasCloseElement = shape.path.elements.contains { element in
+                    if case .close = element { return true }
+                    return false
+                }
+                
+                if hasCloseElement || shape.path.isClosed {
+                    // Find the moveTo and the last point before close
+                    var moveToIndex: Int?
+                    var lastPointIndex: Int?
+                    
+                    for (index, element) in shape.path.elements.enumerated() {
+                        switch element {
+                        case .move(_):
+                            if moveToIndex == nil { // First moveTo
+                                moveToIndex = index
+                            }
+                        case .line(_), .curve(_, _, _), .quadCurve(_, _):
+                            lastPointIndex = index
+                        case .close:
+                            break
+                        }
+                    }
+                    
+                    // If this point is either the moveTo or the last point, include both
+                    if let moveIndex = moveToIndex, let lastIndex = lastPointIndex {
+                        if pointID.elementIndex == moveIndex {
+                            endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: lastIndex))
+                        } else if pointID.elementIndex == lastIndex {
+                            endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: moveIndex))
+                        }
+                    }
+                }
+                break
+            }
+        }
+        
+        return endpointPairs
+    }
+    
+    /// Analyzes and reports all coincident points in the current document
+    /// Useful for debugging and understanding path structure
+    private func analyzeCoincidentPoints() {
+        print("🔍 COINCIDENT POINT ANALYSIS:")
+        print("Using tolerance: \(coincidentPointTolerance) pixels")
+        
+        var totalCoincidentGroups = 0
+        var processedPoints: Set<PointID> = []
+        
+        // Scan all points in the document
+        for layerIndex in document.layers.indices {
+            let layer = document.layers[layerIndex]
+            if !layer.isVisible { continue }
+            
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                print("\n📋 Analyzing shape: \(shape.name)")
+                
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    let pointID = PointID(
+                        shapeID: shape.id,
+                        pathIndex: 0,
+                        elementIndex: elementIndex
+                    )
+                    
+                    // Skip if we already processed this point as part of a coincident group
+                    if processedPoints.contains(pointID) { continue }
+                    
+                    // Skip close elements
+                    switch element {
+                    case .move(_), .line(_), .curve(_, _, _), .quadCurve(_, _):
+                        break // Continue processing this element
+                    case .close:
+                        continue // Skip close elements
+                    }
+                    
+                    // Find coincident points for this point
+                    let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+                    
+                    if !coincidentPoints.isEmpty {
+                        totalCoincidentGroups += 1
+                        if let position = getPointPosition(pointID) {
+                            print("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):")
+                            print("      Primary: Element \(elementIndex)")
+                            for coincidentPoint in coincidentPoints {
+                                print("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)")
+                            }
+                            
+                            // Mark all points in this group as processed
+                            processedPoints.insert(pointID)
+                            for coincidentPoint in coincidentPoints {
+                                processedPoints.insert(coincidentPoint)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        if totalCoincidentGroups == 0 {
+            print("✅ No coincident points found in document")
+        } else {
+            print("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups")
+            print("💡 TIP: These points will move together when selected to maintain path continuity")
+        }
+    }
+
+}
+
+// MARK: - Utility Functions for Coincident Point Detection
+
+extension DrawingCanvas {
+    /// Static utility to find coincident points for use in views
+    static func findCoincidentPointsStatic(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
+        guard let targetPosition = getPointPositionStatic(targetPointID, in: document) else { return [] }
+        
+        var coincidentPoints: Set<PointID> = []
+        let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
+        
+        // Search through all layers and shapes for points at the same location
+        for layerIndex in document.layers.indices {
+            let layer = document.layers[layerIndex]
+            if !layer.isVisible { continue }
+            
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                // Check each path element for coincident points
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    let pointID = PointID(
+                        shapeID: shape.id,
+                        pathIndex: 0,
+                        elementIndex: elementIndex
+                    )
+                    
+                    // Skip the original point itself
+                    if pointID == targetPointID { continue }
+                    
+                    // Extract point location from element
+                    let elementPoint: CGPoint?
+                    switch element {
+                    case .move(let to), .line(let to):
+                        elementPoint = CGPoint(x: to.x, y: to.y)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        elementPoint = CGPoint(x: to.x, y: to.y)
+                    case .close:
+                        elementPoint = nil
+                    }
+                    
+                    // Check if this point is coincident with the target
+                    if let checkPoint = elementPoint {
+                        let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
+                        if distance <= tolerance {
+                            coincidentPoints.insert(pointID)
+                        }
+                    }
+                }
+            }
+        }
+        
+        return coincidentPoints
+    }
+    
+    /// Static utility to get point position for use in views
+    static func getPointPositionStatic(_ pointID: PointID, in document: VectorDocument) -> VectorPoint? {
+        for layer in document.layers {
+            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+                guard pointID.elementIndex < shape.path.elements.count else { return nil }
+                let element = shape.path.elements[pointID.elementIndex]
+                
+                switch element {
+                case .move(let to), .line(let to):
+                    return to
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    return to
+                case .close:
+                    return nil
+                }
+            }
+        }
+        return nil
+    }
 }
 
 // MARK: - Native Mouse Event View
@@ -4796,9 +5087,12 @@ struct ProfessionalDirectSelectionView: View {
                         )
                         let isPointSelected = selectedPoints.contains(pointID)
                         
+                        // Check if this point has coincident points for visual indication
+                        let hasCoincidentPoints = !DrawingCanvas.findCoincidentPointsStatic(to: pointID, in: document, tolerance: 1.0).isEmpty
+                        
                         Rectangle()
                             .fill(isPointSelected ? Color.blue : Color.white)
-                            .stroke(Color.blue, lineWidth: 1.0)
+                            .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
                             .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
                             .position(pointLocation)
                             .scaleEffect(document.zoomLevel, anchor: .topLeading)

@@ -515,9 +515,9 @@ struct ObjectRow: View {
         }
         .onChange(of: isDragging) { oldValue, newValue in
             // Visual feedback during drag
-            if newValue {
-                print("🎯 Dragging \(objectType.rawValue): \(name)")
-            }
+            //if newValue {
+                //print("🎯 Dragging \(objectType.rawValue): \(name)")
+            //}
         }
         .contextMenu {
             // Context menu for object operations
