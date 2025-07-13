@@ -468,8 +468,6 @@ struct DrawingCanvas: View {
                 let point = bezierPoints[index]
                 let pointLocation = CGPoint(x: point.x, y: point.y)
                 let isActive = activeBezierPointIndex == index
-                let isFirstPoint = index == 0
-                let isCloseHovering = showClosePathHint && isFirstPoint
                 
                 // PROFESSIONAL SCALE-INDEPENDENT SIZING (Adobe Illustrator Standards)
                 let anchorSize = 6.0 / document.zoomLevel  // Scale-independent anchor point size
@@ -589,6 +587,13 @@ struct DrawingCanvas: View {
             let strokeWidth = 2.0 / document.zoomLevel    // Scale-independent close preview
             let rubberBandWidth = 1.0 / document.zoomLevel  // Scale-independent rubber band
             
+            // NOTE: Real-time fill now shown on actual shape - no need for rubber band fill preview
+            
+            // PROFESSIONAL FILL PREVIEW - Show what the closed shape will look like
+            if showClosePathHint && bezierPoints.count >= 3 {
+                fillClosePreview(geometry: geometry)
+            }
+            
             // PROFESSIONAL CLOSING STROKE PREVIEW
             if showClosePathHint && bezierPoints.count >= 3 {
                 // Show the closing stroke back to first point (GREEN) with curve preview
@@ -663,6 +668,102 @@ struct DrawingCanvas: View {
                 // NOTE: Professional pen tools (Illustrator, FreeHand, CorelDraw) do NOT show handles at cursor
                 // They only show the curve preview. Handles are only visible on actual anchor points.
             }
+        }
+    }
+    
+    @ViewBuilder
+    internal func rubberBandFillPreview(geometry: GeometryProxy) -> some View {
+        // Show fill preview during normal drawing - BETTER THAN ADOBE!
+        if let mouseLocation = currentMouseLocation,
+           let currentBezierPath = bezierPath,
+           bezierPoints.count >= 2 {
+            
+            let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
+            let lastPointIndex = bezierPoints.count - 1
+            let lastPoint = bezierPoints[lastPointIndex]
+            let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+            let firstPoint = bezierPoints[0]
+            let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+            
+            // Create preview path (existing path + rubber band to cursor + back to first point)
+            Path { path in
+                // Start with the existing path elements (converted to SwiftUI Path)
+                addPathElements(currentBezierPath.elements, to: &path)
+                
+                // Add rubber band segment to cursor
+                if let lastPointHandles = bezierHandles[lastPointIndex],
+                   let lastControl2 = lastPointHandles.control2 {
+                    // Curve rubber band
+                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                    path.addCurve(
+                        to: canvasMouseLocation,
+                        control1: lastControl2Location,
+                        control2: canvasMouseLocation
+                    )
+                } else {
+                    // Straight rubber band
+                    path.addLine(to: canvasMouseLocation)
+                }
+                
+                // Add line back to first point to complete the preview shape
+                path.addLine(to: firstPointLocation)
+                
+                // Close the path for fill preview
+                path.closeSubpath()
+            }
+            .fill(document.defaultFillColor.color.opacity(0.15)) // Very subtle fill preview (lighter than close preview)
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+    }
+    
+    @ViewBuilder
+    internal func fillClosePreview(geometry: GeometryProxy) -> some View {
+        // Show fill preview when close to closing path - this shows what the final filled shape will look like
+        if showClosePathHint && bezierPoints.count >= 3,
+           let currentBezierPath = bezierPath {
+            
+            let lastPointIndex = bezierPoints.count - 1
+            let firstPoint = bezierPoints[0]
+            let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
+            
+            // Get handle information for proper closing curve
+            let lastPointHandles = bezierHandles[lastPointIndex]
+            let firstPointHandles = bezierHandles[0]
+            
+            // Create complete preview path (existing path + closing segment)
+            Path { path in
+                // Start with the existing path elements (converted to SwiftUI Path)
+                addPathElements(currentBezierPath.elements, to: &path)
+                
+                // Add the closing segment with proper curve handling
+                let lastPoint = bezierPoints[lastPointIndex]
+                let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+                
+                if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
+                    // Both points have handles - create smooth closing curve
+                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                    path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstControl1Location)
+                } else if let lastControl2 = lastPointHandles?.control2 {
+                    // Only last point has handle - asymmetric curve
+                    let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
+                    path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
+                } else if let firstControl1 = firstPointHandles?.control1 {
+                    // Only first point has handle - asymmetric curve
+                    let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                    path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
+                } else {
+                    // Straight line close
+                    path.addLine(to: firstPointLocation)
+                }
+                
+                // Close the path for fill preview
+                path.closeSubpath()
+            }
+            .fill(document.defaultFillColor.color.opacity(0.3)) // Semi-transparent fill preview
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
     }
     
@@ -1284,7 +1385,7 @@ struct DrawingCanvas: View {
                 opacity: document.defaultStrokeOpacity
             )
             let fillStyle = FillStyle(
-                color: .clear, // Bezier paths start with no fill
+                color: document.defaultFillColor, // Use toolbar default fill color (Adobe Illustrator behavior)
                 opacity: document.defaultFillOpacity
             )
             
@@ -1469,8 +1570,11 @@ struct DrawingCanvas: View {
                     opacity: document.defaultStrokeOpacity
                 )
                 
-                // Also update fill if user has changed it (but keep .clear for open paths during drawing)
-                // Fill will be applied when path is finished
+                // REAL-TIME FILL WITH OPACITY: Show entire fill while drawing! (BETTER THAN ADOBE!)
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                    color: document.defaultFillColor,
+                    opacity: 0.4 // Semi-transparent fill during drawing
+                )
                 
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 break
@@ -2074,9 +2178,10 @@ struct DrawingCanvas: View {
                         width: 1.0,
                         opacity: document.defaultStrokeOpacity
                     )
+                    // FINAL FILL: Make fully opaque when path is finished
                     document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
                         color: document.defaultFillColor,
-                        opacity: document.defaultFillOpacity
+                        opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
                     )
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     break
@@ -2129,7 +2234,7 @@ struct DrawingCanvas: View {
                 opacity: document.defaultStrokeOpacity
             )
             let fillStyle = FillStyle(
-                color: .clear, // Bezier paths start with no fill
+                color: document.defaultFillColor, // Use toolbar default fill color (Adobe Illustrator behavior)
                 opacity: document.defaultFillOpacity
             )
             
@@ -2880,16 +2985,17 @@ struct DrawingCanvas: View {
         // Create final closed path preserving all curve data
         let closedPath = VectorPath(elements: finalElements, isClosed: true)
         
-        // PROFESSIONAL REAL-TIME CLOSED PATH: Update the existing shape with closed path and default fill
+                        // PROFESSIONAL REAL-TIME CLOSED PATH: Update the existing shape with closed path and default fill
         // Closed paths get both stroke AND fill using document defaults
         if let layerIndex = document.selectedLayerIndex {
             for shapeIndex in document.layers[layerIndex].shapes.indices {
                 if document.layers[layerIndex].shapes[shapeIndex].id == activeShape.id {
                     // Update the existing shape to be closed with fill
                     document.layers[layerIndex].shapes[shapeIndex].path = closedPath
+                    // FINAL FILL: Make fully opaque when path is closed
                     document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
                         color: document.defaultFillColor,
-                        opacity: document.defaultFillOpacity
+                        opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
                     )
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     break
