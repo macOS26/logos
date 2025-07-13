@@ -348,6 +348,6 @@ struct DraggableVectorObject: Codable, Transferable {
 
 extension UTType {
     static var draggableVectorObject: UTType {
-        UTType(exportedAs: "com.toddbruss.logos.draggableVectorObject")
+        UTType(exportedAs: "com.toddbruss.logos-inkpen-io.draggableVectorObject")
     }
 }

@@ -248,11 +248,8 @@ struct ColorSwatchGrid: View {
     }
     
     private func applyFillColorToSelected(_ color: VectorColor) {
-        var hasSelectedObjects = false
-        
         // Apply to selected shapes
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            hasSelectedObjects = true
             document.saveToUndoStack()
             
             for shapeID in document.selectedShapeIDs {
@@ -268,7 +265,6 @@ struct ColorSwatchGrid: View {
         
         // FIXED: Also apply to selected text objects
         if !document.selectedTextIDs.isEmpty {
-            hasSelectedObjects = true
             if !document.selectedShapeIDs.isEmpty {
                 // Don't save to undo stack twice
             } else {
@@ -287,11 +283,8 @@ struct ColorSwatchGrid: View {
     }
     
     private func applyStrokeColorToSelected(_ color: VectorColor) {
-        var hasSelectedObjects = false
-        
         // Apply to selected shapes
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            hasSelectedObjects = true
             document.saveToUndoStack()
             
             for shapeID in document.selectedShapeIDs {
@@ -307,7 +300,6 @@ struct ColorSwatchGrid: View {
         
         // FIXED: Also apply to selected text objects
         if !document.selectedTextIDs.isEmpty {
-            hasSelectedObjects = true
             if !document.selectedShapeIDs.isEmpty {
                 // Don't save to undo stack twice
             } else {
