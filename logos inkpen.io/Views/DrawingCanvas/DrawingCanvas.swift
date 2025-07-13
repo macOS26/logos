@@ -587,7 +587,10 @@ struct DrawingCanvas: View {
             let strokeWidth = 2.0 / document.zoomLevel    // Scale-independent close preview
             let rubberBandWidth = 1.0 / document.zoomLevel  // Scale-independent rubber band
             
-            // NOTE: Real-time fill now shown on actual shape - no need for rubber band fill preview
+            // RUBBER BAND FILL PREVIEW - Show what next point would look like (only when NOT closing)
+            if bezierPoints.count >= 2 && !showClosePathHint {
+                rubberBandFillPreview(geometry: geometry)
+            }
             
             // PROFESSIONAL FILL PREVIEW - Show what the closed shape will look like
             if showClosePathHint && bezierPoints.count >= 3 {
