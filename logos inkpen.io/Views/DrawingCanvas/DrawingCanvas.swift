@@ -627,6 +627,10 @@ struct DrawingCanvas: View {
                         // Only last point has handle - asymmetric curve preview
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         path.addCurve(to: firstPointLocation, control1: lastControl2Location, control2: firstPointLocation)
+                    } else if let firstControl1 = firstPointHandles?.control1 {
+                        // Only first point has handle - asymmetric curve preview
+                        let firstControl1Location = CGPoint(x: firstControl1.x, y: firstControl1.y)
+                        path.addCurve(to: firstPointLocation, control1: lastPointLocation, control2: firstControl1Location)
                     } else {
                         // Straight line close
                         path.addLine(to: firstPointLocation)
