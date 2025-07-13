@@ -475,35 +475,20 @@ struct DrawingCanvas: View {
                 let anchorSize = 6.0 / document.zoomLevel  // Scale-independent anchor point size
                 let lineWidth = 1.0 / document.zoomLevel   // Scale-independent stroke width
                 
-                // PROFESSIONAL FIRST POINT HIGHLIGHTING (like Adobe Illustrator)
-                if isCloseHovering {
-                    // Enlarged, highlighted first point when hovering to close - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                    Rectangle()
-                        .fill(Color.green)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.white, lineWidth: lineWidth)
-                        )
-                        .frame(width: anchorSize * 1.3, height: anchorSize * 1.3)
-                        .position(pointLocation)
-                        .scaleEffect(document.zoomLevel * 1.2, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                        .animation(.easeInOut(duration: 0.2), value: isCloseHovering)
-                } else {
-                    // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                    // Active point: solid black square with white stroke
-                    // Inactive point: hollow white square with black stroke
-                    Rectangle()
-                        .fill(isActive ? Color.black : Color.white)
-                        .overlay(
-                            Rectangle()
-                                .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
-                        )
-                        .frame(width: anchorSize, height: anchorSize)
-                        .position(pointLocation)
-                        .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
-                }
+                // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                // Active point: solid black square with white stroke
+                // Inactive point: hollow white square with black stroke
+                // Note: Removed green square highlighting - close hint circle and preview line are sufficient
+                Rectangle()
+                    .fill(isActive ? Color.black : Color.white)
+                    .overlay(
+                        Rectangle()
+                            .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
+                    )
+                    .frame(width: anchorSize, height: anchorSize)
+                    .position(pointLocation)
+                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
+                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
             }
         }
     }
