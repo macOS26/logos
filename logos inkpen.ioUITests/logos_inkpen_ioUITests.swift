@@ -1,13 +1,13 @@
 //
-//  logosUITests.swift
-//  logosUITests
+//  logos_inkpen_ioUITests.swift
+//  logos inkpen.ioUITests
 //
-//  Created by Todd Bruss on 7/5/25.
+//  Created by Todd Bruss on 7/13/25.
 //
 
 import XCTest
 
-final class logosUITests: XCTestCase {
+final class logos_inkpen_ioUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

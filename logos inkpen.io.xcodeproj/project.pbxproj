@@ -6,68 +6,63 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		EAC969322E234B3D0093AB2A /* CoreGraphics_Framework.pdf in Resources */ = {isa = PBXBuildFile; fileRef = EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
-		EAF054E42E19B78D009DFB2F /* PBXContainerItemProxy */ = {
+		EAC969B92E2416ED0093AB2A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = EAF054CD2E19B78C009DFB2F /* Project object */;
+			containerPortal = EAC969A22E2416EC0093AB2A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = EAF054D42E19B78C009DFB2F;
-			remoteInfo = logos;
+			remoteGlobalIDString = EAC969A92E2416EC0093AB2A;
+			remoteInfo = "logos inkpen.io";
 		};
-		EAF054EE2E19B78D009DFB2F /* PBXContainerItemProxy */ = {
+		EAC969C32E2416ED0093AB2A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = EAF054CD2E19B78C009DFB2F /* Project object */;
+			containerPortal = EAC969A22E2416EC0093AB2A /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = EAF054D42E19B78C009DFB2F;
-			remoteInfo = logos;
+			remoteGlobalIDString = EAC969A92E2416EC0093AB2A;
+			remoteInfo = "logos inkpen.io";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = CoreGraphics_Framework.pdf; sourceTree = "<group>"; };
-		EAF054D52E19B78C009DFB2F /* logos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = logos.app; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		EAF054E32E19B78D009DFB2F /* logosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		EAF054ED2E19B78D009DFB2F /* logosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAC969AA2E2416EC0093AB2A /* logos inkpen.io.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAC969B82E2416ED0093AB2A /* logos inkpen.ioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		EAF054D72E19B78C009DFB2F /* logos */ = {
+		EAC969AC2E2416EC0093AB2A /* logos inkpen.io */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = logos;
+			path = "logos inkpen.io";
 			sourceTree = "<group>";
 		};
-		EAF054E62E19B78D009DFB2F /* logosTests */ = {
+		EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = logosTests;
+			path = "logos inkpen.ioTests";
 			sourceTree = "<group>";
 		};
-		EAF054F02E19B78D009DFB2F /* logosUITests */ = {
+		EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = logosUITests;
+			path = "logos inkpen.ioUITests";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		EAF054D22E19B78C009DFB2F /* Frameworks */ = {
+		EAC969A72E2416EC0093AB2A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EAF054E02E19B78D009DFB2F /* Frameworks */ = {
+		EAC969B52E2416ED0093AB2A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EAF054EA2E19B78D009DFB2F /* Frameworks */ = {
+		EAC969BF2E2416ED0093AB2A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -77,23 +72,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		EAF054CC2E19B78C009DFB2F = {
+		EAC969A12E2416EC0093AB2A = {
 			isa = PBXGroup;
 			children = (
-				EAF054D72E19B78C009DFB2F /* logos */,
-				EAF054E62E19B78D009DFB2F /* logosTests */,
-				EAF054F02E19B78D009DFB2F /* logosUITests */,
-				EAF054D62E19B78C009DFB2F /* Products */,
-				EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */,
+				EAC969AC2E2416EC0093AB2A /* logos inkpen.io */,
+				EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */,
+				EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */,
+				EAC969AB2E2416EC0093AB2A /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		EAF054D62E19B78C009DFB2F /* Products */ = {
+		EAC969AB2E2416EC0093AB2A /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EAF054D52E19B78C009DFB2F /* logos.app */,
-				EAF054E32E19B78D009DFB2F /* logosTests.xctest */,
-				EAF054ED2E19B78D009DFB2F /* logosUITests.xctest */,
+				EAC969AA2E2416EC0093AB2A /* logos inkpen.io.app */,
+				EAC969B82E2416ED0093AB2A /* logos inkpen.ioTests.xctest */,
+				EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,135 +95,134 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EAF054D42E19B78C009DFB2F /* logos */ = {
+		EAC969A92E2416EC0093AB2A /* logos inkpen.io */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EAF054F72E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logos" */;
+			buildConfigurationList = EAC969CC2E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.io" */;
 			buildPhases = (
-				EAF054D12E19B78C009DFB2F /* Sources */,
-				EAF054D22E19B78C009DFB2F /* Frameworks */,
-				EAF054D32E19B78C009DFB2F /* Resources */,
+				EAC969A62E2416EC0093AB2A /* Sources */,
+				EAC969A72E2416EC0093AB2A /* Frameworks */,
+				EAC969A82E2416EC0093AB2A /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				EAF054D72E19B78C009DFB2F /* logos */,
+				EAC969AC2E2416EC0093AB2A /* logos inkpen.io */,
 			);
-			name = logos;
+			name = "logos inkpen.io";
 			packageProductDependencies = (
 			);
-			productName = logos;
-			productReference = EAF054D52E19B78C009DFB2F /* logos.app */;
+			productName = "logos inkpen.io";
+			productReference = EAC969AA2E2416EC0093AB2A /* logos inkpen.io.app */;
 			productType = "com.apple.product-type.application";
 		};
-		EAF054E22E19B78D009DFB2F /* logosTests */ = {
+		EAC969B72E2416ED0093AB2A /* logos inkpen.ioTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EAF054FA2E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logosTests" */;
+			buildConfigurationList = EAC969CF2E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.ioTests" */;
 			buildPhases = (
-				EAF054DF2E19B78D009DFB2F /* Sources */,
-				EAF054E02E19B78D009DFB2F /* Frameworks */,
-				EAF054E12E19B78D009DFB2F /* Resources */,
+				EAC969B42E2416ED0093AB2A /* Sources */,
+				EAC969B52E2416ED0093AB2A /* Frameworks */,
+				EAC969B62E2416ED0093AB2A /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				EAF054E52E19B78D009DFB2F /* PBXTargetDependency */,
+				EAC969BA2E2416ED0093AB2A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				EAF054E62E19B78D009DFB2F /* logosTests */,
+				EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */,
 			);
-			name = logosTests;
+			name = "logos inkpen.ioTests";
 			packageProductDependencies = (
 			);
-			productName = logosTests;
-			productReference = EAF054E32E19B78D009DFB2F /* logosTests.xctest */;
+			productName = "logos inkpen.ioTests";
+			productReference = EAC969B82E2416ED0093AB2A /* logos inkpen.ioTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		EAF054EC2E19B78D009DFB2F /* logosUITests */ = {
+		EAC969C12E2416ED0093AB2A /* logos inkpen.ioUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EAF054FD2E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logosUITests" */;
+			buildConfigurationList = EAC969D22E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.ioUITests" */;
 			buildPhases = (
-				EAF054E92E19B78D009DFB2F /* Sources */,
-				EAF054EA2E19B78D009DFB2F /* Frameworks */,
-				EAF054EB2E19B78D009DFB2F /* Resources */,
+				EAC969BE2E2416ED0093AB2A /* Sources */,
+				EAC969BF2E2416ED0093AB2A /* Frameworks */,
+				EAC969C02E2416ED0093AB2A /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				EAF054EF2E19B78D009DFB2F /* PBXTargetDependency */,
+				EAC969C42E2416ED0093AB2A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				EAF054F02E19B78D009DFB2F /* logosUITests */,
+				EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */,
 			);
-			name = logosUITests;
+			name = "logos inkpen.ioUITests";
 			packageProductDependencies = (
 			);
-			productName = logosUITests;
-			productReference = EAF054ED2E19B78D009DFB2F /* logosUITests.xctest */;
+			productName = "logos inkpen.ioUITests";
+			productReference = EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		EAF054CD2E19B78C009DFB2F /* Project object */ = {
+		EAC969A22E2416EC0093AB2A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
-					EAF054D42E19B78C009DFB2F = {
+					EAC969A92E2416EC0093AB2A = {
 						CreatedOnToolsVersion = 16.3;
 					};
-					EAF054E22E19B78D009DFB2F = {
+					EAC969B72E2416ED0093AB2A = {
 						CreatedOnToolsVersion = 16.3;
-						TestTargetID = EAF054D42E19B78C009DFB2F;
+						TestTargetID = EAC969A92E2416EC0093AB2A;
 					};
-					EAF054EC2E19B78D009DFB2F = {
+					EAC969C12E2416ED0093AB2A = {
 						CreatedOnToolsVersion = 16.3;
-						TestTargetID = EAF054D42E19B78C009DFB2F;
+						TestTargetID = EAC969A92E2416EC0093AB2A;
 					};
 				};
 			};
-			buildConfigurationList = EAF054D02E19B78C009DFB2F /* Build configuration list for PBXProject "logos" */;
+			buildConfigurationList = EAC969A52E2416EC0093AB2A /* Build configuration list for PBXProject "logos inkpen.io" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = EAF054CC2E19B78C009DFB2F;
+			mainGroup = EAC969A12E2416EC0093AB2A;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = EAF054D62E19B78C009DFB2F /* Products */;
+			productRefGroup = EAC969AB2E2416EC0093AB2A /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EAF054D42E19B78C009DFB2F /* logos */,
-				EAF054E22E19B78D009DFB2F /* logosTests */,
-				EAF054EC2E19B78D009DFB2F /* logosUITests */,
+				EAC969A92E2416EC0093AB2A /* logos inkpen.io */,
+				EAC969B72E2416ED0093AB2A /* logos inkpen.ioTests */,
+				EAC969C12E2416ED0093AB2A /* logos inkpen.ioUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		EAF054D32E19B78C009DFB2F /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				EAC969322E234B3D0093AB2A /* CoreGraphics_Framework.pdf in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		EAF054E12E19B78D009DFB2F /* Resources */ = {
+		EAC969A82E2416EC0093AB2A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EAF054EB2E19B78D009DFB2F /* Resources */ = {
+		EAC969B62E2416ED0093AB2A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAC969C02E2416ED0093AB2A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -239,21 +232,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		EAF054D12E19B78C009DFB2F /* Sources */ = {
+		EAC969A62E2416EC0093AB2A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EAF054DF2E19B78D009DFB2F /* Sources */ = {
+		EAC969B42E2416ED0093AB2A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		EAF054E92E19B78D009DFB2F /* Sources */ = {
+		EAC969BE2E2416ED0093AB2A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -263,20 +256,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		EAF054E52E19B78D009DFB2F /* PBXTargetDependency */ = {
+		EAC969BA2E2416ED0093AB2A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EAF054D42E19B78C009DFB2F /* logos */;
-			targetProxy = EAF054E42E19B78D009DFB2F /* PBXContainerItemProxy */;
+			target = EAC969A92E2416EC0093AB2A /* logos inkpen.io */;
+			targetProxy = EAC969B92E2416ED0093AB2A /* PBXContainerItemProxy */;
 		};
-		EAF054EF2E19B78D009DFB2F /* PBXTargetDependency */ = {
+		EAC969C42E2416ED0093AB2A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EAF054D42E19B78C009DFB2F /* logos */;
-			targetProxy = EAF054EE2E19B78D009DFB2F /* PBXContainerItemProxy */;
+			target = EAC969A92E2416EC0093AB2A /* logos inkpen.io */;
+			targetProxy = EAC969C32E2416ED0093AB2A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		EAF054F52E19B78D009DFB2F /* Debug */ = {
+		EAC969CA2E2416ED0093AB2A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -311,6 +304,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 469UCUB275;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -339,7 +333,7 @@
 			};
 			name = Debug;
 		};
-		EAF054F62E19B78D009DFB2F /* Release */ = {
+		EAC969CB2E2416ED0093AB2A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -374,6 +368,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 469UCUB275;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -394,18 +389,19 @@
 			};
 			name = Release;
 		};
-		EAF054F82E19B78D009DFB2F /* Debug */ = {
+		EAC969CD2E2416ED0093AB2A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = logos/logos.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "logos inkpen.io/logos_inkpen_io.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = logos/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -413,25 +409,26 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io";
-				PRODUCT_NAME = "logos inkpen.io";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		EAF054F92E19B78D009DFB2F /* Release */ = {
+		EAC969CE2E2416ED0093AB2A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = logos/logos.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "logos inkpen.io/logos_inkpen_io.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = logos/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -439,117 +436,121 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io";
-				PRODUCT_NAME = "logos inkpen.io";
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
-		EAF054FB2E19B78D009DFB2F /* Debug */ = {
+		EAC969D02E2416ED0093AB2A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-Tests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-ioTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/logos.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/logos";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/logos inkpen.io.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/logos inkpen.io";
 			};
 			name = Debug;
 		};
-		EAF054FC2E19B78D009DFB2F /* Release */ = {
+		EAC969D12E2416ED0093AB2A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-Tests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-ioTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/logos.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/logos";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/logos inkpen.io.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/logos inkpen.io";
 			};
 			name = Release;
 		};
-		EAF054FE2E19B78D009DFB2F /* Debug */ = {
+		EAC969D32E2416ED0093AB2A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-UITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-ioUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = logos;
+				TEST_TARGET_NAME = "logos inkpen.io";
 			};
 			name = Debug;
 		};
-		EAF054FF2E19B78D009DFB2F /* Release */ = {
+		EAC969D42E2416ED0093AB2A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 469UCUB275;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-io-UITests";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.toddbruss.logos-inkpen-ioUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = logos;
+				TEST_TARGET_NAME = "logos inkpen.io";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EAF054D02E19B78C009DFB2F /* Build configuration list for PBXProject "logos" */ = {
+		EAC969A52E2416EC0093AB2A /* Build configuration list for PBXProject "logos inkpen.io" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EAF054F52E19B78D009DFB2F /* Debug */,
-				EAF054F62E19B78D009DFB2F /* Release */,
+				EAC969CA2E2416ED0093AB2A /* Debug */,
+				EAC969CB2E2416ED0093AB2A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAF054F72E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logos" */ = {
+		EAC969CC2E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.io" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EAF054F82E19B78D009DFB2F /* Debug */,
-				EAF054F92E19B78D009DFB2F /* Release */,
+				EAC969CD2E2416ED0093AB2A /* Debug */,
+				EAC969CE2E2416ED0093AB2A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAF054FA2E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logosTests" */ = {
+		EAC969CF2E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.ioTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EAF054FB2E19B78D009DFB2F /* Debug */,
-				EAF054FC2E19B78D009DFB2F /* Release */,
+				EAC969D02E2416ED0093AB2A /* Debug */,
+				EAC969D12E2416ED0093AB2A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAF054FD2E19B78D009DFB2F /* Build configuration list for PBXNativeTarget "logosUITests" */ = {
+		EAC969D22E2416ED0093AB2A /* Build configuration list for PBXNativeTarget "logos inkpen.ioUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				EAF054FE2E19B78D009DFB2F /* Debug */,
-				EAF054FF2E19B78D009DFB2F /* Release */,
+				EAC969D32E2416ED0093AB2A /* Debug */,
+				EAC969D42E2416ED0093AB2A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = EAF054CD2E19B78C009DFB2F /* Project object */;
+	rootObject = EAC969A22E2416EC0093AB2A /* Project object */;
 }

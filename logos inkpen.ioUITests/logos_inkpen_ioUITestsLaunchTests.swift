@@ -1,13 +1,13 @@
 //
-//  logosUITestsLaunchTests.swift
-//  logosUITests
+//  logos_inkpen_ioUITestsLaunchTests.swift
+//  logos inkpen.ioUITests
 //
-//  Created by Todd Bruss on 7/5/25.
+//  Created by Todd Bruss on 7/13/25.
 //
 
 import XCTest
 
-final class logosUITestsLaunchTests: XCTestCase {
+final class logos_inkpen_ioUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

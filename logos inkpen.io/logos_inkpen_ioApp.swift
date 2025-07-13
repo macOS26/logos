@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct logosApp: App {
+struct logos_inken_ioApp: App {
     @StateObject private var menuHandler = MenuCommandHandler.shared
     
     var body: some Scene {
