@@ -240,29 +240,34 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     mutating func updateBounds() {
-        // PROFESSIONAL COORDINATE SYSTEM: Bounds should be relative to position, not include it
-        // This matches how Adobe Illustrator/FreeHand handle text bounds
-        let textRect = textBounds
+        // FIXED: Bounds relative to baseline position to match TextObjectView coordinate system
+        let font = NSFont(name: typography.fontFamily, size: typography.fontSize) ?? NSFont.systemFont(ofSize: typography.fontSize)
+        let nsString = NSString(string: content.isEmpty ? "Text" : content)
+        let textSize = nsString.size(withAttributes: [.font: font])
+        
+        // Text baseline positioning - match TextObjectView frame calculation
+        let ascent = font.ascender
+        let descent = -font.descender
         
         // For area text, use the specified area size if available
         if !isPointText, let areaSize = areaSize {
             bounds = CGRect(
-                x: 0,  // Relative to position
-                y: 0,  // Relative to position
+                x: 0,  // Start at text position (same as shapes)
+                y: -ascent,  // Extend up from baseline
                 width: areaSize.width,
                 height: areaSize.height
             )
         } else {
-            // For point text, use the calculated text size
+            // For point text, calculate bounds to match NSView frame
             bounds = CGRect(
-                x: 0,  // Relative to position
-                y: 0,  // Relative to position
-                width: max(textRect.width, 20),  // Minimum width for empty text
-                height: max(textRect.height, typography.fontSize)  // Minimum height
+                x: 0,  // Start at text position
+                y: -ascent,  // Extend up from baseline  
+                width: max(textSize.width, 20),  // Minimum width for empty text
+                height: max(ascent + descent, typography.fontSize)  // Total height
             )
         }
         
-        // Position is handled separately in rendering - never mix position into bounds!
+        // Position is handled separately - bounds are relative to position
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)
@@ -362,6 +367,12 @@ class FontManager: ObservableObject {
     @Published var availableFonts: [String] = []
     @Published var systemFonts: [String] = []
     @Published var googleFonts: [String] = []
+    
+    // SELECTED FONT PROPERTIES for new text objects
+    @Published var selectedFontFamily: String = "Helvetica"
+    @Published var selectedFontWeight: FontWeight = .regular
+    @Published var selectedFontStyle: FontStyle = .normal
+    @Published var selectedFontSize: Double = 24.0
     
     // Common professional fonts (Adobe/FreeHand standard)
     static let professionalFonts = [

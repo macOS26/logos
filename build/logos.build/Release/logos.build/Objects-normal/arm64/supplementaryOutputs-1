@@ -1,9 +1,0 @@
-"/Users/toddbruss/Documents/logos/logos/Views/TemplateSelectionView.swift":
-  dependencies: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos-master.d"
-  objc-header: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos-Swift.h"
-  diagnostics: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos-master.dia"
-  swiftsourceinfo: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos.swiftsourceinfo"
-  swiftmodule: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos.swiftmodule"
-  const-values: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos-master.swiftconstvalues"
-  swiftdoc: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos.swiftdoc"
-  abi-baseline-json: "/Users/toddbruss/Documents/logos/build/logos.build/Release/logos.build/Objects-normal/arm64/logos.abi.json"

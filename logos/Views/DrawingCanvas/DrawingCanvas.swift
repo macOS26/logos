@@ -86,6 +86,11 @@ struct DrawingCanvas: View {
     // Essential for maintaining continuity in closed paths (circles, etc.)
     @State private var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
     
+    // FONT TOOL STATE (Core Graphics based - no Core Text)
+    @State private var isEditingText = false
+    @State private var editingTextID: UUID? = nil
+    @State private var textCursorPosition: Int = 0
+    
     // Point and handle identification
     struct PointID: Hashable {
         let shapeID: UUID
@@ -240,8 +245,19 @@ struct DrawingCanvas: View {
                 }
             }
             
-            // CRITICAL FIX: Render text objects (they were missing!)
-            // TEXT OBJECTS REMOVED - Starting over with simple text as shapes
+            // RENDER TEXT OBJECTS using Core Graphics (NO CORE TEXT)
+            ForEach(document.textObjects.indices, id: \.self) { textIndex in
+                let textObj = document.textObjects[textIndex]
+                if textObj.isVisible {
+                    TextObjectView(
+                        textObject: textObj,
+                        zoomLevel: document.zoomLevel,
+                        canvasOffset: document.canvasOffset,
+                        isSelected: document.selectedTextIDs.contains(textObj.id),
+                        isEditing: isEditingText && editingTextID == textObj.id
+                    )
+                }
+            }
             
             canvasOverlays(geometry: geometry)
         }
@@ -773,7 +789,8 @@ struct DrawingCanvas: View {
             handleConvertAnchorPointTap(at: canvasLocation)
         case .bezierPen:
             handleBezierPenTap(at: canvasLocation)
-        // TEXT TOOL COMPLETELY REMOVED
+        case .font:
+            handleFontToolTap(at: canvasLocation)
         case .line, .rectangle, .circle, .star, .polygon:
             // SHAPE TOOLS: Do nothing on click - they are drag-only tools
             // Cancel bezier drawing if switching to shape tools
@@ -1024,8 +1041,42 @@ struct DrawingCanvas: View {
         isCommandPressed = modifierFlags.contains(.command)
         isOptionPressed = modifierFlags.contains(.option)
         
-        // Handle Tab key for deselection
-        if event.type == .keyDown {
+        // FONT TOOL TEXT EDITING
+        if event.type == .keyDown && isEditingText, let editingID = editingTextID {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
+                var updatedText = document.textObjects[textIndex]
+                
+                switch event.keyCode {
+                case 51: // Delete key
+                    if !updatedText.content.isEmpty {
+                        updatedText.content.removeLast()
+                        document.textObjects[textIndex] = updatedText
+                        document.objectWillChange.send()
+                    }
+                case 36, 76: // Return/Enter key
+                    // Finish editing
+                    finishTextEditing()
+                case 53: // Escape key
+                    // Cancel editing
+                    cancelTextEditing()
+                default:
+                    // Regular character input
+                    if let characters = event.characters, !characters.isEmpty {
+                        // Filter out control characters
+                        let filteredChars = characters.filter { $0.isLetter || $0.isNumber || $0.isPunctuation || $0.isSymbol || $0.isWhitespace }
+                        if !filteredChars.isEmpty {
+                            updatedText.content.append(String(filteredChars))
+                            document.textObjects[textIndex] = updatedText
+                            document.objectWillChange.send()
+                        }
+                    }
+                }
+            }
+            return
+        }
+        
+        // Handle Tab key for deselection (only if not editing text)
+        if event.type == .keyDown && !isEditingText {
             switch event.keyCode {
             case 48: // Tab key
                 // Deselect all objects
@@ -4571,7 +4622,160 @@ struct DrawingCanvas: View {
         }
     }
 
-    // TEXT TOOL COMPLETELY REMOVED
+    // MARK: - Font Tool Handler (Core Graphics Based)
+    
+    private func handleFontToolTap(at location: CGPoint) {
+        print("🎯 FONT TOOL TAP at: \(location)")
+        
+        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
+        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
+        let isInCanvasArea = canvasBounds.contains(location)
+        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
+        
+        print("🎯 FONT TOOL TAP at: \(location) in \(areaType)")
+        
+        // Check if tapping on existing text to edit it
+        if let existingTextID = findTextAt(location: location) {
+            startEditingText(textID: existingTextID, at: location)
+        } else {
+            // Create new text at tap location
+            createNewTextAt(location: location)
+        }
+    }
+    
+    private func findTextAt(location: CGPoint) -> UUID? {
+        let tolerance: Double = 10.0
+        
+        for textObj in document.textObjects {
+            if !textObj.isVisible || textObj.isLocked { continue }
+            
+            // FIXED: Use baseline coordinate system for text bounds
+            // Text position is the baseline point, bounds are relative to that
+            let absoluteBounds = CGRect(
+                x: textObj.position.x + textObj.bounds.minX,
+                y: textObj.position.y + textObj.bounds.minY,
+                width: textObj.bounds.width,
+                height: textObj.bounds.height
+            )
+            
+            // Expand bounds slightly for easier selection
+            let expandedBounds = CGRect(
+                x: absoluteBounds.minX - tolerance,
+                y: absoluteBounds.minY - tolerance,
+                width: absoluteBounds.width + (tolerance * 2),
+                height: absoluteBounds.height + (tolerance * 2)
+            )
+            
+            if expandedBounds.contains(location) {
+                return textObj.id
+            }
+        }
+        
+        return nil
+    }
+    
+    private func startEditingText(textID: UUID, at location: CGPoint) {
+        print("✏️ Starting to edit existing text: \(textID)")
+        isEditingText = true
+        editingTextID = textID
+        
+        // Find the text object and calculate cursor position
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            document.textObjects[textIndex].isEditing = true
+            
+            // Simple cursor positioning - place at end of text for now
+            textCursorPosition = document.textObjects[textIndex].content.count
+            
+            // Clear shape selection since we're editing text
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.insert(textID)
+        }
+    }
+    
+    private func createNewTextAt(location: CGPoint) {
+        print("✨ Creating new text at: \(location)")
+        
+        // FIXED: Use document default colors from toolbar (exactly like pen tool and shape tools)
+        // Create typography using document defaults or user-selected font properties
+        // CRITICAL: Ensure text is visible by using black if default fill is white/clear
+        let fillColor = (document.defaultFillColor == .white || document.defaultFillColor == .clear) ? .black : document.defaultFillColor
+        
+        let typography = TypographyProperties(
+            fontFamily: document.fontManager.selectedFontFamily,
+            fontWeight: document.fontManager.selectedFontWeight,
+            fontStyle: document.fontManager.selectedFontStyle,
+            fontSize: document.fontManager.selectedFontSize,
+            hasStroke: document.defaultStrokeColor != .clear && document.defaultStrokeColor != .white,
+            strokeColor: document.defaultStrokeColor,
+            strokeOpacity: document.defaultStrokeOpacity,
+            fillColor: fillColor,
+            fillOpacity: document.defaultFillOpacity
+        )
+        
+        print("🎨 FONT TOOL COLORS: fill=\(fillColor) (default was \(document.defaultFillColor)), stroke=\(document.defaultStrokeColor)")
+        print("🎨 FONT TOOL OPACITIES: fillOpacity=\(document.defaultFillOpacity), strokeOpacity=\(document.defaultStrokeOpacity)")
+        
+        // Create new text object with initial placeholder text
+        var newText = VectorText(
+            content: "",
+            typography: typography,
+            position: location,
+            isEditing: true
+        )
+        
+        // Add to document
+        document.textObjects.append(newText)
+        
+        // Set editing state
+        isEditingText = true
+        editingTextID = newText.id
+        textCursorPosition = 0
+        
+        // Select the new text
+        document.selectedShapeIDs.removeAll()
+        document.selectedTextIDs.removeAll()
+        document.selectedTextIDs.insert(newText.id)
+        
+        print("✅ Created new text object with ID: \(newText.id)")
+    }
+    
+    private func finishTextEditing() {
+        if let editingID = editingTextID {
+            // Mark text as not editing
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
+                document.textObjects[textIndex].isEditing = false
+                document.textObjects[textIndex].updateBounds()
+            }
+        }
+        
+        // Clear editing state
+        isEditingText = false
+        editingTextID = nil
+        textCursorPosition = 0
+        
+        print("✅ Finished text editing")
+    }
+    
+    private func cancelTextEditing() {
+        if let editingID = editingTextID {
+            // If text is empty, remove it
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
+                if document.textObjects[textIndex].content.isEmpty {
+                    document.textObjects.remove(at: textIndex)
+                    document.selectedTextIDs.remove(editingID)
+                } else {
+                    document.textObjects[textIndex].isEditing = false
+                }
+            }
+        }
+        
+        // Clear editing state
+        isEditingText = false
+        editingTextID = nil
+        textCursorPosition = 0
+        
+        print("❌ Cancelled text editing")
+    }
 
 }
 

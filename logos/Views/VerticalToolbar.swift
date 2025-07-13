@@ -77,6 +77,8 @@ struct VerticalToolbar: View {
             return "Convert Anchor Point Tool (C) - Convert between smooth and corner points"
         case .bezierPen:
             return "Bezier Pen Tool (P) - Draw bezier curves and paths"
+        case .font:
+            return "Font Tool (T) - Add and edit text"
         case .line:
             return "Line Tool (L) - Draw straight lines"
         case .rectangle:
@@ -246,36 +248,81 @@ struct ColorSwatchGrid: View {
     }
     
     private func applyFillColorToSelected(_ color: VectorColor) {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
+        var hasSelectedObjects = false
         
-        document.saveToUndoStack()
-        
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            hasSelectedObjects = true
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    }
                 }
             }
+        }
+        
+        // FIXED: Also apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            hasSelectedObjects = true
+            if !document.selectedShapeIDs.isEmpty {
+                // Don't save to undo stack twice
+            } else {
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.fillColor = color
+                    document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+            document.objectWillChange.send()
         }
     }
     
     private func applyStrokeColorToSelected(_ color: VectorColor) {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
+        var hasSelectedObjects = false
         
-        document.saveToUndoStack()
-        
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, opacity: 1.0)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            hasSelectedObjects = true
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, opacity: 1.0)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    }
                 }
             }
+        }
+        
+        // FIXED: Also apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            hasSelectedObjects = true
+            if !document.selectedShapeIDs.isEmpty {
+                // Don't save to undo stack twice
+            } else {
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.hasStroke = true
+                    document.textObjects[textIndex].typography.strokeColor = color
+                    document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+            document.objectWillChange.send()
         }
     }
     

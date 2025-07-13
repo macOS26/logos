@@ -2116,6 +2116,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case directSelection = "Direct Selection"
     case convertAnchorPoint = "Convert Anchor Point"
     case bezierPen = "Bezier Pen"
+    case font = "Font"
     case line = "Line"
     case rectangle = "Rectangle"
     case circle = "Circle"
@@ -2131,6 +2132,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .directSelection: return "cursorarrow.and.square.on.square.dashed"
         case .convertAnchorPoint: return "arrow.triangle.turn.up.right.diamond"
         case .bezierPen: return "pencil.tip"
+        case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
         case .circle: return "circle"
@@ -2148,6 +2150,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .directSelection: return .crosshair
         case .convertAnchorPoint: return .pointingHand
         case .bezierPen: return .crosshair
+        case .font: return .iBeam
         case .line: return .crosshair
         case .rectangle: return .crosshair
         case .circle: return .crosshair

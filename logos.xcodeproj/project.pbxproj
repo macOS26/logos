@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EAC969322E234B3D0093AB2A /* CoreGraphics_Framework.pdf in Resources */ = {isa = PBXBuildFile; fileRef = EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		EAF054E42E19B78D009DFB2F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = CoreGraphics_Framework.pdf; sourceTree = "<group>"; };
 		EAF054D52E19B78C009DFB2F /* logos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = logos.app; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAF054E32E19B78D009DFB2F /* logosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAF054ED2E19B78D009DFB2F /* logosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = logosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +84,7 @@
 				EAF054E62E19B78D009DFB2F /* logosTests */,
 				EAF054F02E19B78D009DFB2F /* logosUITests */,
 				EAF054D62E19B78C009DFB2F /* Products */,
+				EAC969312E234B3D0093AB2A /* CoreGraphics_Framework.pdf */,
 			);
 			sourceTree = "<group>";
 		};
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EAC969322E234B3D0093AB2A /* CoreGraphics_Framework.pdf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -89,6 +89,15 @@ struct StrokeFillPanel: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // FONT TOOL CONTROLS - Show when font tool is active or text is selected
+                if document.currentTool == .font || !document.selectedTextIDs.isEmpty {
+                    FontToolSection(document: document)
+                    
+                    if !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty {
+                        Divider()
+                    }
+                }
+                
                 if !document.selectedShapeIDs.isEmpty {
                     // Current Fill and Stroke Display
                     CurrentColorsView(
@@ -1023,6 +1032,236 @@ struct StylePreset {
             fillStyle: FillStyle(color: .rgb(RGBColor(red: 0, green: 1, blue: 0)))
         )
     ]
+}
+
+// MARK: - Font Tool Section
+
+struct FontToolSection: View {
+    @ObservedObject var document: VectorDocument
+    
+    private var selectedText: VectorText? {
+        document.textObjects.first { document.selectedTextIDs.contains($0.id) }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header
+            HStack {
+                Image(systemName: "textformat")
+                    .foregroundColor(.blue)
+                Text("Font Tool")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                Spacer()
+            }
+            
+            // Font Family (Foundry) Picker
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Font Family")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                Picker("Font Family", selection: Binding(
+                    get: { selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily },
+                    set: { newFamily in
+                        document.fontManager.selectedFontFamily = newFamily
+                        updateSelectedTextFont()
+                    }
+                )) {
+                    ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
+                        Text(fontFamily)
+                            .font(.custom(fontFamily, size: 12))
+                            .tag(fontFamily)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity)
+            }
+            
+            // Font Weight and Style Row
+            HStack(spacing: 12) {
+                // Font Weight
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Weight")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    Picker("Weight", selection: Binding(
+                        get: { selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight },
+                        set: { newWeight in
+                            document.fontManager.selectedFontWeight = newWeight
+                            updateSelectedTextFont()
+                        }
+                    )) {
+                        ForEach(FontWeight.allCases, id: \.self) { weight in
+                            Text(weight.rawValue)
+                                .tag(weight)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+                
+                // Font Style
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Style")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    Picker("Style", selection: Binding(
+                        get: { selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle },
+                        set: { newStyle in
+                            document.fontManager.selectedFontStyle = newStyle
+                            updateSelectedTextFont()
+                        }
+                    )) {
+                        ForEach(FontStyle.allCases, id: \.self) { style in
+                            Text(style.rawValue)
+                                .tag(style)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+            }
+            
+            // Font Size
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Font Size")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    TextField("Size", value: Binding(
+                        get: { selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize },
+                        set: { newSize in
+                            document.fontManager.selectedFontSize = newSize
+                            updateSelectedTextFont()
+                        }
+                    ), format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    
+                    Text("pt")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Fill and Stroke integration
+            if let selectedText = selectedText {
+                Divider()
+                
+                // Text Fill Color
+                HStack {
+                    Text("Fill")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Button {
+                        // Use document default fill color for text
+                        updateTextFillColor(document.defaultFillColor)
+                    } label: {
+                        Rectangle()
+                            .fill(selectedText.typography.fillColor.color)
+                            .frame(width: 30, height: 20)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.gray, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Text Stroke Toggle and Color
+                HStack {
+                    Toggle("Stroke", isOn: Binding(
+                        get: { selectedText.typography.hasStroke },
+                        set: { hasStroke in
+                            updateTextStroke(hasStroke: hasStroke)
+                        }
+                    ))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if selectedText.typography.hasStroke {
+                        Button {
+                            // Use document default stroke color for text
+                            updateTextStrokeColor(document.defaultStrokeColor)
+                        } label: {
+                            Rectangle()
+                                .fill(selectedText.typography.strokeColor.color)
+                                .frame(width: 30, height: 20)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.gray, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+        )
+    }
+    
+    private func updateSelectedTextFont() {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        // Update the text object's typography
+        document.textObjects[textIndex].typography.fontFamily = document.fontManager.selectedFontFamily
+        document.textObjects[textIndex].typography.fontWeight = document.fontManager.selectedFontWeight
+        document.textObjects[textIndex].typography.fontStyle = document.fontManager.selectedFontStyle
+        document.textObjects[textIndex].typography.fontSize = document.fontManager.selectedFontSize
+        
+        // Update bounds
+        document.textObjects[textIndex].updateBounds()
+        
+        // Notify UI update
+        document.objectWillChange.send()
+    }
+    
+    private func updateTextFillColor(_ color: VectorColor) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.textObjects[textIndex].typography.fillColor = color
+        document.objectWillChange.send()
+    }
+    
+    private func updateTextStroke(hasStroke: Bool) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.textObjects[textIndex].typography.hasStroke = hasStroke
+        if hasStroke {
+            document.textObjects[textIndex].typography.strokeColor = document.defaultStrokeColor
+        }
+        document.objectWillChange.send()
+    }
+    
+    private func updateTextStrokeColor(_ color: VectorColor) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.textObjects[textIndex].typography.strokeColor = color
+        document.objectWillChange.send()
+    }
 }
 
 // Preview
