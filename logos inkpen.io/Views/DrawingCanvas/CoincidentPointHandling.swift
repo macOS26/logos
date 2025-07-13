@@ -16,7 +16,7 @@ extension DrawingCanvas {
     /// Finds all points that are coincident (at the same coordinates) with the given point
     /// This is essential for closed paths where moveTo and close points must stay together
     func findCoincidentPoints(to targetPointID: PointID, tolerance: Double = 1.0) -> Set<PointID> {
-        guard let targetPosition = getPointPosition(targetPointID, in: document) else { return [] }
+        guard let targetPosition = getPointPosition(targetPointID) else { return [] }
         
         var coincidentPoints: Set<PointID> = []
         let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
@@ -184,7 +184,7 @@ extension DrawingCanvas {
                     
                     if !coincidentPoints.isEmpty {
                         totalCoincidentGroups += 1
-                        if let position = getPointPosition(pointID, in: document) {
+                        if let position = getPointPosition(pointID) {
                             print("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):")
                             print("      Primary: Element \(elementIndex)")
                             for coincidentPoint in coincidentPoints {

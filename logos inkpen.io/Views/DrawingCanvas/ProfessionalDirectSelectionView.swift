@@ -79,121 +79,112 @@ struct ProfessionalDirectSelectionView: View {
         ZStack {
             // RENDER ALL HANDLES AND ANCHOR POINTS - USE SAME COORDINATE CHAIN AS ARROW TOOL
             ForEach(Array(shape.path.elements.enumerated()), id: \.offset) { elementIndex, element in
-                Group {
-                    // HANDLES FIRST - USE SAME COORDINATE CHAIN AS ARROW TOOL
-                    switch element {
-                    case .curve(let to, _, let control2):
-                        let anchorLocation = CGPoint(x: to.x, y: to.y)
-                        let control2Location = CGPoint(x: control2.x, y: control2.y)
-                        
-                        // INCOMING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        Path { path in
-                            path.move(to: anchorLocation)
-                            path.addLine(to: control2Location)
-                        }
-                        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                        .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                        .transformEffect(shape.transform)
-                        
-                        // INCOMING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        Circle()
-                            .fill(Color.blue)
-                            .stroke(Color.white, lineWidth: 0.5)
-                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                            .position(control2Location)
-                            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                            .transformEffect(shape.transform)
-                            
-                        // OUTGOING HANDLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        if elementIndex + 1 < shape.path.elements.count {
-                            let nextElement = shape.path.elements[elementIndex + 1]
-                            if case .curve(_, let nextControl1, _) = nextElement {
-                                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                
-                                // OUTGOING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Path { path in
-                                    path.move(to: anchorLocation)
-                                    path.addLine(to: control1Location)
-                                }
-                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                                .transformEffect(shape.transform)
-                                
-                                // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Circle()
-                                    .fill(Color.blue)
-                                    .stroke(Color.white, lineWidth: 0.5)
-                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                                    .position(control1Location)
-                                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                                    .transformEffect(shape.transform)
-                            }
-                        }
-                        
-                    case .move(let to), .line(let to):
-                        let anchorLocation = CGPoint(x: to.x, y: to.y)
-                        
-                        // OUTGOING HANDLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                        if elementIndex + 1 < shape.path.elements.count {
-                            let nextElement = shape.path.elements[elementIndex + 1]
-                            if case .curve(_, let nextControl1, _) = nextElement {
-                                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                
-                                // OUTGOING HANDLE LINE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Path { path in
-                                    path.move(to: anchorLocation)
-                                    path.addLine(to: control1Location)
-                                }
-                                .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel) // Scale-independent
-                                .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                                .transformEffect(shape.transform)
-                                
-                                // OUTGOING HANDLE CIRCLE - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                                Circle()
-                                    .fill(Color.blue)
-                                    .stroke(Color.white, lineWidth: 0.5)
-                                    .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                                    .position(control1Location)
-                                    .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                                    .transformEffect(shape.transform)
-                            }
-                        }
-                        
-                    default:
-                        EmptyView()
-                    }
-                    
-                    // ANCHOR POINTS ON TOP - USE SAME COORDINATE SYSTEM AS ARROW TOOL
-                    if let point = extractPointFromElement(element) {
-                        let pointLocation = CGPoint(x: point.x, y: point.y)
-                        
-                        let pointID = PointID(
-                            shapeID: shape.id,
-                            pathIndex: 0,
-                            elementIndex: elementIndex
-                        )
-                        let isPointSelected = selectedPoints.contains(pointID)
-                        
-                        // Check if this point has coincident points for visual indication
-                        let hasCoincidentPoints = !findCoincidentPointsStatic(to: pointID, in: document, tolerance: 1.0).isEmpty
-                        
-                        Rectangle()
-                            .fill(isPointSelected ? Color.blue : Color.white)
-                            .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
-                            .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel) // Scale-independent
-                            .position(pointLocation)
-                            .scaleEffect(document.zoomLevel, anchor: .topLeading)
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                            .transformEffect(shape.transform)
-                    }
-                }
+                bezierElementView(shape: shape, elementIndex: elementIndex, element: element)
             }
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierElementView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
+        Group {
+            // HANDLES FIRST
+            bezierHandlesView(shape: shape, elementIndex: elementIndex, element: element)
+            
+            // ANCHOR POINTS ON TOP
+            bezierAnchorPointView(shape: shape, elementIndex: elementIndex, element: element)
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierHandlesView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
+        switch element {
+        case .curve(let to, _, let control2):
+            bezierCurveHandles(shape: shape, elementIndex: elementIndex, to: to, control2: control2)
+        case .move(let to), .line(let to):
+            bezierLineHandles(shape: shape, elementIndex: elementIndex, to: to)
+        default:
+            EmptyView()
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierCurveHandles(shape: VectorShape, elementIndex: Int, to: VectorPoint, control2: VectorPoint) -> some View {
+        let anchorLocation = CGPoint(x: to.x, y: to.y)
+        let control2Location = CGPoint(x: control2.x, y: control2.y)
+        
+        // INCOMING HANDLE
+        bezierHandleLineAndCircle(from: anchorLocation, to: control2Location, shape: shape)
+        
+        // OUTGOING HANDLE
+        if elementIndex + 1 < shape.path.elements.count {
+            let nextElement = shape.path.elements[elementIndex + 1]
+            if case .curve(_, let nextControl1, _) = nextElement {
+                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierLineHandles(shape: VectorShape, elementIndex: Int, to: VectorPoint) -> some View {
+        let anchorLocation = CGPoint(x: to.x, y: to.y)
+        
+        // OUTGOING HANDLE
+        if elementIndex + 1 < shape.path.elements.count {
+            let nextElement = shape.path.elements[elementIndex + 1]
+            if case .curve(_, let nextControl1, _) = nextElement {
+                let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func bezierHandleLineAndCircle(from: CGPoint, to: CGPoint, shape: VectorShape) -> some View {
+        // HANDLE LINE
+        Path { path in
+            path.move(to: from)
+            path.addLine(to: to)
+        }
+        .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
+        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        .transformEffect(shape.transform)
+        
+        // HANDLE CIRCLE
+        Circle()
+            .fill(Color.blue)
+            .stroke(Color.white, lineWidth: 0.5)
+            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel)
+            .position(to)
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            .transformEffect(shape.transform)
+    }
+    
+    @ViewBuilder
+    private func bezierAnchorPointView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
+        if let point = extractPointFromElement(element) {
+            let pointLocation = CGPoint(x: point.x, y: point.y)
+            
+            let pointID = PointID(
+                shapeID: shape.id,
+                pathIndex: 0,
+                elementIndex: elementIndex
+            )
+            let isPointSelected = selectedPoints.contains(pointID)
+            
+            // Check if this point has coincident points for visual indication
+            let hasCoincidentPoints = !findCoincidentPoints(to: pointID, in: document, tolerance: 1.0).isEmpty
+            
+            Rectangle()
+                .fill(isPointSelected ? Color.blue : Color.white)
+                .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
+                .frame(width: 6 / document.zoomLevel, height: 6 / document.zoomLevel)
+                .position(pointLocation)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+                .transformEffect(shape.transform)
         }
     }
     

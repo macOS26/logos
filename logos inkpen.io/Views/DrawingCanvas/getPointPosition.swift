@@ -6,7 +6,7 @@
 //
 
 /// Static utility to get point position for use in views
-func getPointPosition(_ pointID: PointID, in document: VectorDocument) -> VectorPoint? {
+func getPointPositionExternal(_ pointID: PointID, in document: VectorDocument) -> VectorPoint? {
     for layer in document.layers {
         if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
             guard pointID.elementIndex < shape.path.elements.count else { return nil }

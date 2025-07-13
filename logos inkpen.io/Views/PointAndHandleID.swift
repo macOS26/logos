@@ -32,8 +32,8 @@ enum HandleType {
 // MARK: - Utility Functions for Coincident Point Detection
 
 /// Static utility to find coincident points for use in views
-func findCoincidentPointsStatic(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
-    guard let targetPosition = getPointPosition(targetPointID, in: document) else { return [] }
+func findCoincidentPoints(to targetPointID: PointID, in document: VectorDocument, tolerance: Double = 1.0) -> Set<PointID> {
+    guard let targetPosition = getPointPositionExternal(targetPointID, in: document) else { return [] }
     
     var coincidentPoints: Set<PointID> = []
     let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)

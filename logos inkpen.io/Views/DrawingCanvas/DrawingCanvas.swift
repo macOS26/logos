@@ -10,76 +10,76 @@ import AppKit
 
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
-    @State private var currentPath: VectorPath?
-    @State private var isDrawing = false
-    @State private var dragOffset = CGSize.zero
-    @State private var lastPanLocation = CGPoint.zero
-    @State private var drawingStartPoint: CGPoint?
-    @State private var currentDrawingPoints: [CGPoint] = []
+    @State internal var currentPath: VectorPath?
+    @State internal var isDrawing = false
+    @State internal var dragOffset = CGSize.zero
+    @State internal var lastPanLocation = CGPoint.zero
+    @State internal var drawingStartPoint: CGPoint?
+    @State internal var currentDrawingPoints: [CGPoint] = []
 
-    @State private var lastTapTime: Date = Date()
+    @State internal var lastTapTime: Date = Date()
     
     // PROFESSIONAL HAND TOOL STATE (Industry Standards)
     // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW
     // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
-    @State private var initialCanvasOffset = CGPoint.zero    // Reference canvas position when drag started
-    @State private var handToolDragStart = CGPoint.zero      // Reference cursor position when drag started
+    @State internal var initialCanvasOffset = CGPoint.zero    // Reference canvas position when drag started
+    @State internal var handToolDragStart = CGPoint.zero      // Reference cursor position when drag started
     
     // PROFESSIONAL OBJECT DRAGGING STATE (Same precision as hand tool)
-    @State private var selectionDragStart = CGPoint.zero     // Reference cursor position when object drag started
-    @State private var initialObjectPositions: [UUID: CGPoint] = [:]  // Initial object positions when drag started
+    @State internal var selectionDragStart = CGPoint.zero     // Reference cursor position when object drag started
+    @State internal var initialObjectPositions: [UUID: CGPoint] = [:]  // Initial object positions when drag started
     
     // PROFESSIONAL SHAPE DRAWING STATE (Same precision as hand tool)
-    @State private var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started
-    @State private var shapeStartPoint = CGPoint.zero       // Reference canvas position when shape drawing started
+    @State internal var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started
+    @State internal var shapeStartPoint = CGPoint.zero       // Reference canvas position when shape drawing started
     
     // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
-    @State private var isShiftPressed = false
-    @State private var isCommandPressed = false
-    @State private var isOptionPressed = false
-    @State private var keyEventMonitor: Any?
+    @State internal var isShiftPressed = false
+    @State internal var isCommandPressed = false
+    @State internal var isOptionPressed = false
+    @State internal var keyEventMonitor: Any?
     
     // Bezier tool specific state
-    @State private var bezierPath: VectorPath?
-    @State private var bezierPoints: [VectorPoint] = []
-    @State private var isBezierDrawing = false
-    @State private var bezierLastTapTime: Date = Date()
-    @State private var isDraggingBezierHandle = false
-    @State private var activeBezierPointIndex: Int? = nil // Currently active (solid) point
-    @State private var isDraggingBezierPoint = false
-    @State private var bezierHandles: [Int: BezierHandleInfo] = [:] // Point handles for each bezier point
-    @State private var currentMouseLocation: CGPoint? = nil // For rubber band preview
-    @State private var showClosePathHint = false
-    @State private var closePathHintLocation: CGPoint = .zero
+    @State internal var bezierPath: VectorPath?
+    @State internal var bezierPoints: [VectorPoint] = []
+    @State internal var isBezierDrawing = false
+    @State internal var bezierLastTapTime: Date = Date()
+    @State internal var isDraggingBezierHandle = false
+    @State internal var activeBezierPointIndex: Int? = nil // Currently active (solid) point
+    @State internal var isDraggingBezierPoint = false
+    @State internal var bezierHandles: [Int: BezierHandleInfo] = [:] // Point handles for each bezier point
+    @State internal var currentMouseLocation: CGPoint? = nil // For rubber band preview
+    @State internal var showClosePathHint = false
+    @State internal var closePathHintLocation: CGPoint = .zero
     
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
-    @State private var activeBezierShape: VectorShape? = nil // Real shape being built
+    @State internal var activeBezierShape: VectorShape? = nil // Real shape being built
     
     // First point creation state for smooth/corner point detection
-    @State private var pendingFirstPoint: CGPoint? = nil // Location where first point will be created
-    @State private var isCreatingFirstPoint = false // True when we're deciding if first point should be smooth or corner
+    @State internal var pendingFirstPoint: CGPoint? = nil // Location where first point will be created
+    @State internal var isCreatingFirstPoint = false // True when we're deciding if first point should be smooth or corner
     
 
     
     // Track previous tool to detect changes
-    @State private var previousTool: DrawingTool = .selection
+    @State internal var previousTool: DrawingTool = .selection
     
     // Zoom gesture state
-    @State private var initialZoomLevel: CGFloat = 1.0
+    @State internal var initialZoomLevel: CGFloat = 1.0
     
     // PROFESSIONAL GESTURE COORDINATION STATE
-    @State private var isZoomGestureActive = false
-    @State private var isPanGestureActive = false
+    @State internal var isZoomGestureActive = false
+    @State internal var isPanGestureActive = false
     
     // Direct selection state
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []
-    @State private var directSelectedShapeIDs: Set<UUID> = [] // Track which shapes have been direct-selected
-    @State private var isDraggingPoint = false
-    @State private var isDraggingHandle = false
-    @State private var dragStartLocation: CGPoint = .zero
-    @State private var originalPointPositions: [PointID: VectorPoint] = [:]
-    @State private var originalHandlePositions: [HandleID: VectorPoint] = [:]
+    @State internal var directSelectedShapeIDs: Set<UUID> = [] // Track which shapes have been direct-selected
+    @State internal var isDraggingPoint = false
+    @State internal var isDraggingHandle = false
+    @State internal var dragStartLocation: CGPoint = .zero
+    @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
+    @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT
     // This handles the case where multiple points exist at the same X,Y coordinates
@@ -94,7 +94,7 @@ struct DrawingCanvas: View {
     // Point and handle identification moved to PointAndHandleID.swift
     
     @ViewBuilder
-    private var directSelectionContextMenu: some View {
+    internal var directSelectionContextMenu: some View {
         // PROFESSIONAL BEZIER PEN CONTEXT MENU OPTIONS
         if document.currentTool == .bezierPen && isBezierDrawing && bezierPoints.count >= 3 {
             Button("Close Path") {
@@ -139,7 +139,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func canvasMainContent(geometry: GeometryProxy) -> some View {
+    internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         canvasBaseContent(geometry: geometry)
             .clipped()
             .onAppear {
@@ -206,7 +206,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func canvasBaseContent(geometry: GeometryProxy) -> some View {
+    internal func canvasBaseContent(geometry: GeometryProxy) -> some View {
         ZStack {
             // BRILLIANT USER SOLUTION: No more manual background!
             // Canvas is now a regular layer/shape that auto-syncs with everything else
@@ -247,7 +247,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
+    internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
         // Auto-finalize bezier path when switching away from bezier tool
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
             finishBezierPath()
@@ -273,7 +273,7 @@ struct DrawingCanvas: View {
         previousTool = newTool
     }
     
-    private func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
+    internal func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
         if case .active(let location) = phase {
             currentMouseLocation = location
             
@@ -316,7 +316,7 @@ struct DrawingCanvas: View {
     }
     
     /// Updates the live path with a rubber band preview to the mouse location
-    private func updateLivePathWithRubberBand(mouseLocation: CGPoint) {
+    internal func updateLivePathWithRubberBand(mouseLocation: CGPoint) {
         guard let currentBezierPath = bezierPath else { return }
         
         var liveElements = currentBezierPath.elements
@@ -368,7 +368,7 @@ struct DrawingCanvas: View {
     }
     
     /// Updates the live path with a closing preview
-    private func updateLivePathWithClosingPreview(mouseLocation: CGPoint) {
+    internal func updateLivePathWithClosingPreview(mouseLocation: CGPoint) {
         guard let currentBezierPath = bezierPath else { return }
         
         var liveElements = currentBezierPath.elements
@@ -399,7 +399,7 @@ struct DrawingCanvas: View {
     }
     
     /// Updates the active bezier shape with a specific path (used for live previews)
-    private func updateActiveBezierShapeWithPath(_ path: VectorPath) {
+    internal func updateActiveBezierShapeWithPath(_ path: VectorPath) {
         guard let activeBezierShape = activeBezierShape,
               let layerIndex = document.selectedLayerIndex else { return }
         
@@ -418,7 +418,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func canvasOverlays(geometry: GeometryProxy) -> some View {
+    internal func canvasOverlays(geometry: GeometryProxy) -> some View {
         // Current drawing path (while drawing)
         if let currentPath = currentPath {
             Path { path in
@@ -461,7 +461,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func bezierAnchorPoints() -> some View {
+    internal func bezierAnchorPoints() -> some View {
         // PROFESSIONAL BEZIER ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
         if isBezierDrawing {
             ForEach(bezierPoints.indices, id: \.self) { index in
@@ -509,7 +509,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func bezierControlHandles() -> some View {
+    internal func bezierControlHandles() -> some View {
         // Render bezier handles if they exist
         if isBezierDrawing {
             ForEach(bezierPoints.indices, id: \.self) { index in
@@ -560,7 +560,7 @@ struct DrawingCanvas: View {
     }
     
     @ViewBuilder
-    private func bezierClosePathHint() -> some View {
+    internal func bezierClosePathHint() -> some View {
         // PROFESSIONAL CLOSE PATH VISUAL HINT - USE SAME COORDINATE SYSTEM AS ARROW TOOL
         if showClosePathHint {
             ZStack {
@@ -591,7 +591,7 @@ struct DrawingCanvas: View {
     // Professional vector apps (Illustrator, FreeHand, CorelDraw) show the actual path being built, not a preview
     
     @ViewBuilder
-    private func rubberBandPreview(geometry: GeometryProxy) -> some View {
+    internal func rubberBandPreview(geometry: GeometryProxy) -> some View {
         if isBezierDrawing && document.currentTool == .bezierPen,
            let mouseLocation = currentMouseLocation,
            bezierPoints.count > 0 {
@@ -677,68 +677,9 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func setupCanvas(geometry: GeometryProxy) {
-        // FIXED COORDINATE SYSTEM: Set up default view with deterministic positioning
-        setupDefaultView(geometry: geometry)
-        initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
-        print("🎯 FIXED CANVAS SETUP: Using default 75% zoom, no race conditions")
-    }
+
     
-    private func setupDefaultView(geometry: GeometryProxy) {
-        // Use document bounds for zoom/fit calculations (standard approach)
-        // No Canvas-specific coordinate logic needed
-        
-        let documentBounds = document.documentBounds
-        let viewSize = geometry.size
-        
-        // ASPECT RATIO SCALING: Calculate both scales and use minimum for uniform scaling
-        let padding: CGFloat = 100.0  // Leave some padding for professional look
-        let availableWidth = viewSize.width - (padding * 2)
-        let availableHeight = viewSize.height - (padding * 2)
-        
-        let scaleX = availableWidth / documentBounds.width
-        let scaleY = availableHeight / documentBounds.height
-        let uniformScale = min(scaleX, scaleY)  // ✅ UNIFORM SCALING - maintains aspect ratio
-        
-        // Cap the default zoom at reasonable bounds (like professional apps)
-        let defaultZoom = max(0.25, min(1.5, uniformScale))
-        document.zoomLevel = defaultZoom
-        
-        // Center canvas in view using the calculated uniform scale
-        let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
-        )
-        
-        let documentCenter = CGPoint(
-            x: documentBounds.midX,
-            y: documentBounds.midY
-        )
-        
-        // Calculate offset to center document: screen = (document * zoom) + offset
-        document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
-            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
-        )
-        
-        // Update initial zoom level for gesture handling
-        initialZoomLevel = document.zoomLevel
-        
-        print("🎯 DOCUMENT SCALING (Standard Approach):")
-        print("   Document Bounds: \(documentBounds)")
-        print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
-        print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
-        print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
-        print("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   Scale X: \(String(format: "%.3f", scaleX)) (width fit)")
-        print("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)")
-        print("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)")
-        print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
-        print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-        print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
-    }
-    
-    private func handleTap(at location: CGPoint, geometry: GeometryProxy) {
+    internal func handleTap(at location: CGPoint, geometry: GeometryProxy) {
         // PROFESSIONAL FIX: DrawingCanvas gestures are automatically constrained to view bounds
         // SwiftUI ensures gestures only fire within the DrawingCanvas area - no manual blocking needed
         let canvasLocation = screenToCanvas(location, geometry: geometry)
@@ -791,7 +732,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func handleDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL FIX: DrawingCanvas drags are automatically constrained to view bounds
         // SwiftUI ensures drag gestures only fire within the DrawingCanvas area
         let canvasStart = screenToCanvas(value.startLocation, geometry: geometry)
@@ -880,7 +821,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func handleDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         // PASTEBOARD TAP SIMULATION: Convert zero-distance drags to taps for tools that need it
         // This fixes the issue where .onTapGesture doesn't work for pasteboard coordinates
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
@@ -962,7 +903,7 @@ struct DrawingCanvas: View {
     
     // MARK: - Professional Multi-Selection Key Monitoring (Adobe Illustrator Standards)
     
-    private func setupKeyEventMonitoring() {
+    internal func setupKeyEventMonitoring() {
         // Monitor for key down/up and modifier flag changes
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
             DispatchQueue.main.async {
@@ -972,7 +913,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func teardownKeyEventMonitoring() {
+    internal func teardownKeyEventMonitoring() {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
@@ -980,7 +921,7 @@ struct DrawingCanvas: View {
     }
     
     // PROFESSIONAL TOOL KEYBOARD SHORTCUTS (Adobe Illustrator Standards)
-    private func setupToolKeyboardShortcuts() {
+    internal func setupToolKeyboardShortcuts() {
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             // TEXT EDITING REMOVED - All shortcuts now active
             
@@ -1019,7 +960,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func updateModifierKeyStates(with event: NSEvent) {
+    internal func updateModifierKeyStates(with event: NSEvent) {
         let modifierFlags = event.modifierFlags
         isShiftPressed = modifierFlags.contains(.shift)
         isCommandPressed = modifierFlags.contains(.command)
@@ -1079,7 +1020,7 @@ struct DrawingCanvas: View {
     
     // TEXT EDITING FUNCTIONS REMOVED - Starting over with simple approach
     
-    private func handleSelectionTap(at location: CGPoint) {
+    internal func handleSelectionTap(at location: CGPoint) {
         // DETAILED LOGGING: Determine if this is canvas or pasteboard area
         let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
         let isInCanvasArea = canvasBounds.contains(location)
@@ -1231,7 +1172,7 @@ struct DrawingCanvas: View {
         document.objectWillChange.send()
     }
     
-    private func cancelBezierDrawing() {
+    internal func cancelBezierDrawing() {
         bezierPath = nil
         bezierPoints.removeAll()
         isBezierDrawing = false
@@ -1248,7 +1189,7 @@ struct DrawingCanvas: View {
         isCreatingFirstPoint = false
     }
     
-    private func handleBezierPenTap(at location: CGPoint) {
+    internal func handleBezierPenTap(at location: CGPoint) {
         let now = Date()
         let timeSinceLastTap = now.timeIntervalSince(bezierLastTapTime)
         bezierLastTapTime = now
@@ -1318,7 +1259,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func handleBezierPenDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleBezierPenDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let currentLocation = screenToCanvas(value.location, geometry: geometry)
         
@@ -1521,7 +1462,7 @@ struct DrawingCanvas: View {
     
     /// Updates the active bezier shape in the document with the current path
     /// This gives real-time visual feedback like professional vector apps
-    private func updateActiveBezierShapeInDocument() {
+    internal func updateActiveBezierShapeInDocument() {
         guard let activeBezierShape = activeBezierShape,
               let updatedPath = bezierPath,
               let layerIndex = document.selectedLayerIndex else { return }
@@ -1551,7 +1492,7 @@ struct DrawingCanvas: View {
         document.objectWillChange.send()
     }
     
-    private func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL SHAPE DRAWING: Perfect cursor-to-shape synchronization
         // Uses the same precision approach as hand tool and object dragging
         // This eliminates floating-point accumulation errors from DragGesture.translation
@@ -1656,7 +1597,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func finishShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func finishShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let path = currentPath else { return }
         
         // FIXED: Use document's default colors instead of hardcoded values!
@@ -1689,7 +1630,7 @@ struct DrawingCanvas: View {
         print("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation")
     }
     
-    private func startSelectionDrag() {
+    internal func startSelectionDrag() {
         guard let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
         
@@ -1715,7 +1656,7 @@ struct DrawingCanvas: View {
         print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) objects")
     }
     
-    private func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
         
@@ -1814,7 +1755,7 @@ struct DrawingCanvas: View {
         document.objectWillChange.send()
     }
     
-    private func finishSelectionDrag() {
+    internal func finishSelectionDrag() {
         if !initialObjectPositions.isEmpty {
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points
@@ -1838,7 +1779,7 @@ struct DrawingCanvas: View {
     
     // MARK: - Direct Selection Drag Handling
     
-    private func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
         
         // PROTECT LOCKED LAYERS: Don't allow editing points/handles on locked layers
@@ -1912,14 +1853,14 @@ struct DrawingCanvas: View {
         document.objectWillChange.send()
     }
     
-    private func finishDirectSelectionDrag() {
+    internal func finishDirectSelectionDrag() {
         isDraggingPoint = false
         isDraggingHandle = false
         originalPointPositions.removeAll()
         originalHandlePositions.removeAll()
     }
     
-    private func captureOriginalPositions() {
+    internal func captureOriginalPositions() {
         originalPointPositions.removeAll()
         originalHandlePositions.removeAll()
         
@@ -1938,7 +1879,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func getPointPosition(_ pointID: PointID) -> VectorPoint? {
+    internal func getPointPosition(_ pointID: PointID) -> VectorPoint? {
         // Find the shape and get the point position
         for layer in document.layers {
             if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
@@ -1958,7 +1899,7 @@ struct DrawingCanvas: View {
         return nil
     }
     
-    private func getHandlePosition(_ handleID: HandleID) -> VectorPoint? {
+    internal func getHandlePosition(_ handleID: HandleID) -> VectorPoint? {
         // Find the shape and get the handle position
         for layer in document.layers {
             if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
@@ -1978,7 +1919,7 @@ struct DrawingCanvas: View {
         return nil
     }
     
-    private func movePointToAbsolutePosition(_ pointID: PointID, to newPosition: CGPoint) {
+    internal func movePointToAbsolutePosition(_ pointID: PointID, to newPosition: CGPoint) {
         // Find the shape and update the point position
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) {
@@ -2007,7 +1948,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func moveHandleToAbsolutePosition(_ handleID: HandleID, to newPosition: CGPoint) {
+    internal func moveHandleToAbsolutePosition(_ handleID: HandleID, to newPosition: CGPoint) {
         // Find the shape and update the handle position
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == handleID.shapeID }) {
@@ -2048,106 +1989,14 @@ struct DrawingCanvas: View {
         }
     }
     
-    /// Updates the opposite handle of the SAME anchor point to maintain smooth curves
-    /// PROFESSIONAL BEHAVIOR: Smooth points work like a teeter-totter - both handles move together in a straight line
-    /// ENHANCED: Also handles coincident points (first/last in closed paths) as smooth points
-    private func updateLinkedHandle(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) {
-        
-        // FIRST: Check for coincident points (exact same X,Y coordinates)
-        if handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
-            return // Handled by coincident point logic
-        }
-        
-        if draggedHandleID.handleType == .control2 {
-            // Dragging INCOMING handle (control2) of current curve element
-            // This handle belongs to the anchor point at the END of this curve
-            guard case .curve(let anchorTo, let control1, _) = elements[draggedHandleID.elementIndex] else { return }
-            
-            let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
-            
-            // Find the OUTGOING handle of the same anchor point (control1 of NEXT curve element)
-            let nextIndex = draggedHandleID.elementIndex + 1
-            if nextIndex < elements.count, case .curve(let nextTo, let currentOutgoing, let nextControl2) = elements[nextIndex] {
-                
-                // Calculate the opposite handle position (180° from dragged handle through anchor point)
-                let oppositeHandle = calculateLinkedHandle(
-                    anchorPoint: anchorPoint,
-                    draggedHandle: newDraggedPosition,
-                    originalOppositeHandle: CGPoint(x: currentOutgoing.x, y: currentOutgoing.y)
-                )
-                
-                // Update both handles: the dragged one and its opposite
-                elements[draggedHandleID.elementIndex] = .curve(to: anchorTo, control1: control1, control2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
-                elements[nextIndex] = .curve(to: nextTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: nextControl2)
-            }
-            
-        } else if draggedHandleID.handleType == .control1 {
-            // Dragging OUTGOING handle (control1) of current curve element
-            // This handle belongs to the anchor point where the PREVIOUS curve ended
-            
-            let prevIndex = draggedHandleID.elementIndex - 1
-            if prevIndex >= 0, case .curve(let anchorTo, let prevControl1, let currentIncoming) = elements[prevIndex] {
-                
-                let anchorPoint = CGPoint(x: anchorTo.x, y: anchorTo.y)
-                
-                // Calculate the opposite handle position (180° from dragged handle through anchor point)
-                let oppositeHandle = calculateLinkedHandle(
-                    anchorPoint: anchorPoint,
-                    draggedHandle: newDraggedPosition,
-                    originalOppositeHandle: CGPoint(x: currentIncoming.x, y: currentIncoming.y)
-                )
-                
-                // Update both handles: the dragged one and its opposite
-                if case .curve(let currentTo, _, let currentControl2) = elements[draggedHandleID.elementIndex] {
-                    elements[prevIndex] = .curve(to: anchorTo, control1: prevControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
-                    elements[draggedHandleID.elementIndex] = .curve(to: currentTo, control1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y), control2: currentControl2)
-                }
-            }
-        }
-    }
+
     
-    /// Detects if Option/Alt key is pressed for independent handle control
-    private func optionPressed() -> Bool {
-        return isOptionPressed
-    }
-    
-    /// Calculates the linked handle position for smooth curve behavior
-    internal func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
-        // Vector from anchor to dragged handle
-        let draggedVector = CGPoint(
-            x: draggedHandle.x - anchorPoint.x,
-            y: draggedHandle.y - anchorPoint.y
-        )
-        
-        // Keep the original opposite handle length
-        let originalVector = CGPoint(
-            x: originalOppositeHandle.x - anchorPoint.x,
-            y: originalOppositeHandle.y - anchorPoint.y
-        )
-        let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
-        
-        // Create opposite vector (180° from dragged handle) with original length
-        let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
-        guard draggedLength > 0.1 else { return originalOppositeHandle } // Avoid division by zero
-        
-        let normalizedDragged = CGPoint(
-            x: draggedVector.x / draggedLength,
-            y: draggedVector.y / draggedLength
-        )
-        
-        // Opposite direction with original length
-        let linkedHandle = CGPoint(
-            x: anchorPoint.x - normalizedDragged.x * originalLength,
-            y: anchorPoint.y - normalizedDragged.y * originalLength
-        )
-        
-        return linkedHandle
-    }
+
     
     // Coincident smooth point handling functions moved to CoincidentPointHandling.swift
 
     
-    private func isDraggingSelectedObject(at location: CGPoint) -> Bool {
+    internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
         // Check if the location is on any of the currently selected objects across all layers
         for layerIndex in document.layers.indices {
             let layer = document.layers[layerIndex]
@@ -2199,7 +2048,7 @@ struct DrawingCanvas: View {
         return false
     }
     
-    private func selectObjectAt(_ location: CGPoint) {
+    internal func selectObjectAt(_ location: CGPoint) {
         // DETAILED LOGGING: Determine if this is canvas or pasteboard area
         let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
         let isInCanvasArea = canvasBounds.contains(location)
@@ -2218,7 +2067,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func finishBezierPath() {
+    internal func finishBezierPath() {
         guard let activeBezierShape = activeBezierShape, bezierPoints.count >= 2 else { 
             print("Cannot finish bezier path - insufficient points or no active shape")
             cancelBezierDrawing()
@@ -2271,7 +2120,7 @@ struct DrawingCanvas: View {
         print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected finished path")
     }
     
-    private func finishBezierPenDrag() {
+    internal func finishBezierPenDrag() {
         // FIRST POINT CORNER CREATION: Handle case where user clicked (no significant drag) for first point
         if isCreatingFirstPoint, let firstPointLocation = pendingFirstPoint {
             // User clicked without significant drag - create CORNER first point
@@ -2318,44 +2167,9 @@ struct DrawingCanvas: View {
         isDraggingBezierPoint = false
     }
     
-    private func updatePathWithHandles() {
-        guard let path = bezierPath, bezierPoints.count >= 1 else { return }
-        
-        var newElements: [PathElement] = []
-        
-        // Start with move to first point
-        newElements.append(.move(to: bezierPoints[0]))
-        
-        // Pure handle-based approach: only create curves when handles exist
-        for i in 1..<bezierPoints.count {
-            let currentPoint = bezierPoints[i]
-            let previousPoint = bezierPoints[i - 1]
-            
-            // Check for handles on both points
-            let previousHandles = bezierHandles[i - 1]
-            let currentHandles = bezierHandles[i]
-            
-            // Only create curves if there are actual handles to define them
-            let hasOutgoingHandle = previousHandles?.control2 != nil
-            let hasIncomingHandle = currentHandles?.control1 != nil
-            
-            if hasOutgoingHandle || hasIncomingHandle {
-                // Create curve using available handles
-                let control1 = previousHandles?.control2 ?? VectorPoint(previousPoint.x, previousPoint.y)
-                let control2 = currentHandles?.control1 ?? VectorPoint(currentPoint.x, currentPoint.y)
-                
-                newElements.append(.curve(to: currentPoint, control1: control1, control2: control2))
-            } else {
-                // No handles - use straight line
-                newElements.append(.line(to: currentPoint))
-            }
-        }
-        
-        // Update the path
-        bezierPath = VectorPath(elements: newElements, isClosed: path.isClosed)
-    }
+
     
-    private func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
+    internal func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL HAND TOOL: Perfect cursor-to-canvas synchronization
         // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW standards
         // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
@@ -2395,7 +2209,7 @@ struct DrawingCanvas: View {
     
     /// PROFESSIONAL ZOOM GESTURE HANDLING (Adobe Illustrator Standards)
     /// Always available but conditionally processed to prevent UI lockups
-    private func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
+    internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
         // PROFESSIONAL GESTURE COORDINATION: Only zoom when appropriate
         // Don't block the gesture - just ignore it during drawing operations
         guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
@@ -2413,7 +2227,7 @@ struct DrawingCanvas: View {
     }
     
     /// Handle zoom gesture end - finalize zoom level
-    private func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
+    internal func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
         // Always reset gesture state to ensure UI responsiveness
         defer {
             isZoomGestureActive = false
@@ -2432,51 +2246,10 @@ struct DrawingCanvas: View {
         print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, UI responsive")
     }
     
-    private func handleSimplifiedZoom(newZoomLevel: CGFloat, geometry: GeometryProxy) {
-        let oldZoomLevel = document.zoomLevel
-        
-        // Only proceed if zoom level actually changes
-        guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
-        
-        // STABLE ZOOM SYSTEM: Use document center as fixed reference point
-        // This prevents coordinate drift by always using the same reference
-        let documentBounds = document.documentBounds
-        let documentCenter = CGPoint(
-            x: documentBounds.midX,
-            y: documentBounds.midY
-        )
-        
-        // Calculate view center
-        let viewCenter = CGPoint(
-            x: geometry.size.width / 2.0,
-            y: geometry.size.height / 2.0
-        )
-        
-        // Update zoom level
-        document.zoomLevel = newZoomLevel
-        
-        // Calculate offset to keep document center at view center
-        // This approach is stable and prevents drift
-        let newOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * newZoomLevel),
-            y: viewCenter.y - (documentCenter.y * newZoomLevel)
-        )
-        
-        document.canvasOffset = newOffset
-        
-        print("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
-        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
-    }
-    
-    private func handleZoomToLevel(newZoomLevel: CGFloat, geometry: GeometryProxy) {
-        // Legacy function - redirect to simplified version
-        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
-    }
+
     
     /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)
-    private func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
+    internal func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
         
         switch request.mode {
         case .fitToPage:
@@ -2504,207 +2277,17 @@ struct DrawingCanvas: View {
         document.clearZoomRequest()
     }
     
-    /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
-    private func actualSize(geometry: GeometryProxy) {
-        let newZoomLevel: Double = 1.0 // 100% actual size
-        
-        // Calculate what canvas point is currently at the view center
-        let viewCenter = CGPoint(
-            x: geometry.size.width / 2.0,
-            y: geometry.size.height / 2.0
-        )
-        
-        // For actual size, we want to center the document center in the view
-        let documentBounds = document.documentBounds
-        let documentCenter = CGPoint(
-            x: documentBounds.midX,
-            y: documentBounds.midY
-        )
-        
-        // Update zoom level
-        document.zoomLevel = newZoomLevel
-        
-        // Calculate offset to center the document
-        document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * CGFloat(newZoomLevel)),
-            y: viewCenter.y - (documentCenter.y * CGFloat(newZoomLevel))
-        )
-        
-        // Update initial zoom level for gesture handling
-        initialZoomLevel = CGFloat(newZoomLevel)
-        
-        print("🎯 ACTUAL SIZE: Set to 100% and centered document")
-        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-    }
+
     
-    /// Zoom at a specific point (stable version to prevent drift)
-    private func handleZoomAtPoint(newZoomLevel: CGFloat, focalPoint: CGPoint, geometry: GeometryProxy) {
-        let oldZoomLevel = document.zoomLevel
-        
-        // Only proceed if zoom level actually changes
-        guard abs(newZoomLevel - oldZoomLevel) > 0.001 else { return }
-        
-        // Use high precision arithmetic to prevent floating-point drift
-        let preciseOldZoom = Double(oldZoomLevel)
-        let preciseNewZoom = Double(newZoomLevel)
-        let preciseFocalX = Double(focalPoint.x)
-        let preciseFocalY = Double(focalPoint.y)
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
-        
-        // Find the canvas coordinate at the focal point
-        let canvasPointAtFocus = CGPoint(
-            x: (preciseFocalX - preciseOffsetX) / preciseOldZoom,
-            y: (preciseFocalY - preciseOffsetY) / preciseOldZoom
-        )
-        
-        // Update zoom level
-        document.zoomLevel = newZoomLevel
-        
-        // Calculate what the new offset should be to keep the same canvas point at the focal point
-        let newOffset = CGPoint(
-            x: preciseFocalX - (Double(canvasPointAtFocus.x) * preciseNewZoom),
-            y: preciseFocalY - (Double(canvasPointAtFocus.y) * preciseNewZoom)
-        )
-        
-        document.canvasOffset = newOffset
-        
-        print("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
-        print("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))")
-        print("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))")
-        print("   Stable offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
-    }
+
     
-    private func screenToCanvas(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
-        // Mathematical inverse: (screen - canvasOffset) / zoomLevel = canvas
-        // Use high precision to prevent floating-point drift
-        let preciseScreenX = Double(point.x)
-        let preciseScreenY = Double(point.y)
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
-        let preciseZoom = Double(document.zoomLevel)
-        
-        let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
-        let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
-        
-        return CGPoint(x: canvasX, y: canvasY)
-    }
-    
-    private func canvasToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
-        // Visual chain: (canvas * zoomLevel) + canvasOffset = screen
-        // Use high precision to prevent floating-point drift
-        let preciseCanvasX = Double(point.x)
-        let preciseCanvasY = Double(point.y)
-        let preciseOffsetX = Double(document.canvasOffset.x)
-        let preciseOffsetY = Double(document.canvasOffset.y)
-        let preciseZoom = Double(document.zoomLevel)
-        
-        let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
-        let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
-        
-        return CGPoint(x: screenX, y: screenY)
-    }
-    
-    private func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
-        let controlPointOffset = radius * 0.552
-        
-        // PROFESSIONAL 4-CURVE CIRCLE: Each quadrant gets its own curve
-        // Start at 3 o'clock, go clockwise: Right → Bottom → Left → Top → Back to Right
-        return VectorPath(elements: [
-            // Start at right (3 o'clock)
-            .move(to: VectorPoint(center.x + radius, center.y)),
-            
-            // Curve 1: Right → Bottom (3 o'clock to 6 o'clock)
-            .curve(to: VectorPoint(center.x, center.y + radius),
-                   control1: VectorPoint(center.x + radius, center.y + controlPointOffset),
-                   control2: VectorPoint(center.x + controlPointOffset, center.y + radius)),
-            
-            // Curve 2: Bottom → Left (6 o'clock to 9 o'clock)
-            .curve(to: VectorPoint(center.x - radius, center.y),
-                   control1: VectorPoint(center.x - controlPointOffset, center.y + radius),
-                   control2: VectorPoint(center.x - radius, center.y + controlPointOffset)),
-            
-            // Curve 3: Left → Top (9 o'clock to 12 o'clock)
-            .curve(to: VectorPoint(center.x, center.y - radius),
-                   control1: VectorPoint(center.x - radius, center.y - controlPointOffset),
-                   control2: VectorPoint(center.x - controlPointOffset, center.y - radius)),
-            
-            // Curve 4: Top → Right (12 o'clock back to 3 o'clock) - CRITICAL!
-            // This completes the circle with a proper curve, not a straight line
-            .curve(to: VectorPoint(center.x + radius, center.y),
-                   control1: VectorPoint(center.x + controlPointOffset, center.y - radius),
-                   control2: VectorPoint(center.x + radius, center.y - controlPointOffset)),
-            
-            // Close the path (this just marks it as closed, the curves do the actual work)
-            .close
-        ], isClosed: true)
-    }
-    
-    private func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
-        var elements: [PathElement] = []
-        let angleStep = .pi / Double(points)
-        
-        for i in 0..<(points * 2) {
-            let angle = Double(i) * angleStep - .pi / 2 // Start at top
-            let radius = i % 2 == 0 ? outerRadius : innerRadius
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
-            
-            if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
-            } else {
-                elements.append(.line(to: VectorPoint(x, y)))
-            }
-        }
-        elements.append(.close)
-        
-        return VectorPath(elements: elements, isClosed: true)
-    }
-    
-    private func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPath {
-        var elements: [PathElement] = []
-        let angleStep = 2 * .pi / Double(sides)
-        
-        for i in 0..<sides {
-            let angle = Double(i) * angleStep - .pi / 2 // Start at top
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
-            
-            if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
-            } else {
-                elements.append(.line(to: VectorPoint(x, y)))
-            }
-        }
-        elements.append(.close)
-        
-        return VectorPath(elements: elements, isClosed: true)
-    }
+
     
     // TEXT TOOL COMPLETELY REMOVED - Starting over with simple approach
     
-    private func addPathElements(_ elements: [PathElement], to path: inout Path) {
-        for element in elements {
-            switch element {
-            case .move(let to):
-                path.move(to: to.cgPoint)
-            case .line(let to):
-                path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
-                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
-                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-            case .close:
-                path.closeSubpath()
-            }
-        }
-    }
+
     
-    private func handleDirectSelectionTap(at location: CGPoint) {
+    internal func handleDirectSelectionTap(at location: CGPoint) {
         print("🎯 PROFESSIONAL DIRECT SELECTION tap at: \(location)")
         
         // TEXT EDITING REMOVED
@@ -2744,7 +2327,7 @@ struct DrawingCanvas: View {
     // MARK: - PROFESSIONAL ANCHOR POINT AND HANDLE SELECTION
     
     /// STAGE 1: Select individual anchor points or handles (when shape already direct-selected)
-    private func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
+    internal func selectIndividualAnchorPointOrHandle(at location: CGPoint, tolerance: Double) -> Bool {
         // Search through all direct-selected shapes for individual anchor points and handles
         for shapeID in directSelectedShapeIDs {
             // Find the shape in the document
@@ -2927,7 +2510,7 @@ struct DrawingCanvas: View {
     }
     
     /// STAGE 2: Direct-select whole shape (Adobe Illustrator: shows all anchor points)
-    private func directSelectWholeShape(at location: CGPoint) -> Bool {
+    internal func directSelectWholeShape(at location: CGPoint) -> Bool {
         // Search for any shape at the click location
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -3002,7 +2585,7 @@ struct DrawingCanvas: View {
         return false
     }
     
-    private func oldHandleDirectSelectionTap(at location: CGPoint) {
+    internal func oldHandleDirectSelectionTap(at location: CGPoint) {
         // PROFESSIONAL SHIFT SELECTION (Adobe Illustrator Standard)
         // NOTE: This is now handled by the state variables
         
@@ -3171,7 +2754,7 @@ struct DrawingCanvas: View {
         print("Direct selection: Selected \(selectedPoints.count) points, \(selectedHandles.count) handles")
     }
     
-    private func closeSelectedPaths() {
+    internal func closeSelectedPaths() {
         // Get unique shape IDs from selected points
         let selectedShapeIDs = Set(selectedPoints.map { $0.shapeID })
         
@@ -3206,7 +2789,7 @@ struct DrawingCanvas: View {
          document.objectWillChange.send()
      }
      
-     private func deleteSelectedPoints() {
+     internal func deleteSelectedPoints() {
          // Group selected points by shape ID
          let pointsByShape = Dictionary(grouping: selectedPoints) { $0.shapeID }
          
@@ -3250,106 +2833,11 @@ struct DrawingCanvas: View {
      
      // MARK: - Professional Point Deletion (Adobe Illustrator Standards)
      
-     /// Delete specific points from a path while maintaining path integrity
-     private func deletePointsFromPath(_ path: VectorPath, selectedPoints: [PointID]) -> VectorPath {
-         var elements = path.elements
-         
-         // Get element indices to delete (sorted in reverse order to avoid index shifting issues)
-         let indicesToDelete = selectedPoints.compactMap { $0.elementIndex }.sorted(by: >)
-         
-         // Remove elements from back to front to maintain indices
-         for index in indicesToDelete {
-             if index < elements.count {
-                 // Check if this is a critical point for path integrity
-                 if canDeleteElement(at: index, in: elements) {
-                     elements.remove(at: index)
-                 }
-             }
-         }
-         
-         // Ensure path still has a valid structure
-         let validatedElements = validatePathElements(elements)
-         
-         return VectorPath(elements: validatedElements, isClosed: path.isClosed)
-     }
+
      
-     /// Check if an element can be safely deleted without breaking the path
-     private func canDeleteElement(at index: Int, in elements: [PathElement]) -> Bool {
-         // Don't delete if it's the only move element
-         if case .move = elements[index] {
-             let moveCount = elements.compactMap { if case .move = $0 { return 1 } else { return nil } }.count
-             return moveCount > 1
-         }
-         
-         // Don't delete if it would result in too few elements
-         let pointCount = elements.filter { element in
-             switch element {
-             case .move, .line, .curve, .quadCurve: return true
-             case .close: return false
-             }
-         }.count
-         
-         return pointCount > 2 // Need at least 3 points for a valid path
-     }
-     
-     /// Validate and fix path elements to maintain integrity
-     private func validatePathElements(_ elements: [PathElement]) -> [PathElement] {
-         var validElements: [PathElement] = []
-         
-         for element in elements {
-             switch element {
-             case .move(_):
-                 // Always keep move elements
-                 validElements.append(element)
-                 
-             case .line(_):
-                 // Keep line elements if we have a starting point
-                 if !validElements.isEmpty {
-                     validElements.append(element)
-                 }
-                 
-             case .curve(_, _, _):
-                 // Keep curve elements if we have a starting point
-                 if !validElements.isEmpty {
-                     validElements.append(element)
-                 }
-                 
-             case .quadCurve(_, _):
-                 // Keep quadratic curve elements if we have a starting point
-                 if !validElements.isEmpty {
-                     validElements.append(element)
-                 }
-                 
-             case .close:
-                 // Keep close elements if we have enough points
-                 let pointCount = validElements.filter { element in
-                     switch element {
-                     case .move, .line, .curve, .quadCurve: return true
-                     case .close: return false
-                     }
-                 }.count
-                 
-                 if pointCount >= 3 {
-                     validElements.append(element)
-                 }
-             }
-         }
-         
-         // Ensure we have at least a move element
-         if validElements.isEmpty {
-             validElements.append(.move(to: VectorPoint(0, 0)))
-         }
-         
-         return validElements
-     }
-     
-     private func distance(_ point1: CGPoint, _ point2: CGPoint) -> Double {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        return sqrt(dx * dx + dy * dy)
-    }
+ 
     
-    private func closeBezierPath() {
+    internal func closeBezierPath() {
         guard let _ = bezierPath, 
               let activeShape = activeBezierShape,
               bezierPoints.count >= 3 else {
@@ -3447,7 +2935,7 @@ struct DrawingCanvas: View {
         print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected closed path")
     }
     
-    private func handleConvertAnchorPointTap(at location: CGPoint) {
+    internal func handleConvertAnchorPointTap(at location: CGPoint) {
         let tolerance: Double = 8.0 // Hit test tolerance
         
         // TEXT EDITING REMOVED
@@ -3542,7 +3030,7 @@ struct DrawingCanvas: View {
     }
     
     // PROFESSIONAL UX: Auto-select shapes when clicking with Convert Point tool
-    private func tryToSelectShapeForConvertTool(at location: CGPoint) {
+    internal func tryToSelectShapeForConvertTool(at location: CGPoint) {
         // Search for any shape at the click location
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -3629,7 +3117,7 @@ struct DrawingCanvas: View {
     }
     
     // PROFESSIONAL UX IMPROVEMENT: Enable direct selection UI for convert point tool
-    private func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
+    internal func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
         // Clear any existing selections but KEEP the convert point tool active
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
@@ -3660,7 +3148,7 @@ struct DrawingCanvas: View {
         print("  - User can see bezier handles while continuing to use Convert Point tool")
     }
     
-    private func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    internal func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -3717,7 +3205,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func convertSmoothToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    internal func convertSmoothToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -3752,7 +3240,7 @@ struct DrawingCanvas: View {
         }
     }
     
-    private func convertCornerToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    internal func convertCornerToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -3859,7 +3347,7 @@ struct DrawingCanvas: View {
     
 
     
-    private func convertQuadToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    internal func convertQuadToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -3883,147 +3371,12 @@ struct DrawingCanvas: View {
         }
     }
     
-    // SIMPLE 180-DEGREE SYMMETRIC HANDLES - NO COMPLEX MATH!
-    private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
-        // Just create simple horizontal 180-degree handles like Adobe Illustrator
-        let handleLength: Double = 30.0
-        
-        let incomingHandle = VectorPoint(point.x - handleLength, point.y)
-        let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
-        
-        return (incomingHandle, outgoingHandle)
-    }
-    
     // MARK: - COORDINATE SYSTEM DEBUGGING AND TESTING
     // Use Cmd+Shift+T to analyze coordinate system consistency
     
-    /// COMPREHENSIVE COORDINATE SYSTEM TEST
-    /// This systematically tests that objects appear in the same location at all zoom levels
-    private func runCoordinateSystemTest() {
-        print("🎯 COMPREHENSIVE COORDINATE SYSTEM TEST")
-        print("  Testing that objects appear at consistent screen positions across zoom levels")
-        
-        // Save current state
-        let originalZoom = document.zoomLevel
-        let originalOffset = document.canvasOffset
-        
-        // Clear existing objects for clean test
-        if !document.layers.isEmpty {
-            document.layers[0].shapes.removeAll()
-        }
-        
-        // Test at "Fit to Page" zoom first
-        document.zoomLevel = 1.0
-        document.canvasOffset = CGPoint.zero
-        
-        // Create test objects at known canvas coordinates
-        let testObjects = [
-            (name: "Top-Left", point: CGPoint(x: 100, y: 100), color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0))),
-            (name: "Top-Right", point: CGPoint(x: 400, y: 100), color: VectorColor.rgb(RGBColor(red: 0.0, green: 1.0, blue: 0.0))),
-            (name: "Bottom-Left", point: CGPoint(x: 100, y: 300), color: VectorColor.rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0))),
-            (name: "Center", point: CGPoint(x: 250, y: 200), color: VectorColor.rgb(RGBColor(red: 1.0, green: 1.0, blue: 0.0)))
-        ]
-        
-        for testObj in testObjects {
-            let shape = VectorShape(
-                name: "TEST-\(testObj.name)",
-                path: createTestCirclePath(center: testObj.point, radius: 20),
-                strokeStyle: StrokeStyle(color: VectorColor.black, width: 2),
-                fillStyle: FillStyle(color: testObj.color, opacity: 0.8)
-            )
-            document.addShape(shape)
-            print("  ✅ Created \(testObj.name) at canvas coords: (\(testObj.point.x), \(testObj.point.y))")
-        }
-        
-        print("  📏 COORDINATE SYSTEM ANALYSIS:")
-        print("    Background: .scaleEffect(\(document.zoomLevel), anchor: .topLeading).offset(\(document.canvasOffset))")
-        print("    Objects: .transformEffect(shape.transform).scaleEffect(\(document.zoomLevel), anchor: .topLeading).offset(\(document.canvasOffset))")
-        print("    Current drawing: .scaleEffect(\(document.zoomLevel), anchor: .topLeading).offset(\(document.canvasOffset))")
-        print("    ✅ ALL USE IDENTICAL COORDINATE TRANSFORMATIONS")
-        
-        print("  📊 OBJECT COORDINATE VERIFICATION:")
-        for testObj in testObjects {
-            if !document.layers.isEmpty,
-               let shape = document.layers[0].shapes.first(where: { $0.name == "TEST-\(testObj.name)" }) {
-                let centerX = (shape.bounds.minX + shape.bounds.maxX) / 2
-                let centerY = (shape.bounds.minY + shape.bounds.maxY) / 2
-                let actualCenter = CGPoint(x: centerX, y: centerY)
-                
-                let deltaX = abs(actualCenter.x - testObj.point.x)
-                let deltaY = abs(actualCenter.y - testObj.point.y)
-                
-                if deltaX < 1.0 && deltaY < 1.0 {
-                    print("    ✅ \(testObj.name): Expected (\(testObj.point.x), \(testObj.point.y)) → Actual (\(String(format: "%.1f", actualCenter.x)), \(String(format: "%.1f", actualCenter.y)))")
-                } else {
-                    print("    ❌ \(testObj.name): Expected (\(testObj.point.x), \(testObj.point.y)) → Actual (\(String(format: "%.1f", actualCenter.x)), \(String(format: "%.1f", actualCenter.y))) - DRIFT!")
-                }
-            }
-        }
-        
-        // Restore original state
-        document.zoomLevel = originalZoom
-        document.canvasOffset = originalOffset
-        
-        print("  🔍 TESTING COMPLETE:")
-        print("    - If all objects show ✅, coordinate system is CONSISTENT")
-        print("    - If any show ❌, there's coordinate drift that needs fixing")
-        print("    - Objects should remain in same relative positions when zooming")
-        print("    - Drawing preview should match where final objects appear")
-        print("=" + String(repeating: "=", count: 58))
-    }
-    
-    /// CRITICAL DRAWING TEST - Verifies canvas doesn't move during drawing
-    /// Use Cmd+Shift+D to test drawing stability
-    private func runDrawingStabilityTest() {
-        print("🚨 DRAWING STABILITY TEST")
-        print("=" + String(repeating: "=", count: 58))
-        print("  TESTING: Canvas must NOT move during drawing operations")
-        print("  STATUS: isDrawing = \(isDrawing), isBezierDrawing = \(isBezierDrawing)")
-        print("  ZOOM GESTURE: \(!isDrawing && !isBezierDrawing ? "ACTIVE" : "DISABLED")")
-        print("  CURRENT ZOOM: \(String(format: "%.3f", document.zoomLevel))x")
-        print("  CURRENT OFFSET: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-        
-        if isDrawing || isBezierDrawing {
-            print("  🎯 DRAWING IN PROGRESS - Zoom gesture should be DISABLED")
-            print("  ✅ Canvas is protected from zoom changes during drawing")
-        } else {
-            print("  ⏸️  NOT DRAWING - Zoom gesture is available")
-            print("  📝 Start drawing a shape to test stability")
-        }
-        
-        print("  INSTRUCTIONS:")
-        print("    1. Select rectangle tool")
-        print("    2. Start drawing a rectangle")
-        print("    3. While drawing, try to pinch/zoom")
-        print("    4. Canvas should NOT move or zoom")
-        print("    5. Only after releasing should zoom be available")
-        print("=" + String(repeating: "=", count: 58))
-    }
-    
-    /// Create a simple circle path for testing purposes
-    private func createTestCirclePath(center: CGPoint, radius: Double) -> VectorPath {
-        let steps = 32 // Number of segments for circle approximation
-        var elements: [PathElement] = []
-        
-        for i in 0...steps {
-            let angle = Double(i) * 2.0 * .pi / Double(steps)
-            let x = center.x + cos(angle) * radius
-            let y = center.y + sin(angle) * radius
-            
-            if i == 0 {
-                elements.append(.move(to: VectorPoint(x, y)))
-            } else {
-                elements.append(.line(to: VectorPoint(x, y)))
-            }
-        }
-        elements.append(.close)
-        
-        return VectorPath(elements: elements, isClosed: true)
-    }
-    
     /// COMPREHENSIVE DRAWING TEST - Run this to debug coordinate system issues
     /// Use Cmd+Shift+R to run this test
-    private func runRealDrawingTest(geometry: GeometryProxy) {
+    internal func runRealDrawingTest(geometry: GeometryProxy) {
         print("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES")
         print("=" + String(repeating: "=", count: 80))
         
@@ -4146,161 +3499,12 @@ struct DrawingCanvas: View {
         print("🏁 TEST COMPLETE - Check above for coordinate system issues")
     }
 
-    /// SIMPLE DRAWING TEST - Debug coordinate system without geometry
-    /// Use Cmd+Shift+R to run this test
-    private func runRealDrawingTestSimple() {
-        print("🔥 SIMPLE DRAWING TEST - TRACKING COORDINATE SYSTEM")
-        print("=" + String(repeating: "=", count: 80))
-        
-        // Log initial state
-        print("📊 INITIAL STATE:")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
-        print("   Is Drawing: \(isDrawing)")
-        print("   Is Bezier Drawing: \(isBezierDrawing)")
-        
-        // Clear any existing shapes
-        if !document.layers.isEmpty {
-            document.layers[0].shapes.removeAll()
-        }
-        
-        // Create a test shape at a known position
-        let testCenter = CGPoint(x: 300, y: 250)
-        let testShape = VectorShape(
-            name: "TEST SHAPE",
-            path: createTestCirclePath(center: testCenter, radius: 30),
-            strokeStyle: StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), width: 3),
-            fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
-        )
-        
-        print("📍 CREATING TEST SHAPE:")
-        print("   Expected center: (\(testCenter.x), \(testCenter.y))")
-        
-        // Log state before adding shape
-        print("📊 BEFORE ADDING SHAPE:")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        
-        // Add the shape
-        document.addShape(testShape)
-        
-        // Log state after adding shape
-        print("📊 AFTER ADDING SHAPE:")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        
-        // Verify the shape's actual position
-        if let addedShape = document.layers[0].shapes.first(where: { $0.name == "TEST SHAPE" }) {
-            let actualCenter = CGPoint(
-                x: (addedShape.bounds.minX + addedShape.bounds.maxX) / 2,
-                y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
-            )
-            
-            print("📍 SHAPE VERIFICATION:")
-            print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
-            print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
-            
-            let deltaX = abs(actualCenter.x - testCenter.x)
-            let deltaY = abs(actualCenter.y - testCenter.y)
-            
-            if deltaX < 0.1 && deltaY < 0.1 {
-                print("   ✅ SHAPE POSITION CORRECT")
-            } else {
-                print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
-            }
-        }
-        
-        // Now simulate drawing operations to see if coordinate system changes
-        print("🎨 SIMULATING DRAWING OPERATIONS:")
-        
-        // Simulate start drawing
-        isDrawing = true
-        print("📊 DURING DRAWING (isDrawing = true):")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
-        
-        // Create a drawing preview to see if coordinate system shifts
-        let previewStart = CGPoint(x: 200, y: 200)
-        let previewEnd = CGPoint(x: 400, y: 300)
-        currentPath = VectorPath(elements: [
-            .move(to: VectorPoint(previewStart)),
-            .line(to: VectorPoint(previewEnd))
-        ])
-        
-        print("📍 DRAWING PREVIEW CREATED:")
-        print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
-        print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
-        
-        // Log state with drawing preview
-        print("📊 WITH DRAWING PREVIEW:")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        
-        // Simulate end drawing
-        isDrawing = false
-        currentPath = nil
-        
-        print("📊 AFTER DRAWING (isDrawing = false):")
-        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
-        
-        print("=" + String(repeating: "=", count: 80))
-        print("🏁 SIMPLE TEST COMPLETE - Run this test and then try drawing to compare")
-        print("   Next steps:")
-        print("   1. Note the values above")
-        print("   2. Try drawing a rectangle manually")
-        print("   3. Check if zoom/offset values change during drawing")
-        print("   4. If values change, we found the coordinate system bug!")
-    }
+
     
             // MARK: - Canvas Utilities
     
 
-    private func fitToPage(geometry: GeometryProxy) {
-        // Use standard document bounds for fit-to-page calculations
-        let documentBounds = document.documentBounds
-        let viewSize = geometry.size
-        
-        // Calculate zoom level to fit the canvas in the view with padding
-        let padding: CGFloat = 50.0
-        let availableWidth = viewSize.width - (padding * 2)
-        let availableHeight = viewSize.height - (padding * 2)
-        
-        let scaleX = availableWidth / documentBounds.width
-        let scaleY = availableHeight / documentBounds.height
-        let fitZoom = min(scaleX, scaleY)
-        
-        // Set zoom level to fit canvas in view
-        document.zoomLevel = max(0.1, min(10.0, fitZoom))
-        
-        // Center canvas in view at the fit zoom
-        let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
-        )
-        
-        let documentCenter = CGPoint(
-            x: documentBounds.midX,
-            y: documentBounds.midY
-        )
-        
-        // Calculate offset to center document
-        document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
-            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
-        )
-        
-        // Update initial zoom level for gesture handling
-        initialZoomLevel = document.zoomLevel
-        
-        print("🔍 FIT TO PAGE: Using standard document bounds")
-        print("   Document Bounds: \(documentBounds)")
-        print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
-        print("   Standard coordinate system approach")
-    }
+
 
     // MARK: - PROFESSIONAL COINCIDENT POINT HANDLING
     // Coincident point functions moved to CoincidentPointHandling.swift
