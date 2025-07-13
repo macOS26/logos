@@ -43,7 +43,6 @@ struct DrawingCanvas: View {
     @State internal var bezierPath: VectorPath?
     @State internal var bezierPoints: [VectorPoint] = []
     @State internal var isBezierDrawing = false
-    @State internal var bezierLastTapTime: Date = Date()
     @State internal var isDraggingBezierHandle = false
     @State internal var activeBezierPointIndex: Int? = nil // Currently active (solid) point
     @State internal var isDraggingBezierPoint = false
@@ -54,10 +53,6 @@ struct DrawingCanvas: View {
     
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
     @State internal var activeBezierShape: VectorShape? = nil // Real shape being built
-    
-    // First point creation state for smooth/corner point detection
-    @State internal var pendingFirstPoint: CGPoint? = nil // Location where first point will be created
-    @State internal var isCreatingFirstPoint = false // True when we're deciding if first point should be smooth or corner
     
 
     
@@ -248,8 +243,10 @@ struct DrawingCanvas: View {
     }
     
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        // Auto-finalize bezier path when switching away from bezier tool
+        // ✅ EXPLICIT USER ACTION: Auto-finish bezier path when user switches away from pen tool
+        // This is standard Adobe Illustrator behavior and represents explicit user intent to stop drawing
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
+            print("🔧 USER SWITCHED TOOLS: Auto-finishing current bezier path (explicit user action)")
             finishBezierPath()
         }
         
@@ -943,11 +940,10 @@ struct DrawingCanvas: View {
                     if isBezierDrawing { cancelBezierDrawing() }
                     handleConvertAnchorPointTap(at: canvasLocation)
                 case .bezierPen:
-                    // ✅ PASTEBOARD PEN TOOL FIX: Handle pen tool taps on pasteboard
+                    // ✅ ISOLATION FIX: Pen tool works the same everywhere - canvas or pasteboard
+                    // Never automatically finish paths - only add points for continuous tracing
                     handleBezierPenTap(at: canvasLocation)
-                    // CRITICAL: Also call finishBezierPenDrag to actually create the point
-                    // On canvas, the drag system handles this, but for pasteboard we need to do it manually
-                    finishBezierPenDrag()
+                    // Note: Pen tool is isolated from existing objects and layers
                 // TEXT TOOL COMPLETELY REMOVED
                 default:
                     break
@@ -1276,19 +1272,18 @@ struct DrawingCanvas: View {
         currentMouseLocation = nil
         showClosePathHint = false
         activeBezierShape = nil // Clear the real shape reference
-        
-        // Clear first point creation state
-        pendingFirstPoint = nil
-        isCreatingFirstPoint = false
     }
     
     internal func handleBezierPenTap(at location: CGPoint) {
-        let now = Date()
-        let timeSinceLastTap = now.timeIntervalSince(bezierLastTapTime)
-        bezierLastTapTime = now
+        // 🔒 COMPLETE ISOLATION: Pen tool is TOTALLY isolated from existing objects
+        // ✅ NO hit-testing against existing shapes, locked objects, or other layers
+        // ✅ NO interference from pasteboard vs canvas area differences
+        // ✅ NO automatic finishing except explicit user actions (green close hints)
+        // ✅ ONLY interacts with the current path being drawn
         
-        // Check if we're trying to close the path by clicking near the first point
-        if isBezierDrawing && bezierPoints.count >= 3 {
+        // Check if we're trying to close the CURRENT path by clicking near its first point
+        // CRITICAL: Only allow closing if the green close hint is showing (explicit user intent)
+        if isBezierDrawing && bezierPoints.count >= 3 && showClosePathHint {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
             if distance(location, firstPointLocation) <= 25.0 { // Close tolerance (Adobe Illustrator standard)
@@ -1297,19 +1292,40 @@ struct DrawingCanvas: View {
             }
         }
         
-        // Check for double-tap to finish path (within 0.5 seconds)
-        if timeSinceLastTap < 0.5 && isBezierDrawing && bezierPoints.count > 1 {
-            finishBezierPath()
-            return
-        }
-        
         if !isBezierDrawing {
-            // FIXED: Don't set up pending first point - let drag handler create first point directly
-            // This allows click-and-drag in one shot to create smooth first point
-            // If this tap is NOT followed by a drag, finishBezierPenDrag will handle corner point creation
-            pendingFirstPoint = location
-            isCreatingFirstPoint = true
-            print("🎯 PENDING FIRST POINT: Set up at \(location) - ready for immediate drag or corner point creation")
+        // CREATE FIRST POINT IMMEDIATELY: Handle both canvas and pasteboard areas consistently
+        // This allows click-and-drag for smooth points or simple clicks for corner points
+        
+        // Create the bezier path and add the first point as a corner point
+        bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
+        bezierPoints = [VectorPoint(location)]
+        isBezierDrawing = true
+        activeBezierPointIndex = 0 // First point is active (solid)
+        bezierHandles.removeAll()
+        
+        // Create real VectorShape with document default colors
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: 1.0,
+            opacity: document.defaultStrokeOpacity
+        )
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity
+        )
+        
+        activeBezierShape = VectorShape(
+            name: "Bezier Path",
+            path: bezierPath!,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
+        
+        // Add the real shape to the document immediately
+        document.addShape(activeBezierShape!)
+        
+        print("🎯 CREATED FIRST POINT: Started new path at \(location)")
+        print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
             return
         } else {
             // PURE CLICK: Add corner point (no handles)
@@ -1360,76 +1376,10 @@ struct DrawingCanvas: View {
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
         
-        // UNIFIED FIRST POINT CREATION: Handle both click and click-and-drag for first point
+        // First point creation is now handled in handleBezierPenTap()
+        // This drag handler only deals with subsequent points and handle manipulation
         if !isBezierDrawing {
-            // Use the pending first point location if available (from tap gesture), otherwise use drag start location
-            let firstPointLocation = pendingFirstPoint ?? startLocation
-            
-            // Determine if this should be a corner point (small/no drag) or smooth point (significant drag)
-            if dragDistance < minimumDragThreshold {
-                print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - will create corner point on drag end")
-                return
-            }
-            
-            // User dragged significantly - create SMOOTH first point with handles immediately
-            print("🎯 FIRST POINT: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - creating SMOOTH first point")
-            
-            // Create the bezier path and add the first point
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
-            bezierPoints = [VectorPoint(firstPointLocation)]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0 // First point is active (solid)
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: 1.0,
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: document.defaultFillColor, // Use toolbar default fill color (Adobe Illustrator behavior)
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            
-            // Create smooth handles for the first point based on drag direction
-            let dragVector = CGPoint(
-                x: currentLocation.x - firstPointLocation.x,
-                y: currentLocation.y - firstPointLocation.y
-            )
-            
-            let control1 = VectorPoint(
-                firstPointLocation.x - dragVector.x * 0.5,
-                firstPointLocation.y - dragVector.y * 0.5
-            )
-            let control2 = VectorPoint(
-                firstPointLocation.x + dragVector.x * 0.5,
-                firstPointLocation.y + dragVector.y * 0.5
-            )
-            
-            bezierHandles[0] = BezierHandleInfo(
-                control1: control1,
-                control2: control2,
-                hasHandles: true
-            )
-            
-            // Clear first point creation state
-            pendingFirstPoint = nil
-            isCreatingFirstPoint = false
-            isDraggingBezierHandle = true
-            
-            print("✅ CREATED SMOOTH FIRST POINT with handles at \(firstPointLocation)")
-            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            print("⚠️ Warning: Drag detected but no bezier path active - first point should be created in tap handler")
             return
         }
         
@@ -2199,69 +2149,27 @@ struct DrawingCanvas: View {
         print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
         print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: document.defaultStrokeOpacity))")
         
-        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select the path
+        // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
+        // This allows users to trace multiple objects without tool interruption
         let finishedShapeID = activeBezierShape.id
         
-        // Reset bezier state BEFORE switching tools
+        // Reset bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()
         
-        // Switch to direct selection tool
-        document.currentTool = .directSelection
+        // NOTE: Removed automatic tool switch to direct selection
+        // Users can manually switch tools when they're ready to edit points
+        // This enables uninterrupted tracing workflows
         
-        // Direct-select the finished shape
-        directSelectedShapeIDs.removeAll()
-        directSelectedShapeIDs.insert(finishedShapeID)
-        selectedPoints.removeAll() // Clear any existing point selections
-        selectedHandles.removeAll() // Clear any existing handle selections
-        
-        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected finished path")
+        print("✅ FINISHED PATH: Pen tool remains active for continuous tracing")
     }
     
     internal func finishBezierPenDrag() {
-        // FIRST POINT CORNER CREATION: Handle case where user clicked (no significant drag) for first point
-        if isCreatingFirstPoint, let firstPointLocation = pendingFirstPoint {
-            // User clicked without significant drag - create CORNER first point
-            print("🎯 FIRST POINT: No significant drag detected - creating CORNER first point")
-            
-            // Create the bezier path and add the first point
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(firstPointLocation))])
-            bezierPoints = [VectorPoint(firstPointLocation)]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0 // First point is active (solid)
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: 1.0,
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: document.defaultFillColor, // Use toolbar default fill color (Adobe Illustrator behavior)
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            
-            // Clear first point creation state
-            pendingFirstPoint = nil
-            isCreatingFirstPoint = false
-            
-            print("✅ CREATED CORNER FIRST POINT (no handles) at \(firstPointLocation)")
-            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
-        }
-        
-        // Finalize bezier curve drag
+        // Reset bezier drag state
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
+        
+        // Update the real shape in the document
+        updateActiveBezierShapeInDocument()
     }
     
 
@@ -3012,25 +2920,21 @@ struct DrawingCanvas: View {
         print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
         print("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
         
-        // PROFESSIONAL ADOBE ILLUSTRATOR BEHAVIOR: Auto-switch to direct selection and select closed path
+        // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
+        // This allows users to trace multiple objects without tool interruption
         let closedShapeID = activeShape.id
         
-        // Clear bezier state BEFORE switching tools
+        // Clear bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()
         
         // Hide any close path hints
         showClosePathHint = false
         
-        // Switch to direct selection tool
-        document.currentTool = .directSelection
+        // NOTE: Removed automatic tool switch to direct selection
+        // Users can manually switch tools when they're ready to edit points
+        // This enables uninterrupted tracing workflows
         
-        // Direct-select the closed shape
-        directSelectedShapeIDs.removeAll()
-        directSelectedShapeIDs.insert(closedShapeID)
-        selectedPoints.removeAll() // Clear any existing point selections
-        selectedHandles.removeAll() // Clear any existing handle selections
-        
-        print("🎯 AUTO-SWITCHED to Direct Selection and direct-selected closed path")
+        print("✅ CLOSED PATH: Pen tool remains active for continuous tracing")
     }
     
     internal func handleConvertAnchorPointTap(at location: CGPoint) {

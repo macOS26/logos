@@ -17,7 +17,7 @@
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>draggableVectorObject</string>
+					<string>dvo</string>
 				</array>
 			</dict>
 		</dict>
@@ -40,7 +40,7 @@
 				<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
 			</array>
 			<key>NSDocumentClass</key>
-			<string>NSPersistentDocument</string>
+			<string>NSDocument</string>
 		</dict>
 	</array>
 </dict>

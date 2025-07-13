@@ -29,22 +29,9 @@
 		EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		EA72B1B62E245C26001B934D /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"logos-inkpen-io-Info.plist",
-			);
-			target = EAC969A92E2416EC0093AB2A /* logos inkpen.io */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EAC969AC2E2416EC0093AB2A /* logos inkpen.io */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				EA72B1B62E245C26001B934D /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */,
-			);
 			path = "logos inkpen.io";
 			sourceTree = "<group>";
 		};

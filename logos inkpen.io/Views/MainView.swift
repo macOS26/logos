@@ -147,6 +147,7 @@ struct MainView: View {
             }
         }
         .frame(minWidth: 1200, minHeight: 800)
+        .focusedValue(\.document, document)
         .onAppear {
             // SOLUTION: Connect document to menu system
             menuHandler.setDocument(document)
@@ -977,9 +978,8 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("File Operations")
             
-            // SOLUTION: Removed duplicate Edit and Object menus
-            // These are now properly handled by the menu bar Edit and Object menus
-            // This eliminates duplicate functionality and prevents menu confusion
+            // ✅ CLEAN TOOLBAR: No duplicate menu functionality
+            // Edit and Object commands are handled by proper menu bar menus only
             
             // Close Path button (context-sensitive)
             Button {

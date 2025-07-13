@@ -7,9 +7,22 @@
 
 import SwiftUI
 
+// MARK: - FocusedValues for Document Integration
+extension FocusedValues {
+    struct DocumentFocusedValueKey: FocusedValueKey {
+        typealias Value = VectorDocument
+    }
+    
+    var document: VectorDocument? {
+        get { self[DocumentFocusedValueKey.self] }
+        set { self[DocumentFocusedValueKey.self] = newValue }
+    }
+}
+
 @main
 struct logos_inken_ioApp: App {
     @StateObject private var menuHandler = MenuCommandHandler.shared
+    @FocusedValue(\.document) var focusedDocument: VectorDocument?
     
     var body: some Scene {
         WindowGroup {
@@ -17,9 +30,9 @@ struct logos_inken_ioApp: App {
                 .environmentObject(menuHandler)
         }
         .commands {
-            // SOLUTION: Consolidated Menu System - NO DUPLICATES!
+            // SOLUTION: Clean, Non-Duplicate Menu System
             
-            // 1. REPLACE Edit Menu with Proper Implementation
+            // 1. REPLACE Edit Menu - Remove duplicates and fix functionality
             CommandGroup(replacing: .textEditing) {
                 Button("Undo") {
                     menuHandler.undo()
@@ -53,6 +66,14 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("v", modifiers: [.command])
                 .disabled(!menuHandler.canPaste)
                 
+                Button("Delete") {
+                    menuHandler.delete()
+                }
+                .keyboardShortcut(.delete)
+                .disabled(!menuHandler.hasSelection)
+                
+                Divider()
+                
                 Button("Select All") {
                     menuHandler.selectAll()
                 }
@@ -65,171 +86,107 @@ struct logos_inken_ioApp: App {
                 .disabled(!menuHandler.hasSelection)
             }
             
-            // 2. ADD Object Menu AFTER Edit Menu (not as separate CommandMenu)
-            CommandGroup(after: .undoRedo) {
-                Divider()
-                
-                Menu("Object") {
-            Group {
-                Text("Arrange")
-                    .font(.headline)
-                    .disabled(true)
-                
+            // 2. CREATE TOP-LEVEL Object Menu (not submenu!)
+            CommandMenu("Object") {
+                // Arrange Section
                 Button("Bring to Front") {
-                            menuHandler.bringToFront()
+                    menuHandler.bringToFront()
                 }
                 .keyboardShortcut("]", modifiers: [.command, .shift])
-                        .disabled(!menuHandler.hasSelection)
+                .disabled(!menuHandler.hasSelection)
                 
                 Button("Bring Forward") {
-                            menuHandler.bringForward()
+                    menuHandler.bringForward()
                 }
                 .keyboardShortcut("]", modifiers: [.command])
-                        .disabled(!menuHandler.hasSelection)
+                .disabled(!menuHandler.hasSelection)
                 
                 Button("Send Backward") {
-                            menuHandler.sendBackward()
+                    menuHandler.sendBackward()
                 }
                 .keyboardShortcut("[", modifiers: [.command])
-                        .disabled(!menuHandler.hasSelection)
+                .disabled(!menuHandler.hasSelection)
                 
                 Button("Send to Back") {
-                            menuHandler.sendToBack()
+                    menuHandler.sendToBack()
                 }
                 .keyboardShortcut("[", modifiers: [.command, .shift])
-                        .disabled(!menuHandler.hasSelection)
-            }
-            
-            Divider()
-            
-            Group {
-                Text("Group")
-                    .font(.headline)
-                    .disabled(true)
+                .disabled(!menuHandler.hasSelection)
                 
+                Divider()
+                
+                // Group Section
                 Button("Group") {
-                            menuHandler.groupObjects()
+                    menuHandler.groupObjects()
                 }
                 .keyboardShortcut("g", modifiers: [.command])
-                        .disabled(!menuHandler.canGroup)
+                .disabled(!menuHandler.canGroup)
                 
                 Button("Ungroup") {
-                            menuHandler.ungroupObjects()
+                    menuHandler.ungroupObjects()
                 }
                 .keyboardShortcut("g", modifiers: [.command, .shift])
-                        .disabled(!menuHandler.canUngroup)
-            }
-            
-            Divider()
-            
-            Group {
-                        Text("Transform")
-                    .font(.headline)
-                    .disabled(true)
+                .disabled(!menuHandler.canUngroup)
                 
-                        Button("Duplicate") {
-                            menuHandler.duplicate()
-                        }
-                        .keyboardShortcut("d", modifiers: [.command])
-                        .disabled(!menuHandler.hasSelection)
-                        
-                        Button("Delete") {
-                            menuHandler.delete()
-                        }
-                        .keyboardShortcut(.delete)
-                        .disabled(!menuHandler.hasSelection)
-                    }
-                    
-                    Divider()
-                    
-                    Group {
-                        Text("Path Cleanup")
-                            .font(.headline)
-                            .disabled(true)
-                        
-                        Button("Clean Duplicate Points") {
-                            NotificationCenter.default.post(name: .cleanupDuplicatePoints, object: nil)
-                        }
-                        .keyboardShortcut("k", modifiers: [.command, .shift])
-                        .help("Remove overlapping points and merge their curve data smoothly")
-                        
-                        Button("Clean All Duplicate Points") {
-                            NotificationCenter.default.post(name: .cleanupAllDuplicatePoints, object: nil)
-                        }
-                        .keyboardShortcut("k", modifiers: [.command, .option])
-                        .help("Clean duplicate points in all shapes in the document")
-                        
-                        Button("Test Duplicate Point Merger") {
-                            NotificationCenter.default.post(name: .testDuplicatePointMerger, object: nil)
-                        }
-                        .keyboardShortcut("k", modifiers: [.command, .shift, .option])
-                        .help("Run a test to verify the duplicate point merger works correctly")
-                    }
+                Divider()
+                
+                // Transform Section
+                Button("Duplicate") {
+                    menuHandler.duplicate()
                 }
+                .keyboardShortcut("d", modifiers: [.command])
+                .disabled(!menuHandler.hasSelection)
+                
+                Divider()
+                
+                // Path Cleanup Section
+                Button("Clean Duplicate Points") {
+                    NotificationCenter.default.post(name: .cleanupDuplicatePoints, object: nil)
+                }
+                .keyboardShortcut("k", modifiers: [.command, .shift])
+                .help("Remove overlapping points and merge their curve data smoothly")
+                
+                Button("Clean All Duplicate Points") {
+                    NotificationCenter.default.post(name: .cleanupAllDuplicatePoints, object: nil)
+                }
+                .keyboardShortcut("k", modifiers: [.command, .option])
+                .help("Clean duplicate points in all shapes in the document")
+                
+                Button("Test Duplicate Point Merger") {
+                    NotificationCenter.default.post(name: .testDuplicatePointMerger, object: nil)
+                }
+                .keyboardShortcut("k", modifiers: [.command, .shift, .option])
+                .help("Run a test to verify the duplicate point merger works correctly")
             }
             
-            // 3. KEEP System View Menu (NO CUSTOM VIEW MENU - eliminates duplicate!)
-            // System provides: Show/Hide Toolbar, Show/Hide Sidebar, etc.
-            
-            // 4. KEEP System Window Menu (NO CUSTOM WINDOW MENU - eliminates duplicate!)
-            // System provides: Minimize, Zoom, Bring All to Front, etc.
-            
-            // 5. ADD Tool Selection Commands
-            CommandGroup(after: .toolbar) {
-                Menu("Tools") {
-                    Button("Selection Tool") {
-                        menuHandler.selectTool(.selection)
-                    }
-                    .keyboardShortcut("v")
-                    
-                    Button("Direct Selection Tool") {
-                        menuHandler.selectTool(.directSelection)
-                    }
-                    .keyboardShortcut("a")
-                    
-                    Button("Pen Tool") {
-                        menuHandler.selectTool(.bezierPen)
-                    }
-                    .keyboardShortcut("p")
-                    
-                    // TEXT TOOL COMPLETELY REMOVED
-                    
-                    Button("Hand Tool") {
-                        menuHandler.selectTool(.hand)
-                    }
-                    .keyboardShortcut("h")
-                }
+            // 3. KEEP System File, View, Window menus (no duplicates)
+            // System automatically provides standard File, View, Window functionality
+        }
+        .onChange(of: focusedDocument != nil) {
+            // Update menu handler when focused document changes
+            if let document = focusedDocument {
+                menuHandler.setDocument(document)
             }
         }
     }
 }
 
-// MARK: - Centralized Menu Command Handler
+// MARK: - Professional Menu Command Handler (No Duplicates!)
 class MenuCommandHandler: ObservableObject {
     static let shared = MenuCommandHandler()
     
     @Published var canUndo = false
     @Published var canRedo = false
+    @Published var hasSelection = false
     @Published var canCut = false
     @Published var canCopy = false
     @Published var canPaste = false
-    @Published var hasSelection = false
     @Published var canGroup = false
     @Published var canUngroup = false
     
     private var currentDocument: VectorDocument?
     
-    init() {
-        // Initialize with default states - menu items start disabled
-        canUndo = false
-        canRedo = false
-        canCut = false
-        canCopy = false
-        canPaste = false
-        hasSelection = false
-        canGroup = false
-        canUngroup = false
-        
+    private init() {
         print("🎯 MenuCommandHandler initialized")
     }
     
@@ -296,6 +253,24 @@ class MenuCommandHandler: ObservableObject {
         updateMenuStates()
     }
     
+    func delete() {
+        guard let document = currentDocument else { return }
+        document.saveToUndoStack()
+        
+        // Delete selected shapes
+        if !document.selectedShapeIDs.isEmpty {
+            document.removeSelectedShapes()
+        }
+        
+        // Delete selected text
+        if !document.selectedTextIDs.isEmpty {
+            document.removeSelectedText()
+        }
+        
+        updateMenuStates()
+        print("🗑️ MENU: Deleted selected objects")
+    }
+    
     // MARK: - Object Commands
     func bringToFront() {
         guard let document = currentDocument else { return }
@@ -342,46 +317,19 @@ class MenuCommandHandler: ObservableObject {
         }
         updateMenuStates()
     }
-    
-    func delete() {
-        guard let document = currentDocument else { return }
-        if !document.selectedShapeIDs.isEmpty {
-            document.removeSelectedShapes()
-        } else if !document.selectedTextIDs.isEmpty {
-            document.removeSelectedText()
-        }
-        updateMenuStates()
-    }
-    
-    // MARK: - Tool Commands
-    func selectTool(_ tool: DrawingTool) {
-        guard let document = currentDocument else { return }
-        
-        // Safe cursor management
-        var popCount = 0
-        while NSCursor.current != NSCursor.arrow && popCount < 10 {
-            NSCursor.pop()
-            popCount += 1
-        }
-        if NSCursor.current != NSCursor.arrow {
-            NSCursor.arrow.set()
-        }
-        
-        document.currentTool = tool
-        tool.cursor.push()
-        print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
-    }
 }
 
-// MARK: - Clipboard Manager
+// MARK: - Professional Clipboard Manager (Clean Implementation)
 class ClipboardManager {
     static let shared = ClipboardManager()
     
     private let pasteboard = NSPasteboard.general
-    private let vectorObjectsType = NSPasteboard.PasteboardType("com.logos.vectorobjects")
+    private let vectorObjectsType = NSPasteboard.PasteboardType("com.toddbruss.logos-inkpen-io.vectorObjects")
+    
+    private init() {}
     
     func canPaste() -> Bool {
-        return pasteboard.canReadItem(withDataConformingToTypes: [vectorObjectsType.rawValue])
+        return pasteboard.data(forType: vectorObjectsType) != nil
     }
     
     func cut(from document: VectorDocument) {
@@ -499,5 +447,3 @@ struct ClipboardData: Codable {
     let shapes: [VectorShape]
     let texts: [VectorText]
 }
-
-// MARK: - Vector Shape Group Extension removed - group properties now in VectorShape struct
