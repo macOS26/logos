@@ -23,8 +23,6 @@ struct RightPanel: View {
                     LayersPanel(document: document)
                 case .properties:
                     StrokeFillPanel(document: document)
-                case .typography:
-                    TypographyPanel(document: document)
                 case .color:
                     ColorPanel(document: document)
                 case .pathOps:
@@ -56,7 +54,6 @@ struct RightPanel: View {
 enum PanelTab: String, CaseIterable {
     case layers = "Layers"
     case properties = "Stroke/Fill"
-    case typography = "Typography"
     case color = "Color"
     case pathOps = "Path Ops"
     
@@ -64,7 +61,6 @@ enum PanelTab: String, CaseIterable {
         switch self {
         case .layers: return "square.stack"
         case .properties: return "paintbrush"
-        case .typography: return "textformat"
         case .color: return "paintpalette"
         case .pathOps: return "square.grid.2x2"
         }
@@ -292,7 +288,7 @@ struct ProfessionalLayerRow: View {
             }
             
                 // Object Count
-                Text("\(layer.shapes.count + objectCountInLayer(layerIndex))")
+                Text("\(layer.shapes.count)")
                     .font(.system(size: 9))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
@@ -389,26 +385,7 @@ struct ProfessionalLayerRow: View {
                         )
                     }
                     
-                    // Text Objects  
-                    ForEach(document.textObjects.indices, id: \.self) { textIndex in
-                        let textObject = document.textObjects[textIndex]
-                        
-                        ObjectRow(
-                            objectType: .text,
-                            objectId: textObject.id,
-                            name: textObject.content.isEmpty ? "Empty Text" : String(textObject.content.prefix(20)),
-                            isSelected: document.selectedTextIDs.contains(textObject.id),
-                            isVisible: textObject.isVisible,
-                            isLocked: textObject.isLocked,
-                            onSelect: {
-                                document.selectedTextIDs = [textObject.id]
-                                document.selectedShapeIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
-                    }
+                    // TEXT OBJECTS REMOVED - Starting over with simple text as shapes
                 }
                 .padding(.leading, 20) // Indent objects under layer
             }
@@ -421,10 +398,7 @@ struct ProfessionalLayerRow: View {
         return colors[index % colors.count]
     }
     
-    private func objectCountInLayer(_ layerIndex: Int) -> Int {
-        // Count text objects that conceptually belong to this layer
-        return document.textObjects.filter { $0.isVisible }.count
-    }
+    // TEXT OBJECT COUNTING REMOVED
 }
 
 
@@ -433,7 +407,6 @@ struct ProfessionalLayerRow: View {
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
-        case text = "text"
     }
     
     let objectType: ObjectType
@@ -494,7 +467,7 @@ struct ObjectRow: View {
             onSelect()
         }
         .draggable(DraggableVectorObject(
-            objectType: objectType == .shape ? .shape : .text,
+            objectType: .shape,
             objectId: objectId,
             sourceLayerIndex: layerIndex
         )) {
@@ -560,14 +533,12 @@ struct ObjectRow: View {
     private var objectIcon: String {
         switch objectType {
         case .shape: return "square"
-        case .text: return "textformat"
         }
     }
     
     private var objectIconColor: Color {
         switch objectType {
         case .shape: return .blue
-        case .text: return .green
         }
     }
 }

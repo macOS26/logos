@@ -162,19 +162,19 @@ struct MainView: View {
                 fitToPage()
             }
         }
-        .onChange(of: document.selectedShapeIDs) { _ in
+        .onChange(of: document.selectedShapeIDs) {
             // Update menu states when selection changes
             menuHandler.updateMenuStates()
         }
-        .onChange(of: document.selectedTextIDs) { _ in
+        .onChange(of: document.selectedTextIDs) {
             // Update menu states when selection changes
             menuHandler.updateMenuStates()
         }
-        .onChange(of: document.undoStack.count) { _ in
+        .onChange(of: document.undoStack.count) {
             // Update menu states when undo stack changes
             menuHandler.updateMenuStates()
         }
-        .onChange(of: document.redoStack.count) { _ in
+        .onChange(of: document.redoStack.count) {
             // Update menu states when redo stack changes
             menuHandler.updateMenuStates()
         }
@@ -448,9 +448,7 @@ struct MainView: View {
             NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.properties)
         }
         
-        NotificationCenter.default.addObserver(forName: .showTypographyPanel, object: nil, queue: .main) { _ in
-            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.typography)
-        }
+        // TYPOGRAPHY PANEL REMOVED
         
         NotificationCenter.default.addObserver(forName: .showPathOpsPanel, object: nil, queue: .main) { _ in
             NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.pathOps)
@@ -1365,7 +1363,7 @@ struct DocumentSettingsView: View {
                         Text("Width:")
                         TextField("Width", value: $document.settings.width, format: .number)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .onChange(of: document.settings.width) { _ in
+                            .onChange(of: document.settings.width) {
                                 document.onSettingsChanged()
                             }
                     }
@@ -1374,7 +1372,7 @@ struct DocumentSettingsView: View {
                         Text("Height:")
                         TextField("Height", value: $document.settings.height, format: .number)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .onChange(of: document.settings.height) { _ in
+                            .onChange(of: document.settings.height) {
                                 document.onSettingsChanged()
                             }
                     }
@@ -1384,7 +1382,7 @@ struct DocumentSettingsView: View {
                             Text(unit.rawValue).tag(unit)
                         }
                     }
-                    .onChange(of: document.settings.unit) { _ in
+                    .onChange(of: document.settings.unit) {
                         document.onSettingsChanged()
                     }
                 }

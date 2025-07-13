@@ -192,10 +192,7 @@ struct logosApp: App {
                     }
                     .keyboardShortcut("p")
                     
-                    Button("Text Tool") {
-                        menuHandler.selectTool(.text)
-                    }
-                    .keyboardShortcut("t")
+                    // TEXT TOOL COMPLETELY REMOVED
                     
                     Button("Hand Tool") {
                         menuHandler.selectTool(.hand)

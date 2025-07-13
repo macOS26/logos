@@ -87,8 +87,6 @@ struct VerticalToolbar: View {
             return "Star Tool (S) - Draw star shapes"
         case .polygon:
             return "Polygon Tool - Draw polygon shapes"
-        case .text:
-            return "Text Tool (T) - Add text"
         case .eyedropper:
             return "Eyedropper Tool (I) - Sample colors"
         case .hand:

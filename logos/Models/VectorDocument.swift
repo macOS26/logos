@@ -1831,11 +1831,7 @@ class VectorDocument: ObservableObject, Codable {
                 fromLayerIndex: draggableObject.sourceLayerIndex,
                 toLayerIndex: ontoLayerIndex
             )
-        case .text:
-            moveTextToLayer(
-                textId: draggableObject.objectId,
-                toLayerIndex: ontoLayerIndex
-            )
+        // TEXT COMPLETELY REMOVED
         }
     }
     
@@ -2125,7 +2121,6 @@ enum DrawingTool: String, CaseIterable, Codable {
     case circle = "Circle"
     case star = "Star"
     case polygon = "Polygon"
-    case text = "Text"
     case eyedropper = "Eyedropper"
     case hand = "Hand"
     case zoom = "Zoom"
@@ -2141,7 +2136,6 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .circle: return "circle"
         case .star: return "star"
         case .polygon: return "hexagon"
-        case .text: return "textformat"
         case .eyedropper: return "eyedropper"
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
@@ -2159,7 +2153,6 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .circle: return .crosshair
         case .star: return .crosshair
         case .polygon: return .crosshair
-        case .text: return .iBeam
         case .eyedropper: return .crosshair
         case .hand: return .openHand
         case .zoom: return .crosshair

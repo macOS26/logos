@@ -329,7 +329,6 @@ struct VectorLayer: Codable, Hashable, Identifiable {
 struct DraggableVectorObject: Codable, Transferable {
     enum ObjectType: String, Codable {
         case shape = "shape"
-        case text = "text"
     }
     
     let objectType: ObjectType
