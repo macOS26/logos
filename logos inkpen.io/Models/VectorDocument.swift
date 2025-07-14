@@ -1223,8 +1223,8 @@ class VectorDocument: ObservableObject, Codable {
                             // Core Graphics uses bottom-left origin, SwiftUI uses top-left
                             var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
                                 .translatedBy(
-                                    x: textObject.position.x + Double(glyphPosition.x) - 1,
-                                    y: -(textObject.position.y - Double(lineOrigins[lineIndex].y) + 6) //ascent
+                                    x: textObject.position.x + Double(glyphPosition.x),
+                                    y: -textObject.position.y //- Double(lineOrigins[lineIndex].y)
                                 )
                             
                             if let transformedPath = glyphPath.copy(using: &transform) {
