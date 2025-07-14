@@ -984,6 +984,32 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
     }
     
+    func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
+        guard let layerIndex = layerIndex,
+              layerIndex >= 0 && layerIndex < layers.count else {
+            // Fallback to global text objects if no valid layer
+            addText(text)
+            return
+        }
+        
+        saveToUndoStack()
+        
+        // Add text to global array (for rendering compatibility)
+        textObjects.append(text)
+        
+        // Associate text with specific layer by storing layer reference
+        // Note: We still use global textObjects for rendering, but track layer association
+        var modifiedText = text
+        modifiedText.layerIndex = layerIndex
+        textObjects[textObjects.count - 1] = modifiedText
+        
+        selectedTextIDs = [text.id]
+        selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
+        selectedLayerIndex = layerIndex // Select the layer we added text to
+        
+        print("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))")
+    }
+    
     func removeSelectedText() {
         saveToUndoStack()
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
@@ -1806,14 +1832,16 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
         
-        guard textObjects.firstIndex(where: { $0.id == textId }) != nil else {
+        guard let textIndex = textObjects.firstIndex(where: { $0.id == textId }) else {
             print("❌ Text object not found")
             return
         }
         
         saveToUndoStack()
         
-        // Text objects are global but we track which layer they "belong" to for organization
+        // Update the text object's layer association
+        textObjects[textIndex].layerIndex = toLayerIndex
+        
         // Update selection to the target layer
         selectedTextIDs = [textId]
         selectedShapeIDs.removeAll()
@@ -1831,7 +1859,11 @@ class VectorDocument: ObservableObject, Codable {
                 fromLayerIndex: draggableObject.sourceLayerIndex,
                 toLayerIndex: ontoLayerIndex
             )
-        // TEXT COMPLETELY REMOVED
+        case .text:
+            moveTextToLayer(
+                textId: draggableObject.objectId,
+                toLayerIndex: ontoLayerIndex
+            )
         }
     }
     

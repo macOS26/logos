@@ -112,20 +112,15 @@ extension DrawingCanvas {
             isEditing: true
         )
         
-        // Add to document
-        document.textObjects.append(newText)
+        // Add to document and associate with current layer
+        document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex)
         
         // Set editing state
         isEditingText = true
         editingTextID = newText.id
         textCursorPosition = 0
         
-        // Select the new text
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
-        document.selectedTextIDs.insert(newText.id)
-        
-        print("✅ Created new text object with ID: \(newText.id)")
+        print("✅ Created new editable text object with ID: \(newText.id) on layer \(document.selectedLayerIndex ?? -1)")
     }
     
     func finishTextEditing() {

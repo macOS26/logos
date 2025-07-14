@@ -180,6 +180,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var isVisible: Bool
     var isLocked: Bool
     var isEditing: Bool // For inline text editing
+    var layerIndex: Int? // Which layer this text belongs to
     
     // PROFESSIONAL TEXT TOOL PROPERTIES (Adobe Illustrator/FreeHand Standards)
     var isPointText: Bool // Point text (expands as you type) vs Area text (fixed area)
@@ -220,6 +221,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         isVisible: Bool = true,
         isLocked: Bool = false,
         isEditing: Bool = false,
+        layerIndex: Int? = nil,
         isPointText: Bool = true,
         cursorPosition: Int = 0,
         areaSize: CGSize? = nil
@@ -233,6 +235,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         self.isVisible = isVisible
         self.isLocked = isLocked
         self.isEditing = isEditing
+        self.layerIndex = layerIndex
         self.isPointText = isPointText
         self.cursorPosition = cursorPosition
         self.areaSize = areaSize

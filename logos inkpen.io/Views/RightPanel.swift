@@ -287,8 +287,10 @@ struct ProfessionalLayerRow: View {
                     }
             }
             
-                // Object Count
-                Text("\(layer.shapes.count)")
+                // Object Count (shapes + text objects for this layer)
+                let textObjectsInLayer = document.textObjects.filter { $0.layerIndex == layerIndex }.count
+                let totalObjects = layer.shapes.count + textObjectsInLayer
+                Text("\(totalObjects)")
                     .font(.system(size: 9))
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 4)
@@ -385,7 +387,24 @@ struct ProfessionalLayerRow: View {
                         )
                     }
                     
-                    // TEXT OBJECTS REMOVED - Starting over with simple text as shapes
+                    // Text Objects that belong to this layer
+                    ForEach(document.textObjects.filter { $0.layerIndex == layerIndex }, id: \.id) { textObj in
+                        ObjectRow(
+                            objectType: .text,
+                            objectId: textObj.id,
+                            name: textObj.content.isEmpty ? "Text" : textObj.content,
+                            isSelected: document.selectedTextIDs.contains(textObj.id),
+                            isVisible: textObj.isVisible,
+                            isLocked: textObj.isLocked,
+                            onSelect: {
+                                document.selectedTextIDs = [textObj.id]
+                                document.selectedShapeIDs.removeAll()
+                                document.selectedLayerIndex = layerIndex
+                            },
+                            layerIndex: layerIndex,
+                            document: document
+                        )
+                    }
                 }
                 .padding(.leading, 20) // Indent objects under layer
             }
@@ -407,6 +426,7 @@ struct ProfessionalLayerRow: View {
 struct ObjectRow: View {
     enum ObjectType: String {
         case shape = "shape"
+        case text = "text"
     }
     
     let objectType: ObjectType
@@ -467,7 +487,7 @@ struct ObjectRow: View {
             onSelect()
         }
         .draggable(DraggableVectorObject(
-            objectType: .shape,
+            objectType: objectType == .text ? .text : .shape,
             objectId: objectId,
             sourceLayerIndex: layerIndex
         )) {
@@ -533,12 +553,14 @@ struct ObjectRow: View {
     private var objectIcon: String {
         switch objectType {
         case .shape: return "square"
+        case .text: return "textformat"
         }
     }
     
     private var objectIconColor: Color {
         switch objectType {
         case .shape: return .blue
+        case .text: return .green
         }
     }
 }
