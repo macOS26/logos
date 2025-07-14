@@ -285,17 +285,22 @@ struct VectorText: Identifiable, Codable, Hashable {
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
     
-    // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)
+    // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
     func convertToOutlines() -> VectorShape? {
         let attributedString = NSAttributedString(string: content, attributes: [
-            .font: typography.nsFont
+            .font: typography.nsFont,
+            .kern: typography.letterSpacing
         ])
         
         let line = CTLineCreateWithAttributedString(attributedString)
         let runs = CTLineGetGlyphRuns(line) as! [CTRun]
         
-        var pathElements: [PathElement] = []
-        let currentX: Double = 0
+        var allPathElements: [PathElement] = []
+        let font = createCoreTextFont()
+        
+        // Get font metrics for proper coordinate transformation
+        let ascent = CTFontGetAscent(font)
+        let _ = CTFontGetDescent(font) // Font descent (for future use)
         
         for run in runs {
             let glyphCount = CTRunGetGlyphCount(run)
@@ -307,13 +312,19 @@ struct VectorText: Identifiable, Codable, Hashable {
             
             for i in 0..<glyphCount {
                 let glyph = glyphs[i]
-                let position = positions[i]
+                let glyphPosition = positions[i]
                 
-                if let glyphPath = CTFontCreatePathForGlyph(createCoreTextFont(), glyph, nil) {
-                    // Convert CGPath to VectorPath elements
-                    let bezierPath = NSBezierPath(cgPath: glyphPath)
-                    let glyphElements = convertBezierPathToElements(bezierPath, offset: CGPoint(x: currentX + Double(position.x), y: Double(position.y)))
-                    pathElements.append(contentsOf: glyphElements)
+                if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
+                    // CRITICAL FIX: Apply coordinate system transformation for SwiftUI
+                    // Core Graphics uses bottom-left origin, SwiftUI uses top-left
+                    var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
+                        .translatedBy(x: Double(glyphPosition.x), y: -ascent) // Position glyph correctly
+                    
+                    if let transformedPath = glyphPath.copy(using: &transform) {
+                        // Convert transformed CGPath to VectorPath elements
+                        let glyphElements = convertCGPathToElements(transformedPath)
+                        allPathElements.append(contentsOf: glyphElements)
+                    }
                 }
             }
             
@@ -321,17 +332,64 @@ struct VectorText: Identifiable, Codable, Hashable {
             positions.deallocate()
         }
         
-        if !pathElements.isEmpty {
-            let vectorPath = VectorPath(elements: pathElements, isClosed: true)
+        if !allPathElements.isEmpty {
+            // CRITICAL FIX: Create single grouped shape with all letters combined
+            let vectorPath = VectorPath(elements: allPathElements, isClosed: false) // Let individual letters handle closing
             return VectorShape(
                 name: "Text Outline: \(content)",
                 path: vectorPath,
                 strokeStyle: typography.hasStroke ? StrokeStyle(color: typography.strokeColor, width: typography.strokeWidth, opacity: typography.strokeOpacity) : nil,
-                fillStyle: FillStyle(color: typography.fillColor, opacity: typography.fillOpacity)
+                fillStyle: FillStyle(color: typography.fillColor, opacity: typography.fillOpacity),
+                transform: .identity, // No additional transform needed
+                isGroup: false // Single unified shape, not a group
             )
         }
         
         return nil
+    }
+    
+    private func convertCGPathToElements(_ cgPath: CGPath) -> [PathElement] {
+        var elements: [PathElement] = []
+        
+        cgPath.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                let point = element.points[0]
+                elements.append(.move(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addLineToPoint:
+                let point = element.points[0]
+                elements.append(.line(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addQuadCurveToPoint:
+                let control = element.points[0]
+                let point = element.points[1]
+                elements.append(.quadCurve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control: VectorPoint(Double(control.x), Double(control.y))
+                ))
+                
+            case .addCurveToPoint:
+                let control1 = element.points[0]
+                let control2 = element.points[1]
+                let point = element.points[2]
+                elements.append(.curve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control1: VectorPoint(Double(control1.x), Double(control1.y)),
+                    control2: VectorPoint(Double(control2.x), Double(control2.y))
+                ))
+                
+            case .closeSubpath:
+                elements.append(.close)
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        return elements
     }
     
     private func convertBezierPathToElements(_ bezierPath: NSBezierPath, offset: CGPoint) -> [PathElement] {

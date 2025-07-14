@@ -1179,8 +1179,8 @@ class VectorDocument: ObservableObject, Codable {
         let framePath = CGPath(rect: CGRect(origin: .zero, size: textBounds), transform: nil)
         let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), framePath, nil)
         
-        // Extract paths for each character
-        var outlinePaths: [VectorPath] = []
+        // CRITICAL FIX: Extract all glyph paths and combine into single grouped shape
+        var allPathElements: [PathElement] = []
         
         let lines = CTFrameGetLines(frame)
         let lineCount = CFArrayGetCount(lines)
@@ -1209,22 +1209,28 @@ class VectorDocument: ObservableObject, Codable {
                     CTRunGetGlyphs(run, CFRange(location: 0, length: 0), &glyphs)
                     CTRunGetPositions(run, CFRange(location: 0, length: 0), &positions)
                     
-                    // Convert each glyph to a path
+                    // Convert NSFont to CTFont for proper path creation
+                    let ctFont = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
+                    let ascent = CTFontGetAscent(ctFont)
+                    
+                    // Convert each glyph to path elements
                     for glyphIndex in 0..<glyphCount {
                         let glyph = glyphs[glyphIndex]
-                        let position = positions[glyphIndex]
+                        let glyphPosition = positions[glyphIndex]
                         
-                        // Convert NSFont to CTFont for proper path creation
-                        let ctFont = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
                         if let glyphPath = CTFontCreatePathForGlyph(ctFont, glyph, nil) {
-                            // Convert CGPath to VectorPath
-                            let vectorPath = convertCGPathToVectorPath(glyphPath, offset: CGPoint(
-                                x: textObject.position.x + position.x,
-                                y: textObject.position.y + lineOrigins[lineIndex].y + position.y
-                            ))
+                            // CRITICAL FIX: Apply coordinate system transformation for SwiftUI
+                            // Core Graphics uses bottom-left origin, SwiftUI uses top-left
+                            var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
+                                .translatedBy(
+                                    x: textObject.position.x + Double(glyphPosition.x),
+                                    y: -(textObject.position.y + Double(lineOrigins[lineIndex].y) + ascent)
+                                )
                             
-                            if !vectorPath.elements.isEmpty {
-                                outlinePaths.append(vectorPath)
+                            if let transformedPath = glyphPath.copy(using: &transform) {
+                                // Convert transformed CGPath to VectorPath elements
+                                let glyphElements = convertCGPathToVectorPathElements(transformedPath)
+                                allPathElements.append(contentsOf: glyphElements)
                             }
                         }
                     }
@@ -1232,32 +1238,81 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // Create vector shapes from outline paths
-        for (index, path) in outlinePaths.enumerated() {
-            let shape = VectorShape(
-                name: "\(textObject.content) Outline \(index + 1)",
-                path: path,
+        // CRITICAL FIX: Create single grouped shape with all letters combined
+        if !allPathElements.isEmpty {
+            let vectorPath = VectorPath(elements: allPathElements, isClosed: false) // Let individual letters handle closing
+            let outlineShape = VectorShape(
+                name: "Text Outline: \(textObject.content)",
+                path: vectorPath,
                 strokeStyle: textObject.typography.hasStroke ? StrokeStyle(color: textObject.typography.strokeColor, width: textObject.typography.strokeWidth, opacity: textObject.typography.strokeOpacity) : nil,
-                fillStyle: FillStyle(color: textObject.typography.fillColor, opacity: textObject.typography.fillOpacity)
+                fillStyle: FillStyle(color: textObject.typography.fillColor, opacity: textObject.typography.fillOpacity),
+                transform: .identity, // No additional transform needed
+                isGroup: false // Single unified shape, not a group
             )
             
             // Add to current layer
-            layers[layerIndex].shapes.append(shape)
+            layers[layerIndex].shapes.append(outlineShape)
+            
+            // Remove original text object
+            textObjects.remove(at: textIndex)
+            selectedTextIDs.remove(textID)
+            
+            // Select the created outline shape
+            selectedShapeIDs = [outlineShape.id]
+            
+            print("✅ Successfully converted text '\(textObject.content)' to single vector outline shape")
+            print("🎯 Adobe Illustrator standard text-to-outlines conversion complete!")
+        } else {
+            print("❌ Failed to create outline paths for text '\(textObject.content)'")
         }
-        
-        // Remove original text object
-        textObjects.remove(at: textIndex)
-        selectedTextIDs.remove(textID)
-        
-        // Select the created outlines
-        let newShapeIDs = Set(layers[layerIndex].shapes.suffix(outlinePaths.count).map { $0.id })
-        selectedShapeIDs = newShapeIDs
-        
-        print("✅ Successfully converted text to \(outlinePaths.count) vector outline shapes")
-        print("🎯 Adobe Illustrator / FreeHand professional text-to-outlines conversion complete!")
         
         // Force UI update
         objectWillChange.send()
+    }
+    
+    // Helper function to convert CGPath to VectorPath elements
+    private func convertCGPathToVectorPathElements(_ cgPath: CGPath) -> [PathElement] {
+        var elements: [PathElement] = []
+        
+        cgPath.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                let point = element.points[0]
+                elements.append(.move(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addLineToPoint:
+                let point = element.points[0]
+                elements.append(.line(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addQuadCurveToPoint:
+                let control = element.points[0]
+                let point = element.points[1]
+                elements.append(.quadCurve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control: VectorPoint(Double(control.x), Double(control.y))
+                ))
+                
+            case .addCurveToPoint:
+                let control1 = element.points[0]
+                let control2 = element.points[1]
+                let point = element.points[2]
+                elements.append(.curve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control1: VectorPoint(Double(control1.x), Double(control1.y)),
+                    control2: VectorPoint(Double(control2.x), Double(control2.y))
+                ))
+                
+            case .closeSubpath:
+                elements.append(.close)
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        return elements
     }
     
     // Helper function to convert CGPath to VectorPath
