@@ -1211,7 +1211,7 @@ class VectorDocument: ObservableObject, Codable {
                     
                     // Convert NSFont to CTFont for proper path creation
                     let ctFont = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
-                    let ascent = CTFontGetAscent(ctFont)
+                    let _ = CTFontGetAscent(ctFont)
                     
                     // Convert each glyph to path elements
                     for glyphIndex in 0..<glyphCount {
