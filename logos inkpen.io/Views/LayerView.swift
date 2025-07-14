@@ -697,11 +697,12 @@ struct TextSelectionHandles: View {
     @State private var textRotationStartLocation: CGPoint = .zero
     
     var body: some View {
-        // CRITICAL FIX: Use EXACT SAME coordinate system as shape selection
-        // Position text bounds relative to text position (baseline)
+        // CRITICAL FIX: Text baseline offset correction (18 pixels = font ascent)
+        // Text position is at baseline, selection box needs to be at top of text
+        let textAscent = textObject.typography.fontSize * 0.75 // Approximate ascent
         let absoluteBounds = CGRect(
             x: textObject.position.x,
-            y: textObject.position.y + textObject.bounds.minY,
+            y: textObject.position.y - textAscent, // Move up by ascent to get to top
             width: textObject.bounds.width,
             height: textObject.bounds.height
         )

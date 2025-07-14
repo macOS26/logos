@@ -882,12 +882,12 @@ struct DrawingCanvas: View {
                 let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
                 
                 // If nothing is selected, or if we're dragging on an unselected object, try to select it first
-                if document.selectedShapeIDs.isEmpty || !isDraggingSelectedObject(at: startLocation) {
+                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
                     selectObjectAt(startLocation)
                 }
                 
-                // Only start drag if we have something selected
-                if !document.selectedShapeIDs.isEmpty {
+                // Only start drag if we have something selected (shapes or text)
+                if !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty {
                     // PROFESSIONAL OBJECT DRAGGING: Capture reference cursor position (like hand tool)
                     selectionDragStart = value.startLocation
                     startSelectionDrag()
@@ -1680,7 +1680,7 @@ struct DrawingCanvas: View {
     
     internal func startSelectionDrag() {
         guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
+              (!document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty) else { return }
         
         // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
         if document.layers[layerIndex].isLocked {
@@ -1691,6 +1691,8 @@ struct DrawingCanvas: View {
         // PROFESSIONAL OBJECT DRAGGING: Save initial positions (not transforms)
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
+        
+        // Store initial positions for shapes
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 let shape = document.layers[layerIndex].shapes[shapeIndex]
@@ -1701,12 +1703,21 @@ struct DrawingCanvas: View {
             }
         }
         
-        print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) objects")
+        // Store initial positions for text objects
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                let textObj = document.textObjects[textIndex]
+                // Store the text baseline position
+                initialObjectPositions[textID] = textObj.position
+            }
+        }
+        
+        print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects")
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
+              (!document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty) else { return }
         
         // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
         if document.layers[layerIndex].isLocked {
@@ -1794,9 +1805,23 @@ struct DrawingCanvas: View {
             }
         }
         
-        // Professional verification logging (only for significant movements)
-        if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
-            print("🎯 SELECTION DRAG: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+        // Move selected text objects by directly updating their position
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
+               let initialPosition = initialObjectPositions[textID] {
+                
+                // Calculate new position based on initial position + cursor delta
+                let newPosition = CGPoint(
+                    x: initialPosition.x + canvasDelta.x,
+                    y: initialPosition.y + canvasDelta.y
+                )
+                
+                // Update text position directly
+                document.textObjects[textIndex].position = newPosition
+                
+                // Update text bounds if needed
+                document.textObjects[textIndex].updateBounds()
+            }
         }
         
         // Force UI update
@@ -2045,7 +2070,29 @@ struct DrawingCanvas: View {
 
     
     internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
-        // Check if the location is on any of the currently selected objects across all layers
+        // Check if the location is on any of the currently selected objects (shapes or text)
+        
+        // Check selected text objects first
+        for textID in document.selectedTextIDs {
+            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
+                if !textObj.isVisible || textObj.isLocked { continue }
+                
+                // Use same coordinate correction as hit testing
+                let textAscent = textObj.typography.fontSize * 0.75
+                let absoluteBounds = CGRect(
+                    x: textObj.position.x,
+                    y: textObj.position.y - textAscent,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                )
+                
+                if absoluteBounds.contains(location) {
+                    return true
+                }
+            }
+        }
+        
+        // Check selected shapes
         for layerIndex in document.layers.indices {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
