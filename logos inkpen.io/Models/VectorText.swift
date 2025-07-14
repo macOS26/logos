@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import CoreText
+import CoreGraphics
 
 // MARK: - Professional Text Alignment (Adobe Illustrator / FreeHand Standards)
 enum TextAlignment: String, CaseIterable, Codable {
@@ -187,30 +188,26 @@ struct VectorText: Identifiable, Codable, Hashable {
     var cursorPosition: Int // Current cursor position for inline editing
     var areaSize: CGSize? // Area size for area text (nil for point text)
     
-    // Professional text metrics
+    // Professional text metrics using Core Text
     var textBounds: CGRect {
-        let nsString = NSString(string: content.isEmpty ? "Text" : content)
+        let font = createCoreTextFont()
+        let displayText = content.isEmpty ? "Text" : content
+        
+        // Create attributed string with proper font and kerning
         let attributes: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key.font: typography.nsFont, // Uses weight and style
-            NSAttributedString.Key.kern: typography.letterSpacing
+            .font: font,
+            .kern: typography.letterSpacing
         ]
         
-        // PROFESSIONAL TEXT MEASUREMENT: Use reasonable maximum width for area text
-        let maxWidth: CGFloat = {
-            if !isPointText, let areaSize = areaSize {
-                return areaSize.width
-            } else {
-                return 10000  // Reasonable max width instead of .greatestFiniteMagnitude
-            }
-        }()
+        let attributedString = NSAttributedString(string: displayText, attributes: attributes)
         
-        let rect = nsString.boundingRect(
-            with: CGSize(width: maxWidth, height: 10000),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: attributes
-        )
+        // Use CTLine for precise text layout metrics
+        let line = CTLineCreateWithAttributedString(attributedString)
         
-        return rect
+        // Get accurate text bounds from Core Text
+        let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+        
+        return textBounds
     }
     
     init(
@@ -243,34 +240,79 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     mutating func updateBounds() {
-        // SURGICAL FIX: CoreGraphics-compliant text bounds calculation
-        // Uses actual text content for dynamic sizing (fixes editing growth issue)
-        let font = typography.nsFont
+        // NATIVE CORE GRAPHICS BOUNDS CALCULATION
+        // Uses Core Text for accurate text metrics at all zoom levels
+        let font = createCoreTextFont()
         let displayText = content.isEmpty ? "Text" : content
-        let nsString = NSString(string: displayText)
         
-        // CRITICAL: Use boundingRect for accurate multi-line text bounds (CoreGraphics standard)
+        // Create attributed string with proper font and kerning
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .kern: typography.letterSpacing
         ]
         
-        let boundingRect = nsString.boundingRect(
-            with: CGSize(width: isPointText ? 10000 : (areaSize?.width ?? 10000), height: 10000),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: attributes
-        )
+        let attributedString = NSAttributedString(string: displayText, attributes: attributes)
         
-        // SURGICAL FIX: Use actual text visual bounds (not font metrics)
-        // boundingRect gives us the precise visual area of the rendered text
+        // PROFESSIONAL CORE TEXT MEASUREMENT
+        // Use CTLine for precise text layout metrics
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        // Get accurate text bounds from Core Text
+        let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+        
+        // Get font metrics for proper baseline positioning
+        let ascent = CTFontGetAscent(font)
+        let descent = CTFontGetDescent(font)
+        let leading = CTFontGetLeading(font)
+        
+        // CORE GRAPHICS STANDARD: Position is baseline, bounds are relative to baseline
         bounds = CGRect(
-            x: 0,  // Relative to position (CoreGraphics standard)
-            y: -boundingRect.height + 2,  // Actual visual top (relative to baseline)
-            width: max(boundingRect.width, content.isEmpty ? 20 : 1),  // Actual text width
-            height: boundingRect.height  // Actual visual height
+            x: 0,  // Relative to position (Core Graphics standard)
+            y: -ascent,  // Above baseline (negative Y)
+            width: max(textBounds.width, content.isEmpty ? 20 : 1),  // Actual text width
+            height: ascent + descent + leading  // Total line height
         )
         
-        // Position is handled separately - bounds are relative to position (CoreGraphics standard)
+        // Position is handled separately - bounds are relative to position (Core Graphics standard)
+    }
+    
+    private func createCoreTextFont() -> CTFont {
+        // PROFESSIONAL FONT CREATION: Handle weight and style properly
+        
+        // Start with base font descriptor
+        var fontDescriptor = CTFontDescriptorCreateWithNameAndSize(typography.fontFamily as CFString, typography.fontSize)
+        
+        // Add font traits for weight and style
+        var traits: [CFString: Any] = [:]
+        
+        // Map font weight to Core Text weight
+        let weightValue: Double
+        switch typography.fontWeight {
+        case .thin: weightValue = -0.8
+        case .ultraLight: weightValue = -0.6
+        case .light: weightValue = -0.4
+        case .regular: weightValue = 0.0
+        case .medium: weightValue = 0.23
+        case .semibold: weightValue = 0.3
+        case .bold: weightValue = 0.4
+        case .heavy: weightValue = 0.56
+        case .black: weightValue = 0.8
+        }
+        traits[kCTFontWeightTrait] = weightValue
+        
+        // Handle italic/oblique style
+        if typography.fontStyle == .italic {
+            traits[kCTFontSlantTrait] = 0.25 // Standard italic slant
+        }
+        
+        // Create font descriptor with traits
+        if !traits.isEmpty {
+            let traitsDict = [kCTFontTraitsAttribute: traits]
+            fontDescriptor = CTFontDescriptorCreateCopyWithAttributes(fontDescriptor, traitsDict as CFDictionary)
+        }
+        
+        // Create the final font
+        return CTFontCreateWithFontDescriptor(fontDescriptor, typography.fontSize, nil)
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)

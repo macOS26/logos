@@ -2,12 +2,13 @@
 //  TextObjectView.swift
 //  logos
 //
-//  Core Graphics Text Rendering - PURE SWIFTUI
+//  Core Graphics Text Rendering - NATIVE CORE GRAPHICS
 //  COORDINATE SYSTEM: EXACTLY MATCHES SHAPES AND PEN TOOL
 //
 
 import SwiftUI
 import CoreGraphics
+import CoreText
 
 struct TextObjectView: View {
     let textObject: VectorText
@@ -18,9 +19,9 @@ struct TextObjectView: View {
     
     var body: some View {
         ZStack {
-            // FIXED: Pure SwiftUI text rendering with Core Graphics
-            // Uses EXACT SAME coordinate system as shapes
-            PureSwiftUITextView(
+            // NATIVE CORE GRAPHICS TEXT RENDERING - NO RASTERIZATION!
+            // Uses direct Core Graphics drawing for crisp text at all zoom levels
+            CoreGraphicsTextView(
                 text: textObject.content.isEmpty ? "Text" : textObject.content,
                 typography: textObject.typography,
                 position: textObject.position
@@ -85,95 +86,164 @@ struct TextObjectView: View {
     }
 }
 
-// MARK: - Pure SwiftUI Text Renderer with Core Graphics
+// MARK: - Native Core Graphics Text Renderer
 
-struct PureSwiftUITextView: View {
+struct CoreGraphicsTextView: NSViewRepresentable {
     let text: String
     let typography: TypographyProperties
     let position: CGPoint
     
-    var body: some View {
-        // CRITICAL: Pure SwiftUI text rendering using Canvas
-        Canvas { context, size in
-            // FIXED: Core Graphics text rendering at exact position
-            // Text is positioned at baseline (Core Graphics standard)
-            let drawPoint = CGPoint(x: position.x, y: position.y)
-            
-            // FIXED: Use typography colors properly - ensure visible text
-            var textColor: Color
-            if typography.fillColor != .clear {
-                textColor = Color(typography.fillColor.color).opacity(typography.fillOpacity)
-            } else if typography.hasStroke && typography.strokeColor != .clear {
-                textColor = Color(typography.strokeColor.color).opacity(typography.strokeOpacity)
-            } else {
-                // Final fallback to black for visibility
-                textColor = Color.black
-            }
-            
-            // CRITICAL: Draw text at baseline position using SwiftUI Canvas
-            // The position is the baseline point (Core Graphics standard)
-            var baseTextView = Text(text)
-                .font(Font.custom(typography.fontFamily, size: typography.fontSize)
-                    .weight(typography.fontWeight.systemWeight))
-            
-            // Apply font style (italic/oblique)
-            if typography.fontStyle == .italic {
-                baseTextView = baseTextView.italic()
-            }
-            
-            // PROFESSIONAL TEXT STROKE: Draw stroke first, then fill (Adobe Illustrator standard)
-            if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
-                // Draw stroke by drawing multiple offset copies in stroke color
-                let strokeColor = Color(typography.strokeColor.color).opacity(typography.strokeOpacity)
-                let strokeWidth = typography.strokeWidth
-                
-                for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
-                    let offsetX = cos(angle * .pi / 180) * strokeWidth
-                    let offsetY = sin(angle * .pi / 180) * strokeWidth
-                    let strokePoint = CGPoint(x: drawPoint.x + offsetX, y: drawPoint.y + offsetY)
-                    
-                    context.draw(
-                        baseTextView.foregroundColor(strokeColor),
-                        at: strokePoint,
-                        anchor: .bottomLeading
-                    )
-                }
-            }
-            
-            // Draw fill text on top
-            context.draw(
-                baseTextView.foregroundColor(textColor),
-                at: drawPoint,
-                anchor: .bottomLeading
-            )
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    func makeNSView(context: Context) -> CoreGraphicsTextNSView {
+        let view = CoreGraphicsTextNSView()
+        view.text = text
+        view.typography = typography
+        view.position = position
+        return view
+    }
+    
+    func updateNSView(_ nsView: CoreGraphicsTextNSView, context: Context) {
+        nsView.text = text
+        nsView.typography = typography
+        nsView.position = position
+        nsView.needsDisplay = true
     }
 }
 
-// MARK: - Preview Support
+// MARK: - Native Core Graphics Text NSView
 
-#Preview {
-    let sampleTypography = TypographyProperties(
-        fontFamily: "Helvetica",
-        fontWeight: .regular,
-        fontStyle: .normal,
-        fontSize: 24.0,
-        hasStroke: false,
-        fillColor: .black
-    )
+class CoreGraphicsTextNSView: NSView {
+    var text: String = ""
+    var typography: TypographyProperties = TypographyProperties()
+    var position: CGPoint = .zero
     
-    let sampleText = VectorText(
-        content: "Sample Text",
-        typography: sampleTypography,
-        position: CGPoint(x: 50, y: 50)
-    )
+    override var isFlipped: Bool {
+        return true // Use flipped coordinates to match SwiftUI
+    }
     
-    TextObjectView(
-        textObject: sampleText,
-        zoomLevel: 1.0,
-        canvasOffset: .zero,
-        isSelected: false,
-        isEditing: false
-    )
-} 
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        
+        // PROFESSIONAL CORE GRAPHICS TEXT RENDERING
+        // This gives us crisp, scalable text at all zoom levels
+        drawTextWithCoreGraphics(context: context)
+    }
+    
+    private func drawTextWithCoreGraphics(context: CGContext) {
+        // STEP 1: Create font with proper weight and style
+        let font = createCoreTextFont()
+        
+        // STEP 2: Set up text attributes
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .kern: typography.letterSpacing
+        ]
+        
+        // STEP 3: Set text color based on typography settings
+        var textColor: NSColor
+        if typography.fillColor != .clear {
+            textColor = NSColor(typography.fillColor.color).withAlphaComponent(typography.fillOpacity)
+        } else if typography.hasStroke && typography.strokeColor != .clear {
+            textColor = NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity)
+        } else {
+            // Final fallback to black for visibility
+            textColor = NSColor.black
+        }
+        
+        attributes[.foregroundColor] = textColor
+        
+        // STEP 4: Create attributed string
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        
+        // STEP 5: Create CTLine for precise text layout
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        // STEP 6: Calculate text metrics for proper positioning
+        let ascent = CTFontGetAscent(font)
+        let descent = CTFontGetDescent(font)
+        let leading = CTFontGetLeading(font)
+        let _ = ascent + descent + leading // Line height calculation (for future use)
+        
+        // STEP 7: Position text at baseline (Core Graphics standard)
+        // Position.y is the baseline in our coordinate system
+        let drawPoint = CGPoint(x: position.x, y: position.y)
+        
+        // STEP 8: Save graphics state
+        context.saveGState()
+        
+        // STEP 9: Handle text stroke if enabled (Adobe Illustrator style)
+        if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
+            // Draw stroke first (behind fill)
+            context.setTextDrawingMode(.stroke)
+            context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
+            context.setLineWidth(typography.strokeWidth)
+            
+            // Set text position and draw stroke
+            context.textPosition = drawPoint
+            CTLineDraw(line, context)
+        }
+        
+        // STEP 10: Draw fill text (on top of stroke)
+        context.setTextDrawingMode(.fill)
+        context.setFillColor(textColor.cgColor)
+        
+        // Set text position and draw fill
+        context.textPosition = drawPoint
+        CTLineDraw(line, context)
+        
+        // STEP 11: Restore graphics state
+        context.restoreGState()
+    }
+    
+    private func createCoreTextFont() -> CTFont {
+        // PROFESSIONAL FONT CREATION: Handle weight and style properly
+        
+        // Start with base font descriptor
+        var fontDescriptor = CTFontDescriptorCreateWithNameAndSize(typography.fontFamily as CFString, typography.fontSize)
+        
+        // Add font traits for weight and style
+        var traits: [CFString: Any] = [:]
+        
+        // Map font weight to Core Text weight
+        let weightValue: Double
+        switch typography.fontWeight {
+        case .thin: weightValue = -0.8
+        case .ultraLight: weightValue = -0.6
+        case .light: weightValue = -0.4
+        case .regular: weightValue = 0.0
+        case .medium: weightValue = 0.23
+        case .semibold: weightValue = 0.3
+        case .bold: weightValue = 0.4
+        case .heavy: weightValue = 0.56
+        case .black: weightValue = 0.8
+        }
+        traits[kCTFontWeightTrait] = weightValue
+        
+        // Handle italic/oblique style
+        if typography.fontStyle == .italic {
+            traits[kCTFontSlantTrait] = 0.25 // Standard italic slant
+        }
+        
+        // Create font descriptor with traits
+        if !traits.isEmpty {
+            let traitsDict = [kCTFontTraitsAttribute: traits]
+            fontDescriptor = CTFontDescriptorCreateCopyWithAttributes(fontDescriptor, traitsDict as CFDictionary)
+        }
+        
+        // Create the final font
+        return CTFontCreateWithFontDescriptor(fontDescriptor, typography.fontSize, nil)
+    }
+    
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
+    
+    override var acceptsFirstResponder: Bool {
+        return true
+    }
+}
+
+// MARK: - Legacy SwiftUI Canvas Implementation (REMOVED)
+// The old PureSwiftUITextView has been removed because it caused rasterization
+// Native Core Graphics rendering above provides crisp text at all zoom levels 
