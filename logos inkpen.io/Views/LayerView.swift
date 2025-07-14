@@ -697,33 +697,42 @@ struct TextSelectionHandles: View {
     @State private var textRotationStartLocation: CGPoint = .zero
     
     var body: some View {
-        // PROFESSIONAL TEXT SCALING: Use text bounds for transformation
-        let bounds = textObject.bounds
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        // CRITICAL FIX: Use EXACT SAME coordinate system as shape selection
+        // Position text bounds relative to text position (baseline)
+        let absoluteBounds = CGRect(
+            x: textObject.position.x,
+            y: textObject.position.y + textObject.bounds.minY,
+            width: textObject.bounds.width,
+            height: textObject.bounds.height
+        )
+        let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         
         ZStack {
-            // Text bounding box outline (blue, professional standard)
+            // Text bounding box outline (blue, professional standard) 
+            // FIXED: Use EXACT SAME coordinate chain as shape selection
             Rectangle()
-                .stroke(Color.blue, lineWidth: 1.0)
-                .frame(width: bounds.width * zoomLevel, height: bounds.height * zoomLevel)
-                .position(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: center.y * zoomLevel + canvasOffset.y
-                )
+                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+                .frame(width: absoluteBounds.width, height: absoluteBounds.height)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(textObject.transform)
             
             // Corner resize handles (scale proportionally)
+            // FIXED: Use EXACT SAME coordinate chain as shape selection  
             ForEach(0..<4) { i in
-                let position = cornerPosition(for: i, in: bounds, center: center)
+                let position = cornerPosition(for: i, in: absoluteBounds, center: center)
                 Rectangle()
                     .fill(Color.blue)
-                    .frame(width: handleSize, height: handleSize)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(textObject.transform)
                     .gesture(
                         DragGesture()
                             .onChanged { value in
-                                handleTextCornerScaling(index: i, dragValue: value, bounds: bounds, center: center)
+                                handleTextCornerScaling(index: i, dragValue: value, bounds: absoluteBounds, center: center)
                             }
                             .onEnded { _ in
                                 finishTextScaling()
@@ -732,17 +741,20 @@ struct TextSelectionHandles: View {
             }
             
             // Edge resize handles (scale in one direction)  
+            // FIXED: Use EXACT SAME coordinate chain as shape selection
             ForEach(0..<4) { i in
-                let position = edgePosition(for: i, in: bounds, center: center)
+                let position = edgePosition(for: i, in: absoluteBounds, center: center)
                 Rectangle()
                     .fill(Color.blue)
-                    .frame(width: handleSize, height: handleSize)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                     .position(position)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(textObject.transform)
                     .gesture(
                         DragGesture()
                             .onChanged { value in
-                                handleTextEdgeScaling(index: i, dragValue: value, bounds: bounds, center: center)
+                                handleTextEdgeScaling(index: i, dragValue: value, bounds: absoluteBounds, center: center)
                             }
                             .onEnded { _ in
                                 finishTextScaling()
@@ -751,19 +763,22 @@ struct TextSelectionHandles: View {
             }
             
             // Rotation handle (small circle above top-center)
+            // FIXED: Use EXACT SAME coordinate chain as shape selection
             let rotationPosition = CGPoint(
-                x: center.x * zoomLevel + canvasOffset.x,
-                y: (bounds.minY - rotationHandleOffset / zoomLevel) * zoomLevel + canvasOffset.y
+                x: center.x,
+                y: absoluteBounds.minY - rotationHandleOffset / zoomLevel
             )
             Circle()
                 .fill(Color.green)
-                .frame(width: handleSize, height: handleSize)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
                 .position(rotationPosition)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(textObject.transform)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
-                            handleTextRotation(dragValue: value, bounds: bounds, center: center)
+                            handleTextRotation(dragValue: value, bounds: absoluteBounds, center: center)
                         }
                         .onEnded { _ in
                             finishTextRotation()
@@ -771,19 +786,22 @@ struct TextSelectionHandles: View {
                 )
             
             // Rotation indicator line
+            // FIXED: Use EXACT SAME coordinate chain as shape selection
             Path { path in
                 let topCenter = CGPoint(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: bounds.minY * zoomLevel + canvasOffset.y
+                    x: center.x,
+                    y: absoluteBounds.minY
                 )
                 path.move(to: topCenter)
                 path.addLine(to: rotationPosition)
             }
-            .stroke(Color.green, lineWidth: 1.0)
+            .stroke(Color.green, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
             .transformEffect(textObject.transform)
         }
         .onAppear {
-            initialBounds = textObject.bounds
+            initialBounds = absoluteBounds
             initialTransform = textObject.transform
         }
     }
