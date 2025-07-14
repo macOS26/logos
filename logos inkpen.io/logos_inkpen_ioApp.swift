@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 // MARK: - AppDelegate to Remove Default Menus
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -20,135 +21,301 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - FocusedValues for Document Integration
-extension FocusedValues {
-    struct DocumentFocusedValueKey: FocusedValueKey {
-        typealias Value = VectorDocument
+// MARK: - Document State Object (THE SOLUTION!)
+// This is the key to automatic menu state updates
+class DocumentState: ObservableObject {
+    @Published var document: VectorDocument?
+    
+    // AUTOMATIC MENU STATES - Update in real-time with @Published
+    @Published var canUndo = false
+    @Published var canRedo = false
+    @Published var hasSelection = false
+    @Published var canCut = false
+    @Published var canCopy = false
+    @Published var canPaste = false
+    @Published var canGroup = false
+    @Published var canUngroup = false
+    
+    private var cancellables = Set<AnyCancellable>()
+    
+    init() {
+        print("🎯 DocumentState initialized with automatic menu state updates")
     }
     
-    var document: VectorDocument? {
-        get { self[DocumentFocusedValueKey.self] }
-        set { self[DocumentFocusedValueKey.self] = newValue }
+    func setDocument(_ document: VectorDocument) {
+        self.document = document
+        updateAllStates()
+        
+        // Observe document changes for automatic updates
+        setupDocumentObservers()
+    }
+    
+    private func setupDocumentObservers() {
+        guard let document = document else { return }
+        
+        // Clear previous observations
+        cancellables.removeAll()
+        
+        // Monitor document changes that affect menu states
+        document.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateAllStates()
+            }
+        }
+        .store(in: &cancellables)
+    }
+    
+    private func updateAllStates() {
+        guard let document = document else {
+            // No document = disable everything
+            canUndo = false
+            canRedo = false
+            hasSelection = false
+            canCut = false
+            canCopy = false
+            canPaste = false
+            canGroup = false
+            canUngroup = false
+            return
+        }
+        
+        // AUTOMATIC STATE CALCULATION
+        canUndo = !document.undoStack.isEmpty
+        canRedo = !document.redoStack.isEmpty
+        hasSelection = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+        canCut = hasSelection
+        canCopy = hasSelection
+        canPaste = ClipboardManager.shared.canPaste()
+        canGroup = document.selectedShapeIDs.count > 1
+        canUngroup = document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
+        }
+        
+        print("🔄 Menu states updated automatically: undo=\(canUndo), selection=\(hasSelection)")
+    }
+    
+    // MARK: - Menu Actions (Direct document interaction)
+    func undo() {
+        document?.undo()
+        updateAllStates()
+    }
+    
+    func redo() {
+        document?.redo() 
+        updateAllStates()
+    }
+    
+    func cut() {
+        guard let document = document else { return }
+        ClipboardManager.shared.cut(from: document)
+        updateAllStates()
+    }
+    
+    func copy() {
+        guard let document = document else { return }
+        ClipboardManager.shared.copy(from: document)
+        updateAllStates()
+    }
+    
+    func paste() {
+        guard let document = document else { return }
+        ClipboardManager.shared.paste(to: document)
+        updateAllStates()
+    }
+    
+    func pasteInBack() {
+        guard let document = document else { return }
+        ClipboardManager.shared.pasteInBack(to: document)
+        updateAllStates()
+    }
+    
+    func selectAll() {
+        document?.selectAll()
+        updateAllStates()
+    }
+    
+    func deselectAll() {
+        document?.selectedShapeIDs.removeAll()
+        document?.selectedTextIDs.removeAll()
+        updateAllStates()
+    }
+    
+    func delete() {
+        guard let document = document else { return }
+        document.saveToUndoStack()
+        
+        if !document.selectedShapeIDs.isEmpty {
+            document.removeSelectedShapes()
+        }
+        if !document.selectedTextIDs.isEmpty {
+            document.removeSelectedText()
+        }
+        
+        updateAllStates()
+        print("🗑️ MENU: Deleted selected objects")
+    }
+    
+    func bringToFront() {
+        document?.bringSelectedToFront()
+        updateAllStates()
+    }
+    
+    func bringForward() {
+        document?.bringSelectedForward()
+        updateAllStates()
+    }
+    
+    func sendBackward() {
+        document?.sendSelectedBackward()
+        updateAllStates()
+    }
+    
+    func sendToBack() {
+        document?.sendSelectedToBack()
+        updateAllStates()
+    }
+    
+    func groupObjects() {
+        document?.groupSelectedObjects()
+        updateAllStates()
+    }
+    
+    func ungroupObjects() {
+        document?.ungroupSelectedObjects()
+        updateAllStates()
+    }
+    
+    func duplicate() {
+        guard let document = document else { return }
+        if !document.selectedShapeIDs.isEmpty {
+            document.duplicateSelectedShapes()
+        } else if !document.selectedTextIDs.isEmpty {
+            document.duplicateSelectedText()
+        }
+        updateAllStates()
     }
 }
 
 @main
 struct logos_inken_ioApp: App {
-    @StateObject private var menuHandler = MenuCommandHandler.shared
-    @FocusedValue(\.document) var focusedDocument: VectorDocument?
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @FocusedObject var documentState: DocumentState?
     
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(menuHandler)
         }
         .commands {
-            // SOLUTION: Create Custom Working Edit Menu (NOT Apple's broken one)
-            // Use "Edit " with space to prevent Apple from adding their default back
+            // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit ") {
                 Button("Undo") {
-                    menuHandler.undo()
+                    documentState?.undo()
                 }
                 .keyboardShortcut("z", modifiers: [.command])
-                .disabled(!menuHandler.canUndo)
+                .disabled(documentState?.canUndo != true)
                 
                 Button("Redo") {
-                    menuHandler.redo()
+                    documentState?.redo()
                 }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
-                .disabled(!menuHandler.canRedo)
+                .disabled(documentState?.canRedo != true)
                 
                 Divider()
                 
                 Button("Cut") {
-                    menuHandler.cut()
+                    documentState?.cut()
                 }
                 .keyboardShortcut("x", modifiers: [.command])
-                .disabled(!menuHandler.canCut)
+                .disabled(documentState?.canCut != true)
                 
                 Button("Copy") {
-                    menuHandler.copy()
+                    documentState?.copy()
                 }
                 .keyboardShortcut("c", modifiers: [.command])
-                .disabled(!menuHandler.canCopy)
+                .disabled(documentState?.canCopy != true)
                 
                 Button("Paste") {
-                    menuHandler.paste()
+                    documentState?.paste()
                 }
                 .keyboardShortcut("v", modifiers: [.command])
-                .disabled(!menuHandler.canPaste)
+                .disabled(documentState?.canPaste != true)
+                
+                Button("Paste in Back") {
+                    documentState?.pasteInBack()
+                }
+                .keyboardShortcut("v", modifiers: [.command, .shift])
+                .disabled(documentState?.canPaste != true)
                 
                 Button("Delete") {
-                    menuHandler.delete()
+                    documentState?.delete()
                 }
                 .keyboardShortcut(.delete)
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Divider()
                 
                 Button("Select All") {
-                    menuHandler.selectAll()
+                    documentState?.selectAll()
                 }
                 .keyboardShortcut("a", modifiers: [.command])
                 
                 Button("Deselect All") {
-                    menuHandler.deselectAll()
+                    documentState?.deselectAll()
                 }
                 .keyboardShortcut("a", modifiers: [.command, .shift])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
             }
             
-            // CREATE TOP-LEVEL Object Menu
+            // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
                 // Arrange Section
                 Button("Bring to Front") {
-                    menuHandler.bringToFront()
+                    documentState?.bringToFront()
                 }
                 .keyboardShortcut("]", modifiers: [.command, .shift])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Button("Bring Forward") {
-                    menuHandler.bringForward()
+                    documentState?.bringForward()
                 }
                 .keyboardShortcut("]", modifiers: [.command])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Button("Send Backward") {
-                    menuHandler.sendBackward()
+                    documentState?.sendBackward()
                 }
                 .keyboardShortcut("[", modifiers: [.command])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Button("Send to Back") {
-                    menuHandler.sendToBack()
+                    documentState?.sendToBack()
                 }
                 .keyboardShortcut("[", modifiers: [.command, .shift])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Divider()
                 
                 // Group Section
                 Button("Group") {
-                    menuHandler.groupObjects()
+                    documentState?.groupObjects()
                 }
                 .keyboardShortcut("g", modifiers: [.command])
-                .disabled(!menuHandler.canGroup)
+                .disabled(documentState?.canGroup != true)
                 
                 Button("Ungroup") {
-                    menuHandler.ungroupObjects()
+                    documentState?.ungroupObjects()
                 }
                 .keyboardShortcut("g", modifiers: [.command, .shift])
-                .disabled(!menuHandler.canUngroup)
+                .disabled(documentState?.canUngroup != true)
                 
                 Divider()
                 
                 // Transform Section
                 Button("Duplicate") {
-                    menuHandler.duplicate()
+                    documentState?.duplicate()
                 }
                 .keyboardShortcut("d", modifiers: [.command])
-                .disabled(!menuHandler.hasSelection)
+                .disabled(documentState?.hasSelection != true)
                 
                 Divider()
                 
@@ -172,160 +339,6 @@ struct logos_inken_ioApp: App {
                 .help("Run a test to verify the duplicate point merger works correctly")
             }
         }
-        .onChange(of: focusedDocument != nil) {
-            // Update menu handler when focused document changes
-            if let document = focusedDocument {
-                menuHandler.setDocument(document)
-            }
-        }
-    }
-}
-
-// MARK: - Complete Menu Command Handler (All Functionality Working)
-class MenuCommandHandler: ObservableObject {
-    static let shared = MenuCommandHandler()
-    
-    @Published var canUndo = false
-    @Published var canRedo = false
-    @Published var hasSelection = false
-    @Published var canCut = false
-    @Published var canCopy = false
-    @Published var canPaste = false
-    @Published var canGroup = false
-    @Published var canUngroup = false
-    
-    private var currentDocument: VectorDocument?
-    
-    private init() {
-        print("🎯 MenuCommandHandler initialized")
-    }
-    
-    func setDocument(_ document: VectorDocument) {
-        currentDocument = document
-        updateMenuStates()
-    }
-    
-    func updateMenuStates() {
-        guard let document = currentDocument else { return }
-        
-        canUndo = !document.undoStack.isEmpty
-        canRedo = !document.redoStack.isEmpty
-        hasSelection = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
-        canCut = hasSelection
-        canCopy = hasSelection
-        canPaste = ClipboardManager.shared.canPaste()
-        canGroup = document.selectedShapeIDs.count > 1
-        canUngroup = document.selectedShapeIDs.contains { shapeID in
-            // Check if any selected shape is a group
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
-        }
-    }
-    
-    // MARK: - Edit Commands (Actually Working!)
-    func undo() {
-        currentDocument?.undo()
-        updateMenuStates()
-    }
-    
-    func redo() {
-        currentDocument?.redo()
-        updateMenuStates()
-    }
-    
-    func cut() {
-        guard let document = currentDocument else { return }
-        ClipboardManager.shared.cut(from: document)
-        updateMenuStates()
-    }
-    
-    func copy() {
-        guard let document = currentDocument else { return }
-        ClipboardManager.shared.copy(from: document)
-        updateMenuStates()
-    }
-    
-    func paste() {
-        guard let document = currentDocument else { return }
-        ClipboardManager.shared.paste(to: document)
-        updateMenuStates()
-    }
-    
-    func selectAll() {
-        guard let document = currentDocument else { return }
-        document.selectAll()
-        updateMenuStates()
-    }
-    
-    func deselectAll() {
-        guard let document = currentDocument else { return }
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
-        updateMenuStates()
-    }
-    
-    func delete() {
-        guard let document = currentDocument else { return }
-        document.saveToUndoStack()
-        
-        // Delete selected shapes
-        if !document.selectedShapeIDs.isEmpty {
-            document.removeSelectedShapes()
-        }
-        
-        // Delete selected text
-        if !document.selectedTextIDs.isEmpty {
-            document.removeSelectedText()
-        }
-        
-        updateMenuStates()
-        print("🗑️ MENU: Deleted selected objects")
-    }
-    
-    // MARK: - Object Commands (Only custom functionality)
-    func bringToFront() {
-        guard let document = currentDocument else { return }
-        document.bringSelectedToFront()
-        updateMenuStates()
-    }
-    
-    func bringForward() {
-        guard let document = currentDocument else { return }
-        document.bringSelectedForward()
-        updateMenuStates()
-    }
-    
-    func sendBackward() {
-        guard let document = currentDocument else { return }
-        document.sendSelectedBackward()
-        updateMenuStates()
-    }
-    
-    func sendToBack() {
-        guard let document = currentDocument else { return }
-        document.sendSelectedToBack()
-        updateMenuStates()
-    }
-    
-    func groupObjects() {
-        guard let document = currentDocument else { return }
-        document.groupSelectedObjects()
-        updateMenuStates()
-    }
-    
-    func ungroupObjects() {
-        guard let document = currentDocument else { return }
-        document.ungroupSelectedObjects()
-        updateMenuStates()
-    }
-    
-    func duplicate() {
-        guard let document = currentDocument else { return }
-        if !document.selectedShapeIDs.isEmpty {
-            document.duplicateSelectedShapes()
-        } else if !document.selectedTextIDs.isEmpty {
-            document.duplicateSelectedText()
-        }
-        updateMenuStates()
     }
 }
 
@@ -392,64 +405,86 @@ class ClipboardManager {
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
             
-            // Add shapes to current layer
+            // Add shapes to current layer at EXACT original coordinates
             if let layerIndex = document.selectedLayerIndex {
                 for shape in clipboardData.shapes {
                     var newShape = shape
                     newShape.id = UUID()
-                    // Offset pasted objects slightly
-                    newShape.path = offsetPath(newShape.path, by: CGPoint(x: 20, y: 20))
+                    // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                     document.layers[layerIndex].shapes.append(newShape)
                     document.selectedShapeIDs.insert(newShape.id)
                 }
             }
             
-            // Add text objects
+            // Add text objects at EXACT original coordinates
             for text in clipboardData.texts {
                 var newText = text
                 newText.id = UUID()
-                // Offset pasted text slightly
-                newText.position = CGPoint(
-                    x: newText.position.x + 20,
-                    y: newText.position.y + 20
-                )
+                // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
                 document.selectedTextIDs.insert(newText.id)
             }
             
-            print("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects")
+            print("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
         } catch {
             print("❌ Failed to paste objects: \(error)")
         }
     }
     
-    private func offsetPath(_ path: VectorPath, by offset: CGPoint) -> VectorPath {
-        var newElements: [PathElement] = []
+    func pasteInBack(to document: VectorDocument) {
+        guard let data = pasteboard.data(forType: vectorObjectsType) else { return }
         
-        for element in path.elements {
-            switch element {
-            case .move(let to):
-                newElements.append(.move(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-            case .line(let to):
-                newElements.append(.line(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-            case .curve(let to, let control1, let control2):
-                newElements.append(.curve(
-                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                    control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
-                    control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
-                ))
-            case .quadCurve(let to, let control):
-                newElements.append(.quadCurve(
-                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                    control: VectorPoint(control.x + offset.x, control.y + offset.y)
-                ))
-            case .close:
-                newElements.append(.close)
+        do {
+            let clipboardData = try JSONDecoder().decode(ClipboardData.self, from: data)
+            
+            document.saveToUndoStack()
+            
+            // Clear current selection
+            let originalSelectedShapeIDs = document.selectedShapeIDs
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+            
+            // Add shapes to current layer BEHIND selected objects
+            if let layerIndex = document.selectedLayerIndex {
+                // Find the lowest index of any selected shape to paste behind it
+                var insertIndex = 0
+                
+                if !originalSelectedShapeIDs.isEmpty {
+                    // Find the first (lowest z-order) selected shape
+                    for (index, shape) in document.layers[layerIndex].shapes.enumerated() {
+                        if originalSelectedShapeIDs.contains(shape.id) {
+                            insertIndex = index
+                            break
+                        }
+                    }
+                }
+                
+                // Insert shapes at the calculated index (behind selected objects)
+                for (offset, shape) in clipboardData.shapes.enumerated() {
+                    var newShape = shape
+                    newShape.id = UUID()
+                    // PASTE IN BACK: Insert at specific index to place behind selected objects
+                    document.layers[layerIndex].shapes.insert(newShape, at: insertIndex + offset)
+                    document.selectedShapeIDs.insert(newShape.id)
+                }
             }
+            
+            // Add text objects at EXACT original coordinates (text doesn't have z-order within shapes)
+            for text in clipboardData.texts {
+                var newText = text
+                newText.id = UUID()
+                // PASTE AT EXACT ORIGINAL COORDINATES - no offset
+                document.textObjects.append(newText)
+                document.selectedTextIDs.insert(newText.id)
+            }
+            
+            print("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
+        } catch {
+            print("❌ Failed to paste in back: \(error)")
         }
-        
-        return VectorPath(elements: newElements)
     }
+    
+    // NOTE: offsetPath function removed - paste now uses exact original coordinates
 }
 
 // MARK: - Clipboard Data Structure

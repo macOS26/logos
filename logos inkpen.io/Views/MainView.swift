@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 
 struct MainView: View {
     @StateObject private var document = TemplateManager.shared.createBlankDocument()
-    @EnvironmentObject var menuHandler: MenuCommandHandler
+    @StateObject private var documentState = DocumentState()
     @State private var showingDocumentSettings = false
     @State private var showingExportDialog = false
     @State private var showingColorPicker = false
@@ -147,10 +147,10 @@ struct MainView: View {
             }
         }
         .frame(minWidth: 1200, minHeight: 800)
-        .focusedValue(\.document, document)
+        // Note: No longer using focusedValue - using focusedSceneObject instead
         .onAppear {
-            // SOLUTION: Connect document to menu system
-            menuHandler.setDocument(document)
+            // SOLUTION: Connect document to menu system using NEW approach
+            documentState.setDocument(document)
             
             // Set up notification observers for menu commands
             setupMenuCommandObservers()
@@ -163,13 +163,13 @@ struct MainView: View {
                 fitToPage()
             }
         }
+        .focusedSceneObject(documentState)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             // Update menu states when app becomes active
-            menuHandler.updateMenuStates()
+            documentState.setDocument(document)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
-            // Update menu states when app resigns active
-            menuHandler.updateMenuStates()
+            // Note: Menu states now update automatically via @Published properties
         }
     }
     
@@ -1803,6 +1803,5 @@ struct ImportResultView: View {
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
         MainView()
-            .environmentObject(MenuCommandHandler.shared)
     }
 }
