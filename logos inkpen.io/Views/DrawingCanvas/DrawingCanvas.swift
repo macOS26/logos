@@ -1064,6 +1064,7 @@ struct DrawingCanvas: View {
                 case 51: // Delete key
                     if !updatedText.content.isEmpty {
                         updatedText.content.removeLast()
+                        updatedText.updateBounds() // SURGICAL FIX: Update bounds for dynamic sizing
                         document.textObjects[textIndex] = updatedText
                         document.objectWillChange.send()
                     }
@@ -1080,6 +1081,7 @@ struct DrawingCanvas: View {
                         let filteredChars = characters.filter { $0.isLetter || $0.isNumber || $0.isPunctuation || $0.isSymbol || $0.isWhitespace }
                         if !filteredChars.isEmpty {
                             updatedText.content.append(String(filteredChars))
+                            updatedText.updateBounds() // SURGICAL FIX: Update bounds for dynamic sizing
                             document.textObjects[textIndex] = updatedText
                             document.objectWillChange.send()
                         }

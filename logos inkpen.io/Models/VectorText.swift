@@ -243,35 +243,34 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     mutating func updateBounds() {
-        // FIXED: Bounds relative to baseline position to match TextObjectView coordinate system
-        // CRITICAL: Use typography.nsFont which includes weight and style
+        // SURGICAL FIX: CoreGraphics-compliant text bounds calculation
+        // Uses actual text content for dynamic sizing (fixes editing growth issue)
         let font = typography.nsFont
-        let nsString = NSString(string: content.isEmpty ? "Text" : content)
-        let textSize = nsString.size(withAttributes: [.font: font])
+        let displayText = content.isEmpty ? "Text" : content
+        let nsString = NSString(string: displayText)
         
-        // Text baseline positioning - match TextObjectView frame calculation
-        let ascent = font.ascender
-        let descent = -font.descender
+        // CRITICAL: Use boundingRect for accurate multi-line text bounds (CoreGraphics standard)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .kern: typography.letterSpacing
+        ]
         
-        // For area text, use the specified area size if available
-        if !isPointText, let areaSize = areaSize {
-            bounds = CGRect(
-                x: 0,  // Start at text position (same as shapes)
-                y: -ascent,  // Extend up from baseline
-                width: areaSize.width,
-                height: areaSize.height
-            )
-        } else {
-            // For point text, calculate bounds to match NSView frame
-            bounds = CGRect(
-                x: 0,  // Start at text position
-                y: -ascent,  // Extend up from baseline  
-                width: max(textSize.width, 20),  // Minimum width for empty text
-                height: max(ascent + descent, typography.fontSize)  // Total height
-            )
-        }
+        let boundingRect = nsString.boundingRect(
+            with: CGSize(width: isPointText ? 10000 : (areaSize?.width ?? 10000), height: 10000),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attributes
+        )
         
-        // Position is handled separately - bounds are relative to position
+        // SURGICAL FIX: CoreGraphics baseline positioning
+        // According to CoreGraphics manual: baseline is reference point, bounds extend up/down from it
+        bounds = CGRect(
+            x: 0,  // Relative to position (CoreGraphics standard)
+            y: boundingRect.minY,  // Use actual text bounds minY (includes ascent offset)
+            width: max(boundingRect.width, content.isEmpty ? 20 : 1),  // Dynamic width, min for empty
+            height: max(boundingRect.height, typography.fontSize * 1.2)  // Dynamic height with fallback
+        )
+        
+        // Position is handled separately - bounds are relative to position (CoreGraphics standard)
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)
