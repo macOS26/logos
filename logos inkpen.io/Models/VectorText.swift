@@ -277,42 +277,12 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     private func createCoreTextFont() -> CTFont {
-        // PROFESSIONAL FONT CREATION: Handle weight and style properly
+        // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
+        // This already handles weight and style correctly using SwiftUI's font system
+        let nsFont = typography.nsFont
         
-        // Start with base font descriptor
-        var fontDescriptor = CTFontDescriptorCreateWithNameAndSize(typography.fontFamily as CFString, typography.fontSize)
-        
-        // Add font traits for weight and style
-        var traits: [CFString: Any] = [:]
-        
-        // Map font weight to Core Text weight
-        let weightValue: Double
-        switch typography.fontWeight {
-        case .thin: weightValue = -0.8
-        case .ultraLight: weightValue = -0.6
-        case .light: weightValue = -0.4
-        case .regular: weightValue = 0.0
-        case .medium: weightValue = 0.23
-        case .semibold: weightValue = 0.3
-        case .bold: weightValue = 0.4
-        case .heavy: weightValue = 0.56
-        case .black: weightValue = 0.8
-        }
-        traits[kCTFontWeightTrait] = weightValue
-        
-        // Handle italic/oblique style
-        if typography.fontStyle == .italic {
-            traits[kCTFontSlantTrait] = 0.25 // Standard italic slant
-        }
-        
-        // Create font descriptor with traits
-        if !traits.isEmpty {
-            let traitsDict = [kCTFontTraitsAttribute: traits]
-            fontDescriptor = CTFontDescriptorCreateCopyWithAttributes(fontDescriptor, traitsDict as CFDictionary)
-        }
-        
-        // Create the final font
-        return CTFontCreateWithFontDescriptor(fontDescriptor, typography.fontSize, nil)
+        // Convert NSFont to CTFont
+        return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Feature)

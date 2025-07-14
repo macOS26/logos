@@ -94,7 +94,7 @@ extension DrawingCanvas {
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
-            hasStroke: document.defaultStrokeColor != .clear && document.defaultStrokeColor != .white,
+            hasStroke: false, // SURGICAL FIX: Stroke off by default (professional standard)
             strokeColor: document.defaultStrokeColor,
             strokeOpacity: document.defaultStrokeOpacity,
             fillColor: fillColor,
