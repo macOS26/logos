@@ -261,16 +261,13 @@ struct VectorText: Identifiable, Codable, Hashable {
             attributes: attributes
         )
         
-        // SURGICAL FIX: Use font metrics for reliable baseline positioning
-        // CoreGraphics standard: ascender is positive (above baseline), descender is negative (below baseline)
-        let ascent = font.ascender
-        let descent = font.descender  // This is negative
-        
+        // SURGICAL FIX: Use actual text visual bounds (not font metrics)
+        // boundingRect gives us the precise visual area of the rendered text
         bounds = CGRect(
             x: 0,  // Relative to position (CoreGraphics standard)
-            y: -ascent,  // Negative ascent to extend up from baseline
-            width: max(boundingRect.width, content.isEmpty ? 20 : 1),  // Use actual text width
-            height: ascent - descent  // Total height (ascent is positive, descent is negative)
+            y: -boundingRect.height + 2,  // Actual visual top (relative to baseline)
+            width: max(boundingRect.width, content.isEmpty ? 20 : 1),  // Actual text width
+            height: boundingRect.height  // Actual visual height
         )
         
         // Position is handled separately - bounds are relative to position (CoreGraphics standard)
