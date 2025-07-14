@@ -1,60 +1,60 @@
 //
 //  NotificationExtensions.swift
-//  logos
+//  logos inkpen.io
 //
-//  Created by Todd Bruss on 7/5/25.
+//  Created by Todd Bruss on 8/5/25.
 //
 
 import Foundation
 
-extension NSNotification.Name {
+extension Notification.Name {
     // MARK: - Tool Commands
-    static let switchTool = NSNotification.Name("SwitchTool")
+    static let switchTool = Notification.Name("SwitchTool")
     
     // MARK: - Selection Commands
-    static let selectAll = NSNotification.Name("SelectAll")
-    static let deselectAll = NSNotification.Name("DeselectAll")
+    static let selectAll = Notification.Name("SelectAll")
+    static let deselectAll = Notification.Name("DeselectAll")
     
     // MARK: - Object Commands - Arrange
-    static let bringToFront = NSNotification.Name("BringToFront")
-    static let bringForward = NSNotification.Name("BringForward")
-    static let sendBackward = NSNotification.Name("SendBackward")
-    static let sendToBack = NSNotification.Name("SendToBack")
+    static let bringToFront = Notification.Name("BringToFront")
+    static let bringForward = Notification.Name("BringForward")
+    static let sendBackward = Notification.Name("SendBackward")
+    static let sendToBack = Notification.Name("SendToBack")
     
     // MARK: - Object Commands - Lock/Hide
-    static let lockObjects = NSNotification.Name("LockObjects")
-    static let unlockAll = NSNotification.Name("UnlockAll")
-    static let hideObjects = NSNotification.Name("HideObjects")
-    static let showAll = NSNotification.Name("ShowAll")
+    static let lockObjects = Notification.Name("LockObjects")
+    static let unlockAll = Notification.Name("UnlockAll")
+    static let hideObjects = Notification.Name("HideObjects")
+    static let showAll = Notification.Name("ShowAll")
     
     // MARK: - View Commands - Zoom
-    static let zoomIn = NSNotification.Name("ZoomIn")
-    static let zoomOut = NSNotification.Name("ZoomOut")
-    static let fitToPage = NSNotification.Name("FitToPage")
-    static let actualSize = NSNotification.Name("ActualSize")
+    static let zoomIn = Notification.Name("ZoomIn")
+    static let zoomOut = Notification.Name("ZoomOut")
+    static let fitToPage = Notification.Name("FitToPage")
+    static let actualSize = Notification.Name("ActualSize")
     
     // MARK: - View Commands - View Mode
-    static let colorView = NSNotification.Name("ColorView")
-    static let keylineView = NSNotification.Name("KeylineView")
+    static let colorView = Notification.Name("ColorView")
+    static let keylineView = Notification.Name("KeylineView")
     
     // MARK: - View Commands - Show/Hide
-    static let toggleRulers = NSNotification.Name("ToggleRulers")
-    static let toggleGrid = NSNotification.Name("ToggleGrid")
-    static let toggleSnapToGrid = NSNotification.Name("ToggleSnapToGrid")
+    static let toggleRulers = Notification.Name("ToggleRulers")
+    static let toggleGrid = Notification.Name("ToggleGrid")
+    static let toggleSnapToGrid = Notification.Name("ToggleSnapToGrid")
     
     // MARK: - Text Commands
-    static let createOutlines = NSNotification.Name("CreateOutlines")
+    static let createOutlines = Notification.Name("CreateOutlines")
     
     // MARK: - Path Cleanup Commands (Professional Tools)
-    static let cleanupDuplicatePoints = NSNotification.Name("CleanupDuplicatePoints")
-    static let cleanupAllDuplicatePoints = NSNotification.Name("CleanupAllDuplicatePoints")
-    static let testDuplicatePointMerger = NSNotification.Name("TestDuplicatePointMerger")
+    static let cleanupDuplicatePoints = Notification.Name("cleanupDuplicatePoints")
+    static let cleanupAllDuplicatePoints = Notification.Name("cleanupAllDuplicatePoints")
+    static let testDuplicatePointMerger = Notification.Name("testDuplicatePointMerger")
     
     // MARK: - Panel Commands
-    static let showLayersPanel = NSNotification.Name("ShowLayersPanel")
-    static let showColorPanel = NSNotification.Name("ShowColorPanel")
-    static let showStrokeFillPanel = NSNotification.Name("ShowStrokeFillPanel")
-    static let showTypographyPanel = NSNotification.Name("ShowTypographyPanel")
-    static let showPathOpsPanel = NSNotification.Name("ShowPathOpsPanel")
-    static let switchToPanel = NSNotification.Name("SwitchToPanel")
+    static let showLayersPanel = Notification.Name("ShowLayersPanel")
+    static let showColorPanel = Notification.Name("ShowColorPanel")
+    static let showStrokeFillPanel = Notification.Name("ShowStrokeFillPanel")
+    static let showTypographyPanel = Notification.Name("ShowTypographyPanel")
+    static let showPathOpsPanel = Notification.Name("ShowPathOpsPanel")
+    static let switchToPanel = Notification.Name("SwitchToPanel")
 } 

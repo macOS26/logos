@@ -163,25 +163,13 @@ struct MainView: View {
                 fitToPage()
             }
         }
-        .onChange(of: document.selectedShapeIDs) {
-            // Update menu states when selection changes
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            // Update menu states when app becomes active
             menuHandler.updateMenuStates()
         }
-        .onChange(of: document.selectedTextIDs) {
-            // Update menu states when selection changes
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            // Update menu states when app resigns active
             menuHandler.updateMenuStates()
-        }
-        .onChange(of: document.undoStack.count) {
-            // Update menu states when undo stack changes
-            menuHandler.updateMenuStates()
-        }
-        .onChange(of: document.redoStack.count) {
-            // Update menu states when redo stack changes
-            menuHandler.updateMenuStates()
-        }
-        .onDisappear {
-            // Clean up notification observers
-            teardownMenuCommandObservers()
         }
     }
     

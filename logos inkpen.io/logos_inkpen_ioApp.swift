@@ -6,6 +6,19 @@
 //
 
 import SwiftUI
+import AppKit
+
+// MARK: - AppDelegate to Remove Default Menus
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillUpdate(_ notification: Notification) {
+        if let menu = NSApplication.shared.mainMenu {
+            // Remove Apple's default Edit menu (grayed out and useless)
+            if let edit = menu.items.first(where: { $0.title == "Edit"}) {
+                menu.removeItem(edit)
+            }
+        }
+    }
+}
 
 // MARK: - FocusedValues for Document Integration
 extension FocusedValues {
@@ -23,6 +36,7 @@ extension FocusedValues {
 struct logos_inken_ioApp: App {
     @StateObject private var menuHandler = MenuCommandHandler.shared
     @FocusedValue(\.document) var focusedDocument: VectorDocument?
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     var body: some Scene {
         WindowGroup {
@@ -30,10 +44,9 @@ struct logos_inken_ioApp: App {
                 .environmentObject(menuHandler)
         }
         .commands {
-            // SOLUTION: Clean, Non-Duplicate Menu System
-            
-            // 1. REPLACE Edit Menu - Remove duplicates and fix functionality
-            CommandGroup(replacing: .textEditing) {
+            // SOLUTION: Create Custom Working Edit Menu (NOT Apple's broken one)
+            // Use "Edit " with space to prevent Apple from adding their default back
+            CommandMenu("Edit ") {
                 Button("Undo") {
                     menuHandler.undo()
                 }
@@ -86,7 +99,7 @@ struct logos_inken_ioApp: App {
                 .disabled(!menuHandler.hasSelection)
             }
             
-            // 2. CREATE TOP-LEVEL Object Menu (not submenu!)
+            // CREATE TOP-LEVEL Object Menu
             CommandMenu("Object") {
                 // Arrange Section
                 Button("Bring to Front") {
@@ -158,9 +171,6 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("k", modifiers: [.command, .shift, .option])
                 .help("Run a test to verify the duplicate point merger works correctly")
             }
-            
-            // 3. KEEP System File, View, Window menus (no duplicates)
-            // System automatically provides standard File, View, Window functionality
         }
         .onChange(of: focusedDocument != nil) {
             // Update menu handler when focused document changes
@@ -171,7 +181,7 @@ struct logos_inken_ioApp: App {
     }
 }
 
-// MARK: - Professional Menu Command Handler (No Duplicates!)
+// MARK: - Complete Menu Command Handler (All Functionality Working)
 class MenuCommandHandler: ObservableObject {
     static let shared = MenuCommandHandler()
     
@@ -211,7 +221,7 @@ class MenuCommandHandler: ObservableObject {
         }
     }
     
-    // MARK: - Edit Commands
+    // MARK: - Edit Commands (Actually Working!)
     func undo() {
         currentDocument?.undo()
         updateMenuStates()
@@ -271,7 +281,7 @@ class MenuCommandHandler: ObservableObject {
         print("🗑️ MENU: Deleted selected objects")
     }
     
-    // MARK: - Object Commands
+    // MARK: - Object Commands (Only custom functionality)
     func bringToFront() {
         guard let document = currentDocument else { return }
         document.bringSelectedToFront()
