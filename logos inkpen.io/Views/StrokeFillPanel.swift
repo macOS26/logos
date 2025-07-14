@@ -823,7 +823,7 @@ struct ColorPickerSheet: View {
                                 .cornerRadius(6)
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("CMYK(\(Int(cmykPreview.cyan * 100)), \(Int(cmykPreview.magenta * 100)), \(Int(cmykPreview.yellow * 100)), \(Int(cmykPreview.black * 100)))")
+                                Text("CMYK(\(Int((cmykPreview.cyan * 100).isFinite ? cmykPreview.cyan * 100 : 0)), \(Int((cmykPreview.magenta * 100).isFinite ? cmykPreview.magenta * 100 : 0)), \(Int((cmykPreview.yellow * 100).isFinite ? cmykPreview.yellow * 100 : 0)), \(Int((cmykPreview.black * 100).isFinite ? cmykPreview.black * 100 : 0)))")
                                     .font(.caption)
                                     .foregroundColor(.primary)
                                 
@@ -860,10 +860,10 @@ struct ColorPickerSheet: View {
                             blue: rgbColor.components.blue,
                             alpha: rgbColor.components.alpha
                         ))
-                        cyanValue = String(Int(cmyk.cyan * 100))
-                        magentaValue = String(Int(cmyk.magenta * 100))
-                        yellowValue = String(Int(cmyk.yellow * 100))
-                        blackValue = String(Int(cmyk.black * 100))
+                        cyanValue = String(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))
+                        magentaValue = String(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))
+                        yellowValue = String(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))
+                        blackValue = String(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))
                         updateCMYKPreview()
                     }
                 }
@@ -876,10 +876,10 @@ struct ColorPickerSheet: View {
                             rgbColor = color.color
                             // Update CMYK values if switching to CMYK mode
                             if colorMode == .cmyk, case .cmyk(let cmyk) = color {
-                                cyanValue = String(Int(cmyk.cyan * 100))
-                                magentaValue = String(Int(cmyk.magenta * 100))
-                                yellowValue = String(Int(cmyk.yellow * 100))
-                                blackValue = String(Int(cmyk.black * 100))
+                                cyanValue = String(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))
+                                magentaValue = String(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))
+                                yellowValue = String(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))
+                                blackValue = String(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))
                                 updateCMYKPreview()
                             }
                         } label: {
@@ -935,10 +935,10 @@ struct ColorPickerSheet: View {
             
             // Initialize CMYK values if appropriate
             if case .cmyk(let cmyk) = selectedColor {
-                cyanValue = String(Int(cmyk.cyan * 100))
-                magentaValue = String(Int(cmyk.magenta * 100))
-                yellowValue = String(Int(cmyk.yellow * 100))
-                blackValue = String(Int(cmyk.black * 100))
+                cyanValue = String(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))
+                magentaValue = String(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))
+                yellowValue = String(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))
+                blackValue = String(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))
                 updateCMYKPreview()
             }
         }

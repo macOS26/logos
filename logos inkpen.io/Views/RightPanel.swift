@@ -757,7 +757,7 @@ struct ColorPanel: View {
         case .rgb(let rgb): 
             return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
         case .cmyk(let cmyk): 
-            return "CMYK(\(Int(cmyk.cyan * 100))%, \(Int(cmyk.magenta * 100))%, \(Int(cmyk.yellow * 100))%, \(Int(cmyk.black * 100))%)"
+                            return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
         case .pantone(let pantone): 
             return "PANTONE \(pantone.number) - \(pantone.name)"
         }
@@ -1326,7 +1326,7 @@ struct CMYKInputSection: View {
                     .cornerRadius(4)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("CMYK(\(Int(previewColor.cyan * 100)), \(Int(previewColor.magenta * 100)), \(Int(previewColor.yellow * 100)), \(Int(previewColor.black * 100)))")
+                                                    Text("CMYK(\(Int((previewColor.cyan * 100).isFinite ? previewColor.cyan * 100 : 0)), \(Int((previewColor.magenta * 100).isFinite ? previewColor.magenta * 100 : 0)), \(Int((previewColor.yellow * 100).isFinite ? previewColor.yellow * 100 : 0)), \(Int((previewColor.black * 100).isFinite ? previewColor.black * 100 : 0)))")
                         .font(.caption2)
                         .foregroundColor(.primary)
                     
@@ -1570,7 +1570,7 @@ struct PantoneColorPickerSheet: View {
                             }
                             
                             HStack {
-                                Text("CMYK: \(Int(selectedColor.cmykEquivalent.cyan * 100))%, \(Int(selectedColor.cmykEquivalent.magenta * 100))%, \(Int(selectedColor.cmykEquivalent.yellow * 100))%, \(Int(selectedColor.cmykEquivalent.black * 100))%")
+                                Text("CMYK: \(Int((selectedColor.cmykEquivalent.cyan * 100).isFinite ? selectedColor.cmykEquivalent.cyan * 100 : 0))%, \(Int((selectedColor.cmykEquivalent.magenta * 100).isFinite ? selectedColor.cmykEquivalent.magenta * 100 : 0))%, \(Int((selectedColor.cmykEquivalent.yellow * 100).isFinite ? selectedColor.cmykEquivalent.yellow * 100 : 0))%, \(Int((selectedColor.cmykEquivalent.black * 100).isFinite ? selectedColor.cmykEquivalent.black * 100 : 0))%")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 Spacer()

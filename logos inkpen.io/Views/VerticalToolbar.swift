@@ -324,7 +324,7 @@ struct ColorSwatchGrid: View {
         case .white: return "White"
         case .clear: return "Clear"
         case .rgb(let rgb): return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
-        case .cmyk(let cmyk): return "CMYK(\(Int(cmyk.cyan * 100))%, \(Int(cmyk.magenta * 100))%, \(Int(cmyk.yellow * 100))%, \(Int(cmyk.black * 100))%)"
+                        case .cmyk(let cmyk): return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
         case .pantone(let pantone): return "Pantone \(pantone.number)"
         }
     }
