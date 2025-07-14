@@ -32,9 +32,10 @@ struct TextObjectView: View {
             
             // FIXED: Selection outline using EXACT coordinate system as shapes
             if isSelected && !isEditing {
-                // Use absolute bounds (position + relative bounds) just like shapes
+                // CRITICAL FIX: Text bounds are relative to position, not absolute
+                // Position is baseline point, bounds are relative to that baseline
                 let absoluteBounds = CGRect(
-                    x: textObject.position.x + textObject.bounds.minX,
+                    x: textObject.position.x,
                     y: textObject.position.y + textObject.bounds.minY,
                     width: textObject.bounds.width,
                     height: textObject.bounds.height

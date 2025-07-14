@@ -38,10 +38,10 @@ extension DrawingCanvas {
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
-            // FIXED: Use baseline coordinate system for text bounds
-            // Text position is the baseline point, bounds are relative to that
+            // CRITICAL FIX: Text bounds are relative to position, not absolute
+            // Position is baseline point, bounds are relative to that baseline
             let absoluteBounds = CGRect(
-                x: textObj.position.x + textObj.bounds.minX,
+                x: textObj.position.x,
                 y: textObj.position.y + textObj.bounds.minY,
                 width: textObj.bounds.width,
                 height: textObj.bounds.height

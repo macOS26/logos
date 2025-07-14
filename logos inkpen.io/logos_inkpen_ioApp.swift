@@ -91,7 +91,7 @@ class DocumentState: ObservableObject {
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
         }
         
-        print("🔄 Menu states updated automatically: undo=\(canUndo), selection=\(hasSelection)")
+        // Removed excessive logging per user request
     }
     
     // MARK: - Menu Actions (Direct document interaction)
