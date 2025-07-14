@@ -681,7 +681,7 @@ struct DrawingCanvas: View {
             let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
             let lastPointIndex = bezierPoints.count - 1
             let lastPoint = bezierPoints[lastPointIndex]
-            let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
+            let _ = CGPoint(x: lastPoint.x, y: lastPoint.y) // Unused variable
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
             
@@ -2077,11 +2077,10 @@ struct DrawingCanvas: View {
             if let textObj = document.textObjects.first(where: { $0.id == textID }) {
                 if !textObj.isVisible || textObj.isLocked { continue }
                 
-                // Use same coordinate correction as hit testing
-                let textAscent = textObj.typography.fontSize * 0.75
+                // Use exact same coordinate system as selection box
                 let absoluteBounds = CGRect(
-                    x: textObj.position.x,
-                    y: textObj.position.y - textAscent,
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
                     width: textObj.bounds.width,
                     height: textObj.bounds.height
                 )
@@ -2200,7 +2199,7 @@ struct DrawingCanvas: View {
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
-        let finishedShapeID = activeBezierShape.id
+        let _ = activeBezierShape.id // Unused variable
         
         // Reset bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()
@@ -2971,7 +2970,7 @@ struct DrawingCanvas: View {
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
-        let closedShapeID = activeShape.id
+        let _ = activeShape.id // Unused variable
         
         // Clear bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()

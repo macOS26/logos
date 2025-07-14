@@ -78,7 +78,8 @@ struct TextObjectView: View {
     private func getCursorXPosition() -> CGFloat {
         // Simple cursor positioning - place at end of text for now
         let nsString = NSString(string: textObject.content)
-        let font = NSFont(name: textObject.typography.fontFamily, size: textObject.typography.fontSize) ?? NSFont.systemFont(ofSize: textObject.typography.fontSize)
+        // CRITICAL: Use typography.nsFont which includes weight and style
+        let font = textObject.typography.nsFont
         let textSize = nsString.size(withAttributes: [.font: font])
         return textSize.width
     }
@@ -111,10 +112,37 @@ struct PureSwiftUITextView: View {
             
             // CRITICAL: Draw text at baseline position using SwiftUI Canvas
             // The position is the baseline point (Core Graphics standard)
+            var baseTextView = Text(text)
+                .font(Font.custom(typography.fontFamily, size: typography.fontSize)
+                    .weight(typography.fontWeight.systemWeight))
+            
+            // Apply font style (italic/oblique)
+            if typography.fontStyle == .italic {
+                baseTextView = baseTextView.italic()
+            }
+            
+            // PROFESSIONAL TEXT STROKE: Draw stroke first, then fill (Adobe Illustrator standard)
+            if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
+                // Draw stroke by drawing multiple offset copies in stroke color
+                let strokeColor = Color(typography.strokeColor.color).opacity(typography.strokeOpacity)
+                let strokeWidth = typography.strokeWidth
+                
+                for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
+                    let offsetX = cos(angle * .pi / 180) * strokeWidth
+                    let offsetY = sin(angle * .pi / 180) * strokeWidth
+                    let strokePoint = CGPoint(x: drawPoint.x + offsetX, y: drawPoint.y + offsetY)
+                    
+                    context.draw(
+                        baseTextView.foregroundColor(strokeColor),
+                        at: strokePoint,
+                        anchor: .bottomLeading
+                    )
+                }
+            }
+            
+            // Draw fill text on top
             context.draw(
-                Text(text)
-                    .font(Font.custom(typography.fontFamily, size: typography.fontSize))
-                    .foregroundColor(textColor),
+                baseTextView.foregroundColor(textColor),
                 at: drawPoint,
                 anchor: .bottomLeading
             )

@@ -38,12 +38,11 @@ extension DrawingCanvas {
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
-            // CRITICAL FIX: Text baseline offset correction (matches selection box)
-            // Text position is at baseline, hit testing needs to match selection box
-            let textAscent = textObj.typography.fontSize * 0.75 // Approximate ascent
+            // CRITICAL FIX: Use actual text bounds (matches selection box exactly)
+            // Text position is at baseline, bounds are calculated correctly in VectorText
             let absoluteBounds = CGRect(
-                x: textObj.position.x,
-                y: textObj.position.y - textAscent, // Move up by ascent to match selection box
+                x: textObj.position.x + textObj.bounds.minX,
+                y: textObj.position.y + textObj.bounds.minY,
                 width: textObj.bounds.width,
                 height: textObj.bounds.height
             )

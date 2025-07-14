@@ -270,7 +270,8 @@ struct SelectionHandlesView: View {
                         document: document,
                         textObject: textObject,
                         zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset
+                        canvasOffset: document.canvasOffset,
+                        isEditing: false // Text selection handles are never shown during editing
                     )
                 }
             }
@@ -679,6 +680,7 @@ struct TextSelectionHandles: View {
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let isEditing: Bool
     
     private let handleSize: CGFloat = 8
     private let rotationHandleOffset: CGFloat = 20
@@ -697,18 +699,19 @@ struct TextSelectionHandles: View {
     @State private var textRotationStartLocation: CGPoint = .zero
     
     var body: some View {
-        // CRITICAL FIX: Text baseline offset correction (18 pixels = font ascent)
-        // Text position is at baseline, selection box needs to be at top of text
-        let textAscent = textObject.typography.fontSize * 0.75 // Approximate ascent
+        // CRITICAL FIX: Use actual text bounds (not approximation)
+        // Text position is at baseline, bounds are calculated correctly in VectorText
         let absoluteBounds = CGRect(
-            x: textObject.position.x,
-            y: textObject.position.y - textAscent, // Move up by ascent to get to top
+            x: textObject.position.x + textObject.bounds.minX,
+            y: textObject.position.y + textObject.bounds.minY,
             width: textObject.bounds.width,
             height: textObject.bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         
         ZStack {
+            // CRITICAL FIX: Hide transformation box when editing text
+            if !isEditing {
             // Text bounding box outline (blue, professional standard) 
             // FIXED: Use EXACT SAME coordinate chain as shape selection
             Rectangle()
@@ -800,6 +803,8 @@ struct TextSelectionHandles: View {
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
             .transformEffect(textObject.transform)
+        }
+        // End of editing check - transformation box only shown when not editing
         }
         .onAppear {
             initialBounds = absoluteBounds

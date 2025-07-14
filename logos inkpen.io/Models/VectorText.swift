@@ -191,7 +191,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var textBounds: CGRect {
         let nsString = NSString(string: content.isEmpty ? "Text" : content)
         let attributes: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key.font: typography.nsFont,
+            NSAttributedString.Key.font: typography.nsFont, // Uses weight and style
             NSAttributedString.Key.kern: typography.letterSpacing
         ]
         
@@ -244,7 +244,8 @@ struct VectorText: Identifiable, Codable, Hashable {
     
     mutating func updateBounds() {
         // FIXED: Bounds relative to baseline position to match TextObjectView coordinate system
-        let font = NSFont(name: typography.fontFamily, size: typography.fontSize) ?? NSFont.systemFont(ofSize: typography.fontSize)
+        // CRITICAL: Use typography.nsFont which includes weight and style
+        let font = typography.nsFont
         let nsString = NSString(string: content.isEmpty ? "Text" : content)
         let textSize = nsString.size(withAttributes: [.font: font])
         
