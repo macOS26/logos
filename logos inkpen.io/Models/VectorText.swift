@@ -309,7 +309,7 @@ struct VectorText: Identifiable, Codable, Hashable {
                 let glyph = glyphs[i]
                 let position = positions[i]
                 
-                if let glyphPath = CTFontCreatePathForGlyph(typography.nsFont, glyph, nil) {
+                if let glyphPath = CTFontCreatePathForGlyph(createCoreTextFont(), glyph, nil) {
                     // Convert CGPath to VectorPath elements
                     let bezierPath = NSBezierPath(cgPath: glyphPath)
                     let glyphElements = convertBezierPathToElements(bezierPath, offset: CGPoint(x: currentX + Double(position.x), y: Double(position.y)))

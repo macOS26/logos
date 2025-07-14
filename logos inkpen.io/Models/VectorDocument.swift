@@ -1214,7 +1214,9 @@ class VectorDocument: ObservableObject, Codable {
                         let glyph = glyphs[glyphIndex]
                         let position = positions[glyphIndex]
                         
-                        if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
+                        // Convert NSFont to CTFont for proper path creation
+                        let ctFont = CTFontCreateWithName(font.fontName as CFString, font.pointSize, nil)
+                        if let glyphPath = CTFontCreatePathForGlyph(ctFont, glyph, nil) {
                             // Convert CGPath to VectorPath
                             let vectorPath = convertCGPathToVectorPath(glyphPath, offset: CGPoint(
                                 x: textObject.position.x + position.x,

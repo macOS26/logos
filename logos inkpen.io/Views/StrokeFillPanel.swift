@@ -1208,6 +1208,27 @@ struct FontToolSection: View {
                     }
                 }
             }
+            
+            // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
+            if selectedText != nil {
+                Divider()
+                
+                HStack {
+                    Button("Convert to Outlines") {
+                        convertSelectedTextToOutlines()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .font(.caption)
+                    .help("Convert text to vector paths (⌘⇧O)")
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
+                    
+                    Spacer()
+                    
+                    Text("Creates vector paths")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -1261,6 +1282,15 @@ struct FontToolSection: View {
         
         document.textObjects[textIndex].typography.strokeColor = color
         document.objectWillChange.send()
+    }
+    
+    private func convertSelectedTextToOutlines() {
+        guard let textID = document.selectedTextIDs.first else { return }
+        
+        // Convert text to vector outlines using professional Core Graphics implementation
+        document.convertTextToOutlines(textID)
+        
+        print("🎯 FONT TOOL: Converting text to vector outlines (Adobe Illustrator standard)")
     }
 }
 
