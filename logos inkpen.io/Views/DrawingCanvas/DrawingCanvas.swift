@@ -1110,15 +1110,7 @@ struct DrawingCanvas: View {
     // TEXT EDITING FUNCTIONS REMOVED - Starting over with simple approach
     
     internal func handleSelectionTap(at location: CGPoint) {
-        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
-        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
-        let isInCanvasArea = canvasBounds.contains(location)
-        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
-        
-        print("🎯 SELECTION TAP FUNCTION CALLED at: \(location) in \(areaType)")
-        print("🎯 SELECTION: This function was called by a SINGLE CLICK TAP gesture")
-        
-        // TEXT EDITING REMOVED
+        // Clean up excessive logging per user request
         
         // CRITICAL: Regular Selection tool must clear direct selection
         // Professional tools have mutually exclusive selection modes
@@ -1129,7 +1121,41 @@ struct DrawingCanvas: View {
         // Only handle selection for selection tool
         guard document.currentTool == .selection else { return }
         
-        print("Selection tap at \(location)")
+        // CRITICAL FIX: Check for text objects FIRST (they should be selectable with selection tool!)
+        if let textID = findTextAt(location: location) {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                let textObject = document.textObjects[textIndex]
+                
+                // Check if text is locked
+                if textObject.isLocked {
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    document.objectWillChange.send()
+                    return
+                }
+                
+                // Select the text object
+                if isShiftPressed {
+                    // SHIFT+CLICK: Add to selection
+                    document.selectedTextIDs.insert(textID)
+                } else if isCommandPressed {
+                    // CMD+CLICK: Toggle selection
+                    if document.selectedTextIDs.contains(textID) {
+                        document.selectedTextIDs.remove(textID)
+                    } else {
+                        document.selectedTextIDs.insert(textID)
+                    }
+                } else {
+                    // REGULAR CLICK: Replace selection
+                    document.selectedTextIDs = [textID]
+                    document.selectedShapeIDs.removeAll() // Clear shape selection
+                }
+                
+                // Force UI update
+                document.objectWillChange.send()
+                return
+            }
+        }
         
         // Find shape at location across all visible layers
         var hitShape: VectorShape?
@@ -1144,13 +1170,6 @@ struct DrawingCanvas: View {
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
-                print("🔍 HIT TESTING SHAPE: \(shape.name) on layer \(layerIndex)")
-                print("  - Has stroke: \(shape.strokeStyle != nil)")
-                print("  - Has fill: \(shape.fillStyle != nil)")
-                print("  - Fill color: \(String(describing: shape.fillStyle?.color))")
-                print("  - Bounds: \(shape.bounds)")
-                print("  - Is Background Shape: \(shape.name == "Canvas Background" || shape.name == "Pasteboard Background")")
-                
                 // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
                 
                 // FIXED: Proper hit testing logic for stroke vs filled shapes
@@ -1164,9 +1183,6 @@ struct DrawingCanvas: View {
                     // This ensures Canvas/Pasteboard only respond to clicks EXACTLY within their bounds
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
-                    print("  - Background shape - exact bounds hit test result: \(isHit)")
-                    print("  - Shape bounds: \(shapeBounds)")
-                    print("  - Click location: \(location)")
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
@@ -1176,9 +1192,7 @@ struct DrawingCanvas: View {
                         let strokeWidth = shape.strokeStyle?.width ?? 1.0
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         
-                        print("  - Testing stroke-only path with tolerance: \(strokeTolerance)")
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        print("  - Stroke hit test result: \(isHit)")
                     } else {
                         // Method 2: Filled shapes - use bounds + path hit testing
                         let transformedBounds = shape.bounds.applying(shape.transform)
@@ -1186,11 +1200,9 @@ struct DrawingCanvas: View {
                         
                         if expandedBounds.contains(location) {
                             isHit = true
-                            print("  - Hit via bounds check")
                         } else {
                             // Fallback: precise path hit test
                             isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            print("  - Path hit test result: \(isHit)")
                         }
                     }
                 }
@@ -1198,7 +1210,6 @@ struct DrawingCanvas: View {
                 if isHit {
                     hitShape = shape
                     hitLayerIndex = layerIndex
-                    print("Selected shape: \(shape.name)")
                     break
                 }
             }
@@ -1208,8 +1219,6 @@ struct DrawingCanvas: View {
         if let shape = hitShape, let layerIndex = hitLayerIndex {
             // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
             if document.layers[layerIndex].isLocked || shape.isLocked {
-                let lockType = document.layers[layerIndex].isLocked ? "locked layer" : "locked object"
-                print("🚫 Clicked on \(lockType) '\(shape.name)' - deselecting current selection")
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
                 document.objectWillChange.send()
@@ -1222,20 +1231,17 @@ struct DrawingCanvas: View {
             if isShiftPressed {
                 // SHIFT+CLICK: Add to selection (extend selection)
                 document.selectedShapeIDs.insert(shape.id)
-                print("🎯 SHIFT+CLICK: Added \(shape.name) to selection (total: \(document.selectedShapeIDs.count))")
             } else if isCommandPressed {
                 // CMD+CLICK: Toggle selection (add if not selected, remove if selected)
                 if document.selectedShapeIDs.contains(shape.id) {
                     document.selectedShapeIDs.remove(shape.id)
-                    print("🎯 CMD+CLICK: Removed \(shape.name) from selection (total: \(document.selectedShapeIDs.count))")
                 } else {
                     document.selectedShapeIDs.insert(shape.id)
-                    print("🎯 CMD+CLICK: Added \(shape.name) to selection (total: \(document.selectedShapeIDs.count))")
                 }
             } else {
                 // REGULAR CLICK: Replace selection (clear existing, select new)
                 document.selectedShapeIDs = [shape.id]
-                print("🎯 REGULAR CLICK: Selected \(shape.name) only (cleared previous selection)")
+                document.selectedTextIDs.removeAll() // Clear text selection
             }
         } else {
             // NO OBJECT HIT: Clicking on background or empty space  
@@ -1246,14 +1252,10 @@ struct DrawingCanvas: View {
                 // Clicking in gray background area outside document always deselects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-                print("🎯 Clicked gray background (outside document): Cleared all selections")
             } else if !isShiftPressed && !isCommandPressed {
                 // Clicking inside document bounds on empty space deselects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-                print("🎯 Clicked empty space: Cleared all selections")
-            } else {
-                print("🎯 Clicked empty space with modifiers: Keeping existing selection")
             }
         }
         
