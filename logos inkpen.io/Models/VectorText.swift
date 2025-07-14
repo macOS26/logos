@@ -315,11 +315,10 @@ struct VectorText: Identifiable, Codable, Hashable {
                 let glyphPosition = positions[i]
                 
                 if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
-                    // SURGICAL FIX: Apply coordinate system transformation for SwiftUI
+                    // CRITICAL FIX: Apply coordinate system transformation for SwiftUI
                     // Core Graphics uses bottom-left origin, SwiftUI uses top-left
-                    // NOTE: Do NOT apply text position here - that's handled by the calling method
                     var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
-                        .translatedBy(x: Double(glyphPosition.x), y: -ascent) // Position glyph correctly relative to origin
+                        .translatedBy(x: Double(glyphPosition.x), y: -ascent) // Position glyph correctly
                     
                     if let transformedPath = glyphPath.copy(using: &transform) {
                         // Convert transformed CGPath to VectorPath elements
@@ -334,7 +333,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         }
         
         if !allPathElements.isEmpty {
-            // SURGICAL FIX: Create single grouped shape with all letters combined
+            // CRITICAL FIX: Create single grouped shape with all letters combined
             let vectorPath = VectorPath(elements: allPathElements, isClosed: false) // Let individual letters handle closing
             return VectorShape(
                 name: "Text Outline: \(content)",

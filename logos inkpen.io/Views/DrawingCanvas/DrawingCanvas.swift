@@ -250,12 +250,6 @@ struct DrawingCanvas: View {
             finishBezierPath()
         }
         
-        // SURGICAL FIX: Cancel text editing when switching away from font tool
-        if previousTool == .font && newTool != .font && isEditingText {
-            print("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool)")
-            finishTextEditing()
-        }
-        
         // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection or convert point tools
         if (newTool == .directSelection || newTool == .convertAnchorPoint) && 
            (previousTool != .directSelection && previousTool != .convertAnchorPoint) {

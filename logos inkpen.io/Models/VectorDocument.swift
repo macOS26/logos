@@ -1065,12 +1065,9 @@ class VectorDocument: ObservableObject, Codable {
         
         for textObj in selectedTexts {
             if let outlineShape = textObj.convertToOutlines() {
-                // SURGICAL FIX: Position the outline shape using text bounding box coordinates
-                // This ensures the outline appears in the exact same position as the original text
+                // Position the outline shape at the text position
                 var positionedShape = outlineShape
-                
-                // Apply the text's transform and position to match exactly where the text appears
-                positionedShape.transform = textObj.transform.translatedBy(x: textObj.position.x, y: textObj.position.y)
+                positionedShape.transform = positionedShape.transform.translatedBy(x: textObj.position.x, y: textObj.position.y)
                 positionedShape.updateBounds()
                 
                 // Add to the current layer
@@ -1222,13 +1219,12 @@ class VectorDocument: ObservableObject, Codable {
                         let glyphPosition = positions[glyphIndex]
                         
                         if let glyphPath = CTFontCreatePathForGlyph(ctFont, glyph, nil) {
-                            // SURGICAL FIX: Apply coordinate system transformation for SwiftUI
+                            // CRITICAL FIX: Apply coordinate system transformation for SwiftUI
                             // Core Graphics uses bottom-left origin, SwiftUI uses top-left
-                            // NOTE: Position will be applied later, not here
                             var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y-axis
                                 .translatedBy(
-                                    x: Double(glyphPosition.x),
-                                    y: -(Double(lineOrigins[lineIndex].y) + ascent)
+                                    x: textObject.position.x + Double(glyphPosition.x) - 1,
+                                    y: -(textObject.position.y - Double(lineOrigins[lineIndex].y) + 6) //ascent
                                 )
                             
                             if let transformedPath = glyphPath.copy(using: &transform) {
@@ -1242,21 +1238,17 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // SURGICAL FIX: Create single grouped shape with all letters combined
+        // CRITICAL FIX: Create single grouped shape with all letters combined
         if !allPathElements.isEmpty {
             let vectorPath = VectorPath(elements: allPathElements, isClosed: false) // Let individual letters handle closing
-            var outlineShape = VectorShape(
+            let outlineShape = VectorShape(
                 name: "Text Outline: \(textObject.content)",
                 path: vectorPath,
                 strokeStyle: textObject.typography.hasStroke ? StrokeStyle(color: textObject.typography.strokeColor, width: textObject.typography.strokeWidth, opacity: textObject.typography.strokeOpacity) : nil,
                 fillStyle: FillStyle(color: textObject.typography.fillColor, opacity: textObject.typography.fillOpacity),
-                transform: .identity, // Will be set below
+                transform: .identity, // No additional transform needed
                 isGroup: false // Single unified shape, not a group
             )
-            
-            // SURGICAL FIX: Apply text position and transform to match original text exactly
-            outlineShape.transform = textObject.transform.translatedBy(x: textObject.position.x, y: textObject.position.y)
-            outlineShape.updateBounds()
             
             // Add to current layer
             layers[layerIndex].shapes.append(outlineShape)
