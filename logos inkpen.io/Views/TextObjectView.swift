@@ -165,14 +165,18 @@ class CoreGraphicsTextNSView: NSView {
         let leading = CTFontGetLeading(font)
         let _ = ascent + descent + leading // Line height calculation (for future use)
         
-        // STEP 7: Position text at baseline (Core Graphics standard)
-        // Position.y is the baseline in our coordinate system
-        let drawPoint = CGPoint(x: position.x, y: position.y)
-        
-        // STEP 8: Save graphics state
+        // STEP 7: Save graphics state and fix coordinate system
         context.saveGState()
         
-        // STEP 9: Handle text stroke if enabled (Adobe Illustrator style)
+        // STEP 8: Fix coordinate system - Core Graphics Y-axis is flipped from SwiftUI
+        // We need to flip the coordinate system to match SwiftUI's expectations
+        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
+        
+        // STEP 9: Position text at baseline (adjusted for flipped coordinates)
+        // In the flipped coordinate system, we need to adjust the Y position
+        let drawPoint = CGPoint(x: position.x, y: position.y)
+        
+        // STEP 10: Handle text stroke if enabled (Adobe Illustrator style)
         if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
             // Draw stroke first (behind fill)
             context.setTextDrawingMode(.stroke)
@@ -184,7 +188,7 @@ class CoreGraphicsTextNSView: NSView {
             CTLineDraw(line, context)
         }
         
-        // STEP 10: Draw fill text (on top of stroke)
+        // STEP 11: Draw fill text (on top of stroke)
         context.setTextDrawingMode(.fill)
         context.setFillColor(textColor.cgColor)
         
@@ -192,7 +196,7 @@ class CoreGraphicsTextNSView: NSView {
         context.textPosition = drawPoint
         CTLineDraw(line, context)
         
-        // STEP 11: Restore graphics state
+        // STEP 12: Restore graphics state
         context.restoreGState()
     }
     
