@@ -486,27 +486,42 @@ extension ProfessionalPathOperations {
             return validPaths.first
         }
         
-        print("🔨 PROFESSIONAL UNITE: Processing \(validPaths.count) paths")
+        print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
         
-        // Convert first path to polygon
-        var result = ProfessionalBooleanGeometry.cgPathToPolygon(validPaths[0])
+        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
+        let clipper = Clipper()
         
-        // Union with each subsequent path
-        for i in 1..<validPaths.count {
-            let nextPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(validPaths[i])
-            result = ProfessionalBooleanGeometry.union(result, nextPolygon)
-            print("  ✓ United with path \(i)")
+        for cgPath in validPaths {
+            let subpaths = extractSubpaths(from: cgPath)
+            for subpath in subpaths {
+                let clipperPath = cgPathToClipperPath(subpath)
+                if clipperPath.count >= 3 { // Only add valid polygons
+                    clipper.addPath(clipperPath, .subject, true)
+                }
+            }
         }
         
-        let resultPath = ProfessionalBooleanGeometry.polygonToCGPath(result)
-        
-        if resultPath.isEmpty || resultPath.boundingBoxOfPath.isEmpty {
-            print("❌ UNITE failed - returning convex hull fallback")
-            return convexHullFallback(validPaths)
+        var solution = ClipperPaths()
+        do {
+            let success = try clipper.execute(clipType: .union, solution: &solution, fillType: .nonZero)
+            if success && !solution.isEmpty {
+                let resultPath = clipperPathsToCGPath(solution)
+                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
+                    print("✅ PROFESSIONAL UNITE (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    return resultPath
+                } else {
+                    print("⚠️ UNITE result is empty, falling back to convex hull")
+                }
+            } else {
+                print("⚠️ ClipperPaths union failed, falling back to convex hull")
+            }
+        } catch {
+            print("❌ ClipperPaths union error: \(error), falling back to convex hull")
         }
         
-        print("✅ PROFESSIONAL UNITE: Success")
-        return resultPath
+        // Fallback to convex hull if ClipperPaths fails
+        print("🔄 UNITE fallback: Using convex hull")
+        return convexHullFallback(validPaths)
     }
     
     /// PROFESSIONAL MINUS FRONT: Front subtracts from back (Adobe Illustrator "Minus Front")
@@ -699,5 +714,178 @@ extension ProfessionalPathOperations {
     
     private static func cross(_ O: CGPoint, _ A: CGPoint, _ B: CGPoint) -> CGFloat {
         return (A.x - O.x) * (B.y - O.y) - (A.y - O.y) * (B.x - O.x)
+    }
+    
+    // MARK: - ClipperPaths Conversion Helpers
+    
+    /// Extract individual subpaths from a CGPath
+    private static func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
+        var subpaths: [CGPath] = []
+        var currentPath = CGMutablePath()
+        
+        cgPath.applyWithBlock { elementPtr in
+            let element = elementPtr.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                // If we have a current path, save it and start a new one
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                    currentPath = CGMutablePath()
+                }
+                currentPath.move(to: element.points[0])
+                
+            case .addLineToPoint:
+                currentPath.addLine(to: element.points[0])
+                
+            case .addQuadCurveToPoint:
+                currentPath.addQuadCurve(to: element.points[1], control: element.points[0])
+                
+            case .addCurveToPoint:
+                currentPath.addCurve(to: element.points[2], control1: element.points[0], control2: element.points[1])
+                
+            case .closeSubpath:
+                currentPath.closeSubpath()
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        // Add the last path if it's not empty
+        if !currentPath.isEmpty {
+            subpaths.append(currentPath)
+        }
+        
+        return subpaths
+    }
+    
+    /// Convert CGPath to ClipperPath (array of CGPoints) with high-quality curve approximation
+    private static func cgPathToClipperPath(_ cgPath: CGPath) -> ClipperPath {
+        var points = ClipperPath()
+        var currentPoint = CGPoint.zero
+        
+        cgPath.applyWithBlock { elementPtr in
+            let element = elementPtr.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                currentPoint = element.points[0]
+                points.append(currentPoint)
+                
+            case .addLineToPoint:
+                currentPoint = element.points[0]
+                points.append(currentPoint)
+                
+            case .addQuadCurveToPoint:
+                // High-quality quadratic curve approximation
+                let control = element.points[0]
+                let end = element.points[1]
+                let start = currentPoint
+                
+                // Use adaptive subdivision for smooth curves
+                let curvePoints = approximateQuadraticCurve(start: start, control: control, end: end, tolerance: 2.0)
+                points.append(contentsOf: curvePoints)
+                currentPoint = end
+                
+            case .addCurveToPoint:
+                // High-quality cubic curve approximation
+                let control1 = element.points[0]
+                let control2 = element.points[1]
+                let end = element.points[2]
+                let start = currentPoint
+                
+                // Use adaptive subdivision for smooth curves
+                let curvePoints = approximateCubicCurve(start: start, control1: control1, control2: control2, end: end, tolerance: 2.0)
+                points.append(contentsOf: curvePoints)
+                currentPoint = end
+                
+            case .closeSubpath:
+                // Close the path - ClipperPath handles this automatically
+                break
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        return points
+    }
+    
+    /// Approximate quadratic Bezier curve with adaptive subdivision
+    private static func approximateQuadraticCurve(start: CGPoint, control: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
+        var points: [CGPoint] = []
+        
+        // Calculate the number of segments based on the curve's complexity
+        let distance = distanceBetween(start, control) + distanceBetween(control, end)
+        let segments = max(8, min(64, Int(distance / tolerance))) // Adaptive segment count
+        
+        for i in 1...segments {
+            let t = CGFloat(i) / CGFloat(segments)
+            let point = quadraticBezierPoint(t: t, start: start, control: control, end: end)
+            points.append(point)
+        }
+        
+        return points
+    }
+    
+    /// Approximate cubic Bezier curve with adaptive subdivision
+    private static func approximateCubicCurve(start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
+        var points: [CGPoint] = []
+        
+        // Calculate the number of segments based on the curve's complexity
+        let distance = distanceBetween(start, control1) + distanceBetween(control1, control2) + distanceBetween(control2, end)
+        let segments = max(12, min(96, Int(distance / tolerance))) // Adaptive segment count for smoother curves
+        
+        for i in 1...segments {
+            let t = CGFloat(i) / CGFloat(segments)
+            let point = cubicBezierPoint(t: t, start: start, control1: control1, control2: control2, end: end)
+            points.append(point)
+        }
+        
+        return points
+    }
+    
+    /// Calculate point on quadratic Bezier curve
+    private static func quadraticBezierPoint(t: CGFloat, start: CGPoint, control: CGPoint, end: CGPoint) -> CGPoint {
+        let x = (1-t)*(1-t)*start.x + 2*(1-t)*t*control.x + t*t*end.x
+        let y = (1-t)*(1-t)*start.y + 2*(1-t)*t*control.y + t*t*end.y
+        return CGPoint(x: x, y: y)
+    }
+    
+    /// Calculate point on cubic Bezier curve
+    private static func cubicBezierPoint(t: CGFloat, start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint) -> CGPoint {
+        let x = (1-t)*(1-t)*(1-t)*start.x + 3*(1-t)*(1-t)*t*control1.x + 3*(1-t)*t*t*control2.x + t*t*t*end.x
+        let y = (1-t)*(1-t)*(1-t)*start.y + 3*(1-t)*(1-t)*t*control1.y + 3*(1-t)*t*t*control2.y + t*t*t*end.y
+        return CGPoint(x: x, y: y)
+    }
+    
+    /// Calculate distance between two points
+    private static func distanceBetween(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
+        let dx = point1.x - point2.x
+        let dy = point1.y - point2.y
+        return sqrt(dx * dx + dy * dy)
+    }
+    
+    /// Convert ClipperPaths (array of polygons) to CGPath
+    private static func clipperPathsToCGPath(_ clipperPaths: ClipperPaths) -> CGPath {
+        let path = CGMutablePath()
+        
+        for clipperPath in clipperPaths {
+            guard !clipperPath.isEmpty else { continue }
+            
+            // Start new subpath
+            path.move(to: clipperPath[0])
+            
+            // Add lines to all other points
+            for i in 1..<clipperPath.count {
+                path.addLine(to: clipperPath[i])
+            }
+            
+            // Close the subpath
+            path.closeSubpath()
+        }
+        
+        return path
     }
 } 
