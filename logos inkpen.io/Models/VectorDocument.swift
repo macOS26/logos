@@ -1466,14 +1466,41 @@ class VectorDocument: ObservableObject, Codable {
     
     // Load appropriate color swatches based on color mode
     static func getDefaultColorSwatchesForMode(_ colorMode: ColorMode) -> [VectorColor] {
+        let basicColors = VectorColor.defaultColors
+        let appleSystemColors = createAppleSystemColorSwatches()
+        
         switch colorMode {
         case .rgb:
-            return VectorColor.defaultColors
+            return basicColors + appleSystemColors
         case .cmyk:
-            return VectorColor.defaultColors + createCMYKSwatches()
+            return basicColors + appleSystemColors + createCMYKSwatches()
         case .pantone:
-            return VectorColor.defaultColors + ColorManagement.loadPantoneColors().map { .pantone($0) }
+            return basicColors + appleSystemColors + ColorManagement.loadPantoneColors().map { .pantone($0) }
         }
+    }
+    
+    // Create Apple System Color swatches
+    static func createAppleSystemColorSwatches() -> [VectorColor] {
+        let systemColors = [
+            AppleSystemColor.systemBlue,
+            AppleSystemColor.systemRed,
+            AppleSystemColor.systemGreen,
+            AppleSystemColor.systemYellow,
+            AppleSystemColor.systemOrange,
+            AppleSystemColor.systemPurple,
+            AppleSystemColor.systemPink,
+            AppleSystemColor.systemTeal,
+            AppleSystemColor.systemIndigo,
+            AppleSystemColor.systemBrown,
+            AppleSystemColor.systemGray,
+            AppleSystemColor.systemGray2,
+            AppleSystemColor.systemGray3,
+            AppleSystemColor.label,
+            AppleSystemColor.secondaryLabel,
+            AppleSystemColor.link
+        ]
+        
+        return systemColors.map { .appleSystem($0) }
     }
     
     // Create professional CMYK color swatches

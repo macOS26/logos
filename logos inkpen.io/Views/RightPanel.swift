@@ -7,6 +7,58 @@
 
 import SwiftUI
 
+// MARK: - Color Rendering Helper (shared)
+
+@ViewBuilder
+func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5) -> some View {
+    if case .clear = color {
+        ZStack {
+            if cornerRadius > 0 {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: width, height: height)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.gray, lineWidth: borderWidth)
+                    )
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: width, height: height)
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.gray, lineWidth: borderWidth)
+                    )
+            }
+            
+            // Diagonal slash through the clear color
+            Path { path in
+                path.move(to: CGPoint(x: 1, y: height - 1))
+                path.addLine(to: CGPoint(x: width - 1, y: 1))
+            }
+            .stroke(Color.red, lineWidth: max(1, width / 15))
+        }
+    } else {
+        if cornerRadius > 0 {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(color.color)
+                .frame(width: width, height: height)
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(Color.gray, lineWidth: borderWidth)
+                )
+        } else {
+            Rectangle()
+                .fill(color.color)
+                .frame(width: width, height: height)
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.gray, lineWidth: borderWidth)
+                )
+        }
+    }
+}
+
 struct RightPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var selectedTab: PanelTab = .layers
@@ -650,22 +702,19 @@ struct ColorPanel: View {
             // Color Swatches
             ScrollView {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8), spacing: 4) {
-                    ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
-                        Button {
-                            selectColor(color)
-                        } label: {
-                            Rectangle()
-                                .fill(color.color)
-                                .frame(width: 30, height: 30)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
-                                .overlay(
-                                    // Show Pantone number for Pantone colors
-                                    overlayText(for: color)
-                                )
+                                    ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
+                    Button {
+                        selectColor(color)
+                    } label: {
+                        ZStack {
+                            renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
+                            
+                            // Show Pantone number for Pantone colors (if not clear)
+                            if case .pantone = color {
+                                overlayText(for: color)
+                            }
                         }
+                    }
                         .buttonStyle(PlainButtonStyle())
                         .help(colorDescription(for: color))
                     }
@@ -780,9 +829,11 @@ struct ColorPanel: View {
         case .rgb(let rgb): 
             return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
         case .cmyk(let cmyk): 
-                            return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
+            return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
         case .pantone(let pantone): 
             return "PANTONE \(pantone.number) - \(pantone.name)"
+        case .appleSystem(let systemColor): 
+            return "Apple \(systemColor.name.capitalized)"
         }
     }
     
@@ -1311,9 +1362,9 @@ struct PathOperationButton: View {
 struct ProfessionalOffsetPathSection: View {
     @ObservedObject var document: VectorDocument
     @State private var offsetDistance: Double = 10.0
-    @State private var selectedJoinType: JoinType = .miter
+    @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
-    @State private var showAdvanced: Bool = false
+    @State private var showAdvanced: Bool = true
     @State private var keepOriginalPath: Bool = true
     @State private var cleanupOverlaps: Bool = false
 
@@ -1370,6 +1421,7 @@ struct ProfessionalOffsetPathSection: View {
                             Text("Offset Distance")
                         }
                         .controlSize(.small)
+                        .tint(.blue)
                     }
                     
                     // Keep Original Path Checkbox (Adobe Illustrator Standard)
@@ -1393,7 +1445,7 @@ struct ProfessionalOffsetPathSection: View {
                         Spacer()
                     }
                     
-                    // Union Cleanup Checkbox (Professional cleanup for complex shapes)
+                    // TrimX Checkbox (Professional cleanup for complex shapes)
                     HStack {
                         Button {
                             cleanupOverlaps.toggle()
@@ -1403,13 +1455,13 @@ struct ProfessionalOffsetPathSection: View {
                                     .font(.system(size: 14))
                                     .foregroundColor(cleanupOverlaps ? .blue : .secondary)
                                 
-                                Text("Union Cleanup")
+                                Text("TrimX")
                                     .font(.caption2)
                                     .foregroundColor(.primary)
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .help("Remove overlapping pieces from offset results using boolean union")
+                        .help("Clean up offset results using Trim operation between original and result")
                         
                         Spacer()
                     }
@@ -1421,7 +1473,7 @@ struct ProfessionalOffsetPathSection: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 6) {
-                            ForEach([JoinType.round, .miter, .bevel, .square], id: \.self) { joinType in
+                            ForEach([JoinType.round, .square, .bevel, .miter], id: \.self) { joinType in
                                 Button {
                                     selectedJoinType = joinType
                                 } label: {
@@ -1545,22 +1597,30 @@ struct ProfessionalOffsetPathSection: View {
         
         for shape in selectedShapes {
             // Use STROKE-BASED OFFSET for perfect smooth curves (no more Clipper polygons!)
+            let effectiveMiterLimit = selectedJoinType == .square ? 1.0 : CGFloat(miterLimit)
             let strokeOptions = StrokeBasedOffsetOptions(
                 offset: CGFloat(offsetDistance),
                 joinType: mapJoinTypeToCoreGraphics(selectedJoinType),
                 endType: .round,
-                miterLimit: CGFloat(miterLimit),
+                miterLimit: effectiveMiterLimit,
                 keepOriginal: keepOriginalPath
             )
             
             // Create perfect smooth offset using Core Graphics strokes + expand
             var offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
             
-            // Apply union cleanup if requested (removes overlapping pieces)
-            if cleanupOverlaps && offsetPaths.count > 1 {
-                if let unifiedPath = ProfessionalPathOperations.professionalUnite(offsetPaths) {
-                    offsetPaths = [unifiedPath]
-                    print("🔧 UNION CLEANUP: Unified \(offsetPaths.count) offset pieces into single clean path")
+            // Apply TrimX cleanup if requested (professional trim operation)
+            if cleanupOverlaps && !offsetPaths.isEmpty {
+                // TrimX Formula: Take result and original path, run "Trim", return the outside cleaned path
+                for (index, offsetPath) in offsetPaths.enumerated() {
+                    let pathsToTrim = [shape.path.cgPath, offsetPath]
+                    let trimmedPaths = ProfessionalPathOperations.professionalTrim(pathsToTrim)
+                    
+                    // Find the outside path (usually the largest one after trim)
+                    if let outsidePath = findOutsidePath(from: trimmedPaths, original: shape.path.cgPath, offset: offsetPath) {
+                        offsetPaths[index] = outsidePath
+                        print("🔧 TRIMX: Applied trim operation and selected outside cleaned path")
+                    }
                 }
             }
             
@@ -1619,8 +1679,39 @@ struct ProfessionalOffsetPathSection: View {
         case .round: return .round
         case .miter: return .miter
         case .bevel: return .bevel
-        case .square: return .miter  // Use miter with very low limit for square corners
+        case .square: return .miter  // Square corners with minimal miter limit
         }
+    }
+    
+    /// Helper function to find the outside path from trim results
+    private func findOutsidePath(from trimmedPaths: [CGPath], original: CGPath, offset: CGPath) -> CGPath? {
+        guard !trimmedPaths.isEmpty else { return nil }
+        
+        // Get bounds of offset for comparison  
+        let offsetBounds = offset.boundingBoxOfPath
+        
+        // The outside path is typically:
+        // 1. The largest path by area
+        // 2. The path that contains or is closest to the offset bounds
+        var bestPath: CGPath?
+        var bestScore: CGFloat = 0
+        
+        for path in trimmedPaths {
+            let pathBounds = path.boundingBoxOfPath
+            let pathArea = pathBounds.width * pathBounds.height
+            
+            // Score based on area and proximity to offset bounds
+            let areaScore = pathArea
+            let proximityScore = pathBounds.intersection(offsetBounds).width * pathBounds.intersection(offsetBounds).height
+            let totalScore = areaScore + proximityScore * 2.0 // Weight proximity higher
+            
+            if totalScore > bestScore {
+                bestScore = totalScore
+                bestPath = path
+            }
+        }
+        
+        return bestPath ?? trimmedPaths.first
     }
 }
 

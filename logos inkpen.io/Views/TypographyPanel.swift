@@ -12,6 +12,8 @@ import AppKit
 struct TypographyPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var availableFonts: [String] = []
+    @State private var availableFontWeights: [FontWeight] = FontWeight.allCases
+    @State private var availableFontStyles: [FontStyle] = FontStyle.allCases
     @State private var fontSizeText: String = "24"
     @State private var letterSpacingText: String = "0"
     @State private var lineHeightText: String = "28.8"
@@ -145,9 +147,9 @@ struct TypographyPanel: View {
             }
             
             HStack(spacing: 8) {
-                // Font Weight Picker
+                // Font Weight Picker (Dynamic based on selected font)
                 Menu {
-                    ForEach(FontWeight.allCases, id: \.self) { weight in
+                    ForEach(availableFontWeights, id: \.self) { weight in
                         Button(weight.rawValue.capitalized) {
                             applyFontWeight(weight)
                         }
@@ -507,16 +509,98 @@ struct TypographyPanel: View {
         availableFonts = NSFontManager.shared.availableFontFamilies.sorted()
     }
     
+    /// Dynamically loads available font weights and styles for a specific font family
+    private func loadFontWeightsAndStyles(for fontFamily: String) {
+        let fontManager = NSFontManager.shared
+        
+        // Get all members of this font family
+        guard let members = fontManager.availableMembers(ofFontFamily: fontFamily) else {
+            // Fallback to default weights if font family doesn't have members
+            availableFontWeights = [.regular, .bold]
+            availableFontStyles = [.normal]
+            return
+        }
+        
+        var foundWeights: Set<FontWeight> = []
+        var foundStyles: Set<FontStyle> = []
+        
+        for member in members {
+            // member is an array: [font name, weight, traits, etc.]
+            guard member.count >= 3,
+                  let _ = member[0] as? String, // Font name (not used)
+                  let weightValue = member[1] as? NSNumber,
+                  let traitsValue = member[2] as? NSNumber else { continue }
+            
+            let weight = weightValue.intValue
+            let traits = NSFontTraitMask(rawValue: UInt(traitsValue.intValue))
+            
+            // Map NSFont weight to our FontWeight enum
+            let mappedWeight = mapNSFontWeightToFontWeight(weight)
+            foundWeights.insert(mappedWeight)
+            
+            // Check for italic style
+            if traits.contains(.italicFontMask) {
+                foundStyles.insert(.italic)
+            } else {
+                foundStyles.insert(.normal)
+            }
+        }
+        
+        // Update available options, maintaining order
+        availableFontWeights = FontWeight.allCases.filter { foundWeights.contains($0) }
+        availableFontStyles = FontStyle.allCases.filter { foundStyles.contains($0) }
+        
+        // Ensure we always have at least regular weight and normal style
+        if availableFontWeights.isEmpty {
+            availableFontWeights = [.regular]
+        }
+        if availableFontStyles.isEmpty {
+            availableFontStyles = [.normal]
+        }
+        
+        print("🔤 DYNAMIC FONT LOADING: \(fontFamily)")
+        print("   📊 Available weights: \(availableFontWeights.map { $0.rawValue })")
+        print("   🎨 Available styles: \(availableFontStyles.map { $0.rawValue })")
+    }
+    
+    /// Maps NSFont weight values to our FontWeight enum
+    private func mapNSFontWeightToFontWeight(_ weight: Int) -> FontWeight {
+        switch weight {
+        case 1, 2: return .ultraLight
+        case 3: return .thin
+        case 4: return .light
+        case 5: return .regular
+        case 6: return .medium
+        case 7, 8: return .semibold
+        case 9: return .bold
+        case 10: return .heavy
+        case 11, 12: return .black
+        default: return .regular
+        }
+    }
+    
     private func updateUIFromSelectedText() {
-        guard let text = selectedText else { return }
+        guard let text = selectedText else { 
+            // No text selected, reset to default weights and styles
+            availableFontWeights = FontWeight.allCases
+            availableFontStyles = FontStyle.allCases
+            return 
+        }
         
         fontSizeText = String(format: "%.1f", text.typography.fontSize)
         letterSpacingText = String(format: "%.1f", text.typography.letterSpacing)
         lineHeightText = String(format: "%.1f", text.typography.lineHeight)
+        
+        // Load available weights and styles for the current font family
+        loadFontWeightsAndStyles(for: text.typography.fontFamily)
     }
     
     private func applyFontFamily(_ fontFamily: String) {
         guard let textID = document.selectedTextIDs.first else { return }
+        
+        // Update available weights and styles for the new font family
+        loadFontWeightsAndStyles(for: fontFamily)
+        
         document.updateTextTypography(textID) { typography in
             typography.fontFamily = fontFamily
         }

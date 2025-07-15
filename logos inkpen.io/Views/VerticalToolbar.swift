@@ -176,35 +176,66 @@ struct ColorSwatchGrid: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Current Fill and Stroke Colors - FIXED: Match grid style but bigger
-            HStack(spacing: 4) {  // Tighter spacing as requested
-                Button {
-                    applyFillColorToSelected(currentFillColor)
-                } label: {
-                    Rectangle()
-                        .fill(currentFillColor.color)
-                        .frame(width: 20, height: 20)  // 20x20 as requested
-                        .border(Color.gray, width: 0.5)  // Match grid border
-                        // NO cornerRadius - completely square like grid
-                        .contentShape(Rectangle()) // Extend hit area to match entire color area
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Current Fill Color: \(currentFillColor) (Used by pen tool and all shape tools)")
-                
+            // Current Fill and Stroke Colors - Adobe Illustrator Style (overlapping squares)
+            ZStack {
+                // Stroke color (background, bottom-right)
                 Button {
                     applyStrokeColorToSelected(currentStrokeColor)
                 } label: {
-                    Rectangle()
-                        .fill(currentStrokeColor.color)
-                        .frame(width: 20, height: 20)  // 20x20 as requested
-                        .border(Color.gray, width: 0.5)  // Match grid border
-                        // NO cornerRadius - completely square like grid
-                        .contentShape(Rectangle()) // Extend hit area to match entire color area
+                    if case .clear = currentStrokeColor {
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 22, height: 22)
+                                .border(Color.gray, width: 0.5)
+                            
+                            Path { path in
+                                path.move(to: CGPoint(x: 1, y: 21))
+                                path.addLine(to: CGPoint(x: 21, y: 1))
+                            }
+                            .stroke(Color.red, lineWidth: 1.5)
+                        }
+                    } else {
+                        Rectangle()
+                            .fill(currentStrokeColor.color)
+                            .frame(width: 22, height: 22)
+                            .border(Color.gray, width: 0.5)
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Current Stroke Color: \(currentStrokeColor) (Used by pen tool and all shape tools)")
+                .help("Current Stroke Color: \(currentStrokeColor)")
+                .offset(x: 6, y: 6)  // Bottom-right offset
+                
+                // Fill color (foreground, top-left)
+                Button {
+                    applyFillColorToSelected(currentFillColor)
+                } label: {
+                    if case .clear = currentFillColor {
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 22, height: 22)
+                                .border(Color.gray, width: 0.5)
+                            
+                            Path { path in
+                                path.move(to: CGPoint(x: 1, y: 21))
+                                path.addLine(to: CGPoint(x: 21, y: 1))
+                            }
+                            .stroke(Color.red, lineWidth: 1.5)
+                        }
+                    } else {
+                        Rectangle()
+                            .fill(currentFillColor.color)
+                            .frame(width: 22, height: 22)
+                            .border(Color.gray, width: 0.5)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Current Fill Color: \(currentFillColor)")
+                .offset(x: -6, y: -6)  // Top-left offset
             }
-            .padding(.horizontal, 4)  // Adjusted padding
+            .frame(width: 34, height: 34)  // Total frame to contain both squares
+            .padding(.bottom, 8)
             
             // Color Swatches
             LazyVGrid(columns: columns, spacing: 1) {
@@ -223,11 +254,30 @@ struct ColorSwatchGrid: View {
                             print("🎨 TOOLBAR: Set default fill color: \(color) - pen tool will now use this")
                         }
                     } label: {
-                        Rectangle()
-                            .fill(color.color)
-                            .frame(width: 10, height: 10)
-                            .border(Color.gray, width: 0.5)
-                            .contentShape(Rectangle()) // Extend hit area to match entire swatch area
+                        ZStack {
+                            // Base color (gray background for clear, normal color for others)
+                            if case .clear = color {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 10, height: 10)
+                                    .border(Color.gray, width: 0.5)
+                            } else {
+                                Rectangle()
+                                    .fill(color.color)
+                                    .frame(width: 10, height: 10)
+                                    .border(Color.gray, width: 0.5)
+                            }
+                            
+                            // Red slash overlay for clear color
+                            if case .clear = color {
+                                Path { path in
+                                    path.move(to: CGPoint(x: 1, y: 9))
+                                    path.addLine(to: CGPoint(x: 9, y: 1))
+                                }
+                                .stroke(Color.red, lineWidth: 1)
+                            }
+                        }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("\(colorDescription(for: color)) (Click for fill, Option+Click for stroke)")
@@ -328,8 +378,9 @@ struct ColorSwatchGrid: View {
         case .white: return "White"
         case .clear: return "Clear"
         case .rgb(let rgb): return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
-                        case .cmyk(let cmyk): return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
+        case .cmyk(let cmyk): return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
         case .pantone(let pantone): return "Pantone \(pantone.number)"
+        case .appleSystem(let systemColor): return "Apple \(systemColor.name.capitalized)"
         }
     }
 }

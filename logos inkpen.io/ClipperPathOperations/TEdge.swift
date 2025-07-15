@@ -19,7 +19,7 @@ public class TEdge {
     var windDelta: Int = 0 //1 or -1 depending on winding direction
     var windCnt: Int = 0
     var windCnt2: Int = 0 //winding count of the opposite polytype
-    var outIdx: Int =  Unassigned
+    var outIdx: Int = Unassigned
     
     weak var next: TEdge! /// edge is strongly referenced  by clipper, make it weak to resolve retain cycle.
     weak var prev: TEdge!

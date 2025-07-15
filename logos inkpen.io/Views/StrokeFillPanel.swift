@@ -86,6 +86,36 @@ struct StrokeFillPanel: View {
         return shape.strokeStyle?.dashPattern ?? []
     }
     
+    // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
+    private var strokeLineJoin: CGLineJoin {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstSelectedID = document.selectedShapeIDs.first,
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+            return .miter
+        }
+        return shape.strokeStyle?.lineJoin ?? .miter
+    }
+    
+    // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
+    private var strokeLineCap: CGLineCap {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstSelectedID = document.selectedShapeIDs.first,
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+            return .butt
+        }
+        return shape.strokeStyle?.lineCap ?? .butt
+    }
+    
+    // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
+    private var strokeMiterLimit: Double {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstSelectedID = document.selectedShapeIDs.first,
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+            return 10.0
+        }
+        return shape.strokeStyle?.miterLimit ?? 10.0
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -123,12 +153,18 @@ struct StrokeFillPanel: View {
                         strokePlacement: strokePlacement,
                         strokeOpacity: strokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
                         strokeDashPattern: strokeDashPattern, // PROFESSIONAL DASH PATTERNS
+                        strokeLineJoin: strokeLineJoin, // PROFESSIONAL JOIN TYPES
+                        strokeLineCap: strokeLineCap, // PROFESSIONAL ENDCAPS
+                        strokeMiterLimit: strokeMiterLimit, // PROFESSIONAL MITER LIMIT
                         onApplyStroke: applyStrokeToSelectedShapes,
                         onUpdateStrokeColor: updateStrokeColor,
                         onUpdateStrokeWidth: updateStrokeWidth,
                         onUpdateStrokePlacement: updateStrokePlacement,
                         onUpdateStrokeOpacity: updateStrokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
-                        onUpdateDashPattern: updateStrokeDashPattern // PROFESSIONAL DASH PATTERNS
+                        onUpdateDashPattern: updateStrokeDashPattern, // PROFESSIONAL DASH PATTERNS
+                        onUpdateLineJoin: updateStrokeLineJoin, // PROFESSIONAL JOIN TYPES
+                        onUpdateLineCap: updateStrokeLineCap, // PROFESSIONAL ENDCAPS
+                        onUpdateMiterLimit: updateStrokeMiterLimit // PROFESSIONAL MITER LIMIT
                     )
                     
                     // PROFESSIONAL STROKE OUTLINING (Adobe Illustrator Standard)
@@ -344,6 +380,54 @@ struct StrokeFillPanel: View {
         }
     }
     
+    // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
+    private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.saveToUndoStack()
+        
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineJoin: lineJoin)
+                } else {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
+                }
+            }
+        }
+    }
+    
+    // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
+    private func updateStrokeLineCap(_ lineCap: CGLineCap) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.saveToUndoStack()
+        
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineCap: lineCap)
+                } else {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
+                }
+            }
+        }
+    }
+    
+    // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
+    private func updateStrokeMiterLimit(_ miterLimit: Double) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        document.saveToUndoStack()
+        
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, miterLimit: miterLimit)
+                } else {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
+                }
+            }
+        }
+    }
+    
     private func applyFillToSelectedShapes() {
         guard let layerIndex = document.selectedLayerIndex else { return }
         document.saveToUndoStack()
@@ -399,13 +483,7 @@ struct CurrentColorsView: View {
             // Fill Color
             VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onFillColorTap) {
-                    RoundedRectangle(cornerRadius: 4)  // Reduced radius for more square appearance
-                        .fill(fillColor.color)
-                        .frame(width: 60, height: 60)  // Larger, more square
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.gray, lineWidth: 1.5)  // Slightly thicker border
-                        )
+                    renderColorSwatch(fillColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -418,13 +496,7 @@ struct CurrentColorsView: View {
             // Stroke Color
             VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onStrokeColorTap) {
-                    RoundedRectangle(cornerRadius: 4)  // Reduced radius for more square appearance
-                        .fill(strokeColor.color)
-                        .frame(width: 60, height: 60)  // Larger, more square
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.gray, lineWidth: 1.5)  // Slightly thicker border
-                        )
+                    renderColorSwatch(strokeColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -492,12 +564,18 @@ struct StrokePropertiesSection: View {
     let strokePlacement: StrokePlacement
     let strokeOpacity: Double // PROFESSIONAL STROKE TRANSPARENCY
     let strokeDashPattern: [Double] // PROFESSIONAL DASH PATTERNS
+    let strokeLineJoin: CGLineJoin // PROFESSIONAL JOIN TYPES
+    let strokeLineCap: CGLineCap // PROFESSIONAL ENDCAPS
+    let strokeMiterLimit: Double // PROFESSIONAL MITER LIMIT
     let onApplyStroke: () -> Void
     let onUpdateStrokeColor: (VectorColor) -> Void
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void // PROFESSIONAL STROKE TRANSPARENCY
     let onUpdateDashPattern: ([Double]) -> Void // PROFESSIONAL DASH PATTERNS
+    let onUpdateLineJoin: (CGLineJoin) -> Void // PROFESSIONAL JOIN TYPES
+    let onUpdateLineCap: (CGLineCap) -> Void // PROFESSIONAL ENDCAPS
+    let onUpdateMiterLimit: (Double) -> Void // PROFESSIONAL MITER LIMIT
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -563,6 +641,103 @@ struct StrokePropertiesSection: View {
                 }
                 .pickerStyle(MenuPickerStyle())
                 .font(.caption)
+            }
+            
+            // PROFESSIONAL JOIN TYPE CONTROL (Adobe Illustrator Standard)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Joins")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 6) {
+                    ForEach([CGLineJoin.round, .miter, .bevel], id: \.self) { joinType in
+                        Button {
+                            onUpdateLineJoin(joinType)
+                        } label: {
+                            VStack(spacing: 2) {
+                                Image(systemName: joinType.iconName)
+                                    .font(.system(size: 12))
+                                
+                                Text(joinType.displayName)
+                                    .font(.caption2)
+                            }
+                            .foregroundColor(strokeLineJoin == joinType ? .accentColor : .secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(strokeLineJoin == joinType ? Color.accentColor.opacity(0.1) : Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(strokeLineJoin == joinType ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 0.5)
+                                    )
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(joinType.description)
+                    }
+                }
+            }
+            
+            // PROFESSIONAL ENDCAP CONTROL (Adobe Illustrator Standard)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("End Caps")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack(spacing: 6) {
+                    ForEach([CGLineCap.butt, .round, .square], id: \.self) { capType in
+                        Button {
+                            onUpdateLineCap(capType)
+                        } label: {
+                            VStack(spacing: 2) {
+                                Image(systemName: capType.iconName)
+                                    .font(.system(size: 12))
+                                
+                                Text(capType.displayName)
+                                    .font(.caption2)
+                            }
+                            .foregroundColor(strokeLineCap == capType ? .accentColor : .secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(strokeLineCap == capType ? Color.accentColor.opacity(0.1) : Color.clear)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(strokeLineCap == capType ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 0.5)
+                                    )
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help(capType.description)
+                    }
+                }
+            }
+            
+            // Miter Limit (only show for miter joins)
+            if strokeLineJoin == .miter {
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("Miter Limit")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(String(format: "%.1f", strokeMiterLimit))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { strokeMiterLimit },
+                        set: { onUpdateMiterLimit($0) }
+                    ), in: 1...20)
+                    .controlSize(.small)
+                    .tint(.blue)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
             
             // PROFESSIONAL DASH PATTERN CONTROL (Adobe Illustrator Standard)
@@ -1291,6 +1466,142 @@ struct FontToolSection: View {
         document.convertTextToOutlines(textID)
         
         print("🎯 FONT TOOL: Converting text to vector outlines (Adobe Illustrator standard)")
+    }
+}
+
+// MARK: - CGLineJoin Extensions for UI
+
+extension CGLineJoin {
+    var iconName: String {
+        switch self {
+        case .miter: return "triangle"
+        case .round: return "circle"
+        case .bevel: return "hexagon"
+        @unknown default: return "triangle"
+        }
+    }
+    
+    var displayName: String {
+        switch self {
+        case .miter: return "Miter"
+        case .round: return "Round"
+        case .bevel: return "Bevel"
+        @unknown default: return "Miter"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .miter: return "Sharp pointed corners (Adobe Illustrator default)"
+        case .round: return "Smooth rounded corners"
+        case .bevel: return "Chamfered corners (cuts off sharp points)"
+        @unknown default: return "Sharp pointed corners"
+        }
+    }
+}
+
+// MARK: - CGLineCap Extensions for UI
+
+extension CGLineCap {
+    var iconName: String {
+        switch self {
+        case .butt: return "minus"
+        case .round: return "circle"
+        case .square: return "square"
+        @unknown default: return "minus"
+        }
+    }
+    
+    var displayName: String {
+        switch self {
+        case .butt: return "Butt"
+        case .round: return "Round"
+        case .square: return "Square"
+        @unknown default: return "Butt"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .butt: return "Square end aligned with path endpoint"
+        case .round: return "Rounded end extending beyond path endpoint"
+        case .square: return "Square end extending beyond path endpoint"
+        @unknown default: return "Square end aligned with path endpoint"
+        }
+    }
+}
+
+// MARK: - Clear Color Rendering Helper
+
+struct ClearColorView: View {
+    let width: CGFloat
+    let height: CGFloat
+    let cornerRadius: CGFloat
+    let borderWidth: CGFloat
+    let slashWidth: CGFloat
+    
+    init(width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, slashWidth: CGFloat = 1) {
+        self.width = width
+        self.height = height
+        self.cornerRadius = cornerRadius
+        self.borderWidth = borderWidth
+        self.slashWidth = slashWidth
+    }
+    
+    var body: some View {
+        ZStack {
+            if cornerRadius > 0 {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: width, height: height)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.gray, lineWidth: borderWidth)
+                    )
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: width, height: height)
+                    .border(Color.gray, width: borderWidth)
+            }
+            
+            // Diagonal slash through the clear color
+            Path { path in
+                path.move(to: CGPoint(x: 1, y: height - 1))
+                path.addLine(to: CGPoint(x: width - 1, y: 1))
+            }
+            .stroke(Color.red, lineWidth: slashWidth)
+        }
+    }
+}
+
+// MARK: - Color Rendering Helper
+
+@ViewBuilder
+func renderColorSwatch(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5) -> some View {
+    if case .clear = color {
+        ClearColorView(
+            width: width,
+            height: height,
+            cornerRadius: cornerRadius,
+            borderWidth: borderWidth,
+            slashWidth: max(1, width / 20)
+        )
+    } else {
+        if cornerRadius > 0 {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .fill(color.color)
+                .frame(width: width, height: height)
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(Color.gray, lineWidth: borderWidth)
+                )
+        } else {
+            Rectangle()
+                .fill(color.color)
+                .frame(width: width, height: height)
+                .border(Color.gray, width: borderWidth)
+        }
     }
 }
 
