@@ -23,7 +23,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     case trim = "Trim"                      // Adobe Illustrator "Trim" - Remove hidden parts
     case merge = "Merge"                    // Adobe Illustrator "Merge" - Unite + remove strokes
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
-    case outline = "Outline"                // Adobe Illustrator "Outline" - Convert fills to strokes
+    case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
     case minusBack = "Minus Back"           // Adobe Illustrator "Minus Back" - Back subtracts from front
     
     var iconName: String {
@@ -36,7 +36,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .trim: return "scissors"
         case .merge: return "arrow.merge"
         case .crop: return "crop"
-        case .outline: return "circle.dashed"
+        case .dieline: return "circle.dashed"
         case .minusBack: return "minus.circle.fill"
         }
     }
@@ -45,7 +45,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         switch self {
         case .unite, .minusFront, .intersect, .exclude:
             return true
-        case .divide, .trim, .merge, .crop, .outline, .minusBack:
+        case .divide, .trim, .merge, .crop, .dieline, .minusBack:
             return false
         }
     }
@@ -60,7 +60,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .trim: return "Removes parts of shapes that are behind other shapes"
         case .merge: return "Combines shapes and removes strokes between overlapping areas"
         case .crop: return "Uses top shape to crop shapes beneath it"
-        case .outline: return "Converts fills to outlined strokes"
+        case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
         }
     }
@@ -116,9 +116,9 @@ class ProfessionalPathOperations {
         return professionalCrop(paths)
     }
     
-    /// OUTLINE: Converts fills to outlined strokes (Adobe Illustrator "Outline Stroke")
-    static func outline(_ paths: [CGPath]) -> [CGPath] {
-        return professionalOutline(paths)
+    /// DIELINE: Applies Divide then converts all results to 1px black strokes with no fill
+    static func dieline(_ paths: [CGPath]) -> [CGPath] {
+        return professionalDieline(paths)
     }
     
     /// MINUS BACK: Back shape subtracts from front shape (Adobe Illustrator "Minus Back")
@@ -412,7 +412,7 @@ class ProfessionalPathOperations {
             return paths.count >= 2
         case .minusFront, .intersect, .exclude, .minusBack:
             return paths.count == 2
-        case .outline:
+        case .dieline:
             return paths.count >= 1
         }
     }

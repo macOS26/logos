@@ -1411,36 +1411,17 @@ extension ProfessionalPathOperations {
         return professionalCropWithShapeTracking(paths).map { $0.0 }
     }
     
-    /// PROFESSIONAL OUTLINE: Converts fills to outlined strokes (Adobe Illustrator "Outline Stroke")
-    static func professionalOutline(_ paths: [CGPath]) -> [CGPath] {
+    /// PROFESSIONAL DIELINE: Applies Divide then converts all results to 1px black strokes with no fill
+    /// This is much more useful than Adobe's outline - it combines divide power with dieline visualization
+    static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
-        print("🔨 PROFESSIONAL OUTLINE (ClipperPaths): Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
         
-        var outlinedPaths: [CGPath] = []
+        // Step 1: Apply Divide operation to cut everything at intersections
+        let dividedPaths = professionalDivide(paths)
         
-        for path in paths {
-            // Adobe Illustrator Outline creates individual path segments from the objects
-            // This converts the path to its outline/stroke representation
-            
-            let bounds = path.boundingBoxOfPath
-            guard !bounds.isEmpty else { continue }
-            
-            // Create stroke outline using CoreGraphics
-            let strokeWidth: CGFloat = 2.0 // Default stroke width
-            let strokedPath = path.copy(
-                strokingWithWidth: strokeWidth,
-                lineCap: .round,
-                lineJoin: .round,
-                miterLimit: 10.0
-            )
-            
-            if !strokedPath.isEmpty && !strokedPath.boundingBoxOfPath.isEmpty {
-                outlinedPaths.append(strokedPath)
-            }
-        }
-        
-        print("✅ PROFESSIONAL OUTLINE (ClipperPaths): Created \(outlinedPaths.count) outlined shapes")
-        return outlinedPaths
+        print("✅ PROFESSIONAL DIELINE: Created \(dividedPaths.count) divided shapes ready for dieline conversion")
+        return dividedPaths
     }
 } 

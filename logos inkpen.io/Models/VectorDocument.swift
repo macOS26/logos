@@ -1769,36 +1769,27 @@ class VectorDocument: ObservableObject, Codable {
             
             print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
             
-        case .outline:
-            // OUTLINE: Convert fills to strokes/outlines
-            let outlinedPaths = ProfessionalPathOperations.outline(paths)
+        case .dieline:
+            // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
+            let dielinePaths = ProfessionalPathOperations.dieline(paths)
             
-            for (index, outlinedPath) in outlinedPaths.enumerated() {
-                guard index < selectedShapes.count else { break }
-                let originalShape = selectedShapes[index]
-                
-                // Convert fill to stroke (Adobe Illustrator "Outline" behavior)
-                var outlineStroke: StrokeStyle?
-                if let fillStyle = originalShape.fillStyle, fillStyle.color != .clear {
-                    outlineStroke = StrokeStyle(
-                        color: fillStyle.color,
+            for (index, dielinePath) in dielinePaths.enumerated() {
+                let dielineShape = VectorShape(
+                    name: "Dieline \(index + 1)",
+                    path: VectorPath(cgPath: dielinePath),
+                    strokeStyle: StrokeStyle(
+                        color: .black,
                         width: 1.0,
                         lineCap: .round,
                         lineJoin: .round
-                    )
-                }
-                
-                let outlinedShape = VectorShape(
-                    name: "Outlined \(originalShape.name)",
-                    path: VectorPath(cgPath: outlinedPath),
-                    strokeStyle: outlineStroke,
-                    fillStyle: nil, // OUTLINE removes fills (Adobe Illustrator standard)
+                    ),
+                    fillStyle: nil, // DIELINE has no fill - only 1px black stroke
                     transform: .identity,
-                    opacity: originalShape.opacity
+                    opacity: 1.0
                 )
-                resultShapes.append(outlinedShape)
+                resultShapes.append(dielineShape)
             }
-            print("✅ OUTLINE: Created \(resultShapes.count) outlined shapes")
+            print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
             
         case .minusBack:
             // MINUS BACK: Back objects subtract from front object, result takes color of FRONT object
