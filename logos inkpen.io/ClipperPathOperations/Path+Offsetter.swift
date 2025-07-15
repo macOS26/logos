@@ -60,12 +60,23 @@ public struct StrokeBasedOffsetOptions {
             keepOriginal: keepOriginal
         )
     }
+    
+    /// Adobe Illustrator "Square" preset (sharp corners, no miter/bevel/round)
+    public static func squareJoin(offset: CGFloat, keepOriginal: Bool = true) -> StrokeBasedOffsetOptions {
+        return StrokeBasedOffsetOptions(
+            offset: offset,
+            joinType: .miter,  // Use miter with limit 1.0 for sharp square corners
+            endType: .butt,
+            miterLimit: 1.0,   // Very low miter limit creates square corners
+            keepOriginal: keepOriginal
+        )
+    }
 }
 
 extension CGPath {
     
     /// PROFESSIONAL STROKE-BASED OFFSET (True Adobe Illustrator Quality)
-    /// This creates perfect smooth bezier curves for rounded corners
+    /// This creates perfect smooth bezier curves for ALL join types using stroke expansion
     public func strokeBasedOffset(_ options: StrokeBasedOffsetOptions) -> [CGPath] {
         guard !self.isEmpty else { return [] }
         
@@ -73,20 +84,22 @@ extension CGPath {
         guard offsetDistance > 0 else { return [self] }
         
         if options.offset > 0 {
-            // OUTSET: Create stroke, outline it, then union with original
-            return createOutsetPaths(distance: offsetDistance, options: options)
+            // OUTSET: Create stroke, expand it, separate compound path, keep outer path
+            return createStrokeBasedOutsetPaths(distance: offsetDistance, options: options)
         } else {
             // INSET: Create negative stroke effect
             return createInsetPaths(distance: offsetDistance, options: options)
         }
     }
     
-    /// Creates outset (expansion) paths using stroke+outline technique
-    private func createOutsetPaths(distance: CGFloat, options: StrokeBasedOffsetOptions) -> [CGPath] {
+    /// Creates outset (expansion) paths using stroke+expand+separate technique for ALL join types
+    private func createStrokeBasedOutsetPaths(distance: CGFloat, options: StrokeBasedOffsetOptions) -> [CGPath] {
         // Step 1: Create stroke with double the offset distance (stroke goes both directions)
         let strokeWidth = distance * 2.0
         
-        // Step 2: Create stroked path with perfect smooth corners
+        print("🎨 STROKE-BASED OFFSET: \(options.joinType) join, width=\(strokeWidth), miterLimit=\(options.miterLimit)")
+        
+        // Step 2: Create stroked path with specified join type
         let strokedPath = self.copy(
             strokingWithWidth: strokeWidth,
             lineCap: options.endType,
@@ -94,15 +107,17 @@ extension CGPath {
             miterLimit: options.miterLimit
         )
         
-        // Step 3: CRITICAL FIX - Separate the compound path and keep only the outer path
-        // The stroke expansion creates both outer and inner paths connected by artifacts
+        // Step 3: Separate the compound path and keep only the outer path
+        // This works for ALL join types: Round, Miter, Bevel, and Square
         let separatedPaths = separateCompoundPath(strokedPath)
         
         // Step 4: Keep only the largest path (the outer expanded path)
         if let largestPath = findLargestPath(separatedPaths) {
+            print("✅ STROKE-BASED SUCCESS: Clean outer path extracted for \(options.joinType) join")
             return [largestPath]
         } else {
             // Fallback to original stroke if separation fails
+            print("⚠️ FALLBACK: Using unseparated stroke path")
             return [strokedPath]
         }
     }

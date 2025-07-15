@@ -434,6 +434,7 @@ public class Offsetter {
                 }
             case .square:doSquare (j, k)
             case .round: doRound (j, k)
+            case .bevel: doSquare (j, k) // Bevel uses same implementation as square
             }
         }
         k = j

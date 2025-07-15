@@ -24,7 +24,7 @@ public enum PolyFillType {
 }
 
 public enum JoinType {
-    case square, round, miter
+    case square, round, miter, bevel
 }
 public enum EndType {
     case closedPolygon, closedLine, openButt, openSquare, openRound

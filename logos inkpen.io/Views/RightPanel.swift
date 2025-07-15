@@ -1397,7 +1397,7 @@ struct ProfessionalOffsetPathSection: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 6) {
-                            ForEach([JoinType.miter, .round, .square], id: \.self) { joinType in
+                            ForEach([JoinType.round, .miter, .bevel, .square], id: \.self) { joinType in
                                 Button {
                                     selectedJoinType = joinType
                                 } label: {
@@ -1584,7 +1584,7 @@ struct ProfessionalOffsetPathSection: View {
             // Use STROKE-BASED OFFSET for perfect smooth curves (no more Clipper polygons!)
             let strokeOptions = StrokeBasedOffsetOptions(
                 offset: CGFloat(offsetDistance),
-                joinType: selectedJoinType == .round ? .round : (selectedJoinType == .square ? .bevel : .miter),
+                joinType: mapJoinTypeToCoreGraphics(selectedJoinType),
                 endType: .round,
                 miterLimit: CGFloat(miterLimit),
                 keepOriginal: keepOriginalPath
@@ -1606,18 +1606,26 @@ struct ProfessionalOffsetPathSection: View {
                     opacity: shape.opacity
                 )
                 
-                // Add to document
+                // Add to document (will be moved behind original later)
                 document.addShape(offsetShape)
             }
             
         }
         
-        // Remove original shapes if not keeping them
-        if !keepOriginalPath {
+        // Move offset shapes behind originals (Adobe Illustrator standard)
+        if keepOriginalPath {
+            // Send offset shapes to back so they appear behind the originals
+            document.sendSelectedToBack()
+            
+            // Restore selection to original shapes
+            let originalShapeIDs = Set(selectedShapes.map { $0.id })
+            document.selectedShapeIDs = originalShapeIDs
+        } else {
+            // Remove original shapes if not keeping them
             document.removeSelectedShapes()
         }
          
-         print("✅ OFFSET PATH: Created offset shapes")
+         print("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals")
     }
     
     private func performInsetPath() {
@@ -1637,6 +1645,15 @@ struct ProfessionalOffsetPathSection: View {
             keepOriginalPath = true
         }
     }
+    
+    private func mapJoinTypeToCoreGraphics(_ joinType: JoinType) -> CGLineJoin {
+        switch joinType {
+        case .round: return .round
+        case .miter: return .miter
+        case .bevel: return .bevel
+        case .square: return .miter  // Use miter with very low limit for square corners
+        }
+    }
 }
 
 // MARK: - JoinType Extensions for UI
@@ -1646,6 +1663,7 @@ extension JoinType {
         switch self {
         case .miter: return "triangle"
         case .round: return "circle"
+        case .bevel: return "hexagon"
         case .square: return "square"
         }
     }
@@ -1654,15 +1672,17 @@ extension JoinType {
         switch self {
         case .miter: return "Miter"
         case .round: return "Round"
-        case .square: return "Bevel"
+        case .bevel: return "Bevel"
+        case .square: return "Square"
         }
     }
     
     var description: String {
         switch self {
-        case .miter: return "Sharp corners (Adobe Illustrator default)"
-        case .round: return "Rounded corners"
-        case .square: return "Beveled/squared corners"
+        case .miter: return "Sharp pointed corners (Adobe Illustrator default)"
+        case .round: return "Smooth rounded corners"
+        case .bevel: return "Chamfered corners (cuts off sharp points)"
+        case .square: return "Sharp square corners (no miter limit)"
         }
     }
 }
