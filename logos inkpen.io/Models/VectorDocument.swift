@@ -1677,15 +1677,24 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
             
         case .trim:
-            // TRIM: Remove hidden parts, objects retain original colors, removes strokes
-            let trimmedPaths = ProfessionalPathOperations.trim(paths)
+            // TRIM: Remove overlapping areas, objects retain original colors, removes strokes
+            let trimmedResults = ProfessionalPathOperations.professionalTrimWithShapeTracking(paths)
             
-            for (index, trimmedPath) in trimmedPaths.enumerated() {
-                guard index < selectedShapes.count else { break }
-                let originalShape = selectedShapes[index]
+            // Adobe Illustrator Trim: Each resulting piece maintains the color of its original shape
+            // The new algorithm tracks which original shape each piece came from
+            var shapeCounters: [Int: Int] = [:]
+            
+            for (trimmedPath, originalShapeIndex) in trimmedResults {
+                guard originalShapeIndex < selectedShapes.count else { continue }
+                
+                let originalShape = selectedShapes[originalShapeIndex]
+                
+                // Track how many pieces we've created from this original shape
+                shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
+                let pieceNumber = shapeCounters[originalShapeIndex]!
                 
                 let trimmedShape = VectorShape(
-                    name: "Trimmed \(originalShape.name)",
+                    name: pieceNumber > 1 ? "Trimmed \(originalShape.name) (\(pieceNumber))" : "Trimmed \(originalShape.name)",
                     path: VectorPath(cgPath: trimmedPath),
                     strokeStyle: nil, // TRIM removes strokes (Adobe Illustrator standard)
                     fillStyle: originalShape.fillStyle,
@@ -1694,6 +1703,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(trimmedShape)
             }
+            
             print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
             
         case .merge:

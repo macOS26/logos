@@ -1194,11 +1194,17 @@ extension ProfessionalPathOperations {
         return path
     }
     
-    /// PROFESSIONAL TRIM: Removes parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
-    static func professionalTrim(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
+    /// PROFESSIONAL TRIM: Removes HIDDEN parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
+    /// The visual result should look identical to the original, but hidden overlapping paths are removed.
+    /// This is like cutting away the parts you can't see in a stained glass window.
+    /// Returns an array of tuples: (trimmedPath, originalShapeIndex)
+    static func professionalTrimWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int)] {
+        guard paths.count >= 2 else { 
+            return paths.enumerated().map { (index, path) in (path, index) }
+        }
         
         print("🔨 PROFESSIONAL TRIM (ClipperPaths): Processing \(paths.count) paths")
+        print("   Adobe Illustrator Trim: Removing HIDDEN parts, keeping visible appearance")
         
         // Convert all paths to ClipperPaths
         var allClipperPaths: [ClipperPath] = []
@@ -1214,42 +1220,73 @@ extension ProfessionalPathOperations {
         
         guard allClipperPaths.count >= 2 else { 
             print("⚠️ Not enough valid polygons for trim operation")
-            return paths 
+            return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        var resultPaths: [CGPath] = []
+        var resultPaths: [(CGPath, Int)] = []
         
-        // Adobe Illustrator Trim: Remove parts that are hidden by shapes on top
-        // Process from bottom to top (front shapes can hide back shapes)
+        // Adobe Illustrator Trim Algorithm (CORRECTED):
+        // Process shapes from BACK to FRONT (stacking order)
+        // For each shape, subtract only the shapes that are IN FRONT of it
+        // This removes the HIDDEN parts (parts behind other shapes)
+        
         for i in 0..<allClipperPaths.count {
             let clipper = Clipper()
+            
+            // Add current shape as subject (what we want to keep visible parts of)
             clipper.addPath(allClipperPaths[i], .subject, true)
             
-            // Subtract all paths that are in front (later in the stacking order)
+            // Add only shapes that are IN FRONT of this shape as clips
+            // (shapes with higher index are in front in stacking order)
+            var hasShapesInFront = false
             for j in (i+1)..<allClipperPaths.count {
                 clipper.addPath(allClipperPaths[j], .clip, true)
+                hasShapesInFront = true
             }
             
             var solution = ClipperPaths()
             do {
-                let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
-                if success {
-                    for clipperPath in solution {
-                        if clipperPath.count >= 3 {
-                            let cgPath = clipperPathsToCGPath([clipperPath])
-                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                resultPaths.append(cgPath)
+                if hasShapesInFront {
+                    // Use DIFFERENCE to remove the hidden parts (parts behind shapes in front)
+                    let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
+                    if success {
+                        // Add all resulting visible pieces from this shape
+                        for clipperPath in solution {
+                            if clipperPath.count >= 3 {
+                                let cgPath = clipperPathsToCGPath([clipperPath])
+                                if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                                    resultPaths.append((cgPath, i))
+                                    print("   ✅ Shape \(i): Trimmed hidden parts, keeping visible area")
+                                }
                             }
                         }
+                    }
+                } else {
+                    // No shapes in front, so keep the entire shape (nothing to trim)
+                    let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
+                    if !originalPath.isEmpty {
+                        resultPaths.append((originalPath, i))
+                        print("   ✅ Shape \(i): No shapes in front, keeping entire shape")
                     }
                 }
             } catch {
                 print("    ⚠️ Error trimming shape \(i): \(error)")
+                // On error, try to keep the original shape
+                let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
+                if !originalPath.isEmpty {
+                    resultPaths.append((originalPath, i))
+                }
             }
         }
         
         print("✅ PROFESSIONAL TRIM (ClipperPaths): Created \(resultPaths.count) trimmed pieces")
+        print("   Result should look identical to original, but with hidden paths removed")
         return resultPaths
+    }
+    
+    /// PROFESSIONAL TRIM: Legacy wrapper that returns only paths (for compatibility)
+    static func professionalTrim(_ paths: [CGPath]) -> [CGPath] {
+        return professionalTrimWithShapeTracking(paths).map { $0.0 }
     }
     
     /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
