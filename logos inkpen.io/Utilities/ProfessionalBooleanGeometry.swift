@@ -528,32 +528,58 @@ extension ProfessionalPathOperations {
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
-        print("🔨 PROFESSIONAL MINUS FRONT: Processing")
+        print("🔨 PROFESSIONAL MINUS FRONT (ClipperPaths): Processing")
         
-        let backPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(backPath)
-        let frontPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(frontPath)
+        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
+        let clipper = Clipper()
         
-        let result = ProfessionalBooleanGeometry.difference(backPolygon, frontPolygon)
-        let resultPath = ProfessionalBooleanGeometry.polygonToCGPath(result)
-        
-        if resultPath.isEmpty || resultPath.boundingBoxOfPath.isEmpty {
-            print("❌ MINUS FRONT failed - checking if paths overlap")
-            
-            // Check if paths actually overlap
-            let frontBounds = frontPath.boundingBoxOfPath
-            let backBounds = backPath.boundingBoxOfPath
-            
-            if !frontBounds.intersects(backBounds) {
-                print("  → No overlap, returning original back path")
-                return backPath
+        // Add back path as subject (what we're subtracting FROM)
+        let backSubpaths = extractSubpaths(from: backPath)
+        for subpath in backSubpaths {
+            let clipperPath = cgPathToClipperPath(subpath)
+            if clipperPath.count >= 3 { // Only add valid polygons
+                clipper.addPath(clipperPath, .subject, true)
             }
-            
-            print("  → Overlap detected, returning nil (complete subtraction)")
-            return nil
         }
         
-        print("✅ PROFESSIONAL MINUS FRONT: Success")
-        return resultPath
+        // Add front path as clip (what we're subtracting)
+        let frontSubpaths = extractSubpaths(from: frontPath)
+        for subpath in frontSubpaths {
+            let clipperPath = cgPathToClipperPath(subpath)
+            if clipperPath.count >= 3 { // Only add valid polygons
+                clipper.addPath(clipperPath, .clip, true)
+            }
+        }
+        
+        var solution = ClipperPaths()
+        do {
+            let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
+            if success && !solution.isEmpty {
+                let resultPath = clipperPathsToCGPath(solution)
+                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
+                    print("✅ PROFESSIONAL MINUS FRONT (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    return resultPath
+                } else {
+                    print("⚠️ MINUS FRONT result is empty")
+                }
+            } else {
+                print("⚠️ ClipperPaths minus front failed")
+            }
+        } catch {
+            print("❌ ClipperPaths minus front error: \(error)")
+        }
+        
+        // Check if paths actually overlap for better error reporting
+        let frontBounds = frontPath.boundingBoxOfPath
+        let backBounds = backPath.boundingBoxOfPath
+        
+        if !frontBounds.intersects(backBounds) {
+            print("  → No overlap, returning original back path")
+            return backPath
+        }
+        
+        print("  → Paths should overlap but ClipperPaths minus front failed")
+        return nil
     }
     
     /// PROFESSIONAL INTERSECT: Only overlapping areas (Adobe Illustrator "Intersect")
