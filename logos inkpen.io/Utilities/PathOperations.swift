@@ -97,67 +97,8 @@ class ProfessionalPathOperations {
     
     /// DIVIDE: Breaks paths into separate objects at all intersection points (Adobe Illustrator "Divide")
     static func divide(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
-        
-        print("🔨 PROFESSIONAL DIVIDE: Processing \(paths.count) paths")
-        
-        // Convert all paths to polygons using the professional geometry engine
-        let polygons = paths.map { ProfessionalBooleanGeometry.cgPathToPolygon($0) }
-        
-        var resultPaths: [CGPath] = []
-        
-        // Create all possible overlapping and non-overlapping regions
-        // Adobe Illustrator Divide creates separate objects for each distinct region
-        
-        // 1. Get all non-overlapping parts of each shape
-        for i in 0..<polygons.count {
-            var currentPolygon = polygons[i]
-            
-            // Subtract all other polygons to get the unique part
-            for j in 0..<polygons.count where j != i {
-                currentPolygon = ProfessionalBooleanGeometry.difference(currentPolygon, polygons[j])
-            }
-            
-            let resultPath = ProfessionalBooleanGeometry.polygonToCGPath(currentPolygon)
-            if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                resultPaths.append(resultPath)
-            }
-        }
-        
-        // 2. Get all intersection regions (2-way, 3-way, etc.)
-        for i in 0..<polygons.count {
-            for j in (i+1)..<polygons.count {
-                var intersection = ProfessionalBooleanGeometry.intersection(polygons[i], polygons[j])
-                
-                // Subtract any higher-order intersections to avoid duplicates
-                for k in 0..<polygons.count where k != i && k != j {
-                    intersection = ProfessionalBooleanGeometry.difference(intersection, polygons[k])
-                }
-                
-                let intersectionPath = ProfessionalBooleanGeometry.polygonToCGPath(intersection)
-                if !intersectionPath.isEmpty && !intersectionPath.boundingBoxOfPath.isEmpty {
-                    resultPaths.append(intersectionPath)
-                }
-            }
-        }
-        
-        // 3. Get 3-way intersections (if any)
-        for i in 0..<polygons.count {
-            for j in (i+1)..<polygons.count {
-                for k in (j+1)..<polygons.count {
-                    let intersection1 = ProfessionalBooleanGeometry.intersection(polygons[i], polygons[j])
-                    let intersection2 = ProfessionalBooleanGeometry.intersection(intersection1, polygons[k])
-                    
-                    let intersectionPath = ProfessionalBooleanGeometry.polygonToCGPath(intersection2)
-                    if !intersectionPath.isEmpty && !intersectionPath.boundingBoxOfPath.isEmpty {
-                        resultPaths.append(intersectionPath)
-                    }
-                }
-            }
-        }
-        
-        print("✅ PROFESSIONAL DIVIDE: Created \(resultPaths.count) pieces from \(paths.count) originals")
-        return resultPaths
+        // Use professional ClipperPaths implementation
+        return ProfessionalPathOperations.professionalDivide(paths)
     }
     
     /// TRIM: Removes parts of shapes that are behind other shapes (Adobe Illustrator "Trim")

@@ -637,6 +637,213 @@ extension ProfessionalPathOperations {
         return professionalMinusFront(backPath, from: frontPath)
     }
     
+    // MARK: - PROFESSIONAL DIVIDE OPERATION USING CLIPPER PATHS
+    
+    /// PROFESSIONAL DIVIDE: Breaks paths into separate objects at all intersection points (Adobe Illustrator "Divide")
+    static func professionalDivide(_ paths: [CGPath]) -> [CGPath] {
+        guard paths.count >= 2 else { return paths }
+        
+        print("🔨 PROFESSIONAL DIVIDE (ClipperPaths): Processing \(paths.count) paths")
+        
+        // Convert all paths to ClipperPaths
+        var allClipperPaths: [ClipperPath] = []
+        for cgPath in paths {
+            let subpaths = extractSubpaths(from: cgPath)
+            for subpath in subpaths {
+                let clipperPath = cgPathToClipperPath(subpath)
+                if clipperPath.count >= 3 { // Only add valid polygons
+                    allClipperPaths.append(clipperPath)
+                }
+            }
+        }
+        
+        guard allClipperPaths.count >= 2 else { 
+            print("⚠️ Not enough valid polygons for divide operation")
+            return paths 
+        }
+        
+        var resultPaths: [CGPath] = []
+        
+        // STEP 1: Get all unique (non-overlapping) parts of each shape
+        print("  → Finding unique parts of each shape...")
+        for i in 0..<allClipperPaths.count {
+            let clipper = Clipper()
+            clipper.addPath(allClipperPaths[i], .subject, true)
+            
+            // Add all other paths as clips to subtract them
+            for j in 0..<allClipperPaths.count where j != i {
+                clipper.addPath(allClipperPaths[j], .clip, true)
+            }
+            
+            var solution = ClipperPaths()
+            do {
+                let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
+                if success {
+                    for clipperPath in solution {
+                        if clipperPath.count >= 3 {
+                            let cgPath = clipperPathsToCGPath([clipperPath])
+                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                                resultPaths.append(cgPath)
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("    ⚠️ Error getting unique part for shape \(i): \(error)")
+            }
+        }
+        
+        // STEP 2: Get all 2-way intersections
+        print("  → Finding 2-way intersections...")
+        for i in 0..<allClipperPaths.count {
+            for j in (i+1)..<allClipperPaths.count {
+                let clipper = Clipper()
+                clipper.addPath(allClipperPaths[i], .subject, true)
+                clipper.addPath(allClipperPaths[j], .clip, true)
+                
+                var solution = ClipperPaths()
+                do {
+                    let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
+                    if success {
+                        for clipperPath in solution {
+                            if clipperPath.count >= 3 {
+                                // Check if this intersection overlaps with any other shapes
+                                let intersectionPath = clipperPathsToCGPath([clipperPath])
+                                let cleanedPath = removeHigherOrderOverlaps(intersectionPath, 
+                                                                          excludingIndices: [i, j], 
+                                                                          from: allClipperPaths)
+                                
+                                if !cleanedPath.isEmpty && !cleanedPath.boundingBoxOfPath.isEmpty {
+                                    resultPaths.append(cleanedPath)
+                                }
+                            }
+                        }
+                    }
+                } catch {
+                    print("    ⚠️ Error getting intersection for shapes \(i) and \(j): \(error)")
+                }
+            }
+        }
+        
+        // STEP 3: Get all 3-way intersections (if 3+ shapes)
+        if allClipperPaths.count >= 3 {
+            print("  → Finding 3-way intersections...")
+            for i in 0..<allClipperPaths.count {
+                for j in (i+1)..<allClipperPaths.count {
+                    for k in (j+1)..<allClipperPaths.count {
+                        let clipper = Clipper()
+                        clipper.addPath(allClipperPaths[i], .subject, true)
+                        clipper.addPath(allClipperPaths[j], .clip, true)
+                        
+                        var solution = ClipperPaths()
+                        do {
+                            // First intersect i and j
+                            let success1 = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
+                            if success1 && !solution.isEmpty {
+                                // Then intersect result with k
+                                let clipper2 = Clipper()
+                                for path in solution {
+                                    clipper2.addPath(path, .subject, true)
+                                }
+                                clipper2.addPath(allClipperPaths[k], .clip, true)
+                                
+                                var finalSolution = ClipperPaths()
+                                let success2 = try clipper2.execute(clipType: .intersection, solution: &finalSolution, fillType: .nonZero)
+                                if success2 {
+                                    for clipperPath in finalSolution {
+                                        if clipperPath.count >= 3 {
+                                            let cgPath = clipperPathsToCGPath([clipperPath])
+                                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                                                resultPaths.append(cgPath)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch {
+                            print("    ⚠️ Error getting 3-way intersection for shapes \(i), \(j), \(k): \(error)")
+                        }
+                    }
+                }
+            }
+        }
+        
+        // STEP 4: Get all 4-way intersections (if 4+ shapes)
+        if allClipperPaths.count >= 4 {
+            print("  → Finding 4-way intersections...")
+            for i in 0..<allClipperPaths.count {
+                for j in (i+1)..<allClipperPaths.count {
+                    for k in (j+1)..<allClipperPaths.count {
+                        for l in (k+1)..<allClipperPaths.count {
+                            let intersection = getMultiWayIntersection([allClipperPaths[i], allClipperPaths[j], allClipperPaths[k], allClipperPaths[l]])
+                            if !intersection.isEmpty && !intersection.boundingBoxOfPath.isEmpty {
+                                resultPaths.append(intersection)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        print("✅ PROFESSIONAL DIVIDE (ClipperPaths): Created \(resultPaths.count) pieces from \(paths.count) originals")
+        return resultPaths
+    }
+    
+    /// Helper function to remove higher-order overlaps from an intersection
+    private static func removeHigherOrderOverlaps(_ intersectionPath: CGPath, excludingIndices: [Int], from allPaths: [ClipperPath]) -> CGPath {
+        let clipper = Clipper()
+        let intersectionClipperPath = cgPathToClipperPath(intersectionPath)
+        clipper.addPath(intersectionClipperPath, .subject, true)
+        
+        // Subtract all other paths except the ones we're already intersecting
+        for i in 0..<allPaths.count {
+            if !excludingIndices.contains(i) {
+                clipper.addPath(allPaths[i], .clip, true)
+            }
+        }
+        
+        var solution = ClipperPaths()
+        do {
+            let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
+            if success && !solution.isEmpty {
+                return clipperPathsToCGPath(solution)
+            }
+        } catch {
+            print("    ⚠️ Error removing higher-order overlaps: \(error)")
+        }
+        
+        return intersectionPath // Return original if cleaning fails
+    }
+    
+    /// Helper function to get multi-way intersection
+    private static func getMultiWayIntersection(_ paths: [ClipperPath]) -> CGPath {
+        guard paths.count >= 2 else { return CGMutablePath() }
+        
+        var currentResult = [paths[0]]
+        
+        for i in 1..<paths.count {
+            let clipper = Clipper()
+            for path in currentResult {
+                clipper.addPath(path, .subject, true)
+            }
+            clipper.addPath(paths[i], .clip, true)
+            
+            var solution = ClipperPaths()
+            do {
+                let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
+                if success {
+                    currentResult = solution
+                } else {
+                    return CGMutablePath() // No intersection
+                }
+            } catch {
+                return CGMutablePath() // Error occurred
+            }
+        }
+        
+        return clipperPathsToCGPath(currentResult)
+    }
+    
     // MARK: - FALLBACK OPERATIONS
     
     private static func convexHullFallback(_ paths: [CGPath]) -> CGPath? {
