@@ -1467,19 +1467,36 @@ class VectorDocument: ObservableObject, Codable {
         colorSwatches.removeAll { $0 == color }
     }
     
-    // Load appropriate color swatches based on color mode
+    // Load appropriate color swatches based on color mode - SEPARATED by mode
     static func getDefaultColorSwatchesForMode(_ colorMode: ColorMode) -> [VectorColor] {
-        let basicColors = VectorColor.defaultColors
-        let appleSystemColors = createAppleSystemColorSwatches()
+        let basicColors: [VectorColor] = [.black, .white, .clear]
         
         switch colorMode {
         case .rgb:
-            return basicColors + appleSystemColors
+            return basicColors + createRGBSwatches() + createAppleSystemColorSwatches()
         case .cmyk:
-            return basicColors + appleSystemColors + createCMYKSwatches()
+            return basicColors + createCMYKSwatches()
         case .pantone:
-            return basicColors + appleSystemColors + ColorManagement.loadPantoneColors().map { .pantone($0) }
+            return basicColors + ColorManagement.loadPantoneColors().map { .pantone($0) }
         }
+    }
+    
+    // Create RGB-specific color swatches
+    static func createRGBSwatches() -> [VectorColor] {
+        return [
+            .rgb(RGBColor(red: 1, green: 0, blue: 0)),     // Red
+            .rgb(RGBColor(red: 0, green: 1, blue: 0)),     // Green
+            .rgb(RGBColor(red: 0, green: 0, blue: 1)),     // Blue
+            .rgb(RGBColor(red: 1, green: 1, blue: 0)),     // Yellow
+            .rgb(RGBColor(red: 1, green: 0, blue: 1)),     // Magenta
+            .rgb(RGBColor(red: 0, green: 1, blue: 1)),     // Cyan
+            .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0.5)), // Gray
+            .rgb(RGBColor(red: 1, green: 0.5, blue: 0)),   // Orange
+            .rgb(RGBColor(red: 0.5, green: 0, blue: 0.5)), // Purple
+            .rgb(RGBColor(red: 0, green: 0.5, blue: 0)),   // Dark Green
+            .rgb(RGBColor(red: 0, green: 0, blue: 0.5)),   // Dark Blue
+            .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0)), // Olive
+        ]
     }
     
     // Create Apple System Color swatches
@@ -1506,22 +1523,41 @@ class VectorDocument: ObservableObject, Codable {
         return systemColors.map { .appleSystem($0) }
     }
     
-    // Create professional CMYK color swatches
+    // Create professional CMYK color swatches (print-ready colors)
     static func createCMYKSwatches() -> [VectorColor] {
         var cmykColors: [VectorColor] = []
         
-        // Standard CMYK color swatches
+        // Professional CMYK color swatches for print production
         let cmykValues = [
-            (100, 0, 0, 0),    // Cyan
-            (0, 100, 0, 0),    // Magenta
-            (0, 0, 100, 0),    // Yellow
-            (0, 0, 0, 100),    // Black
-            (50, 0, 100, 0),   // Green
-            (100, 100, 0, 0),  // Blue
-            (0, 100, 100, 0),  // Red
-            (25, 25, 25, 0),   // Light Gray
-            (50, 50, 50, 0),   // Medium Gray
-            (75, 75, 75, 0),   // Dark Gray
+            // Primary CMYK colors
+            (100, 0, 0, 0),    // Cyan 100%
+            (0, 100, 0, 0),    // Magenta 100%
+            (0, 0, 100, 0),    // Yellow 100%
+            (0, 0, 0, 100),    // Black 100%
+            
+            // Secondary colors (print mixing)
+            (100, 100, 0, 0),  // Blue (C+M)
+            (0, 100, 100, 0),  // Red (M+Y)
+            (100, 0, 100, 0),  // Green (C+Y)
+            
+            // Professional print colors
+            (100, 0, 0, 25),   // Dark Cyan
+            (0, 100, 0, 25),   // Dark Magenta
+            (0, 0, 100, 25),   // Dark Yellow
+            
+            // Grays (K-only for proper neutral grays)
+            (0, 0, 0, 25),     // 25% Gray
+            (0, 0, 0, 50),     // 50% Gray
+            (0, 0, 0, 75),     // 75% Gray
+            
+            // Rich blacks for professional printing
+            (30, 30, 30, 100), // Rich Black (recommended)
+            (40, 40, 40, 100), // Super Rich Black
+            
+            // Professional skin tones (CMYK)
+            (0, 30, 45, 0),    // Light Skin
+            (0, 40, 60, 10),   // Medium Skin
+            (0, 50, 75, 25),   // Dark Skin
         ]
         
         for (c, m, y, k) in cmykValues {
@@ -1537,22 +1573,54 @@ class VectorDocument: ObservableObject, Codable {
         return cmykColors
     }
     
-    // Update color swatches when color mode changes
+    // Update color swatches when color mode changes - CLEAN SEPARATION
     func updateColorSwatchesForMode() {
+        // Get mode-specific defaults (separated by mode)
+        let modeDefaults = Self.getDefaultColorSwatchesForMode(settings.colorMode)
+        
+        // Keep only user-added colors that match the current mode
         let currentSwatches = colorSwatches
-        let defaultSwatches = Self.getDefaultColorSwatchesForMode(settings.colorMode)
+        var userAddedColors: [VectorColor] = []
         
-        // Keep user-added colors and merge with new defaults
-        var newSwatches = defaultSwatches
-        
-        // Add any existing colors that aren't in the defaults
-        for existingColor in currentSwatches {
-            if !newSwatches.contains(existingColor) {
-                newSwatches.append(existingColor)
+        for color in currentSwatches {
+            // Only keep user colors that match the current color mode
+            let matchesMode = colorMatchesCurrentMode(color)
+            let isDefault = modeDefaults.contains(color)
+            
+            if matchesMode && !isDefault {
+                userAddedColors.append(color)
             }
         }
         
-        self.colorSwatches = newSwatches
+        // Set clean swatches: mode defaults + user-added colors of same mode
+        self.colorSwatches = modeDefaults + userAddedColors
+    }
+    
+    // Check if a color matches the current color mode
+    private func colorMatchesCurrentMode(_ color: VectorColor) -> Bool {
+        switch settings.colorMode {
+        case .rgb:
+            switch color {
+            case .rgb, .appleSystem, .black, .white, .clear:
+                return true
+            default:
+                return false
+            }
+        case .cmyk:
+            switch color {
+            case .cmyk, .black, .white, .clear:
+                return true
+            default:
+                return false
+            }
+        case .pantone:
+            switch color {
+            case .pantone, .black, .white, .clear:
+                return true
+            default:
+                return false
+            }
+        }
     }
     
     // MARK: - PROFESSIONAL PATHFINDER OPERATIONS (Adobe Illustrator Standards)

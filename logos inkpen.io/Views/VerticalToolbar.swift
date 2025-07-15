@@ -333,6 +333,7 @@ struct ColorSwatchGrid: View {
                             document.defaultFillColor = color
                             applyFillColorToSelected(color)
                         }
+                        // ONLY add to swatches when explicitly adding via "Add Color" button
                         document.addColorSwatch(color)
                     }
                 )

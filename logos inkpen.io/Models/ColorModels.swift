@@ -148,26 +148,9 @@ enum VectorColor: Codable, Hashable {
         }
     }
     
-    static let defaultColors: [VectorColor] = [
-        .black, .white, .clear,
-        .rgb(RGBColor(red: 1, green: 0, blue: 0)),
-        .rgb(RGBColor(red: 0, green: 1, blue: 0)),
-        .rgb(RGBColor(red: 0, green: 0, blue: 1)),
-        .rgb(RGBColor(red: 1, green: 1, blue: 0)),
-        .rgb(RGBColor(red: 1, green: 0, blue: 1)),
-        .rgb(RGBColor(red: 0, green: 1, blue: 1)),
-        .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0.5)),
-        // Add Apple System Colors
-        .appleSystem(.systemBlue),
-        .appleSystem(.systemRed),
-        .appleSystem(.systemGreen),
-        .appleSystem(.systemYellow),
-        .appleSystem(.systemOrange),
-        .appleSystem(.systemPurple),
-        .appleSystem(.systemPink),
-        .appleSystem(.systemTeal),
-        .appleSystem(.systemIndigo),
-        .appleSystem(.systemBrown)
+    // Basic colors available in all modes
+    static let basicColors: [VectorColor] = [
+        .black, .white, .clear
     ]
 }
 

@@ -425,7 +425,7 @@ class ColorPalette: ObservableObject, Codable {
     }
     
     static let defaultPalettes: [ColorPalette] = [
-        ColorPalette(name: "Basic", colors: VectorColor.defaultColors),
+        ColorPalette(name: "Basic", colors: VectorColor.basicColors),
         ColorPalette(name: "Pantone", colors: ColorManagement.loadPantoneColors().map { .pantone($0) }),
         ColorPalette(name: "Web Safe", colors: createWebSafePalette()),
         ColorPalette(name: "Material Design", colors: createMaterialDesignPalette())

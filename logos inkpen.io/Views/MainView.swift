@@ -110,6 +110,7 @@ struct MainView: View {
                     } else {
                         document.defaultFillColor = color
                     }
+                    // ONLY add to swatches when explicitly using color picker
                     document.addColorSwatch(color)
                 }
             )

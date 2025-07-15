@@ -824,7 +824,10 @@ struct ColorPanel: View {
             $0.name.localizedCaseInsensitiveContains(searchQuery)
         }) {
             let pantoneColor = VectorColor.pantone(foundColor)
-            document.addColorSwatch(pantoneColor)
+            // Only add to swatches when explicitly searching and finding
+            if !document.colorSwatches.contains(pantoneColor) {
+                document.addColorSwatch(pantoneColor)
+            }
             searchText = ""
         }
     }

@@ -236,14 +236,26 @@ struct StrokeFillPanel: View {
             ColorPickerModal(
                 document: document,
                 title: "Stroke Color",
-                onColorSelected: updateStrokeColor
+                onColorSelected: { color in
+                    updateStrokeColor(color)
+                    // Only add to swatches if not already present
+                    if !document.colorSwatches.contains(color) {
+                        document.addColorSwatch(color)
+                    }
+                }
             )
         }
         .sheet(isPresented: $showingFillColorPicker) {
             ColorPickerModal(
                 document: document,
                 title: "Fill Color",
-                onColorSelected: updateFillColor
+                onColorSelected: { color in
+                    updateFillColor(color)
+                    // Only add to swatches if not already present
+                    if !document.colorSwatches.contains(color) {
+                        document.addColorSwatch(color)
+                    }
+                }
             )
         }
     }
