@@ -1639,19 +1639,21 @@ class VectorDocument: ObservableObject, Codable {
                 return false
             }
             
-            if let excludedPath = ProfessionalPathOperations.exclude(paths[0], paths[1]) {
-                let topmostShape = selectedShapes.last! // Last = topmost
+            let excludedPaths = ProfessionalPathOperations.exclude(paths[0], paths[1])
+            let topmostShape = selectedShapes.last! // Last = topmost
+            
+            for (index, excludedPath) in excludedPaths.enumerated() {
                 let excludedShape = VectorShape(
-                    name: "Excluded Shape",
+                    name: "Excluded Shape \(index + 1)",
                     path: VectorPath(cgPath: excludedPath),
                     strokeStyle: topmostShape.strokeStyle,
                     fillStyle: topmostShape.fillStyle,
                     transform: .identity,
                     opacity: topmostShape.opacity
                 )
-                resultShapes = [excludedShape]
-                print("✅ EXCLUDE: Result takes topmost object's color (\(topmostShape.name))")
+                resultShapes.append(excludedShape)
             }
+            print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .divide:

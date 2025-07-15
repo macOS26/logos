@@ -89,7 +89,7 @@ class ProfessionalPathOperations {
     }
     
     /// EXCLUDE: Removes overlapping areas, keeps non-overlapping (Adobe Illustrator "Exclude")
-    static func exclude(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
+    static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return professionalExclude(path1, path2)
     }
     
@@ -570,7 +570,7 @@ class PathOperations {
         return minusFront(frontPath, from: backPath)
     }
     
-    static func exclude(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
+    static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return ProfessionalPathOperations.professionalExclude(path1, path2)
     }
     

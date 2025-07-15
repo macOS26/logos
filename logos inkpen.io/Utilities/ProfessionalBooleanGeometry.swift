@@ -615,38 +615,92 @@ extension ProfessionalPathOperations {
     }
     
     /// PROFESSIONAL EXCLUDE: Remove overlapping areas (Adobe Illustrator "Exclude")
-    static func professionalExclude(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
+    /// Like Divide but WITHOUT the overlapping pieces - only returns non-overlapping parts
+    static func professionalExclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         guard !path1.isEmpty && !path2.isEmpty else {
             // If one path is empty, return the other (Adobe Illustrator behavior)
-            return path1.isEmpty ? path2 : path1
+            let nonEmptyPath = path1.isEmpty ? path2 : path1
+            return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
         
-        print("🔨 PROFESSIONAL EXCLUDE: Processing")
+        print("🔨 PROFESSIONAL EXCLUDE (ClipperPaths): Processing - like Divide but without overlapping pieces")
         
-        let polygon1 = ProfessionalBooleanGeometry.cgPathToPolygon(path1)
-        let polygon2 = ProfessionalBooleanGeometry.cgPathToPolygon(path2)
+        // Convert to ClipperPaths
+        let clipperPath1 = cgPathToClipperPath(path1)
+        let clipperPath2 = cgPathToClipperPath(path2)
         
-        let result = ProfessionalBooleanGeometry.exclusion(polygon1, polygon2)
-        let resultPath = ProfessionalBooleanGeometry.polygonToCGPath(result)
+        guard clipperPath1.count >= 3 && clipperPath2.count >= 3 else {
+            print("⚠️ Invalid polygons for exclude operation")
+            return [path1, path2]
+        }
         
-        if resultPath.isEmpty || resultPath.boundingBoxOfPath.isEmpty {
-            print("❌ EXCLUDE failed - using union fallback")
+        var resultPaths: [CGPath] = []
+        
+        // STEP 1: Get unique part of path1 (path1 - path2)
+        let clipper1 = Clipper()
+        clipper1.addPath(clipperPath1, .subject, true)
+        clipper1.addPath(clipperPath2, .clip, true)
+        
+        var solution1 = ClipperPaths()
+        do {
+            let success = try clipper1.execute(clipType: .difference, solution: &solution1, fillType: .nonZero)
+            if success {
+                for clipperPath in solution1 {
+                    if clipperPath.count >= 3 {
+                        let cgPath = clipperPathsToCGPath([clipperPath])
+                        if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                            resultPaths.append(cgPath)
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("❌ Error getting unique part of path1: \(error)")
+        }
+        
+        // STEP 2: Get unique part of path2 (path2 - path1)
+        let clipper2 = Clipper()
+        clipper2.addPath(clipperPath2, .subject, true)
+        clipper2.addPath(clipperPath1, .clip, true)
+        
+        var solution2 = ClipperPaths()
+        do {
+            let success = try clipper2.execute(clipType: .difference, solution: &solution2, fillType: .nonZero)
+            if success {
+                for clipperPath in solution2 {
+                    if clipperPath.count >= 3 {
+                        let cgPath = clipperPathsToCGPath([clipperPath])
+                        if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                            resultPaths.append(cgPath)
+                        }
+                    }
+                }
+            }
+        } catch {
+            print("❌ Error getting unique part of path2: \(error)")
+        }
+        
+        // NOTE: We deliberately DO NOT include the intersection (overlapping part)
+        // This is what makes Exclude different from Divide
+        
+        if !resultPaths.isEmpty {
+            print("✅ PROFESSIONAL EXCLUDE (ClipperPaths): Success - \(resultPaths.count) non-overlapping pieces")
+            return resultPaths
+        } else {
+            print("⚠️ EXCLUDE result is empty - no non-overlapping parts found")
             
             // Check if paths actually overlap
             let bounds1 = path1.boundingBoxOfPath
             let bounds2 = path2.boundingBoxOfPath
             
             if !bounds1.intersects(bounds2) {
-                print("  → No overlap, returning union of both paths")
-                return professionalUnite([path1, path2])
+                print("  → No overlap, returning both paths separately")
+                return [path1, path2]
+            } else {
+                print("  → Paths completely overlap, returning empty array")
+                return []
             }
-            
-            // Return union as fallback
-            return professionalUnite([path1, path2])
         }
-        
-        print("✅ PROFESSIONAL EXCLUDE: Success")
-        return resultPath
     }
     
     /// PROFESSIONAL MINUS BACK: Back subtracts from front (Adobe Illustrator "Minus Back")
