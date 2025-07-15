@@ -43,6 +43,7 @@ struct VerticalToolbar: View {
                                 : Color.clear
                             )
                             .cornerRadius(4)
+                            .contentShape(Rectangle()) // Extend hit area to match entire button area
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help(toolTooltip(for: tool))
@@ -185,6 +186,7 @@ struct ColorSwatchGrid: View {
                         .frame(width: 20, height: 20)  // 20x20 as requested
                         .border(Color.gray, width: 0.5)  // Match grid border
                         // NO cornerRadius - completely square like grid
+                        .contentShape(Rectangle()) // Extend hit area to match entire color area
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Current Fill Color: \(currentFillColor) (Used by pen tool and all shape tools)")
@@ -197,6 +199,7 @@ struct ColorSwatchGrid: View {
                         .frame(width: 20, height: 20)  // 20x20 as requested
                         .border(Color.gray, width: 0.5)  // Match grid border
                         // NO cornerRadius - completely square like grid
+                        .contentShape(Rectangle()) // Extend hit area to match entire color area
                 }
                 .buttonStyle(PlainButtonStyle())
                 .help("Current Stroke Color: \(currentStrokeColor) (Used by pen tool and all shape tools)")
@@ -224,6 +227,7 @@ struct ColorSwatchGrid: View {
                             .fill(color.color)
                             .frame(width: 10, height: 10)
                             .border(Color.gray, width: 0.5)
+                            .contentShape(Rectangle()) // Extend hit area to match entire swatch area
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("\(colorDescription(for: color)) (Click for fill, Option+Click for stroke)")

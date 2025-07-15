@@ -86,6 +86,7 @@ struct PanelTabBar: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                     .background(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
+                    .contentShape(Rectangle()) // Extend hit area to match entire highlight area
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -1268,6 +1269,7 @@ struct PathfinderOperationButton: View {
                             .stroke(isEnabled ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 0.5)
                     )
             )
+            .contentShape(Rectangle()) // Extend hit area to match entire button background
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(!isEnabled)
@@ -1419,6 +1421,7 @@ struct ProfessionalOffsetPathSection: View {
                                                     .stroke(selectedJoinType == joinType ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 0.5)
                                             )
                                     )
+                                    .contentShape(Rectangle()) // Extend hit area to match entire button background
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .help(joinType.description)
