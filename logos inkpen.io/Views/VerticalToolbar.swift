@@ -174,64 +174,88 @@ struct ColorSwatchGrid: View {
         return document.defaultStrokeColor  // Show default color for new shapes
     }
     
+    // Get current fill opacity (from selected shapes or default)
+    private var currentFillOpacity: Double {
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.fillStyle?.opacity {
+            return opacity
+        }
+        return document.defaultFillOpacity
+    }
+    
+    // Get current stroke opacity (from selected shapes or default)
+    private var currentStrokeOpacity: Double {
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.strokeStyle?.opacity {
+            return opacity
+        }
+        return document.defaultStrokeOpacity
+    }
+    
     var body: some View {
         VStack(spacing: 4) {
             // Current Fill and Stroke Colors - Adobe Illustrator Style (overlapping squares)
             ZStack {
                 // Stroke color (background, bottom-right)
                 Button {
-                    applyStrokeColorToSelected(currentStrokeColor)
+                    document.activeColorTarget = .stroke
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(width: 22, height: 22)
-                                .border(Color.gray, width: 0.5)
+                                .border(document.activeColorTarget == .stroke ? Color.blue : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
                             
                             Path { path in
-                                path.move(to: CGPoint(x: 1, y: 21))
-                                path.addLine(to: CGPoint(x: 21, y: 1))
+                                path.move(to: CGPoint(x: 22, y: 0))
+                                path.addLine(to: CGPoint(x: 0, y: 22))
                             }
                             .stroke(Color.red, lineWidth: 1.5)
+                            .frame(width: 22, height: 22)
                         }
                     } else {
                         Rectangle()
-                            .fill(currentStrokeColor.color)
+                            .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                             .frame(width: 22, height: 22)
-                            .border(Color.gray, width: 0.5)
+                            .border(document.activeColorTarget == .stroke ? Color.blue : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Current Stroke Color: \(currentStrokeColor)")
+                .help("Current Stroke Color: \(currentStrokeColor) (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)  // Bottom-right offset
                 
                 // Fill color (foreground, top-left)
                 Button {
-                    applyFillColorToSelected(currentFillColor)
+                    document.activeColorTarget = .fill
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(width: 22, height: 22)
-                                .border(Color.gray, width: 0.5)
+                                .border(document.activeColorTarget == .fill ? Color.blue : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
                             
                             Path { path in
-                                path.move(to: CGPoint(x: 1, y: 21))
-                                path.addLine(to: CGPoint(x: 21, y: 1))
+                                path.move(to: CGPoint(x: 22, y: 0))
+                                path.addLine(to: CGPoint(x: 0, y: 22))
                             }
                             .stroke(Color.red, lineWidth: 1.5)
+                            .frame(width: 22, height: 22)
                         }
                     } else {
                         Rectangle()
-                            .fill(currentFillColor.color)
+                            .fill(currentFillColor.color.opacity(currentFillOpacity))
                             .frame(width: 22, height: 22)
-                            .border(Color.gray, width: 0.5)
+                            .border(document.activeColorTarget == .fill ? Color.blue : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Current Fill Color: \(currentFillColor)")
+                .help("Current Fill Color: \(currentFillColor) (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
                 .offset(x: -6, y: -6)  // Top-left offset
             }
             .frame(width: 34, height: 34)  // Total frame to contain both squares
@@ -241,17 +265,17 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.colorSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        // FIXED: Update default colors for future shapes AND apply to selected
-                        if NSEvent.modifierFlags.contains(.option) {
+                        // Apply color to the currently active target (fill or stroke)
+                        if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
-                            print("🎨 TOOLBAR: Set default stroke color: \(color) - pen tool will now use this")
+                            print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
-                            print("🎨 TOOLBAR: Set default fill color: \(color) - pen tool will now use this")
+                            print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
                         }
                     } label: {
                         ZStack {
@@ -271,16 +295,17 @@ struct ColorSwatchGrid: View {
                             // Red slash overlay for clear color
                             if case .clear = color {
                                 Path { path in
-                                    path.move(to: CGPoint(x: 1, y: 9))
-                                    path.addLine(to: CGPoint(x: 9, y: 1))
+                                    path.move(to: CGPoint(x: 10, y: 0))
+                                    path.addLine(to: CGPoint(x: 0, y: 10))
                                 }
                                 .stroke(Color.red, lineWidth: 1)
+                                .frame(width: 10, height: 10)
                             }
                         }
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("\(colorDescription(for: color)) (Click for fill, Option+Click for stroke)")
+                    .help("\(colorDescription(for: color)) (Click to apply to \(document.activeColorTarget == .fill ? "fill" : "stroke"))")
                 }
             }
             .padding(.horizontal, 2)
@@ -296,7 +321,21 @@ struct ColorSwatchGrid: View {
             .buttonStyle(PlainButtonStyle())
             .help("Add Custom Color")
             .sheet(isPresented: $showingColorPicker) {
-                CustomColorPicker(document: document)
+                ColorPickerModal(
+                    document: document,
+                    title: "Add Color", 
+                    onColorSelected: { color in
+                        // Apply to active target
+                        if document.activeColorTarget == .stroke {
+                            document.defaultStrokeColor = color
+                            applyStrokeColorToSelected(color)
+                        } else {
+                            document.defaultFillColor = color
+                            applyFillColorToSelected(color)
+                        }
+                        document.addColorSwatch(color)
+                    }
+                )
             }
         }
     }
@@ -385,49 +424,7 @@ struct ColorSwatchGrid: View {
     }
 }
 
-struct CustomColorPicker: View {
-    @ObservedObject var document: VectorDocument
-    @Environment(\.presentationMode) var presentationMode
-    @State private var selectedColor = Color.red
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                // Color Picker
-                ColorPicker("Select Color", selection: $selectedColor)
-                    .labelsHidden()
-                    .scaleEffect(2.0)
-                    .frame(height: 200)
-                
-                // Add to Swatches Button
-                Button("Add to Swatches") {
-                    let rgbColor = RGBColor(
-                        red: selectedColor.components.red,
-                        green: selectedColor.components.green,
-                        blue: selectedColor.components.blue,
-                        alpha: selectedColor.components.alpha
-                    )
-                    let vectorColor = VectorColor.rgb(rgbColor)
-                    document.addColorSwatch(vectorColor)
-                    presentationMode.wrappedValue.dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Add Color")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-        }
-        .frame(width: 300, height: 400)
-    }
-}
+
 
 // Preview
 struct VerticalToolbar_Previews: PreviewProvider {

@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Color Rendering Helper (shared)
 
 @ViewBuilder
-func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5) -> some View {
+func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
     if case .clear = color {
         ZStack {
             if cornerRadius > 0 {
@@ -33,15 +33,15 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
             
             // Diagonal slash through the clear color
             Path { path in
-                path.move(to: CGPoint(x: 1, y: height - 1))
-                path.addLine(to: CGPoint(x: width - 1, y: 1))
+                path.move(to: CGPoint(x: width - 1, y: 0))
+                path.addLine(to: CGPoint(x: 0, y: height - 1))
             }
             .stroke(Color.red, lineWidth: max(1, width / 15))
         }
     } else {
         if cornerRadius > 0 {
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(color.color)
+                .fill(color.color.opacity(opacity))
                 .frame(width: width, height: height)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
@@ -49,7 +49,7 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
                 )
         } else {
             Rectangle()
-                .fill(color.color)
+                .fill(color.color.opacity(opacity))
                 .frame(width: width, height: height)
                 .overlay(
                     Rectangle()
@@ -626,6 +626,12 @@ struct ColorPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
+    let onColorSelected: ((VectorColor) -> Void)?
+    
+    init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil) {
+        self.document = document
+        self.onColorSelected = onColorSelected
+    }
     
     var body: some View {
             VStack(alignment: .leading, spacing: 16) {
@@ -806,6 +812,8 @@ struct ColorPanel: View {
                 }
             }
         }
+        
+        onColorSelected?(color)
     }
     
     private func searchPantoneColor(_ searchQuery: String) {
@@ -2262,6 +2270,36 @@ struct PantoneColorPickerSheet: View {
         .onChange(of: searchText) { oldValue, newValue in
             selectedColor = filteredColors.first
         }
+    }
+}
+
+// MARK: - Professional Color Picker Modal
+
+struct ColorPickerModal: View {
+    @ObservedObject var document: VectorDocument
+    @Environment(\.presentationMode) var presentationMode
+    let title: String
+    let onColorSelected: (VectorColor) -> Void
+    
+    var body: some View {
+        NavigationView {
+            ColorPanel(document: document, onColorSelected: onColorSelected)
+                .navigationTitle(title)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Done") {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }
+                }
+        }
+        .frame(width: 300, height: 500)
     }
 }
 

@@ -133,6 +133,8 @@ struct StrokeFillPanel: View {
                     CurrentColorsView(
                         strokeColor: selectedStrokeColor,
                         fillColor: selectedFillColor,
+                        strokeOpacity: strokeOpacity,
+                        fillOpacity: fillOpacity,
                         onStrokeColorTap: { showingStrokeColorPicker = true },
                         onFillColorTap: { showingFillColorPicker = true }
                     )
@@ -231,19 +233,17 @@ struct StrokeFillPanel: View {
             .padding()
         }
         .sheet(isPresented: $showingStrokeColorPicker) {
-            ColorPickerSheet(
-                selectedColor: selectedStrokeColor,
+            ColorPickerModal(
                 document: document,
                 title: "Stroke Color",
-                onColorChanged: updateStrokeColor
+                onColorSelected: updateStrokeColor
             )
         }
         .sheet(isPresented: $showingFillColorPicker) {
-            ColorPickerSheet(
-                selectedColor: selectedFillColor,
+            ColorPickerModal(
                 document: document,
                 title: "Fill Color",
-                onColorChanged: updateFillColor
+                onColorSelected: updateFillColor
             )
         }
     }
@@ -475,6 +475,8 @@ struct StrokeFillPanel: View {
 struct CurrentColorsView: View {
     let strokeColor: VectorColor
     let fillColor: VectorColor
+    let strokeOpacity: Double
+    let fillOpacity: Double
     let onStrokeColorTap: () -> Void
     let onFillColorTap: () -> Void
     
@@ -483,7 +485,7 @@ struct CurrentColorsView: View {
             // Fill Color
             VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onFillColorTap) {
-                    renderColorSwatch(fillColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5)
+                    renderColorSwatchRightPanel(fillColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5, opacity: fillOpacity)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -496,7 +498,7 @@ struct CurrentColorsView: View {
             // Stroke Color
             VStack(spacing: 12) {  // Increased spacing between swatch and label
                 Button(action: onStrokeColorTap) {
-                    renderColorSwatch(strokeColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5)
+                    renderColorSwatchRightPanel(strokeColor, width: 60, height: 60, cornerRadius: 4, borderWidth: 1.5, opacity: strokeOpacity)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -944,6 +946,8 @@ struct GradientFillSection: View {
     }
 }
 
+// REMOVED: ColorPickerSheet - replaced with ColorPickerModal from RightPanel
+/*
 struct ColorPickerSheet: View {
     let selectedColor: VectorColor
     @ObservedObject var document: VectorDocument
@@ -1133,6 +1137,7 @@ struct ColorPickerSheet: View {
         )
     }
 }
+*/
 
 // Style Presets
 struct StylePreset {
@@ -1531,79 +1536,11 @@ extension CGLineCap {
     }
 }
 
-// MARK: - Clear Color Rendering Helper
-
-struct ClearColorView: View {
-    let width: CGFloat
-    let height: CGFloat
-    let cornerRadius: CGFloat
-    let borderWidth: CGFloat
-    let slashWidth: CGFloat
-    
-    init(width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, slashWidth: CGFloat = 1) {
-        self.width = width
-        self.height = height
-        self.cornerRadius = cornerRadius
-        self.borderWidth = borderWidth
-        self.slashWidth = slashWidth
-    }
-    
-    var body: some View {
-        ZStack {
-            if cornerRadius > 0 {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: width, height: height)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color.gray, lineWidth: borderWidth)
-                    )
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: width, height: height)
-                    .border(Color.gray, width: borderWidth)
-            }
-            
-            // Diagonal slash through the clear color
-            Path { path in
-                path.move(to: CGPoint(x: 1, y: height - 1))
-                path.addLine(to: CGPoint(x: width - 1, y: 1))
-            }
-            .stroke(Color.red, lineWidth: slashWidth)
-        }
-    }
-}
+// MARK: - Clear Color Rendering
+// Note: ClearColorView removed - using renderColorSwatchRightPanel for consistency
 
 // MARK: - Color Rendering Helper
-
-@ViewBuilder
-func renderColorSwatch(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5) -> some View {
-    if case .clear = color {
-        ClearColorView(
-            width: width,
-            height: height,
-            cornerRadius: cornerRadius,
-            borderWidth: borderWidth,
-            slashWidth: max(1, width / 20)
-        )
-    } else {
-        if cornerRadius > 0 {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(color.color)
-                .frame(width: width, height: height)
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(Color.gray, lineWidth: borderWidth)
-                )
-        } else {
-            Rectangle()
-                .fill(color.color)
-                .frame(width: width, height: height)
-                .border(Color.gray, width: borderWidth)
-        }
-    }
-}
+// Note: Using renderColorSwatchRightPanel from RightPanel.swift for consistency
 
 // Preview
 struct StrokeFillPanel_Previews: PreviewProvider {

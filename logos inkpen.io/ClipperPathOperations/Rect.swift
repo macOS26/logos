@@ -97,4 +97,3 @@ extension ClipperPaths {
         return result
     }
 }
-

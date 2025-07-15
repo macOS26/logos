@@ -100,7 +100,19 @@ struct MainView: View {
             ExportView(document: document)
         }
         .sheet(isPresented: $showingColorPicker) {
-            ColorPickerView(document: document)
+            ColorPickerModal(
+                document: document,
+                title: "Color Picker",
+                onColorSelected: { color in
+                    // Apply to active target and add to swatches
+                    if document.activeColorTarget == .stroke {
+                        document.defaultStrokeColor = color
+                    } else {
+                        document.defaultFillColor = color
+                    }
+                    document.addColorSwatch(color)
+                }
+            )
         }
         .fileImporter(
             isPresented: $showingImportDialog,
@@ -1612,88 +1624,7 @@ struct ExportView: View {
     }
 }
 
-struct ColorPickerView: View {
-    @ObservedObject var document: VectorDocument
-    @Environment(\.presentationMode) var presentationMode
-    @State private var selectedColor = Color.red
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                // Color Picker
-                ColorPicker("Select Color", selection: $selectedColor)
-                    .labelsHidden()
-                    .scaleEffect(2.0)
-                    .frame(height: 200)
-                
-                // Color Mode Picker
-                Picker("Color Mode", selection: $document.settings.colorMode) {
-                    ForEach(ColorMode.allCases, id: \.self) { mode in
-                        HStack {
-                            Image(systemName: mode.iconName)
-                            Text(mode.rawValue)
-                        }
-                        .tag(mode)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                
-                // Current Swatches
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(40), spacing: 8), count: 6), spacing: 8) {
-                    ForEach(Array(document.colorSwatches.enumerated()), id: \.offset) { index, color in
-                        Rectangle()
-                            .fill(color.color)
-                            .frame(width: 40, height: 40)
-                            .border(Color.gray, width: 1)
-                            .onTapGesture {
-                                selectedColor = color.color
-                            }
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Color Picker")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add to Swatches") {
-                        addColorToSwatches()
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-        }
-        .frame(width: 400, height: 500)
-    }
-    
-    private func addColorToSwatches() {
-        let rgbColor = RGBColor(red: selectedColor.components.red, green: selectedColor.components.green, blue: selectedColor.components.blue)
-        let vectorColor = VectorColor.rgb(rgbColor)
-        document.addColorSwatch(vectorColor)
-    }
-}
 
-// Helper extension for Color components
-extension Color {
-    var components: (red: Double, green: Double, blue: Double, alpha: Double) {
-        let nsColor = NSColor(self)
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-        
-        nsColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        
-        return (red: Double(red), green: Double(green), blue: Double(blue), alpha: Double(alpha))
-    }
-}
 
 // MARK: - Import Result View
 

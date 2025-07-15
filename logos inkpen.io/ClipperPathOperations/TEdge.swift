@@ -38,9 +38,7 @@ extension TEdge: Equatable {
     public static func == (lhs: TEdge, rhs: TEdge) -> Bool {
         return lhs === rhs
     }
-}
 
-extension TEdge {
     static func initEdge(edge: TEdge, next: TEdge, prev: TEdge, pt: CGPoint) {
         edge.next = next
         edge.prev = prev
@@ -105,10 +103,6 @@ extension TEdge {
         }
         return e
     }
-}
-
-
-extension TEdge {
     
     func isSlopesEqual(with edge: TEdge) -> Bool {
         return (self.top.y - self.bot.y) * (edge.top.x - edge.bot.x) == (self.top.x - self.bot.x) * (edge.top.y - edge.bot.y)
@@ -212,7 +206,4 @@ extension TEdge {
         }
         return ip
     }
-    
-    
-    
 }

@@ -145,5 +145,4 @@ extension PolyTree {
         addPolyNodeToPaths(polynode: self, nt: .any, paths: &result)
         return result
     }
-    
 }

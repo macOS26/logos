@@ -121,6 +121,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     
+    // ACTIVE COLOR STATE (Adobe Illustrator Standard)
+    @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
+    
     private let maxUndoStackSize = 50
     
     init(settings: DocumentSettings = DocumentSettings()) {

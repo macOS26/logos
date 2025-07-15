@@ -23,6 +23,12 @@ enum ColorMode: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - Active Color Target
+enum ColorTarget: String, CaseIterable, Codable {
+    case fill = "Fill"
+    case stroke = "Stroke"
+}
+
 // MARK: - Color Definitions
 struct RGBColor: Codable, Hashable {
     var red: Double
@@ -482,4 +488,21 @@ struct AppleSystemColor: Codable, Hashable {
         .systemGroupedBackground, .secondarySystemGroupedBackground, .tertiarySystemGroupedBackground,
         .systemFill, .secondarySystemFill, .tertiarySystemFill, .quaternarySystemFill
     ]
+}
+
+// MARK: - Helper Extensions
+
+// Helper extension for Color components
+extension Color {
+    var components: (red: Double, green: Double, blue: Double, alpha: Double) {
+        let nsColor = NSColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        nsColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        return (red: Double(red), green: Double(green), blue: Double(blue), alpha: Double(alpha))
+    }
 }

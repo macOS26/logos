@@ -19,11 +19,7 @@ extension CGPoint: @retroactive ExpressibleByArrayLiteral {
             self.y = 0
         }
     }
-        
-}
 
-extension CGPoint {
-    
     public func isSlopesEqual(_ pt1: CGPoint, _ pt3: CGPoint) -> Bool {
         return (pt1.y-self.y)*(self.x-pt3.x) == (pt1.x-self.x)*(self.y-pt3.y)
     }
@@ -115,8 +111,6 @@ extension CGPoint {
     static func / (left:CGPoint,right:CGFloat) -> CGPoint {
         return CGPoint(x: left.x/right,y: left.y/right)
     }
-
-    
 }
 
 extension Int {
@@ -130,4 +124,3 @@ extension CGFloat {
         return Int(self)
     }
 }
-
