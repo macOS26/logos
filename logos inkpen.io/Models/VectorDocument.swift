@@ -1727,24 +1727,47 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
             
         case .crop:
-            // CROP: Use topmost shape to crop others, cropped objects retain original colors, removes strokes
-            let croppedPaths = ProfessionalPathOperations.crop(paths)
+            // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
+            let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
             
-            for (index, croppedPath) in croppedPaths.enumerated() {
-                guard index < selectedShapes.count - 1 else { break } // Exclude topmost (crop shape)
-                let originalShape = selectedShapes[index]
+            // Adobe Illustrator Crop: Each resulting piece maintains the color of its original shape
+            var shapeCounters: [Int: Int] = [:]
+            
+            for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
+                guard originalShapeIndex < selectedShapes.count else { continue }
                 
-                let croppedShape = VectorShape(
-                    name: "Cropped \(originalShape.name)",
-                    path: VectorPath(cgPath: croppedPath),
-                    strokeStyle: nil, // CROP removes strokes (Adobe Illustrator standard)
-                    fillStyle: originalShape.fillStyle,
-                    transform: .identity,
-                    opacity: originalShape.opacity
-                )
-                resultShapes.append(croppedShape)
+                let originalShape = selectedShapes[originalShapeIndex]
+                
+                if isInvisibleCropShape {
+                    // Top shape becomes invisible (no fill, no stroke)
+                    let invisibleCropShape = VectorShape(
+                        name: "Crop Boundary (\(originalShape.name))",
+                        path: VectorPath(cgPath: croppedPath),
+                        strokeStyle: nil, // No stroke
+                        fillStyle: nil,   // No fill - invisible
+                        transform: .identity,
+                        opacity: originalShape.opacity
+                    )
+                    resultShapes.append(invisibleCropShape)
+                    print("   ✅ Created invisible crop boundary from \(originalShape.name)")
+                } else {
+                    // Track how many pieces we've created from this original shape
+                    shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
+                    let pieceNumber = shapeCounters[originalShapeIndex]!
+                    
+                    let croppedShape = VectorShape(
+                        name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
+                        path: VectorPath(cgPath: croppedPath),
+                        strokeStyle: nil, // CROP removes strokes (Adobe Illustrator standard)
+                        fillStyle: originalShape.fillStyle,
+                        transform: .identity,
+                        opacity: originalShape.opacity
+                    )
+                    resultShapes.append(croppedShape)
+                }
             }
-            print("✅ CROP: Created \(resultShapes.count) cropped shapes, removed strokes")
+            
+            print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
             
         case .outline:
             // OUTLINE: Convert fills to strokes/outlines

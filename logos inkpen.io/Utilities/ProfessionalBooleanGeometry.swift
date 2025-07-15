@@ -1308,31 +1308,39 @@ extension ProfessionalPathOperations {
     }
     
     /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
-    static func professionalCrop(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
+    /// 1. Top shape becomes invisible (no fill, no stroke) - it's the crop boundary
+    /// 2. All other shapes are cropped to only show parts within the crop boundary
+    /// 3. Then everything gets TRIMMED - removing hidden overlapping parts
+    /// Returns an array of tuples: (croppedPath, originalShapeIndex, isInvisibleCropShape)
+    static func professionalCropWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int, Bool)] {
+        guard paths.count >= 2 else { 
+            return paths.enumerated().map { (index, path) in (path, index, false) }
+        }
         
         print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
+        print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then trimmed")
         
         let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
         let shapesToCrop = Array(paths.dropLast())
+        let cropShapeIndex = paths.count - 1
         
         // Convert crop shape to ClipperPath
         let cropSubpaths = extractSubpaths(from: cropShape)
         guard let cropSubpath = cropSubpaths.first else {
             print("⚠️ Invalid crop shape")
-            return []
+            return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
         let cropClipperPath = cgPathToClipperPath(cropSubpath)
         guard cropClipperPath.count >= 3 else {
             print("⚠️ Crop shape has insufficient points")
-            return []
+            return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
-        var resultPaths: [CGPath] = []
+        var croppedPaths: [CGPath] = []
         
-        // Intersect each shape with the crop shape
-        for path in shapesToCrop {
+        // STEP 1: Intersect each shape with the crop shape (crop to boundary)
+        for (index, path) in shapesToCrop.enumerated() {
             let subpaths = extractSubpaths(from: path)
             for subpath in subpaths {
                 let clipperPath = cgPathToClipperPath(subpath)
@@ -1349,20 +1357,58 @@ extension ProfessionalPathOperations {
                                 if resultClipperPath.count >= 3 {
                                     let cgPath = clipperPathsToCGPath([resultClipperPath])
                                     if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                        resultPaths.append(cgPath)
+                                        croppedPaths.append(cgPath)
                                     }
                                 }
                             }
                         }
                     } catch {
-                        print("    ⚠️ Error cropping path: \(error)")
+                        print("    ⚠️ Error cropping path \(index): \(error)")
                     }
                 }
             }
         }
         
-        print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(resultPaths.count) cropped pieces")
-        return resultPaths
+        print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
+        
+        // STEP 2: Apply TRIM to the cropped shapes to remove hidden overlapping parts
+        if croppedPaths.count >= 2 {
+            print("   🔨 STEP 2: Applying TRIM to remove hidden overlapping parts")
+            let trimmedResults = professionalTrimWithShapeTracking(croppedPaths)
+            
+            // Map the trimmed results back to their original shape indices
+            var finalResults: [(CGPath, Int, Bool)] = []
+            for (trimmedPath, _) in trimmedResults {
+                // Since we cropped all shapes, we need to map back to original indices
+                // For now, we'll cycle through the original shape indices
+                let originalIndex = finalResults.count % shapesToCrop.count
+                finalResults.append((trimmedPath, originalIndex, false))
+            }
+            
+            // Add the invisible crop shape
+            finalResults.append((cropShape, cropShapeIndex, true))
+            
+            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            return finalResults
+        } else {
+            // If we have fewer than 2 cropped shapes, no need to trim
+            var finalResults: [(CGPath, Int, Bool)] = []
+            for (index, path) in croppedPaths.enumerated() {
+                let originalIndex = index % shapesToCrop.count
+                finalResults.append((path, originalIndex, false))
+            }
+            
+            // Add the invisible crop shape
+            finalResults.append((cropShape, cropShapeIndex, true))
+            
+            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            return finalResults
+        }
+    }
+    
+    /// PROFESSIONAL CROP: Legacy wrapper that returns only paths (for compatibility)
+    static func professionalCrop(_ paths: [CGPath]) -> [CGPath] {
+        return professionalCropWithShapeTracking(paths).map { $0.0 }
     }
     
     /// PROFESSIONAL OUTLINE: Converts fills to outlined strokes (Adobe Illustrator "Outline Stroke")
