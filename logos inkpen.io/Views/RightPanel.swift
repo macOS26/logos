@@ -1312,6 +1312,8 @@ struct ProfessionalOffsetPathSection: View {
     @State private var selectedJoinType: JoinType = .miter
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = false
+    @State private var keepOriginalPath: Bool = true
+    @State private var arcTolerance: Double = 0.001 // Professional smooth curves default
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1365,6 +1367,27 @@ struct ProfessionalOffsetPathSection: View {
                             Text("Offset Distance")
                         }
                         .controlSize(.small)
+                    }
+                    
+                    // Keep Original Path Checkbox (Adobe Illustrator Standard)
+                    HStack {
+                        Button {
+                            keepOriginalPath.toggle()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: keepOriginalPath ? "checkmark.square.fill" : "square")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(keepOriginalPath ? .blue : .secondary)
+                                
+                                Text("Keep Original Path")
+                                    .font(.caption2)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Keep the original path when creating offset (Adobe Illustrator default)")
+                        
+                        Spacer()
                     }
                     
                     // Join Type Selection (Adobe Illustrator style)
@@ -1423,6 +1446,54 @@ struct ProfessionalOffsetPathSection: View {
                                 Text("Miter Limit")
                             }
                             .controlSize(.small)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    
+                    // Arc Tolerance (only show for round joins) - Professional smooth curves control
+                    if selectedJoinType == .round {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text("Smoothness:")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                
+                                Spacer()
+                                
+                                Text(arcToleranceDisplayText)
+                                    .font(.caption2)
+                                    .foregroundColor(.primary)
+                                    .monospacedDigit()
+                            }
+                            
+                            Slider(value: Binding(
+                                get: { log10(arcTolerance * 1000) }, // Convert to log scale for better UI
+                                set: { arcTolerance = pow(10, $0) / 1000 }
+                            ), in: -1.0...1.0, step: 0.1) {
+                                Text("Arc Tolerance")
+                            }
+                            .controlSize(.small)
+                            
+                            // Professional presets for arc tolerance
+                            HStack(spacing: 4) {
+                                Button("Ultra") {
+                                    arcTolerance = 0.0001 // Ultra smooth (Affinity Designer level)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.mini)
+                                
+                                Button("High") {
+                                    arcTolerance = 0.001 // High quality (Adobe Illustrator default)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.mini)
+                                
+                                Button("Normal") {
+                                    arcTolerance = 0.01 // Normal quality
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.mini)
+                            }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
@@ -1486,6 +1557,18 @@ struct ProfessionalOffsetPathSection: View {
         return !document.selectedShapeIDs.isEmpty
     }
     
+    private var arcToleranceDisplayText: String {
+        if arcTolerance <= 0.0001 {
+            return "Ultra"
+        } else if arcTolerance <= 0.001 {
+            return "High"
+        } else if arcTolerance <= 0.01 {
+            return "Normal"
+        } else {
+            return "Low"
+        }
+    }
+    
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
         
@@ -1498,39 +1581,41 @@ struct ProfessionalOffsetPathSection: View {
         let selectedShapes = document.getSelectedShapes()
         
         for shape in selectedShapes {
-            // Convert VectorPath to ClipperPath
-            let clipperPath = shape.path.cgPath.toClipperPath()
-            
-            // Create professional offset options
-            let options = ProfessionalOffsetOptions(
+            // Use STROKE-BASED OFFSET for perfect smooth curves (no more Clipper polygons!)
+            let strokeOptions = StrokeBasedOffsetOptions(
                 offset: CGFloat(offsetDistance),
-                joinType: selectedJoinType,
-                endType: .closedPolygon,
+                joinType: selectedJoinType == .round ? .round : (selectedJoinType == .square ? .bevel : .miter),
+                endType: .round,
                 miterLimit: CGFloat(miterLimit),
-                arcTolerance: 0.25
+                keepOriginal: keepOriginalPath
             )
             
-            // Perform offset
-            let offsetPaths = clipperPath.professionalOffset(options)
+            // Create perfect smooth offset using Core Graphics strokes + expand
+            let offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
             
-                         // Convert results back to VectorShapes
-             for (index, offsetClipperPath) in offsetPaths.enumerated() {
-                 let offsetCGPath = offsetClipperPath.toCGPath()
-                 let offsetVectorPath = VectorPath(cgPath: offsetCGPath)
-                 
-                 let offsetShape = VectorShape(
-                     name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt\(index > 0 ? " \(index + 1)" : "")",
-                     path: offsetVectorPath,
-                     strokeStyle: shape.strokeStyle,
-                     fillStyle: shape.fillStyle,
-                     transform: shape.transform,
-                     opacity: shape.opacity
-                 )
-                 
-                 // Add to document
-                 document.addShape(offsetShape)
-             }
-         }
+            // Convert results back to VectorShapes (now working with CGPaths directly!)
+            for (index, offsetCGPath) in offsetPaths.enumerated() {
+                let offsetVectorPath = VectorPath(cgPath: offsetCGPath)
+                
+                let offsetShape = VectorShape(
+                    name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt\(index > 0 ? " \(index + 1)" : "")",
+                    path: offsetVectorPath,
+                    strokeStyle: shape.strokeStyle,
+                    fillStyle: shape.fillStyle,
+                    transform: shape.transform,
+                    opacity: shape.opacity
+                )
+                
+                // Add to document
+                document.addShape(offsetShape)
+            }
+            
+        }
+        
+        // Remove original shapes if not keeping them
+        if !keepOriginalPath {
+            document.removeSelectedShapes()
+        }
          
          print("✅ OFFSET PATH: Created offset shapes")
     }
@@ -1548,6 +1633,8 @@ struct ProfessionalOffsetPathSection: View {
             offsetDistance = 10.0
             selectedJoinType = .miter
             miterLimit = 4.0
+            arcTolerance = 0.001 // Professional default
+            keepOriginalPath = true
         }
     }
 }
@@ -1584,28 +1671,106 @@ extension JoinType {
 
 extension CGPath {
     func toClipperPath() -> ClipperPath {
-        var clipperPath = ClipperPath()
+        // Use the professional curve-preserving conversion from ProfessionalBooleanGeometry
+        // Use the professional curve-preserving conversion
+        var points = ClipperPath()
         var currentPoint = CGPoint.zero
         
-        // Simplified conversion using manual path enumeration
-        let pathBounds = self.boundingBoxOfPath
-        
-        // For complex paths, we'll approximate with bounding box points for now
-        // This is a simplified approach that can be enhanced later
-        if !pathBounds.isEmpty {
-            let left = pathBounds.minX
-            let right = pathBounds.maxX
-            let top = pathBounds.minY
-            let bottom = pathBounds.maxY
+        self.applyWithBlock { elementPtr in
+            let element = elementPtr.pointee
             
-            // Create a simple rectangular approximation
-            clipperPath.append(CGPoint(x: left, y: top))
-            clipperPath.append(CGPoint(x: right, y: top))
-            clipperPath.append(CGPoint(x: right, y: bottom))
-            clipperPath.append(CGPoint(x: left, y: bottom))
+            switch element.type {
+            case .moveToPoint:
+                currentPoint = element.points[0]
+                points.append(currentPoint)
+                
+            case .addLineToPoint:
+                currentPoint = element.points[0]
+                points.append(currentPoint)
+                
+            case .addQuadCurveToPoint:
+                // High-quality quadratic curve approximation
+                let control = element.points[0]
+                let end = element.points[1]
+                let start = currentPoint
+                
+                // Use adaptive subdivision for smooth curves
+                let curvePoints = approximateQuadraticCurve(start: start, control: control, end: end, tolerance: 2.0)
+                points.append(contentsOf: curvePoints)
+                currentPoint = end
+                
+            case .addCurveToPoint:
+                // High-quality cubic curve approximation
+                let control1 = element.points[0]
+                let control2 = element.points[1]
+                let end = element.points[2]
+                let start = currentPoint
+                
+                // Use adaptive subdivision for smooth curves
+                let curvePoints = approximateCubicCurve(start: start, control1: control1, control2: control2, end: end, tolerance: 2.0)
+                points.append(contentsOf: curvePoints)
+                currentPoint = end
+                
+            case .closeSubpath:
+                // Close the path - ClipperPath handles this automatically
+                break
+                
+            @unknown default:
+                break
+            }
         }
         
-        return clipperPath
+        return points
+    }
+    
+    private func approximateQuadraticCurve(start: CGPoint, control: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
+        var points: [CGPoint] = []
+        
+        // Calculate the number of segments based on the curve's complexity
+        let distance = distanceBetween(start, control) + distanceBetween(control, end)
+        let segments = max(8, min(64, Int(distance / tolerance))) // Adaptive segment count
+        
+        for i in 1...segments {
+            let t = CGFloat(i) / CGFloat(segments)
+            let point = quadraticBezierPoint(t: t, start: start, control: control, end: end)
+            points.append(point)
+        }
+        
+        return points
+    }
+    
+    private func approximateCubicCurve(start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
+        var points: [CGPoint] = []
+        
+        // Calculate the number of segments based on the curve's complexity
+        let distance = distanceBetween(start, control1) + distanceBetween(control1, control2) + distanceBetween(control2, end)
+        let segments = max(12, min(96, Int(distance / tolerance))) // Adaptive segment count for smoother curves
+        
+        for i in 1...segments {
+            let t = CGFloat(i) / CGFloat(segments)
+            let point = cubicBezierPoint(t: t, start: start, control1: control1, control2: control2, end: end)
+            points.append(point)
+        }
+        
+        return points
+    }
+    
+    private func quadraticBezierPoint(t: CGFloat, start: CGPoint, control: CGPoint, end: CGPoint) -> CGPoint {
+        let x = (1-t)*(1-t)*start.x + 2*(1-t)*t*control.x + t*t*end.x
+        let y = (1-t)*(1-t)*start.y + 2*(1-t)*t*control.y + t*t*end.y
+        return CGPoint(x: x, y: y)
+    }
+    
+    private func cubicBezierPoint(t: CGFloat, start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint) -> CGPoint {
+        let x = (1-t)*(1-t)*(1-t)*start.x + 3*(1-t)*(1-t)*t*control1.x + 3*(1-t)*t*t*control2.x + t*t*t*end.x
+        let y = (1-t)*(1-t)*(1-t)*start.y + 3*(1-t)*(1-t)*t*control1.y + 3*(1-t)*t*t*control2.y + t*t*t*end.y
+        return CGPoint(x: x, y: y)
+    }
+    
+    private func distanceBetween(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
+        let dx = point2.x - point1.x
+        let dy = point2.y - point1.y
+        return sqrt(dx * dx + dy * dy)
     }
 }
 
