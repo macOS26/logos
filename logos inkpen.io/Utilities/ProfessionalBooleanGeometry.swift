@@ -560,40 +560,58 @@ extension ProfessionalPathOperations {
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
         
-        print("🔨 PROFESSIONAL INTERSECT: Processing")
+        print("🔨 PROFESSIONAL INTERSECT (ClipperPaths): Processing")
         
-        let polygon1 = ProfessionalBooleanGeometry.cgPathToPolygon(path1)
-        let polygon2 = ProfessionalBooleanGeometry.cgPathToPolygon(path2)
+        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
+        let clipper = Clipper()
         
-        let result = ProfessionalBooleanGeometry.intersection(polygon1, polygon2)
-        let resultPath = ProfessionalBooleanGeometry.polygonToCGPath(result)
-        
-        if resultPath.isEmpty || resultPath.boundingBoxOfPath.isEmpty {
-            print("❌ INTERSECT failed - checking if paths overlap")
-            
-            // Check if paths actually overlap
-            let bounds1 = path1.boundingBoxOfPath
-            let bounds2 = path2.boundingBoxOfPath
-            
-            if !bounds1.intersects(bounds2) {
-                print("  → No bounding box overlap, returning nil")
-                return nil
+        // Add first path as subject
+        let subpaths1 = extractSubpaths(from: path1)
+        for subpath in subpaths1 {
+            let clipperPath = cgPathToClipperPath(subpath)
+            if clipperPath.count >= 3 { // Only add valid polygons
+                clipper.addPath(clipperPath, .subject, true)
             }
-            
-            // Try bounding box intersection as fallback
-            let intersection = bounds1.intersection(bounds2)
-            if !intersection.isEmpty {
-                print("  → Using bounding box intersection fallback")
-                let fallbackPath = CGMutablePath()
-                fallbackPath.addRect(intersection)
-                return fallbackPath
+        }
+        
+        // Add second path as clip
+        let subpaths2 = extractSubpaths(from: path2)
+        for subpath in subpaths2 {
+            let clipperPath = cgPathToClipperPath(subpath)
+            if clipperPath.count >= 3 { // Only add valid polygons
+                clipper.addPath(clipperPath, .clip, true)
             }
-            
+        }
+        
+        var solution = ClipperPaths()
+        do {
+            let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
+            if success && !solution.isEmpty {
+                let resultPath = clipperPathsToCGPath(solution)
+                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
+                    print("✅ PROFESSIONAL INTERSECT (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    return resultPath
+                } else {
+                    print("⚠️ INTERSECT result is empty")
+                }
+            } else {
+                print("⚠️ ClipperPaths intersection failed")
+            }
+        } catch {
+            print("❌ ClipperPaths intersection error: \(error)")
+        }
+        
+        // Check if paths actually overlap for better error reporting
+        let bounds1 = path1.boundingBoxOfPath
+        let bounds2 = path2.boundingBoxOfPath
+        
+        if !bounds1.intersects(bounds2) {
+            print("  → No bounding box overlap, returning nil")
             return nil
         }
         
-        print("✅ PROFESSIONAL INTERSECT: Success")
-        return resultPath
+        print("  → Paths should overlap but ClipperPaths intersection failed")
+        return nil
     }
     
     /// PROFESSIONAL EXCLUDE: Remove overlapping areas (Adobe Illustrator "Exclude")
