@@ -1315,7 +1315,8 @@ struct ProfessionalOffsetPathSection: View {
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = false
     @State private var keepOriginalPath: Bool = true
-    @State private var arcTolerance: Double = 0.001 // Professional smooth curves default
+    @State private var cleanupOverlaps: Bool = false
+
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1392,6 +1393,27 @@ struct ProfessionalOffsetPathSection: View {
                         Spacer()
                     }
                     
+                    // Union Cleanup Checkbox (Professional cleanup for complex shapes)
+                    HStack {
+                        Button {
+                            cleanupOverlaps.toggle()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: cleanupOverlaps ? "checkmark.square.fill" : "square")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(cleanupOverlaps ? .blue : .secondary)
+                                
+                                Text("Union Cleanup")
+                                    .font(.caption2)
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Remove overlapping pieces from offset results using boolean union")
+                        
+                        Spacer()
+                    }
+                    
                     // Join Type Selection (Adobe Illustrator style)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Joins:")
@@ -1453,58 +1475,12 @@ struct ProfessionalOffsetPathSection: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     
-                    // Arc Tolerance (only show for round joins) - Professional smooth curves control
-                    if selectedJoinType == .round {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("Smoothness:")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                
-                                Spacer()
-                                
-                                Text(arcToleranceDisplayText)
-                                    .font(.caption2)
-                                    .foregroundColor(.primary)
-                                    .monospacedDigit()
-                            }
-                            
-                            Slider(value: Binding(
-                                get: { log10(arcTolerance * 1000) }, // Convert to log scale for better UI
-                                set: { arcTolerance = pow(10, $0) / 1000 }
-                            ), in: -1.0...1.0, step: 0.1) {
-                                Text("Arc Tolerance")
-                            }
-                            .controlSize(.small)
-                            
-                            // Professional presets for arc tolerance
-                            HStack(spacing: 4) {
-                                Button("Ultra") {
-                                    arcTolerance = 0.0001 // Ultra smooth (Affinity Designer level)
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.mini)
-                                
-                                Button("High") {
-                                    arcTolerance = 0.001 // High quality (Adobe Illustrator default)
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.mini)
-                                
-                                Button("Normal") {
-                                    arcTolerance = 0.01 // Normal quality
-                                }
-                                .buttonStyle(.bordered)
-                                .controlSize(.mini)
-                            }
-                        }
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                    }
+
                     
                     // Action Buttons (Adobe Illustrator style)
                     VStack(spacing: 4) {
                         HStack(spacing: 6) {
-                            // Offset Path button
+                            // Offset Path button (handles both positive and negative offsets)
                             Button("Offset Path") {
                                 performOffsetPath()
                             }
@@ -1513,14 +1489,7 @@ struct ProfessionalOffsetPathSection: View {
                             .help("Create offset path with current settings (⌘⌥O)")
                             .disabled(!canPerformOffset())
                             
-                            // Inset Path button
-                            Button("Inset") {
-                                performInsetPath()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                            .help("Create inset path (negative offset)")
-                            .disabled(!canPerformOffset())
+                            Spacer()
                         }
                         
                         HStack(spacing: 6) {
@@ -1560,17 +1529,7 @@ struct ProfessionalOffsetPathSection: View {
         return !document.selectedShapeIDs.isEmpty
     }
     
-    private var arcToleranceDisplayText: String {
-        if arcTolerance <= 0.0001 {
-            return "Ultra"
-        } else if arcTolerance <= 0.001 {
-            return "High"
-        } else if arcTolerance <= 0.01 {
-            return "Normal"
-        } else {
-            return "Low"
-        }
-    }
+
     
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
@@ -1582,6 +1541,7 @@ struct ProfessionalOffsetPathSection: View {
         
         // Get selected shapes
         let selectedShapes = document.getSelectedShapes()
+        var newOffsetShapeIDs: Set<UUID> = []
         
         for shape in selectedShapes {
             // Use STROKE-BASED OFFSET for perfect smooth curves (no more Clipper polygons!)
@@ -1594,7 +1554,15 @@ struct ProfessionalOffsetPathSection: View {
             )
             
             // Create perfect smooth offset using Core Graphics strokes + expand
-            let offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
+            var offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
+            
+            // Apply union cleanup if requested (removes overlapping pieces)
+            if cleanupOverlaps && offsetPaths.count > 1 {
+                if let unifiedPath = ProfessionalPathOperations.professionalUnite(offsetPaths) {
+                    offsetPaths = [unifiedPath]
+                    print("🔧 UNION CLEANUP: Unified \(offsetPaths.count) offset pieces into single clean path")
+                }
+            }
             
             // Convert results back to VectorShapes (now working with CGPaths directly!)
             for (index, offsetCGPath) in offsetPaths.enumerated() {
@@ -1611,6 +1579,7 @@ struct ProfessionalOffsetPathSection: View {
                 
                 // Add to document (will be moved behind original later)
                 document.addShape(offsetShape)
+                newOffsetShapeIDs.insert(offsetShape.id)
             }
             
         }
@@ -1619,33 +1588,29 @@ struct ProfessionalOffsetPathSection: View {
         if keepOriginalPath {
             // Send offset shapes to back so they appear behind the originals
             document.sendSelectedToBack()
-            
-            // Restore selection to original shapes
-            let originalShapeIDs = Set(selectedShapes.map { $0.id })
-            document.selectedShapeIDs = originalShapeIDs
         } else {
             // Remove original shapes if not keeping them
             document.removeSelectedShapes()
         }
+        
+        // Always select the result of the offset path operation
+        document.selectedShapeIDs = newOffsetShapeIDs
+        
+        // Force document refresh so arrow tool can see newly created shapes
+        document.objectWillChange.send()
          
          print("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals")
     }
     
-    private func performInsetPath() {
-        // Temporarily set negative offset and perform
-        let originalOffset = offsetDistance
-        offsetDistance = -abs(offsetDistance)
-        performOffsetPath()
-        offsetDistance = originalOffset
-    }
+
     
     private func resetToDefaults() {
         withAnimation(.easeInOut(duration: 0.2)) {
             offsetDistance = 10.0
             selectedJoinType = .miter
             miterLimit = 4.0
-            arcTolerance = 0.001 // Professional default
             keepOriginalPath = true
+            cleanupOverlaps = false
         }
     }
     
