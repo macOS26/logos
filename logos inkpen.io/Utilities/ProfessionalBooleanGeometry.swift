@@ -1024,7 +1024,7 @@ extension ProfessionalPathOperations {
     // MARK: - ClipperPaths Conversion Helpers
     
     /// Extract individual subpaths from a CGPath
-    private static func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
+    static func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
         
@@ -1066,7 +1066,7 @@ extension ProfessionalPathOperations {
     }
     
     /// Convert CGPath to ClipperPath (array of CGPoints) with high-quality curve approximation
-    private static func cgPathToClipperPath(_ cgPath: CGPath) -> ClipperPath {
+    static func cgPathToClipperPath(_ cgPath: CGPath) -> ClipperPath {
         var points = ClipperPath()
         var currentPoint = CGPoint.zero
         
@@ -1173,7 +1173,7 @@ extension ProfessionalPathOperations {
     }
     
     /// Convert ClipperPaths (array of polygons) to CGPath
-    private static func clipperPathsToCGPath(_ clipperPaths: ClipperPaths) -> CGPath {
+    static func clipperPathsToCGPath(_ clipperPaths: ClipperPaths) -> CGPath {
         let path = CGMutablePath()
         
         for clipperPath in clipperPaths {
@@ -1192,5 +1192,172 @@ extension ProfessionalPathOperations {
         }
         
         return path
+    }
+    
+    /// PROFESSIONAL TRIM: Removes parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
+    static func professionalTrim(_ paths: [CGPath]) -> [CGPath] {
+        guard paths.count >= 2 else { return paths }
+        
+        print("🔨 PROFESSIONAL TRIM (ClipperPaths): Processing \(paths.count) paths")
+        
+        // Convert all paths to ClipperPaths
+        var allClipperPaths: [ClipperPath] = []
+        for cgPath in paths {
+            let subpaths = extractSubpaths(from: cgPath)
+            for subpath in subpaths {
+                let clipperPath = cgPathToClipperPath(subpath)
+                if clipperPath.count >= 3 { // Only add valid polygons
+                    allClipperPaths.append(clipperPath)
+                }
+            }
+        }
+        
+        guard allClipperPaths.count >= 2 else { 
+            print("⚠️ Not enough valid polygons for trim operation")
+            return paths 
+        }
+        
+        var resultPaths: [CGPath] = []
+        
+        // Adobe Illustrator Trim: Remove parts that are hidden by shapes on top
+        // Process from bottom to top (front shapes can hide back shapes)
+        for i in 0..<allClipperPaths.count {
+            let clipper = Clipper()
+            clipper.addPath(allClipperPaths[i], .subject, true)
+            
+            // Subtract all paths that are in front (later in the stacking order)
+            for j in (i+1)..<allClipperPaths.count {
+                clipper.addPath(allClipperPaths[j], .clip, true)
+            }
+            
+            var solution = ClipperPaths()
+            do {
+                let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
+                if success {
+                    for clipperPath in solution {
+                        if clipperPath.count >= 3 {
+                            let cgPath = clipperPathsToCGPath([clipperPath])
+                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                                resultPaths.append(cgPath)
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("    ⚠️ Error trimming shape \(i): \(error)")
+            }
+        }
+        
+        print("✅ PROFESSIONAL TRIM (ClipperPaths): Created \(resultPaths.count) trimmed pieces")
+        return resultPaths
+    }
+    
+    /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
+    static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
+        guard paths.count >= 2 else { return paths }
+        
+        print("🔨 PROFESSIONAL MERGE (ClipperPaths): Processing \(paths.count) paths")
+        
+        // Adobe Illustrator Merge: Unite all objects into single shape, no interior lines
+        // This is essentially the same as Unite but specifically for merging multiple objects
+        
+        if let unified = professionalUnite(paths) {
+            print("✅ PROFESSIONAL MERGE (ClipperPaths): Merged into single unified shape")
+            return [unified]
+        }
+        
+        print("❌ PROFESSIONAL MERGE (ClipperPaths): Failed to merge, returning original paths")
+        return paths
+    }
+    
+    /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
+    static func professionalCrop(_ paths: [CGPath]) -> [CGPath] {
+        guard paths.count >= 2 else { return paths }
+        
+        print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
+        
+        let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
+        let shapesToCrop = Array(paths.dropLast())
+        
+        // Convert crop shape to ClipperPath
+        let cropSubpaths = extractSubpaths(from: cropShape)
+        guard let cropSubpath = cropSubpaths.first else {
+            print("⚠️ Invalid crop shape")
+            return []
+        }
+        
+        let cropClipperPath = cgPathToClipperPath(cropSubpath)
+        guard cropClipperPath.count >= 3 else {
+            print("⚠️ Crop shape has insufficient points")
+            return []
+        }
+        
+        var resultPaths: [CGPath] = []
+        
+        // Intersect each shape with the crop shape
+        for path in shapesToCrop {
+            let subpaths = extractSubpaths(from: path)
+            for subpath in subpaths {
+                let clipperPath = cgPathToClipperPath(subpath)
+                if clipperPath.count >= 3 {
+                    let clipper = Clipper()
+                    clipper.addPath(clipperPath, .subject, true)
+                    clipper.addPath(cropClipperPath, .clip, true)
+                    
+                    var solution = ClipperPaths()
+                    do {
+                        let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
+                        if success {
+                            for resultClipperPath in solution {
+                                if resultClipperPath.count >= 3 {
+                                    let cgPath = clipperPathsToCGPath([resultClipperPath])
+                                    if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
+                                        resultPaths.append(cgPath)
+                                    }
+                                }
+                            }
+                        }
+                    } catch {
+                        print("    ⚠️ Error cropping path: \(error)")
+                    }
+                }
+            }
+        }
+        
+        print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(resultPaths.count) cropped pieces")
+        return resultPaths
+    }
+    
+    /// PROFESSIONAL OUTLINE: Converts fills to outlined strokes (Adobe Illustrator "Outline Stroke")
+    static func professionalOutline(_ paths: [CGPath]) -> [CGPath] {
+        guard !paths.isEmpty else { return [] }
+        
+        print("🔨 PROFESSIONAL OUTLINE (ClipperPaths): Processing \(paths.count) paths")
+        
+        var outlinedPaths: [CGPath] = []
+        
+        for path in paths {
+            // Adobe Illustrator Outline creates individual path segments from the objects
+            // This converts the path to its outline/stroke representation
+            
+            let bounds = path.boundingBoxOfPath
+            guard !bounds.isEmpty else { continue }
+            
+            // Create stroke outline using CoreGraphics
+            let strokeWidth: CGFloat = 2.0 // Default stroke width
+            let strokedPath = path.copy(
+                strokingWithWidth: strokeWidth,
+                lineCap: .round,
+                lineJoin: .round,
+                miterLimit: 10.0
+            )
+            
+            if !strokedPath.isEmpty && !strokedPath.boundingBoxOfPath.isEmpty {
+                outlinedPaths.append(strokedPath)
+            }
+        }
+        
+        print("✅ PROFESSIONAL OUTLINE (ClipperPaths): Created \(outlinedPaths.count) outlined shapes")
+        return outlinedPaths
     }
 } 

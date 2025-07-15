@@ -103,109 +103,22 @@ class ProfessionalPathOperations {
     
     /// TRIM: Removes parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
     static func trim(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
-        
-        print("🔨 PROFESSIONAL TRIM: Processing \(paths.count) paths")
-        
-        // Convert all paths to polygons using the professional geometry engine
-        let polygons = paths.map { ProfessionalBooleanGeometry.cgPathToPolygon($0) }
-        var resultPaths: [CGPath] = []
-        
-        // Adobe Illustrator Trim: Remove parts that are hidden by shapes on top
-        // Process from bottom to top (front shapes can hide back shapes)
-        for i in 0..<polygons.count {
-            var trimmedPolygon = polygons[i]
-            
-            // Subtract all polygons that are in front (later in the stacking order)
-            for j in (i+1)..<polygons.count {
-                trimmedPolygon = ProfessionalBooleanGeometry.difference(trimmedPolygon, polygons[j])
-            }
-            
-            let trimmedPath = ProfessionalBooleanGeometry.polygonToCGPath(trimmedPolygon)
-            if !trimmedPath.isEmpty && !trimmedPath.boundingBoxOfPath.isEmpty {
-                resultPaths.append(trimmedPath)
-            }
-        }
-        
-        print("✅ PROFESSIONAL TRIM: Created \(resultPaths.count) trimmed pieces")
-        return resultPaths
+        return professionalTrim(paths)
     }
     
     /// MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
     static func merge(_ paths: [CGPath]) -> [CGPath] {
-        guard !paths.isEmpty else { return [] }
-        
-        print("🔨 PROFESSIONAL MERGE: Processing \(paths.count) paths")
-        
-        // Adobe Illustrator Merge: Unite overlapping shapes with same fill color
-        // For this implementation, unite all shapes (would need fill color info for proper grouping)
-        if let unified = professionalUnite(paths) {
-            print("✅ PROFESSIONAL MERGE: Merged into single shape")
-            return [unified]
-        }
-        
-        print("✅ PROFESSIONAL MERGE: Returned original paths")
-        return paths
+        return professionalMerge(paths)
     }
     
     /// CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
     static func crop(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
-        
-        print("🔨 PROFESSIONAL CROP: Processing \(paths.count) paths")
-        
-        let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
-        let shapesToCrop = Array(paths.dropLast())
-        
-        var resultPaths: [CGPath] = []
-        let cropPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(cropShape)
-        
-        // Intersect each shape with the crop shape
-        for path in shapesToCrop {
-            let shapePolygon = ProfessionalBooleanGeometry.cgPathToPolygon(path)
-            let croppedPolygon = ProfessionalBooleanGeometry.intersection(shapePolygon, cropPolygon)
-            
-            let croppedPath = ProfessionalBooleanGeometry.polygonToCGPath(croppedPolygon)
-            if !croppedPath.isEmpty && !croppedPath.boundingBoxOfPath.isEmpty {
-                resultPaths.append(croppedPath)
-            }
-        }
-        
-        print("✅ PROFESSIONAL CROP: Created \(resultPaths.count) cropped pieces")
-        return resultPaths
+        return professionalCrop(paths)
     }
     
     /// OUTLINE: Converts fills to outlined strokes (Adobe Illustrator "Outline Stroke")
     static func outline(_ paths: [CGPath]) -> [CGPath] {
-        print("🔨 PROFESSIONAL OUTLINE: Processing \(paths.count) paths")
-        
-        // Adobe Illustrator Outline Stroke: Converts strokes to filled paths
-        // This is a simplified implementation - full version would need stroke width info
-        var outlinedPaths: [CGPath] = []
-        
-        for path in paths {
-            // Create a slightly expanded version to simulate stroke outline
-            let bounds = path.boundingBoxOfPath
-            let strokeWidth: CGFloat = 2.0 // Default stroke width
-            let expandedBounds = bounds.insetBy(dx: -strokeWidth/2, dy: -strokeWidth/2)
-            
-            // Create outer rectangle
-            let outerPath = CGMutablePath()
-            outerPath.addRect(expandedBounds)
-            
-            // Subtract the original path to create outline effect
-            let outerPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(outerPath)
-            let innerPolygon = ProfessionalBooleanGeometry.cgPathToPolygon(path)
-            let outlinePolygon = ProfessionalBooleanGeometry.difference(outerPolygon, innerPolygon)
-            
-            let outlinePath = ProfessionalBooleanGeometry.polygonToCGPath(outlinePolygon)
-            if !outlinePath.isEmpty && !outlinePath.boundingBoxOfPath.isEmpty {
-                outlinedPaths.append(outlinePath)
-            }
-        }
-        
-        print("✅ PROFESSIONAL OUTLINE: Created \(outlinedPaths.count) outlined shapes")
-        return outlinedPaths
+        return professionalOutline(paths)
     }
     
     /// MINUS BACK: Back shape subtracts from front shape (Adobe Illustrator "Minus Back")
