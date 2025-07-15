@@ -7,7 +7,7 @@
 
 import CoreGraphics
 
-extension CGPoint: ExpressibleByArrayLiteral {
+extension CGPoint: @retroactive ExpressibleByArrayLiteral {
     
     public init(arrayLiteral elements: CGFloat...) {
         self.init()

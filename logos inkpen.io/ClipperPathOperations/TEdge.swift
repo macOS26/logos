@@ -6,7 +6,7 @@
 //
 
 import CoreGraphics
-import Foundation
+//import Foundation
 
 /// TEdge is a-linked list represents a polygon.
 public class TEdge {

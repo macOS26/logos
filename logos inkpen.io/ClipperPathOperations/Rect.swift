@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import CoreGraphics
+//import CoreGraphics
 
 public struct Rect: Equatable {
     var left: CGFloat
