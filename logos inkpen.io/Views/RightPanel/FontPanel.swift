@@ -273,7 +273,9 @@ struct FontPanel: View {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
+        document.saveToUndoStack()
         document.textObjects[textIndex].typography.fillColor = color
+        document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
     }
     
@@ -292,7 +294,9 @@ struct FontPanel: View {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
+        document.saveToUndoStack()
         document.textObjects[textIndex].typography.strokeColor = color
+        document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
     }
     
