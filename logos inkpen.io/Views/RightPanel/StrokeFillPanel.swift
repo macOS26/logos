@@ -130,17 +130,14 @@ struct StrokeFillPanel: View {
                 
                 if !document.selectedShapeIDs.isEmpty {
                     // Current Fill and Stroke Display
-                    FillStrokeSwatches(
-                        fillColor: selectedFillColor,
+                    CurrentColorsView(
                         strokeColor: selectedStrokeColor,
-                        fillOpacity: fillOpacity,
+                        fillColor: selectedFillColor,
                         strokeOpacity: strokeOpacity,
-                        onFillTap: { showingFillColorPicker = true },
-                        onStrokeTap: { showingStrokeColorPicker = true }
+                        fillOpacity: fillOpacity,
+                        onStrokeColorTap: { showingStrokeColorPicker = true },
+                        onFillColorTap: { showingFillColorPicker = true }
                     )
-                    .padding(20)
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                    .cornerRadius(12)
                     
                     // Fill Properties
                     FillPropertiesSection(
@@ -487,7 +484,45 @@ struct StrokeFillPanel: View {
     }
 }
 
-
+struct CurrentColorsView: View {
+    let strokeColor: VectorColor
+    let fillColor: VectorColor
+    let strokeOpacity: Double
+    let fillOpacity: Double
+    let onStrokeColorTap: () -> Void
+    let onFillColorTap: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 8) {  // Match ColorPanel spacing
+            // Fill Color
+            VStack(spacing: 4) {  // Compact spacing
+                Button(action: onFillColorTap) {
+                    renderColorSwatchRightPanel(fillColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: fillOpacity)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Text("Fill")
+                    .font(.caption2)  // Smaller font to match ColorPanel
+                    .foregroundColor(.secondary)
+            }
+            
+            // Stroke Color
+            VStack(spacing: 4) {  // Compact spacing
+                Button(action: onStrokeColorTap) {
+                    renderColorSwatchRightPanel(strokeColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1, opacity: strokeOpacity)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Text("Stroke")
+                    .font(.caption2)  // Smaller font to match ColorPanel
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(12)  // Compact padding
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .cornerRadius(8)
+    }
+}
 
 struct FillPropertiesSection: View {
     let fillColor: VectorColor
@@ -1308,33 +1343,60 @@ struct FontToolSection: View {
             if let selectedText = selectedText {
                 Divider()
                 
-                // Text Fill and Stroke Colors
-                CompactFillStrokeSwatches(
-                    fillColor: selectedText.typography.fillColor,
-                    strokeColor: selectedText.typography.hasStroke ? selectedText.typography.strokeColor : nil,
-                    fillOpacity: selectedText.typography.fillOpacity,
-                    strokeOpacity: selectedText.typography.strokeOpacity,
-                    hasStroke: selectedText.typography.hasStroke,
-                    onFillTap: {
-                        // TODO: Show color picker for text fill
+                // Text Fill Color
+                HStack {
+                    Text("Fill")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Button {
+                        // Use document default fill color for text
                         updateTextFillColor(document.defaultFillColor)
-                    },
-                    onStrokeTap: {
-                        // TODO: Show color picker for text stroke
-                        updateTextStrokeColor(document.defaultStrokeColor)
+                    } label: {
+                        Rectangle()
+                            .fill(selectedText.typography.fillColor.color)
+                            .frame(width: 30, height: 20)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.gray, lineWidth: 1)
+                            )
                     }
-                )
+                    .buttonStyle(.plain)
+                }
                 
-                // Stroke Toggle
-                Toggle("Enable Stroke", isOn: Binding(
-                    get: { selectedText.typography.hasStroke },
-                    set: { hasStroke in
-                        updateTextStroke(hasStroke: hasStroke)
+                // Text Stroke Toggle and Color
+                HStack {
+                    Toggle("Stroke", isOn: Binding(
+                        get: { selectedText.typography.hasStroke },
+                        set: { hasStroke in
+                            updateTextStroke(hasStroke: hasStroke)
+                        }
+                    ))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    if selectedText.typography.hasStroke {
+                        Button {
+                            // Use document default stroke color for text
+                            updateTextStrokeColor(document.defaultStrokeColor)
+                        } label: {
+                            Rectangle()
+                                .fill(selectedText.typography.strokeColor.color)
+                                .frame(width: 30, height: 20)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.gray, lineWidth: 1)
+                                )
+                        }
+                        .buttonStyle(.plain)
                     }
-                ))
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                }
             }
             
             // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
