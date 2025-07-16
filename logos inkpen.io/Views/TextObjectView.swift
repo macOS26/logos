@@ -140,18 +140,9 @@ class CoreGraphicsTextNSView: NSView {
             .kern: typography.letterSpacing
         ]
         
-        // STEP 3: Set text color based on typography settings
-        var textColor: NSColor
-        if typography.fillColor != .clear {
-            textColor = NSColor(typography.fillColor.color).withAlphaComponent(typography.fillOpacity)
-        } else if typography.hasStroke && typography.strokeColor != .clear {
-            textColor = NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity)
-        } else {
-            // Final fallback to black for visibility
-            textColor = NSColor.black
-        }
-        
-        attributes[.foregroundColor] = textColor
+        // STEP 3: Set fill color for the attributed string
+        let fillColor = NSColor(typography.fillColor.color).withAlphaComponent(typography.fillOpacity)
+        attributes[.foregroundColor] = fillColor
         
         // STEP 4: Create attributed string
         let attributedString = NSAttributedString(string: text, attributes: attributes)
@@ -178,23 +169,35 @@ class CoreGraphicsTextNSView: NSView {
         
         // STEP 10: Handle text stroke if enabled (Adobe Illustrator style)
         if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
-            // Draw stroke first (behind fill)
-            context.setTextDrawingMode(.stroke)
-            context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
-            context.setLineWidth(typography.strokeWidth)
+            // If we have both fill and stroke, use fillStroke mode for efficiency
+            if typography.fillColor != .clear {
+                context.setTextDrawingMode(.fillStroke)
+                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
+                context.setLineWidth(typography.strokeWidth)
+                context.setFillColor(fillColor.cgColor)
+                
+                // Set text position and draw both fill and stroke
+                context.textPosition = drawPoint
+                CTLineDraw(line, context)
+            } else {
+                // Stroke only (no fill)
+                context.setTextDrawingMode(.stroke)
+                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
+                context.setLineWidth(typography.strokeWidth)
+                
+                // Set text position and draw stroke
+                context.textPosition = drawPoint
+                CTLineDraw(line, context)
+            }
+        } else if typography.fillColor != .clear {
+            // STEP 11: Fill only (no stroke)
+            context.setTextDrawingMode(.fill)
+            context.setFillColor(fillColor.cgColor)
             
-            // Set text position and draw stroke
+            // Set text position and draw fill
             context.textPosition = drawPoint
             CTLineDraw(line, context)
         }
-        
-        // STEP 11: Draw fill text (on top of stroke)
-        context.setTextDrawingMode(.fill)
-        context.setFillColor(textColor.cgColor)
-        
-        // Set text position and draw fill
-        context.textPosition = drawPoint
-        CTLineDraw(line, context)
         
         // STEP 12: Restore graphics state
         context.restoreGState()
