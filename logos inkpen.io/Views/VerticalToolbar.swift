@@ -392,7 +392,7 @@ struct ColorSwatchGrid: View {
             }
         }
         
-        // FIXED: Also apply to selected text objects - STROKE ONLY, NOT FILL
+        // FIXED: Also apply to selected text objects
         if !document.selectedTextIDs.isEmpty {
             if !document.selectedShapeIDs.isEmpty {
                 // Don't save to undo stack twice
