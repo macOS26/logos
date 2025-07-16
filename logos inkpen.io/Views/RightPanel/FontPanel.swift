@@ -19,8 +19,7 @@ struct FontPanel: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                if document.currentTool == .font || !document.selectedTextIDs.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 16) {
                         // Header
                         HStack {
                             Text("Font Properties")
@@ -223,24 +222,6 @@ struct FontPanel: View {
                     .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
                     .cornerRadius(12)
                     .padding(.horizontal, 12)
-                } else {
-                    // No text selected message
-                    VStack(spacing: 16) {
-                        Image(systemName: "textformat")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
-                        
-                        Text("No text selected")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Select text or use the Font tool to edit typography")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                }
                 
                 Spacer()
             }

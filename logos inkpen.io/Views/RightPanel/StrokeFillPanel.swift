@@ -119,9 +119,6 @@ struct StrokeFillPanel: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-
-                
-                if !document.selectedShapeIDs.isEmpty {
                     // Current Fill and Stroke Display
                     CurrentColorsView(
                         strokeColor: selectedStrokeColor,
@@ -162,7 +159,7 @@ struct StrokeFillPanel: View {
                         onUpdateMiterLimit: updateStrokeMiterLimit // PROFESSIONAL MITER LIMIT
                     )
                     
-                    // PROFESSIONAL STROKE OUTLINING (Adobe Illustrator Standard)
+                    // PROFESSIONAL STROKE OUTLINING (Adobe Illustrator Standard) - Only show when shapes selected
                     if !document.selectedShapeIDs.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Stroke Operations")
@@ -202,24 +199,6 @@ struct StrokeFillPanel: View {
                     
                     // Gradient Fill (Future Enhancement)
                     GradientFillSection()
-                } else {
-                    // No selection message
-                    VStack(spacing: 16) {
-                        Image(systemName: "paintbrush")
-                            .font(.system(size: 48))
-                            .foregroundColor(.secondary)
-                        
-                        Text("No shapes selected")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Select a shape to edit its stroke and fill properties")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
-                }
                 
                 Spacer()
             }
