@@ -9,40 +9,37 @@ import CoreGraphics
 
 extension ClipperPath {
     
-    public func union(_ path: ClipperPath, isClosed: Bool = true) -> ClipperPaths {
+    // MARK: - Private Helper
+    
+    private func performBooleanOperation(
+        with path: ClipperPath,
+        clipType: ClipType,
+        isClosed: Bool
+    ) -> ClipperPaths {
         var paths = ClipperPaths()
         let c = Clipper()
         c.addPath(self, .subject, isClosed)
         c.addPath(path, .clip, isClosed)
-        _ = try? c.execute(clipType: .union, solution: &paths)
+        _ = try? c.execute(clipType: clipType, solution: &paths)
         return paths
+    }
+    
+    // MARK: - Public Boolean Operations
+    
+    public func union(_ path: ClipperPath, isClosed: Bool = true) -> ClipperPaths {
+        return performBooleanOperation(with: path, clipType: .union, isClosed: isClosed)
     }
     
     public func intersection(_ path: ClipperPath, isClosed: Bool = true) -> ClipperPaths {
-        var paths = ClipperPaths()
-        let c = Clipper()
-        c.addPath(self, .subject, isClosed)
-        c.addPath(path, .clip, isClosed)
-        _ = try? c.execute(clipType: .intersection, solution: &paths)
-        return paths
+        return performBooleanOperation(with: path, clipType: .intersection, isClosed: isClosed)
     }
     
     public func difference(_ path: ClipperPath, isClosed: Bool = true) -> ClipperPaths {
-        var paths = ClipperPaths()
-        let c = Clipper()
-        c.addPath(self, .subject, isClosed)
-        c.addPath(path, .clip, isClosed)
-        _ = try? c.execute(clipType: .difference, solution: &paths)
-        return paths
+        return performBooleanOperation(with: path, clipType: .difference, isClosed: isClosed)
     }
     
     public func xor(_ path: ClipperPath, isClosed: Bool = true) -> ClipperPaths {
-        var paths = ClipperPaths()
-        let c = Clipper()
-        c.addPath(self, .subject, isClosed)
-        c.addPath(path, .clip, isClosed)
-        _ = try? c.execute(clipType: .xor, solution: &paths)
-        return paths
+        return performBooleanOperation(with: path, clipType: .xor, isClosed: isClosed)
     }
     
     
