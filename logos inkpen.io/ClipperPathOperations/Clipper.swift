@@ -8,6 +8,20 @@
 import Foundation
 //import CoreGraphics
 
+/// The main class for performing boolean operations on polygons
+/// 
+/// Clipper provides methods to compute union, intersection, difference, and XOR
+/// operations on sets of polygons. It uses the Vatti clipping algorithm with
+/// extensions for handling various edge cases and polygon fill rules.
+///
+/// Example usage:
+/// ```swift
+/// let clipper = Clipper()
+/// clipper.addPath(subjectPath, .subject, true)
+/// clipper.addPath(clipPath, .clip, true)
+/// var solution = ClipperPaths()
+/// try clipper.execute(clipType: .intersection, solution: &solution)
+/// ```
 public class Clipper: ClipperBase {
     
     private var clipType = ClipType.union
@@ -23,6 +37,7 @@ public class Clipper: ClipperBase {
     private var reverseSolution = false
     private var strictlySimple = false
 
+    /// Options that control how the clipping solution is generated
     public struct SolutionOptions: OptionSet {
         public let rawValue: Int
         
@@ -30,10 +45,17 @@ public class Clipper: ClipperBase {
             self.rawValue = rawValue
         }
         
-        public static let `default`    = SolutionOptions(rawValue: 1 << 0)
-        public static let reverse  = SolutionOptions(rawValue: 1 << 1)
-        public static let strictlySimple   = SolutionOptions(rawValue: 1 << 2)
-        public static let preserveCollinear   = SolutionOptions(rawValue: 1 << 3)
+        /// Default options with no special processing
+        public static let `default` = SolutionOptions(rawValue: 1 << 0)
+        
+        /// Reverses the orientation of the solution polygons
+        public static let reverse = SolutionOptions(rawValue: 1 << 1)
+        
+        /// Ensures output polygons don't self-intersect
+        public static let strictlySimple = SolutionOptions(rawValue: 1 << 2)
+        
+        /// Preserves collinear edges that would normally be merged
+        public static let preserveCollinear = SolutionOptions(rawValue: 1 << 3)
     }
     
     public init(options:SolutionOptions = .default) {
@@ -43,6 +65,13 @@ public class Clipper: ClipperBase {
         preserveCollinear = options.contains(.preserveCollinear)
     }
     
+    /// Executes a boolean clipping operation on the previously added paths
+    /// - Parameters:
+    ///   - clipType: The type of boolean operation to perform
+    ///   - solution: Output parameter that receives the resulting polygons
+    ///   - fillType: The fill rule to use for both subject and clip polygons
+    /// - Returns: True if the operation succeeded
+    /// - Throws: ClipperError if the operation fails
     @discardableResult
     public func execute(clipType: ClipType, solution:inout ClipperPaths, fillType: PolyFillType = .evenOdd) throws ->  Bool {
         return try execute(clipType: clipType, solution: &solution, subjFillType: fillType, clipFillType: fillType)
