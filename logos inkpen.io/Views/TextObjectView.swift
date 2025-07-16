@@ -134,72 +134,84 @@ class CoreGraphicsTextNSView: NSView {
         // STEP 1: Create font with proper weight and style
         let font = createCoreTextFont()
         
-        // STEP 2: Set up text attributes
-        var attributes: [NSAttributedString.Key: Any] = [
+        // STEP 2: PURE CORE GRAPHICS - NO COLOR ATTRIBUTES
+        // Only set font and kerning, never foregroundColor
+        let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
             .kern: typography.letterSpacing
         ]
         
-        // STEP 3: Set fill color for the attributed string
-        let fillColor = NSColor(typography.fillColor.color).withAlphaComponent(typography.fillOpacity)
-        attributes[.foregroundColor] = fillColor
+        print("🎨 PURE CORE GRAPHICS: No NSAttributedString colors, only font and kerning")
         
-        // STEP 4: Create attributed string
+        // STEP 3: Create attributed string WITHOUT any color information
         let attributedString = NSAttributedString(string: text, attributes: attributes)
         
-        // STEP 5: Create CTLine for precise text layout
+        // STEP 4: Create CTLine for precise text layout
         let line = CTLineCreateWithAttributedString(attributedString)
         
-        // STEP 6: Calculate text metrics for proper positioning
+        // STEP 5: Calculate text metrics for proper positioning
         let ascent = CTFontGetAscent(font)
         let descent = CTFontGetDescent(font)
         let leading = CTFontGetLeading(font)
         let _ = ascent + descent + leading // Line height calculation (for future use)
         
-        // STEP 7: Save graphics state and fix coordinate system
+        // STEP 6: Save graphics state and fix coordinate system
         context.saveGState()
         
-        // STEP 8: Fix coordinate system - Core Graphics Y-axis is flipped from SwiftUI
-        // We need to flip the coordinate system to match SwiftUI's expectations
+        // STEP 7: Fix coordinate system - Core Graphics Y-axis is flipped from SwiftUI
         context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
         
-        // STEP 9: Position text at baseline (adjusted for flipped coordinates)
-        // In the flipped coordinate system, we need to adjust the Y position
+        // STEP 8: Position text at baseline (adjusted for flipped coordinates)
         let drawPoint = CGPoint(x: position.x, y: position.y)
         
-        // STEP 10: Handle text stroke if enabled (Adobe Illustrator style)
-        if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
-            // If we have both fill and stroke, use fillStroke mode for efficiency
-            if typography.fillColor != .clear {
-                context.setTextDrawingMode(.fillStroke)
-                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
-                context.setLineWidth(typography.strokeWidth)
-                context.setFillColor(fillColor.cgColor)
-                
-                // Set text position and draw both fill and stroke
-                context.textPosition = drawPoint
-                CTLineDraw(line, context)
-            } else {
-                // Stroke only (no fill)
-                context.setTextDrawingMode(.stroke)
-                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
-                context.setLineWidth(typography.strokeWidth)
-                
-                // Set text position and draw stroke
-                context.textPosition = drawPoint
-                CTLineDraw(line, context)
-            }
-        } else if typography.fillColor != .clear {
-            // STEP 11: Fill only (no stroke)
-            context.setTextDrawingMode(.fill)
-            context.setFillColor(fillColor.cgColor)
+        // STEP 9: PURE CORE GRAPHICS COLOR HANDLING
+        let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
+        let hasFill = typography.fillColor != .clear
+        
+        // Convert colors using direct cgColor (no NSColor conversion)
+        let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
+        let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
+        
+        print("🎨 PURE CORE GRAPHICS RENDERING:")
+        print("   Fill: \(typography.fillColor) -> CGColor: \(fillCGColor)")
+        print("   Has Fill: \(hasFill), Has Stroke: \(hasStroke)")
+        
+        if hasStroke && hasFill {
+            // Both fill and stroke - draw separately for color accuracy
+            print("   Mode: Fill + Stroke (separate drawing)")
             
-            // Set text position and draw fill
+            // Draw fill first
+            context.setTextDrawingMode(.fill)
+            context.setFillColor(fillCGColor)
+            context.textPosition = drawPoint
+            CTLineDraw(line, context)
+            
+            // Draw stroke on top
+            context.setTextDrawingMode(.stroke)
+            context.setStrokeColor(strokeCGColor)
+            context.setLineWidth(typography.strokeWidth)
+            context.textPosition = drawPoint
+            CTLineDraw(line, context)
+            
+        } else if hasStroke {
+            // Stroke only
+            print("   Mode: Stroke only")
+            context.setTextDrawingMode(.stroke)
+            context.setStrokeColor(strokeCGColor)
+            context.setLineWidth(typography.strokeWidth)
+            context.textPosition = drawPoint
+            CTLineDraw(line, context)
+            
+        } else if hasFill {
+            // Fill only
+            print("   Mode: Fill only")
+            context.setTextDrawingMode(.fill)
+            context.setFillColor(fillCGColor)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
         }
         
-        // STEP 12: Restore graphics state
+        // STEP 10: Restore graphics state
         context.restoreGState()
     }
     
