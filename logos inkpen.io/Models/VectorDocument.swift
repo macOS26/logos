@@ -1373,6 +1373,7 @@ class VectorDocument: ObservableObject, Codable {
         
         let shapesToOutline = layers[layerIndex].shapes.filter { selectedShapeIDs.contains($0.id) && $0.strokeStyle != nil }
         var newShapeIDs: Set<UUID> = []
+        var originalShapeIDs: Set<UUID> = []
         
         for shape in shapesToOutline {
             guard let strokeStyle = shape.strokeStyle,
@@ -1385,11 +1386,12 @@ class VectorDocument: ObservableObject, Codable {
                 path: shape.path.cgPath,
                 strokeStyle: strokeStyle
             ) {
-                // Create new shape with outlined path as fill
-                var newShape = VectorShape(
-                    name: "\(shape.name) Outlined",
+                // ADOBE ILLUSTRATOR BEHAVIOR: Create stroke outline as separate shape
+                // 1. Create new shape with outlined stroke path as fill
+                var strokeShape = VectorShape(
+                    name: "\(shape.name) Stroke",
                     path: VectorPath(cgPath: outlinedPath),
-                    strokeStyle: nil, // Remove stroke since it's now a fill
+                    strokeStyle: nil, // No stroke since it's now a fill
                     fillStyle: FillStyle(
                         color: strokeStyle.color,
                         opacity: strokeStyle.opacity,
@@ -1397,24 +1399,43 @@ class VectorDocument: ObservableObject, Codable {
                     )
                 )
                 
-                // Preserve other properties
-                newShape.transform = shape.transform
-                newShape.opacity = shape.opacity
-                newShape.isVisible = shape.isVisible
-                newShape.isLocked = shape.isLocked
-                newShape.updateBounds()
+                // Preserve transform and visibility properties
+                strokeShape.transform = shape.transform
+                strokeShape.opacity = shape.opacity
+                strokeShape.isVisible = shape.isVisible
+                strokeShape.isLocked = shape.isLocked
+                strokeShape.updateBounds()
                 
-                // Add to layer
-                layers[layerIndex].addShape(newShape)
-                newShapeIDs.insert(newShape.id)
+                // 2. Create or update original shape to have just the fill (no stroke)
+                if shape.fillStyle != nil && shape.fillStyle?.color != .clear {
+                    // Keep the original shape with fill only
+                    var fillShape = shape
+                    fillShape.strokeStyle = nil // Remove stroke from original
+                    fillShape.name = "\(shape.name) Fill"
+                    fillShape.updateBounds()
+                    
+                    // Find the index of the original shape
+                    if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        // Replace original shape with fill-only version
+                        layers[layerIndex].shapes[shapeIndex] = fillShape
+                        originalShapeIDs.insert(fillShape.id)
+                        
+                        // Add stroke shape ABOVE the fill shape (Adobe Illustrator behavior)
+                        layers[layerIndex].shapes.insert(strokeShape, at: shapeIndex + 1)
+                        newShapeIDs.insert(strokeShape.id)
+                    }
+                } else {
+                    // No fill, just replace with stroke outline
+                    if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        layers[layerIndex].shapes[shapeIndex] = strokeShape
+                        newShapeIDs.insert(strokeShape.id)
+                    }
+                }
             }
         }
         
-        // Remove original shapes if outlining was successful
-        if !newShapeIDs.isEmpty {
-            layers[layerIndex].shapes.removeAll { selectedShapeIDs.contains($0.id) }
-            selectedShapeIDs = newShapeIDs
-        }
+        // Select all resulting shapes (both fill and stroke outlines)
+        selectedShapeIDs = newShapeIDs.union(originalShapeIDs)
     }
     
     /// Checks if outline stroke operation is available for current selection
