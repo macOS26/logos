@@ -14,46 +14,6 @@ public class ClipperBase {
         let message: String
     }
     
-    class IntersectNode {
-        var edge1: TEdge
-        var edge2: TEdge
-        var pt: CGPoint = .zero
-        
-        init(edge1: TEdge, edge2:TEdge) {
-            self.edge1 = edge1
-            self.edge2 = edge2
-        }
-    }
-
-    class LocalMinima {
-        var y: CGFloat = 0
-        var leftBound: TEdge!
-        var rightBound: TEdge!
-        var next: LocalMinima!
-    }
-
-    class Scanbeam {
-        var y: CGFloat = 0
-        var next: Scanbeam?
-    }
-
-    class Maxima {
-        var x: CGFloat = 0
-        var next: Maxima?
-        var prev: Maxima?
-    }
-    
-    class Join {
-        var outPt1: OutPt
-        var outPt2: OutPt
-        var offPt: CGPoint = .zero
-        
-        init(op1: OutPt, op2: OutPt) {
-            self.outPt1 = op1
-            self.outPt2 = op2
-        }
-    }
-    
     var minimaList: LocalMinima?
     var currentLM: LocalMinima?
     var edges =  [[TEdge]]()
