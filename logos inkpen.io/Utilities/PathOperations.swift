@@ -13,7 +13,7 @@ import CoreGraphics
 
 enum PathfinderOperation: String, CaseIterable, Codable {
     // SHAPE MODES (Create compound shapes that can be edited)
-    case unite = "Unite"                    // Adobe Illustrator "Unite" - Combines shapes
+    case union = "Union"                    // Adobe Illustrator "Union" - Combines shapes
     case minusFront = "Minus Front"         // Adobe Illustrator "Minus Front" - Front subtracts from back  
     case intersect = "Intersect"            // Adobe Illustrator "Intersect" - Only overlapping areas
     case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
@@ -28,7 +28,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var iconName: String {
         switch self {
-        case .unite: return "plus.circle"
+        case .union: return "plus.circle"
         case .minusFront: return "minus.circle"
         case .intersect: return "circle.circle"
         case .exclude: return "xmark.circle"
@@ -43,7 +43,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var isShapeMode: Bool {
         switch self {
-        case .unite, .minusFront, .intersect, .exclude:
+        case .union, .minusFront, .intersect, .exclude:
             return true
         case .split, .cut, .merge, .crop, .dieline, .minusBack:
             return false
@@ -52,7 +52,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var description: String {
         switch self {
-        case .unite: return "Combines two shapes into a single shape (behaves like merge when exactly 2 shapes)"
+        case .union: return "Combines two shapes into a single shape (behaves like merge when exactly 2 shapes)"
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
@@ -70,12 +70,12 @@ class ProfessionalPathOperations {
     
     // MARK: - ADOBE ILLUSTRATOR SHAPE MODES
     
-    /// UNITE: Combines two or more paths into a single path (Adobe Illustrator "Unite")
+    /// UNION: Combines two or more paths into a single path (Adobe Illustrator "Union")
     /// When exactly 2 paths are provided, behaves identically to merge operation
     /// Most commonly used operation in professional vector graphics
-    static func unite(_ paths: [CGPath]) -> CGPath? {
+    static func union(_ paths: [CGPath]) -> CGPath? {
         // Use professional boolean geometry implementation
-        return professionalUnite(paths)
+        return professionalUnion(paths)
     }
     
     /// MINUS FRONT: Front shape subtracts from back shape (Adobe Illustrator "Minus Front")
@@ -108,8 +108,12 @@ class ProfessionalPathOperations {
     }
     
     /// MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
+    /// Uses the same CoreGraphics Union implementation for better performance and curve preservation
     static func merge(_ paths: [CGPath]) -> [CGPath] {
-        return professionalMerge(paths)
+        if let unionResult = professionalUnion(paths) {
+            return [unionResult]
+        }
+        return []
     }
     
     /// CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
@@ -411,7 +415,7 @@ class ProfessionalPathOperations {
         switch operation {
         case .split, .cut, .merge, .crop:
             return paths.count >= 2
-        case .unite: 
+        case .union: 
             return paths.count >= 2  // Changed from == 2 to >= 2 to match merge behavior
         case .minusFront, .intersect, .exclude, .minusBack:
             return paths.count == 2
@@ -467,11 +471,11 @@ class PathOperations {
     
     // Redirect to professional implementation using the actual functions
     static func unite(_ paths: [CGPath]) -> CGPath? {
-        return ProfessionalPathOperations.professionalUnite(paths)
+        return ProfessionalPathOperations.professionalUnion(paths)
     }
     
     static func union(_ paths: [CGPath]) -> CGPath? {
-        return unite(paths)
+        return ProfessionalPathOperations.professionalUnion(paths)
     }
     
     static func intersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
@@ -505,7 +509,7 @@ class PathOperations {
     // Legacy validation functions
     static func canPerformOperation(_ operation: PathOperation, on paths: [CGPath]) -> Bool {
         switch operation {
-        case .union: return ProfessionalPathOperations.canPerformOperation(.unite, on: paths)
+        case .union: return ProfessionalPathOperations.canPerformOperation(.union, on: paths)
         case .intersect: return ProfessionalPathOperations.canPerformOperation(.intersect, on: paths)
         case .frontMinusBack: return ProfessionalPathOperations.canPerformOperation(.minusFront, on: paths)
         case .backMinusFront: return ProfessionalPathOperations.canPerformOperation(.minusBack, on: paths)

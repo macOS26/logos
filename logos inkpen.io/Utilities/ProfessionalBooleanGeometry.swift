@@ -475,9 +475,9 @@ class ProfessionalBooleanGeometry {
 
 extension ProfessionalPathOperations {
     
-    /// PROFESSIONAL UNITE: Combines two or more paths into a single path (Adobe Illustrator "Unite")
+    /// PROFESSIONAL UNION: Combines two or more paths into a single path (Adobe Illustrator "Union")
     /// When there are exactly 2 paths, behaves like merge for consistency
-    static func professionalUnite(_ paths: [CGPath]) -> CGPath? {
+    static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
         guard !paths.isEmpty else { return nil }
         
         let validPaths = paths.filter { !$0.isEmpty }
@@ -489,23 +489,23 @@ extension ProfessionalPathOperations {
         
         // Use CoreGraphics for 2-path operations (much faster and preserves curves)
         if validPaths.count == 2 {
-            print("🔨 PROFESSIONAL UNITE (2 paths): Using CoreGraphics...")
+            print("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...")
             
             if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
-                print("✅ PROFESSIONAL UNITE: CoreGraphics success (preserves smooth curves)")
+                print("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)")
                 return coreGraphicsResult
             } else {
                 print("⚠️ CoreGraphics union returned nil, falling back to ClipperPath")
-                return professionalUniteCore(validPaths)
+                return professionalUnionCore(validPaths)
             }
         }
         
-        print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
-        return professionalUniteCore(validPaths)
+        print("🔨 PROFESSIONAL UNION (ClipperPaths): Processing \(validPaths.count) paths")
+        return professionalUnionCore(validPaths)
     }
     
-    /// Core unite implementation shared by both unite and merge operations
-    private static func professionalUniteCore(_ paths: [CGPath]) -> CGPath? {
+    /// Core union implementation shared by both union and merge operations
+    private static func professionalUnionCore(_ paths: [CGPath]) -> CGPath? {
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
         
@@ -525,10 +525,10 @@ extension ProfessionalPathOperations {
             if success && !solution.isEmpty {
                 let resultPath = clipperPathsToCGPath(solution)
                 if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    print("✅ PROFESSIONAL UNITE (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    print("✅ PROFESSIONAL UNION (ClipperPaths): Success - \(solution.count) resulting polygons")
                     return resultPath
                 } else {
-                    print("⚠️ UNITE result is empty, falling back to convex hull")
+                    print("⚠️ UNION result is empty, falling back to convex hull")
                 }
             } else {
                 print("⚠️ ClipperPaths union failed, falling back to convex hull")
@@ -538,7 +538,7 @@ extension ProfessionalPathOperations {
         }
         
         // Fallback to convex hull if ClipperPaths fails
-        print("🔄 UNITE fallback: Using convex hull")
+        print("🔄 UNION fallback: Using convex hull")
         return convexHullFallback(paths)
     }
     
@@ -1092,23 +1092,21 @@ extension ProfessionalPathOperations {
 
     
     /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
+    /// Uses the same CoreGraphics Union implementation for better performance and curve preservation
     static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        print("🔨 PROFESSIONAL MERGE (ClipperPaths): Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths")
         
         // Adobe Illustrator Merge: Unite all objects into single shape, no interior lines
-        // Uses the same core logic as unite but returns as array for consistency with other pathfinder effects
+        // Now uses the same CoreGraphics Union implementation as Union operation
         
-        let validPaths = paths.filter { !$0.isEmpty }
-        guard !validPaths.isEmpty else { return paths }
-        
-        if let unified = professionalUniteCore(validPaths) {
-            print("✅ PROFESSIONAL MERGE (ClipperPaths): Merged into single unified shape")
-            return [unified]
+        if let unionResult = professionalUnion(paths) {
+            print("✅ PROFESSIONAL MERGE (CoreGraphics): Merged into single unified shape")
+            return [unionResult]
         }
         
-        print("❌ PROFESSIONAL MERGE (ClipperPaths): Failed to merge, returning original paths")
+        print("❌ PROFESSIONAL MERGE (CoreGraphics): Failed to merge, returning original paths")
         return paths
     }
     

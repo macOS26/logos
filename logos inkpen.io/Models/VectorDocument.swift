@@ -1680,20 +1680,20 @@ class VectorDocument: ObservableObject, Codable {
         
         switch operation {
         // SHAPE MODES (Adobe Illustrator)
-        case .unite:
-            // UNITE: Combines all shapes, result takes color of TOPMOST object
-            if let unitedPath = ProfessionalPathOperations.unite(paths) {
+        case .union:
+            // UNION: Combines all shapes, result takes color of TOPMOST object
+            if let unionPath = ProfessionalPathOperations.union(paths) {
                 let topmostShape = selectedShapes.last! // Last in array = topmost in stacking order
-                let unitedShape = VectorShape(
-                    name: "United Shape",
-                    path: VectorPath(cgPath: unitedPath),
+                let unionShape = VectorShape(
+                    name: "Union Shape",
+                    path: VectorPath(cgPath: unionPath),
                     strokeStyle: topmostShape.strokeStyle,
                     fillStyle: topmostShape.fillStyle,
                     transform: .identity,
                     opacity: topmostShape.opacity
                 )
-                resultShapes = [unitedShape]
-                print("✅ UNITE: Created unified shape with topmost object's color")
+                resultShapes = [unionShape]
+                print("✅ UNION: Created unified shape with topmost object's color")
             }
             
         case .minusFront:
