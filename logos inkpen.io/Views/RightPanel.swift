@@ -51,21 +51,7 @@ struct RightPanel: View {
     }
 }
 
-enum PanelTab: String, CaseIterable {
-    case layers = "Layers"
-    case properties = "Stroke/Fill"
-    case color = "Color"
-    case pathOps = "Path Ops"
-    
-    var iconName: String {
-        switch self {
-        case .layers: return "square.stack"
-        case .properties: return "paintbrush"
-        case .color: return "paintpalette"
-        case .pathOps: return "square.grid.2x2"
-        }
-    }
-}
+
 
 struct PanelTabBar: View {
     @Binding var selectedTab: PanelTab
