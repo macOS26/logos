@@ -1228,6 +1228,8 @@ struct StylePreset {
 
 struct FontToolSection: View {
     @ObservedObject var document: VectorDocument
+    @State private var showingTextFillColorPicker = false
+    @State private var showingTextStrokeColorPicker = false
     
     private var selectedText: VectorText? {
         document.textObjects.first { document.selectedTextIDs.contains($0.id) }
@@ -1353,16 +1355,9 @@ struct FontToolSection: View {
                     Spacer()
                     
                     Button {
-                        // Use document default fill color for text
-                        updateTextFillColor(document.defaultFillColor)
+                        showingTextFillColorPicker = true
                     } label: {
-                        Rectangle()
-                            .fill(selectedText.typography.fillColor.color)
-                            .frame(width: 30, height: 20)
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray, lineWidth: 1)
-                            )
+                        renderColorSwatchRightPanel(selectedText.typography.fillColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
                     }
                     .buttonStyle(.plain)
                 }
@@ -1383,16 +1378,9 @@ struct FontToolSection: View {
                     
                     if selectedText.typography.hasStroke {
                         Button {
-                            // Use document default stroke color for text
-                            updateTextStrokeColor(document.defaultStrokeColor)
+                            showingTextStrokeColorPicker = true
                         } label: {
-                            Rectangle()
-                                .fill(selectedText.typography.strokeColor.color)
-                                .frame(width: 30, height: 20)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
+                            renderColorSwatchRightPanel(selectedText.typography.strokeColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
                         }
                         .buttonStyle(.plain)
                     }
@@ -1428,6 +1416,30 @@ struct FontToolSection: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(Color(NSColor.separatorColor), lineWidth: 1)
         )
+        .sheet(isPresented: $showingTextFillColorPicker) {
+            ColorPickerModal(
+                document: document,
+                title: "Text Fill Color",
+                onColorSelected: { color in
+                    updateTextFillColor(color)
+                    if !document.colorSwatches.contains(color) {
+                        document.addColorSwatch(color)
+                    }
+                }
+            )
+        }
+        .sheet(isPresented: $showingTextStrokeColorPicker) {
+            ColorPickerModal(
+                document: document,
+                title: "Text Stroke Color",
+                onColorSelected: { color in
+                    updateTextStrokeColor(color)
+                    if !document.colorSwatches.contains(color) {
+                        document.addColorSwatch(color)
+                    }
+                }
+            )
+        }
     }
     
     private func updateSelectedTextFont() {
