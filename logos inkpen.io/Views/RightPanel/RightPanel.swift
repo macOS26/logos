@@ -27,6 +27,8 @@ struct RightPanel: View {
                     ColorPanel(document: document)
                 case .pathOps:
                     PathOperationsPanel(document: document)
+                case .font:
+                    FontPanel(document: document)
                 }
             }
         }

@@ -12,6 +12,7 @@ enum PanelTab: String, CaseIterable {
     case properties = "Stroke/Fill"
     case color = "Color"
     case pathOps = "Path Ops"
+    case font = "Font"
     
     var iconName: String {
         switch self {
@@ -19,6 +20,7 @@ enum PanelTab: String, CaseIterable {
         case .properties: return "paintbrush"
         case .color: return "paintpalette"
         case .pathOps: return "square.grid.2x2"
+        case .font: return "textformat"
         }
     }
 } 
