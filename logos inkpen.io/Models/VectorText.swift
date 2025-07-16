@@ -277,12 +277,11 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     private func createCoreTextFont() -> CTFont {
-        // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
-        // This already handles weight and style correctly using SwiftUI's font system
+        // CRITICAL FIX: Use the NSFont directly to preserve ALL attributes (weight, style, etc.)
         let nsFont = typography.nsFont
         
-        // Convert NSFont to CTFont
-        return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
+        // Convert NSFont to CTFont while preserving ALL attributes
+        return CTFontCreateWithFontDescriptor(nsFont.fontDescriptor, nsFont.pointSize, nil)
     }
     
     // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
