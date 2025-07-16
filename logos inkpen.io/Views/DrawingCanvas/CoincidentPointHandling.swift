@@ -56,8 +56,8 @@ extension DrawingCanvas {
                         let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
                         if distance <= tolerance {
                             coincidentPoints.insert(pointID)
-                            print("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target")
-                            print("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)")
+                            // print("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target")
+                            // print("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)")
                         }
                     }
                 }
@@ -86,9 +86,9 @@ extension DrawingCanvas {
         }
         
         if !coincidentPoints.isEmpty {
-            print("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points")
-            print("   Primary point: \(pointID)")
-            print("   Coincident points: \(coincidentPoints)")
+            // print("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points")
+            // print("   Primary point: \(pointID)")
+            // print("   Coincident points: \(coincidentPoints)")
         }
     }
     
@@ -145,8 +145,8 @@ extension DrawingCanvas {
     /// Analyzes and reports all coincident points in the current document
     /// Useful for debugging and understanding path structure
     func analyzeCoincidentPoints() {
-        print("🔍 COINCIDENT POINT ANALYSIS:")
-        print("Using tolerance: \(coincidentPointTolerance) pixels")
+        // print("🔍 COINCIDENT POINT ANALYSIS:")
+        // print("Using tolerance: \(coincidentPointTolerance) pixels")
         
         var totalCoincidentGroups = 0
         var processedPoints: Set<PointID> = []
@@ -159,7 +159,7 @@ extension DrawingCanvas {
             for shape in layer.shapes {
                 if !shape.isVisible { continue }
                 
-                print("\n📋 Analyzing shape: \(shape.name)")
+                // print("\n📋 Analyzing shape: \(shape.name)")
                 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     let pointID = PointID(
@@ -185,10 +185,10 @@ extension DrawingCanvas {
                     if !coincidentPoints.isEmpty {
                         totalCoincidentGroups += 1
                         if let position = getPointPosition(pointID) {
-                            print("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):")
-                            print("      Primary: Element \(elementIndex)")
+                            // print("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):")
+                            // print("      Primary: Element \(elementIndex)")
                             for coincidentPoint in coincidentPoints {
-                                print("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)")
+                                // print("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)")
                             }
                             
                             // Mark all points in this group as processed
@@ -203,10 +203,10 @@ extension DrawingCanvas {
         }
         
         if totalCoincidentGroups == 0 {
-            print("✅ No coincident points found in document")
+            // print("✅ No coincident points found in document")
         } else {
-            print("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups")
-            print("💡 TIP: These points will move together when selected to maintain path continuity")
+            // print("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups")
+            // print("💡 TIP: These points will move together when selected to maintain path continuity")
         }
     }
     
@@ -270,7 +270,7 @@ extension DrawingCanvas {
                 elements[draggedHandleID.elementIndex] = updateElementControl1(elements[draggedHandleID.elementIndex], newControl1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[lastElementIndex] = .curve(to: lastTo, control1: lastControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
                 
-                print("🔗 COINCIDENT SMOOTH: Updated first→last handles")
+                // print("🔗 COINCIDENT SMOOTH: Updated first→last handles")
                 return true
             }
             
@@ -289,7 +289,7 @@ extension DrawingCanvas {
                 elements[draggedHandleID.elementIndex] = updateElementControl2(elements[draggedHandleID.elementIndex], newControl2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[1] = .curve(to: secondTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: secondControl2)
                 
-                print("🔗 COINCIDENT SMOOTH: Updated last→first handles")
+                // print("🔗 COINCIDENT SMOOTH: Updated last→first handles")
                 return true
             }
         }

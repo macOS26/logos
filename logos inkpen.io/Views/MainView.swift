@@ -136,7 +136,7 @@ struct MainView: View {
                 guard let url = urls.first else { return }
                 importVectorFile(from: url)
             case .failure(let error):
-                print("❌ File import error: \(error)")
+                 print("❌ File import error: \(error)")
             }
         }
         .sheet(item: $importResult) { result in
@@ -204,7 +204,7 @@ struct MainView: View {
                 
                 document.currentTool = tool
                 tool.cursor.push()
-                print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
+                // print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
             }
         }
         
@@ -220,7 +220,7 @@ struct MainView: View {
             for textObj in document.textObjects {
                 document.selectedTextIDs.insert(textObj.id)
             }
-            print("📝 MENU: Selected all objects (\(document.selectedShapeIDs.count) shapes, \(document.selectedTextIDs.count) text)")
+            // print("📝 MENU: Selected all objects (\(document.selectedShapeIDs.count) shapes, \(document.selectedTextIDs.count) text)")
         }
         
         NotificationCenter.default.addObserver(forName: .deselectAll, object: nil, queue: .main) { _ in
@@ -228,13 +228,13 @@ struct MainView: View {
             let textCount = document.selectedTextIDs.count
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
-            print("📝 MENU: Deselected all objects (\(shapeCount) shapes, \(textCount) text)")
+            // print("📝 MENU: Deselected all objects (\(shapeCount) shapes, \(textCount) text)")
         }
         
         // Object Commands - Arrange - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .bringToFront, object: nil, queue: .main) { _ in
             guard !document.selectedShapeIDs.isEmpty else { 
-                print("📝 MENU: Bring to Front - No objects selected")
+                // print("📝 MENU: Bring to Front - No objects selected")
                 return 
             }
             
@@ -257,12 +257,12 @@ struct MainView: View {
             
             // Add to front (end of array)
             document.layers[layerIndex].shapes.append(contentsOf: shapesToMove)
-            print("📝 MENU: Brought \(shapesToMove.count) objects to front")
+            // print("📝 MENU: Brought \(shapesToMove.count) objects to front")
         }
         
         NotificationCenter.default.addObserver(forName: .bringForward, object: nil, queue: .main) { _ in
             guard !document.selectedShapeIDs.isEmpty else { 
-                print("📝 MENU: Bring Forward - No objects selected")
+                // print("📝 MENU: Bring Forward - No objects selected")
                 return 
             }
             
@@ -279,12 +279,12 @@ struct MainView: View {
                 }
             }
             document.layers[layerIndex] = layer
-            print("📝 MENU: Brought forward \(document.selectedShapeIDs.count) objects")
+            // print("📝 MENU: Brought forward \(document.selectedShapeIDs.count) objects")
         }
         
         NotificationCenter.default.addObserver(forName: .sendBackward, object: nil, queue: .main) { _ in
             guard !document.selectedShapeIDs.isEmpty else { 
-                print("📝 MENU: Send Backward - No objects selected")
+                // print("📝 MENU: Send Backward - No objects selected")
                 return 
             }
             
@@ -301,12 +301,12 @@ struct MainView: View {
                 }
             }
             document.layers[layerIndex] = layer
-            print("📝 MENU: Sent backward \(document.selectedShapeIDs.count) objects")
+            // print("📝 MENU: Sent backward \(document.selectedShapeIDs.count) objects")
         }
         
         NotificationCenter.default.addObserver(forName: .sendToBack, object: nil, queue: .main) { _ in
             guard !document.selectedShapeIDs.isEmpty else { 
-                print("📝 MENU: Send to Back - No objects selected")
+                // print("📝 MENU: Send to Back - No objects selected")
                 return 
             }
             
@@ -329,28 +329,28 @@ struct MainView: View {
             
             // Insert at beginning (back)
             document.layers[layerIndex].shapes.insert(contentsOf: shapesToMove, at: 0)
-            print("📝 MENU: Sent \(shapesToMove.count) objects to back")
+            // print("📝 MENU: Sent \(shapesToMove.count) objects to back")
         }
         
         // Object Commands - Lock/Hide
         NotificationCenter.default.addObserver(forName: .lockObjects, object: nil, queue: .main) { _ in
             document.lockSelectedObjects()
-            print("📝 MENU: Lock Objects")
+            // print("📝 MENU: Lock Objects")
         }
         
         NotificationCenter.default.addObserver(forName: .unlockAll, object: nil, queue: .main) { _ in
             document.unlockAllObjects()
-            print("📝 MENU: Unlock All")
+            // print("📝 MENU: Unlock All")
         }
         
         NotificationCenter.default.addObserver(forName: .hideObjects, object: nil, queue: .main) { _ in
             document.hideSelectedObjects()
-            print("📝 MENU: Hide Objects")
+            // print("📝 MENU: Hide Objects")
         }
         
         NotificationCenter.default.addObserver(forName: .showAll, object: nil, queue: .main) { _ in
             document.showAllObjects()
-            print("📝 MENU: Show All")
+            // print("📝 MENU: Show All")
         }
         
         // View Commands - Zoom - PROPERLY IMPLEMENTED
@@ -358,51 +358,51 @@ struct MainView: View {
             let oldZoom = document.zoomLevel
             let newZoom = min(document.zoomLevel * 1.25, 50.0)
             document.zoomLevel = newZoom
-            print("📝 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
+            // print("📝 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
         }
         
         NotificationCenter.default.addObserver(forName: .zoomOut, object: nil, queue: .main) { _ in
             let oldZoom = document.zoomLevel
             let newZoom = max(document.zoomLevel / 1.25, 0.01)
             document.zoomLevel = newZoom
-            print("📝 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
+            // print("📝 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
         }
         
         NotificationCenter.default.addObserver(forName: .fitToPage, object: nil, queue: .main) { _ in
             fitToPage()
-            print("📝 MENU: Fit to Page")
+            // print("📝 MENU: Fit to Page")
         }
         
         NotificationCenter.default.addObserver(forName: .actualSize, object: nil, queue: .main) { _ in
             document.zoomLevel = 1.0
-            print("📝 MENU: Actual Size (100%)")
+            // print("📝 MENU: Actual Size (100%)")
         }
         
         // View Commands - View Mode - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .colorView, object: nil, queue: .main) { _ in
             document.viewMode = .color
-            print("📝 MENU: Switched to Color View")
+            // print("📝 MENU: Switched to Color View")
         }
         
         NotificationCenter.default.addObserver(forName: .keylineView, object: nil, queue: .main) { _ in
             document.viewMode = .keyline
-            print("📝 MENU: Switched to Keyline View")
+            // print("📝 MENU: Switched to Keyline View")
         }
         
         // View Commands - Show/Hide - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .toggleRulers, object: nil, queue: .main) { _ in
             document.showRulers.toggle()
-            print("📝 MENU: Rulers \(document.showRulers ? "shown" : "hidden")")
+            // print("📝 MENU: Rulers \(document.showRulers ? "shown" : "hidden")")
         }
         
         NotificationCenter.default.addObserver(forName: .toggleGrid, object: nil, queue: .main) { _ in
             document.settings.showGrid.toggle()
-            print("📝 MENU: Grid \(document.settings.showGrid ? "shown" : "hidden")")
+            // print("📝 MENU: Grid \(document.settings.showGrid ? "shown" : "hidden")")
         }
         
         NotificationCenter.default.addObserver(forName: .toggleSnapToGrid, object: nil, queue: .main) { _ in
             document.snapToGrid.toggle()
-            print("📝 MENU: Snap to Grid \(document.snapToGrid ? "enabled" : "disabled")")
+            // print("📝 MENU: Snap to Grid \(document.snapToGrid ? "enabled" : "disabled")")
         }
         
         // Text Commands
@@ -418,23 +418,23 @@ struct MainView: View {
         NotificationCenter.default.addObserver(forName: .cleanupDuplicatePoints, object: nil, queue: .main) { _ in
             if !document.selectedShapeIDs.isEmpty {
                 ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
-                print("🧹 MENU: Cleaned duplicate points in selected shapes")
+                // print("🧹 MENU: Cleaned duplicate points in selected shapes")
             } else {
                 ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-                print("🧹 MENU: Cleaned duplicate points in all shapes")
+                // print("🧹 MENU: Cleaned duplicate points in all shapes")
             }
         }
         
         // Clean up duplicate points in all shapes
         NotificationCenter.default.addObserver(forName: .cleanupAllDuplicatePoints, object: nil, queue: .main) { _ in
             ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-            print("🧹 MENU: Cleaned duplicate points in all document shapes")
+            // print("🧹 MENU: Cleaned duplicate points in all document shapes")
         }
         
         // Test duplicate point merger (for verification)
         NotificationCenter.default.addObserver(forName: .testDuplicatePointMerger, object: nil, queue: .main) { _ in
             ProfessionalPathOperations.testDuplicatePointMerger()
-            print("🧪 MENU: Ran duplicate point merger test")
+            // print("🧪 MENU: Ran duplicate point merger test")
         }
         
         // Window Commands - Panel Switching
@@ -466,18 +466,18 @@ struct MainView: View {
     private func fitToPage() {
         // Fit the entire page to the view (Adobe Illustrator standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
+        // print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
     }
     
     private func setupDocument() {
         // Document starts completely empty - no default shapes
-        print("✅ Document setup complete - starting with empty canvas")
+        // print("✅ Document setup complete - starting with empty canvas")
         
         // PROFESSIONAL STARTUP BEHAVIOR: Auto-fit to page on launch (like Adobe Illustrator)
         // Use a small delay to ensure the view is fully rendered before fitting
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-            print("🔍 AUTO-FIT TO PAGE: Applied on app launch for professional startup experience")
+            // print("🔍 AUTO-FIT TO PAGE: Applied on app launch for professional startup experience")
         }
     }
     
@@ -512,7 +512,7 @@ struct MainView: View {
         do {
             try FileOperations.exportToJSON(document, url: url)
             
-            print("✅ Successfully saved document to: \(url.path)")
+            // print("✅ Successfully saved document to: \(url.path)")
             
             // Show success notification
             DispatchQueue.main.async {
@@ -524,7 +524,7 @@ struct MainView: View {
             }
             
         } catch {
-            print("❌ Save failed: \(error)")
+            // print("❌ Save failed: \(error)")
             
             // Show error notification
             DispatchQueue.main.async {
@@ -559,13 +559,13 @@ struct MainView: View {
         // Clear the current document URL (new document has no saved location)
         currentDocumentURL = nil
         
-        print("✅ Created new document using TemplateManager - completely empty")
+        // print("✅ Created new document using TemplateManager - completely empty")
         
         // PROFESSIONAL NEW DOCUMENT BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
         // Use a small delay to ensure the view is updated before fitting
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-            print("🔍 AUTO-FIT TO PAGE: Applied for new document creation")
+            // print("🔍 AUTO-FIT TO PAGE: Applied for new document creation")
         }
     }
     
@@ -612,13 +612,13 @@ struct MainView: View {
                         // Update current document URL
                         currentDocumentURL = url
                         
-                        print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
+                        // print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
                         // PROFESSIONAL DOCUMENT OPEN BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
                         // Use a small delay to ensure the view is updated before fitting
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-                            print("🔍 AUTO-FIT TO PAGE: Applied for opened document")
+                            // print("🔍 AUTO-FIT TO PAGE: Applied for opened document")
                         }
                         
                         // Show success notification
@@ -630,7 +630,7 @@ struct MainView: View {
                     }
                     
                 } catch {
-                    print("❌ Open failed: \(error)")
+                    // print("❌ Open failed: \(error)")
                     
                     // Show error notification
                     await MainActor.run {
@@ -661,16 +661,16 @@ struct MainView: View {
                     for shape in result.shapes {
                         document.addShape(shape)
                     }
-                    print("✅ Import successful: \(result.shapes.count) shapes imported")
+                    // print("✅ Import successful: \(result.shapes.count) shapes imported")
                     
                     // PROFESSIONAL IMPORT BEHAVIOR: Auto-fit to page after import (like Adobe Illustrator)
                     // Use a small delay to ensure the shapes are added before fitting
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-                        print("🔍 AUTO-FIT TO PAGE: Applied after vector import")
+                        // print("🔍 AUTO-FIT TO PAGE: Applied after vector import")
                     }
                 } else {
-                    print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")
+                    // print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")
                 }
                 
                 // Show import result dialog
@@ -693,7 +693,7 @@ struct MainView: View {
             do {
                 try FileOperations.exportDWF(document, url: url, options: options)
                 
-                print("✅ Successfully exported DWF to: \(url.path)")
+                // print("✅ Successfully exported DWF to: \(url.path)")
                 
                 // Show success notification
                 DispatchQueue.main.async {
@@ -705,7 +705,7 @@ struct MainView: View {
                 }
                 
             } catch {
-                print("❌ DWF export failed: \(error)")
+                // print("❌ DWF export failed: \(error)")
                 
                 // Show error notification
                 DispatchQueue.main.async {
@@ -722,7 +722,7 @@ struct MainView: View {
     // MARK: - Debug Functions
     
     private func runPasteboardDiagnostics() {
-        print("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI")
+        // print("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI")
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
         
@@ -752,7 +752,7 @@ struct MainView: View {
             do {
                 try FileOperations.exportDWG(document, url: url, options: options)
                 
-                print("✅ Successfully exported DWG to: \(url.path)")
+                // print("✅ Successfully exported DWG to: \(url.path)")
                 
                 // Show success notification
                 DispatchQueue.main.async {
@@ -764,7 +764,7 @@ struct MainView: View {
                 }
                 
             } catch {
-                print("❌ DWG export failed: \(error)")
+                // print("❌ DWG export failed: \(error)")
                 
                 // Show error notification
                 DispatchQueue.main.async {
@@ -919,7 +919,7 @@ struct MainToolbarContent: ToolbarContent {
                         let newPath = VectorPath(elements: newElements, isClosed: true)
                         document.layers[layerIndex].shapes[shapeIndex].path = newPath
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                        print("🎯 Closed selected path for shape \(shape.name)")
+                        // print("🎯 Closed selected path for shape \(shape.name)")
                     }
                 }
             }
@@ -1093,26 +1093,26 @@ struct MainToolbarContent: ToolbarContent {
         // Zoom in by 25% (Adobe Illustrator standard)
         let newZoom = min(10.0, document.zoomLevel * 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
-        print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+        // print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
     }
     
     private func onZoomOut() {
         // Zoom out by 25% (Adobe Illustrator standard)
         let newZoom = max(0.1, document.zoomLevel / 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomOut)
-        print("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+        // print("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
     }
     
     private func onFitToPage() {
         // Fit the entire page to the view (Adobe Illustrator standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
+        // print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
     }
     
     private func onActualSize() {
         // Set to 100% zoom (Adobe Illustrator standard)
         document.requestZoom(to: 1.0, mode: .actualSize)
-        print("🔍 ACTUAL SIZE: Set to 100% zoom")
+        // print("🔍 ACTUAL SIZE: Set to 100% zoom")
     }
     
     // MARK: - Professional Object Management Functions (Adobe Illustrator Standards)
@@ -1132,7 +1132,7 @@ struct MainToolbarContent: ToolbarContent {
         shapes.append(contentsOf: selectedShapes)
         
         document.layers[layerIndex].shapes = shapes
-        print("⬆️⬆️ Brought to front \(document.selectedShapeIDs.count) objects")
+        // print("⬆️⬆️ Brought to front \(document.selectedShapeIDs.count) objects")
     }
     
     private func bringSelectedForward() {
@@ -1152,7 +1152,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         document.layers[layerIndex].shapes = shapes
-        print("⬆️ Brought forward \(document.selectedShapeIDs.count) objects")
+        // print("⬆️ Brought forward \(document.selectedShapeIDs.count) objects")
     }
     
     private func sendSelectedBackward() {
@@ -1172,7 +1172,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         document.layers[layerIndex].shapes = shapes
-        print("⬇️ Sent backward \(document.selectedShapeIDs.count) objects")
+        // print("⬇️ Sent backward \(document.selectedShapeIDs.count) objects")
     }
     
     private func sendSelectedToBack() {
@@ -1190,7 +1190,7 @@ struct MainToolbarContent: ToolbarContent {
         shapes.insert(contentsOf: selectedShapes, at: 0)
         
         document.layers[layerIndex].shapes = shapes
-        print("⬇️⬇️ Sent to back \(document.selectedShapeIDs.count) objects")
+        // print("⬇️⬇️ Sent to back \(document.selectedShapeIDs.count) objects")
     }
     
     private func lockSelectedObjects() {
@@ -1216,7 +1216,7 @@ struct MainToolbarContent: ToolbarContent {
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         
-        print("🔒 Locked selected objects")
+        // print("🔒 Locked selected objects")
     }
     
     private func unlockAllObjects() {
@@ -1234,7 +1234,7 @@ struct MainToolbarContent: ToolbarContent {
             document.textObjects[textIndex].isLocked = false
         }
         
-        print("🔓 Unlocked all objects")
+        // print("🔓 Unlocked all objects")
     }
     
     private func hideSelectedObjects() {
@@ -1260,7 +1260,7 @@ struct MainToolbarContent: ToolbarContent {
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         
-        print("👁️‍🗨️ Hidden selected objects")
+        // print("👁️‍🗨️ Hidden selected objects")
     }
     
     private func showAllObjects() {
@@ -1278,7 +1278,7 @@ struct MainToolbarContent: ToolbarContent {
             document.textObjects[textIndex].isVisible = true
         }
         
-        print("👁️ Showed all objects")
+        // print("👁️ Showed all objects")
     }
 }
 
@@ -1598,7 +1598,7 @@ struct ExportView: View {
                     try FileOperations.exportToJPEG(document, url: url, scale: CGFloat(exportScale), quality: exportQuality)
                 }
                 
-                print("✅ Successfully exported document as \(exportFormat.rawValue) to: \(url.path)")
+                // print("✅ Successfully exported document as \(exportFormat.rawValue) to: \(url.path)")
                 
                 // Show success notification
                 DispatchQueue.main.async {
@@ -1610,7 +1610,7 @@ struct ExportView: View {
                 }
                 
             } catch {
-                print("❌ Export failed: \(error)")
+                // print("❌ Export failed: \(error)")
                 
                 // Show error notification
                 DispatchQueue.main.async {

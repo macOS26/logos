@@ -1,0 +1,50 @@
+//
+//  DrawingCanvas+DirectSelContextMenu.swift
+//  logos inkpen.io
+//
+//  Created by Todd Bruss on 7/15/25.
+//
+
+import SwiftUI
+    
+extension DrawingCanvas {
+    @ViewBuilder
+    internal var directSelectionContextMenu: some View {
+        // PROFESSIONAL BEZIER PEN CONTEXT MENU OPTIONS
+        if document.currentTool == .bezierPen && isBezierDrawing && bezierPoints.count >= 3 {
+            Button("Close Path") {
+                closeBezierPath()
+            }
+            .keyboardShortcut("j", modifiers: [.command]) // Adobe Illustrator standard
+            
+            Button("Finish Path (Open)") {
+                finishBezierPath()
+            }
+            .keyboardShortcut(.return)
+            
+            Button("Cancel Path") {
+                cancelBezierDrawing()
+            }
+            .keyboardShortcut(.escape)
+        }
+        
+        if document.currentTool == .directSelection && !selectedPoints.isEmpty {
+            Button("Close Path") {
+                closeSelectedPaths()
+            }
+            // Note: Global Command+Shift+J shortcut handles this in MainView
+            
+            Button("Delete Selected") {
+                deleteSelectedPoints()
+            }
+            .keyboardShortcut(.delete)
+            
+            Divider()
+            
+            Button("Analyze Coincident Points") {
+                analyzeCoincidentPoints()
+            }
+        }
+    }
+
+}

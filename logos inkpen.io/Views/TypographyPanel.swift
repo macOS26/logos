@@ -558,9 +558,9 @@ struct TypographyPanel: View {
             availableFontStyles = [.normal]
         }
         
-        print("🔤 DYNAMIC FONT LOADING: \(fontFamily)")
-        print("   📊 Available weights: \(availableFontWeights.map { $0.rawValue })")
-        print("   🎨 Available styles: \(availableFontStyles.map { $0.rawValue })")
+        // print("🔤 DYNAMIC FONT LOADING: \(fontFamily)")
+        // print("   📊 Available weights: \(availableFontWeights.map { $0.rawValue })")
+        // print("   🎨 Available styles: \(availableFontStyles.map { $0.rawValue })")
     }
     
     /// Maps NSFont weight values to our FontWeight enum
@@ -700,7 +700,7 @@ struct TypographyPanel: View {
         // This will trigger the text-to-outlines conversion
         document.convertTextToOutlines(textID)
         
-        print("🎯 Converting text to vector outlines (Adobe Illustrator / FreeHand professional feature)")
+        // print("🎯 Converting text to vector outlines (Adobe Illustrator / FreeHand professional feature)")
     }
 }
 

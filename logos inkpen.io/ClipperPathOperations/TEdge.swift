@@ -30,7 +30,7 @@ public class TEdge {
     weak var prevInSEL: TEdge?
     
     deinit {
-//        print("TEdge deinit.")
+//        // print("TEdge deinit.")
     }
 }
 

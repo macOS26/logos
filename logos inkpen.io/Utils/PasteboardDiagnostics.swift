@@ -16,8 +16,8 @@ class PasteboardDiagnostics {
     
     /// Run comprehensive pasteboard diagnostics
     func runDiagnostics(on document: VectorDocument) -> DiagnosticReport {
-        print("🔍 RUNNING PASTEBOARD DIAGNOSTICS")
-        print("=" * 50)
+        // print("🔍 RUNNING PASTEBOARD DIAGNOSTICS")
+        // print("=" * 50)
         
         var report = DiagnosticReport()
         
@@ -36,8 +36,8 @@ class PasteboardDiagnostics {
         // Test 5: Performance
         report.performance = testPerformance(document)
         
-        print("🔍 DIAGNOSTICS COMPLETE")
-        print("=" * 50)
+        // print("🔍 DIAGNOSTICS COMPLETE")
+        // print("=" * 50)
         
         return report
     }
@@ -45,7 +45,7 @@ class PasteboardDiagnostics {
     // MARK: - Individual Test Functions
     
     private func testLayerStructure(_ document: VectorDocument) -> LayerStructureTest {
-        print("🧪 TEST 1: Layer Structure")
+        // print("🧪 TEST 1: Layer Structure")
         
         var test = LayerStructureTest()
         
@@ -80,16 +80,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.layerCountCorrect && test.layerNamesCorrect && test.lockStatusCorrect
         
-        print("  Layer count: \(test.layerCount)/\(test.expectedLayerCount) ✓")
-        print("  Layer names: \(test.layerNamesCorrect ? "✓" : "✗")")
-        print("  Lock status: \(test.lockStatusCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("  Layer count: \(test.layerCount)/\(test.expectedLayerCount) ✓")
+        // print("  Layer names: \(test.layerNamesCorrect ? "✓" : "✗")")
+        // print("  Lock status: \(test.lockStatusCorrect ? "✓" : "✗")")
+        // print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
         
         return test
     }
     
     private func testBackgroundShapes(_ document: VectorDocument) -> BackgroundShapesTest {
-        print("🧪 TEST 2: Background Shapes")
+        // print("🧪 TEST 2: Background Shapes")
         
         var test = BackgroundShapesTest()
         
@@ -149,23 +149,23 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardShapeCorrect && test.canvasShapeCorrect && test.sizingCorrect && test.positioningCorrect
         
-        print("  Pasteboard shape: \(test.pasteboardShapeCorrect ? "✓" : "✗")")
-        print("  Canvas shape: \(test.canvasShapeCorrect ? "✓" : "✗")")
-        print("  Sizing: \(test.sizingCorrect ? "✓" : "✗")")
-        print("  Positioning: \(test.positioningCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("  Pasteboard shape: \(test.pasteboardShapeCorrect ? "✓" : "✗")")
+        // print("  Canvas shape: \(test.canvasShapeCorrect ? "✓" : "✗")")
+        // print("  Sizing: \(test.sizingCorrect ? "✓" : "✗")")
+        // print("  Positioning: \(test.positioningCorrect ? "✓" : "✗")")
+        // print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
         
         return test
     }
     
     private func testHitTestingSimulation(_ document: VectorDocument) -> HitTestingTest {
-        print("🧪 TEST 3: Hit Testing Simulation")
+        // print("🧪 TEST 3: Hit Testing Simulation")
         
         var test = HitTestingTest()
         
         guard document.layers.count >= 3 else {
             test.passed = false
-            print("  ✗ FAIL: Insufficient layers")
+            // print("  ✗ FAIL: Insufficient layers")
             return test
         }
         
@@ -199,16 +199,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardHitCorrect && test.canvasPriorityCorrect && test.layerIterationTest.passed
         
-        print("  Pasteboard hit: \(test.pasteboardHitCorrect ? "✓" : "✗")")
-        print("  Canvas priority: \(test.canvasPriorityCorrect ? "✓" : "✗")")
-        print("  Layer iteration: \(test.layerIterationTest.passed ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("  Pasteboard hit: \(test.pasteboardHitCorrect ? "✓" : "✗")")
+        // print("  Canvas priority: \(test.canvasPriorityCorrect ? "✓" : "✗")")
+        // print("  Layer iteration: \(test.layerIterationTest.passed ? "✓" : "✗")")
+        // print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
         
         return test
     }
     
     private func testLayerIteration(_ document: VectorDocument) -> LayerIterationTest {
-        print("    🔍 Testing layer iteration...")
+        // print("    🔍 Testing layer iteration...")
         
         var test = LayerIterationTest()
         let testPoint = CGPoint(x: 100, y: 100)
@@ -235,7 +235,7 @@ class PasteboardDiagnostics {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     let isHit = shapeBounds.contains(testPoint)
                     
-                    print("      Testing Layer \(layerIndex) - \(shape.name): \(isHit ? "HIT" : "miss")")
+                    // print("      Testing Layer \(layerIndex) - \(shape.name): \(isHit ? "HIT" : "miss")")
                     
                     if isHit {
                         break
@@ -261,14 +261,14 @@ class PasteboardDiagnostics {
         
         test.passed = test.allLayersTested && test.allBackgroundShapesTested
         
-        print("      Layers tested: \(test.allLayersTested ? "✓" : "✗")")
-        print("      Background shapes tested: \(test.allBackgroundShapesTested ? "✓" : "✗")")
+        // print("      Layers tested: \(test.allLayersTested ? "✓" : "✗")")
+        // print("      Background shapes tested: \(test.allBackgroundShapesTested ? "✓" : "✗")")
         
         return test
     }
     
     private func testRealWorldScenarios(_ document: VectorDocument) -> RealWorldScenariosTest {
-        print("🧪 TEST 4: Real-World Scenarios")
+        // print("🧪 TEST 4: Real-World Scenarios")
         
         var test = RealWorldScenariosTest()
         
@@ -356,16 +356,16 @@ class PasteboardDiagnostics {
         
         test.passed = test.pasteboardObjectHitCorrect && test.canvasObjectHitCorrect && test.emptyPasteboardHitCorrect
         
-        print("  Pasteboard object hit: \(test.pasteboardObjectHitCorrect ? "✓" : "✗")")
-        print("  Canvas object hit: \(test.canvasObjectHitCorrect ? "✓" : "✗")")
-        print("  Empty pasteboard hit: \(test.emptyPasteboardHitCorrect ? "✓" : "✗")")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("  Pasteboard object hit: \(test.pasteboardObjectHitCorrect ? "✓" : "✗")")
+        // print("  Canvas object hit: \(test.canvasObjectHitCorrect ? "✓" : "✗")")
+        // print("  Empty pasteboard hit: \(test.emptyPasteboardHitCorrect ? "✓" : "✗")")
+        // print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
         
         return test
     }
     
     private func testPerformance(_ document: VectorDocument) -> PerformanceTest {
-        print("🧪 TEST 5: Performance")
+        // print("🧪 TEST 5: Performance")
         
         var test = PerformanceTest()
         
@@ -402,9 +402,9 @@ class PasteboardDiagnostics {
         
         test.passed = test.averageTimePerHitTest < 0.001 // Less than 1ms per hit test
         
-        print("  Total time: \(String(format: "%.4f", test.totalTime))s")
-        print("  Average per hit test: \(String(format: "%.6f", test.averageTimePerHitTest))s")
-        print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("  Total time: \(String(format: "%.4f", test.totalTime))s")
+        // print("  Average per hit test: \(String(format: "%.6f", test.averageTimePerHitTest))s")
+        // print("  Overall: \(test.passed ? "✓ PASS" : "✗ FAIL")")
         
         return test
     }
@@ -477,16 +477,16 @@ struct DiagnosticReport {
     }
     
     func printSummary() {
-        print("\n📊 DIAGNOSTIC REPORT SUMMARY")
-        print("=" * 40)
-        print("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")")
-        print("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")")
-        print("=" * 40)
-        print("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")")
-        print("=" * 40)
+        // print("\n📊 DIAGNOSTIC REPORT SUMMARY")
+        // print("=" * 40)
+        // print("Layer Structure:     \(layerStructure.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("Background Shapes:   \(backgroundShapes.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("Hit Testing:         \(hitTesting.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("Real-World Scenarios:\(realWorldScenarios.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("Performance:         \(performance.passed ? "✓ PASS" : "✗ FAIL")")
+        // print("=" * 40)
+        // print("OVERALL:             \(overallPassed ? "✅ PASS" : "❌ FAIL")")
+        // print("=" * 40)
     }
 }
 

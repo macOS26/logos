@@ -85,18 +85,18 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 DOCUMENT SCALING (Standard Approach):")
-        print("   Document Bounds: \(documentBounds)")
-        print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
-        print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
-        print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
-        print("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   Scale X: \(String(format: "%.3f", scaleX)) (width fit)")
-        print("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)")
-        print("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)")
-        print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
-        print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-        print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
+        // print("🎯 DOCUMENT SCALING (Standard Approach):")
+        // print("   Document Bounds: \(documentBounds)")
+        // print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
+        // print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
+        // print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
+        // print("   Available Space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
+        // print("   Scale X: \(String(format: "%.3f", scaleX)) (width fit)")
+        // print("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)")
+        // print("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)")
+        // print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
+        // print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+        // print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
     }
     
     /// Fit canvas to page view
@@ -137,10 +137,10 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🔍 FIT TO PAGE: Using standard document bounds")
-        print("   Document Bounds: \(documentBounds)")
-        print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
-        print("   Standard coordinate system approach")
+        // print("🔍 FIT TO PAGE: Using standard document bounds")
+        // print("   Document Bounds: \(documentBounds)")
+        // print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
+        // print("   Standard coordinate system approach")
     }
     
     /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
@@ -172,10 +172,10 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        print("🎯 ACTUAL SIZE: Set to 100% and centered document")
-        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
+        // print("🎯 ACTUAL SIZE: Set to 100% and centered document")
+        // print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
+        // print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        // print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
     
     /// Zoom at a specific point (stable version to prevent drift)
@@ -210,10 +210,10 @@ extension DrawingCanvas {
         
         document.canvasOffset = newOffset
         
-        print("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
-        print("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))")
-        print("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))")
-        print("   Stable offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+        // print("🔍 FOCAL POINT ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        // print("   Focal point: (\(String(format: "%.1f", focalPoint.x)), \(String(format: "%.1f", focalPoint.y)))")
+        // print("   Canvas point at focus: (\(String(format: "%.1f", canvasPointAtFocus.x)), \(String(format: "%.1f", canvasPointAtFocus.y)))")
+        // print("   Stable offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
     
     /// Handle simplified zoom
@@ -249,9 +249,9 @@ extension DrawingCanvas {
         
         document.canvasOffset = newOffset
         
-        print("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
-        print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
-        print("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
+        // print("🔍 STABLE ZOOM: \(String(format: "%.3f", oldZoomLevel))x → \(String(format: "%.3f", newZoomLevel))x")
+        // print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
+        // print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        // print("   Fixed offset: (\(String(format: "%.1f", newOffset.x)), \(String(format: "%.1f", newOffset.y)))")
     }
 } 

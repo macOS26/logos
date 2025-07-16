@@ -595,7 +595,7 @@ struct SelectionHandles: View {
             return
         }
         
-        print("🔧 Applying scaling transform to shape coordinates: \(shape.name)")
+        // print("🔧 Applying scaling transform to shape coordinates: \(shape.name)")
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -641,7 +641,7 @@ struct SelectionHandles: View {
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
-        print("✅ Shape coordinates updated after scaling - object origin stays with object")
+        // print("✅ Shape coordinates updated after scaling - object origin stays with object")
     }
     
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
@@ -869,7 +869,7 @@ struct TextSelectionHandles: View {
         // Apply uniform scaling for text (Adobe Illustrator behavior)
         applyTextScaling(scaleX: scaleFactor, scaleY: scaleFactor)
         
-        print("🔤 Text corner scaling - maintaining proportions (professional standard)")
+        // print("🔤 Text corner scaling - maintaining proportions (professional standard)")
     }
     
     private func handleTextEdgeScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
@@ -908,7 +908,7 @@ struct TextSelectionHandles: View {
         // Apply non-proportional scaling for text
         applyTextScaling(scaleX: scaleX, scaleY: scaleY)
         
-        print("🔤 Text edge scaling - non-proportional (professional standard)")
+        // print("🔤 Text edge scaling - non-proportional (professional standard)")
     }
     
     private func applyTextScaling(scaleX: CGFloat, scaleY: CGFloat) {
@@ -1033,7 +1033,7 @@ struct TextSelectionHandles: View {
             document.textObjects[textIndex].updateBounds()
         }
         
-        print("🔄 Text rotation completed")
+        // print("🔄 Text rotation completed")
     }
 }
 

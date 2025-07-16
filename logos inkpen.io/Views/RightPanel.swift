@@ -93,7 +93,7 @@ struct RightPanel: View {
             NotificationCenter.default.addObserver(forName: .switchToPanel, object: nil, queue: .main) { notification in
                 if let panelTab = notification.object as? PanelTab {
                     selectedTab = panelTab
-                    print("🎨 Menu: Switched to panel: \(panelTab.rawValue)")
+                    // print("🎨 Menu: Switched to panel: \(panelTab.rawValue)")
                 }
             }
         }
@@ -372,7 +372,7 @@ struct ProfessionalLayerRow: View {
                 
                 // PROTECT CANVAS LAYER: Don't allow selection of Canvas layer when locked
                 if isCanvasLayer && layer.isLocked {
-                    print("🚫 Cannot select locked Canvas layer")
+                    // print("🚫 Cannot select locked Canvas layer")
                     return
                 }
                 
@@ -562,7 +562,7 @@ struct ObjectRow: View {
         .onChange(of: isDragging) { oldValue, newValue in
             // Visual feedback during drag
             //if newValue {
-                //print("🎯 Dragging \(objectType.rawValue): \(name)")
+                //// print("🎯 Dragging \(objectType.rawValue): \(name)")
             //}
         }
         .contextMenu {
@@ -974,18 +974,18 @@ struct PathOperationsPanel: View {
     }
     
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
-        print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
+        // print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
         
         // Get selected shapes in correct STACKING ORDER (Adobe Illustrator standard)
         let selectedShapes = document.getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
-            print("❌ No shapes selected for pathfinder operation")
+            // print("❌ No shapes selected for pathfinder operation")
             return
         }
         
-        print("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes")
+        // print("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes")
         for (index, shape) in selectedShapes.enumerated() {
-            print("  \(index): \(shape.name) (bottom→top)")
+            // print("  \(index): \(shape.name) (bottom→top)")
         }
         
         // Convert shapes to CGPaths
@@ -993,7 +993,7 @@ struct PathOperationsPanel: View {
         
         // Validate operation can be performed
         guard ProfessionalPathOperations.canPerformOperation(operation, on: paths) else {
-            print("❌ Cannot perform \(operation.rawValue) on selected shapes")
+            // print("❌ Cannot perform \(operation.rawValue) on selected shapes")
             return
         }
         
@@ -1018,20 +1018,20 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [unitedShape]
-                print("✅ UNITE: Created unified shape with topmost object's color")
+                // print("✅ UNITE: Created unified shape with topmost object's color")
             }
             
         case .minusFront:
             // MINUS FRONT: Front objects subtract from back object, result takes color of BACK object
             guard selectedShapes.count >= 2 else { 
-                print("❌ MINUS FRONT requires at least 2 shapes")
+                // print("❌ MINUS FRONT requires at least 2 shapes")
                 return 
             }
             
             let backShape = selectedShapes.first!    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            print("🔪 MINUS FRONT: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
+            // print("🔪 MINUS FRONT: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
             
             var resultPath = backShape.path.cgPath
             
@@ -1039,7 +1039,7 @@ struct PathOperationsPanel: View {
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
-                    print("  ⚡ Subtracted '\(frontShape.name)' from result")
+                    // print("  ⚡ Subtracted '\(frontShape.name)' from result")
                 }
             }
             
@@ -1053,12 +1053,12 @@ struct PathOperationsPanel: View {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ MINUS FRONT: Result takes back object's color (\(backShape.name))")
+            // print("✅ MINUS FRONT: Result takes back object's color (\(backShape.name))")
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                print("❌ INTERSECT requires exactly 2 shapes")
+                // print("❌ INTERSECT requires exactly 2 shapes")
                 return
             }
             
@@ -1073,13 +1073,13 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [intersectedShape]
-                print("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))")
+                // print("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))")
             }
             
         case .exclude:
             // EXCLUDE: Remove overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                print("❌ EXCLUDE requires exactly 2 shapes")
+                // print("❌ EXCLUDE requires exactly 2 shapes")
                 return
             }
             
@@ -1097,7 +1097,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(excludedShape)
             }
-            print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
+            // print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .divide:
@@ -1118,7 +1118,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(dividedShape)
             }
-            print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
+            // print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
             
         case .trim:
             // TRIM: Remove overlapping areas, objects retain original colors, removes strokes
@@ -1146,7 +1146,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(trimmedShape)
             }
-            print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
+            // print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
             
         case .merge:
             // MERGE: Like trim but merges objects of same color, removes strokes
@@ -1166,7 +1166,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(mergedShape)
             }
-            print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
+            // print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
@@ -1191,7 +1191,7 @@ struct PathOperationsPanel: View {
                         opacity: originalShape.opacity
                     )
                     resultShapes.append(invisibleCropShape)
-                    print("   ✅ Created invisible crop boundary from \(originalShape.name)")
+                    // print("   ✅ Created invisible crop boundary from \(originalShape.name)")
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
@@ -1209,7 +1209,7 @@ struct PathOperationsPanel: View {
                 }
             }
             
-            print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
+            // print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
             
         case .dieline:
             // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
@@ -1231,19 +1231,19 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(dielineShape)
             }
-            print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
+            // print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
             
         case .minusBack:
             // MINUS BACK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
-                print("❌ MINUS BACK requires at least 2 shapes")
+                // print("❌ MINUS BACK requires at least 2 shapes")
                 return
             }
             
             let frontShape = selectedShapes.last!     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            print("🔪 MINUS BACK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
+            // print("🔪 MINUS BACK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
             
             var resultPath = frontShape.path.cgPath
             
@@ -1251,7 +1251,7 @@ struct PathOperationsPanel: View {
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusBack(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
-                    print("  ⚡ Subtracted '\(backShape.name)' from result")
+                    // print("  ⚡ Subtracted '\(backShape.name)' from result")
                 }
             }
             
@@ -1265,11 +1265,11 @@ struct PathOperationsPanel: View {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ MINUS BACK: Result takes front object's color (\(frontShape.name))")
+            // print("✅ MINUS BACK: Result takes front object's color (\(frontShape.name))")
         }
         
         guard !resultShapes.isEmpty else {
-            print("❌ Pathfinder operation \(operation.rawValue) produced no results")
+            // print("❌ Pathfinder operation \(operation.rawValue) produced no results")
             return
         }
         
@@ -1282,7 +1282,7 @@ struct PathOperationsPanel: View {
             document.selectShape(resultShape.id)
         }
         
-        print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
+        // print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
     }
     
     /// Determine which original shape a divided piece belongs to (for color assignment)
@@ -1597,7 +1597,7 @@ struct ProfessionalOffsetPathSection: View {
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
         
-        print("🎨 PROFESSIONAL OFFSET PATH: \(offsetDistance)pt, join: \(selectedJoinType)")
+        // print("🎨 PROFESSIONAL OFFSET PATH: \(offsetDistance)pt, join: \(selectedJoinType)")
         
         // Save to undo stack
         document.saveToUndoStack()
@@ -1630,7 +1630,7 @@ struct ProfessionalOffsetPathSection: View {
                     // Find the outside path (usually the largest one after trim)
                     if let outsidePath = findOutsidePath(from: trimmedPaths, original: shape.path.cgPath, offset: offsetPath) {
                         offsetPaths[index] = outsidePath
-                        print("🔧 TRIMX: Applied trim operation and selected outside cleaned path")
+                        // print("🔧 TRIMX: Applied trim operation and selected outside cleaned path")
                     }
                 }
             }
@@ -1670,7 +1670,7 @@ struct ProfessionalOffsetPathSection: View {
         // Force document refresh so arrow tool can see newly created shapes
         document.objectWillChange.send()
          
-         print("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals")
+         // print("✅ OFFSET PATH: Created offset shapes \(keepOriginalPath ? "behind" : "replacing") originals")
     }
     
 

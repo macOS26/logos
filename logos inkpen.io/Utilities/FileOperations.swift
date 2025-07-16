@@ -152,7 +152,7 @@ class VectorImportManager {
     
     /// Import vector graphics file with professional-grade parsing
     func importVectorFile(from url: URL) async -> VectorImportResult {
-        print("🔄 Importing vector file: \(url.lastPathComponent)")
+        // print("🔄 Importing vector file: \(url.lastPathComponent)")
         
         // Detect file format
         guard let format = detectFormat(from: url) else {
@@ -165,7 +165,7 @@ class VectorImportManager {
             )
         }
         
-        print("📋 Detected format: \(format.displayName)")
+        // print("📋 Detected format: \(format.displayName)")
         
         // Check if format is currently supported
         guard format.isCurrentlySupported else {
@@ -260,7 +260,7 @@ class VectorImportManager {
         var warnings: [String] = []
         var shapes: [VectorShape] = []
         
-        print("📊 Importing SVG using professional SVG parser...")
+        // print("📊 Importing SVG using professional SVG parser...")
         
         do {
             guard let data = try? Data(contentsOf: url) else {
@@ -289,7 +289,7 @@ class VectorImportManager {
                 documentVersion: svgContent.version
             )
             
-            print("✅ SVG import successful: \(shapes.count) shapes")
+            // print("✅ SVG import successful: \(shapes.count) shapes")
             
             return VectorImportResult(
                 success: true,
@@ -301,7 +301,7 @@ class VectorImportManager {
             
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
-            print("❌ SVG import failed: \(error)")
+            // print("❌ SVG import failed: \(error)")
             
             return VectorImportResult(
                 success: false,
@@ -320,7 +320,7 @@ class VectorImportManager {
         let warnings: [String] = []
         var shapes: [VectorShape] = []
         
-        print("📊 Importing PDF using CoreGraphics professional parser...")
+        // print("📊 Importing PDF using CoreGraphics professional parser...")
         
         guard let pdfDocument = CGPDFDocument(url as CFURL) else {
             errors.append(.corruptedFile)
@@ -366,7 +366,7 @@ class VectorImportManager {
                 documentVersion: pdfContent.version
             )
             
-            print("✅ PDF import successful: \(shapes.count) vector shapes")
+            // print("✅ PDF import successful: \(shapes.count) vector shapes")
             
             return VectorImportResult(
                 success: true,
@@ -378,7 +378,7 @@ class VectorImportManager {
             
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
-            print("❌ PDF import failed: \(error)")
+            // print("❌ PDF import failed: \(error)")
             
             return VectorImportResult(
                 success: false,
@@ -396,8 +396,8 @@ class VectorImportManager {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
         
-        print("📊 Importing Adobe Illustrator file...")
-        print("💡 Adobe Illustrator files contain embedded PDF data")
+        // print("📊 Importing Adobe Illustrator file...")
+        // print("💡 Adobe Illustrator files contain embedded PDF data")
         
         // Adobe Illustrator files contain embedded PDF that we can extract
         do {
@@ -422,7 +422,7 @@ class VectorImportManager {
                     documentVersion: aiContent.version
                 )
                 
-                print("✅ Adobe Illustrator import successful via embedded PDF")
+                // print("✅ Adobe Illustrator import successful via embedded PDF")
                 
                 return VectorImportResult(
                     success: pdfResult.success,
@@ -437,7 +437,7 @@ class VectorImportManager {
             
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
-            print("❌ Adobe Illustrator import failed: \(error)")
+            // print("❌ Adobe Illustrator import failed: \(error)")
             
             return VectorImportResult(
                 success: false,
@@ -455,7 +455,7 @@ class VectorImportManager {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
         
-        print("📊 Importing EPS (Encapsulated PostScript)...")
+        // print("📊 Importing EPS (Encapsulated PostScript)...")
         
         // EPS can often be converted to PDF for import
         do {
@@ -476,7 +476,7 @@ class VectorImportManager {
                 documentVersion: epsContent.version
             )
             
-            print("✅ EPS import successful: \(epsContent.shapes.count) shapes")
+            // print("✅ EPS import successful: \(epsContent.shapes.count) shapes")
             
             return VectorImportResult(
                 success: true,
@@ -488,7 +488,7 @@ class VectorImportManager {
             
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
-            print("❌ EPS import failed: \(error)")
+            // print("❌ EPS import failed: \(error)")
             
             return VectorImportResult(
                 success: false,
@@ -507,8 +507,8 @@ class VectorImportManager {
         var warnings: [String] = []
         var shapes: [VectorShape] = []
         
-        print("📊 Importing DWF (Design Web Format)...")
-        print("💡 DWF is Autodesk's published, open format for CAD/engineering drawings")
+        // print("📊 Importing DWF (Design Web Format)...")
+        // print("💡 DWF is Autodesk's published, open format for CAD/engineering drawings")
         
         do {
             guard let data = try? Data(contentsOf: url) else {
@@ -545,7 +545,7 @@ class VectorImportManager {
                 documentVersion: dwfContent.version
             )
             
-            print("✅ DWF import successful: \(shapes.count) vector shapes, \(dwfContent.layerCount) layers")
+            // print("✅ DWF import successful: \(shapes.count) vector shapes, \(dwfContent.layerCount) layers")
             
             return VectorImportResult(
                 success: true,
@@ -557,7 +557,7 @@ class VectorImportManager {
             
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
-            print("❌ DWF import failed: \(error)")
+            // print("❌ DWF import failed: \(error)")
             
             return VectorImportResult(
                 success: false,
@@ -643,7 +643,7 @@ private struct DWFContent {
 
 private func parseSVGContent(_ data: Data) throws -> SVGContent {
     // PROFESSIONAL SVG PARSER IMPLEMENTATION
-    print("🔧 Implementing professional SVG parser...")
+    // print("🔧 Implementing professional SVG parser...")
     
     guard let xmlString = String(data: data, encoding: .utf8) else {
         throw VectorImportError.parsingError("Could not decode SVG as UTF-8", line: nil)
@@ -800,7 +800,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     // MARK: - CSS Style Parsing
     
     private func parseCSSStyles(_ cssContent: String) {
-        print("🎨 Parsing CSS styles")
+        // print("🎨 Parsing CSS styles")
         
         // Parse CSS rules from style content
         let rules = cssContent.components(separatedBy: "}")
@@ -826,11 +826,11 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
                 
                 cssStyles[selector] = styles
-                print("📋 Added CSS rule: \(selector) -> \(styles)")
+                // print("📋 Added CSS rule: \(selector) -> \(styles)")
             }
         }
         
-        print("✅ CSS parsing complete - \(cssStyles.count) rules parsed")
+        // print("✅ CSS parsing complete - \(cssStyles.count) rules parsed")
     }
     
     // MARK: - SVG Element Parsers
@@ -838,7 +838,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parseText(attributes: [String: String]) {
         currentTextContent = ""
         currentTextAttributes = attributes
-        print("🔤 Starting text element parsing")
+        // print("🔤 Starting text element parsing")
     }
     
     private func finishTextElement() {
@@ -867,7 +867,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         currentTextContent = ""
         currentTextAttributes = [:]
         
-        print("📝 Created text object: '\(textObject.content)'")
+        // print("📝 Created text object: '\(textObject.content)'")
     }
     
     private func parseSVGRoot(attributes: [String: String]) {
@@ -899,12 +899,12 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parsePath(attributes: [String: String]) {
         guard let d = attributes["d"] else { return }
         
-        print("🔍 Parsing SVG path: \(d)")
+        // print("🔍 Parsing SVG path: \(d)")
         
         let pathData = parsePathData(d)
         let vectorPath = VectorPath(elements: pathData)
         
-        print("📐 Created path with \(pathData.count) elements")
+        // print("📐 Created path with \(pathData.count) elements")
         
         let shape = createShape(
             name: "Path",
@@ -913,18 +913,18 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         if let fill = shape.fillStyle {
-            print("🎨 Shape has fill style: \(fill)")
+            // print("🎨 Shape has fill style: \(fill)")
         } else {
-            print("⚪ Shape has no fill")
+            // print("⚪ Shape has no fill")
         }
         if let stroke = shape.strokeStyle {
-            print("🖊️ Shape has stroke style: \(stroke)")
+            // print("🖊️ Shape has stroke style: \(stroke)")
         } else {
-            print("📝 Shape has no stroke")
+            // print("📝 Shape has no stroke")
         }
         
         shapes.append(shape)
-        print("✅ Added shape to collection - total: \(shapes.count)")
+        // print("✅ Added shape to collection - total: \(shapes.count)")
     }
     
     private func parseRectangle(attributes: [String: String]) {
@@ -1093,22 +1093,22 @@ class SVGParser: NSObject, XMLParserDelegate {
         var mergedAttributes = attributes
         
         if let className = attributes["class"] {
-            print("🏷️ Processing classes: \(className)")
+            // print("🏷️ Processing classes: \(className)")
             // Handle multiple classes separated by spaces
             let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
             for cls in classNames {
                 let selector = "." + cls
                 if let classStyles = cssStyles[selector] {
-                    print("✅ Found styles for \(selector): \(classStyles)")
+                    // print("✅ Found styles for \(selector): \(classStyles)")
                     // CSS class styles have lower priority than inline styles
                     for (key, value) in classStyles {
                         if mergedAttributes[key] == nil {
                             mergedAttributes[key] = value
-                            print("   Applied \(key): \(value)")
+                            // print("   Applied \(key): \(value)")
                         }
                     }
                 } else {
-                    print("❌ No styles found for \(selector)")
+                    // print("❌ No styles found for \(selector)")
                 }
             }
         }
@@ -1144,11 +1144,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         if mergedAttributes["transform"] != nil {
             // External SVG with transform attribute - apply it
             transform = parseTransform(mergedAttributes["transform"] ?? "").concatenating(currentTransform)
-            print("🔄 Applied external SVG transform")
+            // print("🔄 Applied external SVG transform")
         } else {
             // Our own exported SVG (no transform attribute) - coordinates are already correct
             transform = currentTransform.isIdentity ? .identity : currentTransform
-            print("✅ Using identity transform for logos-exported shape")
+            // print("✅ Using identity transform for logos-exported shape")
         }
         
         return VectorShape(
@@ -1428,11 +1428,11 @@ class SVGParser: NSObject, XMLParserDelegate {
         var subpathStart = CGPoint.zero
         var lastControlPoint: CGPoint?
         
-        print("🔍 RAW PATH DATA: \(pathData.prefix(100))...")
+        // print("🔍 RAW PATH DATA: \(pathData.prefix(100))...")
         
         // Professional SVG tokenization using proper regex patterns
         let tokens = tokenizeSVGPath(pathData)
-        print("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))")
+        // print("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))")
         
         // Check for basic parsing issues
         var coordinateCount = 0
@@ -1444,7 +1444,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 coordinateCount += 1
             }
         }
-        print("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates")
+        // print("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates")
         
         var i = 0
         var currentCommand: String = ""
@@ -1456,7 +1456,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             if token.rangeOfCharacter(from: .letters) != nil {
                 // It's a command
                 currentCommand = token
-                print("🔧 COMMAND: \(currentCommand)")
+                // print("🔧 COMMAND: \(currentCommand)")
                 i += 1
                 continue
             }
@@ -1467,7 +1467,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i + 1 < tokens.count {
                     let x = Double(tokens[i]) ?? 0
                     let y = Double(tokens[i + 1]) ?? 0
-                    print("   Move to: (\(x), \(y))")
+                    // print("   Move to: (\(x), \(y))")
                     currentPoint = CGPoint(x: x, y: y)
                     subpathStart = currentPoint
                     elements.append(.move(to: VectorPoint(currentPoint)))
@@ -1475,7 +1475,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     // After first moveto, subsequent coordinate pairs are treated as lineto
                     currentCommand = "L"
                 } else {
-                    print("   ⚠️ Not enough tokens for M command")
+                    // print("   ⚠️ Not enough tokens for M command")
                     i += 1
                 }
                 
@@ -1496,13 +1496,13 @@ class SVGParser: NSObject, XMLParserDelegate {
                 if i + 1 < tokens.count {
                     let x = Double(tokens[i]) ?? 0
                     let y = Double(tokens[i + 1]) ?? 0
-                    print("   Line to: (\(x), \(y))")
+                    // print("   Line to: (\(x), \(y))")
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = nil // Reset control point after line command
                     elements.append(.line(to: VectorPoint(currentPoint)))
                     i += 2
                 } else {
-                    print("   ⚠️ Not enough tokens for L command")
+                    // print("   ⚠️ Not enough tokens for L command")
                     i += 1
                 }
                 
@@ -1599,8 +1599,8 @@ class SVGParser: NSObject, XMLParserDelegate {
                     let y2 = currentPoint.y + dy2
                     let newPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
                     
-                    print("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))")
-                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
+                    // print("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))")
+                    // print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
                     
                     currentPoint = newPoint
                     lastControlPoint = CGPoint(x: x2, y: y2)
@@ -1612,7 +1612,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     ))
                     i += 6
                 } else {
-                    print("   ⚠️ Not enough tokens for c command")
+                    // print("   ⚠️ Not enough tokens for c command")
                     i += 1
                 }
                 
@@ -1637,8 +1637,8 @@ class SVGParser: NSObject, XMLParserDelegate {
                         y1 = currentPoint.y
                     }
                     
-                    print("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))")
-                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
+                    // print("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))")
+                    // print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
                     
                     currentPoint = CGPoint(x: x, y: y)
                     lastControlPoint = CGPoint(x: x2, y: y2)
@@ -1742,7 +1742,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
                 
             case "Z", "z": // Close path
-                print("   Close path")
+                // print("   Close path")
                 elements.append(.close)
                 currentPoint = subpathStart
                 lastControlPoint = nil
@@ -1754,9 +1754,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
-        print("🏁 FINAL ELEMENTS: \(elements.count) total")
+        // print("🏁 FINAL ELEMENTS: \(elements.count) total")
         for (index, element) in elements.enumerated() {
-            print("  [\(index)] \(element)")
+            // print("  [\(index)] \(element)")
         }
         return elements
     }
@@ -1777,7 +1777,7 @@ class SVGParser: NSObject, XMLParserDelegate {
 }
 
 private func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
-    print("🔧 Implementing professional PDF vector extraction...")
+    // print("🔧 Implementing professional PDF vector extraction...")
     
     var shapes: [VectorShape] = []
     let textCount: Int = 0
@@ -1826,7 +1826,7 @@ private func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     
     shapes.append(rectShape)
     
-    print("✅ PDF vector extraction completed: \(shapes.count) shapes extracted")
+    // print("✅ PDF vector extraction completed: \(shapes.count) shapes extracted")
     
     return PDFContent(
         shapes: shapes,
@@ -1837,7 +1837,7 @@ private func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
 }
 
 private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
-    print("🔧 Implementing professional Adobe Illustrator parser...")
+    // print("🔧 Implementing professional Adobe Illustrator parser...")
     
     guard let data = try? Data(contentsOf: url) else {
         throw VectorImportError.fileNotFound
@@ -1855,7 +1855,7 @@ private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
     
     // Check if it contains PDF data
     if fileContent.contains("%PDF-") {
-        print("📋 Found embedded PDF data in AI file")
+        // print("📋 Found embedded PDF data in AI file")
         
         // Extract the PDF portion from the AI file
         if let pdfStartRange = fileContent.range(of: "%PDF-") {
@@ -1881,7 +1881,7 @@ private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
                 try pdfData.write(to: tempURL)
                 embeddedPDFURL = tempURL
                 
-                print("✅ Extracted embedded PDF to temporary file")
+                // print("✅ Extracted embedded PDF to temporary file")
             }
         }
     }
@@ -1899,7 +1899,7 @@ private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
     layerCount = fileContent.components(separatedBy: layerPattern).count - 1
     if layerCount <= 0 { layerCount = 1 }
     
-    print("✅ Adobe Illustrator parsing completed - Found \(layerCount) layers")
+    // print("✅ Adobe Illustrator parsing completed - Found \(layerCount) layers")
     
     return AIContent(
         embeddedPDFURL: embeddedPDFURL,
@@ -1909,7 +1909,7 @@ private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
 }
 
 private func parseEPSContent(_ url: URL) throws -> EPSContent {
-    print("🔧 Implementing professional EPS/PostScript parser...")
+    // print("🔧 Implementing professional EPS/PostScript parser...")
     
     guard let data = try? Data(contentsOf: url) else {
         throw VectorImportError.fileNotFound
@@ -1941,7 +1941,7 @@ private func parseEPSContent(_ url: URL) throws -> EPSContent {
                    let width = Double(components[3]),
                    let height = Double(components[4]) {
                     boundingBox = CGRect(x: x, y: y, width: width - x, height: height - y)
-                    print("📋 Found bounding box: \(boundingBox)")
+                    // print("📋 Found bounding box: \(boundingBox)")
                 }
             }
         }
@@ -1973,7 +1973,7 @@ private func parseEPSContent(_ url: URL) throws -> EPSContent {
     // Parse basic PostScript drawing commands to extract shapes
     shapes = try parsePostScriptPaths(fileContent)
     
-    print("✅ EPS parsing completed: \(shapes.count) shapes, \(textCount) text objects")
+    // print("✅ EPS parsing completed: \(shapes.count) shapes, \(textCount) text objects")
     
     return EPSContent(
         shapes: shapes,
@@ -2063,7 +2063,7 @@ private func parsePostScriptPaths(_ content: String) throws -> [VectorShape] {
 
 private func parseDWFContent(_ data: Data) throws -> DWFContent {
     // PROFESSIONAL DWF PARSER - Based on Autodesk's published specification
-    print("🔧 Implementing professional DWF parser...")
+    // print("🔧 Implementing professional DWF parser...")
     
     guard data.count >= 12 else {
         throw VectorImportError.invalidStructure("File too small to be valid DWF")
@@ -2082,7 +2082,7 @@ private func parseDWFContent(_ data: Data) throws -> DWFContent {
     let versionEnd = headerString.index(headerString.endIndex, offsetBy: -1)
     let version = String(headerString[versionStart..<versionEnd])
     
-    print("📋 DWF Version: \(version)")
+    // print("📋 DWF Version: \(version)")
     
     // Parse DWF data block starting at byte 13
     var currentOffset = 12
@@ -2103,7 +2103,7 @@ private func parseDWFContent(_ data: Data) throws -> DWFContent {
             let trailerData = data.subdata(in: currentOffset..<(currentOffset + 10))
             if let trailerString = String(data: trailerData, encoding: .ascii),
                trailerString == "(EndOfDWF)" {
-                print("📋 Found DWF termination trailer")
+                // print("📋 Found DWF termination trailer")
                 break
             }
         }
@@ -2151,7 +2151,7 @@ private func parseDWFContent(_ data: Data) throws -> DWFContent {
         }
     }
     
-    print("✅ DWF parsing complete: \(shapes.count) shapes, \(layerCount) layers")
+    // print("✅ DWF parsing complete: \(shapes.count) shapes, \(layerCount) layers")
     
     return DWFContent(
         shapes: shapes,
@@ -2173,21 +2173,21 @@ private func parseDWFContent(_ data: Data) throws -> DWFContent {
 private func parseDWFLine(_ data: Data, offset: inout Int) throws -> VectorShape? {
     // Parse DWF line format: L x1,y1 x2,y2
     // This is a simplified implementation - full implementation would handle all coordinate formats
-    print("🔧 DWF line parser - simplified implementation")
+    // print("🔧 DWF line parser - simplified implementation")
     offset += 20 // Skip for now
             return nil
         }
 
 private func parseDWFPolyline(_ data: Data, offset: inout Int) throws -> VectorShape? {
     // Parse DWF polyline format: P count x1,y1 x2,y2 ...
-    print("🔧 DWF polyline parser - simplified implementation")
+    // print("🔧 DWF polyline parser - simplified implementation")
     offset += 20 // Skip for now
     return nil
 }
 
 private func parseDWFCircle(_ data: Data, offset: inout Int) throws -> VectorShape? {
     // Parse DWF circle format: R x,y,radius
-    print("🔧 DWF circle parser - simplified implementation")
+    // print("🔧 DWF circle parser - simplified implementation")
     offset += 20 // Skip for now
     return nil
 }
@@ -2201,7 +2201,7 @@ private func parseDWFExtendedASCII(_ data: Data, offset: inout Int,
                                  sourceApplication: inout String?,
                                  missingFonts: inout [String]) throws {
     // Parse extended ASCII opcodes like (DrawingInfo), (Layer), (View), etc.
-    print("🔧 DWF extended ASCII parser - simplified implementation")
+    // print("🔧 DWF extended ASCII parser - simplified implementation")
     
     // Find matching closing parenthesis
     let startOffset = offset
@@ -2219,12 +2219,12 @@ private func parseDWFExtendedASCII(_ data: Data, offset: inout Int,
         if let contentString = String(data: contentData, encoding: .ascii) {
             // Parse specific DWF commands
             if contentString.contains("DrawingInfo") {
-                print("📋 Found DWF DrawingInfo section")
+                // print("📋 Found DWF DrawingInfo section")
             } else if contentString.contains("Layer") {
                 layerCount += 1
-                print("📋 Found DWF Layer definition")
+                // print("📋 Found DWF Layer definition")
             } else if contentString.contains("View") {
-                print("📋 Found DWF View definition")
+                // print("📋 Found DWF View definition")
             }
         }
     }
@@ -2241,7 +2241,7 @@ private func skipDWFExtendedBinary(_ data: Data, offset: inout Int) throws {
     let length = lengthBytes.withUnsafeBytes { $0.load(as: UInt32.self) }
     
     offset += 4 + Int(length)
-    print("⚠️ Skipped \(length) bytes of encrypted/binary DWF data")
+    // print("⚠️ Skipped \(length) bytes of encrypted/binary DWF data")
 }
 
 // MARK: - PROFESSIONAL DWF EXPORT SYSTEM (Adobe Illustrator Standards)
@@ -2257,8 +2257,8 @@ class VectorExportManager {
     
     /// Export to DWF with professional scaling (Adobe Illustrator approach for AutoDesk)
     func exportDWF(_ document: VectorDocument, to url: URL, options: DWFExportOptions) throws {
-        print("📄 Exporting to DWF using Adobe Illustrator professional standards...")
-        print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
+        // print("📄 Exporting to DWF using Adobe Illustrator professional standards...")
+        // print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
         
         // Create reference rectangle for scale maintenance (Adobe Illustrator method)
         let referenceRect = calculateReferenceRectangle(for: document, options: options)
@@ -2275,16 +2275,16 @@ class VectorExportManager {
         // Write DWF file with proper headers and structure
         try writeDWFFile(content: dwfContent, to: url)
         
-        print("✅ DWF export successful: \(url.lastPathComponent)")
-        print("📊 Exported: \(dwfContent.shapeCount) shapes, \(dwfContent.layerCount) layers")
+        // print("✅ DWF export successful: \(url.lastPathComponent)")
+        // print("📊 Exported: \(dwfContent.shapeCount) shapes, \(dwfContent.layerCount) layers")
     }
     
     // MARK: - DWG Export (Adobe Illustrator Standards for AutoCAD)
     
     /// Export to DWG with professional AutoCAD scaling (Adobe Illustrator approach)
     func exportDWG(_ document: VectorDocument, to url: URL, options: DWGExportOptions) throws {
-        print("📄 Exporting to DWG using Adobe Illustrator professional standards for AutoCAD...")
-        print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
+        // print("📄 Exporting to DWG using Adobe Illustrator professional standards for AutoCAD...")
+        // print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
         
         // Create professional reference rectangle (Adobe Illustrator method for AutoCAD)
         let referenceRect = calculateDWGReferenceRectangle(for: document, options: options)
@@ -2301,8 +2301,8 @@ class VectorExportManager {
         // Write DWG file with proper AutoCAD structure
         try writeDWGFile(content: dwgContent, to: url, version: options.dwgVersion)
         
-        print("✅ DWG export successful: \(url.lastPathComponent)")
-        print("📊 Exported: \(dwgContent.entityCount) entities, \(dwgContent.layerCount) layers")
+        // print("✅ DWG export successful: \(url.lastPathComponent)")
+        // print("📊 Exported: \(dwgContent.entityCount) entities, \(dwgContent.layerCount) layers")
     }
     
     // MARK: - Professional Scale Calculations (Adobe Illustrator Method)
@@ -3034,10 +3034,10 @@ class VectorExportManager {
     
     /// Professional DWG export with 100% scaling and millimeter precision
     func exportDWGWithMillimeterPrecision(_ document: VectorDocument, to url: URL, options: DWGExportOptions) async throws {
-        print("🔧 PROFESSIONAL DWG EXPORT - 100% Scaling with Millimeter Precision")
-        print("📊 Source units: \(document.documentUnits.rawValue)")
-        print("📊 Target units: \(options.targetUnits.rawValue)")
-        print("📊 Scale: \(options.scale.description)")
+        // print("🔧 PROFESSIONAL DWG EXPORT - 100% Scaling with Millimeter Precision")
+        // print("📊 Source units: \(document.documentUnits.rawValue)")
+        // print("📊 Target units: \(options.targetUnits.rawValue)")
+        // print("📊 Scale: \(options.scale.description)")
         
         // Calculate professional unit conversion with millimeter precision
         let preciseConversionFactor = document.documentUnits.convertTo(options.targetUnits, value: 1.0)
@@ -3046,9 +3046,9 @@ class VectorExportManager {
         let scaleMultiplier = getMillimeterPreciseScaleMultiplier(for: options.scale)
         let finalScaleFactor = preciseConversionFactor * scaleMultiplier
         
-        print("📊 Conversion factor: \(preciseConversionFactor)")
-        print("📊 Scale multiplier: \(scaleMultiplier)")
-        print("📊 Final scale: \(finalScaleFactor)")
+        // print("📊 Conversion factor: \(preciseConversionFactor)")
+        // print("📊 Scale multiplier: \(scaleMultiplier)")
+        // print("📊 Final scale: \(finalScaleFactor)")
         
         // Create professional coordinate transformation
         let transformation = createProfessionalCADTransformation(
@@ -3063,7 +3063,7 @@ class VectorExportManager {
             scaleFactor: finalScaleFactor
         )
         
-        print("📊 Precise bounds: \(preciseBounds)")
+        // print("📊 Precise bounds: \(preciseBounds)")
         
         // Generate DWG content with millimeter precision
         let content = try generateProfessionalDWGContent(
@@ -3076,16 +3076,16 @@ class VectorExportManager {
         // Write DWG file with millimeter precision
         try await writeProfessionalDWGFile(content: content, to: url, options: options)
         
-        print("✅ DWG EXPORT COMPLETE - Millimeter precision maintained")
-        print("📊 Exported: \(content.entityCount) entities, \(content.layerCount) layers")
+        // print("✅ DWG EXPORT COMPLETE - Millimeter precision maintained")
+        // print("📊 Exported: \(content.entityCount) entities, \(content.layerCount) layers")
     }
     
     /// Professional DWF export with 100% scaling and millimeter precision
     func exportDWFWithMillimeterPrecision(_ document: VectorDocument, to url: URL, options: DWFExportOptions) async throws {
-        print("🔧 PROFESSIONAL DWF EXPORT - 100% Scaling with Millimeter Precision")
-        print("📊 Source units: \(document.documentUnits.rawValue)")
-        print("📊 Target units: \(options.targetUnits.rawValue)")
-        print("📊 Scale: \(options.scale.description)")
+        // print("🔧 PROFESSIONAL DWF EXPORT - 100% Scaling with Millimeter Precision")
+        // print("📊 Source units: \(document.documentUnits.rawValue)")
+        // print("📊 Target units: \(options.targetUnits.rawValue)")
+        // print("📊 Scale: \(options.scale.description)")
         
         // Calculate professional unit conversion with millimeter precision
         let preciseConversionFactor = document.documentUnits.convertTo(options.targetUnits, value: 1.0)
@@ -3094,9 +3094,9 @@ class VectorExportManager {
         let scaleMultiplier = getMillimeterPreciseScaleMultiplier(for: options.scale)
         let finalScaleFactor = preciseConversionFactor * scaleMultiplier
         
-        print("📊 Conversion factor: \(preciseConversionFactor)")
-        print("📊 Scale multiplier: \(scaleMultiplier)")
-        print("📊 Final scale: \(finalScaleFactor)")
+        // print("📊 Conversion factor: \(preciseConversionFactor)")
+        // print("📊 Scale multiplier: \(scaleMultiplier)")
+        // print("📊 Final scale: \(finalScaleFactor)")
         
         // Create professional coordinate transformation
         let transformation = createProfessionalCADTransformationForDWF(
@@ -3111,7 +3111,7 @@ class VectorExportManager {
             scaleFactor: finalScaleFactor
         )
         
-        print("📊 Precise bounds: \(preciseBounds)")
+        // print("📊 Precise bounds: \(preciseBounds)")
         
         // Generate DWF content with millimeter precision
         let content = try generateProfessionalDWFContent(
@@ -3124,8 +3124,8 @@ class VectorExportManager {
         // Write DWF file with millimeter precision
         try await writeProfessionalDWFFile(content: content, to: url, options: options)
         
-        print("✅ DWF EXPORT COMPLETE - Millimeter precision maintained")
-        print("📊 Exported: \(content.shapeCount) shapes, \(content.layerCount) layers")
+        // print("✅ DWF EXPORT COMPLETE - Millimeter precision maintained")
+        // print("📊 Exported: \(content.shapeCount) shapes, \(content.layerCount) layers")
     }
     
     // MARK: - MILLIMETER PRECISION SCALING CALCULATIONS
@@ -3611,7 +3611,7 @@ class VectorExportManager {
     // MARK: - ENHANCED FILE WRITING WITH MILLIMETER PRECISION
     
     private func writeProfessionalDWGFile(content: DWGExportContent, to url: URL, options: DWGExportOptions) async throws {
-        print("🔧 Writing DWG file with millimeter precision...")
+        // print("🔧 Writing DWG file with millimeter precision...")
         
         var dwgData = Data()
         
@@ -3657,11 +3657,11 @@ class VectorExportManager {
         dwgData.append(footer.data(using: .utf8)!)
         
         try dwgData.write(to: url)
-        print("✅ Professional DWG file written with millimeter precision")
+        // print("✅ Professional DWG file written with millimeter precision")
     }
     
     private func writeProfessionalDWFFile(content: DWFExportContent, to url: URL, options: DWFExportOptions) async throws {
-        print("🔧 Writing DWF file with millimeter precision...")
+        // print("🔧 Writing DWF file with millimeter precision...")
         
         var dwfData = Data()
         
@@ -3680,7 +3680,7 @@ class VectorExportManager {
         dwfData.append(footer.data(using: .ascii)!)
         
         try dwfData.write(to: url)
-        print("✅ Professional DWF file written with millimeter precision")
+        // print("✅ Professional DWF file written with millimeter precision")
     }
     
     // MARK: - MILLIMETER PRECISION SERIALIZATION
@@ -4245,7 +4245,7 @@ class FileOperations {
     // MARK: - TODO: Other export formats (for future implementation)
     
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
-        print("💾 Exporting document to JSON: \(url.path)")
+        // print("💾 Exporting document to JSON: \(url.path)")
         
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -4254,15 +4254,15 @@ class FileOperations {
         do {
             let jsonData = try encoder.encode(document)
             try jsonData.write(to: url)
-            print("✅ Successfully exported JSON document")
+            // print("✅ Successfully exported JSON document")
         } catch {
-            print("❌ JSON export failed: \(error)")
+            // print("❌ JSON export failed: \(error)")
             throw VectorImportError.parsingError("Failed to export JSON: \(error.localizedDescription)", line: nil)
         }
     }
     
     static func importFromJSON(url: URL) throws -> VectorDocument {
-        print("📂 Importing document from JSON: \(url.path)")
+        // print("📂 Importing document from JSON: \(url.path)")
         
         do {
             let jsonData = try Data(contentsOf: url)
@@ -4270,16 +4270,16 @@ class FileOperations {
             decoder.dateDecodingStrategy = .iso8601
             
             let document = try decoder.decode(VectorDocument.self, from: jsonData)
-            print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+            // print("✅ Successfully imported JSON document with \(document.layers.count) layers")
             return document
         } catch {
-            print("❌ JSON import failed: \(error)")
+            // print("❌ JSON import failed: \(error)")
             throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
         }
     }
     
     static func importFromSVG(url: URL) async throws -> VectorDocument {
-        print("🎨 Importing document from SVG: \(url.path)")
+        // print("🎨 Importing document from SVG: \(url.path)")
         
         let result = await VectorImportManager.shared.importVectorFile(from: url)
         
@@ -4313,10 +4313,10 @@ class FileOperations {
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
         
-        print("🎯 SVG IMPORT BOUNDS CALCULATION:")
-        print("   Raw artwork bounds: \(artworkBounds)")
-        print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
-        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+        // print("🎯 SVG IMPORT BOUNDS CALCULATION:")
+        // print("   Raw artwork bounds: \(artworkBounds)")
+        // print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
+        // print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
         // Clear existing layers and create pasteboard + canvas + imported layers in correct order
         document.layers.removeAll()
@@ -4371,10 +4371,10 @@ class FileOperations {
         let translateX = canvasCenterX - artworkCenterX
         let translateY = canvasCenterY - artworkCenterY
         
-        print("🎯 CENTERING CALCULATION:")
-        print("   Artwork center: (\(String(format: "%.1f", artworkCenterX)), \(String(format: "%.1f", artworkCenterY)))")
-        print("   Canvas center: (\(String(format: "%.1f", canvasCenterX)), \(String(format: "%.1f", canvasCenterY)))")
-        print("   Translation needed: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
+        // print("🎯 CENTERING CALCULATION:")
+        // print("   Artwork center: (\(String(format: "%.1f", artworkCenterX)), \(String(format: "%.1f", artworkCenterY)))")
+        // print("   Canvas center: (\(String(format: "%.1f", canvasCenterX)), \(String(format: "%.1f", canvasCenterY)))")
+        // print("   Translation needed: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
         
         // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
         for shape in result.shapes {
@@ -4406,11 +4406,11 @@ class FileOperations {
         
         // Log warnings if any
         for warning in result.warnings {
-            print("⚠️ SVG Import Warning: \(warning)")
+            // print("⚠️ SVG Import Warning: \(warning)")
         }
         
-        print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
-        print("📐 Canvas sized to \(canvasWidth) × \(canvasHeight) pts with artwork centered")
+        // print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
+        // print("📐 Canvas sized to \(canvasWidth) × \(canvasHeight) pts with artwork centered")
         return document
     }
     
@@ -4470,14 +4470,14 @@ class FileOperations {
     }
     
     static func exportToSVG(_ document: VectorDocument, url: URL) throws {
-        print("🎨 Exporting document to SVG: \(url.path)")
+        // print("🎨 Exporting document to SVG: \(url.path)")
         
         do {
             let svgContent = try generateSVGContent(from: document)
             try svgContent.write(to: url, atomically: true, encoding: .utf8)
-            print("✅ Successfully exported SVG document")
+            // print("✅ Successfully exported SVG document")
         } catch {
-            print("❌ SVG export failed: \(error)")
+            // print("❌ SVG export failed: \(error)")
             throw VectorImportError.parsingError("Failed to export SVG: \(error.localizedDescription)", line: nil)
         }
     }
@@ -4492,10 +4492,10 @@ class FileOperations {
         let width = max(pasteboardBounds.width, 100) // Use pasteboard width
         let height = max(pasteboardBounds.height, 100) // Use pasteboard height
         
-        print("📊 SVG Export bounds:")
-        print("   Pasteboard: \(pasteboardBounds)")
-        print("   Content: \(contentBounds)")
-        print("   Using pasteboard bounds for consistent export")
+        // print("📊 SVG Export bounds:")
+        // print("   Pasteboard: \(pasteboardBounds)")
+        // print("   Content: \(contentBounds)")
+        // print("   Using pasteboard bounds for consistent export")
         
         // Collect unique styles for CSS generation
         var uniqueStyles: [String: (fill: String, stroke: String)] = [:]
@@ -4911,7 +4911,7 @@ class FileOperations {
     }
     
     static func exportToPDF(_ document: VectorDocument, url: URL) throws {
-        print("📄 Exporting document to PDF: \(url.path)")
+        // print("📄 Exporting document to PDF: \(url.path)")
         
         // Create PDF context
         let pageSize = document.settings.sizeInPoints
@@ -4965,7 +4965,7 @@ class FileOperations {
         // Close PDF context
         context.closePDF()
         
-        print("✅ Successfully exported PDF document")
+        // print("✅ Successfully exported PDF document")
     }
     
     private static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
@@ -5045,7 +5045,7 @@ class FileOperations {
     }
     
     static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat) throws {
-        print("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale")
+        // print("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale")
         
         // Calculate output size
         let pageSize = document.settings.sizeInPoints
@@ -5117,11 +5117,11 @@ class FileOperations {
             throw VectorImportError.parsingError("Failed to finalize PNG export", line: nil)
         }
         
-        print("✅ Successfully exported PNG document")
+        // print("✅ Successfully exported PNG document")
     }
     
     static func exportToJPEG(_ document: VectorDocument, url: URL, scale: CGFloat, quality: Double) throws {
-        print("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality")
+        // print("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality")
         
         // Calculate output size
         let pageSize = document.settings.sizeInPoints
@@ -5195,6 +5195,6 @@ class FileOperations {
             throw VectorImportError.parsingError("Failed to finalize JPEG export", line: nil)
         }
         
-        print("✅ Successfully exported JPEG document")
+        // print("✅ Successfully exported JPEG document")
     }
 }
