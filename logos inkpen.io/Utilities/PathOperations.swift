@@ -529,6 +529,7 @@ class PathOperations {
     // MARK: - STROKE OUTLINING COMPATIBILITY
     
     /// Converts a stroke into a filled path outline (Adobe Illustrator "Outline Stroke" feature)
+    /// The resulting stroke is unified using Union operation to remove any overlapping parts
     static func outlineStroke(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
         let bounds = path.boundingBoxOfPath
         let expandedBounds = bounds.insetBy(dx: -strokeStyle.width * 2, dy: -strokeStyle.width * 2)
@@ -537,22 +538,36 @@ class PathOperations {
             return nil
         }
         
+        let outlinedPath: CGPath?
+        
         if strokeStyle.dashPattern.isEmpty {
             // Simple stroke without dash pattern
-            let outlined = path.copy(
+            outlinedPath = path.copy(
                 strokingWithWidth: strokeStyle.width,
                 lineCap: strokeStyle.lineCap,
                 lineJoin: strokeStyle.lineJoin,
                 miterLimit: strokeStyle.miterLimit
             )
-            return outlined
         } else {
             // For dashed strokes, we need to handle dash patterns manually
-            return outlineStrokeWithDashPattern(path: path, strokeStyle: strokeStyle)
+            outlinedPath = outlineStrokeWithDashPattern(path: path, strokeStyle: strokeStyle)
+        }
+        
+        // Apply Union operation to the outlined stroke to flatten any overlapping parts
+        guard let outlined = outlinedPath else { return nil }
+        
+        // Use CoreGraphics Union operation with the same shape twice to flatten overlapping parts
+        if let unifiedStroke = CoreGraphicsPathOperations.union(outlined, outlined, using: .winding) {
+            print("✅ OUTLINE STROKE: Applied CoreGraphics Union to flatten overlapping parts")
+            return unifiedStroke
+        } else {
+            print("⚠️ OUTLINE STROKE: CoreGraphics Union failed, returning original outlined path")
+            return outlined
         }
     }
     
     /// Handles stroke outlining with dash patterns
+    /// Returns the raw outlined path without Union operation (Union is applied in main outlineStroke method)
     private static func outlineStrokeWithDashPattern(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
         let bounds = path.boundingBoxOfPath
         let expandedBounds = bounds.insetBy(dx: -strokeStyle.width * 2, dy: -strokeStyle.width * 2)
