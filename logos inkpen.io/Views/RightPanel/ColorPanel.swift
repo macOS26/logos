@@ -163,42 +163,45 @@ struct ColorPanel: View {
     }
     
     private func selectColor(_ color: VectorColor) {
-        // Apply color to selected objects
-        if !document.selectedShapeIDs.isEmpty {
-            // Apply to shapes
-            guard let layerIndex = document.selectedLayerIndex else { return }
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if NSEvent.modifierFlags.contains(.option) {
-                        // Option+Click = stroke color
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle != nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+        // If we have a callback, just use it (we're in a modal for specific purpose)
+        if let onColorSelected = onColorSelected {
+            onColorSelected(color)
+        } else {
+            // Otherwise, apply color to selected objects based on modifier keys
+            if !document.selectedShapeIDs.isEmpty {
+                // Apply to shapes
+                guard let layerIndex = document.selectedLayerIndex else { return }
+                
+                for shapeID in document.selectedShapeIDs {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if NSEvent.modifierFlags.contains(.option) {
+                            // Option+Click = stroke color
+                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle != nil {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0)
+                            }
                         } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0)
-                        }
-                    } else {
-                        // Regular click = fill color
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle != nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                            // Regular click = fill color
+                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle != nil {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                            }
                         }
                     }
                 }
             }
-        }
-        
-        if !document.selectedTextIDs.isEmpty {
-            // Apply to text
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    document.textObjects[textIndex].typography.fillColor = color
+            
+            if !document.selectedTextIDs.isEmpty {
+                // Apply to text
+                for textID in document.selectedTextIDs {
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                        document.textObjects[textIndex].typography.fillColor = color
+                    }
                 }
             }
         }
-        
-        onColorSelected?(color)
     }
     
     private func searchPantoneColor(_ searchQuery: String) {
