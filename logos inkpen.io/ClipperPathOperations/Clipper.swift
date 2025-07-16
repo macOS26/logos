@@ -60,7 +60,7 @@ public class Clipper: ClipperBase {
             return false
         }
         if hasOpenPaths {
-            throw ClipperError(message:"Error: PolyTree struct is needed for open path clipping.")
+            throw ClipperError.openPathsRequirePolyTree
         }
         
         executeLocked = true
@@ -1698,7 +1698,7 @@ public class Clipper: ClipperBase {
             deleteFromAEL(e)
             deleteFromAEL(eMaxPair)
         } else {
-            throw ClipperError(message: "doMaxima error")
+            throw ClipperError.invalidMaximaConfiguration
         }
     }
     

@@ -10,10 +10,6 @@ import Foundation
 
 public class ClipperBase {
     
-    public struct ClipperError: Error {
-        let message: String
-    }
-    
     var minimaList: LocalMinima?
     var currentLM: LocalMinima?
     var edges =  [[TEdge]]()
@@ -483,7 +479,7 @@ public class ClipperBase {
     
     func updateEdgeIntoAEL(_ e:inout TEdge) throws {
         if e.nextInLML == nil {
-            throw ClipperError(message: "updateEdgeIntoAEL: invalid call")
+            throw ClipperError.unknownError("updateEdgeIntoAEL: invalid call")
         }
         e.nextInLML?.outIdx = e.outIdx
         let aelPrev = e.prevInAEL
