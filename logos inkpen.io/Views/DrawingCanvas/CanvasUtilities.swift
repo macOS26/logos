@@ -22,6 +22,6 @@ extension DrawingCanvas {
         // FIXED COORDINATE SYSTEM: Set up default view with deterministic positioning
         setupDefaultView(geometry: geometry)
         initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
-        // print("🎯 FIXED CANVAS SETUP: Using default 75% zoom, no race conditions")
+        print("🎯 FIXED CANVAS SETUP: Using default 75% zoom, no race conditions")
     }
 } 

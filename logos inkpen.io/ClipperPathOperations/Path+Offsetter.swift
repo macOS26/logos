@@ -97,7 +97,7 @@ extension CGPath {
         // Step 1: Create stroke with double the offset distance (stroke goes both directions)
         let strokeWidth = distance * 2.0
         
-        // print("🎨 STROKE-BASED OFFSET: \(options.joinType) join, width=\(strokeWidth), miterLimit=\(options.miterLimit)")
+        print("🎨 STROKE-BASED OFFSET: \(options.joinType) join, width=\(strokeWidth), miterLimit=\(options.miterLimit)")
         
         // Step 2: Create stroked path with specified join type
         let strokedPath = self.copy(
@@ -113,11 +113,11 @@ extension CGPath {
         
         // Step 4: Keep only the largest path (the outer expanded path)
         if let largestPath = findLargestPath(separatedPaths) {
-            // print("✅ STROKE-BASED SUCCESS: Clean outer path extracted for \(options.joinType) join")
+            print("✅ STROKE-BASED SUCCESS: Clean outer path extracted for \(options.joinType) join")
             return [largestPath]
         } else {
             // Fallback to original stroke if separation fails
-            // print("⚠️ FALLBACK: Using unseparated stroke path")
+            print("⚠️ FALLBACK: Using unseparated stroke path")
             return [strokedPath]
         }
     }
@@ -127,7 +127,7 @@ extension CGPath {
         var separatedPaths: [CGPath] = []
         var currentSubpath: CGMutablePath?
         
-        // print("🔍 SEPARATING COMPOUND PATH: Starting separation...")
+        print("🔍 SEPARATING COMPOUND PATH: Starting separation...")
         
         compoundPath.applyWithBlock { element in
             switch element.pointee.type {
@@ -135,12 +135,12 @@ extension CGPath {
                 // Start of new subpath - save previous if exists
                 if let existingPath = currentSubpath, !existingPath.isEmpty {
                     separatedPaths.append(existingPath.copy()!)
-                    // print("📍 SUBPATH COMPLETED: Added subpath #\(separatedPaths.count)")
+                    print("📍 SUBPATH COMPLETED: Added subpath #\(separatedPaths.count)")
                 }
                 // Start new subpath
                 currentSubpath = CGMutablePath()
                 currentSubpath?.move(to: element.pointee.points[0])
-                // print("🚀 NEW SUBPATH: Starting at \(element.pointee.points[0])")
+                print("🚀 NEW SUBPATH: Starting at \(element.pointee.points[0])")
                 
             case .addLineToPoint:
                 currentSubpath?.addLine(to: element.pointee.points[0])
@@ -160,7 +160,7 @@ extension CGPath {
                 
             case .closeSubpath:
                 currentSubpath?.closeSubpath()
-                // print("🔒 SUBPATH CLOSED")
+                print("🔒 SUBPATH CLOSED")
                 
             @unknown default:
                 break
@@ -170,10 +170,10 @@ extension CGPath {
         // Add final subpath if exists
         if let existingPath = currentSubpath, !existingPath.isEmpty {
             separatedPaths.append(existingPath.copy()!)
-            // print("📍 FINAL SUBPATH: Added final subpath #\(separatedPaths.count)")
+            print("📍 FINAL SUBPATH: Added final subpath #\(separatedPaths.count)")
         }
         
-        // print("✅ SEPARATION COMPLETE: Found \(separatedPaths.count) subpaths")
+        print("✅ SEPARATION COMPLETE: Found \(separatedPaths.count) subpaths")
         return separatedPaths
     }
     
@@ -184,23 +184,23 @@ extension CGPath {
         var largestPath: CGPath?
         var largestArea: CGFloat = 0
         
-        // print("🔍 FINDING LARGEST PATH: Analyzing \(paths.count) paths...")
+        print("🔍 FINDING LARGEST PATH: Analyzing \(paths.count) paths...")
         
         for (index, path) in paths.enumerated() {
             let bounds = path.boundingBoxOfPath
             let area = bounds.width * bounds.height
             
-            // print("📏 PATH #\(index + 1): Bounds=\(bounds), Area=\(area)")
+            print("📏 PATH #\(index + 1): Bounds=\(bounds), Area=\(area)")
             
             // Only consider paths with reasonable size
             if area > largestArea && area > 1.0 {
                 largestArea = area
                 largestPath = path
-                // print("🎯 NEW LARGEST: Path #\(index + 1) is now largest (area: \(area))")
+                print("🎯 NEW LARGEST: Path #\(index + 1) is now largest (area: \(area))")
             }
         }
         
-        // print("✅ LARGEST PATH SELECTED: Area=\(largestArea)")
+        print("✅ LARGEST PATH SELECTED: Area=\(largestArea)")
         return largestPath ?? paths.first
     }
     

@@ -93,7 +93,7 @@ struct DrawingCanvas: View {
     
     internal func finishBezierPath() {
         guard let activeBezierShape = activeBezierShape, bezierPoints.count >= 2 else {
-            // print("Cannot finish bezier path - insufficient points or no active shape")
+            print("Cannot finish bezier path - insufficient points or no active shape")
             cancelBezierDrawing()
             return
         }
@@ -120,12 +120,12 @@ struct DrawingCanvas: View {
             }
         }
         
-        // print("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors")
-        // print("Path elements: \(activeBezierShape.path.elements.count)")
-        // print("Shape bounds: \(activeBezierShape.bounds)")
-        // print("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
-        // print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
-        // print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: document.defaultStrokeOpacity))")
+        print("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors")
+        print("Path elements: \(activeBezierShape.path.elements.count)")
+        print("Shape bounds: \(activeBezierShape.bounds)")
+        print("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+        print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
+        print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: document.defaultStrokeOpacity))")
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
@@ -138,7 +138,7 @@ struct DrawingCanvas: View {
         // Users can manually switch tools when they're ready to edit points
         // This enables uninterrupted tracing workflows
         
-        // print("✅ FINISHED PATH: Pen tool remains active for continuous tracing")
+        print("✅ FINISHED PATH: Pen tool remains active for continuous tracing")
     }
     
     internal func finishBezierPenDrag() {
@@ -171,13 +171,13 @@ struct DrawingCanvas: View {
                     if points.count >= pathPointCount || pathPointCount <= 2 {
                         // Delete entire shape
                         document.layers[layerIndex].shapes.remove(at: shapeIndex)
-                        // print("Deleted entire shape")
+                        print("Deleted entire shape")
                     } else {
                         // Delete specific points while maintaining path integrity
                         let updatedPath = deletePointsFromPath(shape.path, selectedPoints: points)
                         document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                        // print("Deleted \(points.count) points from path, \(updatedPath.elements.count) elements remain")
+                        print("Deleted \(points.count) points from path, \(updatedPath.elements.count) elements remain")
                     }
                     break
                 }
@@ -197,7 +197,7 @@ struct DrawingCanvas: View {
         guard let _ = bezierPath,
                 let activeShape = activeBezierShape,
               bezierPoints.count >= 3 else {
-            // print("Cannot close bezier path - insufficient points or no path")
+            print("Cannot close bezier path - insufficient points or no path")
             cancelBezierDrawing()
             return
         }
@@ -207,7 +207,7 @@ struct DrawingCanvas: View {
         
         // PROFESSIONAL PATH CLOSING: Connect last point to first with proper curve
         guard let updatedPath = bezierPath else {
-            // print("Failed to update path with handles")
+            print("Failed to update path with handles")
             cancelBezierDrawing()
             return
         }
@@ -226,19 +226,19 @@ struct DrawingCanvas: View {
         if let lastControl2 = lastPointHandles?.control2, let firstControl1 = firstPointHandles?.control1 {
             // Both points have handles - create smooth closing curve
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstControl1))
-            // print("🎯 Created smooth closing curve with both handles")
+            print("🎯 Created smooth closing curve with both handles")
         } else if let lastControl2 = lastPointHandles?.control2 {
             // Only last point has handle - create asymmetric curve
             finalElements.append(.curve(to: firstPoint, control1: lastControl2, control2: firstPoint))
-            // print("🎯 Created closing curve with outgoing handle")
+            print("🎯 Created closing curve with outgoing handle")
         } else if let firstControl1 = firstPointHandles?.control1 {
             // Only first point has handle - create asymmetric curve
             finalElements.append(.curve(to: firstPoint, control1: VectorPoint(bezierPoints[lastIndex].x, bezierPoints[lastIndex].y), control2: firstControl1))
-            // print("🎯 Created closing curve with incoming handle")
+            print("🎯 Created closing curve with incoming handle")
         } else {
             // No handles - straight line close
             finalElements.append(.line(to: firstPoint))
-            // print("🎯 Created straight line closing")
+            print("🎯 Created straight line closing")
         }
         
         // Add close element to mark path as closed
@@ -265,11 +265,11 @@ struct DrawingCanvas: View {
             }
         }
         
-        // print("🔧 DEBUG STEP 3: Path CLOSED - final curve creation")
-        // print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
-        // print("Path elements: \(closedPath.elements.count) (including close)")
-        // print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
-        // print("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+        print("🔧 DEBUG STEP 3: Path CLOSED - final curve creation")
+        print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
+        print("Path elements: \(closedPath.elements.count) (including close)")
+        print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")
+        print("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
@@ -285,7 +285,7 @@ struct DrawingCanvas: View {
         // Users can manually switch tools when they're ready to edit points
         // This enables uninterrupted tracing workflows
         
-        // print("✅ CLOSED PATH: Pen tool remains active for continuous tracing")
+        print("✅ CLOSED PATH: Pen tool remains active for continuous tracing")
     }
     
     internal func handleConvertAnchorPointTap(at location: CGPoint) {
@@ -342,11 +342,11 @@ struct DrawingCanvas: View {
                             if isCornerPoint {
                                 // Convert corner point back to smooth curve
                                 convertCornerToSmooth(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                // print("🔄 DETECTED CORNER POINT → Converting to SMOOTH")
+                                print("🔄 DETECTED CORNER POINT → Converting to SMOOTH")
                             } else {
                                 // Convert smooth point to corner point
                                 convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                // print("🔄 DETECTED SMOOTH POINT → Converting to CORNER")
+                                print("🔄 DETECTED SMOOTH POINT → Converting to CORNER")
                             }
                             
                             // PROFESSIONAL UX: Auto-enable direct selection to show the result
@@ -375,11 +375,11 @@ struct DrawingCanvas: View {
         
         // ENHANCED DEBUGGING: Show detailed coordinate info for toolbar bleed-through investigation
         let documentBounds = document.documentBounds
-        // print("Convert Anchor Point: No point found at location \(location)")
-        // print("  - Document bounds: \(documentBounds)")
-        // print("  - Is within document: \(documentBounds.contains(location))")
-        // print("  - Current tool: \(document.currentTool.rawValue)")
-        // print("  - This might be a toolbar click bleeding through to canvas!")
+        print("Convert Anchor Point: No point found at location \(location)")
+        print("  - Document bounds: \(documentBounds)")
+        print("  - Is within document: \(documentBounds.contains(location))")
+        print("  - Current tool: \(document.currentTool.rawValue)")
+        print("  - This might be a toolbar click bleeding through to canvas!")
     }
     
     // PROFESSIONAL UX: Auto-select shapes when clicking with Convert Point tool
@@ -435,7 +435,7 @@ struct DrawingCanvas: View {
                     // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
                     if layer.isLocked || shape.isLocked {
                         let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        // print("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                        print("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection")
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
@@ -456,7 +456,7 @@ struct DrawingCanvas: View {
                     // Force UI update
                     document.objectWillChange.send()
                     
-                    // print("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI")
+                    print("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI")
                     return
                 }
             }
@@ -495,10 +495,10 @@ struct DrawingCanvas: View {
         // Force UI update to show the changes
         document.objectWillChange.send()
         
-        // print("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)")
-        // print("  - Shape: \(shapeID)")
-        // print("  - Point: Element \(elementIndex)")
-        // print("  - User can see bezier handles while continuing to use Convert Point tool")
+        print("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)")
+        print("  - Shape: \(shapeID)")
+        print("  - Point: Element \(elementIndex)")
+        print("  - User can see bezier handles while continuing to use Convert Point tool")
     }
     
     internal func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
@@ -533,7 +533,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            // print("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure")
+            print("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure")
             
         case .move(let to):
             // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
@@ -549,7 +549,7 @@ struct DrawingCanvas: View {
                     document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     
-                    // print("✅ ADDED OUTGOING HANDLE to move point")
+                    print("✅ ADDED OUTGOING HANDLE to move point")
                 }
             }
             
@@ -587,7 +587,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            // print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)")
+            print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)")
         default:
             break
         }
@@ -692,7 +692,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            // print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles")
+            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles")
         default:
             break
         }
@@ -718,7 +718,7 @@ struct DrawingCanvas: View {
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            // print("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)")
+            print("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)")
         default:
             break
         }
@@ -730,16 +730,16 @@ struct DrawingCanvas: View {
     /// COMPREHENSIVE DRAWING TEST - Run this to debug coordinate system issues
     /// Use Cmd+Shift+R to run this test
     internal func runRealDrawingTest(geometry: GeometryProxy) {
-        // print("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES")
-        // print("=" + String(repeating: "=", count: 80))
+        print("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES")
+        print("=" + String(repeating: "=", count: 80))
         
         // Log initial state
-        // print("📊 INITIAL STATE:")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        // print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
-        // print("   Is Drawing: \(isDrawing)")
-        // print("   Is Bezier Drawing: \(isBezierDrawing)")
+        print("📊 INITIAL STATE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
+        print("   Is Drawing: \(isDrawing)")
+        print("   Is Bezier Drawing: \(isBezierDrawing)")
         
         // Clear any existing shapes
         if !document.layers.isEmpty {
@@ -755,21 +755,21 @@ struct DrawingCanvas: View {
             fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
         )
         
-        // print("📍 CREATING TEST SHAPE:")
-        // print("   Expected center: (\(testCenter.x), \(testCenter.y))")
+        print("📍 CREATING TEST SHAPE:")
+        print("   Expected center: (\(testCenter.x), \(testCenter.y))")
         
         // Log state before adding shape
-        // print("📊 BEFORE ADDING SHAPE:")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("📊 BEFORE ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
         // Add the shape
         document.addShape(testShape)
         
         // Log state after adding shape
-        // print("📊 AFTER ADDING SHAPE:")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("📊 AFTER ADDING SHAPE:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
         // Verify the shape's actual position
         if let addedShape = document.layers[0].shapes.first(where: { $0.name == "TEST SHAPE" }) {
@@ -778,29 +778,29 @@ struct DrawingCanvas: View {
                 y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
             )
             
-            // print("📍 SHAPE VERIFICATION:")
-            // print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
-            // print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
+            print("📍 SHAPE VERIFICATION:")
+            print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
+            print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
             
             let deltaX = abs(actualCenter.x - testCenter.x)
             let deltaY = abs(actualCenter.y - testCenter.y)
             
             if deltaX < 0.1 && deltaY < 0.1 {
-                // print("   ✅ SHAPE POSITION CORRECT")
+                print("   ✅ SHAPE POSITION CORRECT")
             } else {
-                // print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
+                print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
             }
         }
         
         // Now simulate drawing operations to see if coordinate system changes
-        // print("🎨 SIMULATING DRAWING OPERATIONS:")
+        print("🎨 SIMULATING DRAWING OPERATIONS:")
         
         // Simulate start drawing
         isDrawing = true
-        // print("📊 DURING DRAWING (isDrawing = true):")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        // print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        print("📊 DURING DRAWING (isDrawing = true):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
         
         // Create a drawing preview to see if coordinate system shifts
         let previewStart = CGPoint(x: 200, y: 200)
@@ -810,46 +810,46 @@ struct DrawingCanvas: View {
             .line(to: VectorPoint(previewEnd))
         ])
         
-        // print("📍 DRAWING PREVIEW CREATED:")
-        // print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
-        // print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
+        print("📍 DRAWING PREVIEW CREATED:")
+        print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
+        print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
         
         // Log state with drawing preview
-        // print("📊 WITH DRAWING PREVIEW:")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("📊 WITH DRAWING PREVIEW:")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
         // Simulate end drawing
         isDrawing = false
         currentPath = nil
         
-        // print("📊 AFTER DRAWING (isDrawing = false):")
-        // print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
-        // print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        // print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        print("📊 AFTER DRAWING (isDrawing = false):")
+        print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
+        print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
+        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
         
         // Test coordinate conversion consistency
-        // print("🔄 COORDINATE CONVERSION TEST:")
+        print("🔄 COORDINATE CONVERSION TEST:")
         let testCanvasPoint = CGPoint(x: 300, y: 200)
         let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
         let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)
         
-        // print("   Canvas → Screen → Canvas:")
-        // print("   Original: (\(String(format: "%.6f", testCanvasPoint.x)), \(String(format: "%.6f", testCanvasPoint.y)))")
-        // print("   Screen: (\(String(format: "%.6f", screenPoint.x)), \(String(format: "%.6f", screenPoint.y)))")
-        // print("   Back to Canvas: (\(String(format: "%.6f", backToCanvas.x)), \(String(format: "%.6f", backToCanvas.y)))")
+        print("   Canvas → Screen → Canvas:")
+        print("   Original: (\(String(format: "%.6f", testCanvasPoint.x)), \(String(format: "%.6f", testCanvasPoint.y)))")
+        print("   Screen: (\(String(format: "%.6f", screenPoint.x)), \(String(format: "%.6f", screenPoint.y)))")
+        print("   Back to Canvas: (\(String(format: "%.6f", backToCanvas.x)), \(String(format: "%.6f", backToCanvas.y)))")
         
         let conversionDeltaX = abs(backToCanvas.x - testCanvasPoint.x)
         let conversionDeltaY = abs(backToCanvas.y - testCanvasPoint.y)
         
         if conversionDeltaX < 0.001 && conversionDeltaY < 0.001 {
-            // print("   ✅ COORDINATE CONVERSION ACCURATE")
+            print("   ✅ COORDINATE CONVERSION ACCURATE")
         } else {
-            // print("   ❌ COORDINATE CONVERSION DRIFT: ΔX=\(String(format: "%.6f", conversionDeltaX)), ΔY=\(String(format: "%.6f", conversionDeltaY))")
+            print("   ❌ COORDINATE CONVERSION DRIFT: ΔX=\(String(format: "%.6f", conversionDeltaX)), ΔY=\(String(format: "%.6f", conversionDeltaY))")
         }
         
-        // print("=" + String(repeating: "=", count: 80))
-        // print("🏁 TEST COMPLETE - Check above for coordinate system issues")
+        print("=" + String(repeating: "=", count: 80))
+        print("🏁 TEST COMPLETE - Check above for coordinate system issues")
     }
     
     // MARK: - PROFESSIONAL COINCIDENT POINT HANDLING
@@ -886,7 +886,7 @@ extension DrawingCanvas {
                         document.layers[layerIndex].shapes[shapeIndex].path = newPath
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                         
-                        // print("Closed path for shape \(shape.name)")
+                        print("Closed path for shape \(shape.name)")
                     }
                 }
             }
@@ -920,7 +920,7 @@ extension DrawingCanvas {
                     // Background shapes: Use EXACT bounds checking - no tolerance!
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
-                    // print("  - Background shape - exact bounds hit test: \(isHit)")
+                    print("  - Background shape - exact bounds hit test: \(isHit)")
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
@@ -930,7 +930,7 @@ extension DrawingCanvas {
                         let strokeWidth = shape.strokeStyle?.width ?? 1.0
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        // print("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))")
+                        print("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))")
                     } else {
                         // Regular shapes: Use bounds + path hit testing
                         let transformedBounds = shape.bounds.applying(shape.transform)
@@ -938,10 +938,10 @@ extension DrawingCanvas {
                         
                         if expandedBounds.contains(location) {
                             isHit = true
-                            // print("  - Bounds hit test: \(isHit)")
+                            print("  - Bounds hit test: \(isHit)")
                         } else {
                             isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            // print("  - Path hit test: \(isHit)")
+                            print("  - Path hit test: \(isHit)")
                         }
                     }
                 }
@@ -950,7 +950,7 @@ extension DrawingCanvas {
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
                         let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        // print("🚫 Direct-clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                        print("🚫 Direct-clicked on \(lockType) '\(shape.name)' - deselecting current selection")
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -964,8 +964,8 @@ extension DrawingCanvas {
                     selectedPoints.removeAll() // Clear individual selections
                     selectedHandles.removeAll()
                     
-                    // print("✅ DIRECT-SELECTED SHAPE: \(shape.name)")
-                    // print("  Shape will now show ALL anchor points and handles (Adobe Illustrator behavior)")
+                    print("✅ DIRECT-SELECTED SHAPE: \(shape.name)")
+                    print("  Shape will now show ALL anchor points and handles (Adobe Illustrator behavior)")
                     return true
                 }
             }
@@ -990,7 +990,7 @@ extension DrawingCanvas {
                     // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
                     if layer.isLocked || shape.isLocked {
                         let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        // print("🚫 Clicked on points/handles of \(lockType) '\(shape.name)' - deselecting current selection")
+                        print("🚫 Clicked on points/handles of \(lockType) '\(shape.name)' - deselecting current selection")
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
@@ -1022,14 +1022,14 @@ extension DrawingCanvas {
                                         
                                         if isShiftPressed && selectedHandles.contains(handleID) {
                                             selectedHandles.remove(handleID)
-                                            // print("🎯 Deselected OUTGOING handle from line/move point")
+                                            print("🎯 Deselected OUTGOING handle from line/move point")
                                         } else {
                                             if !isShiftPressed {
                                                 selectedHandles.removeAll()
                                                 selectedPoints.removeAll()
                                             }
                                             selectedHandles.insert(handleID)
-                                            // print("🎯 Selected OUTGOING handle from line/move point")
+                                            print("🎯 Selected OUTGOING handle from line/move point")
                                         }
                                         return true
                                     }
@@ -1056,14 +1056,14 @@ extension DrawingCanvas {
                                 
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    // print("🎯 Deselected INCOMING handle")
+                                    print("🎯 Deselected INCOMING handle")
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
-                                    // print("🎯 Selected INCOMING handle")
+                                    print("🎯 Selected INCOMING handle")
                                 }
                                 return true
                             }
@@ -1084,14 +1084,14 @@ extension DrawingCanvas {
                                         
                                         if isShiftPressed && selectedHandles.contains(handleID) {
                                             selectedHandles.remove(handleID)
-                                            // print("🎯 Deselected OUTGOING handle")
+                                            print("🎯 Deselected OUTGOING handle")
                                         } else {
                                             if !isShiftPressed {
                                                 selectedHandles.removeAll()
                                                 selectedPoints.removeAll()
                                             }
                                             selectedHandles.insert(handleID)
-                                            // print("🎯 Selected OUTGOING handle")
+                                            print("🎯 Selected OUTGOING handle")
                                         }
                                         return true
                                     }
@@ -1113,14 +1113,14 @@ extension DrawingCanvas {
                                 
                                 if isShiftPressed && selectedHandles.contains(handleID) {
                                     selectedHandles.remove(handleID)
-                                    // print("🎯 Deselected quad handle")
+                                    print("🎯 Deselected quad handle")
                                 } else {
                                     if !isShiftPressed {
                                         selectedHandles.removeAll()
                                         selectedPoints.removeAll()
                                     }
                                     selectedHandles.insert(handleID)
-                                    // print("🎯 Selected quad handle")
+                                    print("🎯 Selected quad handle")
                                 }
                                 return true
                             }
@@ -1145,11 +1145,11 @@ extension DrawingCanvas {
                                 for coincidentPoint in coincidentPoints {
                                     selectedPoints.remove(coincidentPoint)
                                 }
-                                // print("🎯 Deselected anchor point and \(coincidentPoints.count) coincident points")
+                                print("🎯 Deselected anchor point and \(coincidentPoints.count) coincident points")
                             } else {
                                 // Select point with all coincident points for unified movement
                                 selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)
-                                // print("🎯 Selected anchor point with coincident points")
+                                print("🎯 Selected anchor point with coincident points")
                             }
                             return true
                         }
@@ -1165,7 +1165,7 @@ extension DrawingCanvas {
 extension DrawingCanvas {
     // TEXT TOOL COMPLETELY REMOVED - Starting over with simple approach
     internal func handleDirectSelectionTap(at location: CGPoint) {
-        // print("🎯 PROFESSIONAL DIRECT SELECTION tap at: \(location)")
+        print("🎯 PROFESSIONAL DIRECT SELECTION tap at: \(location)")
         
         // TEXT EDITING REMOVED
         
@@ -1174,28 +1174,28 @@ extension DrawingCanvas {
         
         // STAGE 1: Check if clicking on individual anchor points/handles (for already direct-selected shapes)
         if !directSelectedShapeIDs.isEmpty {
-            // print("🔥 STAGE 1: Checking individual anchor points in direct-selected shapes...")
+            print("🔥 STAGE 1: Checking individual anchor points in direct-selected shapes...")
             foundSelection = selectIndividualAnchorPointOrHandle(at: location, tolerance: tolerance)
         }
         
         // STAGE 2: If no anchor point selected, try to direct-select a whole shape (Adobe Illustrator behavior)
         if !foundSelection {
-            // print("🔥 STAGE 2: Looking for shapes to direct-select...")
+            print("🔥 STAGE 2: Looking for shapes to direct-select...")
             foundSelection = directSelectWholeShape(at: location)
         }
         
         // STAGE 3: If nothing found, clear all selections (clicked empty space)
         if !foundSelection {
-            // print("❌ Clicked empty space - clearing all direct selections")
+            print("❌ Clicked empty space - clearing all direct selections")
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             directSelectedShapeIDs.removeAll()
         }
         
-        // print("🎯 DIRECT SELECTION RESULT:")
-        // print("  Selected points: \(selectedPoints.count)")
-        // print("  Selected handles: \(selectedHandles.count)")
-        // print("  Direct selected shapes: \(directSelectedShapeIDs.count)")
+        print("🎯 DIRECT SELECTION RESULT:")
+        print("  Selected points: \(selectedPoints.count)")
+        print("  Selected handles: \(selectedHandles.count)")
+        print("  Direct selected shapes: \(directSelectedShapeIDs.count)")
         
         // Force UI update to show selections
         document.objectWillChange.send()
@@ -1215,7 +1215,7 @@ extension DrawingCanvas {
         
         if !isZoomGestureActive {
             isZoomGestureActive = true
-            // print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
+            print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
         }
         
         let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
@@ -1232,14 +1232,14 @@ extension DrawingCanvas {
         // PROFESSIONAL GESTURE COORDINATION: Only finalize zoom when appropriate
         guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
             // Gesture ended but we weren't processing it - UI remains responsive
-            // print("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive")
+            print("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive")
             return
         }
         
         let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
         document.zoomLevel = finalZoomLevel
         initialZoomLevel = finalZoomLevel
-        // print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, UI responsive")
+        print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, UI responsive")
     }
     
     /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)
@@ -1249,22 +1249,22 @@ extension DrawingCanvas {
         case .fitToPage:
             // Fit to page: Calculate optimal zoom and center
             fitToPage(geometry: geometry)
-            // print("🔍 HANDLED ZOOM REQUEST: Fit to Page")
+            print("🔍 HANDLED ZOOM REQUEST: Fit to Page")
             
         case .actualSize:
             // Actual size: Set to 100% and center properly
             actualSize(geometry: geometry)
-            // print("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)")
+            print("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)")
             
         case .zoomIn, .zoomOut:
             // Zoom in/out: Maintain current focal point
             handleSimplifiedZoom(newZoomLevel: request.targetZoom, geometry: geometry)
-            // print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))%")
+            print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))%")
             
         case .custom(let focalPoint):
             // Custom zoom with specific focal point
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
-            // print("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)")
+            print("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)")
         }
         
         // Clear the request after processing
@@ -1286,9 +1286,9 @@ extension DrawingCanvas {
             handToolDragStart = value.startLocation
             isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
-            // print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
-            // print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
-            // print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
+            print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
+            print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
+            print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -1307,7 +1307,7 @@ extension DrawingCanvas {
         
         // Professional verification logging (only for significant movements)
         if abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10 {
-            // print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y))), UI responsive")
+            print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y))), UI responsive")
         }
     }
 }
@@ -1319,14 +1319,14 @@ extension DrawingCanvas {
         let isInCanvasArea = canvasBounds.contains(location)
         let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
         
-        // print("🎯 SELECT OBJECT AT FUNCTION CALLED at: \(location) in \(areaType)")
+        print("🎯 SELECT OBJECT AT FUNCTION CALLED at: \(location) in \(areaType)")
         
         if !isInCanvasArea {
-            // print("🎯 PASTEBOARD: Prioritizing object selection with optimized hit testing")
+            print("🎯 PASTEBOARD: Prioritizing object selection with optimized hit testing")
             // PASTEBOARD OPTIMIZATION: Use selection tap logic directly for better object detection
             handleSelectionTap(at: location)
         } else {
-            // print("🎯 CANVAS: Using standard drag-based selection")
+            print("🎯 CANVAS: Using standard drag-based selection")
             // Reuse the selection tap logic for canvas
             handleSelectionTap(at: location)
         }
@@ -1552,7 +1552,7 @@ extension DrawingCanvas {
             for layerIndex in document.layers.indices {
                 if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == pointID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
-                        // print("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'")
+                        print("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'")
                         return
                     }
                     break
@@ -1565,7 +1565,7 @@ extension DrawingCanvas {
             for layerIndex in document.layers.indices {
                 if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == handleID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
-                        // print("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'")
+                        print("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'")
                         return
                     }
                     break
@@ -1632,7 +1632,7 @@ extension DrawingCanvas {
         
         // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
         if document.layers[layerIndex].isLocked {
-            // print("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'")
+            print("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'")
             return
         }
         
@@ -1660,7 +1660,7 @@ extension DrawingCanvas {
             }
         }
         
-        // print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects")
+        print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects")
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -1791,8 +1791,8 @@ extension DrawingCanvas {
             initialObjectPositions.removeAll()
             selectionDragStart = CGPoint.zero
             
-            // print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
-            // print("   State reset - ready for next drag operation")
+            print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
+            print("   State reset - ready for next drag operation")
         }
     }
 }
@@ -1810,7 +1810,7 @@ extension DrawingCanvas {
         
         // Only proceed with shape creation if user has dragged significantly
         if dragDistance < minimumDragThreshold {
-            // print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)")
+            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)")
             return
         }
         
@@ -1825,8 +1825,8 @@ extension DrawingCanvas {
             shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
             drawingStartPoint = shapeStartPoint
             
-            // print("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
-            // print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation")
+            print("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
+            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation")
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -1850,7 +1850,7 @@ extension DrawingCanvas {
         
         // Professional verification logging (only for significant movements)
         if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
-            // print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+            print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
         }
         
         guard let startPoint = drawingStartPoint else { return }
@@ -1925,7 +1925,7 @@ extension DrawingCanvas {
         )
         
         document.addShape(shape)
-        // print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
+        print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
         
         // PROFESSIONAL SHAPE DRAWING: Clean state reset for next drawing operation
         // This ensures each new shape starts with fresh reference points
@@ -1933,7 +1933,7 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
         
-        // print("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation")
+        print("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation")
     }
 }
 
@@ -2001,8 +2001,8 @@ extension DrawingCanvas {
             // Add the real shape to the document immediately
             document.addShape(activeBezierShape!)
             
-            // print("🎯 CREATED FIRST POINT: Started new path at \(location)")
-            // print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            print("🎯 CREATED FIRST POINT: Started new path at \(location)")
+            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
             return
         } else {
             // PURE CLICK: Add corner point (no handles)
@@ -2023,25 +2023,25 @@ extension DrawingCanvas {
                let previousHandles = bezierHandles[previousPointIndex],
                let previousControl2 = previousHandles.control2 {
                 // CURVE: Previous point has outgoing handle, create curve like rubber band preview
-                // print("🔧 DEBUG STEP 2: Creating CURVE (matches rubber band preview)")
-                // print("   Previous point \(previousPointIndex) has outgoing handle at: (\(previousControl2.x), \(previousControl2.y))")
+                print("🔧 DEBUG STEP 2: Creating CURVE (matches rubber band preview)")
+                print("   Previous point \(previousPointIndex) has outgoing handle at: (\(previousControl2.x), \(previousControl2.y))")
                 
                 // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
                 // Step 3 uses: control1: previousControl2, control2: targetPoint
                 // This creates natural curves without hooks
                 bezierPath?.addElement(.curve(to: newPoint, control1: previousControl2, control2: newPoint))
-                // print("   ✅ Added CURVE element (matches rubber band preview)")
+                print("   ✅ Added CURVE element (matches rubber band preview)")
             } else {
                 // STRAIGHT LINE: Previous point has no handles or is first point
-                // print("🔧 DEBUG STEP 2: Creating straight line - previous point has no handles")
+                print("🔧 DEBUG STEP 2: Creating straight line - previous point has no handles")
                 bezierPath?.addElement(.line(to: newPoint))
             }
             
             // Update the real shape in the document immediately
             updateActiveBezierShapeInDocument()
             
-            // print("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)")
-            // print("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
+            print("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)")
+            print("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
         }
     }
     
@@ -2056,7 +2056,7 @@ extension DrawingCanvas {
         // First point creation is now handled in handleBezierPenTap()
         // This drag handler only deals with subsequent points and handle manipulation
         if !isBezierDrawing {
-            // print("⚠️ Warning: Drag detected but no bezier path active - first point should be created in tap handler")
+            print("⚠️ Warning: Drag detected but no bezier path active - first point should be created in tap handler")
             return
         }
         
@@ -2065,11 +2065,11 @@ extension DrawingCanvas {
         
         // Only proceed with handle creation if user has dragged significantly
         if dragDistance < minimumDragThreshold {
-            // print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - treating as CLICK, no handles created")
+            print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - treating as CLICK, no handles created")
             return
         }
         
-        // print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - FIRST plotting new point, THEN creating handles")
+        print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - FIRST plotting new point, THEN creating handles")
         
         // Check if we're dragging from an existing anchor point (editing existing handles)
         let tolerance: Double = 8.0
@@ -2088,7 +2088,7 @@ extension DrawingCanvas {
             if !isDraggingBezierHandle {
                 isDraggingBezierHandle = true
                 isDraggingBezierPoint = true
-                // print("📝 EDITING: Dragging handles from existing point \(pointIndex)")
+                print("📝 EDITING: Dragging handles from existing point \(pointIndex)")
             }
             
             // Create/update bezier handles for this existing point
@@ -2139,8 +2139,8 @@ extension DrawingCanvas {
                 // Add the new point to the path as a line segment initially
                 bezierPath?.addElement(.line(to: newPoint))
                 
-                // print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
-                // print("📏 Now creating smooth curve handles as user drags...")
+                print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
+                print("📏 Now creating smooth curve handles as user drags...")
             }
             
             // Create handles for the newly placed point based on drag direction
@@ -2409,8 +2409,8 @@ extension DrawingCanvas {
                     return event
                 case "t": // Test Coordinate System (Cmd+Shift+T) - DEBUG ONLY
                     if modifiers.contains(.shift) {
-                        // print("🔬 RUNNING COORDINATE SYSTEM TEST:")
-                        // print("=" + String(repeating: "=", count: 58))
+                        print("🔬 RUNNING COORDINATE SYSTEM TEST:")
+                        print("=" + String(repeating: "=", count: 58))
                         self.runCoordinateSystemTest()
                         return event
                     }
@@ -2486,7 +2486,7 @@ extension DrawingCanvas {
                 selectedHandles.removeAll()
                 directSelectedShapeIDs.removeAll()
                 document.objectWillChange.send()
-                // print("✅ Tab pressed - deselected all objects")
+                print("✅ Tab pressed - deselected all objects")
             default:
                 break
             }
@@ -2509,8 +2509,8 @@ extension DrawingCanvas {
             
             if isInPasteboardArea {
                 // PASTEBOARD TAP: Convert zero-distance drag to tap
-                // print("🎯 PASTEBOARD TAP SIMULATION: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) converted to tap")
-                // print("🎯 PASTEBOARD CLICK at canvas: \(canvasLocation)")
+                print("🎯 PASTEBOARD TAP SIMULATION: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) converted to tap")
+                print("🎯 PASTEBOARD CLICK at canvas: \(canvasLocation)")
                 
                 // Call the appropriate tap handler based on current tool
                 switch document.currentTool {
@@ -2547,9 +2547,9 @@ extension DrawingCanvas {
             initialCanvasOffset = CGPoint.zero
             handToolDragStart = CGPoint.zero
             isPanGestureActive = false  // PROFESSIONAL GESTURE COORDINATION
-            // print("✋ HAND TOOL: Drag operation completed successfully, UI fully responsive")
-            // print("   Final canvas position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
-            // print("   State reset - ready for next drag operation")
+            print("✋ HAND TOOL: Drag operation completed successfully, UI fully responsive")
+            print("   Final canvas position: (\(String(format: "%.1f", finalOffset.x)), \(String(format: "%.1f", finalOffset.y)))")
+            print("   State reset - ready for next drag operation")
         case .line, .rectangle, .circle, .star, .polygon:
             finishShapeDrawing(value: value, geometry: geometry)
             // Reset drawing state for shape tools
@@ -2593,21 +2593,21 @@ extension DrawingCanvas {
         // PASTEBOARD OPTIMIZATION: Use 0-pixel threshold for pasteboard to maximize single-click sensitivity
         let _ = startedInCanvasArea ? 40.0 : 0.0
         
-        //// print("🎯 DRAG GESTURE CHANGED at start: \(canvasStart) current: \(canvasCurrent) in \(areaType)")
-        //// print("🎯 DRAG GESTURE: This is CLICK AND DRAG, not a single click")
-        //// print("🎯 Drag distance: \(String(format: "%.2f", dragDistance)) pixels (threshold: \(effectiveThreshold))")
+        //print("🎯 DRAG GESTURE CHANGED at start: \(canvasStart) current: \(canvasCurrent) in \(areaType)")
+        //print("🎯 DRAG GESTURE: This is CLICK AND DRAG, not a single click")
+        //print("🎯 Drag distance: \(String(format: "%.2f", dragDistance)) pixels (threshold: \(effectiveThreshold))")
         
         // PASTEBOARD OPTIMIZATION: Handle small movements as selections, not drags
         if !startedInCanvasArea && document.currentTool == .selection {
             if dragDistance < 3.0 {
                 // Very small movement on pasteboard - treat as selection, not drag
-                // print("🎯 PASTEBOARD: Tiny movement (\(String(format: "%.1f", dragDistance))px) - treating as selection")
+                print("🎯 PASTEBOARD: Tiny movement (\(String(format: "%.1f", dragDistance))px) - treating as selection")
                 selectObjectAt(canvasStart)
                 return
             } else if dragDistance < 8.0 {
                 // Small movement - only proceed if we have selected objects to drag
                 if document.selectedShapeIDs.isEmpty {
-                    // print("🎯 PASTEBOARD: Small movement (\(String(format: "%.1f", dragDistance))px) with no selection - trying selection first")
+                    print("🎯 PASTEBOARD: Small movement (\(String(format: "%.1f", dragDistance))px) with no selection - trying selection first")
                     selectObjectAt(canvasStart)
                     return
                 }
@@ -2618,7 +2618,7 @@ extension DrawingCanvas {
         if startedInCanvasArea && dragDistance < 8.0 {
             // Small movement on canvas - be more tolerant of hand tremor
             if document.currentTool == .selection && document.selectedShapeIDs.isEmpty {
-                // print("🎯 CANVAS: Small movement (\(String(format: "%.1f", dragDistance))px) - trying selection")
+                print("🎯 CANVAS: Small movement (\(String(format: "%.1f", dragDistance))px) - trying selection")
                 selectObjectAt(canvasStart)
                 return
             }
@@ -2646,7 +2646,7 @@ extension DrawingCanvas {
                     selectionDragStart = value.startLocation
                     startSelectionDrag()
                     isDrawing = true
-                    // print("🎯 SELECTION DRAG: Started at cursor position (\(String(format: "%.1f", selectionDragStart.x)), \(String(format: "%.1f", selectionDragStart.y)))")
+                    print("🎯 SELECTION DRAG: Started at cursor position (\(String(format: "%.1f", selectionDragStart.x)), \(String(format: "%.1f", selectionDragStart.y)))")
                 }
             }
             
@@ -2677,9 +2677,9 @@ extension DrawingCanvas {
         let isInCanvasArea = canvasBounds.contains(canvasLocation)
         let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
         
-        // print("🎯 SINGLE CLICK TAP at screen: \(location) canvas: \(canvasLocation) in \(areaType)")
-        // print("🎯 TAP GESTURE: This is a SINGLE CLICK, not a drag")
-        // print("🎯 Canvas bounds: \(canvasBounds), click in canvas: \(isInCanvasArea)")
+        print("🎯 SINGLE CLICK TAP at screen: \(location) canvas: \(canvasLocation) in \(areaType)")
+        print("🎯 TAP GESTURE: This is a SINGLE CLICK, not a drag")
+        print("🎯 Canvas bounds: \(canvasBounds), click in canvas: \(isInCanvasArea)")
         
         switch document.currentTool {
         case .selection:
@@ -2710,7 +2710,7 @@ extension DrawingCanvas {
             if isBezierDrawing {
                 cancelBezierDrawing()
             }
-            // print("🎨 SHAPE TOOL CLICK: Ignored - shape tools (\(document.currentTool.rawValue)) only work with click and drag")
+            print("🎨 SHAPE TOOL CLICK: Ignored - shape tools (\(document.currentTool.rawValue)) only work with click and drag")
         default:
             // Cancel bezier drawing if switching to other tools
             if isBezierDrawing {
@@ -2899,8 +2899,8 @@ extension DrawingCanvas {
                         // Show curve tangent to the existing outgoing handle (like Adobe Illustrator)
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         
-                        // print("🔧 DEBUG STEP 1: Rubber band preview - CURVE")
-                        // print("   Last point \(lastPointIndex) has outgoing handle at: (\(lastControl2.x), \(lastControl2.y))")
+                        print("🔧 DEBUG STEP 1: Rubber band preview - CURVE")
+                        print("   Last point \(lastPointIndex) has outgoing handle at: (\(lastControl2.x), \(lastControl2.y))")
                         
                         // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
                         // Step 3 uses: control1: lastControl2, control2: targetPoint
@@ -2910,7 +2910,7 @@ extension DrawingCanvas {
                             control1: lastControl2Location,
                             control2: canvasMouseLocation
                         )
-                        // print("   ✅ Rubber band curve uses SAME math as step 2")
+                        print("   ✅ Rubber band curve uses SAME math as step 2")
                         
                     } else {
                         // STRAIGHT RUBBER BAND: Previous point is corner point (no outgoing handle)
@@ -3245,13 +3245,13 @@ extension DrawingCanvas {
         // ✅ EXPLICIT USER ACTION: Auto-finish bezier path when user switches away from pen tool
         // This is standard Adobe Illustrator behavior and represents explicit user intent to stop drawing
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
-            // print("🔧 USER SWITCHED TOOLS: Auto-finishing current bezier path (explicit user action)")
+            print("🔧 USER SWITCHED TOOLS: Auto-finishing current bezier path (explicit user action)")
             finishBezierPath()
         }
         
         // SURGICAL FIX: Cancel text editing when switching away from font tool
         if previousTool == .font && newTool != .font && isEditingText {
-            // print("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool)")
+            print("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool)")
             finishTextEditing()
         }
         
@@ -3260,7 +3260,7 @@ extension DrawingCanvas {
             (previousTool != .directSelection && previousTool != .convertAnchorPoint) {
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
-            // print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
+            print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
         }
         
         // Clear direct selection state when switching away from direct selection tools
@@ -3269,7 +3269,7 @@ extension DrawingCanvas {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             directSelectedShapeIDs.removeAll()
-            // print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
+            print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
         }
         
         previousTool = newTool
@@ -3340,7 +3340,7 @@ extension DrawingCanvas {
             .onTapGesture { location in
                 // UNIFIED COORDINATE SYSTEM: Handle ALL clicks (canvas + pasteboard) with SwiftUI
                 // This gives perfect accuracy everywhere using the same coordinate system
-                // print("🎯 UNIFIED TAP GESTURE at screen: \(location)")
+                print("🎯 UNIFIED TAP GESTURE at screen: \(location)")
                 handleTap(at: location, geometry: geometry)
             }
             .onHover { isHovering in

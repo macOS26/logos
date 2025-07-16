@@ -75,7 +75,7 @@ public class ClipperBase {
     }
     
     deinit {
-//        // print("Clipper deinit.")
+//        print("Clipper deinit.")
     }
     
     

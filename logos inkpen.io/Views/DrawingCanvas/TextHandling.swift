@@ -14,14 +14,14 @@ extension DrawingCanvas {
     // MARK: - Font Tool Handler (Core Graphics Based)
     
     func handleFontToolTap(at location: CGPoint) {
-        // print("🎯 FONT TOOL TAP at: \(location)")
+        print("🎯 FONT TOOL TAP at: \(location)")
         
         // DETAILED LOGGING: Determine if this is canvas or pasteboard area
         let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
         let isInCanvasArea = canvasBounds.contains(location)
         let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
         
-        // print("🎯 FONT TOOL TAP at: \(location) in \(areaType)")
+        print("🎯 FONT TOOL TAP at: \(location) in \(areaType)")
         
         // Check if tapping on existing text to edit it
         if let existingTextID = findTextAt(location: location) {
@@ -64,7 +64,7 @@ extension DrawingCanvas {
     }
     
     func startEditingText(textID: UUID, at location: CGPoint) {
-        // print("✏️ Starting to edit existing text: \(textID)")
+        print("✏️ Starting to edit existing text: \(textID)")
         isEditingText = true
         editingTextID = textID
         
@@ -82,7 +82,7 @@ extension DrawingCanvas {
     }
     
     func createNewTextAt(location: CGPoint) {
-        // print("✨ Creating new text at: \(location)")
+        print("✨ Creating new text at: \(location)")
         
         // FIXED: Use document default colors from toolbar (exactly like pen tool and shape tools)
         // Create typography using document defaults or user-selected font properties
@@ -101,8 +101,8 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         
-        // print("🎨 FONT TOOL COLORS: fill=\(fillColor) (default was \(document.defaultFillColor)), stroke=\(document.defaultStrokeColor)")
-        // print("🎨 FONT TOOL OPACITIES: fillOpacity=\(document.defaultFillOpacity), strokeOpacity=\(document.defaultStrokeOpacity)")
+        print("🎨 FONT TOOL COLORS: fill=\(fillColor) (default was \(document.defaultFillColor)), stroke=\(document.defaultStrokeColor)")
+        print("🎨 FONT TOOL OPACITIES: fillOpacity=\(document.defaultFillOpacity), strokeOpacity=\(document.defaultStrokeOpacity)")
         
         // Create new text object with initial placeholder text
         let newText = VectorText(
@@ -120,7 +120,7 @@ extension DrawingCanvas {
         editingTextID = newText.id
         textCursorPosition = 0
         
-        // print("✅ Created new editable text object with ID: \(newText.id) on layer \(document.selectedLayerIndex ?? -1)")
+        print("✅ Created new editable text object with ID: \(newText.id) on layer \(document.selectedLayerIndex ?? -1)")
     }
     
     func finishTextEditing() {
@@ -137,7 +137,7 @@ extension DrawingCanvas {
         editingTextID = nil
         textCursorPosition = 0
         
-        // print("✅ Finished text editing")
+        print("✅ Finished text editing")
     }
     
     func cancelTextEditing() {
@@ -158,6 +158,6 @@ extension DrawingCanvas {
         editingTextID = nil
         textCursorPosition = 0
         
-        // print("❌ Cancelled text editing")
+        print("❌ Cancelled text editing")
     }
 } 

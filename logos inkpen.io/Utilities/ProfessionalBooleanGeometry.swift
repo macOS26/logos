@@ -486,7 +486,7 @@ extension ProfessionalPathOperations {
             return validPaths.first
         }
         
-        // print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
+        print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
         
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
@@ -507,20 +507,20 @@ extension ProfessionalPathOperations {
             if success && !solution.isEmpty {
                 let resultPath = clipperPathsToCGPath(solution)
                 if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    // print("✅ PROFESSIONAL UNITE (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    print("✅ PROFESSIONAL UNITE (ClipperPaths): Success - \(solution.count) resulting polygons")
                     return resultPath
                 } else {
-                    // print("⚠️ UNITE result is empty, falling back to convex hull")
+                    print("⚠️ UNITE result is empty, falling back to convex hull")
                 }
             } else {
-                // print("⚠️ ClipperPaths union failed, falling back to convex hull")
+                print("⚠️ ClipperPaths union failed, falling back to convex hull")
             }
         } catch {
-            // print("❌ ClipperPaths union error: \(error), falling back to convex hull")
+            print("❌ ClipperPaths union error: \(error), falling back to convex hull")
         }
         
         // Fallback to convex hull if ClipperPaths fails
-        // print("🔄 UNITE fallback: Using convex hull")
+        print("🔄 UNITE fallback: Using convex hull")
         return convexHullFallback(validPaths)
     }
     
@@ -528,7 +528,7 @@ extension ProfessionalPathOperations {
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
-        // print("🔨 PROFESSIONAL MINUS FRONT (ClipperPaths): Processing")
+        print("🔨 PROFESSIONAL MINUS FRONT (ClipperPaths): Processing")
         
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
@@ -557,16 +557,16 @@ extension ProfessionalPathOperations {
             if success && !solution.isEmpty {
                 let resultPath = clipperPathsToCGPath(solution)
                 if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    // print("✅ PROFESSIONAL MINUS FRONT (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    print("✅ PROFESSIONAL MINUS FRONT (ClipperPaths): Success - \(solution.count) resulting polygons")
                     return resultPath
                 } else {
-                    // print("⚠️ MINUS FRONT result is empty")
+                    print("⚠️ MINUS FRONT result is empty")
                 }
             } else {
-                // print("⚠️ ClipperPaths minus front failed")
+                print("⚠️ ClipperPaths minus front failed")
             }
         } catch {
-            // print("❌ ClipperPaths minus front error: \(error)")
+            print("❌ ClipperPaths minus front error: \(error)")
         }
         
         // Check if paths actually overlap for better error reporting
@@ -574,11 +574,11 @@ extension ProfessionalPathOperations {
         let backBounds = backPath.boundingBoxOfPath
         
         if !frontBounds.intersects(backBounds) {
-            // print("  → No overlap, returning original back path")
+            print("  → No overlap, returning original back path")
             return backPath
         }
         
-        // print("  → Paths should overlap but ClipperPaths minus front failed")
+        print("  → Paths should overlap but ClipperPaths minus front failed")
         return nil
     }
     
@@ -586,7 +586,7 @@ extension ProfessionalPathOperations {
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
         
-        // print("🔨 PROFESSIONAL INTERSECT (ClipperPaths): Processing")
+        print("🔨 PROFESSIONAL INTERSECT (ClipperPaths): Processing")
         
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
@@ -615,16 +615,16 @@ extension ProfessionalPathOperations {
             if success && !solution.isEmpty {
                 let resultPath = clipperPathsToCGPath(solution)
                 if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    // print("✅ PROFESSIONAL INTERSECT (ClipperPaths): Success - \(solution.count) resulting polygons")
+                    print("✅ PROFESSIONAL INTERSECT (ClipperPaths): Success - \(solution.count) resulting polygons")
                     return resultPath
                 } else {
-                    // print("⚠️ INTERSECT result is empty")
+                    print("⚠️ INTERSECT result is empty")
                 }
             } else {
-                // print("⚠️ ClipperPaths intersection failed")
+                print("⚠️ ClipperPaths intersection failed")
             }
         } catch {
-            // print("❌ ClipperPaths intersection error: \(error)")
+            print("❌ ClipperPaths intersection error: \(error)")
         }
         
         // Check if paths actually overlap for better error reporting
@@ -632,11 +632,11 @@ extension ProfessionalPathOperations {
         let bounds2 = path2.boundingBoxOfPath
         
         if !bounds1.intersects(bounds2) {
-            // print("  → No bounding box overlap, returning nil")
+            print("  → No bounding box overlap, returning nil")
             return nil
         }
         
-        // print("  → Paths should overlap but ClipperPaths intersection failed")
+        print("  → Paths should overlap but ClipperPaths intersection failed")
         return nil
     }
     
@@ -649,14 +649,14 @@ extension ProfessionalPathOperations {
             return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
         
-        // print("🔨 PROFESSIONAL EXCLUDE (ClipperPaths): Processing - like Divide but without overlapping pieces")
+        print("🔨 PROFESSIONAL EXCLUDE (ClipperPaths): Processing - like Divide but without overlapping pieces")
         
         // Convert to ClipperPaths
         let clipperPath1 = cgPathToClipperPath(path1)
         let clipperPath2 = cgPathToClipperPath(path2)
         
         guard clipperPath1.count >= 3 && clipperPath2.count >= 3 else {
-            // print("⚠️ Invalid polygons for exclude operation")
+            print("⚠️ Invalid polygons for exclude operation")
             return [path1, path2]
         }
         
@@ -681,7 +681,7 @@ extension ProfessionalPathOperations {
                 }
             }
         } catch {
-            // print("❌ Error getting unique part of path1: \(error)")
+            print("❌ Error getting unique part of path1: \(error)")
         }
         
         // STEP 2: Get unique part of path2 (path2 - path1)
@@ -703,27 +703,27 @@ extension ProfessionalPathOperations {
                 }
             }
         } catch {
-            // print("❌ Error getting unique part of path2: \(error)")
+            print("❌ Error getting unique part of path2: \(error)")
         }
         
         // NOTE: We deliberately DO NOT include the intersection (overlapping part)
         // This is what makes Exclude different from Divide
         
         if !resultPaths.isEmpty {
-            // print("✅ PROFESSIONAL EXCLUDE (ClipperPaths): Success - \(resultPaths.count) non-overlapping pieces")
+            print("✅ PROFESSIONAL EXCLUDE (ClipperPaths): Success - \(resultPaths.count) non-overlapping pieces")
             return resultPaths
         } else {
-            // print("⚠️ EXCLUDE result is empty - no non-overlapping parts found")
+            print("⚠️ EXCLUDE result is empty - no non-overlapping parts found")
             
             // Check if paths actually overlap
             let bounds1 = path1.boundingBoxOfPath
             let bounds2 = path2.boundingBoxOfPath
             
             if !bounds1.intersects(bounds2) {
-                // print("  → No overlap, returning both paths separately")
+                print("  → No overlap, returning both paths separately")
                 return [path1, path2]
             } else {
-                // print("  → Paths completely overlap, returning empty array")
+                print("  → Paths completely overlap, returning empty array")
                 return []
             }
         }
@@ -741,7 +741,7 @@ extension ProfessionalPathOperations {
     static func professionalDivide(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        // print("🔨 PROFESSIONAL DIVIDE (ClipperPaths): Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL DIVIDE (ClipperPaths): Processing \(paths.count) paths")
         
         // Convert all paths to ClipperPaths
         var allClipperPaths: [ClipperPath] = []
@@ -756,14 +756,14 @@ extension ProfessionalPathOperations {
         }
         
         guard allClipperPaths.count >= 2 else { 
-            // print("⚠️ Not enough valid polygons for divide operation")
+            print("⚠️ Not enough valid polygons for divide operation")
             return paths 
         }
         
         var resultPaths: [CGPath] = []
         
         // STEP 1: Get all unique (non-overlapping) parts of each shape
-        // print("  → Finding unique parts of each shape...")
+        print("  → Finding unique parts of each shape...")
         for i in 0..<allClipperPaths.count {
             let clipper = Clipper()
             clipper.addPath(allClipperPaths[i], .subject, true)
@@ -787,12 +787,12 @@ extension ProfessionalPathOperations {
                     }
                 }
             } catch {
-                // print("    ⚠️ Error getting unique part for shape \(i): \(error)")
+                print("    ⚠️ Error getting unique part for shape \(i): \(error)")
             }
         }
         
         // STEP 2: Get all 2-way intersections
-        // print("  → Finding 2-way intersections...")
+        print("  → Finding 2-way intersections...")
         for i in 0..<allClipperPaths.count {
             for j in (i+1)..<allClipperPaths.count {
                 let clipper = Clipper()
@@ -818,14 +818,14 @@ extension ProfessionalPathOperations {
                         }
                     }
                 } catch {
-                    // print("    ⚠️ Error getting intersection for shapes \(i) and \(j): \(error)")
+                    print("    ⚠️ Error getting intersection for shapes \(i) and \(j): \(error)")
                 }
             }
         }
         
         // STEP 3: Get all 3-way intersections (if 3+ shapes)
         if allClipperPaths.count >= 3 {
-            // print("  → Finding 3-way intersections...")
+            print("  → Finding 3-way intersections...")
             for i in 0..<allClipperPaths.count {
                 for j in (i+1)..<allClipperPaths.count {
                     for k in (j+1)..<allClipperPaths.count {
@@ -859,7 +859,7 @@ extension ProfessionalPathOperations {
                                 }
                             }
                         } catch {
-                            // print("    ⚠️ Error getting 3-way intersection for shapes \(i), \(j), \(k): \(error)")
+                            print("    ⚠️ Error getting 3-way intersection for shapes \(i), \(j), \(k): \(error)")
                         }
                     }
                 }
@@ -868,7 +868,7 @@ extension ProfessionalPathOperations {
         
         // STEP 4: Get all 4-way intersections (if 4+ shapes)
         if allClipperPaths.count >= 4 {
-            // print("  → Finding 4-way intersections...")
+            print("  → Finding 4-way intersections...")
             for i in 0..<allClipperPaths.count {
                 for j in (i+1)..<allClipperPaths.count {
                     for k in (j+1)..<allClipperPaths.count {
@@ -883,7 +883,7 @@ extension ProfessionalPathOperations {
             }
         }
         
-        // print("✅ PROFESSIONAL DIVIDE (ClipperPaths): Created \(resultPaths.count) pieces from \(paths.count) originals")
+        print("✅ PROFESSIONAL DIVIDE (ClipperPaths): Created \(resultPaths.count) pieces from \(paths.count) originals")
         return resultPaths
     }
     
@@ -907,7 +907,7 @@ extension ProfessionalPathOperations {
                 return clipperPathsToCGPath(solution)
             }
         } catch {
-            // print("    ⚠️ Error removing higher-order overlaps: \(error)")
+            print("    ⚠️ Error removing higher-order overlaps: \(error)")
         }
         
         return intersectionPath // Return original if cleaning fails
@@ -945,7 +945,7 @@ extension ProfessionalPathOperations {
     // MARK: - FALLBACK OPERATIONS
     
     private static func convexHullFallback(_ paths: [CGPath]) -> CGPath? {
-        // print("🔧 Using convex hull fallback")
+        print("🔧 Using convex hull fallback")
         
         var allPoints: [CGPoint] = []
         
@@ -1203,8 +1203,8 @@ extension ProfessionalPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        // print("🔨 PROFESSIONAL TRIM (ClipperPaths): Processing \(paths.count) paths")
-        // print("   Adobe Illustrator Trim: Removing HIDDEN parts, keeping visible appearance")
+        print("🔨 PROFESSIONAL TRIM (ClipperPaths): Processing \(paths.count) paths")
+        print("   Adobe Illustrator Trim: Removing HIDDEN parts, keeping visible appearance")
         
         // Convert all paths to ClipperPaths
         var allClipperPaths: [ClipperPath] = []
@@ -1219,7 +1219,7 @@ extension ProfessionalPathOperations {
         }
         
         guard allClipperPaths.count >= 2 else { 
-            // print("⚠️ Not enough valid polygons for trim operation")
+            print("⚠️ Not enough valid polygons for trim operation")
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
@@ -1256,7 +1256,7 @@ extension ProfessionalPathOperations {
                                 let cgPath = clipperPathsToCGPath([clipperPath])
                                 if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
                                     resultPaths.append((cgPath, i))
-                                    // print("   ✅ Shape \(i): Trimmed hidden parts, keeping visible area")
+                                    print("   ✅ Shape \(i): Trimmed hidden parts, keeping visible area")
                                 }
                             }
                         }
@@ -1266,11 +1266,11 @@ extension ProfessionalPathOperations {
                     let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
                     if !originalPath.isEmpty {
                         resultPaths.append((originalPath, i))
-                        // print("   ✅ Shape \(i): No shapes in front, keeping entire shape")
+                        print("   ✅ Shape \(i): No shapes in front, keeping entire shape")
                     }
                 }
             } catch {
-                // print("    ⚠️ Error trimming shape \(i): \(error)")
+                print("    ⚠️ Error trimming shape \(i): \(error)")
                 // On error, try to keep the original shape
                 let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
                 if !originalPath.isEmpty {
@@ -1279,8 +1279,8 @@ extension ProfessionalPathOperations {
             }
         }
         
-        // print("✅ PROFESSIONAL TRIM (ClipperPaths): Created \(resultPaths.count) trimmed pieces")
-        // print("   Result should look identical to original, but with hidden paths removed")
+        print("✅ PROFESSIONAL TRIM (ClipperPaths): Created \(resultPaths.count) trimmed pieces")
+        print("   Result should look identical to original, but with hidden paths removed")
         return resultPaths
     }
     
@@ -1293,17 +1293,17 @@ extension ProfessionalPathOperations {
     static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        // print("🔨 PROFESSIONAL MERGE (ClipperPaths): Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL MERGE (ClipperPaths): Processing \(paths.count) paths")
         
         // Adobe Illustrator Merge: Unite all objects into single shape, no interior lines
         // This is essentially the same as Unite but specifically for merging multiple objects
         
         if let unified = professionalUnite(paths) {
-            // print("✅ PROFESSIONAL MERGE (ClipperPaths): Merged into single unified shape")
+            print("✅ PROFESSIONAL MERGE (ClipperPaths): Merged into single unified shape")
             return [unified]
         }
         
-        // print("❌ PROFESSIONAL MERGE (ClipperPaths): Failed to merge, returning original paths")
+        print("❌ PROFESSIONAL MERGE (ClipperPaths): Failed to merge, returning original paths")
         return paths
     }
     
@@ -1317,8 +1317,8 @@ extension ProfessionalPathOperations {
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
-        // print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
-        // print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then trimmed")
+        print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
+        print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then trimmed")
         
         let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
         let shapesToCrop = Array(paths.dropLast())
@@ -1327,13 +1327,13 @@ extension ProfessionalPathOperations {
         // Convert crop shape to ClipperPath
         let cropSubpaths = extractSubpaths(from: cropShape)
         guard let cropSubpath = cropSubpaths.first else {
-            // print("⚠️ Invalid crop shape")
+            print("⚠️ Invalid crop shape")
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
         let cropClipperPath = cgPathToClipperPath(cropSubpath)
         guard cropClipperPath.count >= 3 else {
-            // print("⚠️ Crop shape has insufficient points")
+            print("⚠️ Crop shape has insufficient points")
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
@@ -1363,17 +1363,17 @@ extension ProfessionalPathOperations {
                             }
                         }
                     } catch {
-                        // print("    ⚠️ Error cropping path \(index): \(error)")
+                        print("    ⚠️ Error cropping path \(index): \(error)")
                     }
                 }
             }
         }
         
-        // print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
+        print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
         
         // STEP 2: Apply TRIM to the cropped shapes to remove hidden overlapping parts
         if croppedPaths.count >= 2 {
-            // print("   🔨 STEP 2: Applying TRIM to remove hidden overlapping parts")
+            print("   🔨 STEP 2: Applying TRIM to remove hidden overlapping parts")
             let trimmedResults = professionalTrimWithShapeTracking(croppedPaths)
             
             // Map the trimmed results back to their original shape indices
@@ -1388,7 +1388,7 @@ extension ProfessionalPathOperations {
             // Add the invisible crop shape
             finalResults.append((cropShape, cropShapeIndex, true))
             
-            // print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
             return finalResults
         } else {
             // If we have fewer than 2 cropped shapes, no need to trim
@@ -1401,7 +1401,7 @@ extension ProfessionalPathOperations {
             // Add the invisible crop shape
             finalResults.append((cropShape, cropShapeIndex, true))
             
-            // print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
             return finalResults
         }
     }
@@ -1416,12 +1416,12 @@ extension ProfessionalPathOperations {
     static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
-        // print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
         
         // Step 1: Apply Divide operation to cut everything at intersections
         let dividedPaths = professionalDivide(paths)
         
-        // print("✅ PROFESSIONAL DIELINE: Created \(dividedPaths.count) divided shapes ready for dieline conversion")
+        print("✅ PROFESSIONAL DIELINE: Created \(dividedPaths.count) divided shapes ready for dieline conversion")
         return dividedPaths
     }
 } 

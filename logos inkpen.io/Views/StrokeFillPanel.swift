@@ -264,7 +264,7 @@ struct StrokeFillPanel: View {
     private func updateFillColor(_ color: VectorColor) {
         // ALWAYS update the default color for new shapes
         document.defaultFillColor = color
-        // print("🎨 Set default fill color: \(color)")
+        print("🎨 Set default fill color: \(color)")
         
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
@@ -285,7 +285,7 @@ struct StrokeFillPanel: View {
     private func updateFillOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultFillOpacity = opacity
-        // print("🎨 Set default fill opacity: \(Int(opacity * 100))%")
+        print("🎨 Set default fill opacity: \(Int(opacity * 100))%")
         
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
@@ -306,7 +306,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeColor(_ color: VectorColor) {
         // ALWAYS update the default color for new shapes
         document.defaultStrokeColor = color
-        // print("🎨 Set default stroke color: \(color)")
+        print("🎨 Set default stroke color: \(color)")
         
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
@@ -358,7 +358,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultStrokeOpacity = opacity
-        // print("🎨 Set default stroke opacity: \(Int(opacity * 100))%")
+        print("🎨 Set default stroke opacity: \(Int(opacity * 100))%")
         
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
@@ -1482,7 +1482,7 @@ struct FontToolSection: View {
         // Convert text to vector outlines using professional Core Graphics implementation
         document.convertTextToOutlines(textID)
         
-        // print("🎯 FONT TOOL: Converting text to vector outlines (Adobe Illustrator standard)")
+        print("🎯 FONT TOOL: Converting text to vector outlines (Adobe Illustrator standard)")
     }
 }
 

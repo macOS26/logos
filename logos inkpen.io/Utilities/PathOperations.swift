@@ -651,11 +651,11 @@ extension ProfessionalPathOperations {
     /// Detects and merges duplicate points in a vector path
     /// This resolves issues when closing paths creates overlapping points
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
-        // print("🔧 DUPLICATE POINT MERGER: Analyzing path with \(path.elements.count) elements")
-        // print("   Using tolerance: \(tolerance)px")
+        print("🔧 DUPLICATE POINT MERGER: Analyzing path with \(path.elements.count) elements")
+        print("   Using tolerance: \(tolerance)px")
         
         guard path.elements.count > 2 else { 
-            // print("   Path too short to have duplicates")
+            print("   Path too short to have duplicates")
             return path 
         }
         
@@ -673,7 +673,7 @@ extension ProfessionalPathOperations {
         var duplicatesRemoved = 0
         
         if let first = firstPoint {
-            // print("   🎯 FIRST POINT: (\(first.x), \(first.y))")
+            print("   🎯 FIRST POINT: (\(first.x), \(first.y))")
             
             for (index, element) in path.elements.enumerated() {
                 if index == 0 { continue } // Skip the move element itself
@@ -693,7 +693,7 @@ extension ProfessionalPathOperations {
                 if let end = endpoint {
                     let distance = first.distance(to: end)
                     if distance <= tolerance {
-                        // print("   🔍 FOUND FIRST/LAST DUPLICATE: Element \(index) ends at (\(end.x), \(end.y)) - distance \(distance)px from first point")
+                        print("   🔍 FOUND FIRST/LAST DUPLICATE: Element \(index) ends at (\(end.x), \(end.y)) - distance \(distance)px from first point")
                         elementsToSkip.insert(index)
                         duplicatesRemoved += 1
                     }
@@ -706,10 +706,10 @@ extension ProfessionalPathOperations {
         
         for (index, element) in path.elements.enumerated() {
             if elementsToSkip.contains(index) {
-                // print("   ❌ SKIPPING element \(index): \(element) - duplicate of first point")
+                print("   ❌ SKIPPING element \(index): \(element) - duplicate of first point")
             } else {
                 cleanedElements.append(element)
-                // print("   ✅ KEEPING element \(index): \(element)")
+                print("   ✅ KEEPING element \(index): \(element)")
             }
         }
         
@@ -717,7 +717,7 @@ extension ProfessionalPathOperations {
         
         // Ensure we have a valid path structure
         if cleanedElements.isEmpty {
-            // print("   ⚠️ Cleaning resulted in empty path - returning original")
+            print("   ⚠️ Cleaning resulted in empty path - returning original")
             return path
         }
         
@@ -725,17 +725,17 @@ extension ProfessionalPathOperations {
         if case .move = cleanedElements.first {
             // Good, starts with move
         } else {
-            // print("   ⚠️ Path doesn't start with move - returning original to avoid corruption")
+            print("   ⚠️ Path doesn't start with move - returning original to avoid corruption")
             return path
         }
         
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
         
         if duplicatesRemoved > 0 {
-            // print("✅ DUPLICATE POINT MERGER: Removed \(duplicatesRemoved) duplicate points")
-            // print("   Original: \(path.elements.count) elements → Cleaned: \(cleanedElements.count) elements")
+            print("✅ DUPLICATE POINT MERGER: Removed \(duplicatesRemoved) duplicate points")
+            print("   Original: \(path.elements.count) elements → Cleaned: \(cleanedElements.count) elements")
         } else {
-            // print("   No duplicate points found within tolerance (\(tolerance)px)")
+            print("   No duplicate points found within tolerance (\(tolerance)px)")
         }
         
         return cleanedPath
@@ -761,7 +761,7 @@ extension ProfessionalPathOperations {
     
     /// Cleans up duplicate points in all shapes of a vector document
     static func cleanupDocumentDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
-        // print("🧹 DOCUMENT CLEANUP: Removing duplicate points from all shapes")
+        print("🧹 DOCUMENT CLEANUP: Removing duplicate points from all shapes")
         
         document.saveToUndoStack()
         
@@ -775,27 +775,27 @@ extension ProfessionalPathOperations {
                 if cleanedShape.path.elements.count != originalShape.path.elements.count {
                     document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
                     totalCleaned += 1
-                    // print("   Cleaned shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
+                    print("   Cleaned shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
                 }
             }
         }
         
         if totalCleaned > 0 {
             document.objectWillChange.send()
-            // print("✅ DOCUMENT CLEANUP: Cleaned \(totalCleaned) shapes")
+            print("✅ DOCUMENT CLEANUP: Cleaned \(totalCleaned) shapes")
         } else {
-            // print("   No shapes needed cleaning")
+            print("   No shapes needed cleaning")
         }
     }
     
     /// Cleans up duplicate points in selected shapes only
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
         guard !document.selectedShapeIDs.isEmpty else {
-            // print("⚠️ No shapes selected for duplicate cleanup")
+            print("⚠️ No shapes selected for duplicate cleanup")
             return
         }
         
-        // print("🧹 SELECTED CLEANUP: Removing duplicate points from selected shapes")
+        print("🧹 SELECTED CLEANUP: Removing duplicate points from selected shapes")
         
         document.saveToUndoStack()
         
@@ -812,7 +812,7 @@ extension ProfessionalPathOperations {
                     if cleanedShape.path.elements.count != originalShape.path.elements.count {
                         document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
                         totalCleaned += 1
-                        // print("   Cleaned selected shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
+                        print("   Cleaned selected shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
                     }
                 }
             }
@@ -820,9 +820,9 @@ extension ProfessionalPathOperations {
         
         if totalCleaned > 0 {
             document.objectWillChange.send()
-            // print("✅ SELECTED CLEANUP: Cleaned \(totalCleaned) selected shapes")
+            print("✅ SELECTED CLEANUP: Cleaned \(totalCleaned) selected shapes")
         } else {
-            // print("   No selected shapes needed cleaning")
+            print("   No selected shapes needed cleaning")
         }
     }
 }
@@ -833,8 +833,8 @@ extension ProfessionalPathOperations {
     
     /// Test function to verify the duplicate point merger works correctly
     static func testDuplicatePointMerger() {
-        // print("🧪 TESTING DUPLICATE POINT MERGER:")
-        // print("=" + String(repeating: "=", count: 40))
+        print("🧪 TESTING DUPLICATE POINT MERGER:")
+        print("=" + String(repeating: "=", count: 40))
         
         // Create a test path with CONSECUTIVE duplicate points (not closing duplicates)
         let testElements: [PathElement] = [
@@ -850,23 +850,23 @@ extension ProfessionalPathOperations {
         
         let testPath = VectorPath(elements: testElements, isClosed: true)
         
-        // print("Original path: \(testElements.count) elements")
+        print("Original path: \(testElements.count) elements")
         for (index, element) in testElements.enumerated() {
-            // print("  [\(index)] \(element)")
+            print("  [\(index)] \(element)")
         }
         
         // Run the merger
         let cleanedPath = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
         
-        // print("\nCleaned path: \(cleanedPath.elements.count) elements")
+        print("\nCleaned path: \(cleanedPath.elements.count) elements")
         for (index, element) in cleanedPath.elements.enumerated() {
-            // print("  [\(index)] \(element)")
+            print("  [\(index)] \(element)")
         }
         
         let duplicatesRemoved = testElements.count - cleanedPath.elements.count
-        // print("\n✅ Test completed - removed \(duplicatesRemoved) duplicate points")
-        // print("   Should have removed 2 consecutive duplicates: line(100,0) and line(200,100)")
-        // print("   Should have preserved the closing structure and curve handles")
-        // print("=" + String(repeating: "=", count: 40))
+        print("\n✅ Test completed - removed \(duplicatesRemoved) duplicate points")
+        print("   Should have removed 2 consecutive duplicates: line(100,0) and line(200,100)")
+        print("   Should have preserved the closing structure and curve handles")
+        print("=" + String(repeating: "=", count: 40))
     }
 }

@@ -121,7 +121,7 @@ class TemplateManager {
     // MARK: - Template Loading
     
     private func loadAvailableTemplates() {
-        // print("📄 Loading professional document templates...")
+        print("📄 Loading professional document templates...")
         
         // BLANK DOCUMENT (11" × 8.5" Landscape)
         availableTemplates[.blank] = TemplateConfiguration(
@@ -300,7 +300,7 @@ class TemplateManager {
             )
         )
         
-        // print("✅ Loaded \(availableTemplates.count) professional templates")
+        print("✅ Loaded \(availableTemplates.count) professional templates")
     }
     
     // MARK: - Template Creation Helpers
@@ -455,10 +455,10 @@ class TemplateManager {
     
     /// Create a new document from template
     func createDocumentFromTemplate(_ type: TemplateType) -> VectorDocument {
-        // print("📄 Creating document from template: \(type.displayName)")
+        print("📄 Creating document from template: \(type.displayName)")
         
         guard let template = availableTemplates[type] else {
-            // print("⚠️ Template not found, using blank template")
+            print("⚠️ Template not found, using blank template")
             return createBlankDocument()
         }
         
@@ -492,15 +492,15 @@ class TemplateManager {
         // Select the first layer
         document.selectedLayerIndex = 0
         
-        // print("✅ Created document from template: \(type.displayName)")
-        // print("📊 Document: \(document.layers.count) layers, \(document.getTotalShapeCount()) shapes")
+        print("✅ Created document from template: \(type.displayName)")
+        print("📊 Document: \(document.layers.count) layers, \(document.getTotalShapeCount()) shapes")
         
         return document
     }
     
     /// Create a truly blank document (no content whatsoever)
     func createBlankDocument() -> VectorDocument {
-        // print("📄 Creating truly blank document...")
+        print("📄 Creating truly blank document...")
         
         let blankSettings = DocumentSettings(
             width: 11.0,
@@ -524,7 +524,7 @@ class TemplateManager {
         document.selectedTextIDs.removeAll()
         document.textObjects.removeAll()
         
-        // print("✅ Created truly blank document - single layer!")
+        print("✅ Created truly blank document - single layer!")
         return document
     }
     
@@ -544,7 +544,7 @@ class TemplateManager {
         )
         
         customTemplates[name] = configuration
-        // print("✅ Saved custom template: \(name)")
+        print("✅ Saved custom template: \(name)")
     }
     
     /// Get all custom template names
@@ -555,14 +555,14 @@ class TemplateManager {
     /// Create document from custom template
     func createDocumentFromCustomTemplate(name: String) -> VectorDocument? {
         guard let template = customTemplates[name] else {
-            // print("❌ Custom template not found: \(name)")
+            print("❌ Custom template not found: \(name)")
             return nil
         }
         
         let document = VectorDocument(settings: template.settings)
         document.layers = template.initialLayers
         
-        // print("✅ Created document from custom template: \(name)")
+        print("✅ Created document from custom template: \(name)")
         return document
     }
     

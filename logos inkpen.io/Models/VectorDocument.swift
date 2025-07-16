@@ -157,9 +157,9 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set the selected layer index to working layer (not canvas or pasteboard)
         self.selectedLayerIndex = 2 // Working layer is now at index 2
-        // print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
-        // print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
-        // print("=" + String(repeating: "=", count: 50))
+        print("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)")
+        print("🎯 INITIALIZATION COMPLETE - Ready to draw!")
+        print("=" + String(repeating: "=", count: 50))
         
         // Set up settings change observation
         setupSettingsObservation()
@@ -198,7 +198,7 @@ class VectorDocument: ObservableObject, Codable {
         pasteboardShape.name = "Pasteboard Background"
         pasteboardLayer.addShape(pasteboardShape)
         layers.append(pasteboardLayer)
-        // print("📋 CREATED PASTEBOARD LAYER: Pasteboard (index 0) - BEHIND everything")
+        print("📋 CREATED PASTEBOARD LAYER: Pasteboard (index 0) - BEHIND everything")
         
         // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -213,11 +213,11 @@ class VectorDocument: ObservableObject, Codable {
         backgroundShape.name = "Canvas Background"
         canvasLayer.addShape(backgroundShape)
         layers.append(canvasLayer)
-        // print("📋 CREATED CANVAS LAYER: Canvas (index 1)")
+        print("📋 CREATED CANVAS LAYER: Canvas (index 1)")
         
         // Create working layer THIRD (index 2) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
-        // print("📋 CREATED WORKING LAYER: Layer 1 (index 2)")
+        print("📋 CREATED WORKING LAYER: Layer 1 (index 2)")
         
         // DEBUG: Print actual layer order to verify
         debugLayerOrder()
@@ -225,11 +225,11 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Debug function to print current layer order
     func debugLayerOrder() {
-        // print("🔍 CURRENT LAYER ORDER:")
+        print("🔍 CURRENT LAYER ORDER:")
         for (index, layer) in layers.enumerated() {
-            // print("   Index \(index): '\(layer.name)' - shapes: \(layer.shapes.count)")
+            print("   Index \(index): '\(layer.name)' - shapes: \(layer.shapes.count)")
         }
-        // print("   Layers panel shows these REVERSED (index \(layers.count-1) at top)")
+        print("   Layers panel shows these REVERSED (index \(layers.count-1) at top)")
     }
     
     /// Update pasteboard layer to match canvas size and center it
@@ -237,7 +237,7 @@ class VectorDocument: ObservableObject, Codable {
         guard layers.count > 0,
               layers[0].name == "Pasteboard",
               let pasteboardShape = layers[0].shapes.first(where: { $0.name == "Pasteboard Background" }) else {
-            // print("⚠️ Cannot update pasteboard - pasteboard layer not found")
+            print("⚠️ Cannot update pasteboard - pasteboard layer not found")
             return
         }
         
@@ -264,7 +264,7 @@ class VectorDocument: ObservableObject, Codable {
             
             layers[0].shapes[pasteboardIndex] = updatedPasteboardShape
             
-            // print("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)")
+            print("📐 Updated pasteboard: \(pasteboardSize) at \(pasteboardOrigin)")
         }
     }
     
@@ -287,15 +287,15 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Debug function to print current document state
     func debugCurrentState() {
-        // print("🔍 DOCUMENT DEBUG STATE:")
-        // print("   Total layers: \(layers.count)")
-        // print("   Selected layer index: \(selectedLayerIndex ?? -1)")
+        print("🔍 DOCUMENT DEBUG STATE:")
+        print("   Total layers: \(layers.count)")
+        print("   Selected layer index: \(selectedLayerIndex ?? -1)")
         for (index, layer) in layers.enumerated() {
             let marker = (selectedLayerIndex == index) ? "👈" : "  "
-            // print("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)")
+            print("   \(marker) Layer \(index): '\(layer.name)' - locked: \(layer.isLocked), visible: \(layer.isVisible), shapes: \(layer.shapes.count)")
         }
-        // print("   Selected shapes: \(selectedShapeIDs.count)")
-        // print("   Current tool: \(currentTool)")
+        print("   Selected shapes: \(selectedShapeIDs.count)")
+        print("   Current tool: \(currentTool)")
     }
     
     // MARK: - Document Properties for Professional Export
@@ -365,7 +365,7 @@ class VectorDocument: ObservableObject, Codable {
     private func setupSettingsObservation() {
         // Since settings is a struct, we can't directly observe individual properties
         // Instead, we'll provide a method that should be called when settings change
-        // print("🔧 Settings observation setup complete")
+        print("🔧 Settings observation setup complete")
     }
     
     /// Call this method whenever document settings change to update pasteboard
@@ -376,7 +376,7 @@ class VectorDocument: ObservableObject, Codable {
         // Update any other dependent elements
         objectWillChange.send()
         
-        // print("🔄 Settings changed - updated pasteboard layer")
+        print("🔄 Settings changed - updated pasteboard layer")
     }
     
     private func setupNotificationObservers() {
@@ -404,7 +404,7 @@ class VectorDocument: ObservableObject, Codable {
               let scaleY = userInfo["scaleY"] as? CGFloat,
               let initialTransform = userInfo["initialTransform"] as? CGAffineTransform,
               let initialBounds = userInfo["initialBounds"] as? CGRect else {
-            // print("Invalid scaling notification data")
+            print("Invalid scaling notification data")
             return
         }
         
@@ -470,7 +470,7 @@ class VectorDocument: ObservableObject, Codable {
             return
         }
         
-        // print("🔧 Applying transform to shape coordinates: \(shape.name)")
+        print("🔧 Applying transform to shape coordinates: \(shape.name)")
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -516,7 +516,7 @@ class VectorDocument: ObservableObject, Codable {
         layers[layerIndex].shapes[shapeIndex].transform = .identity
         layers[layerIndex].shapes[shapeIndex].updateBounds()
         
-        // print("✅ Shape coordinates updated - object origin now follows object position")
+        print("✅ Shape coordinates updated - object origin now follows object position")
     }
     
     // MARK: - Codable Implementation
@@ -580,13 +580,13 @@ class VectorDocument: ObservableObject, Codable {
     /// Rename a layer at the specified index
     func renameLayer(at index: Int, to newName: String) {
         guard index >= 0 && index < layers.count else {
-            // print("❌ Invalid layer index for rename: \(index)")
+            print("❌ Invalid layer index for rename: \(index)")
             return
         }
         
         // Don't allow renaming Canvas layer
         if index == 0 && layers[index].name == "Canvas" {
-            // print("🚫 Cannot rename Canvas layer")
+            print("🚫 Cannot rename Canvas layer")
             return
         }
         
@@ -594,19 +594,19 @@ class VectorDocument: ObservableObject, Codable {
         layers[index].name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         
         saveToUndoStack()
-        // print("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'")
+        print("✏️ Renamed layer '\(oldName)' to '\(layers[index].name)'")
     }
     
     /// Duplicate a layer at the specified index
     func duplicateLayer(at index: Int) {
         guard index >= 0 && index < layers.count else {
-            // print("❌ Invalid layer index for duplicate: \(index)")
+            print("❌ Invalid layer index for duplicate: \(index)")
             return
         }
         
         // Don't allow duplicating Canvas layer
         if index == 0 && layers[index].name == "Canvas" {
-            // print("🚫 Cannot duplicate Canvas layer")
+            print("🚫 Cannot duplicate Canvas layer")
             return
         }
         
@@ -633,7 +633,7 @@ class VectorDocument: ObservableObject, Codable {
         // Select the new layer
         selectedLayerIndex = index + 1
         
-        // print("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'")
+        print("📋 Duplicated layer '\(originalLayer.name)' to '\(duplicatedLayer.name)'")
     }
     
     /// Move a layer from one index to another
@@ -641,31 +641,31 @@ class VectorDocument: ObservableObject, Codable {
         guard sourceIndex >= 0 && sourceIndex < layers.count,
               targetIndex >= 0 && targetIndex <= layers.count,  // Allow targetIndex == layers.count for "move to top"
               sourceIndex != targetIndex else {
-            // print("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)")
+            print("❌ Invalid layer indices for move: source=\(sourceIndex), target=\(targetIndex)")
             return
         }
         
         // PROTECT PASTEBOARD LAYER: Never allow Pasteboard layer to be moved
         if sourceIndex == 0 && layers[sourceIndex].name == "Pasteboard" {
-            // print("🚫 Cannot move Pasteboard layer - it must remain at the bottom")
+            print("🚫 Cannot move Pasteboard layer - it must remain at the bottom")
             return
         }
         
         // PROTECT CANVAS LAYER: Never allow Canvas layer to be moved
         if sourceIndex == 1 && layers[sourceIndex].name == "Canvas" {
-            // print("🚫 Cannot move Canvas layer - it must remain above pasteboard")
+            print("🚫 Cannot move Canvas layer - it must remain above pasteboard")
             return
         }
         
         // PROTECT PASTEBOARD LAYER: Never allow moving to Pasteboard position
         if targetIndex == 0 {
-            // print("🚫 Cannot move layers to Pasteboard position (index 0)")
+            print("🚫 Cannot move layers to Pasteboard position (index 0)")
             return
         }
         
         // PROTECT CANVAS LAYER: Never allow moving to Canvas position
         if targetIndex == 1 && targetIndex < layers.count && layers[targetIndex].name == "Canvas" {
-            // print("🚫 Cannot move layers to Canvas position (index 1)")
+            print("🚫 Cannot move layers to Canvas position (index 1)")
             return
         }
         
@@ -678,7 +678,7 @@ class VectorDocument: ObservableObject, Codable {
         if targetIndex == layers.count {
             // Special case: move to top (append to end after removal)
             adjustedTargetIndex = layers.count
-            // print("🔝 Moving to top position (will be index \(adjustedTargetIndex))")
+            print("🔝 Moving to top position (will be index \(adjustedTargetIndex))")
         } else if sourceIndex < targetIndex {
             // Moving forward in the array - adjust for removal
             adjustedTargetIndex = targetIndex - 1
@@ -701,7 +701,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // print("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)")
+        print("🔄 Moved layer '\(movingLayer.name)' from index \(sourceIndex) to \(adjustedTargetIndex)")
     }
     
     func addLayer(name: String = "New Layer") {
@@ -712,7 +712,7 @@ class VectorDocument: ObservableObject, Codable {
     func removeLayer(at index: Int) {
         // Allow deletion of any layer, just prevent deleting the last layer
         guard index >= 0 && index < layers.count && layers.count > 1 else { 
-            // print("⚠️ Cannot remove last remaining layer")
+            print("⚠️ Cannot remove last remaining layer")
             return 
         }
         layers.remove(at: index)
@@ -811,13 +811,13 @@ class VectorDocument: ObservableObject, Codable {
         if !allShapeIDs.isEmpty {
             selectedShapeIDs = allShapeIDs
             selectedTextIDs.removeAll() // Mutually exclusive
-            // print("🎯 SELECT ALL: Selected \(allShapeIDs.count) shapes")
+            print("🎯 SELECT ALL: Selected \(allShapeIDs.count) shapes")
         } else if !allTextIDs.isEmpty {
             selectedTextIDs = allTextIDs
             selectedShapeIDs.removeAll() // Mutually exclusive
-            // print("🎯 SELECT ALL: Selected \(allTextIDs.count) text objects")
+            print("🎯 SELECT ALL: Selected \(allTextIDs.count) text objects")
         } else {
-            // print("🎯 SELECT ALL: No selectable objects found")
+            print("🎯 SELECT ALL: No selectable objects found")
         }
     }
     
@@ -914,7 +914,7 @@ class VectorDocument: ObservableObject, Codable {
             // Clear redo stack when a new action is performed
             redoStack.removeAll()
         } catch {
-            // print("Error saving to undo stack: \(error)")
+            print("Error saving to undo stack: \(error)")
         }
     }
     
@@ -927,7 +927,7 @@ class VectorDocument: ObservableObject, Codable {
             let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
             redoStack.append(copy)
         } catch {
-            // print("Error saving to redo stack: \(error)")
+            print("Error saving to redo stack: \(error)")
         }
         
         // Restore previous state
@@ -958,12 +958,12 @@ class VectorDocument: ObservableObject, Codable {
                 undoStack.removeFirst()
             }
         } catch {
-            // print("Error saving to undo stack: \(error)")
+            print("Error saving to undo stack: \(error)")
         }
         
         // Restore next state (double-check the stack isn't empty)
         guard !redoStack.isEmpty else { 
-            // print("Warning: Redo stack became empty during redo operation")
+            print("Warning: Redo stack became empty during redo operation")
             return 
         }
         let nextState = redoStack.removeLast()
@@ -1010,7 +1010,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
         selectedLayerIndex = layerIndex // Select the layer we added text to
         
-        // print("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))")
+        print("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))")
     }
     
     func removeSelectedText() {
@@ -1043,7 +1043,7 @@ class VectorDocument: ObservableObject, Codable {
         
         // Select the duplicated text objects
         selectedTextIDs = newTextIDs
-        // print("✅ Duplicated \(newTextIDs.count) text objects")
+        print("✅ Duplicated \(newTextIDs.count) text objects")
     }
     
 
@@ -1120,7 +1120,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
         
-        // print("🧹 Cleared all objects from document")
+        print("🧹 Cleared all objects from document")
     }
     
     func updateTextContent(_ textID: UUID, content: String) {
@@ -1150,13 +1150,13 @@ class VectorDocument: ObservableObject, Codable {
         
         guard let textIndex = textObjects.firstIndex(where: { $0.id == textID }),
               let layerIndex = selectedLayerIndex else {
-            // print("❌ Failed to find text or layer for conversion")
+            print("❌ Failed to find text or layer for conversion")
             return
         }
         
         let textObject = textObjects[textIndex]
         
-        // print("🎯 Converting text '\(textObject.content)' to vector outlines...")
+        print("🎯 Converting text '\(textObject.content)' to vector outlines...")
         
         // Create NSAttributedString with typography properties
         let attributes: [NSAttributedString.Key: Any] = [
@@ -1263,10 +1263,10 @@ class VectorDocument: ObservableObject, Codable {
             // Select the created outline shape
             selectedShapeIDs = [outlineShape.id]
             
-            // print("✅ Successfully converted text '\(textObject.content)' to single vector outline shape")
-            // print("🎯 Adobe Illustrator standard text-to-outlines conversion complete!")
+            print("✅ Successfully converted text '\(textObject.content)' to single vector outline shape")
+            print("🎯 Adobe Illustrator standard text-to-outlines conversion complete!")
         } else {
-            // print("❌ Failed to create outline paths for text '\(textObject.content)'")
+            print("❌ Failed to create outline paths for text '\(textObject.content)'")
         }
         
         // Force UI update
@@ -1448,7 +1448,7 @@ class VectorDocument: ObservableObject, Codable {
     func requestZoom(to targetZoom: CGFloat, mode: ZoomMode) {
         let request = ZoomRequest(targetZoom: targetZoom, mode: mode)
         zoomRequest = request
-        // print("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%")
+        print("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%")
     }
     
     /// Clear zoom request after processing
@@ -1628,18 +1628,18 @@ class VectorDocument: ObservableObject, Codable {
     /// Performs pathfinder operations following exact Adobe Illustrator behavior
     /// Returns true if the operation was successful, false otherwise
     func performPathfinderOperation(_ operation: PathfinderOperation) -> Bool {
-        // print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
+        print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
         
         // Get selected shapes in correct STACKING ORDER (Adobe Illustrator standard)
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
-            // print("❌ No shapes selected for pathfinder operation")
+            print("❌ No shapes selected for pathfinder operation")
             return false
         }
         
-        // print("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes")
+        print("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes")
         for (index, shape) in selectedShapes.enumerated() {
-            // print("  \(index): \(shape.name) (bottom→top)")
+            print("  \(index): \(shape.name) (bottom→top)")
         }
         
         // Convert shapes to CGPaths
@@ -1647,7 +1647,7 @@ class VectorDocument: ObservableObject, Codable {
         
         // Validate operation can be performed
         guard ProfessionalPathOperations.canPerformOperation(operation, on: paths) else {
-            // print("❌ Cannot perform \(operation.rawValue) on selected shapes")
+            print("❌ Cannot perform \(operation.rawValue) on selected shapes")
             return false
         }
         
@@ -1672,20 +1672,20 @@ class VectorDocument: ObservableObject, Codable {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [unitedShape]
-                // print("✅ UNITE: Created unified shape with topmost object's color")
+                print("✅ UNITE: Created unified shape with topmost object's color")
             }
             
         case .minusFront:
             // MINUS FRONT: Front objects subtract from back object, result takes color of BACK object
             guard selectedShapes.count >= 2 else { 
-                // print("❌ MINUS FRONT requires at least 2 shapes")
+                print("❌ MINUS FRONT requires at least 2 shapes")
                 return false 
             }
             
             let backShape = selectedShapes.first!    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            // print("🔪 MINUS FRONT: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
+            print("🔪 MINUS FRONT: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
             
             var resultPath = backShape.path.cgPath
             
@@ -1693,7 +1693,7 @@ class VectorDocument: ObservableObject, Codable {
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
-                    // print("  ⚡ Subtracted '\(frontShape.name)' from result")
+                    print("  ⚡ Subtracted '\(frontShape.name)' from result")
                 }
             }
             
@@ -1707,12 +1707,12 @@ class VectorDocument: ObservableObject, Codable {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            // print("✅ MINUS FRONT: Result takes back object's color (\(backShape.name))")
+            print("✅ MINUS FRONT: Result takes back object's color (\(backShape.name))")
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                // print("❌ INTERSECT requires exactly 2 shapes")
+                print("❌ INTERSECT requires exactly 2 shapes")
                 return false
             }
             
@@ -1727,13 +1727,13 @@ class VectorDocument: ObservableObject, Codable {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [intersectedShape]
-                // print("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))")
+                print("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))")
             }
             
         case .exclude:
             // EXCLUDE: Remove overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                // print("❌ EXCLUDE requires exactly 2 shapes")
+                print("❌ EXCLUDE requires exactly 2 shapes")
                 return false
             }
             
@@ -1751,7 +1751,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(excludedShape)
             }
-            // print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
+            print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .divide:
@@ -1772,7 +1772,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(dividedShape)
             }
-            // print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
+            print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
             
         case .trim:
             // TRIM: Remove overlapping areas, objects retain original colors, removes strokes
@@ -1802,7 +1802,7 @@ class VectorDocument: ObservableObject, Codable {
                 resultShapes.append(trimmedShape)
             }
             
-            // print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
+            print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
             
         case .merge:
             // MERGE: Like trim but merges objects of same color, removes strokes
@@ -1822,7 +1822,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(mergedShape)
             }
-            // print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
+            print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
@@ -1847,7 +1847,7 @@ class VectorDocument: ObservableObject, Codable {
                         opacity: originalShape.opacity
                     )
                     resultShapes.append(invisibleCropShape)
-                    // print("   ✅ Created invisible crop boundary from \(originalShape.name)")
+                    print("   ✅ Created invisible crop boundary from \(originalShape.name)")
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
@@ -1865,7 +1865,7 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
             
-            // print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
+            print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
             
         case .dieline:
             // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
@@ -1887,19 +1887,19 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(dielineShape)
             }
-            // print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
+            print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
             
         case .minusBack:
             // MINUS BACK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
-                // print("❌ MINUS BACK requires at least 2 shapes")
+                print("❌ MINUS BACK requires at least 2 shapes")
                 return false
             }
             
             let frontShape = selectedShapes.last!     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            // print("🔪 MINUS BACK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
+            print("🔪 MINUS BACK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
             
             var resultPath = frontShape.path.cgPath
             
@@ -1907,7 +1907,7 @@ class VectorDocument: ObservableObject, Codable {
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusBack(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
-                    // print("  ⚡ Subtracted '\(backShape.name)' from result")
+                    print("  ⚡ Subtracted '\(backShape.name)' from result")
                 }
             }
             
@@ -1921,11 +1921,11 @@ class VectorDocument: ObservableObject, Codable {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            // print("✅ MINUS BACK: Result takes front object's color (\(frontShape.name))")
+            print("✅ MINUS BACK: Result takes front object's color (\(frontShape.name))")
         }
         
         guard !resultShapes.isEmpty else {
-            // print("❌ Pathfinder operation \(operation.rawValue) produced no results")
+            print("❌ Pathfinder operation \(operation.rawValue) produced no results")
             return false
         }
         
@@ -1938,7 +1938,7 @@ class VectorDocument: ObservableObject, Codable {
             selectedShapeIDs.insert(resultShape.id)
         }
         
-        // print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
+        print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
         return true
     }
     
@@ -1966,25 +1966,25 @@ class VectorDocument: ObservableObject, Codable {
         guard fromLayerIndex >= 0 && fromLayerIndex < layers.count,
               toLayerIndex >= 0 && toLayerIndex < layers.count,
               fromLayerIndex != toLayerIndex else {
-            // print("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)")
+            print("❌ Invalid layer indices for shape move: from=\(fromLayerIndex), to=\(toLayerIndex)")
             return
         }
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            // print("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'")
+            print("🚫 Cannot move objects to locked layer '\(layers[toLayerIndex].name)'")
             return
         }
         
         // Don't allow moving from locked layers unless it's a selection operation
         if layers[fromLayerIndex].isLocked {
-            // print("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'")
+            print("🚫 Cannot move objects from locked layer '\(layers[fromLayerIndex].name)'")
             return
         }
         
         // Find and remove the shape from source layer
         guard let shapeIndex = layers[fromLayerIndex].shapes.firstIndex(where: { $0.id == shapeId }) else {
-            // print("❌ Shape not found in source layer \(fromLayerIndex)")
+            print("❌ Shape not found in source layer \(fromLayerIndex)")
             return
         }
         
@@ -1997,24 +1997,24 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs = [shapeId]
         selectedLayerIndex = toLayerIndex
         
-        // print("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'")
+        print("✅ Moved shape '\(shape.name)' from layer '\(layers[fromLayerIndex].name)' to '\(layers[toLayerIndex].name)'")
     }
     
     /// Move a text object to a specific layer (conceptually)
     func moveTextToLayer(textId: UUID, toLayerIndex: Int) {
         guard toLayerIndex >= 0 && toLayerIndex < layers.count else {
-            // print("❌ Invalid layer index for text move: \(toLayerIndex)")
+            print("❌ Invalid layer index for text move: \(toLayerIndex)")
             return
         }
         
         // Don't allow moving to locked layers
         if layers[toLayerIndex].isLocked {
-            // print("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'")
+            print("🚫 Cannot move text to locked layer '\(layers[toLayerIndex].name)'")
             return
         }
         
         guard let textIndex = textObjects.firstIndex(where: { $0.id == textId }) else {
-            // print("❌ Text object not found")
+            print("❌ Text object not found")
             return
         }
         
@@ -2028,7 +2028,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll()
         selectedLayerIndex = toLayerIndex
         
-        // print("✅ Moved text object to layer '\(layers[toLayerIndex].name)'")
+        print("✅ Moved text object to layer '\(layers[toLayerIndex].name)'")
     }
     
     /// Handle dropping a draggable object onto a layer
@@ -2066,7 +2066,7 @@ class VectorDocument: ObservableObject, Codable {
         shapes.append(contentsOf: selectedShapes)
         
         layers[layerIndex].shapes = shapes
-        // print("⬆️⬆️ Brought to front \(selectedShapeIDs.count) objects")
+        print("⬆️⬆️ Brought to front \(selectedShapeIDs.count) objects")
     }
     
     /// Bring selected shapes forward
@@ -2087,7 +2087,7 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         layers[layerIndex].shapes = shapes
-        // print("⬆️ Brought forward \(selectedShapeIDs.count) objects")
+        print("⬆️ Brought forward \(selectedShapeIDs.count) objects")
     }
     
     /// Send selected shapes backward
@@ -2108,7 +2108,7 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         layers[layerIndex].shapes = shapes
-        // print("⬇️ Sent backward \(selectedShapeIDs.count) objects")
+        print("⬇️ Sent backward \(selectedShapeIDs.count) objects")
     }
     
     /// Send selected shapes to back
@@ -2127,7 +2127,7 @@ class VectorDocument: ObservableObject, Codable {
         shapes.insert(contentsOf: selectedShapes, at: 0)
         
         layers[layerIndex].shapes = shapes
-        // print("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects")
+        print("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects")
     }
     
     // MARK: - Object Grouping Methods (Adobe Illustrator Standards)
@@ -2152,7 +2152,7 @@ class VectorDocument: ObservableObject, Codable {
         layers[layerIndex].shapes.append(groupShape)
         selectedShapeIDs = [groupShape.id]
         
-        // print("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'")
+        print("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'")
     }
     
     /// Ungroup selected objects
@@ -2182,7 +2182,7 @@ class VectorDocument: ObservableObject, Codable {
                     // Mark group for removal
                     shapesToRemove.append(shapeID)
                     
-                    // print("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects")
+                    print("📦 Ungrouped '\(shape.name)' containing \(shape.groupedShapes.count) objects")
                 } else {
                     // Not a group, keep it selected
                     newSelectedShapeIDs.insert(shapeID)
@@ -2200,9 +2200,9 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs = newSelectedShapeIDs
         
         if !shapesToRemove.isEmpty {
-            // print("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects")
+            print("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects")
         } else {
-            // print("📦 No groups found in selection")
+            print("📦 No groups found in selection")
         }
     }
     
@@ -2230,7 +2230,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // print("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
+        print("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
         
         // Clear selection since locked objects can't be selected
         selectedShapeIDs.removeAll()
@@ -2261,7 +2261,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // print("🔓 Unlocked \(unlockedCount) objects")
+        print("🔓 Unlocked \(unlockedCount) objects")
     }
     
     // MARK: - Hide/Show Methods (Adobe Illustrator Standards)
@@ -2288,7 +2288,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // print("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
+        print("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects")
         
         // Clear selection since hidden objects can't be selected
         selectedShapeIDs.removeAll()
@@ -2319,7 +2319,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // print("👁️ Shown \(shownCount) objects")
+        print("👁️ Shown \(shownCount) objects")
     }
 }
 

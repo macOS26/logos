@@ -39,7 +39,7 @@ class DocumentState: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // print("🎯 DocumentState initialized with automatic menu state updates")
+        print("🎯 DocumentState initialized with automatic menu state updates")
     }
     
     func setDocument(_ document: VectorDocument) {
@@ -152,7 +152,7 @@ class DocumentState: ObservableObject {
         }
         
         updateAllStates()
-        // print("🗑️ MENU: Deleted selected objects")
+        print("🗑️ MENU: Deleted selected objects")
     }
     
     func bringToFront() {
@@ -387,9 +387,9 @@ class ClipboardManager {
             let data = try JSONEncoder().encode(clipboardData)
             pasteboard.clearContents()
             pasteboard.setData(data, forType: vectorObjectsType)
-            // print("📋 Copied \(shapesToCopy.count) shapes and \(textToCopy.count) text objects")
+            print("📋 Copied \(shapesToCopy.count) shapes and \(textToCopy.count) text objects")
         } catch {
-            // print("❌ Failed to copy objects: \(error)")
+            print("❌ Failed to copy objects: \(error)")
         }
     }
     
@@ -425,9 +425,9 @@ class ClipboardManager {
                 document.selectedTextIDs.insert(newText.id)
             }
             
-            // print("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
+            print("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
         } catch {
-            // print("❌ Failed to paste objects: \(error)")
+            print("❌ Failed to paste objects: \(error)")
         }
     }
     
@@ -478,9 +478,9 @@ class ClipboardManager {
                 document.selectedTextIDs.insert(newText.id)
             }
             
-            // print("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
+            print("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates")
         } catch {
-            // print("❌ Failed to paste in back: \(error)")
+            print("❌ Failed to paste in back: \(error)")
         }
     }
     

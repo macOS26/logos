@@ -31,7 +31,7 @@ struct VerticalToolbar: View {
                         document.currentTool = tool
                         tool.cursor.push()
                         
-                        // print("🛠️ Switched to tool: \(tool.rawValue)")
+                        print("🛠️ Switched to tool: \(tool.rawValue)")
                     } label: {
                         Image(systemName: tool.iconName)
                             .font(.system(size: 16))
@@ -270,12 +270,12 @@ struct ColorSwatchGrid: View {
                             selectedStrokeColor = color
                             document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
-                            // print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
+                            print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
-                            // print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
+                            print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
                         }
                     } label: {
                         ZStack {
