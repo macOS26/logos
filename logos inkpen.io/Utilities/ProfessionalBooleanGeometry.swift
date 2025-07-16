@@ -796,212 +796,46 @@ extension ProfessionalPathOperations {
         return professionalMinusFront(backPath, from: frontPath)
     }
     
-    // MARK: - PROFESSIONAL DIVIDE OPERATION USING CLIPPER PATHS
+    // MARK: - PROFESSIONAL DIVIDE & SPLIT OPERATIONS
     
-    /// PROFESSIONAL DIVIDE: Breaks paths into separate objects at all intersection points (Adobe Illustrator "Divide")
-    static func professionalDivide(_ paths: [CGPath]) -> [CGPath] {
+    /// PROFESSIONAL SPLIT: CoreGraphics-based alternative to Divide with curve preservation (NEW!)
+    /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
+    static func professionalSplit(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        print("🔨 PROFESSIONAL DIVIDE (ClipperPaths): Processing \(paths.count) paths")
+        print("🔨 PROFESSIONAL SPLIT: Using CoreGraphics with curve preservation...")
         
-        // Convert all paths to ClipperPaths
-        var allClipperPaths: [ClipperPath] = []
-        for cgPath in paths {
-            let subpaths = extractSubpaths(from: cgPath)
-            for subpath in subpaths {
-                let clipperPath = cgPathToClipperPath(subpath)
-                if clipperPath.count >= 3 { // Only add valid polygons
-                    allClipperPaths.append(clipperPath)
-                }
-            }
+        // Use the new CoreGraphics split operation
+        let result = CoreGraphicsPathOperations.split(paths, using: .winding)
+        
+        if !result.isEmpty {
+            print("✅ PROFESSIONAL SPLIT: CoreGraphics success - \(result.count) pieces (curves preserved)")
+            return result
+        } else {
+            print("⚠️ CoreGraphics split returned empty result")
+            return []
         }
-        
-        guard allClipperPaths.count >= 2 else { 
-            print("⚠️ Not enough valid polygons for divide operation")
-            return paths 
-        }
-        
-        var resultPaths: [CGPath] = []
-        
-        // STEP 1: Get all unique (non-overlapping) parts of each shape
-        print("  → Finding unique parts of each shape...")
-        for i in 0..<allClipperPaths.count {
-            let clipper = Clipper()
-            clipper.addPath(allClipperPaths[i], .subject, true)
-            
-            // Add all other paths as clips to subtract them
-            for j in 0..<allClipperPaths.count where j != i {
-                clipper.addPath(allClipperPaths[j], .clip, true)
-            }
-            
-            var solution = ClipperPaths()
-            do {
-                let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
-                if success {
-                    for clipperPath in solution {
-                        if clipperPath.count >= 3 {
-                            let cgPath = clipperPathsToCGPath([clipperPath])
-                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                resultPaths.append(cgPath)
-                            }
-                        }
-                    }
-                }
-            } catch {
-                print("    ⚠️ Error getting unique part for shape \(i): \(error)")
-            }
-        }
-        
-        // STEP 2: Get all 2-way intersections
-        print("  → Finding 2-way intersections...")
-        for i in 0..<allClipperPaths.count {
-            for j in (i+1)..<allClipperPaths.count {
-                let clipper = Clipper()
-                clipper.addPath(allClipperPaths[i], .subject, true)
-                clipper.addPath(allClipperPaths[j], .clip, true)
-                
-                var solution = ClipperPaths()
-                do {
-                    let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
-                    if success {
-                        for clipperPath in solution {
-                            if clipperPath.count >= 3 {
-                                // Check if this intersection overlaps with any other shapes
-                                let intersectionPath = clipperPathsToCGPath([clipperPath])
-                                let cleanedPath = removeHigherOrderOverlaps(intersectionPath, 
-                                                                          excludingIndices: [i, j], 
-                                                                          from: allClipperPaths)
-                                
-                                if !cleanedPath.isEmpty && !cleanedPath.boundingBoxOfPath.isEmpty {
-                                    resultPaths.append(cleanedPath)
-                                }
-                            }
-                        }
-                    }
-                } catch {
-                    print("    ⚠️ Error getting intersection for shapes \(i) and \(j): \(error)")
-                }
-            }
-        }
-        
-        // STEP 3: Get all 3-way intersections (if 3+ shapes)
-        if allClipperPaths.count >= 3 {
-            print("  → Finding 3-way intersections...")
-            for i in 0..<allClipperPaths.count {
-                for j in (i+1)..<allClipperPaths.count {
-                    for k in (j+1)..<allClipperPaths.count {
-                        let clipper = Clipper()
-                        clipper.addPath(allClipperPaths[i], .subject, true)
-                        clipper.addPath(allClipperPaths[j], .clip, true)
-                        
-                        var solution = ClipperPaths()
-                        do {
-                            // First intersect i and j
-                            let success1 = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
-                            if success1 && !solution.isEmpty {
-                                // Then intersect result with k
-                                let clipper2 = Clipper()
-                                for path in solution {
-                                    clipper2.addPath(path, .subject, true)
-                                }
-                                clipper2.addPath(allClipperPaths[k], .clip, true)
-                                
-                                var finalSolution = ClipperPaths()
-                                let success2 = try clipper2.execute(clipType: .intersection, solution: &finalSolution, fillType: .nonZero)
-                                if success2 {
-                                    for clipperPath in finalSolution {
-                                        if clipperPath.count >= 3 {
-                                            let cgPath = clipperPathsToCGPath([clipperPath])
-                                            if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                                resultPaths.append(cgPath)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } catch {
-                            print("    ⚠️ Error getting 3-way intersection for shapes \(i), \(j), \(k): \(error)")
-                        }
-                    }
-                }
-            }
-        }
-        
-        // STEP 4: Get all 4-way intersections (if 4+ shapes)
-        if allClipperPaths.count >= 4 {
-            print("  → Finding 4-way intersections...")
-            for i in 0..<allClipperPaths.count {
-                for j in (i+1)..<allClipperPaths.count {
-                    for k in (j+1)..<allClipperPaths.count {
-                        for l in (k+1)..<allClipperPaths.count {
-                            let intersection = getMultiWayIntersection([allClipperPaths[i], allClipperPaths[j], allClipperPaths[k], allClipperPaths[l]])
-                            if !intersection.isEmpty && !intersection.boundingBoxOfPath.isEmpty {
-                                resultPaths.append(intersection)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        print("✅ PROFESSIONAL DIVIDE (ClipperPaths): Created \(resultPaths.count) pieces from \(paths.count) originals")
-        return resultPaths
     }
     
-    /// Helper function to remove higher-order overlaps from an intersection
-    private static func removeHigherOrderOverlaps(_ intersectionPath: CGPath, excludingIndices: [Int], from allPaths: [ClipperPath]) -> CGPath {
-        let clipper = Clipper()
-        let intersectionClipperPath = cgPathToClipperPath(intersectionPath)
-        clipper.addPath(intersectionClipperPath, .subject, true)
+    /// PROFESSIONAL CUT: CoreGraphics-based alternative to Trim with curve preservation (NEW!)
+    /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
+    static func professionalCut(_ paths: [CGPath]) -> [CGPath] {
+        guard paths.count >= 2 else { return paths }
         
-        // Subtract all other paths except the ones we're already intersecting
-        for i in 0..<allPaths.count {
-            if !excludingIndices.contains(i) {
-                clipper.addPath(allPaths[i], .clip, true)
-            }
+        print("🔨 PROFESSIONAL CUT: Using CoreGraphics with curve preservation...")
+        
+        // Use the new CoreGraphics cut operation  
+        let result = CoreGraphicsPathOperations.cut(paths, using: .winding)
+        
+        if !result.isEmpty {
+            print("✅ PROFESSIONAL CUT: CoreGraphics success - \(result.count) pieces (curves preserved)")
+            return result
+        } else {
+            print("⚠️ CoreGraphics cut returned empty result")
+            return []
         }
-        
-        var solution = ClipperPaths()
-        do {
-            let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
-            if success && !solution.isEmpty {
-                return clipperPathsToCGPath(solution)
-            }
-        } catch {
-            print("    ⚠️ Error removing higher-order overlaps: \(error)")
-        }
-        
-        return intersectionPath // Return original if cleaning fails
     }
-    
-    /// Helper function to get multi-way intersection
-    private static func getMultiWayIntersection(_ paths: [ClipperPath]) -> CGPath {
-        guard paths.count >= 2 else { return CGMutablePath() }
-        
-        var currentResult = [paths[0]]
-        
-        for i in 1..<paths.count {
-            let clipper = Clipper()
-            for path in currentResult {
-                clipper.addPath(path, .subject, true)
-            }
-            clipper.addPath(paths[i], .clip, true)
-            
-            var solution = ClipperPaths()
-            do {
-                let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
-                if success {
-                    currentResult = solution
-                } else {
-                    return CGMutablePath() // No intersection
-                }
-            } catch {
-                return CGMutablePath() // Error occurred
-            }
-        }
-        
-        return clipperPathsToCGPath(currentResult)
-    }
+
     
     // MARK: - FALLBACK OPERATIONS
     
@@ -1255,100 +1089,7 @@ extension ProfessionalPathOperations {
         return path
     }
     
-    /// PROFESSIONAL TRIM: Removes HIDDEN parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
-    /// The visual result should look identical to the original, but hidden overlapping paths are removed.
-    /// This is like cutting away the parts you can't see in a stained glass window.
-    /// Returns an array of tuples: (trimmedPath, originalShapeIndex)
-    static func professionalTrimWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int)] {
-        guard paths.count >= 2 else { 
-            return paths.enumerated().map { (index, path) in (path, index) }
-        }
-        
-        print("🔨 PROFESSIONAL TRIM (ClipperPaths): Processing \(paths.count) paths")
-        print("   Adobe Illustrator Trim: Removing HIDDEN parts, keeping visible appearance")
-        
-        // Convert all paths to ClipperPaths
-        var allClipperPaths: [ClipperPath] = []
-        for cgPath in paths {
-            let subpaths = extractSubpaths(from: cgPath)
-            for subpath in subpaths {
-                let clipperPath = cgPathToClipperPath(subpath)
-                if clipperPath.count >= 3 { // Only add valid polygons
-                    allClipperPaths.append(clipperPath)
-                }
-            }
-        }
-        
-        guard allClipperPaths.count >= 2 else { 
-            print("⚠️ Not enough valid polygons for trim operation")
-            return paths.enumerated().map { (index, path) in (path, index) }
-        }
-        
-        var resultPaths: [(CGPath, Int)] = []
-        
-        // Adobe Illustrator Trim Algorithm (CORRECTED):
-        // Process shapes from BACK to FRONT (stacking order)
-        // For each shape, subtract only the shapes that are IN FRONT of it
-        // This removes the HIDDEN parts (parts behind other shapes)
-        
-        for i in 0..<allClipperPaths.count {
-            let clipper = Clipper()
-            
-            // Add current shape as subject (what we want to keep visible parts of)
-            clipper.addPath(allClipperPaths[i], .subject, true)
-            
-            // Add only shapes that are IN FRONT of this shape as clips
-            // (shapes with higher index are in front in stacking order)
-            var hasShapesInFront = false
-            for j in (i+1)..<allClipperPaths.count {
-                clipper.addPath(allClipperPaths[j], .clip, true)
-                hasShapesInFront = true
-            }
-            
-            var solution = ClipperPaths()
-            do {
-                if hasShapesInFront {
-                    // Use DIFFERENCE to remove the hidden parts (parts behind shapes in front)
-                    let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
-                    if success {
-                        // Add all resulting visible pieces from this shape
-                        for clipperPath in solution {
-                            if clipperPath.count >= 3 {
-                                let cgPath = clipperPathsToCGPath([clipperPath])
-                                if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                    resultPaths.append((cgPath, i))
-                                    print("   ✅ Shape \(i): Trimmed hidden parts, keeping visible area")
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // No shapes in front, so keep the entire shape (nothing to trim)
-                    let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
-                    if !originalPath.isEmpty {
-                        resultPaths.append((originalPath, i))
-                        print("   ✅ Shape \(i): No shapes in front, keeping entire shape")
-                    }
-                }
-            } catch {
-                print("    ⚠️ Error trimming shape \(i): \(error)")
-                // On error, try to keep the original shape
-                let originalPath = clipperPathsToCGPath([allClipperPaths[i]])
-                if !originalPath.isEmpty {
-                    resultPaths.append((originalPath, i))
-                }
-            }
-        }
-        
-        print("✅ PROFESSIONAL TRIM (ClipperPaths): Created \(resultPaths.count) trimmed pieces")
-        print("   Result should look identical to original, but with hidden paths removed")
-        return resultPaths
-    }
-    
-    /// PROFESSIONAL TRIM: Legacy wrapper that returns only paths (for compatibility)
-    static func professionalTrim(_ paths: [CGPath]) -> [CGPath] {
-        return professionalTrimWithShapeTracking(paths).map { $0.0 }
-    }
+
     
     /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
     static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
@@ -1374,7 +1115,7 @@ extension ProfessionalPathOperations {
     /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
     /// 1. Top shape becomes invisible (no fill, no stroke) - it's the crop boundary
     /// 2. All other shapes are cropped to only show parts within the crop boundary
-    /// 3. Then everything gets TRIMMED - removing hidden overlapping parts
+            /// 3. Then everything gets CUT - removing hidden overlapping parts
     /// Returns an array of tuples: (croppedPath, originalShapeIndex, isInvisibleCropShape)
     static func professionalCropWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int, Bool)] {
         guard paths.count >= 2 else { 
@@ -1382,7 +1123,7 @@ extension ProfessionalPathOperations {
         }
         
         print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
-        print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then trimmed")
+                    print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then cut")
         
         let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
         let shapesToCrop = Array(paths.dropLast())
@@ -1435,18 +1176,18 @@ extension ProfessionalPathOperations {
         
         print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
         
-        // STEP 2: Apply TRIM to the cropped shapes to remove hidden overlapping parts
+        // STEP 2: Apply CUT to the cropped shapes to remove hidden overlapping parts
         if croppedPaths.count >= 2 {
-            print("   🔨 STEP 2: Applying TRIM to remove hidden overlapping parts")
-            let trimmedResults = professionalTrimWithShapeTracking(croppedPaths)
+            print("   🔨 STEP 2: Applying CUT to remove hidden overlapping parts")
+            let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(croppedPaths, using: .winding)
             
-            // Map the trimmed results back to their original shape indices
+            // Map the cut results back to their original shape indices
             var finalResults: [(CGPath, Int, Bool)] = []
-            for (trimmedPath, _) in trimmedResults {
+            for (cutPath, _) in cutResults {
                 // Since we cropped all shapes, we need to map back to original indices
                 // For now, we'll cycle through the original shape indices
                 let originalIndex = finalResults.count % shapesToCrop.count
-                finalResults.append((trimmedPath, originalIndex, false))
+                finalResults.append((cutPath, originalIndex, false))
             }
             
             // Add the invisible crop shape
@@ -1455,7 +1196,7 @@ extension ProfessionalPathOperations {
             print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
             return finalResults
         } else {
-            // If we have fewer than 2 cropped shapes, no need to trim
+            // If we have fewer than 2 cropped shapes, no need to cut
             var finalResults: [(CGPath, Int, Bool)] = []
             for (index, path) in croppedPaths.enumerated() {
                 let originalIndex = index % shapesToCrop.count
@@ -1475,17 +1216,17 @@ extension ProfessionalPathOperations {
         return professionalCropWithShapeTracking(paths).map { $0.0 }
     }
     
-    /// PROFESSIONAL DIELINE: Applies Divide then converts all results to 1px black strokes with no fill
-    /// This is much more useful than Adobe's outline - it combines divide power with dieline visualization
+    /// PROFESSIONAL DIELINE: Applies Split then converts all results to 1px black strokes with no fill
+    /// This is much more useful than Adobe's outline - it combines split power with dieline visualization
     static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
         print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
         
-        // Step 1: Apply Divide operation to cut everything at intersections
-        let dividedPaths = professionalDivide(paths)
+        // Step 1: Apply Split operation to cut everything at intersections (with curve preservation)
+        let splitPaths = professionalSplit(paths)
         
-        print("✅ PROFESSIONAL DIELINE: Created \(dividedPaths.count) divided shapes ready for dieline conversion")
-        return dividedPaths
+        print("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) split shapes ready for dieline conversion")
+        return splitPaths
     }
 } 

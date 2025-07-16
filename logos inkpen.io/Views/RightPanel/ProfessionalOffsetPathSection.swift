@@ -259,17 +259,17 @@ struct ProfessionalOffsetPathSection: View {
             // Create perfect smooth offset using Core Graphics strokes + expand
             var offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
             
-            // Apply TrimX cleanup if requested (professional trim operation)
+            // Apply CutX cleanup if requested (professional cut operation)
             if cleanupOverlaps && !offsetPaths.isEmpty {
-                // TrimX Formula: Take result and original path, run "Trim", return the outside cleaned path
+                // CutX Formula: Take result and original path, run "Cut", return the outside cleaned path
                 for (index, offsetPath) in offsetPaths.enumerated() {
-                    let pathsToTrim = [shape.path.cgPath, offsetPath]
-                    let trimmedPaths = ProfessionalPathOperations.professionalTrim(pathsToTrim)
+                    let pathsToCut = [shape.path.cgPath, offsetPath]
+                    let cutPaths = ProfessionalPathOperations.professionalCut(pathsToCut)
                     
-                    // Find the outside path (usually the largest one after trim)
-                    if let outsidePath = findOutsidePath(from: trimmedPaths, original: shape.path.cgPath, offset: offsetPath) {
+                    // Find the outside path (usually the largest one after cut)
+                    if let outsidePath = findOutsidePath(from: cutPaths, original: shape.path.cgPath, offset: offsetPath) {
                         offsetPaths[index] = outsidePath
-                        print("🔧 TRIMX: Applied trim operation and selected outside cleaned path")
+                        print("🔧 CUTX: Applied cut operation and selected outside cleaned path")
                     }
                 }
             }

@@ -155,7 +155,6 @@ enum PathOperation: String, CaseIterable, Codable {
     case frontMinusBack = "Front Minus Back"
     case backMinusFront = "Back Minus Front"
     case exclude = "Exclude"
-    case divide = "Divide"
     
     var iconName: String {
         switch self {
@@ -164,7 +163,6 @@ enum PathOperation: String, CaseIterable, Codable {
         case .frontMinusBack: return "minus.circle"
         case .backMinusFront: return "minus.circle.fill"
         case .exclude: return "xmark.circle"
-        case .divide: return "divide.circle"
         }
     }
 }

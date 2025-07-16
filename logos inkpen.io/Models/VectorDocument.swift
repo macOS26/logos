@@ -1775,35 +1775,34 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
-        case .divide:
-            // DIVIDE: Break into separate objects, each retains original color
-            let dividedPaths = ProfessionalPathOperations.divide(paths)
+        case .split:
+            // SPLIT: CoreGraphics-based alternative to Divide with curve preservation
+            let splitPaths = ProfessionalPathOperations.split(paths)
             
-            for (index, dividedPath) in dividedPaths.enumerated() {
-                // Determine which original shape this divided piece belongs to
-                let originalShape = determineOriginalShapeForDividedPiece(dividedPath, from: selectedShapes)
+            for (index, splitPath) in splitPaths.enumerated() {
+                // Determine which original shape this split piece belongs to
+                let originalShape = determineOriginalShapeForDividedPiece(splitPath, from: selectedShapes)
                 
-                let dividedShape = VectorShape(
-                    name: "Divided Piece \(index + 1)",
-                    path: VectorPath(cgPath: dividedPath),
+                let splitShape = VectorShape(
+                    name: "Split Piece \(index + 1)",
+                    path: VectorPath(cgPath: splitPath),
                     strokeStyle: originalShape.strokeStyle,
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
-                resultShapes.append(dividedShape)
+                resultShapes.append(splitShape)
             }
-            print("✅ DIVIDE: Created \(resultShapes.count) pieces with original colors")
+            print("✅ SPLIT: Created \(resultShapes.count) pieces with original colors (curves preserved)")
             
-        case .trim:
-            // TRIM: Remove overlapping areas, objects retain original colors, removes strokes
-            let trimmedResults = ProfessionalPathOperations.professionalTrimWithShapeTracking(paths)
+        case .cut:
+            // CUT: CoreGraphics-based alternative to Trim with curve preservation
+            let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
             
-            // Adobe Illustrator Trim: Each resulting piece maintains the color of its original shape
-            // The new algorithm tracks which original shape each piece came from
+            // Adobe Illustrator Cut: Each resulting piece maintains the color of its original shape (with curves preserved)
             var shapeCounters: [Int: Int] = [:]
             
-            for (trimmedPath, originalShapeIndex) in trimmedResults {
+            for (cutPath, originalShapeIndex) in cutResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
                 
                 let originalShape = selectedShapes[originalShapeIndex]
@@ -1812,18 +1811,18 @@ class VectorDocument: ObservableObject, Codable {
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex]!
                 
-                let trimmedShape = VectorShape(
-                    name: pieceNumber > 1 ? "Trimmed \(originalShape.name) (\(pieceNumber))" : "Trimmed \(originalShape.name)",
-                    path: VectorPath(cgPath: trimmedPath),
-                    strokeStyle: nil, // TRIM removes strokes (Adobe Illustrator standard)
+                let cutShape = VectorShape(
+                    name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
+                    path: VectorPath(cgPath: cutPath),
+                    strokeStyle: nil, // CUT removes strokes (Adobe Illustrator standard)
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
-                resultShapes.append(trimmedShape)
+                resultShapes.append(cutShape)
             }
             
-            print("✅ TRIM: Created \(resultShapes.count) trimmed shapes, removed strokes")
+            print("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes")
             
         case .merge:
             // MERGE: Like trim but merges objects of same color, removes strokes

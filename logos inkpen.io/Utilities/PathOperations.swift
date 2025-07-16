@@ -19,8 +19,8 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
     
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
-    case divide = "Divide"                  // Adobe Illustrator "Divide" - Break at intersections
-    case trim = "Trim"                      // Adobe Illustrator "Trim" - Remove hidden parts
+    case split = "Split"                    // CoreGraphics "Split" - Break at intersections (curves preserved)
+    case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
     case merge = "Merge"                    // Adobe Illustrator "Merge" - Unite + remove strokes
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
@@ -32,8 +32,8 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .minusFront: return "minus.circle"
         case .intersect: return "circle.circle"
         case .exclude: return "xmark.circle"
-        case .divide: return "divide.circle"
-        case .trim: return "scissors"
+        case .split: return "square.split.diagonal"
+        case .cut: return "scissors.badge.ellipsis"
         case .merge: return "arrow.merge"
         case .crop: return "crop"
         case .dieline: return "circle.dashed"
@@ -45,7 +45,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         switch self {
         case .unite, .minusFront, .intersect, .exclude:
             return true
-        case .divide, .trim, .merge, .crop, .dieline, .minusBack:
+        case .split, .cut, .merge, .crop, .dieline, .minusBack:
             return false
         }
     }
@@ -56,8 +56,8 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
-        case .divide: return "Breaks shapes into separate objects at intersections"
-        case .trim: return "Removes parts of shapes that are behind other shapes"
+        case .split: return "Breaks shapes at intersections with curve preservation (CoreGraphics)"
+        case .cut: return "Removes hidden parts with curve preservation (CoreGraphics)"
         case .merge: return "Combines multiple shapes using the same logic as unite, removes strokes between overlapping areas"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
@@ -96,15 +96,15 @@ class ProfessionalPathOperations {
     
     // MARK: - ADOBE ILLUSTRATOR PATHFINDER EFFECTS
     
-    /// DIVIDE: Breaks paths into separate objects at all intersection points (Adobe Illustrator "Divide")
-    static func divide(_ paths: [CGPath]) -> [CGPath] {
-        // Use professional ClipperPaths implementation
-        return ProfessionalPathOperations.professionalDivide(paths)
+    /// SPLIT: CoreGraphics-based path breaking with curve preservation (replaces Divide)
+    static func split(_ paths: [CGPath]) -> [CGPath] {
+        // Use professional CoreGraphics implementation
+        return ProfessionalPathOperations.professionalSplit(paths)
     }
     
-    /// TRIM: Removes parts of shapes that are behind other shapes (Adobe Illustrator "Trim")
-    static func trim(_ paths: [CGPath]) -> [CGPath] {
-        return professionalTrim(paths)
+    /// CUT: CoreGraphics-based alternative to Trim with curve preservation (NEW!)
+    static func cut(_ paths: [CGPath]) -> [CGPath] {
+        return ProfessionalPathOperations.professionalCut(paths)
     }
     
     /// MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
@@ -409,7 +409,7 @@ class ProfessionalPathOperations {
     
     static func canPerformOperation(_ operation: PathfinderOperation, on paths: [CGPath]) -> Bool {
         switch operation {
-        case .divide, .trim, .merge, .crop:
+        case .split, .cut, .merge, .crop:
             return paths.count >= 2
         case .unite: 
             return paths.count >= 2  // Changed from == 2 to >= 2 to match merge behavior
@@ -490,12 +490,12 @@ class PathOperations {
         return ProfessionalPathOperations.professionalExclude(path1, path2)
     }
     
-    static func divide(_ paths: [CGPath]) -> [CGPath] {
-        return ProfessionalPathOperations.divide(paths)
+    static func split(_ paths: [CGPath]) -> [CGPath] {
+        return ProfessionalPathOperations.split(paths)
     }
     
-    static func trim(_ paths: [CGPath]) -> [CGPath] {
-        return ProfessionalPathOperations.trim(paths)
+    static func cut(_ paths: [CGPath]) -> [CGPath] {
+        return ProfessionalPathOperations.cut(paths)
     }
     
     static func crop(_ paths: [CGPath]) -> [CGPath] {
@@ -510,7 +510,7 @@ class PathOperations {
         case .frontMinusBack: return ProfessionalPathOperations.canPerformOperation(.minusFront, on: paths)
         case .backMinusFront: return ProfessionalPathOperations.canPerformOperation(.minusBack, on: paths)
         case .exclude: return ProfessionalPathOperations.canPerformOperation(.exclude, on: paths)
-        case .divide: return ProfessionalPathOperations.canPerformOperation(.divide, on: paths)
+
         }
     }
     
