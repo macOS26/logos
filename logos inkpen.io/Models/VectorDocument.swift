@@ -1434,8 +1434,8 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // Select all resulting shapes (both fill and stroke outlines)
-        selectedShapeIDs = newShapeIDs.union(originalShapeIDs)
+        // Select only the stroke shapes (not the fill shapes)
+        selectedShapeIDs = newShapeIDs
     }
     
     /// Checks if outline stroke operation is available for current selection
