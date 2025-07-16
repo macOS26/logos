@@ -283,29 +283,74 @@ public class Clipper: ClipperBase {
             ghostJoins.removeAll()
         }
         
+        // Initialize execution state
+        initializeExecutionState()
         
+        // Process scanbeam algorithm
+        if !processScanbeamAlgorithm() {
+            return false
+        }
+        
+        // Post-process results
+        postProcessResults()
+        
+        return true
+    }
+    
+    private func initializeExecutionState() {
         reset()
         sortedEdges = nil
         maxima = nil
-        
+    }
+    
+    private func processScanbeamAlgorithm() -> Bool {
         var botY = CGFloat.zero, topY = CGFloat.zero
+        
+        // Initialize first scanbeam
         if !popScanbeam(&botY) {
             return false
         }
         insertLocalMinimaIntoAEL(botY)
+        
+        // Process all scanbeams
         while popScanbeam(&topY) || localMinimaPending {
-            try processHorizontals()
-            ghostJoins.removeAll()
-            let result = processIntersections(topY)
-            if !result {
+            do {
+                try processHorizontals()
+                ghostJoins.removeAll()
+                
+                let result = processIntersections(topY)
+                if !result {
+                    return false
+                }
+                
+                try processEdgesAtTopOfScanbeam(topY)
+                botY = topY
+                insertLocalMinimaIntoAEL(botY)
+            } catch {
                 return false
             }
-            try processEdgesAtTopOfScanbeam(topY)
-            botY = topY
-            insertLocalMinimaIntoAEL(botY)
         }
         
-        //fix orientations ...
+        return true
+    }
+    
+    private func postProcessResults() {
+        // Fix orientations
+        fixPolygonOrientations()
+        
+        // Join common edges
+        joinCommonEdges()
+        
+        // Fix up output polygons
+        fixUpOutputPolygons()
+        
+        // Handle strictly simple polygons if needed
+        if strictlySimple {
+            doSimplePolygons()
+        }
+    }
+    
+    private func fixPolygonOrientations() {
         for outRec in polyOuts {
             if outRec.pts == nil || outRec.isOpen {
                 continue
@@ -314,9 +359,9 @@ public class Clipper: ClipperBase {
                 outRec.pts.reverse()
             }
         }
-        
-        joinCommonEdges()
-        
+    }
+    
+    private func fixUpOutputPolygons() {
         for outRec in polyOuts {
             if outRec.pts == nil {
                 continue
@@ -325,14 +370,7 @@ public class Clipper: ClipperBase {
             } else {
                 fixUpOutPolygon(outRec)
             }
-            
         }
-        
-        if strictlySimple {
-            doSimplePolygons()
-        }
-        return true
-        
     }
     
     private func addJoin(_ op1: OutPt, _ op2: OutPt, _ offPt: CGPoint) {
@@ -493,103 +531,110 @@ public class Clipper: ClipperBase {
         return subjFillType == .evenOdd
     }
     
+    // MARK: - Contribution Checking
+    
     private func isContributing(_ edge: TEdge) -> Bool {
-        var pft: PolyFillType
-        var pft2: PolyFillType
-        if edge.polyType == .subject {
-            pft = subjFillType
-            pft2 = clipFillType
-        } else {
-            pft = clipFillType
-            pft2 = subjFillType
+        let (pft, pft2) = getFillTypes(for: edge)
+        
+        // Check primary fill type contribution
+        if !checkPrimaryFillTypeContribution(edge, fillType: pft) {
+            return false
         }
         
-        switch pft {
+        // Check secondary fill type contribution based on clip type
+        return checkSecondaryFillTypeContribution(edge, fillType: pft2)
+    }
+    
+    private func getFillTypes(for edge: TEdge) -> (primary: PolyFillType, secondary: PolyFillType) {
+        if edge.polyType == .subject {
+            return (subjFillType, clipFillType)
+        } else {
+            return (clipFillType, subjFillType)
+        }
+    }
+    
+    private func checkPrimaryFillTypeContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
+        switch fillType {
         case .evenOdd:
             //return false if a subj line has been flagged as inside a subj polygon
-            if edge.windDelta == 0 && edge.windCnt != 1 {
-                return false
-            }
+            return !(edge.windDelta == 0 && edge.windCnt != 1)
         case .nonZero:
-            if abs(edge.windCnt) != 1 {
-                return false
-            }
+            return abs(edge.windCnt) == 1
         case .positive:
-            if edge.windCnt != 1 {
-                return false
-            }
-        default: //PolyFillType.negative
-            if edge.windCnt != -1 {
-                return false
-            }
+            return edge.windCnt == 1
+        case .negative:
+            return edge.windCnt == -1
         }
-        
+    }
+    
+    private func checkSecondaryFillTypeContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
         switch clipType {
         case .intersection:
-            switch pft2 {
-            case .evenOdd:fallthrough
-            case .nonZero:
-                return (edge.windCnt2 != 0)
-            case .positive:
-                return (edge.windCnt2 > 0)
-            default:
-                return (edge.windCnt2 < 0)
-            }
+            return checkIntersectionContribution(edge, fillType: fillType)
         case .union:
-            switch pft2
-            {
-            case .evenOdd:fallthrough
-            case .nonZero:
-                return (edge.windCnt2 == 0)
-            case .positive:
-                return (edge.windCnt2 <= 0)
-            default:
-                return (edge.windCnt2 >= 0)
-            }
+            return checkUnionContribution(edge, fillType: fillType)
         case .difference:
-            if edge.polyType == .subject {
-                switch pft2
-                {
-                case .evenOdd:fallthrough
-                case .nonZero:
-                    return (edge.windCnt2 == 0)
-                case .positive:
-                    return (edge.windCnt2 <= 0)
-                default:
-                    return (edge.windCnt2 >= 0)
-                }
-            }
-            else {
-                switch pft2
-                {
-                case .evenOdd:fallthrough
-                case .nonZero:
-                    return (edge.windCnt2 != 0)
-                case .positive:
-                    return (edge.windCnt2 > 0)
-                default:
-                    return (edge.windCnt2 < 0)
-                }
-            }
-            
+            return checkDifferenceContribution(edge, fillType: fillType)
         case .xor:
-            if edge.windDelta == 0  {//XOr always contributing unless open
-                switch pft2
-                {
-                case .evenOdd:fallthrough
-                case .nonZero:
-                    return (edge.windCnt2 == 0)
-                case .positive:
-                    return (edge.windCnt2 <= 0)
-                default:
-                    return (edge.windCnt2 >= 0)
-                }
-                
+            return checkXorContribution(edge, fillType: fillType)
+        }
+    }
+    
+    private func checkIntersectionContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
+        switch fillType {
+        case .evenOdd, .nonZero:
+            return edge.windCnt2 != 0
+        case .positive:
+            return edge.windCnt2 > 0
+        case .negative:
+            return edge.windCnt2 < 0
+        }
+    }
+    
+    private func checkUnionContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
+        switch fillType {
+        case .evenOdd, .nonZero:
+            return edge.windCnt2 == 0
+        case .positive:
+            return edge.windCnt2 <= 0
+        case .negative:
+            return edge.windCnt2 >= 0
+        }
+    }
+    
+    private func checkDifferenceContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
+        if edge.polyType == .subject {
+            switch fillType {
+            case .evenOdd, .nonZero:
+                return edge.windCnt2 == 0
+            case .positive:
+                return edge.windCnt2 <= 0
+            case .negative:
+                return edge.windCnt2 >= 0
             }
-            else {
-                return true
+        } else {
+            switch fillType {
+            case .evenOdd, .nonZero:
+                return edge.windCnt2 != 0
+            case .positive:
+                return edge.windCnt2 > 0
+            case .negative:
+                return edge.windCnt2 < 0
             }
-        default:
+        }
+    }
+    
+    private func checkXorContribution(_ edge: TEdge, fillType: PolyFillType) -> Bool {
+        if edge.windDelta == 0 { //XOr always contributing unless open
+            switch fillType {
+            case .evenOdd, .nonZero:
+                return edge.windCnt2 == 0
+            case .positive:
+                return edge.windCnt2 <= 0
+            case .negative:
+                return edge.windCnt2 >= 0
+            }
+        } else {
             return true
         }
     }
