@@ -7,6 +7,8 @@
 
 import CoreGraphics
 
+// MARK: - ClipperPath Boolean Operations
+
 extension ClipperPath {
     
     // MARK: - Private Helper
@@ -42,6 +44,7 @@ extension ClipperPath {
         return performBooleanOperation(with: path, clipType: .xor, isClosed: isClosed)
     }
     
+    // MARK: - Path Simplification and Cleaning
     
     public func simplify(fillType: PolyFillType = .evenOdd) -> ClipperPaths {
         var result = ClipperPaths()
@@ -110,6 +113,7 @@ extension ClipperPath {
         return result
     }
     
+    // MARK: - Minkowski Operations
     
     func minkowski(path: ClipperPath, isSum: Bool, isClosed: Bool) -> ClipperPaths {
         let delta = isClosed ? 1 : 0
@@ -195,6 +199,8 @@ extension ClipperPath {
 }
 
 
+
+// MARK: - ClipperPaths Operations
 
 extension ClipperPaths {
     

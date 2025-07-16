@@ -24,6 +24,8 @@ import Foundation
 /// ```
 public class Clipper: ClipperBase {
     
+    // MARK: - Properties
+    
     private var clipType = ClipType.union
     private var maxima: Maxima?
     private var sortedEdges: TEdge?
@@ -58,12 +60,16 @@ public class Clipper: ClipperBase {
         public static let preserveCollinear = SolutionOptions(rawValue: 1 << 3)
     }
     
+    // MARK: - Initialization
+    
     public init(options:SolutionOptions = .default) {
         super.init()
         reverseSolution = options.contains(.reverse)
         strictlySimple = options.contains(.strictlySimple)
         preserveCollinear = options.contains(.preserveCollinear)
     }
+    
+    // MARK: - Public Execution Methods
     
     /// Executes a boolean clipping operation on the previously added paths
     /// - Parameters:
@@ -136,6 +142,8 @@ public class Clipper: ClipperBase {
         executeLocked = false
         return succeeded
     }
+    
+    // MARK: - Private Helper Methods
     
     private func getDx(_ pt1: CGPoint,_ pt2: CGPoint) -> CGFloat {
         if pt1.y == pt2.y {return Horizontal}
