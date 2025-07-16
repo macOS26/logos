@@ -475,7 +475,8 @@ class ProfessionalBooleanGeometry {
 
 extension ProfessionalPathOperations {
     
-    /// PROFESSIONAL UNITE: Combines paths into single shape (Adobe Illustrator "Unite")
+    /// PROFESSIONAL UNITE: Combines two or more paths into a single path (Adobe Illustrator "Unite")
+    /// When there are exactly 2 paths, behaves like merge for consistency
     static func professionalUnite(_ paths: [CGPath]) -> CGPath? {
         guard !paths.isEmpty else { return nil }
         
@@ -486,12 +487,29 @@ extension ProfessionalPathOperations {
             return validPaths.first
         }
         
-        print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
+        // Use CoreGraphics for 2-path operations (much faster and preserves curves)
+        if validPaths.count == 2 {
+            print("🔨 PROFESSIONAL UNITE (2 paths): Using CoreGraphics...")
+            
+            if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
+                print("✅ PROFESSIONAL UNITE: CoreGraphics success (preserves smooth curves)")
+                return coreGraphicsResult
+            } else {
+                print("⚠️ CoreGraphics union returned nil, falling back to ClipperPath")
+                return professionalUniteCore(validPaths)
+            }
+        }
         
+        print("🔨 PROFESSIONAL UNITE (ClipperPaths): Processing \(validPaths.count) paths")
+        return professionalUniteCore(validPaths)
+    }
+    
+    /// Core unite implementation shared by both unite and merge operations
+    private static func professionalUniteCore(_ paths: [CGPath]) -> CGPath? {
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
         
-        for cgPath in validPaths {
+        for cgPath in paths {
             let subpaths = extractSubpaths(from: cgPath)
             for subpath in subpaths {
                 let clipperPath = cgPathToClipperPath(subpath)
@@ -521,14 +539,25 @@ extension ProfessionalPathOperations {
         
         // Fallback to convex hull if ClipperPaths fails
         print("🔄 UNITE fallback: Using convex hull")
-        return convexHullFallback(validPaths)
+        return convexHullFallback(paths)
     }
     
     /// PROFESSIONAL MINUS FRONT: Front subtracts from back (Adobe Illustrator "Minus Front")
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
-        print("🔨 PROFESSIONAL MINUS FRONT (ClipperPaths): Processing")
+        print("🔨 PROFESSIONAL MINUS FRONT: Using CoreGraphics...")
+        
+        // Use CoreGraphics (much faster and preserves curves)
+        if let coreGraphicsResult = CoreGraphicsPathOperations.subtract(frontPath, from: backPath, using: .winding) {
+            print("✅ PROFESSIONAL MINUS FRONT: CoreGraphics success (preserves smooth curves)")
+            return coreGraphicsResult
+        } else {
+            print("⚠️ CoreGraphics subtract returned nil, falling back to ClipperPath")
+        }
+        
+        // Fallback to ClipperPath only if CoreGraphics returned nil
+        print("🔄 PROFESSIONAL MINUS FRONT: Using ClipperPath fallback")
         
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
@@ -586,7 +615,18 @@ extension ProfessionalPathOperations {
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
         
-        print("🔨 PROFESSIONAL INTERSECT (ClipperPaths): Processing")
+        print("🔨 PROFESSIONAL INTERSECT: Using CoreGraphics...")
+        
+        // Use CoreGraphics (much faster and preserves curves)
+        if let coreGraphicsResult = CoreGraphicsPathOperations.intersection(path1, path2, using: .winding) {
+            print("✅ PROFESSIONAL INTERSECT: CoreGraphics success (preserves smooth curves)")
+            return coreGraphicsResult
+        } else {
+            print("⚠️ CoreGraphics intersection returned nil, falling back to ClipperPath")
+        }
+        
+        // Fallback to ClipperPath only if CoreGraphics returned nil
+        print("🔄 PROFESSIONAL INTERSECT: Using ClipperPath fallback")
         
         // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
         let clipper = Clipper()
@@ -641,7 +681,7 @@ extension ProfessionalPathOperations {
     }
     
     /// PROFESSIONAL EXCLUDE: Remove overlapping areas (Adobe Illustrator "Exclude")
-    /// Like Divide but WITHOUT the overlapping pieces - only returns non-overlapping parts
+    /// Returns areas that are in either path but not both (symmetric difference)
     static func professionalExclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         guard !path1.isEmpty && !path2.isEmpty else {
             // If one path is empty, return the other (Adobe Illustrator behavior)
@@ -649,7 +689,28 @@ extension ProfessionalPathOperations {
             return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
         
-        print("🔨 PROFESSIONAL EXCLUDE (ClipperPaths): Processing - like Divide but without overlapping pieces")
+        print("🔨 PROFESSIONAL EXCLUDE: Using CoreGraphics...")
+        
+        // Use CoreGraphics Symmetric Difference (exactly what Exclude does!)
+        if let coreGraphicsResult = CoreGraphicsPathOperations.symmetricDifference(path1, path2, using: .winding) {
+            print("✅ PROFESSIONAL EXCLUDE: CoreGraphics success (preserves smooth curves)")
+            
+            // CoreGraphics returns a single path, but we need to return as array
+            // Check if result has multiple components and separate them
+            let components = CoreGraphicsPathOperations.componentsSeparated(coreGraphicsResult, using: .winding)
+            if !components.isEmpty {
+                print("   → Separated into \(components.count) components")
+                return components
+            } else {
+                // Single path result
+                return [coreGraphicsResult]
+            }
+        } else {
+            print("⚠️ CoreGraphics symmetric difference returned nil, falling back to ClipperPath")
+        }
+        
+        // Fallback to ClipperPath only if CoreGraphics returned nil
+        print("🔄 PROFESSIONAL EXCLUDE: Using ClipperPath fallback")
         
         // Convert to ClipperPaths
         let clipperPath1 = cgPathToClipperPath(path1)
@@ -1296,9 +1357,12 @@ extension ProfessionalPathOperations {
         print("🔨 PROFESSIONAL MERGE (ClipperPaths): Processing \(paths.count) paths")
         
         // Adobe Illustrator Merge: Unite all objects into single shape, no interior lines
-        // This is essentially the same as Unite but specifically for merging multiple objects
+        // Uses the same core logic as unite but returns as array for consistency with other pathfinder effects
         
-        if let unified = professionalUnite(paths) {
+        let validPaths = paths.filter { !$0.isEmpty }
+        guard !validPaths.isEmpty else { return paths }
+        
+        if let unified = professionalUniteCore(validPaths) {
             print("✅ PROFESSIONAL MERGE (ClipperPaths): Merged into single unified shape")
             return [unified]
         }

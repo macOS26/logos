@@ -25,6 +25,10 @@ struct MainView: View {
     @State private var showingDWGExportDialog = false
     @State private var dwgExportOptions = DWGExportOptions()
     
+    // MARK: - Development Views State
+    @State private var showingCoreGraphicsTest = false
+    @State private var showingPathOperationsComparison = false
+    
     var body: some View {
         VStack(spacing: 0) {
             // Main Content Area
@@ -158,6 +162,14 @@ struct MainView: View {
                 showingDWGExportDialog = false
                 exportToDWG(with: finalOptions)
             }
+        }
+        .sheet(isPresented: $showingCoreGraphicsTest) {
+            CoreGraphicsPathTestView()
+                .frame(width: 1000, height: 700)
+        }
+        .sheet(isPresented: $showingPathOperationsComparison) {
+            PathOperationsComparisonView(document: document)
+                .frame(width: 1000, height: 700)
         }
         .frame(minWidth: 1200, minHeight: 800)
         // Note: No longer using focusedValue - using focusedSceneObject instead
@@ -455,6 +467,20 @@ struct MainView: View {
         NotificationCenter.default.addObserver(forName: .showPathOpsPanel, object: nil, queue: .main) { _ in
             NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.pathOps)
         }
+        
+        // MARK: - Development Commands - CoreGraphics Path Operations Testing
+        
+        NotificationCenter.default.addObserver(forName: .showCoreGraphicsTest, object: nil, queue: .main) { _ in
+            showingCoreGraphicsTest = true
+        }
+        
+        NotificationCenter.default.addObserver(forName: .showPathOperationsComparison, object: nil, queue: .main) { _ in
+            showingPathOperationsComparison = true
+        }
+        
+        NotificationCenter.default.addObserver(forName: .runPathOperationsBenchmark, object: nil, queue: .main) { _ in
+            runPathOperationsBenchmark()
+        }
     }
     
     private func teardownMenuCommandObservers() {
@@ -736,6 +762,112 @@ struct MainView: View {
             alert.alertStyle = report.overallPassed ? .informational : .warning
             alert.runModal()
         }
+    }
+    
+    // MARK: - Development Functions
+    
+    private func runPathOperationsBenchmark() {
+        print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
+        print("Comparing ClipperPath vs CoreGraphics performance...")
+        
+        // Create test paths
+        let testCases = [
+            ("Simple Circles", createTestCircles()),
+            ("Complex Curves", createTestComplexPaths()),
+            ("Many Points", createTestManyPointPaths())
+        ]
+        
+        for (name, paths) in testCases {
+            print("\n📊 Testing: \(name)")
+            benchmarkPathOperations(name: name, pathA: paths.0, pathB: paths.1)
+        }
+        
+        print("\n✅ BENCHMARK COMPLETE")
+    }
+    
+    private func createTestCircles() -> (CGPath, CGPath) {
+        let pathA = CGMutablePath()
+        pathA.addEllipse(in: CGRect(x: 0, y: 0, width: 100, height: 100))
+        
+        let pathB = CGMutablePath()
+        pathB.addEllipse(in: CGRect(x: 50, y: 50, width: 100, height: 100))
+        
+        return (pathA, pathB)
+    }
+    
+    private func createTestComplexPaths() -> (CGPath, CGPath) {
+        let pathA = CGMutablePath()
+        pathA.move(to: CGPoint(x: 0, y: 50))
+        pathA.addCurve(to: CGPoint(x: 100, y: 50), 
+                      control1: CGPoint(x: 25, y: 0), 
+                      control2: CGPoint(x: 75, y: 100))
+        pathA.addCurve(to: CGPoint(x: 0, y: 50), 
+                      control1: CGPoint(x: 75, y: 25), 
+                      control2: CGPoint(x: 25, y: 75))
+        pathA.closeSubpath()
+        
+        let pathB = CGMutablePath()
+        pathB.move(to: CGPoint(x: 50, y: 0))
+        pathB.addCurve(to: CGPoint(x: 50, y: 100), 
+                      control1: CGPoint(x: 100, y: 25), 
+                      control2: CGPoint(x: 0, y: 75))
+        pathB.addCurve(to: CGPoint(x: 50, y: 0), 
+                      control1: CGPoint(x: 25, y: 75), 
+                      control2: CGPoint(x: 75, y: 25))
+        pathB.closeSubpath()
+        
+        return (pathA, pathB)
+    }
+    
+    private func createTestManyPointPaths() -> (CGPath, CGPath) {
+        let pathA = CGMutablePath()
+        pathA.move(to: CGPoint(x: 0, y: 0))
+        for i in 1...100 {
+            let x = CGFloat(i)
+            let y = sin(CGFloat(i) * 0.1) * 50 + 50
+            pathA.addLine(to: CGPoint(x: x, y: y))
+        }
+        pathA.closeSubpath()
+        
+        let pathB = CGMutablePath()
+        pathB.move(to: CGPoint(x: 0, y: 25))
+        for i in 1...100 {
+            let x = CGFloat(i)
+            let y = cos(CGFloat(i) * 0.1) * 50 + 75
+            pathB.addLine(to: CGPoint(x: x, y: y))
+        }
+        pathB.closeSubpath()
+        
+        return (pathA, pathB)
+    }
+    
+    private func benchmarkPathOperations(name: String, pathA: CGPath, pathB: CGPath) {
+        let iterations = 100
+        
+        // Benchmark CoreGraphics
+        let coreGraphicsStart = CFAbsoluteTimeGetCurrent()
+        for _ in 0..<iterations {
+            let _ = pathA.union(pathB, using: .winding)
+            let _ = pathA.intersection(pathB, using: .winding)
+            let _ = pathA.subtracting(pathB, using: .winding)
+        }
+        let coreGraphicsTime = CFAbsoluteTimeGetCurrent() - coreGraphicsStart
+        
+        // Benchmark ClipperPath (convert to ClipperPath first)
+        let clipperPathA = pathA.toClipperPath()
+        let clipperPathB = pathB.toClipperPath()
+        
+        let clipperStart = CFAbsoluteTimeGetCurrent()
+        for _ in 0..<iterations {
+            let _ = clipperPathA.union(clipperPathB)
+            let _ = clipperPathA.intersection(clipperPathB)
+            let _ = clipperPathA.difference(clipperPathB)
+        }
+        let clipperTime = CFAbsoluteTimeGetCurrent() - clipperStart
+        
+        print("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s")
+        print("  ClipperPath:  \(String(format: "%.4f", clipperTime))s")
+        print("  Speedup: \(String(format: "%.2f", clipperTime / coreGraphicsTime))x")
     }
     
     // MARK: - Professional DWG Export

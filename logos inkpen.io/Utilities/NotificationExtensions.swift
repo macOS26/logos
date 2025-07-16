@@ -57,4 +57,9 @@ extension Notification.Name {
     static let showTypographyPanel = Notification.Name("ShowTypographyPanel")
     static let showPathOpsPanel = Notification.Name("ShowPathOpsPanel")
     static let switchToPanel = Notification.Name("SwitchToPanel")
+    
+    // MARK: - Development Commands - CoreGraphics Path Operations Testing
+    static let showCoreGraphicsTest = Notification.Name("ShowCoreGraphicsTest")
+    static let showPathOperationsComparison = Notification.Name("ShowPathOperationsComparison")
+    static let runPathOperationsBenchmark = Notification.Name("RunPathOperationsBenchmark")
 } 

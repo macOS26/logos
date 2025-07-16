@@ -338,6 +338,27 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("k", modifiers: [.command, .shift, .option])
                 .help("Run a test to verify the duplicate point merger works correctly")
             }
+            
+            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing
+            CommandMenu("Development") {
+                Button("CoreGraphics Path Operations Test") {
+                    NotificationCenter.default.post(name: .showCoreGraphicsTest, object: nil)
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift, .option])
+                .help("Test new CoreGraphics boolean operations (macOS 14+)")
+                
+                Divider()
+                
+                Button("Path Operations Comparison") {
+                    NotificationCenter.default.post(name: .showPathOperationsComparison, object: nil)
+                }
+                .help("Compare ClipperPath vs CoreGraphics operations")
+                
+                Button("Performance Benchmark") {
+                    NotificationCenter.default.post(name: .runPathOperationsBenchmark, object: nil)
+                }
+                .help("Benchmark ClipperPath vs CoreGraphics performance")
+            }
         }
     }
 }

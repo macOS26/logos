@@ -52,13 +52,13 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var description: String {
         switch self {
-        case .unite: return "Combines two shapes into a single shape"
+        case .unite: return "Combines two shapes into a single shape (behaves like merge when exactly 2 shapes)"
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
         case .divide: return "Breaks shapes into separate objects at intersections"
         case .trim: return "Removes parts of shapes that are behind other shapes"
-        case .merge: return "Combines multiple shapes and removes strokes between overlapping areas"
+        case .merge: return "Combines multiple shapes using the same logic as unite, removes strokes between overlapping areas"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
@@ -71,6 +71,7 @@ class ProfessionalPathOperations {
     // MARK: - ADOBE ILLUSTRATOR SHAPE MODES
     
     /// UNITE: Combines two or more paths into a single path (Adobe Illustrator "Unite")
+    /// When exactly 2 paths are provided, behaves identically to merge operation
     /// Most commonly used operation in professional vector graphics
     static func unite(_ paths: [CGPath]) -> CGPath? {
         // Use professional boolean geometry implementation
@@ -410,7 +411,9 @@ class ProfessionalPathOperations {
         switch operation {
         case .divide, .trim, .merge, .crop:
             return paths.count >= 2
-        case .unite, .minusFront, .intersect, .exclude, .minusBack:
+        case .unite: 
+            return paths.count >= 2  // Changed from == 2 to >= 2 to match merge behavior
+        case .minusFront, .intersect, .exclude, .minusBack:
             return paths.count == 2
         case .dieline:
             return paths.count >= 1
