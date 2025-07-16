@@ -43,7 +43,3 @@ enum PointSideType: Int {
     case inside = 1
     case onBoundary = -1
 }
-
-let Horizontal = -CGFloat.greatestFiniteMagnitude;
-let Unassigned = -1;  //edge not currently 'owning' a solution
-let Skip = -2;        //edge that would otherwise close a path

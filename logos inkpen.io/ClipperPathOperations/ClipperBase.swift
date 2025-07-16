@@ -187,7 +187,7 @@ public class ClipperBase {
         while highI > 0 && pg[highI] == pg[highI - 1] {
             highI -= 1
         }
-        if closed && highI < 2 || (!closed && highI < 1) {
+        if closed && highI < (ClipperConstants.minClosedPolygonSize - 1) || (!closed && highI < (ClipperConstants.minPolygonSize - 1)) {
             return false
         }
         

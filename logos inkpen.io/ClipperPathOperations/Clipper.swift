@@ -1678,7 +1678,7 @@ public class Clipper: ClipperBase {
             }
             var p:OutPt = outRec.pts.prev
             let cnt = pointCount(p)
-            if cnt < 2 {
+            if cnt < ClipperConstants.minPolygonSize {
                 continue
             }
             var pg = ClipperPath()
@@ -1696,8 +1696,8 @@ public class Clipper: ClipperBase {
         for i in polyOuts.indices {
             let outRec = polyOuts[i]
             let cnt = pointCount(outRec.pts)
-            if (outRec.isOpen && cnt < 2) ||
-                (!outRec.isOpen && cnt < 3) {
+            if (outRec.isOpen && cnt < ClipperConstants.minPolygonSize) ||
+                (!outRec.isOpen && cnt < ClipperConstants.minClosedPolygonSize) {
                 continue
             }
             fixHoleLinkage(outRec)

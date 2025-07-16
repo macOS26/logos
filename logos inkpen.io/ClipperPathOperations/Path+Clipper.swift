@@ -99,7 +99,7 @@ extension ClipperPath {
             }
         }
         
-        if cnt < 3 {
+        if cnt < ClipperConstants.minClosedPolygonSize {
             cnt = 0
         }
         var result = ClipperPath()

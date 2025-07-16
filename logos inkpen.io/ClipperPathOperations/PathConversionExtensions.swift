@@ -68,7 +68,7 @@ extension CGPath {
         
         // Calculate the number of segments based on the curve's complexity
         let distance = distanceBetween(start, control) + distanceBetween(control, end)
-        let segments = max(8, min(64, Int(distance / tolerance))) // Adaptive segment count
+        let segments = max(ClipperConstants.minIterations, min(ClipperConstants.maxIterations, Int(distance / tolerance))) // Adaptive segment count
         
         for i in 1...segments {
             let t = CGFloat(i) / CGFloat(segments)
@@ -84,7 +84,9 @@ extension CGPath {
         
         // Calculate the number of segments based on the curve's complexity
         let distance = distanceBetween(start, control1) + distanceBetween(control1, control2) + distanceBetween(control2, end)
-        let segments = max(12, min(96, Int(distance / tolerance))) // Adaptive segment count for smoother curves
+        let minSegments = Int(CGFloat(ClipperConstants.minIterations) * 1.5) // 12 for cubic curves
+        let maxSegments = Int(CGFloat(ClipperConstants.maxIterations) * 1.5) // 96 for cubic curves
+        let segments = max(minSegments, min(maxSegments, Int(distance / tolerance))) // Adaptive segment count for smoother curves
         
         for i in 1...segments {
             let t = CGFloat(i) / CGFloat(segments)

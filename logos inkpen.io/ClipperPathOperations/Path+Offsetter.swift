@@ -287,7 +287,7 @@ extension CGPath {
         // Also check if last point equals start point
         if let start = startPoint, let last = lastPoint {
             let distance = sqrt(pow(start.x - last.x, 2) + pow(start.y - last.y, 2))
-            if distance < 0.01 { // Very close points
+            if distance < ClipperConstants.epsilon { // Very close points
                 isClosed = true
             }
         }

@@ -26,8 +26,8 @@ public class Offsetter {
     public var arcTolerance = CGFloat.zero
     public var miterLimit = CGFloat.zero
     
-    private let TwoPi = CGFloat.pi * 2
-    private let ArcTolerance: CGFloat = 0.25
+    private let TwoPi = ClipperConstants.twoPi
+    private let ArcTolerance = ClipperConstants.defaultArcTolerance
     
     public init(miterLimit: CGFloat = 2.0, arcTolerance: CGFloat = 0.25) {
         self.miterLimit = miterLimit
@@ -73,7 +73,7 @@ public class Offsetter {
             i += 1
         }
 
-        if endType == .closedPolygon && j < 2 {
+        if endType == .closedPolygon && j < (ClipperConstants.minClosedPolygonSize - 1) {
             return
         }
         
@@ -339,10 +339,11 @@ public class Offsetter {
             let r = destPolys.bounds
             var outer = ClipperPath()
             
-            outer.append([r.left - 10, r.bottom + 10])
-            outer.append([r.right + 10, r.bottom + 10])
-            outer.append([r.right + 10, r.top - 10])
-            outer.append([r.left - 10, r.top - 10])
+            let offset = ClipperConstants.defaultBoundsOffset
+            outer.append([r.left - offset, r.bottom + offset])
+            outer.append([r.right + offset, r.bottom + offset])
+            outer.append([r.right + offset, r.top - offset])
+            outer.append([r.left - offset, r.top - offset])
             
             clpr.addPath(outer, .subject, true)
             try clpr.execute(clipType: .union,
@@ -374,10 +375,11 @@ public class Offsetter {
             let r = destPolys.bounds
             var outer = ClipperPath()
             
-            outer.append([r.left - 10, r.bottom + 10])
-            outer.append([r.right + 10, r.bottom + 10])
-            outer.append([r.right + 10, r.top - 10])
-            outer.append([r.left - 10, r.top - 10])
+            let offset = ClipperConstants.defaultBoundsOffset
+            outer.append([r.left - offset, r.bottom + offset])
+            outer.append([r.right + offset, r.bottom + offset])
+            outer.append([r.right + offset, r.top - offset])
+            outer.append([r.left - offset, r.top - offset])
             
             clpr.addPath(outer, PolyType.subject, true)
             try clpr.execute(clipType: .union,
