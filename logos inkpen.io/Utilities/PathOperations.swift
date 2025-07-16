@@ -52,13 +52,13 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var description: String {
         switch self {
-        case .unite: return "Combines all selected shapes into a single shape"
+        case .unite: return "Combines two shapes into a single shape"
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
         case .divide: return "Breaks shapes into separate objects at intersections"
         case .trim: return "Removes parts of shapes that are behind other shapes"
-        case .merge: return "Combines shapes and removes strokes between overlapping areas"
+        case .merge: return "Combines multiple shapes and removes strokes between overlapping areas"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
@@ -408,9 +408,9 @@ class ProfessionalPathOperations {
     
     static func canPerformOperation(_ operation: PathfinderOperation, on paths: [CGPath]) -> Bool {
         switch operation {
-        case .unite, .divide, .trim, .merge, .crop:
+        case .divide, .trim, .merge, .crop:
             return paths.count >= 2
-        case .minusFront, .intersect, .exclude, .minusBack:
+        case .unite, .minusFront, .intersect, .exclude, .minusBack:
             return paths.count == 2
         case .dieline:
             return paths.count >= 1
