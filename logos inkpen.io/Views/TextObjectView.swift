@@ -140,17 +140,9 @@ class CoreGraphicsTextNSView: NSView {
             .kern: typography.letterSpacing
         ]
         
-        // STEP 3: Only set fill color in attributed string if we're doing fill-only rendering
-        // For stroke rendering, we'll handle colors manually via CoreGraphics
-        let willUseManualRendering = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
-        
-        if !willUseManualRendering {
-            // Fill-only: Use attributed string foreground color with direct cgColor conversion
-            let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
-            let fillNSColor = NSColor(cgColor: fillCGColor) ?? NSColor.black
-            attributes[.foregroundColor] = fillNSColor
-        }
-        // For manual stroke/fill rendering, DO NOT set any foregroundColor to avoid conflicts
+        // STEP 3: Set fill color for the attributed string
+        let fillColor = NSColor(typography.fillColor.color).withAlphaComponent(typography.fillOpacity)
+        attributes[.foregroundColor] = fillColor
         
         // STEP 4: Create attributed string
         let attributedString = NSAttributedString(string: text, attributes: attributes)
@@ -177,28 +169,20 @@ class CoreGraphicsTextNSView: NSView {
         
         // STEP 10: Handle text stroke if enabled (Adobe Illustrator style)
         if typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0 {
-            // Prepare colors for manual rendering
-            let fillCGColor = typography.fillColor.cgColor
-            let strokeCGColor = typography.strokeColor.cgColor
-            
-            // If we have both fill and stroke, draw them separately for better color control
+            // If we have both fill and stroke, use fillStroke mode for efficiency
             if typography.fillColor != .clear {
-                // First draw the fill
-                context.setTextDrawingMode(.fill)
-                context.setFillColor(fillCGColor.copy(alpha: typography.fillOpacity) ?? fillCGColor)
-                context.textPosition = drawPoint
-                CTLineDraw(line, context)
-                
-                // Then draw the stroke on top
-                context.setTextDrawingMode(.stroke)
-                context.setStrokeColor(strokeCGColor.copy(alpha: typography.strokeOpacity) ?? strokeCGColor)
+                context.setTextDrawingMode(.fillStroke)
+                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
                 context.setLineWidth(typography.strokeWidth)
+                context.setFillColor(fillColor.cgColor)
+                
+                // Set text position and draw both fill and stroke
                 context.textPosition = drawPoint
                 CTLineDraw(line, context)
             } else {
                 // Stroke only (no fill)
                 context.setTextDrawingMode(.stroke)
-                context.setStrokeColor(strokeCGColor.copy(alpha: typography.strokeOpacity) ?? strokeCGColor)
+                context.setStrokeColor(NSColor(typography.strokeColor.color).withAlphaComponent(typography.strokeOpacity).cgColor)
                 context.setLineWidth(typography.strokeWidth)
                 
                 // Set text position and draw stroke
@@ -206,8 +190,9 @@ class CoreGraphicsTextNSView: NSView {
                 CTLineDraw(line, context)
             }
         } else if typography.fillColor != .clear {
-            // STEP 11: Fill only (no stroke) - attributed string already has foreground color set
+            // STEP 11: Fill only (no stroke)
             context.setTextDrawingMode(.fill)
+            context.setFillColor(fillColor.cgColor)
             
             // Set text position and draw fill
             context.textPosition = drawPoint
@@ -219,11 +204,12 @@ class CoreGraphicsTextNSView: NSView {
     }
     
     private func createCoreTextFont() -> CTFont {
-        // CRITICAL FIX: Use the NSFont directly to preserve ALL attributes (weight, style, etc.)
+        // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
+        // This already handles weight and style correctly using SwiftUI's font system
         let nsFont = typography.nsFont
         
-        // Convert NSFont to CTFont while preserving ALL attributes
-        return CTFontCreateWithFontDescriptor(nsFont.fontDescriptor, nsFont.pointSize, nil)
+        // Convert NSFont to CTFont
+        return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
     
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool {

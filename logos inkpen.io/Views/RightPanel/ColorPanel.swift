@@ -194,17 +194,10 @@ struct ColorPanel: View {
             }
             
             if !document.selectedTextIDs.isEmpty {
-                // Apply to text based on active color target
+                // Apply to text
                 for textID in document.selectedTextIDs {
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                        if document.activeColorTarget == .stroke {
-                            // Apply to stroke color
-                            document.textObjects[textIndex].typography.hasStroke = true
-                            document.textObjects[textIndex].typography.strokeColor = color
-                        } else {
-                            // Apply to fill color
                         document.textObjects[textIndex].typography.fillColor = color
-                        }
                     }
                 }
             }
