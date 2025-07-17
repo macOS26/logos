@@ -274,7 +274,7 @@ struct HSBInputSection: View {
             HStack(spacing: 8) {
                 // Square Color Swatch Preview (30x30 like RGB)
                 Button(action: {
-                    applyColorToActiveSelection()
+                    addColorToSwatches()
                 }) {
                     Rectangle()
                         .fill(currentColor.color)
@@ -285,7 +285,7 @@ struct HSBInputSection: View {
                         )
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Click to apply color to active fill or stroke")
+                .help("Click to add color to swatches")
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Button("Add to Swatches") {
@@ -310,6 +310,31 @@ struct HSBInputSection: View {
                         updateSharedColor()
                     }
             }
+            
+            // HSB colors with preset hues at full saturation and brightness
+            Text("HSB colors with preset hues")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+                .padding(.top, 8)
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30)), count: 8), spacing: 4) {
+                ForEach(defaultHSBColors.indices, id: \.self) { index in
+                    Button(action: {
+                        let hsbColor = defaultHSBColors[index]
+                        addSpecificHSBColorToSwatches(hsbColor)
+                    }) {
+                        Rectangle()
+                            .fill(defaultHSBColors[index].color)
+                            .frame(width: 30, height: 30)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Click to add color to swatches")
+                }
+            }
         }
         .padding(.vertical, 8)
         .onAppear {
@@ -318,6 +343,52 @@ struct HSBInputSection: View {
         .onChange(of: sharedColor) { _, newColor in
             loadFromSharedColor()
         }
+    }
+    
+    // MARK: - Default HSB Colors
+    
+    private var defaultHSBColors: [HSBColorModel] {
+        [
+            // First row - Pure hues at full saturation and brightness
+            HSBColorModel(hue: 0, saturation: 0, brightness: 0),      // Black
+            HSBColorModel(hue: 0, saturation: 0, brightness: 1),      // White
+            HSBColorModel(hue: 0, saturation: 0, brightness: 0.8),    // Light Gray
+            HSBColorModel(hue: 0, saturation: 1, brightness: 1),      // Red
+            HSBColorModel(hue: 30, saturation: 1, brightness: 1),     // Orange
+            HSBColorModel(hue: 60, saturation: 1, brightness: 1),     // Yellow
+            HSBColorModel(hue: 120, saturation: 1, brightness: 1),    // Green
+            HSBColorModel(hue: 180, saturation: 1, brightness: 1),    // Cyan
+            
+            // Second row - More hues
+            HSBColorModel(hue: 240, saturation: 1, brightness: 1),    // Blue
+            HSBColorModel(hue: 270, saturation: 1, brightness: 1),    // Purple
+            HSBColorModel(hue: 300, saturation: 1, brightness: 1),    // Magenta
+            HSBColorModel(hue: 15, saturation: 1, brightness: 1),     // Red-Orange
+            HSBColorModel(hue: 45, saturation: 1, brightness: 1),     // Yellow-Orange
+            HSBColorModel(hue: 90, saturation: 1, brightness: 1),     // Yellow-Green
+            HSBColorModel(hue: 150, saturation: 1, brightness: 1),    // Green-Cyan
+            HSBColorModel(hue: 210, saturation: 1, brightness: 1),    // Blue-Cyan
+            
+            // Third row - Darker variations
+            HSBColorModel(hue: 0, saturation: 1, brightness: 0.7),    // Dark Red
+            HSBColorModel(hue: 60, saturation: 1, brightness: 0.7),   // Dark Yellow
+            HSBColorModel(hue: 120, saturation: 1, brightness: 0.7),  // Dark Green
+            HSBColorModel(hue: 180, saturation: 1, brightness: 0.7),  // Dark Cyan
+            HSBColorModel(hue: 240, saturation: 1, brightness: 0.7),  // Dark Blue
+            HSBColorModel(hue: 300, saturation: 1, brightness: 0.7),  // Dark Magenta
+            HSBColorModel(hue: 30, saturation: 1, brightness: 0.7),   // Dark Orange
+            HSBColorModel(hue: 270, saturation: 1, brightness: 0.7),  // Dark Purple
+            
+            // Fourth row - Pastel colors (lower saturation)
+            HSBColorModel(hue: 0, saturation: 0.5, brightness: 1),    // Pastel Red
+            HSBColorModel(hue: 60, saturation: 0.5, brightness: 1),   // Pastel Yellow
+            HSBColorModel(hue: 120, saturation: 0.5, brightness: 1),  // Pastel Green
+            HSBColorModel(hue: 180, saturation: 0.5, brightness: 1),  // Pastel Cyan
+            HSBColorModel(hue: 240, saturation: 0.5, brightness: 1),  // Pastel Blue
+            HSBColorModel(hue: 300, saturation: 0.5, brightness: 1),  // Pastel Magenta
+            HSBColorModel(hue: 30, saturation: 0.5, brightness: 1),   // Pastel Orange
+            HSBColorModel(hue: 270, saturation: 0.5, brightness: 1),  // Pastel Purple
+        ]
     }
     
     // MARK: - Helper Methods
@@ -405,6 +476,11 @@ struct HSBInputSection: View {
     
     private func addColorToSwatches() {
         let vectorColor = VectorColor.hsb(currentColor)
+        document.addColorToSwatches(vectorColor)
+    }
+    
+    private func addSpecificHSBColorToSwatches(_ hsbColor: HSBColorModel) {
+        let vectorColor = VectorColor.hsb(hsbColor)
         document.addColorToSwatches(vectorColor)
     }
 } 
