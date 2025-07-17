@@ -302,13 +302,13 @@ struct HSBInputSection: View {
                     VStack(spacing: 1) {
                         Rectangle()
                             .fill(currentColor.color)
-                            .frame(width: 24, height: 24)
+                            .frame(width: 30, height: 30)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                         Text("HSB")
-                            .font(.system(size: 5))
+                            .font(.system(size: 6))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -323,7 +323,7 @@ struct HSBInputSection: View {
                         ZStack {
                             Rectangle()
                                 .fill(closestPantoneColor?.color ?? currentColor.color)
-                                .frame(width: 24, height: 24)
+                                .frame(width: 30, height: 30)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -332,15 +332,15 @@ struct HSBInputSection: View {
                             // Show Pantone number if match found
                             if let pantoneColor = closestPantoneColor {
                                 Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 5, weight: .bold))
+                                    .font(.system(size: 6, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.5)
+                                    .minimumScaleFactor(0.6)
                             }
                         }
                         Text("PMS")
-                            .font(.system(size: 5))
+                            .font(.system(size: 6))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -368,21 +368,21 @@ struct HSBInputSection: View {
                     }
             }
             
-            // HSB colors with preset hues
-            Text("HSB colors with preset hues")
+            // HSB colors with preset hues - PMS Color with Pantone Matching
+            Text("PMS Color with Pantone Matching")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(24)), count: 6), spacing: 3) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30)), count: 6), spacing: 4) {
                 ForEach(Array(defaultHSBColors.prefix(18).enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
                         addSpecificPMSColorToSwatches(hsbColor)
                     }) {
                         ZStack {
                             Rectangle()
-                                .fill(hsbColor.color)
-                                .frame(width: 24, height: 24)
+                                .fill(pantoneLibrary.findClosestMatch(to: hsbColor)?.color ?? hsbColor.color)
+                                .frame(width: 30, height: 30)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -391,16 +391,16 @@ struct HSBInputSection: View {
                             // Show Pantone number if match found for this specific color
                             if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
                                 Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 4, weight: .bold))
+                                    .font(.system(size: 6, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.4)
+                                    .minimumScaleFactor(0.6)
                             }
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Click to add color to swatches")
+                    .help("Click to add PMS color to swatches")
                 }
             }
         }
