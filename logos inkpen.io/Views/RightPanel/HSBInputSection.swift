@@ -401,13 +401,13 @@ struct HSBInputSection: View {
                 }
             }
             
-            // PMS colors with Pantone matching - 6 columns
-            Text("PMS colors with Pantone matching")
+            // PMS Color
+            Text("PMS Color")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 8), spacing: 4) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 4), spacing: 4) {
                 ForEach(Array(defaultHSBColors.enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
                         addSpecificPMSColorToSwatches(hsbColor)
@@ -477,46 +477,11 @@ struct HSBInputSection: View {
     
     private var defaultHSBColors: [HSBColorModel] {
         [
-            // First row - Pure hues at full saturation and brightness
+            // Essential colors only
             HSBColorModel(hue: 0, saturation: 0, brightness: 0),      // Black
             HSBColorModel(hue: 0, saturation: 0, brightness: 1),      // White
             HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0),  // Clear
-            HSBColorModel(hue: 0, saturation: 0, brightness: 0.8),    // Light Gray
-            HSBColorModel(hue: 0, saturation: 1, brightness: 1),      // Red
-            HSBColorModel(hue: 30, saturation: 1, brightness: 1),     // Orange
-            HSBColorModel(hue: 60, saturation: 1, brightness: 1),     // Yellow
-            HSBColorModel(hue: 120, saturation: 1, brightness: 1),    // Green
-            HSBColorModel(hue: 180, saturation: 1, brightness: 1),    // Cyan
-            
-            // Second row - More hues
-            HSBColorModel(hue: 240, saturation: 1, brightness: 1),    // Blue
-            HSBColorModel(hue: 270, saturation: 1, brightness: 1),    // Purple
-            HSBColorModel(hue: 300, saturation: 1, brightness: 1),    // Magenta
-            HSBColorModel(hue: 15, saturation: 1, brightness: 1),     // Red-Orange
-            HSBColorModel(hue: 45, saturation: 1, brightness: 1),     // Yellow-Orange
-            HSBColorModel(hue: 90, saturation: 1, brightness: 1),     // Yellow-Green
-            HSBColorModel(hue: 150, saturation: 1, brightness: 1),    // Green-Cyan
-            HSBColorModel(hue: 210, saturation: 1, brightness: 1),    // Blue-Cyan
-            
-            // Third row - Darker variations
-            HSBColorModel(hue: 0, saturation: 1, brightness: 0.7),    // Dark Red
-            HSBColorModel(hue: 60, saturation: 1, brightness: 0.7),   // Dark Yellow
-            HSBColorModel(hue: 120, saturation: 1, brightness: 0.7),  // Dark Green
-            HSBColorModel(hue: 180, saturation: 1, brightness: 0.7),  // Dark Cyan
-            HSBColorModel(hue: 240, saturation: 1, brightness: 0.7),  // Dark Blue
-            HSBColorModel(hue: 300, saturation: 1, brightness: 0.7),  // Dark Magenta
-            HSBColorModel(hue: 30, saturation: 1, brightness: 0.7),   // Dark Orange
-            HSBColorModel(hue: 270, saturation: 1, brightness: 0.7),  // Dark Purple
-            
-            // Fourth row - Pastel colors (lower saturation)
-            HSBColorModel(hue: 0, saturation: 0.5, brightness: 1),    // Pastel Red
-            HSBColorModel(hue: 60, saturation: 0.5, brightness: 1),   // Pastel Yellow
-            HSBColorModel(hue: 120, saturation: 0.5, brightness: 1),  // Pastel Green
-            HSBColorModel(hue: 180, saturation: 0.5, brightness: 1),  // Pastel Cyan
-            HSBColorModel(hue: 240, saturation: 0.5, brightness: 1),  // Pastel Blue
-            HSBColorModel(hue: 300, saturation: 0.5, brightness: 1),  // Pastel Magenta
-            HSBColorModel(hue: 30, saturation: 0.5, brightness: 1),   // Pastel Orange
-            HSBColorModel(hue: 270, saturation: 0.5, brightness: 1),  // Pastel Purple
+            HSBColorModel(hue: 0, saturation: 1, brightness: 1)       // Red
         ]
     }
     
