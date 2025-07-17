@@ -79,7 +79,10 @@ struct ColorPanel: View {
             } else if document.settings.colorMode == .cmyk {
                 CMYKInputSection(document: document)
                         .padding(.horizontal, 12)
-                }
+            } else if document.settings.colorMode == .rgb {
+                RGBInputSection(document: document)
+                        .padding(.horizontal, 12)
+            }
                 
             // Color Mode Specific Information
             HStack {
@@ -113,24 +116,18 @@ struct ColorPanel: View {
                 .padding(.horizontal, 12)
             }
             
-            // Add Color Button
-            HStack {
-                if document.settings.colorMode == .pantone {
+            // Add Color Button (only for Pantone mode now)
+            if document.settings.colorMode == .pantone {
+                HStack {
                     Button("Browse Pantone Library") {
                         showingPantoneSearch = true
                     }
                     .buttonStyle(.bordered)
                     .font(.caption)
-                } else {
-                    Button("Add Custom Color") {
-                        showingPantoneSearch = true // Will be used for general color picker
-                    }
-                    .buttonStyle(.bordered)
-                    .font(.caption)
+                    Spacer()
                 }
-                Spacer()
+                .padding(.horizontal, 12)
             }
-            .padding(.horizontal, 12)
             
             Spacer()
         }

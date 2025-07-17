@@ -1490,6 +1490,42 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
+    func addColorToSwatches(_ color: VectorColor) {
+        addColorSwatch(color)
+    }
+    
+    func setActiveColor(_ color: VectorColor) {
+        switch activeColorTarget {
+        case .fill:
+            defaultFillColor = color
+        case .stroke:
+            defaultStrokeColor = color
+        }
+        
+        // Apply to selected shapes if any
+        guard let layerIndex = selectedLayerIndex else { return }
+        
+        for shapeID in selectedShapeIDs {
+            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                saveToUndoStack()
+                switch activeColorTarget {
+                case .fill:
+                    if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                        layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                    } else {
+                        layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    }
+                case .stroke:
+                    if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color)
+                    } else {
+                        layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    }
+                }
+            }
+        }
+    }
+    
     func removeColorSwatch(_ color: VectorColor) {
         colorSwatches.removeAll { $0 == color }
     }

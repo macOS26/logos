@@ -273,13 +273,13 @@ struct CoreGraphicsPathTestView: View {
         .onAppear {
             executeOperation() // Show initial result
         }
-        .onChange(of: selectedOperation) { _ in
+        .onChange(of: selectedOperation) {
             executeOperation()
         }
-        .onChange(of: fillRule) { _ in
+        .onChange(of: fillRule) {
             executeOperation()
         }
-        .onChange(of: threshold) { _ in
+        .onChange(of: threshold) {
             if selectedOperation == .flattened {
                 executeOperation()
             }
@@ -290,8 +290,7 @@ struct CoreGraphicsPathTestView: View {
     
     private func executeOperation() {
         DispatchQueue.main.async {
-            do {
-                switch selectedOperation {
+            switch selectedOperation {
                 case .union:
                     resultPath = pathA.union(pathB, using: fillRule)
                     
@@ -342,11 +341,6 @@ struct CoreGraphicsPathTestView: View {
                         }
                     }
                 }
-                
-            } catch {
-                print("CoreGraphics operation failed: \(error)")
-                resultPath = nil
-            }
         }
     }
     

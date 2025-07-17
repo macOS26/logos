@@ -24,8 +24,19 @@ struct ProfessionalDirectSelectionView: View {
                     ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
                         let shape = layer.shapes[shapeIndex]
                         if shape.isVisible && directSelectedShapeIDs.contains(shape.id) {
-                            // CRITICAL: Show ALL bezier curve handles for direct-selected shapes (Adobe Illustrator standard)
-                            professionalBezierDisplay(for: shape)
+                            // GROUP DIRECT SELECTION FIX: Handle groups differently
+                            if shape.isGroupContainer {
+                                // For groups, show anchor points for all grouped shapes
+                                ForEach(shape.groupedShapes.indices, id: \.self) { groupedShapeIndex in
+                                    let groupedShape = shape.groupedShapes[groupedShapeIndex]
+                                    if groupedShape.isVisible {
+                                        professionalBezierDisplay(for: groupedShape)
+                                    }
+                                }
+                            } else {
+                                // For individual shapes, show anchor points normally
+                                professionalBezierDisplay(for: shape)
+                            }
                         }
                     }
                 }
@@ -202,8 +213,9 @@ struct ProfessionalDirectSelectionView: View {
     // REMOVED: Duplicate function - use the precision version above
     
     private func getPointLocation(_ pointID: PointID) -> CGPoint? {
-        // Find the shape and extract point location
+        // Find the shape and extract point location (including grouped shapes)
         for layer in document.layers {
+            // First check top-level shapes
             if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
                 if pointID.elementIndex < shape.path.elements.count {
                     let element = shape.path.elements[pointID.elementIndex]
@@ -220,6 +232,28 @@ struct ProfessionalDirectSelectionView: View {
                     }
                 }
             }
+            
+            // Then check grouped shapes within group containers
+            for containerShape in layer.shapes {
+                if containerShape.isGroupContainer {
+                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+                        if pointID.elementIndex < groupedShape.path.elements.count {
+                            let element = groupedShape.path.elements[pointID.elementIndex]
+                            
+                            switch element {
+                            case .move(let to), .line(let to):
+                                return CGPoint(x: to.x, y: to.y)
+                            case .curve(let to, _, _):
+                                return CGPoint(x: to.x, y: to.y)
+                            case .quadCurve(let to, _):
+                                return CGPoint(x: to.x, y: to.y)
+                            case .close:
+                                return nil
+                            }
+                        }
+                    }
+                }
+            }
         }
         return nil
     }
@@ -229,57 +263,16 @@ struct ProfessionalDirectSelectionView: View {
         // HandleIDs now point to where the handle data actually lives in the bezier structure
         
         for layer in document.layers {
+            // First check top-level shapes
             if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
-                if handleID.elementIndex < shape.path.elements.count {
-                    let element = shape.path.elements[handleID.elementIndex]
-                    
-                    switch element {
-                    case .curve(let to, let control1, let control2):
-                        if handleID.handleType == .control1 {
-                            // OUTGOING HANDLE: control1 of current element belongs to PREVIOUS anchor point
-                            if handleID.elementIndex > 0 {
-                                let prevElement = shape.path.elements[handleID.elementIndex - 1]
-                                switch prevElement {
-                                case .move(let prevTo), .line(let prevTo):
-                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                                    let handleLocation = CGPoint(x: control1.x, y: control1.y)
-                                    return (pointLocation, handleLocation)
-                                case .curve(let prevTo, _, _):
-                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                                    let handleLocation = CGPoint(x: control1.x, y: control1.y)
-                                    return (pointLocation, handleLocation)
-                                default:
-                                    return nil
-                                }
-                            }
-                        } else {
-                            // INCOMING HANDLE: control2 of current element belongs to current anchor point
-                            let pointLocation = CGPoint(x: to.x, y: to.y)
-                            let handleLocation = CGPoint(x: control2.x, y: control2.y)
-                            return (pointLocation, handleLocation)
-                        }
-                    case .quadCurve(let to, let control):
-                        if handleID.handleType == .control1 {
-                            // For quad curves, control1 could be outgoing from previous point
-                            if handleID.elementIndex > 0 {
-                                let prevElement = shape.path.elements[handleID.elementIndex - 1]
-                                switch prevElement {
-                                case .move(let prevTo), .line(let prevTo), .curve(let prevTo, _, _):
-                                    let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
-                                    let handleLocation = CGPoint(x: control.x, y: control.y)
-                                    return (pointLocation, handleLocation)
-                                default:
-                                    return nil
-                                }
-                            }
-                        } else {
-                            // Standard quad curve control handle
-                            let pointLocation = CGPoint(x: to.x, y: to.y)
-                            let handleLocation = CGPoint(x: control.x, y: control.y)
-                            return (pointLocation, handleLocation)
-                        }
-                    default:
-                        return nil
+                return getHandleInfoFromShape(shape, handleID: handleID)
+            }
+            
+            // Then check grouped shapes within group containers
+            for containerShape in layer.shapes {
+                if containerShape.isGroupContainer {
+                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
+                        return getHandleInfoFromShape(groupedShape, handleID: handleID)
                     }
                 }
             }
@@ -287,21 +280,97 @@ struct ProfessionalDirectSelectionView: View {
         return nil
     }
     
+    private func getHandleInfoFromShape(_ shape: VectorShape, handleID: HandleID) -> (pointLocation: CGPoint, handleLocation: CGPoint)? {
+        if handleID.elementIndex < shape.path.elements.count {
+            let element = shape.path.elements[handleID.elementIndex]
+            
+            switch element {
+            case .curve(let to, let control1, let control2):
+                if handleID.handleType == .control1 {
+                    // OUTGOING HANDLE: control1 of current element belongs to PREVIOUS anchor point
+                    if handleID.elementIndex > 0 {
+                        let prevElement = shape.path.elements[handleID.elementIndex - 1]
+                        switch prevElement {
+                        case .move(let prevTo), .line(let prevTo):
+                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                            let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                            return (pointLocation, handleLocation)
+                        case .curve(let prevTo, _, _):
+                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                            let handleLocation = CGPoint(x: control1.x, y: control1.y)
+                            return (pointLocation, handleLocation)
+                        default:
+                            return nil
+                        }
+                    }
+                } else {
+                    // INCOMING HANDLE: control2 of current element belongs to current anchor point
+                    let pointLocation = CGPoint(x: to.x, y: to.y)
+                    let handleLocation = CGPoint(x: control2.x, y: control2.y)
+                    return (pointLocation, handleLocation)
+                }
+            case .quadCurve(let to, let control):
+                if handleID.handleType == .control1 {
+                    // For quad curves, control1 could be outgoing from previous point
+                    if handleID.elementIndex > 0 {
+                        let prevElement = shape.path.elements[handleID.elementIndex - 1]
+                        switch prevElement {
+                        case .move(let prevTo), .line(let prevTo), .curve(let prevTo, _, _):
+                            let pointLocation = CGPoint(x: prevTo.x, y: prevTo.y)
+                            let handleLocation = CGPoint(x: control.x, y: control.y)
+                            return (pointLocation, handleLocation)
+                        default:
+                            return nil
+                        }
+                    }
+                } else {
+                    // Standard quad curve control handle
+                    let pointLocation = CGPoint(x: to.x, y: to.y)
+                    let handleLocation = CGPoint(x: control.x, y: control.y)
+                    return (pointLocation, handleLocation)
+                }
+            default:
+                return nil
+            }
+        }
+        return nil
+    }
+    
     private func getShapeForHandle(_ handleID: HandleID) -> VectorShape? {
-        // Find the shape that contains this handle
+        // Find the shape that contains this handle (including grouped shapes)
         for layer in document.layers {
+            // First check top-level shapes
             if let shape = layer.shapes.first(where: { $0.id == handleID.shapeID }) {
                 return shape
+            }
+            
+            // Then check grouped shapes within group containers
+            for containerShape in layer.shapes {
+                if containerShape.isGroupContainer {
+                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == handleID.shapeID }) {
+                        return groupedShape
+                    }
+                }
             }
         }
         return nil
     }
     
     private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
-        // Find the shape that contains this point
+        // Find the shape that contains this point (including grouped shapes)
         for layer in document.layers {
+            // First check top-level shapes
             if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
                 return shape
+            }
+            
+            // Then check grouped shapes within group containers
+            for containerShape in layer.shapes {
+                if containerShape.isGroupContainer {
+                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+                        return groupedShape
+                    }
+                }
             }
         }
         return nil

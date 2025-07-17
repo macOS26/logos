@@ -62,14 +62,20 @@ extension DrawingCanvas {
         var hitShape: VectorShape?
         var hitLayerIndex: Int?
         
+        print("🎯 SELECTION TAP: Looking for shapes at location \(location)")
+        
         // Search through layers from top to bottom
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
+            print("🎯 SELECTION TAP: Checking layer \(layerIndex): '\(layer.name)' with \(layer.shapes.count) shapes")
+            
             // Search through shapes from top to bottom (reverse order)
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
+                
+                print("🎯 SELECTION TAP: Testing shape '\(shape.name)' (group: \(shape.isGroupContainer))")
                 
                 // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
                 
@@ -84,6 +90,48 @@ extension DrawingCanvas {
                     // This ensures Canvas/Pasteboard only respond to clicks EXACTLY within their bounds
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
+                    print("  - Background shape hit test: \(isHit)")
+                } else if shape.isGroupContainer {
+                    // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
+                    print("  - Group container: checking \(shape.groupedShapes.count) grouped shapes")
+                    for groupedShape in shape.groupedShapes {
+                        if !groupedShape.isVisible { continue }
+                        
+                        print("    - Testing grouped shape '\(groupedShape.name)'")
+                        
+                        // Apply the same hit testing logic to grouped shapes
+                        let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
+                        
+                        if isStrokeOnly && groupedShape.strokeStyle != nil {
+                            // Stroke-only shapes: Use stroke-based hit testing
+                            let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
+                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
+                                isHit = true
+                                print("      - Stroke hit: YES")
+                                break
+                            } else {
+                                print("      - Stroke hit: NO")
+                            }
+                        } else {
+                            // Regular grouped shapes: Use bounds + path hit testing
+                            let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
+                            let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                            
+                            if expandedBounds.contains(location) {
+                                isHit = true
+                                print("      - Bounds hit: YES")
+                                break
+                            } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
+                                isHit = true
+                                print("      - Path hit: YES")
+                                break
+                            } else {
+                                print("      - Bounds hit: NO, Path hit: NO")
+                            }
+                        }
+                    }
+                    print("  - Group overall hit result: \(isHit)")
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
@@ -94,6 +142,7 @@ extension DrawingCanvas {
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                        print("  - Regular stroke hit test: \(isHit)")
                     } else {
                         // Method 2: Filled shapes - use bounds + path hit testing
                         let transformedBounds = shape.bounds.applying(shape.transform)
@@ -101,9 +150,11 @@ extension DrawingCanvas {
                         
                         if expandedBounds.contains(location) {
                             isHit = true
+                            print("  - Regular bounds hit test: \(isHit)")
                         } else {
                             // Fallback: precise path hit test
                             isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                            print("  - Regular path hit test: \(isHit)")
                         }
                     }
                 }
@@ -111,10 +162,15 @@ extension DrawingCanvas {
                 if isHit {
                     hitShape = shape
                     hitLayerIndex = layerIndex
+                    print("🎯 SELECTION TAP: FOUND HIT - Shape '\(shape.name)' in layer \(layerIndex)")
                     break
                 }
             }
             if hitShape != nil { break }
+        }
+        
+        if hitShape == nil {
+            print("🎯 SELECTION TAP: NO SHAPE HIT - will deselect")
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
