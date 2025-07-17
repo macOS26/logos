@@ -354,21 +354,23 @@ struct SelectionHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     
-    private let handleSize: CGFloat = 8
-    private let rotationHandleOffset: CGFloat = 20
-    
-    // Professional scaling state management
+    // Professional scaling state management - FIXED: Preview-based scaling
     @State private var isScaling = false
     @State private var scalingStarted = false
     @State private var initialBounds: CGRect = .zero
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
+    @State private var previewTransform: CGAffineTransform = .identity // NEW: Preview only
+    @State private var scalingAnchorPoint: CGPoint = .zero // NEW: Corner pinning
     
     // Professional rotation state management
     @State private var isRotating = false
     @State private var rotationStarted = false
     @State private var initialRotation: CGFloat = 0
     @State private var rotationStartLocation: CGPoint = .zero
+    
+    private let handleSize: CGFloat = 8
+    private let rotationHandleOffset: CGFloat = 20
     
     var body: some View {
         // PROFESSIONAL SCALING: Use appropriate bounds for groups vs individual shapes
@@ -470,41 +472,51 @@ struct SelectionHandles: View {
         if !scalingStarted {
             scalingStarted = true
             isScaling = true
+            document.isHandleScalingActive = true // CRITICAL: Prevent canvas drag conflicts
             initialBounds = bounds
             initialTransform = shape.transform
             startLocation = dragValue.startLocation
             document.saveToUndoStack()
+            
+            // PROFESSIONAL CORNER PINNING: Set anchor point to opposite corner
+            scalingAnchorPoint = getOppositeCorner(for: index, in: bounds)
+            print("🔄 SCALING: Anchored to opposite corner at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
         }
         
-        // Professional scaling: Calculate scale based on distance from center
-        let initialCenter = CGPoint(
-            x: center.x * zoomLevel + canvasOffset.x,
-            y: center.y * zoomLevel + canvasOffset.y
+        // PROFESSIONAL SCALING: Calculate scale based on distance from anchor point (not center)
+        let anchorInScreen = CGPoint(
+            x: scalingAnchorPoint.x * zoomLevel + canvasOffset.x,
+            y: scalingAnchorPoint.y * zoomLevel + canvasOffset.y
         )
         
-        let initialDistance = distance(startLocation, initialCenter)
+        let initialDistance = distance(startLocation, anchorInScreen)
         let currentDistance = distance(
             CGPoint(
                 x: startLocation.x + dragValue.translation.width,
                 y: startLocation.y + dragValue.translation.height
             ),
-            initialCenter
+            anchorInScreen
         )
         
         let scaleFactor = max(0.1, currentDistance / max(initialDistance, 1.0))
         
-        // Apply uniform scaling for corner handles (Adobe Illustrator behavior)
-        applyScaling(scaleX: scaleFactor, scaleY: scaleFactor)
+        // FIXED: Only calculate preview transform, don't apply to actual shape yet
+        calculatePreviewTransform(scaleX: scaleFactor, scaleY: scaleFactor, anchor: scalingAnchorPoint)
     }
     
     private func handleEdgeScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !scalingStarted {
             scalingStarted = true
             isScaling = true
+            document.isHandleScalingActive = true // CRITICAL: Prevent canvas drag conflicts
             initialBounds = bounds
             initialTransform = shape.transform
             startLocation = dragValue.startLocation
             document.saveToUndoStack()
+            
+            // PROFESSIONAL EDGE PINNING: Set anchor point to opposite edge
+            scalingAnchorPoint = getOppositeEdgeAnchor(for: index, in: bounds)
+            print("🔄 EDGE SCALING: Anchored to opposite edge at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
         }
         
         // Professional edge scaling: Scale only in the direction of the edge
@@ -517,57 +529,39 @@ struct SelectionHandles: View {
         var scaleY: CGFloat = 1.0
         
         switch index {
-        case 0: // Top edge
+        case 0: // Top edge - pin bottom edge
             scaleY = max(0.1, (bounds.height - translation.y) / bounds.height)
-        case 1: // Right edge
+        case 1: // Right edge - pin left edge
             scaleX = max(0.1, (bounds.width + translation.x) / bounds.width)
-        case 2: // Bottom edge
+        case 2: // Bottom edge - pin top edge
             scaleY = max(0.1, (bounds.height + translation.y) / bounds.height)
-        case 3: // Left edge
+        case 3: // Left edge - pin right edge
             scaleX = max(0.1, (bounds.width - translation.x) / bounds.width)
         default:
             break
         }
         
-        applyScaling(scaleX: scaleX, scaleY: scaleY)
-    }
-    
-    private func applyScaling(scaleX: CGFloat, scaleY: CGFloat) {
-        // PROFESSIONAL SCALING: Apply directly to document with proper transform management
-        guard let layerIndex = document.selectedLayerIndex,
-              let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else {
-            return
-        }
-        
-        // Create scaling transform from the center of the object
-        let centerX = initialBounds.midX
-        let centerY = initialBounds.midY
-        
-        // Build transform: translate to origin, scale, translate back, then apply original transform
-        let scaleTransform = CGAffineTransform.identity
-            .translatedBy(x: centerX, y: centerY)
-            .scaledBy(x: scaleX, y: scaleY)
-            .translatedBy(x: -centerX, y: -centerY)
-        
-        // Combine with initial transform
-        let newTransform = initialTransform.concatenating(scaleTransform)
-        
-        // Apply to shape - this ensures object stays with selection bounds
-        document.layers[layerIndex].shapes[shapeIndex].transform = newTransform
-        
-        // Force UI update
-        document.objectWillChange.send()
+        // FIXED: Only calculate preview transform, don't apply to actual shape yet
+        calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
     
     private func finishScaling() {
         scalingStarted = false
         isScaling = false
+        document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
         
-        // CRITICAL FIX: Apply transform to actual coordinates after scaling
+        // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Adobe Illustrator behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            
+            // Reset preview transform
+            previewTransform = .identity
+            
+            print("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity")
         }
     }
     
@@ -655,12 +649,12 @@ struct SelectionHandles: View {
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Adobe Illustrator behavior)
-    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
-        let transform = shape.transform
+        let currentTransform = transform ?? shape.transform
         
         // Don't apply identity transforms
-        if transform.isIdentity {
+        if currentTransform.isIdentity {
             return
         }
         
@@ -672,17 +666,17 @@ struct SelectionHandles: View {
         for element in shape.path.elements {
             switch element {
             case .move(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
                 transformedElements.append(.move(to: VectorPoint(transformedPoint)))
                 
             case .line(let to):
-                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
                 transformedElements.append(.line(to: VectorPoint(transformedPoint)))
                 
             case .curve(let to, let control1, let control2):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
-                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
                 transformedElements.append(.curve(
                     to: VectorPoint(transformedTo),
                     control1: VectorPoint(transformedControl1),
@@ -690,8 +684,8 @@ struct SelectionHandles: View {
                 ))
                 
             case .quadCurve(let to, let control):
-                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
-                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
                 transformedElements.append(.quadCurve(
                     to: VectorPoint(transformedTo),
                     control: VectorPoint(transformedControl)
@@ -739,6 +733,50 @@ struct SelectionHandles: View {
     // Distance calculation helper
     private func distance(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
         return sqrt(pow(point2.x - point1.x, 2) + pow(point2.y - point1.y, 2))
+    }
+    
+    // Helper to get the opposite corner for corner scaling
+    private func getOppositeCorner(for index: Int, in bounds: CGRect) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.maxX, y: bounds.maxY) // Top-left -> Bottom-right
+        case 1: return CGPoint(x: bounds.minX, y: bounds.maxY) // Top-right -> Bottom-left
+        case 2: return CGPoint(x: bounds.minX, y: bounds.minY) // Bottom-right -> Top-left
+        case 3: return CGPoint(x: bounds.maxX, y: bounds.minY) // Bottom-left -> Top-right
+        default: return CGPoint(x: bounds.midX, y: bounds.midY) // Fallback to center
+        }
+    }
+    
+    // Helper to get the opposite edge anchor for edge scaling
+    private func getOppositeEdgeAnchor(for index: Int, in bounds: CGRect) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.midX, y: bounds.maxY) // Top edge -> Bottom edge
+        case 1: return CGPoint(x: bounds.minX, y: bounds.midY) // Right edge -> Left edge
+        case 2: return CGPoint(x: bounds.midX, y: bounds.minY) // Bottom edge -> Top edge
+        case 3: return CGPoint(x: bounds.maxX, y: bounds.midY) // Left edge -> Right edge
+        default: return CGPoint(x: bounds.midX, y: bounds.midY) // Fallback to center
+        }
+    }
+    
+    // FIXED: Calculate preview transform from anchor point (corner pinning)
+    private func calculatePreviewTransform(scaleX: CGFloat, scaleY: CGFloat, anchor: CGPoint) {
+        // Create scaling transform around the anchor point (opposite corner)
+        let scaleTransform = CGAffineTransform.identity
+            .translatedBy(x: anchor.x, y: anchor.y)
+            .scaledBy(x: scaleX, y: scaleY)
+            .translatedBy(x: -anchor.x, y: -anchor.y)
+        
+        // Store as preview transform (will be applied at the end)
+        previewTransform = initialTransform.concatenating(scaleTransform)
+        
+        // CRITICAL: Apply preview to the actual shape for visual feedback
+        // This gets replaced with the final transform in finishScaling
+        if let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
+        }
+        
+        // Force UI update
+        document.objectWillChange.send()
     }
 }
 

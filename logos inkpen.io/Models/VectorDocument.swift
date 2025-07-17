@@ -96,26 +96,35 @@ struct ZoomRequest: Equatable {
 // MARK: - Vector Document
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
-    @Published var layers: [VectorLayer]
-    
-    // SIMPLIFIED SWATCH SYSTEM - Three separate modifiable arrays
-    @Published var rgbSwatches: [VectorColor]
-    @Published var cmykSwatches: [VectorColor]
-    @Published var hsbSwatches: [VectorColor]
+    @Published var layers: [VectorLayer] = []
+    @Published var layerIndex: Int = 0
+    @Published var pasteboard: VectorLayer = VectorLayer(name: "Pasteboard")
     
     @Published var selectedLayerIndex: Int?
-    @Published var selectedShapeIDs: Set<UUID>
-    @Published var selectedTextIDs: Set<UUID> // PROFESSIONAL TEXT SUPPORT
-    @Published var textObjects: [VectorText] // PROFESSIONAL TEXT OBJECTS
-    @Published var currentTool: DrawingTool
-    @Published var viewMode: ViewMode
-    @Published var zoomLevel: Double
-    @Published var canvasOffset: CGPoint
+    @Published var selectedShapeIDs: Set<UUID> = []
+    @Published var selectedTextIDs: Set<UUID> = [] // PROFESSIONAL TEXT SUPPORT
+    
+    // SIMPLIFIED SWATCH SYSTEM - Three separate modifiable arrays
+    @Published var rgbSwatches: [VectorColor] = []
+    @Published var cmykSwatches: [VectorColor] = []
+    @Published var hsbSwatches: [VectorColor] = []
+    
+    // CRITICAL FIX: Shared state to prevent double transformations  
+    @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
+    @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
+    @Published var currentTool: DrawingTool = .selection
+    @Published var viewMode: ViewMode = .color
+    @Published var zoomLevel: Double = 1.0
+    @Published var canvasOffset: CGPoint = .zero
     @Published var zoomRequest: ZoomRequest? = nil // For coordinated zoom operations
-    @Published var showRulers: Bool
-    @Published var snapToGrid: Bool
-    @Published var undoStack: [VectorDocument]
-    @Published var redoStack: [VectorDocument]
+    @Published var showRulers: Bool = false
+    @Published var showGrid: Bool = false
+    @Published var snapToGrid: Bool = false
+    @Published var gridSpacing: Double = 12.0
+    @Published var backgroundColor: VectorColor = .white
+    
+    @Published var undoStack: [VectorDocument] = []
+    @Published var redoStack: [VectorDocument] = []
     
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
@@ -131,11 +140,10 @@ class VectorDocument: ObservableObject, Codable {
     
     private let maxUndoStackSize = 50
     
+
+    
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
-        
-        // Standard layer initialization (no special Canvas layer)
-        self.layers = []
         
         // Initialize separate swatch arrays with defaults
         self.rgbSwatches = Self.createDefaultRGBSwatches()
@@ -151,10 +159,12 @@ class VectorDocument: ObservableObject, Codable {
         self.zoomLevel = 1.0
         self.canvasOffset = .zero
         self.showRulers = settings.showRulers
+        self.showGrid = settings.showGrid
         self.snapToGrid = settings.snapToGrid
+        self.gridSpacing = settings.gridSpacing
+        self.backgroundColor = settings.backgroundColor
         self.undoStack = []
         self.redoStack = []
-        self.fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
         // Add notification observers for scaling operations
         setupNotificationObservers()

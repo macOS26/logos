@@ -143,6 +143,13 @@ extension DrawingCanvas {
             // TEXT TOOL COMPLETELY REMOVED
         case .selection:
             if !isDrawing {
+                // CRITICAL FIX: Don't start selection drag if handle scaling is active
+                // This prevents double transformations when dragging selection handles
+                if document.isHandleScalingActive {
+                    print("🎯 HANDLE SCALING ACTIVE: Skipping selection drag to prevent double transformation")
+                    return
+                }
+                
                 // Check if we're starting a drag on a selected object
                 let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
                 
@@ -162,6 +169,11 @@ extension DrawingCanvas {
             }
             
             if isDrawing {
+                // CRITICAL FIX: Don't continue selection drag if handle scaling is active
+                if document.isHandleScalingActive {
+                    print("🎯 HANDLE SCALING ACTIVE: Skipping selection drag update to prevent double transformation")
+                    return
+                }
                 handleSelectionDrag(value: value, geometry: geometry)
             }
         case .directSelection:

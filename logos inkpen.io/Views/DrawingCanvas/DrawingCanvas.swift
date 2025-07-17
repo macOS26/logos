@@ -77,6 +77,8 @@ struct DrawingCanvas: View {
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT
     // This handles the case where multiple points exist at the same X,Y coordinates
     // Essential for maintaining continuity in closed paths (circles, etc.)
+    @State internal var coincidentPointClusters: [CGPoint: [PointID]] = [:]
+    @State internal var coincidentPointRadius: CGFloat = 2.0 // Points within this radius are considered coincident
     @State internal var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
     
     // FONT TOOL STATE (Core Graphics based - no Core Text)
