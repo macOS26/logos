@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 struct LayerView: View {
     let layer: VectorLayer
@@ -408,6 +409,7 @@ struct ScaleHandles: View {
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var scalingAnchorPoint: CGPoint = .zero
     @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds
+    @State private var isShiftPressed = false  // PROPORTIONAL SCALING: Track shift key state
     
     private let handleSize: CGFloat = 8
     
@@ -426,9 +428,29 @@ struct ScaleHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             
+            // CENTER POINT: Green if live, red if pinned anchor
+            let isCenterPinned = document.scalingAnchor == .center
+            Circle()
+                .fill(isCenterPinned ? Color.red : Color.green)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: 6 / zoomLevel, height: 6 / zoomLevel)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    // Allow clicking center to set center anchor
+                    if !isScaling {
+                        document.scalingAnchor = .center
+                        print("🎯 ANCHOR CHANGED: Center scaling selected")
+                    }
+                }
+            
             // MARQUEE PREVIEW: Show EXACT final destination (PINNED CORRECTLY!)
             if isScaling && !finalMarqueeBounds.isEmpty {
                 let marqueeCenter = CGPoint(x: finalMarqueeBounds.midX, y: finalMarqueeBounds.midY)
+                
+                // Marquee outline
                 Rectangle()
                     .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                     .frame(width: finalMarqueeBounds.width, height: finalMarqueeBounds.height)
@@ -437,6 +459,23 @@ struct ScaleHandles: View {
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     // NO transformEffect! Show exact final position
                     .opacity(0.8) // Semi-transparent for clarity
+                
+                // MARQUEE CENTER POINT: Green if live, red if pinned
+                let isCenterPinned = document.scalingAnchor == .center
+                Circle()
+                    .fill(isCenterPinned ? Color.red : Color.green)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: 6 / zoomLevel, height: 6 / zoomLevel)
+                    .position(marqueeCenter)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .onTapGesture {
+                        // Allow clicking center to set center anchor
+                        if !isScaling {
+                            document.scalingAnchor = .center
+                            print("🎯 ANCHOR CHANGED: Center scaling selected")
+                        }
+                    }
             }
             
             // 4 Corner scaling handles - GREEN for live, RED for pinned anchor
@@ -453,8 +492,16 @@ struct ScaleHandles: View {
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(shape.transform)
+                    .onTapGesture {
+                        // Allow clicking corner to set anchor point
+                        if !isScaling {
+                            let newAnchor = getAnchorForCorner(index: i)
+                            document.scalingAnchor = newAnchor
+                            print("🎯 ANCHOR CHANGED: \(newAnchor.displayName) selected via corner \(i)")
+                        }
+                    }
                     .highPriorityGesture(
-                        // Don't allow interaction on pinned corners
+                        // Don't allow scaling from pinned corners
                         isPinnedCorner ? nil : DragGesture()
                             .onChanged { value in
                                 handleCornerScaling(index: i, dragValue: value, bounds: bounds, center: center)
@@ -468,6 +515,10 @@ struct ScaleHandles: View {
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
+            setupKeyEventMonitoring()
+        }
+        .onDisappear {
+            teardownKeyEventMonitoring()
         }
     }
     
@@ -508,11 +559,19 @@ struct ScaleHandles: View {
         )
         
         // Calculate scale factors
-        let scaleX = abs(startDistance.x) > 1.0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-        let scaleY = abs(startDistance.y) > 1.0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+        var scaleX = abs(startDistance.x) > 1.0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+        var scaleY = abs(startDistance.y) > 1.0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+        
+        // PROPORTIONAL SCALING: When shift is held, use uniform scaling
+        if isShiftPressed {
+            let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
+            scaleX = uniformScale
+            scaleY = uniformScale
+            print("🔀 PROPORTIONAL SCALING: Shift held - uniform scale \(String(format: "%.3f", uniformScale))")
+        }
         
         // Professional logging for tracking
-        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))")
+        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))\(isShiftPressed ? " (PROPORTIONAL)" : "")")
         print("   🖱️ Cursor: (\(String(format: "%.1f", currentLocation.x)), \(String(format: "%.1f", currentLocation.y))) → Distance: (\(String(format: "%.1f", currentDistance.x)), \(String(format: "%.1f", currentDistance.y)))")
         print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
         
@@ -697,6 +756,36 @@ struct ScaleHandles: View {
             return cornerIndex == 2 // Bottom-right corner (index 2)
         case .bottomLeft:
             return cornerIndex == 3 // Bottom-left corner (index 3)
+        }
+    }
+    
+    /// Get scaling anchor for a corner index
+    private func getAnchorForCorner(index: Int) -> ScalingAnchor {
+        switch index {
+        case 0: return .topLeft      // Top-left corner
+        case 1: return .topRight     // Top-right corner
+        case 2: return .bottomRight  // Bottom-right corner
+        case 3: return .bottomLeft   // Bottom-left corner
+        default: return .center      // Fallback
+        }
+    }
+    
+    // MARK: - Shift Key Monitoring for Proportional Scaling
+    @State private var keyEventMonitor: Any?
+    
+    private func setupKeyEventMonitoring() {
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+            }
+            return event
+        }
+    }
+    
+    private func teardownKeyEventMonitoring() {
+        if let monitor = keyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyEventMonitor = nil
         }
     }
 }
