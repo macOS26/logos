@@ -732,20 +732,20 @@ extension ProfessionalPathOperations {
     
 
     
-    /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
-    /// Groups shapes by color and merges each color group separately using CoreGraphics operations
+    /// PROFESSIONAL MERGE: Maintains composite appearance then merges same colors (Adobe Illustrator "Merge")  
+    /// Two-step process: 1) Cut all shapes (maintain appearance), 2) Union same colors
     static func professionalMergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor]) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else { 
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MERGE: Using CoreGraphics with color-based merging...")
+        print("🔨 PROFESSIONAL MERGE: Using CoreGraphics with cut-first, merge-colors approach...")
         
         // Use the new CoreGraphics merge operation with color tracking
         let result = CoreGraphicsPathOperations.mergeWithShapeTracking(paths, colors: colors, using: .winding)
         
         if !result.isEmpty {
-            print("✅ PROFESSIONAL MERGE: CoreGraphics success - \(result.count) color groups merged")
+            print("✅ PROFESSIONAL MERGE: CoreGraphics success - \(result.count) color-unified shapes")
             return result
         } else {
             print("⚠️ CoreGraphics merge returned empty result")

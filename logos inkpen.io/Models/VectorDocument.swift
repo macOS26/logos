@@ -1839,7 +1839,7 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes")
             
         case .merge:
-            // MERGE: Adobe Illustrator Merge - groups by color and merges each color group separately
+            // MERGE: Adobe Illustrator Merge - cut all shapes first (maintain appearance), then merge same colors
             let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
             
             guard colors.count == selectedShapes.count else {
@@ -1849,7 +1849,7 @@ class VectorDocument: ObservableObject, Codable {
             
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
             
-            // Adobe Illustrator Merge: Each resulting piece maintains the color of its original shape, removes strokes
+            // Adobe Illustrator Merge: Cut-first approach maintains appearance, then same colors get unified, removes strokes
             var shapeCounters: [Int: Int] = [:]
             
             for (mergedPath, originalShapeIndex) in mergeResults {
@@ -1871,7 +1871,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(mergedShape)
             }
-            print("✅ MERGE: Created \(resultShapes.count) merged shapes with color-based grouping, removed strokes")
+            print("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes")
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.

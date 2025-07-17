@@ -452,8 +452,8 @@ public class CoreGraphicsPathOperations {
     
     // MARK: - Merge Operations (CoreGraphics Alternative for Color-Based Merging)
     
-    /// Merge operation: Groups shapes by color and merges each color group separately
-    /// Adobe Illustrator Merge: Unite objects of same color, remove strokes between overlapping areas
+    /// Merge operation: Applies Cut to all shapes first, then merges same colors
+    /// Adobe Illustrator Merge: 1) Cut all shapes (maintain appearance), 2) Union same colors
     /// - Parameters:
     ///   - paths: Array of paths to merge
     ///   - colors: Array of fill colors (same order as paths)
@@ -464,58 +464,67 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with color-based merging")
-        print("   Adobe Illustrator Merge: Group by color, merge each group, remove interior strokes")
+        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with two-step process")
+        print("   Adobe Illustrator Merge: 1) Cut all shapes (maintain appearance), 2) Merge same colors")
         
-        // STEP 1: Group shapes by fill color
+        // STEP 1: Apply Cut logic to ALL shapes to remove hidden overlaps and maintain visual appearance
+        print("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...")
+        let cutResults = cutWithShapeTracking(paths, using: fillRule)
+        
+        print("   ✅ Cut produced \(cutResults.count) pieces from \(paths.count) original shapes")
+        
+        // STEP 2: Group cut results by color and merge same colors
+        print("   🎨 STEP 2: Grouping cut results by color and merging same colors...")
+        
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
         
-        for (index, (path, color)) in zip(paths, colors).enumerated() {
+        for (cutPath, originalIndex) in cutResults {
+            let color = colors[originalIndex]
             if colorGroups[color] == nil {
                 colorGroups[color] = []
             }
-            colorGroups[color]?.append((path, index))
+            colorGroups[color]?.append((cutPath, originalIndex))
         }
         
-        print("   🎨 Found \(colorGroups.count) color groups:")
+        print("   🎨 Found \(colorGroups.count) color groups in cut results:")
         for (color, group) in colorGroups {
-            print("     Color \(color): \(group.count) shapes")
+            print("     Color \(color): \(group.count) pieces")
         }
         
         var resultPaths: [(CGPath, Int)] = []
         
-        // STEP 2: Merge each color group separately
+        // STEP 3: Union pieces within each color group
         for (color, group) in colorGroups {
             if group.count == 1 {
-                // Single shape in this color group - keep as-is
+                // Single piece in this color group - keep as-is
                 let (path, originalIndex) = group[0]
                 resultPaths.append((path, originalIndex))
-                print("   ✅ Color \(color): Single shape, keeping as-is")
+                print("   ✅ Color \(color): Single piece, keeping as-is")
             } else {
-                // Multiple shapes in this color group - merge them
-                print("   🔧 Color \(color): Merging \(group.count) shapes...")
+                // Multiple pieces in this color group - union them together
+                print("   🔧 Color \(color): Unioning \(group.count) cut pieces...")
                 
-                var mergedPath = group[0].0  // Start with first path
-                let representativeIndex = group[0].1  // Use first shape's index as representative
+                var mergedPath = group[0].0  // Start with first piece
+                let representativeIndex = group[0].1  // Use first piece's index as representative
                 
-                // Iteratively merge all paths in this color group
+                // Union all pieces in this color group
                 for i in 1..<group.count {
-                    let (pathToMerge, _) = group[i]
+                    let (pieceToMerge, _) = group[i]
                     
-                    if let unionResult = union(mergedPath, pathToMerge, using: fillRule) {
+                    if let unionResult = union(mergedPath, pieceToMerge, using: fillRule) {
                         mergedPath = unionResult
-                        print("     → Merged shape \(i + 1) of \(group.count)")
+                        print("     → Unioned piece \(i + 1) of \(group.count)")
                     } else {
-                        print("     ⚠️ Failed to merge shape \(i + 1), continuing...")
+                        print("     ⚠️ Failed to union piece \(i + 1), continuing...")
                     }
                 }
                 
                 resultPaths.append((mergedPath, representativeIndex))
-                print("   ✅ Color \(color): Merged \(group.count) shapes into 1 unified shape")
+                print("   ✅ Color \(color): Merged \(group.count) pieces into 1 unified shape")
             }
         }
         
-        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) merged shapes")
+        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) color-unified shapes with maintained appearance")
         return resultPaths
     }
     
@@ -524,7 +533,7 @@ public class CoreGraphicsPathOperations {
     ///   - paths: Array of paths to merge
     ///   - colors: Array of fill colors (same order as paths)
     ///   - fillRule: Fill rule to use (.winding or .evenOdd)
-    /// - Returns: Array of merged paths
+    /// - Returns: Array of color-unified shapes with maintained composite appearance
     static func merge(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
         return mergeWithShapeTracking(paths, colors: colors, using: fillRule).map { $0.0 }
     }

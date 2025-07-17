@@ -58,7 +58,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
         case .split: return "Breaks shapes at intersections with curve preservation (CoreGraphics)"
         case .cut: return "Removes hidden parts with curve preservation (CoreGraphics)"
-        case .merge: return "Combines multiple shapes using the same logic as unite, removes strokes between overlapping areas"
+        case .merge: return "Maintains composite appearance then merges same colors: 1) Cut all shapes, 2) Union same colors"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
