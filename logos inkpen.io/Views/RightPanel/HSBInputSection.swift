@@ -294,21 +294,21 @@ struct HSBInputSection: View {
             }
             
             // Two Swatch Previews: HSB and PMS
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 // HSB Color Swatch Preview
                 Button(action: {
                     addColorToSwatches()
                 }) {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 1) {
                         Rectangle()
                             .fill(currentColor.color)
-                            .frame(width: 30, height: 30)
+                            .frame(width: 24, height: 24)
                             .overlay(
                                 Rectangle()
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                         Text("HSB")
-                            .font(.system(size: 6))
+                            .font(.system(size: 5))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -319,11 +319,11 @@ struct HSBInputSection: View {
                 Button(action: {
                     addPMSColorToSwatches()
                 }) {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 1) {
                         ZStack {
                             Rectangle()
                                 .fill(closestPantoneColor?.color ?? currentColor.color)
-                                .frame(width: 30, height: 30)
+                                .frame(width: 24, height: 24)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -332,15 +332,15 @@ struct HSBInputSection: View {
                             // Show Pantone number if match found
                             if let pantoneColor = closestPantoneColor {
                                 Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 5, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.5)
                             }
                         }
                         Text("PMS")
-                            .font(.system(size: 6))
+                            .font(.system(size: 5))
                             .foregroundColor(.secondary)
                     }
                 }
@@ -350,19 +350,19 @@ struct HSBInputSection: View {
                 Button("Add") {
                     addPMSColorToSwatches()
                 }
-                .font(.system(size: 10))
+                .font(.system(size: 9))
                 .foregroundColor(.primary)
                 
                 Spacer()
                 
                 Text("#")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
                 
                 TextField("ff0000", text: $hexValue)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(.system(size: 11))
-                    .frame(width: 55)
+                    .font(.system(size: 10))
+                    .frame(width: 50)
                     .onChange(of: hexValue) { _, _ in
                         updateHSBFromHex()
                     }
