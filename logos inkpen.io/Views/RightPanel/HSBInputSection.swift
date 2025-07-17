@@ -55,9 +55,15 @@ struct HSBInputSection: View {
                         .foregroundColor(.secondary)
                     Spacer()
                     Button("Add to Swatches") {
+                        // Add current HSB color as a PMS color using the closest Pantone match name
                         if let pantoneColor = closestPantoneColor {
-                            let pantColor = VectorColor.pantone(pantoneColor)
-                            document.addColorSwatch(pantColor)
+                            // Create a PMS color based on current HSB values but with Pantone naming
+                            let pmsColor = VectorColor.pantone(pantoneColor)
+                            document.addColorSwatch(pmsColor)
+                        } else {
+                            // Fallback: Add as HSB color with PMS-style naming
+                            let hsbColor = VectorColor.hsb(currentColor)
+                            document.addColorSwatch(hsbColor)
                         }
                     }
                     .buttonStyle(.bordered)
@@ -90,11 +96,11 @@ struct HSBInputSection: View {
                     if let pantoneColor = closestPantoneColor {
                         VStack(spacing: 4) {
                             Button {
-                                // Apply closest Pantone color
-                                let pantColor = VectorColor.pantone(pantoneColor)
-                                sharedColor = pantColor
-                                document.addColorToCurrentMode(pantColor)
-                                updateHSBFromColor(pantColor)
+                                // Apply closest Pantone color using PMS naming
+                                let pmsColor = VectorColor.pantone(pantoneColor)
+                                sharedColor = pmsColor
+                                document.addColorToCurrentMode(pmsColor)
+                                updateHSBFromColor(pmsColor)
                             } label: {
                                 Rectangle()
                                     .fill(pantoneColor.color)
@@ -155,15 +161,33 @@ struct HSBInputSection: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("PMS Library")
+                        Text("Current Color")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
-                        Button("Browse Library") {
-                            showingPMSLibrary = true
+                        HStack {
+                            Button("Use Current") {
+                                // Add current HSB color with PMS naming
+                                if let pantoneColor = closestPantoneColor {
+                                    let pmsColor = VectorColor.pantone(pantoneColor)
+                                    sharedColor = pmsColor
+                                    document.addColorToCurrentMode(pmsColor)
+                                } else {
+                                    // Create custom PMS-style color from HSB
+                                    let hsbColor = VectorColor.hsb(currentColor)
+                                    sharedColor = hsbColor
+                                    document.addColorToCurrentMode(hsbColor)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                            
+                            Button("Browse Library") {
+                                showingPMSLibrary = true
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
                         }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
                     }
                 }
             }
@@ -302,7 +326,12 @@ struct HSBInputSection: View {
     }
     
     private func updateSharedColor() {
-        sharedColor = .hsb(currentColor)
+        // Always try to match to PMS first, fallback to HSB
+        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: currentColor) {
+            sharedColor = .pantone(pantoneMatch)
+        } else {
+            sharedColor = .hsb(currentColor)
+        }
     }
     
     private func updateHSBFromSharedColor() {
