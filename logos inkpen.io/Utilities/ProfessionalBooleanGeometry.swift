@@ -1111,101 +1111,24 @@ extension ProfessionalPathOperations {
     }
     
     /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
-    /// 1. Top shape becomes invisible (no fill, no stroke) - it's the crop boundary
-    /// 2. All other shapes are cropped to only show parts within the crop boundary
-            /// 3. Then everything gets CUT - removing hidden overlapping parts
+    /// Now uses CoreGraphics for curve preservation (like Cut and Trim operations)
     /// Returns an array of tuples: (croppedPath, originalShapeIndex, isInvisibleCropShape)
     static func professionalCropWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int, Bool)] {
         guard paths.count >= 2 else { 
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
-        print("🔨 PROFESSIONAL CROP (ClipperPaths): Processing \(paths.count) paths")
-                    print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then cut")
+        print("🔨 PROFESSIONAL CROP: Using CoreGraphics with curve preservation...")
         
-        let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
-        let shapesToCrop = Array(paths.dropLast())
-        let cropShapeIndex = paths.count - 1
+        // Use the new CoreGraphics crop operation
+        let result = CoreGraphicsPathOperations.cropWithShapeTracking(paths, using: .winding)
         
-        // Convert crop shape to ClipperPath
-        let cropSubpaths = extractSubpaths(from: cropShape)
-        guard let cropSubpath = cropSubpaths.first else {
-            print("⚠️ Invalid crop shape")
-            return paths.enumerated().map { (index, path) in (path, index, false) }
-        }
-        
-        let cropClipperPath = cgPathToClipperPath(cropSubpath)
-        guard cropClipperPath.count >= 3 else {
-            print("⚠️ Crop shape has insufficient points")
-            return paths.enumerated().map { (index, path) in (path, index, false) }
-        }
-        
-        var croppedPaths: [CGPath] = []
-        
-        // STEP 1: Intersect each shape with the crop shape (crop to boundary)
-        for (index, path) in shapesToCrop.enumerated() {
-            let subpaths = extractSubpaths(from: path)
-            for subpath in subpaths {
-                let clipperPath = cgPathToClipperPath(subpath)
-                if clipperPath.count >= 3 {
-                    let clipper = Clipper()
-                    clipper.addPath(clipperPath, .subject, true)
-                    clipper.addPath(cropClipperPath, .clip, true)
-                    
-                    var solution = ClipperPaths()
-                    do {
-                        let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
-                        if success {
-                            for resultClipperPath in solution {
-                                if resultClipperPath.count >= 3 {
-                                    let cgPath = clipperPathsToCGPath([resultClipperPath])
-                                    if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                                        croppedPaths.append(cgPath)
-                                    }
-                                }
-                            }
-                        }
-                    } catch {
-                        print("    ⚠️ Error cropping path \(index): \(error)")
-                    }
-                }
-            }
-        }
-        
-        print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
-        
-        // STEP 2: Apply CUT to the cropped shapes to remove hidden overlapping parts
-        if croppedPaths.count >= 2 {
-            print("   🔨 STEP 2: Applying CUT to remove hidden overlapping parts")
-            let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(croppedPaths, using: .winding)
-            
-            // Map the cut results back to their original shape indices
-            var finalResults: [(CGPath, Int, Bool)] = []
-            for (cutPath, _) in cutResults {
-                // Since we cropped all shapes, we need to map back to original indices
-                // For now, we'll cycle through the original shape indices
-                let originalIndex = finalResults.count % shapesToCrop.count
-                finalResults.append((cutPath, originalIndex, false))
-            }
-            
-            // Add the invisible crop shape
-            finalResults.append((cropShape, cropShapeIndex, true))
-            
-            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
-            return finalResults
+        if !result.isEmpty {
+            print("✅ PROFESSIONAL CROP: CoreGraphics success - \(result.count) shapes (curves preserved)")
+            return result
         } else {
-            // If we have fewer than 2 cropped shapes, no need to cut
-            var finalResults: [(CGPath, Int, Bool)] = []
-            for (index, path) in croppedPaths.enumerated() {
-                let originalIndex = index % shapesToCrop.count
-                finalResults.append((path, originalIndex, false))
-            }
-            
-            // Add the invisible crop shape
-            finalResults.append((cropShape, cropShapeIndex, true))
-            
-            print("✅ PROFESSIONAL CROP (ClipperPaths): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
-            return finalResults
+            print("⚠️ CoreGraphics crop returned empty result")
+            return []
         }
     }
     
