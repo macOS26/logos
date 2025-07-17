@@ -248,12 +248,12 @@ struct PathOperationsPanel: View {
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .split:
-            // SPLIT: CoreGraphics-based alternative to Divide with curve preservation
-            let splitPaths = ProfessionalPathOperations.split(paths)
+            // SPLIT: CoreGraphics-based alternative to Divide with PERFECT stained glass effect
+            let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
-            for (index, splitPath) in splitPaths.enumerated() {
-                // Determine which original shape this split piece belongs to
-                let originalShape = determineOriginalShapeForDividedPiece(splitPath, from: selectedShapes)
+            for (index, (splitPath, originalShapeIndex)) in splitResults.enumerated() {
+                // Use the exact original shape determined by stained glass tracking
+                let originalShape = selectedShapes[originalShapeIndex]
                 
                 let splitShape = VectorShape(
                     name: "Split Piece \(index + 1)",
@@ -265,7 +265,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(splitShape)
             }
-            print("✅ SPLIT: Created \(resultShapes.count) pieces with original colors (curves preserved)")
+            print("✅ SPLIT: Created \(resultShapes.count) pieces with PERFECT stained glass window colors (topmost shape wins in overlaps)")
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
@@ -447,20 +447,5 @@ struct PathOperationsPanel: View {
         print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
     }
     
-    /// Determine which original shape a divided piece belongs to (for color assignment)
-    private func determineOriginalShapeForDividedPiece(_ piece: CGPath, from originalShapes: [VectorShape]) -> VectorShape {
-        // Get the center point of the piece
-        let pieceBounds = piece.boundingBoxOfPath
-        let pieceCenter = CGPoint(x: pieceBounds.midX, y: pieceBounds.midY)
-        
-        // Find which original shape contains this center point
-        for shape in originalShapes {
-            if shape.path.cgPath.contains(pieceCenter) {
-                return shape
-            }
-        }
-        
-        // Fallback: use the first shape
-        return originalShapes.first!
-    }
+
 } 

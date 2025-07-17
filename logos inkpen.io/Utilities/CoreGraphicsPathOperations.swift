@@ -270,6 +270,7 @@ public class CoreGraphicsPathOperations {
     }
     
     /// Determines which original shape a piece belongs to using spatial analysis
+    /// For stained glass effects: topmost shape wins in overlapping areas
     private static func determineOriginalShapeIndex(for piece: CGPath, from originalPaths: [CGPath]) -> Int {
         let pieceBounds = piece.boundingBoxOfPath
         let pieceCenter = CGPoint(x: pieceBounds.midX, y: pieceBounds.midY)
@@ -282,12 +283,14 @@ public class CoreGraphicsPathOperations {
             }
         }
         
-        // If only one shape contains the center, that's our answer
-        if containingShapes.count == 1 {
-            return containingShapes[0]
+        // STAINED GLASS EFFECT: If multiple shapes contain the center (overlapping area),
+        // return the TOPMOST shape (highest index in stacking order)
+        if !containingShapes.isEmpty {
+            return containingShapes.max() ?? 0  // Topmost shape wins
         }
         
-        // Method 2: For overlapping areas, find the shape with maximum intersection area
+        // Method 2: For edge cases where center point isn't contained,
+        // find the shape with maximum intersection area
         var maxIntersectionArea: CGFloat = 0
         var bestShapeIndex = 0
         

@@ -26,6 +26,9 @@ struct HSBInputSection: View {
     // State for PMS entry
     @State private var pmsEntryText: String = ""
     
+    // Live PMS preview state
+    @State private var livePMSPreview: PantoneLibraryColor? = nil
+    
     // Find closest Pantone color match
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
     
@@ -40,6 +43,18 @@ struct HSBInputSection: View {
     
     private var closestPantoneColor: PantoneLibraryColor? {
         pantoneLibrary.findClosestMatch(to: currentColor)
+    }
+    
+    // Live preview color - either from live PMS search or current HSB
+    private var livePreviewColor: (pms: PantoneLibraryColor?, hsb: HSBColorModel) {
+        if let livePMS = livePMSPreview {
+            // Show live PMS match and its HSB approximation
+            let hsbApproximation = HSBColorModel.fromRGB(livePMS.rgbEquivalent)
+            return (pms: livePMS, hsb: hsbApproximation)
+        } else {
+            // Show current HSB color and closest PMS match
+            return (pms: closestPantoneColor, hsb: currentColor)
+        }
     }
     
     // Current hue as solid color for H circle
@@ -147,7 +162,10 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
-                                // ONLY update H - do not touch S or B
+                                updateHexFromHSB()
+                                updateSharedColor()
+                                // Clear live PMS preview when manually adjusting HSB
+                                livePMSPreview = nil
                             }
                         
                         // Gradient overlay
@@ -164,7 +182,10 @@ struct HSBInputSection: View {
                             .onChange(of: hueValue) { _, _ in
                                 if let intValue = Double(hueValue) {
                                     hueSlider = min(360, max(0, intValue))
-                                    // ONLY update H - do not touch S or B
+                                    updateHexFromHSB()
+                                    updateSharedColor()
+                                    // Clear live PMS preview when manually adjusting HSB
+                                    livePMSPreview = nil
                                 }
                             }
                 }
@@ -199,7 +220,10 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
-                                // ONLY update S - do not touch H or B
+                                updateHexFromHSB()
+                                updateSharedColor()
+                                // Clear live PMS preview when manually adjusting HSB
+                                livePMSPreview = nil
                             }
                         
                         // Gradient overlay
@@ -216,7 +240,10 @@ struct HSBInputSection: View {
                             .onChange(of: saturationValue) { _, _ in
                                 if let intValue = Double(saturationValue) {
                                     saturationSlider = min(100, max(0, intValue))
-                                    // ONLY update S - do not touch H or B
+                                    updateHexFromHSB()
+                                    updateSharedColor()
+                                    // Clear live PMS preview when manually adjusting HSB
+                                    livePMSPreview = nil
                                 }
                             }
                 }
@@ -251,7 +278,10 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))
-                                // ONLY update B - do not touch H or S
+                                updateHexFromHSB()
+                                updateSharedColor()
+                                // Clear live PMS preview when manually adjusting HSB
+                                livePMSPreview = nil
                             }
                         
                         // Gradient overlay
@@ -268,7 +298,10 @@ struct HSBInputSection: View {
                             .onChange(of: brightnessValue) { _, _ in
                                 if let intValue = Double(brightnessValue) {
                                     brightnessSlider = min(100, max(0, intValue))
-                                    // ONLY update B - do not touch H or S
+                                    updateHexFromHSB()
+                                    updateSharedColor()
+                                    // Clear live PMS preview when manually adjusting HSB
+                                    livePMSPreview = nil
                                 }
                             }
                 }
@@ -277,13 +310,13 @@ struct HSBInputSection: View {
             // HSB and PMS Swatch Previews with PMS Entry
             VStack(spacing: 4) {
                 HStack(spacing: 6) {
-                    // HSB Color Swatch Preview
+                    // HSB Color Swatch Preview (shows live preview approximation)
                     Button(action: {
                         addColorToSwatches()
                     }) {
                         VStack(spacing: 2) {
                             Rectangle()
-                                .fill(currentColor.color)
+                                .fill(livePreviewColor.hsb.color)
                                 .frame(width: 32, height: 32)
                                 .overlay(
                                     Rectangle()
@@ -297,28 +330,29 @@ struct HSBInputSection: View {
                     .buttonStyle(PlainButtonStyle())
                     .help("Click to add HSB color to swatches")
                     
-                    // PMS Color Swatch Preview  
+                    // PMS Color Swatch Preview (shows live PMS preview)
                     Button(action: {
                         addPMSColorToSwatches()
                     }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Rectangle()
-                                    .fill(closestPantoneColor?.color ?? currentColor.color)
+                                    .fill(livePreviewColor.pms?.color ?? livePreviewColor.hsb.color)
                                     .frame(width: 32, height: 32)
                                     .overlay(
                                         Rectangle()
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
                                 
-                                // Show Pantone number if match found
-                                if let pantoneColor = closestPantoneColor {
+                                // Show Pantone number if match found (live or closest)
+                                if let pantoneColor = livePreviewColor.pms {
                                     Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
                                         .font(.system(size: 6, weight: .bold))
                                         .foregroundColor(.white)
                                         .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                        .lineLimit(1)
+                                        .lineLimit(3)
                                         .minimumScaleFactor(0.6)
+                                        .multilineTextAlignment(.center)
                                 }
                             }
                             Text("PMS")
@@ -340,6 +374,9 @@ struct HSBInputSection: View {
                         .onSubmit {
                             searchAndApplyPMSColor()
                         }
+                        .onChange(of: pmsEntryText) { _, newValue in
+                            performLivePMSSearch(newValue)
+                        }
                     
                     Button("Add") {
                         searchAndApplyPMSColor()
@@ -357,38 +394,66 @@ struct HSBInputSection: View {
                         .frame(width: 60)
                         .onChange(of: hexValue) { _, _ in
                             updateHSBFromHex()
+                            updateSharedColor()
+                            // Clear live PMS preview when manually adjusting hex
+                            livePMSPreview = nil
                         }
                 }
             }
             
             // PMS colors with Pantone matching - 6 columns
-            Text("PMS Color with Pantone Matching")
+            Text("PMS colors with Pantone matching")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 6), spacing: 4) {
-                ForEach(Array(defaultHSBColors.prefix(18).enumerated()), id: \.offset) { index, hsbColor in
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 8), spacing: 4) {
+                ForEach(Array(defaultHSBColors.enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
                         addSpecificPMSColorToSwatches(hsbColor)
                     }) {
                         ZStack {
                             Rectangle()
-                                .fill(pantoneLibrary.findClosestMatch(to: hsbColor)?.color ?? hsbColor.color)
+                                .fill(hsbColor.color)
                                 .frame(width: 32, height: 32)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
                             
-                            // Show Pantone number if match found for this specific color
-                            if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
+                            // Show descriptive name for special colors
+                            if hsbColor.saturation == 0 && hsbColor.brightness == 0 {
+                                Text("black")
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
+                                    .lineLimit(3)
+                                    .minimumScaleFactor(0.6)
+                                    .multilineTextAlignment(.center)
+                            } else if hsbColor.saturation == 0 && hsbColor.brightness == 1 {
+                                Text("white")
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .shadow(color: .white, radius: 1, x: 0, y: 0)
+                                    .lineLimit(3)
+                                    .minimumScaleFactor(0.6)
+                                    .multilineTextAlignment(.center)
+                            } else if hsbColor.alpha < 1.0 {
+                                Text("clear")
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .shadow(color: .white, radius: 1, x: 0, y: 0)
+                                    .lineLimit(3)
+                                    .minimumScaleFactor(0.6)
+                                    .multilineTextAlignment(.center)
+                            } else if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
                                 Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
                                     .font(.system(size: 6, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                    .lineLimit(1)
+                                    .lineLimit(3)
                                     .minimumScaleFactor(0.6)
+                                    .multilineTextAlignment(.center)
                             }
                         }
                     }
@@ -415,6 +480,7 @@ struct HSBInputSection: View {
             // First row - Pure hues at full saturation and brightness
             HSBColorModel(hue: 0, saturation: 0, brightness: 0),      // Black
             HSBColorModel(hue: 0, saturation: 0, brightness: 1),      // White
+            HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0),  // Clear
             HSBColorModel(hue: 0, saturation: 0, brightness: 0.8),    // Light Gray
             HSBColorModel(hue: 0, saturation: 1, brightness: 1),      // Red
             HSBColorModel(hue: 30, saturation: 1, brightness: 1),     // Orange
@@ -488,12 +554,7 @@ struct HSBInputSection: View {
     }
     
     private func updateSharedColor() {
-        // Always try to match to PMS first, fallback to HSB
-        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: currentColor) {
-            sharedColor = .pantone(pantoneMatch)
-        } else {
-            sharedColor = .hsb(currentColor)
-        }
+        sharedColor = .hsb(currentColor)
     }
     
     private func loadFromSharedColor() {
@@ -577,6 +638,46 @@ struct HSBInputSection: View {
         }
     }
     
+    // MARK: - Live PMS Search
+    
+    private func performLivePMSSearch(_ query: String) {
+        let cleanedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if cleanedQuery.isEmpty {
+            // Clear live preview when text is empty
+            livePMSPreview = nil
+            return
+        }
+        
+        // Search for exact PMS color match as user types
+        let searchResults = pantoneLibrary.searchColors(query: cleanedQuery)
+        
+        if let foundColor = searchResults.first {
+            // Update live preview
+            livePMSPreview = foundColor
+            
+            // REAL-TIME HSB SLIDER UPDATE: Convert PMS to HSB and update sliders
+            let hsbColor = HSBColorModel.fromRGB(foundColor.rgbEquivalent)
+            
+            // Update all HSB slider values and text fields in real-time
+            hueValue = String(Int(hsbColor.hue))
+            saturationValue = String(Int(hsbColor.saturation * 100))
+            brightnessValue = String(Int(hsbColor.brightness * 100))
+            hueSlider = hsbColor.hue
+            saturationSlider = hsbColor.saturation * 100
+            brightnessSlider = hsbColor.brightness * 100
+            
+            // Update hex value to match
+            updateHexFromHSB()
+            
+            // Update shared color to sync with other color modes
+            updateSharedColor()
+        } else {
+            // Clear live preview if no match found
+            livePMSPreview = nil
+        }
+    }
+    
     private func searchAndApplyPMSColor() {
         let cleanedEntry = pmsEntryText
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -602,8 +703,9 @@ struct HSBInputSection: View {
             // Update hex value
             updateHexFromHSB()
             
-            // Clear the search field
+            // Clear the search field and live preview
             pmsEntryText = ""
+            livePMSPreview = nil
             
             // Add to swatches
             let pmsColor = VectorColor.pantone(foundColor)
