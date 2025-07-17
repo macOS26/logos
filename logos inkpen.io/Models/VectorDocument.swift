@@ -1782,15 +1782,23 @@ class VectorDocument: ObservableObject, Codable {
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .split:
-            // SPLIT: CoreGraphics-based alternative to Divide with curve preservation
-            let splitPaths = ProfessionalPathOperations.split(paths)
+            // SPLIT: CoreGraphics-based alternative to Divide with curve preservation and perfect color fidelity
+            let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
-            for (index, splitPath) in splitPaths.enumerated() {
-                // Determine which original shape this split piece belongs to
-                let originalShape = determineOriginalShapeForDividedPiece(splitPath, from: selectedShapes)
+            // Adobe Illustrator Split: Each resulting piece maintains the color of its original shape (like stained glass)
+            var shapeCounters: [Int: Int] = [:]
+            
+            for (splitPath, originalShapeIndex) in splitResults {
+                guard originalShapeIndex < selectedShapes.count else { continue }
+                
+                let originalShape = selectedShapes[originalShapeIndex]
+                
+                // Track how many pieces we've created from this original shape
+                shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
+                let pieceNumber = shapeCounters[originalShapeIndex]!
                 
                 let splitShape = VectorShape(
-                    name: "Split Piece \(index + 1)",
+                    name: pieceNumber > 1 ? "Split \(originalShape.name) (\(pieceNumber))" : "Split \(originalShape.name)",
                     path: VectorPath(cgPath: splitPath),
                     strokeStyle: originalShape.strokeStyle,
                     fillStyle: originalShape.fillStyle,
@@ -1799,7 +1807,7 @@ class VectorDocument: ObservableObject, Codable {
                 )
                 resultShapes.append(splitShape)
             }
-            print("✅ SPLIT: Created \(resultShapes.count) pieces with original colors (curves preserved)")
+            print("✅ SPLIT: Created \(resultShapes.count) pieces with PERFECT color fidelity - Stained Glass Window effect (curves preserved)")
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
@@ -1968,22 +1976,7 @@ class VectorDocument: ObservableObject, Codable {
         return true
     }
     
-    /// Determine which original shape a divided piece belongs to (for color assignment)
-    private func determineOriginalShapeForDividedPiece(_ piece: CGPath, from originalShapes: [VectorShape]) -> VectorShape {
-        // Get the center point of the piece
-        let pieceBounds = piece.boundingBoxOfPath
-        let pieceCenter = CGPoint(x: pieceBounds.midX, y: pieceBounds.midY)
-        
-        // Find which original shape contains this center point
-        for shape in originalShapes {
-            if shape.path.cgPath.contains(pieceCenter) {
-                return shape
-            }
-        }
-        
-        // Fallback: use the first shape
-        return originalShapes.first!
-    }
+
 
     // MARK: - Drag and Drop Object Movement Between Layers
     

@@ -161,11 +161,24 @@ public class CoreGraphicsPathOperations {
     ///   - fillRule: Fill rule to use (.winding or .evenOdd)
     /// - Returns: Array of split path components
     public static func split(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
+        return splitWithShapeTracking(paths, using: fillRule).map { $0.0 }
+    }
+    
+    /// PROFESSIONAL SPLIT with Shape Tracking: Maintains color fidelity like Cut and Crop
+    /// Returns split paths with their original shape indices for perfect color assignment
+    /// - Parameters:
+    ///   - paths: Array of paths to split
+    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
+    /// - Returns: Array of tuples (splitPath, originalShapeIndex)
+    public static func splitWithShapeTracking(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
+        guard paths.count >= 2 else {
+            return paths.enumerated().map { (index, path) in (path, index) }
+        }
         
         print("🔨 PROFESSIONAL SPLIT (CoreGraphics): Processing \(paths.count) paths with curve preservation")
+        print("   Stained Glass Window: Each piece maintains original shape's color")
         
-        var resultPaths: [CGPath] = []
+        var resultPaths: [(CGPath, Int)] = []
         
         // STEP 1: Get unique (non-overlapping) parts of each path
         print("  → Finding unique parts of each path...")
@@ -190,10 +203,15 @@ public class CoreGraphicsPathOperations {
                 }
             }
             
-            // Add the unique parts as separate components
+            // Add the unique parts as separate components WITH SHAPE TRACKING
             if !remainingPath.isEmpty {
                 let components = componentsSeparated(remainingPath, using: fillRule)
-                resultPaths.append(contentsOf: components)
+                for component in components {
+                    if !component.isEmpty {
+                        resultPaths.append((component, i))
+                        print("   ✅ Shape \(i): Added unique part (curves preserved)")
+                    }
+                }
             }
         }
         
@@ -225,7 +243,13 @@ public class CoreGraphicsPathOperations {
                     
                     if !cleanedIntersection.isEmpty {
                         let components = componentsSeparated(cleanedIntersection, using: fillRule)
-                        resultPaths.append(contentsOf: components)
+                        for component in components {
+                            if !component.isEmpty {
+                                // Assign 2-way intersection to first (bottom-most) shape for consistent color
+                                resultPaths.append((component, i))
+                                print("   ✅ 2-way intersection (\(i),\(j)): Assigned to shape \(i) (bottom-most)")
+                            }
+                        }
                     }
                 }
             }
@@ -264,7 +288,13 @@ public class CoreGraphicsPathOperations {
                             
                             if !cleanedIntersection.isEmpty {
                                 let components = componentsSeparated(cleanedIntersection, using: fillRule)
-                                resultPaths.append(contentsOf: components)
+                                for component in components {
+                                    if !component.isEmpty {
+                                        // Assign 3-way intersection to first (bottom-most) shape for consistent color
+                                        resultPaths.append((component, i))
+                                        print("   ✅ 3-way intersection (\(i),\(j),\(k)): Assigned to shape \(i) (bottom-most)")
+                                    }
+                                }
                             }
                         }
                     }
@@ -281,11 +311,18 @@ public class CoreGraphicsPathOperations {
             let multiWayIntersection = getMultiWayIntersectionCoreGraphics(paths, using: fillRule)
             if !multiWayIntersection.isEmpty {
                 let components = componentsSeparated(multiWayIntersection, using: fillRule)
-                resultPaths.append(contentsOf: components)
+                for component in components {
+                    if !component.isEmpty {
+                        // Assign multi-way intersection to first (bottom-most) shape for consistent color
+                        resultPaths.append((component, 0))
+                        print("   ✅ 4-way+ intersection: Assigned to shape 0 (bottom-most)")
+                    }
+                }
             }
         }
         
         print("✅ PROFESSIONAL SPLIT (CoreGraphics): Created \(resultPaths.count) pieces from \(paths.count) originals (curves preserved)")
+        print("   🎨 Stained Glass Window: Color fidelity maintained through shape tracking")
         return resultPaths
     }
     
