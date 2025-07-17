@@ -18,7 +18,6 @@ struct HSBInputSection: View {
     @State private var brightnessValue: String = "100"
     @State private var hexValue: String = "ff0000"
     @State private var isUpdatingHexFromHSB: Bool = false // Flag to prevent feedback loops
-    @State private var allowHSBUpdatesFromSharedColor: Bool = true // Allow updates only during mode switching
     
     // Slider values
     @State private var hueSlider: Double = 0        // 0-360 degrees
@@ -339,7 +338,7 @@ struct HSBInputSection: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Click to add HSB color to swatches")
+                    .help("Click to add HSB color to swatches (preserves exact HSB values)")
                     
                     // PMS Color Swatch Preview (shows live PMS preview)
                     Button(action: {
@@ -374,7 +373,7 @@ struct HSBInputSection: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Click to add PMS color to swatches")
+                    .help("Click to add PMS/Pantone color to swatches (converts to closest Pantone match)")
                     
                     Spacer()
                 }
@@ -475,7 +474,7 @@ struct HSBInputSection: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .help("Click to add PMS color to swatches")
+                    .help("Click to add PMS/Pantone color to swatches (converts to closest Pantone match)")
                 }
             }
             .padding(.top, 8)
@@ -487,12 +486,8 @@ struct HSBInputSection: View {
             // HSB sliders stay isolated - no updateSharedColor() here
         }
         .onChange(of: sharedColor) { _, newColor in
-            // Only load from shared color when legitimate mode switching occurs
-            if allowHSBUpdatesFromSharedColor {
-                loadFromSharedColor()
-            }
-            // Reset flag after potential update
-            allowHSBUpdatesFromSharedColor = false
+            // Always load from shared color when it changes (like CMYKInputSection does)
+            loadFromSharedColor()
         }
     }
     
@@ -607,8 +602,17 @@ struct HSBInputSection: View {
     }
     
     private func addColorToSwatches() {
-        let vectorColor = VectorColor.hsb(currentColor)
+        // Ensure we create HSB color with exact user input values
+        let exactHSBColor = HSBColorModel(
+            hue: Double(hueValue) ?? 0,
+            saturation: (Double(saturationValue) ?? 0) / 100.0,
+            brightness: (Double(brightnessValue) ?? 0) / 100.0
+        )
+        let vectorColor = VectorColor.hsb(exactHSBColor)
         document.addColorToSwatches(vectorColor)
+        
+        // Debug: Confirm HSB format is being added
+        print("🎨 HSB: Added color as HSB format - H:\(exactHSBColor.hue)° S:\(Int(exactHSBColor.saturation * 100))% B:\(Int(exactHSBColor.brightness * 100))%")
     }
     
     private func addPMSColorToSwatches() {
@@ -617,10 +621,16 @@ struct HSBInputSection: View {
             // Create a PMS color based on current HSB values but with Pantone naming
             let pmsColor = VectorColor.pantone(pantoneColor)
             document.addColorSwatch(pmsColor)
+            
+            // Debug: Confirm Pantone format is being added
+            print("🎨 PMS: Added color as Pantone format - \(pantoneColor.pantone) (\(pantoneColor.name))")
         } else {
             // Fallback: Add as HSB color if no PMS match found
             let hsbColor = VectorColor.hsb(currentColor)
             document.addColorSwatch(hsbColor)
+            
+            // Debug: Fallback to HSB when no Pantone match
+            print("🎨 PMS: No Pantone match found, added as HSB format instead")
         }
     }
     
