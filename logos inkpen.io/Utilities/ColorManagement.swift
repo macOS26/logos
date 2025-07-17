@@ -168,21 +168,9 @@ class ColorManagement {
     
     // MARK: - Pantone Colors
     static func loadPantoneColors() -> [PantoneLibraryColor] {
-        return [
-            // Sample Pantone colors - this will be replaced by the full library
-            PantoneLibraryColor(pantone: "13-1023 TPG", hex: "#ffb5a7"),
-            PantoneLibraryColor(pantone: "032 C", hex: "#ef3340"),
-            PantoneLibraryColor(pantone: "072 C", hex: "#10069f"),
-            PantoneLibraryColor(pantone: "012 C", hex: "#ffd700"),
-            PantoneLibraryColor(pantone: "354 C", hex: "#00b140"),
-            PantoneLibraryColor(pantone: "021 C", hex: "#fe5000"),
-            PantoneLibraryColor(pantone: "2685 C", hex: "#330072"),
-            PantoneLibraryColor(pantone: "2375 C", hex: "#e277cd"),
-            PantoneLibraryColor(pantone: "Warm Gray 1 C", hex: "#d7d2cb"),
-            PantoneLibraryColor(pantone: "Cool Gray 9 C", hex: "#75787b"),
-            PantoneLibraryColor(pantone: "871 C", hex: "#84754e"),
-            PantoneLibraryColor(pantone: "877 C", hex: "#8a8d8f")
-        ]
+        // Use the shared PantoneLibrary instance
+        let pantoneLibrary = PantoneLibrary()
+        return pantoneLibrary.allColors
     }
     
     // MARK: - Color Accessibility

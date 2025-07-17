@@ -546,7 +546,15 @@ class PantoneLibrary: ObservableObject {
         guard let url = Bundle.main.url(forResource: "pantone_library", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let pantoneData = try? JSONDecoder().decode([PantoneRawData].self, from: data) else {
-            print("Failed to load Pantone library")
+            print("Failed to load Pantone library - using fallback colors")
+            // Fallback to a small set of essential colors if file can't be loaded
+            allColors = [
+                PantoneLibraryColor(pantone: "032 C", hex: "#ef3340"),
+                PantoneLibraryColor(pantone: "072 C", hex: "#10069f"),
+                PantoneLibraryColor(pantone: "355 C", hex: "#00b140"),
+                PantoneLibraryColor(pantone: "Yellow C", hex: "#fedd00"),
+                PantoneLibraryColor(pantone: "Process Black C", hex: "#2d2926")
+            ]
             return
         }
         
@@ -554,7 +562,7 @@ class PantoneLibrary: ObservableObject {
             PantoneLibraryColor(pantone: rawColor.pantone, hex: rawColor.hex)
         }
         
-        print("Loaded \(allColors.count) Pantone colors")
+        print("✅ Loaded \(allColors.count) Pantone colors from library")
     }
     
     // Find closest Pantone color match

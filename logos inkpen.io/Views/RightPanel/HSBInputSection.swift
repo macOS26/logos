@@ -36,6 +36,13 @@ struct HSBInputSection: View {
         SPOTColor.findClosestMatch(to: currentColor)
     }
     
+    // Find closest Pantone color match
+    @ObservedObject private var pantoneLibrary = PantoneLibrary()
+    
+    private var closestPantoneColor: PantoneLibraryColor? {
+        pantoneLibrary.findClosestMatch(to: currentColor)
+    }
+    
     // Hue gradient (full spectrum)
     private var hueGradient: LinearGradient {
         LinearGradient(
@@ -92,7 +99,7 @@ struct HSBInputSection: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                 
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     // Current HSB Color
                     VStack(spacing: 4) {
                         Circle()
@@ -124,7 +131,7 @@ struct HSBInputSection: View {
                         } label: {
                             Circle()
                                 .fill(closestSPOTColor.color)
-                                .frame(width: 40, height: 40)
+                                .frame(width: 35, height: 35)
                                 .overlay(
                                     Circle()
                                         .stroke(Color.blue, lineWidth: 2)
@@ -133,10 +140,38 @@ struct HSBInputSection: View {
                         .buttonStyle(PlainButtonStyle())
                         .help("Click to use closest SPOT color: \(closestSPOTColor.number)")
                         
-                        Text("SPOT \(closestSPOTColor.number)")
+                        Text("SPOT")
                             .font(.caption2)
                             .foregroundColor(.blue)
                             .lineLimit(1)
+                    }
+                    
+                    // Closest Pantone Color Match
+                    if let pantoneColor = closestPantoneColor {
+                        VStack(spacing: 4) {
+                            Button {
+                                // Apply closest Pantone color
+                                let pantColor = VectorColor.pantone(pantoneColor)
+                                sharedColor = pantColor
+                                document.addColorToCurrentMode(pantColor)
+                                updateHSBFromColor(pantColor)
+                            } label: {
+                                Circle()
+                                    .fill(pantoneColor.color)
+                                    .frame(width: 35, height: 35)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.purple, lineWidth: 2)
+                                    )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .help("Click to use closest Pantone color: \(pantoneColor.pantone)")
+                            
+                            Text("PMS")
+                                .font(.caption2)
+                                .foregroundColor(.purple)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 
@@ -150,9 +185,19 @@ struct HSBInputSection: View {
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(4)
                     
-                    Text("Closest: SPOT \(closestSPOTColor.number) - \(closestSPOTColor.name)")
+                    Text("SPOT: \(closestSPOTColor.number) - \(closestSPOTColor.name)")
                         .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.blue)
+                    
+                    if let pantoneColor = closestPantoneColor {
+                        Text("PMS: \(pantoneColor.pantone) - \(pantoneColor.name)")
+                            .font(.caption2)
+                            .foregroundColor(.purple)
+                    } else {
+                        Text("PMS: Loading Pantone library...")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             .padding(12)
