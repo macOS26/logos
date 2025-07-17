@@ -378,18 +378,58 @@ struct SelectionOutline: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     
+    private let handleSize: CGFloat = 8
+    
     var body: some View {
-        // SELECTION TOOL: Just show bounding box outline (no transform handles)
+        // SELECTION TOOL: Show bounding box outline with blue corner handles and center point
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
-        Rectangle()
-            .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-            .frame(width: bounds.width, height: bounds.height)
-            .position(center)
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
+        ZStack {
+            // Bounding box outline
+            Rectangle()
+                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+                .frame(width: bounds.width, height: bounds.height)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+            
+            // CENTER POINT: Blue square same size as corners
+            Rectangle()
+                .fill(Color.blue)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+            
+            // 4 Corner handles - ALL BLUE
+            ForEach(0..<4) { i in
+                let position = cornerPosition(for: i, in: bounds, center: center)
+                
+                Rectangle()
+                    .fill(Color.blue)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .position(position)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
+            }
+        }
+    }
+    
+    /// Calculate corner positions for handles
+    private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.minX, y: bounds.minY) // Top-left
+        case 1: return CGPoint(x: bounds.maxX, y: bounds.minY) // Top-right
+        case 2: return CGPoint(x: bounds.maxX, y: bounds.maxY) // Bottom-right
+        case 3: return CGPoint(x: bounds.minX, y: bounds.maxY) // Bottom-left
+        default: return center
+        }
     }
 }
 

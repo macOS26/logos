@@ -52,34 +52,6 @@ struct VerticalToolbar: View {
             
             Divider()
             
-            // Scaling Anchor Selection (only show when Scale tool is active)
-            if document.currentTool == .scale {
-                ToolSection(title: "Scale From") {
-                    ForEach(ScalingAnchor.allCases, id: \.self) { anchor in
-                        Button {
-                            document.scalingAnchor = anchor
-                            print("🎯 Scaling Anchor: \(anchor.displayName)")
-                        } label: {
-                            Image(systemName: anchor.iconName)
-                                .font(.system(size: 16))
-                                .foregroundColor(document.scalingAnchor == anchor ? .white : .primary)
-                                .frame(width: 32, height: 32)
-                                .background(
-                                    document.scalingAnchor == anchor 
-                                    ? Color.blue.opacity(0.8)
-                                    : Color.clear
-                                )
-                                .cornerRadius(4)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Scale from \(anchor.displayName)")
-                    }
-                }
-                
-                Divider()
-            }
-            
             // Quick Color Swatches
             ToolSection(title: "Colors") {
                 ColorSwatchGrid(document: document)
