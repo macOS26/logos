@@ -98,11 +98,10 @@ class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
     @Published var layers: [VectorLayer]
     
-    // SIMPLIFIED SWATCH SYSTEM - Four separate modifiable arrays
+    // SIMPLIFIED SWATCH SYSTEM - Three separate modifiable arrays
     @Published var rgbSwatches: [VectorColor]
     @Published var cmykSwatches: [VectorColor]
     @Published var hsbSwatches: [VectorColor]
-    @Published var pantoneSwatches: [VectorColor]
     
     @Published var selectedLayerIndex: Int?
     @Published var selectedShapeIDs: Set<UUID>
@@ -142,7 +141,6 @@ class VectorDocument: ObservableObject, Codable {
         self.rgbSwatches = Self.createDefaultRGBSwatches()
         self.cmykSwatches = Self.createDefaultCMYKSwatches()
         self.hsbSwatches = Self.createDefaultHSBSwatches()
-        self.pantoneSwatches = Self.createDefaultPantoneSwatches()
         
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
@@ -183,8 +181,6 @@ class VectorDocument: ObservableObject, Codable {
             return cmykSwatches
         case .pms:
             return hsbSwatches
-        case .pantone:
-            return pantoneSwatches
         }
     }
     
@@ -544,7 +540,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, pantoneSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
     }
     
     required init(from decoder: Decoder) throws {
@@ -556,7 +552,6 @@ class VectorDocument: ObservableObject, Codable {
         rgbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .rgbSwatches) ?? Self.createDefaultRGBSwatches()
         cmykSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .cmykSwatches) ?? Self.createDefaultCMYKSwatches()
         hsbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .hsbSwatches) ?? Self.createDefaultHSBSwatches()
-        pantoneSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .pantoneSwatches) ?? Self.createDefaultPantoneSwatches()
         
         selectedLayerIndex = try container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = try container.decode(Set<UUID>.self, forKey: .selectedShapeIDs)
@@ -592,7 +587,6 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(rgbSwatches, forKey: .rgbSwatches)
         try container.encode(cmykSwatches, forKey: .cmykSwatches)
         try container.encode(hsbSwatches, forKey: .hsbSwatches)
-        try container.encode(pantoneSwatches, forKey: .pantoneSwatches)
         
         try container.encodeIfPresent(selectedLayerIndex, forKey: .selectedLayerIndex)
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
@@ -972,7 +966,6 @@ class VectorDocument: ObservableObject, Codable {
         rgbSwatches = previousState.rgbSwatches
         cmykSwatches = previousState.cmykSwatches
         hsbSwatches = previousState.hsbSwatches
-        pantoneSwatches = previousState.pantoneSwatches
         selectedLayerIndex = previousState.selectedLayerIndex
         selectedShapeIDs = previousState.selectedShapeIDs
         currentTool = previousState.currentTool
@@ -1010,7 +1003,6 @@ class VectorDocument: ObservableObject, Codable {
         rgbSwatches = nextState.rgbSwatches
         cmykSwatches = nextState.cmykSwatches
         hsbSwatches = nextState.hsbSwatches
-        pantoneSwatches = nextState.pantoneSwatches
         selectedLayerIndex = nextState.selectedLayerIndex
         selectedShapeIDs = nextState.selectedShapeIDs
         currentTool = nextState.currentTool
@@ -1539,10 +1531,6 @@ class VectorDocument: ObservableObject, Codable {
             if !hsbSwatches.contains(color) {
                 hsbSwatches.append(color)
             }
-        case .pantone:
-            if !pantoneSwatches.contains(color) {
-                pantoneSwatches.append(color)
-            }
         }
     }
     
@@ -1562,8 +1550,6 @@ class VectorDocument: ObservableObject, Codable {
             cmykSwatches.removeAll { $0 == color }
         case .pms:
             hsbSwatches.removeAll { $0 == color }
-        case .pantone:
-            pantoneSwatches.removeAll { $0 == color }
         }
     }
     
@@ -1699,12 +1685,6 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         return basicColors + cmykColors
-    }
-    
-    static func createDefaultPantoneSwatches() -> [VectorColor] {
-        let basicColors: [VectorColor] = [.black, .white, .clear]
-        let spotColors = SPOTColor.allSPOTColors.map { VectorColor.spot($0) }
-        return basicColors + spotColors
     }
     
     static func createDefaultHSBSwatches() -> [VectorColor] {

@@ -67,25 +67,6 @@ struct ColorPanel: View {
             if document.settings.colorMode == .pms {
                 HSBInputSection(document: document, sharedColor: $currentPreviewColor)
                     .padding(.horizontal, 12)
-            } else if document.settings.colorMode == .pantone {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Search Pantone Colors")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    HStack {
-                        TextField("Enter Pantone number (e.g. 032 C)", text: $searchText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.caption)
-                        
-                        Button("Search") {
-                            searchPantoneColor(searchText)
-                        }
-                        .buttonStyle(.bordered)
-                        .font(.caption)
-                    }
-                }
-                .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
                 CMYKInputSection(document: document, sharedColor: $currentPreviewColor)
                         .padding(.horizontal, 12)
@@ -113,7 +94,7 @@ struct ColorPanel: View {
                         currentPreviewColor = color
                     } label: {
                         ZStack {
-                            renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
+                            renderColorSwatchRightPanel(color, width: 32, height: 32, cornerRadius: 0, borderWidth: 1)
                             
                             // Show Pantone number for Pantone colors (if not clear)
                             if case .pantone = color {
@@ -133,18 +114,7 @@ struct ColorPanel: View {
                 .padding(.horizontal, 12)
             }
             
-            // Add Color Button (only for Pantone mode now)
-            if document.settings.colorMode == .pantone {
-                HStack {
-                    Button("Browse Pantone Library") {
-                        showingPantoneSearch = true
-                    }
-                    .buttonStyle(.bordered)
-                    .font(.caption)
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-            }
+
             
             Spacer()
         }
@@ -163,8 +133,6 @@ struct ColorPanel: View {
             return "CMYK colors for print production"
         case .pms:
             return "PMS colors with Pantone matching"
-        case .pantone:
-            return "SPOT colors for professional printing"
         }
     }
     
@@ -220,21 +188,7 @@ struct ColorPanel: View {
         }
     }
     
-    private func searchPantoneColor(_ searchQuery: String) {
-        let allPantoneColors = ColorManagement.loadPantoneColors()
-        
-        if let foundColor = allPantoneColors.first(where: { 
-            $0.pantone.localizedCaseInsensitiveContains(searchQuery) ||
-            $0.name.localizedCaseInsensitiveContains(searchQuery)
-        }) {
-            let pantoneColor = VectorColor.pantone(foundColor)
-            // Only add to swatches when explicitly searching and finding
-            if !document.currentSwatches.contains(pantoneColor) {
-                document.addColorSwatch(pantoneColor)
-            }
-            searchText = ""
-        }
-    }
+
     
     private func colorDescription(for color: VectorColor) -> String {
         switch color {

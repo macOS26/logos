@@ -566,7 +566,7 @@ struct MainView: View {
         document.rgbSwatches = newDoc.rgbSwatches
         document.cmykSwatches = newDoc.cmykSwatches
         document.hsbSwatches = newDoc.hsbSwatches
-        document.pantoneSwatches = newDoc.pantoneSwatches
+        
         document.selectedLayerIndex = newDoc.selectedLayerIndex
         document.selectedShapeIDs = newDoc.selectedShapeIDs
         document.selectedTextIDs = newDoc.selectedTextIDs
@@ -622,7 +622,7 @@ struct MainView: View {
                         document.rgbSwatches = loadedDocument.rgbSwatches
                         document.cmykSwatches = loadedDocument.cmykSwatches
                         document.hsbSwatches = loadedDocument.hsbSwatches
-                        document.pantoneSwatches = loadedDocument.pantoneSwatches
+                        
                         document.selectedLayerIndex = loadedDocument.selectedLayerIndex
                         document.selectedShapeIDs = loadedDocument.selectedShapeIDs
                         document.selectedTextIDs = loadedDocument.selectedTextIDs

@@ -13,14 +13,12 @@ enum ColorMode: String, CaseIterable, Codable {
     case rgb = "RGB"
     case cmyk = "CMYK"
     case pms = "PMS"
-    case pantone = "SPOT"
     
     var iconName: String {
         switch self {
         case .rgb: return "display"
         case .cmyk: return "printer"
         case .pms: return "slider.horizontal.3"
-        case .pantone: return "paintbrush"
         }
     }
 }
