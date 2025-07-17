@@ -495,52 +495,17 @@ extension ProfessionalPathOperations {
                 print("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)")
                 return coreGraphicsResult
             } else {
-                print("⚠️ CoreGraphics union returned nil, falling back to ClipperPath")
-                return professionalUnionCore(validPaths)
+                print("⚠️ CoreGraphics union failed, falling back to convex hull")
+                return convexHullFallback(validPaths)
             }
         }
         
-        print("🔨 PROFESSIONAL UNION (ClipperPaths): Processing \(validPaths.count) paths")
-        return professionalUnionCore(validPaths)
+        // For multiple paths, fall back to convex hull
+        print("⚠️ PROFESSIONAL UNION: Multiple paths, falling back to convex hull")
+        return convexHullFallback(validPaths)
     }
     
-    /// Core union implementation shared by both union and merge operations
-    private static func professionalUnionCore(_ paths: [CGPath]) -> CGPath? {
-        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
-        let clipper = Clipper()
-        
-        for cgPath in paths {
-            let subpaths = extractSubpaths(from: cgPath)
-            for subpath in subpaths {
-                let clipperPath = cgPathToClipperPath(subpath)
-                if clipperPath.count >= 3 { // Only add valid polygons
-                    clipper.addPath(clipperPath, .subject, true)
-                }
-            }
-        }
-        
-        var solution = ClipperPaths()
-        do {
-            let success = try clipper.execute(clipType: .union, solution: &solution, fillType: .nonZero)
-            if success && !solution.isEmpty {
-                let resultPath = clipperPathsToCGPath(solution)
-                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    print("✅ PROFESSIONAL UNION (ClipperPaths): Success - \(solution.count) resulting polygons")
-                    return resultPath
-                } else {
-                    print("⚠️ UNION result is empty, falling back to convex hull")
-                }
-            } else {
-                print("⚠️ ClipperPaths union failed, falling back to convex hull")
-            }
-        } catch {
-            print("❌ ClipperPaths union error: \(error), falling back to convex hull")
-        }
-        
-        // Fallback to convex hull if ClipperPaths fails
-        print("🔄 UNION fallback: Using convex hull")
-        return convexHullFallback(paths)
-    }
+
     
     /// PROFESSIONAL MINUS FRONT: Front subtracts from back (Adobe Illustrator "Minus Front")
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
@@ -552,62 +517,9 @@ extension ProfessionalPathOperations {
         if let coreGraphicsResult = CoreGraphicsPathOperations.subtract(frontPath, from: backPath, using: .winding) {
             print("✅ PROFESSIONAL MINUS FRONT: CoreGraphics success (preserves smooth curves)")
             return coreGraphicsResult
-        } else {
-            print("⚠️ CoreGraphics subtract returned nil, falling back to ClipperPath")
         }
         
-        // Fallback to ClipperPath only if CoreGraphics returned nil
-        print("🔄 PROFESSIONAL MINUS FRONT: Using ClipperPath fallback")
-        
-        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
-        let clipper = Clipper()
-        
-        // Add back path as subject (what we're subtracting FROM)
-        let backSubpaths = extractSubpaths(from: backPath)
-        for subpath in backSubpaths {
-            let clipperPath = cgPathToClipperPath(subpath)
-            if clipperPath.count >= 3 { // Only add valid polygons
-                clipper.addPath(clipperPath, .subject, true)
-            }
-        }
-        
-        // Add front path as clip (what we're subtracting)
-        let frontSubpaths = extractSubpaths(from: frontPath)
-        for subpath in frontSubpaths {
-            let clipperPath = cgPathToClipperPath(subpath)
-            if clipperPath.count >= 3 { // Only add valid polygons
-                clipper.addPath(clipperPath, .clip, true)
-            }
-        }
-        
-        var solution = ClipperPaths()
-        do {
-            let success = try clipper.execute(clipType: .difference, solution: &solution, fillType: .nonZero)
-            if success && !solution.isEmpty {
-                let resultPath = clipperPathsToCGPath(solution)
-                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    print("✅ PROFESSIONAL MINUS FRONT (ClipperPaths): Success - \(solution.count) resulting polygons")
-                    return resultPath
-                } else {
-                    print("⚠️ MINUS FRONT result is empty")
-                }
-            } else {
-                print("⚠️ ClipperPaths minus front failed")
-            }
-        } catch {
-            print("❌ ClipperPaths minus front error: \(error)")
-        }
-        
-        // Check if paths actually overlap for better error reporting
-        let frontBounds = frontPath.boundingBoxOfPath
-        let backBounds = backPath.boundingBoxOfPath
-        
-        if !frontBounds.intersects(backBounds) {
-            print("  → No overlap, returning original back path")
-            return backPath
-        }
-        
-        print("  → Paths should overlap but ClipperPaths minus front failed")
+        print("⚠️ PROFESSIONAL MINUS FRONT: CoreGraphics operation failed")
         return nil
     }
     
@@ -621,62 +533,9 @@ extension ProfessionalPathOperations {
         if let coreGraphicsResult = CoreGraphicsPathOperations.intersection(path1, path2, using: .winding) {
             print("✅ PROFESSIONAL INTERSECT: CoreGraphics success (preserves smooth curves)")
             return coreGraphicsResult
-        } else {
-            print("⚠️ CoreGraphics intersection returned nil, falling back to ClipperPath")
         }
         
-        // Fallback to ClipperPath only if CoreGraphics returned nil
-        print("🔄 PROFESSIONAL INTERSECT: Using ClipperPath fallback")
-        
-        // Convert CGPaths to ClipperPaths - handle multiple subpaths properly
-        let clipper = Clipper()
-        
-        // Add first path as subject
-        let subpaths1 = extractSubpaths(from: path1)
-        for subpath in subpaths1 {
-            let clipperPath = cgPathToClipperPath(subpath)
-            if clipperPath.count >= 3 { // Only add valid polygons
-                clipper.addPath(clipperPath, .subject, true)
-            }
-        }
-        
-        // Add second path as clip
-        let subpaths2 = extractSubpaths(from: path2)
-        for subpath in subpaths2 {
-            let clipperPath = cgPathToClipperPath(subpath)
-            if clipperPath.count >= 3 { // Only add valid polygons
-                clipper.addPath(clipperPath, .clip, true)
-            }
-        }
-        
-        var solution = ClipperPaths()
-        do {
-            let success = try clipper.execute(clipType: .intersection, solution: &solution, fillType: .nonZero)
-            if success && !solution.isEmpty {
-                let resultPath = clipperPathsToCGPath(solution)
-                if !resultPath.isEmpty && !resultPath.boundingBoxOfPath.isEmpty {
-                    print("✅ PROFESSIONAL INTERSECT (ClipperPaths): Success - \(solution.count) resulting polygons")
-                    return resultPath
-                } else {
-                    print("⚠️ INTERSECT result is empty")
-                }
-            } else {
-                print("⚠️ ClipperPaths intersection failed")
-            }
-        } catch {
-            print("❌ ClipperPaths intersection error: \(error)")
-        }
-        
-        // Check if paths actually overlap for better error reporting
-        let bounds1 = path1.boundingBoxOfPath
-        let bounds2 = path2.boundingBoxOfPath
-        
-        if !bounds1.intersects(bounds2) {
-            print("  → No bounding box overlap, returning nil")
-            return nil
-        }
-        
-        print("  → Paths should overlap but ClipperPaths intersection failed")
+        print("⚠️ PROFESSIONAL INTERSECT: CoreGraphics operation failed")
         return nil
     }
     
@@ -705,89 +564,10 @@ extension ProfessionalPathOperations {
                 // Single path result
                 return [coreGraphicsResult]
             }
-        } else {
-            print("⚠️ CoreGraphics symmetric difference returned nil, falling back to ClipperPath")
         }
         
-        // Fallback to ClipperPath only if CoreGraphics returned nil
-        print("🔄 PROFESSIONAL EXCLUDE: Using ClipperPath fallback")
-        
-        // Convert to ClipperPaths
-        let clipperPath1 = cgPathToClipperPath(path1)
-        let clipperPath2 = cgPathToClipperPath(path2)
-        
-        guard clipperPath1.count >= 3 && clipperPath2.count >= 3 else {
-            print("⚠️ Invalid polygons for exclude operation")
-            return [path1, path2]
-        }
-        
-        var resultPaths: [CGPath] = []
-        
-        // STEP 1: Get unique part of path1 (path1 - path2)
-        let clipper1 = Clipper()
-        clipper1.addPath(clipperPath1, .subject, true)
-        clipper1.addPath(clipperPath2, .clip, true)
-        
-        var solution1 = ClipperPaths()
-        do {
-            let success = try clipper1.execute(clipType: .difference, solution: &solution1, fillType: .nonZero)
-            if success {
-                for clipperPath in solution1 {
-                    if clipperPath.count >= 3 {
-                        let cgPath = clipperPathsToCGPath([clipperPath])
-                        if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                            resultPaths.append(cgPath)
-                        }
-                    }
-                }
-            }
-        } catch {
-            print("❌ Error getting unique part of path1: \(error)")
-        }
-        
-        // STEP 2: Get unique part of path2 (path2 - path1)
-        let clipper2 = Clipper()
-        clipper2.addPath(clipperPath2, .subject, true)
-        clipper2.addPath(clipperPath1, .clip, true)
-        
-        var solution2 = ClipperPaths()
-        do {
-            let success = try clipper2.execute(clipType: .difference, solution: &solution2, fillType: .nonZero)
-            if success {
-                for clipperPath in solution2 {
-                    if clipperPath.count >= 3 {
-                        let cgPath = clipperPathsToCGPath([clipperPath])
-                        if !cgPath.isEmpty && !cgPath.boundingBoxOfPath.isEmpty {
-                            resultPaths.append(cgPath)
-                        }
-                    }
-                }
-            }
-        } catch {
-            print("❌ Error getting unique part of path2: \(error)")
-        }
-        
-        // NOTE: We deliberately DO NOT include the intersection (overlapping part)
-        // This is what makes Exclude different from Divide
-        
-        if !resultPaths.isEmpty {
-            print("✅ PROFESSIONAL EXCLUDE (ClipperPaths): Success - \(resultPaths.count) non-overlapping pieces")
-            return resultPaths
-        } else {
-            print("⚠️ EXCLUDE result is empty - no non-overlapping parts found")
-            
-            // Check if paths actually overlap
-            let bounds1 = path1.boundingBoxOfPath
-            let bounds2 = path2.boundingBoxOfPath
-            
-            if !bounds1.intersects(bounds2) {
-                print("  → No overlap, returning both paths separately")
-                return [path1, path2]
-            } else {
-                print("  → Paths completely overlap, returning empty array")
-                return []
-            }
-        }
+        print("⚠️ PROFESSIONAL EXCLUDE: CoreGraphics operation failed")
+        return []
     }
     
     /// PROFESSIONAL MINUS BACK: Back subtracts from front (Adobe Illustrator "Minus Back")
@@ -960,134 +740,7 @@ extension ProfessionalPathOperations {
         return subpaths
     }
     
-    /// Convert CGPath to ClipperPath (array of CGPoints) with high-quality curve approximation
-    static func cgPathToClipperPath(_ cgPath: CGPath) -> ClipperPath {
-        var points = ClipperPath()
-        var currentPoint = CGPoint.zero
-        
-        cgPath.applyWithBlock { elementPtr in
-            let element = elementPtr.pointee
-            
-            switch element.type {
-            case .moveToPoint:
-                currentPoint = element.points[0]
-                points.append(currentPoint)
-                
-            case .addLineToPoint:
-                currentPoint = element.points[0]
-                points.append(currentPoint)
-                
-            case .addQuadCurveToPoint:
-                // High-quality quadratic curve approximation
-                let control = element.points[0]
-                let end = element.points[1]
-                let start = currentPoint
-                
-                // Use adaptive subdivision for smooth curves
-                let curvePoints = approximateQuadraticCurve(start: start, control: control, end: end, tolerance: 2.0)
-                points.append(contentsOf: curvePoints)
-                currentPoint = end
-                
-            case .addCurveToPoint:
-                // High-quality cubic curve approximation
-                let control1 = element.points[0]
-                let control2 = element.points[1]
-                let end = element.points[2]
-                let start = currentPoint
-                
-                // Use adaptive subdivision for smooth curves
-                let curvePoints = approximateCubicCurve(start: start, control1: control1, control2: control2, end: end, tolerance: 2.0)
-                points.append(contentsOf: curvePoints)
-                currentPoint = end
-                
-            case .closeSubpath:
-                // Close the path - ClipperPath handles this automatically
-                break
-                
-            @unknown default:
-                break
-            }
-        }
-        
-        return points
-    }
-    
-    /// Approximate quadratic Bezier curve with adaptive subdivision
-    private static func approximateQuadraticCurve(start: CGPoint, control: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
-        var points: [CGPoint] = []
-        
-        // Calculate the number of segments based on the curve's complexity
-        let distance = distanceBetween(start, control) + distanceBetween(control, end)
-        let segments = max(8, min(64, Int(distance / tolerance))) // Adaptive segment count
-        
-        for i in 1...segments {
-            let t = CGFloat(i) / CGFloat(segments)
-            let point = quadraticBezierPoint(t: t, start: start, control: control, end: end)
-            points.append(point)
-        }
-        
-        return points
-    }
-    
-    /// Approximate cubic Bezier curve with adaptive subdivision
-    private static func approximateCubicCurve(start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint, tolerance: CGFloat) -> [CGPoint] {
-        var points: [CGPoint] = []
-        
-        // Calculate the number of segments based on the curve's complexity
-        let distance = distanceBetween(start, control1) + distanceBetween(control1, control2) + distanceBetween(control2, end)
-        let segments = max(12, min(96, Int(distance / tolerance))) // Adaptive segment count for smoother curves
-        
-        for i in 1...segments {
-            let t = CGFloat(i) / CGFloat(segments)
-            let point = cubicBezierPoint(t: t, start: start, control1: control1, control2: control2, end: end)
-            points.append(point)
-        }
-        
-        return points
-    }
-    
-    /// Calculate point on quadratic Bezier curve
-    private static func quadraticBezierPoint(t: CGFloat, start: CGPoint, control: CGPoint, end: CGPoint) -> CGPoint {
-        let x = (1-t)*(1-t)*start.x + 2*(1-t)*t*control.x + t*t*end.x
-        let y = (1-t)*(1-t)*start.y + 2*(1-t)*t*control.y + t*t*end.y
-        return CGPoint(x: x, y: y)
-    }
-    
-    /// Calculate point on cubic Bezier curve
-    private static func cubicBezierPoint(t: CGFloat, start: CGPoint, control1: CGPoint, control2: CGPoint, end: CGPoint) -> CGPoint {
-        let x = (1-t)*(1-t)*(1-t)*start.x + 3*(1-t)*(1-t)*t*control1.x + 3*(1-t)*t*t*control2.x + t*t*t*end.x
-        let y = (1-t)*(1-t)*(1-t)*start.y + 3*(1-t)*(1-t)*t*control1.y + 3*(1-t)*t*t*control2.y + t*t*t*end.y
-        return CGPoint(x: x, y: y)
-    }
-    
-    /// Calculate distance between two points
-    private static func distanceBetween(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
-        let dx = point1.x - point2.x
-        let dy = point1.y - point2.y
-        return sqrt(dx * dx + dy * dy)
-    }
-    
-    /// Convert ClipperPaths (array of polygons) to CGPath
-    static func clipperPathsToCGPath(_ clipperPaths: ClipperPaths) -> CGPath {
-        let path = CGMutablePath()
-        
-        for clipperPath in clipperPaths {
-            guard !clipperPath.isEmpty else { continue }
-            
-            // Start new subpath
-            path.move(to: clipperPath[0])
-            
-            // Add lines to all other points
-            for i in 1..<clipperPath.count {
-                path.addLine(to: clipperPath[i])
-            }
-            
-            // Close the subpath
-            path.closeSubpath()
-        }
-        
-        return path
-    }
+
     
 
     
