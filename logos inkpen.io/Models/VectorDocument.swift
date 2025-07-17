@@ -1156,6 +1156,12 @@ class VectorDocument: ObservableObject, Codable {
         
         let textObject = textObjects[textIndex]
         
+        // VALIDATION: Check for empty text content
+        guard !textObject.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            print("❌ Cannot convert empty text to outlines. Please type some text first.")
+            return
+        }
+        
         print("🎯 Converting text '\(textObject.content)' to vector outlines...")
         
         // Create NSAttributedString with typography properties

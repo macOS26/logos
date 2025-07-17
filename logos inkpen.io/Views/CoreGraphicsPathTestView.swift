@@ -2,6 +2,7 @@ import SwiftUI
 import CoreGraphics
 
 struct CoreGraphicsPathTestView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var pathA: CGPath = createSamplePath(center: CGPoint(x: 150, y: 150), size: 80)
     @State private var pathB: CGPath = createSamplePath(center: CGPoint(x: 200, y: 150), size: 80)
     @State private var resultPath: CGPath?
@@ -38,14 +39,26 @@ struct CoreGraphicsPathTestView: View {
         HStack(spacing: 20) {
             // Left Panel - Controls
             VStack(alignment: .leading, spacing: 16) {
-                // Header
-                Text("CoreGraphics Path Operations Test")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Text("Testing new native CoreGraphics boolean operations")
-                    .font(.caption)
+                // Header with Close Button
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text("CoreGraphics Path Operations Test")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        
+                        Text("Testing new native CoreGraphics boolean operations")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Close") {
+                        dismiss()
+                    }
+                    .buttonStyle(.borderless)
                     .foregroundColor(.secondary)
+                }
                 
                 Divider()
                 

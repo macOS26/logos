@@ -207,10 +207,11 @@ struct FontPanel: View {
                                     .font(.caption)
                                     .help("Convert text to vector paths (⌘⇧O)")
                                     .keyboardShortcut("o", modifiers: [.command, .shift])
+                                    .disabled(selectedText?.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
                                     
                                     Spacer()
                                     
-                                    Text("Creates vector paths")
+                                    Text(selectedText?.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true ? "Type text first" : "Creates vector paths")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                 }

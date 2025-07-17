@@ -1439,15 +1439,25 @@ struct StatusBar: View {
             
             Spacer()
             
-            // Selection Info
-            if document.selectedShapeIDs.isEmpty {
-                Text("No selection")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            } else {
-                Text("\(document.selectedShapeIDs.count) selected")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            // Selection Info with Object Dimensions
+            VStack(alignment: .leading, spacing: 2) {
+                if document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty {
+                    Text("No selection")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    let totalSelected = document.selectedShapeIDs.count + document.selectedTextIDs.count
+                    Text("\(totalSelected) selected")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    // Show dimensions of selected objects
+                    if let bounds = getSelectionBounds() {
+                        Text("W: \(formatDimension(bounds.width))pt H: \(formatDimension(bounds.height))pt")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                }
             }
             
             Spacer()
@@ -1481,6 +1491,47 @@ struct StatusBar: View {
         } else {
             return String(format: "%.1f", value)  // Show one decimal place
         }
+    }
+    
+    /// Calculate combined bounds of all selected objects
+    private func getSelectionBounds() -> CGRect? {
+        var combinedBounds: CGRect?
+        
+        // Include selected shapes
+        for layerIndex in document.layers.indices {
+            let layer = document.layers[layerIndex]
+            for shape in layer.shapes {
+                if document.selectedShapeIDs.contains(shape.id) {
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    if combinedBounds == nil {
+                        combinedBounds = shapeBounds
+                    } else {
+                        combinedBounds = combinedBounds!.union(shapeBounds)
+                    }
+                }
+            }
+        }
+        
+        // Include selected text objects
+        for textObj in document.textObjects {
+            if document.selectedTextIDs.contains(textObj.id) {
+                // Calculate absolute text bounds
+                let textBounds = CGRect(
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                ).applying(textObj.transform)
+                
+                if combinedBounds == nil {
+                    combinedBounds = textBounds
+                } else {
+                    combinedBounds = combinedBounds!.union(textBounds)
+                }
+            }
+        }
+        
+        return combinedBounds
     }
 }
 

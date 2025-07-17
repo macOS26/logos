@@ -2,6 +2,7 @@ import SwiftUI
 import CoreGraphics
 
 struct PathOperationsComparisonView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var document: VectorDocument
     @State private var selectedPathA: CGPath? = nil
     @State private var selectedPathB: CGPath? = nil
@@ -82,13 +83,25 @@ struct PathOperationsComparisonView: View {
     
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("Path Operations Comparison")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("CoreGraphics (macOS 14+) vs ClipperPath Implementation")
-                .font(.subheadline)
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Path Operations Comparison")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("CoreGraphics (macOS 14+) vs ClipperPath Implementation")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button("Close") {
+                    dismiss()
+                }
+                .buttonStyle(.borderless)
                 .foregroundColor(.secondary)
+            }
             
             if selectedPathA == nil || selectedPathB == nil {
                 Text("Select two shapes in the main document to compare operations")

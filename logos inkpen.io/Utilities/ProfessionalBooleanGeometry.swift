@@ -814,9 +814,9 @@ extension ProfessionalPathOperations {
         } else {
             print("⚠️ CoreGraphics split returned empty result")
             return []
+            }
         }
-    }
-    
+        
     /// PROFESSIONAL CUT: CoreGraphics-based alternative to Trim with curve preservation (NEW!)
     /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
     static func professionalCut(_ paths: [CGPath]) -> [CGPath] {
@@ -830,12 +830,12 @@ extension ProfessionalPathOperations {
         if !result.isEmpty {
             print("✅ PROFESSIONAL CUT: CoreGraphics success - \(result.count) pieces (curves preserved)")
             return result
-        } else {
+                } else {
             print("⚠️ CoreGraphics cut returned empty result")
             return []
+            }
         }
-    }
-
+        
     
     // MARK: - FALLBACK OPERATIONS
     

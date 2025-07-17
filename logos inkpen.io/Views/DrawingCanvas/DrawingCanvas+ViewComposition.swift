@@ -18,6 +18,9 @@ extension DrawingCanvas {
             .stroke(Color.blue, lineWidth: 1.0)
             .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+            
+            // REAL-TIME SIZE DISPLAY WHILE DRAWING
+            drawingDimensionsOverlay(for: currentPath)
         }
         
         // PROFESSIONAL REAL-TIME BEZIER PATH (Adobe Illustrator style - shows actual path with real colors)
@@ -36,6 +39,11 @@ extension DrawingCanvas {
                 document: document,
                 geometry: geometry
             )
+        }
+        
+        // Real-time dimensions for Bezier tool
+        if isBezierDrawing && document.currentTool == .bezierPen {
+            bezierDrawingDimensionsOverlay()
         }
         
         // Direct selection points and handles
@@ -90,6 +98,64 @@ extension DrawingCanvas {
             }
             
             canvasOverlays(geometry: geometry)
+        }
+    }
+    
+    @ViewBuilder
+    internal func drawingDimensionsOverlay(for path: VectorPath) -> some View {
+        if isDrawing {
+            let bounds = path.cgPath.boundingBoxOfPath
+            let width = bounds.width
+            let height = bounds.height
+            
+            // Position the label above the top-right of the shape being drawn
+            let labelPosition = CGPoint(
+                x: bounds.maxX + 10,
+                y: bounds.minY - 30
+            )
+            
+            // Format dimensions (same as status bar)
+            let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
+            let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
+            
+            Text("W: \(widthText)pt\nH: \(heightText)pt")
+                .font(.caption)
+                .foregroundColor(.white)
+                .padding(4)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(4)
+                .position(labelPosition)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+    }
+    
+    @ViewBuilder
+    internal func bezierDrawingDimensionsOverlay() -> some View {
+        if let bezierPath = bezierPath, bezierPoints.count >= 2 {
+            let bounds = bezierPath.cgPath.boundingBoxOfPath
+            let width = bounds.width
+            let height = bounds.height
+            
+            // Position the label above the top-right of the bezier path being drawn
+            let labelPosition = CGPoint(
+                x: bounds.maxX + 10,
+                y: bounds.minY - 30
+            )
+            
+            // Format dimensions (same as status bar)
+            let widthText = width == floor(width) ? String(format: "%.0f", width) : String(format: "%.1f", width)
+            let heightText = height == floor(height) ? String(format: "%.0f", height) : String(format: "%.1f", height)
+            
+            Text("W: \(widthText)pt\nH: \(heightText)pt")
+                .font(.caption)
+                .foregroundColor(.white)
+                .padding(4)
+                .background(Color.black.opacity(0.8))
+                .cornerRadius(4)
+                .position(labelPosition)
+                .scaleEffect(document.zoomLevel, anchor: .topLeading)
+                .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
     }
     

@@ -16,7 +16,7 @@ struct ProfessionalOffsetPathSection: View {
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
     @State private var keepOriginalPath: Bool = true
-    @State private var cleanupOverlaps: Bool = false
+
 
     
     var body: some View {
@@ -95,26 +95,7 @@ struct ProfessionalOffsetPathSection: View {
                         Spacer()
                     }
                     
-                    // TrimX Checkbox (Professional cleanup for complex shapes)
-                    HStack {
-                        Button {
-                            cleanupOverlaps.toggle()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: cleanupOverlaps ? "checkmark.square.fill" : "square")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(cleanupOverlaps ? .blue : .secondary)
-                                
-                                Text("TrimX")
-                                    .font(.caption2)
-                                    .foregroundColor(.primary)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Clean up offset results using Trim operation between original and result")
-                        
-                        Spacer()
-                    }
+
                     
                     // Join Type Selection (Adobe Illustrator style)
                     VStack(alignment: .leading, spacing: 4) {
@@ -246,58 +227,87 @@ struct ProfessionalOffsetPathSection: View {
         var newOffsetShapeIDs: Set<UUID> = []
         
         for shape in selectedShapes {
-            // Use STROKE-BASED OFFSET for perfect smooth curves (no more Clipper polygons!)
-            let effectiveMiterLimit = selectedJoinType == .square ? 1.0 : CGFloat(miterLimit)
-            let strokeOptions = StrokeBasedOffsetOptions(
-                offset: CGFloat(offsetDistance),
-                joinType: mapJoinTypeToCoreGraphics(selectedJoinType),
-                endType: .round,
-                miterLimit: effectiveMiterLimit,
-                keepOriginal: keepOriginalPath
+            
+            // Step 1: Apply stroke directly to the original path (centerline stroke)
+            let strokeStyle = StrokeStyle(
+                width: abs(CGFloat(offsetDistance)) * 2.0, // Offset Distance × 2
+                lineCap: .round,
+                lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
+                miterLimit: CGFloat(miterLimit)
             )
             
-            // Create perfect smooth offset using Core Graphics strokes + expand
-            var offsetPaths = shape.path.cgPath.strokeBasedOffset(strokeOptions)
-            
-            // Apply CutX cleanup if requested (professional cut operation)
-            if cleanupOverlaps && !offsetPaths.isEmpty {
-                // CutX Formula: Take result and original path, run "Cut", return the outside cleaned path
-                for (index, offsetPath) in offsetPaths.enumerated() {
-                    let pathsToCut = [shape.path.cgPath, offsetPath]
-                    let cutPaths = ProfessionalPathOperations.professionalCut(pathsToCut)
+            // Step 2: Expand/Outline the stroke of the original path
+            if let expandedStroke = PathOperations.outlineStroke(path: shape.path.cgPath, strokeStyle: strokeStyle) {
+                // Step 3: Union the Expanded Stroke with itself (like Outline Stroke button)
+                if let unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding) {
                     
-                    // Find the outside path (usually the largest one after cut)
-                    if let outsidePath = findOutsidePath(from: cutPaths, original: shape.path.cgPath, offset: offsetPath) {
-                        offsetPaths[index] = outsidePath
-                        print("🔧 CUTX: Applied cut operation and selected outside cleaned path")
+                    var finalPath: CGPath
+                    
+                    if offsetDistance >= 0 {
+                        // POSITIVE OFFSET: Union the unioned expanded stroke with original shape
+                        if let finalResult = CoreGraphicsPathOperations.union(shape.path.cgPath, unionedStroke, using: .winding) {
+                            finalPath = finalResult
+                            print("🔧 POSITIVE OFFSET: Expanded stroke + union with original shape")
+                        } else {
+                            finalPath = unionedStroke
+                            print("⚠️ POSITIVE OFFSET: Union with original failed, keeping unioned stroke")
+                        }
+                    } else {
+                        // NEGATIVE OFFSET: Subtract the unioned expanded stroke from original shape
+                        if let finalResult = CoreGraphicsPathOperations.subtract(unionedStroke, from: shape.path.cgPath, using: .winding) {
+                            finalPath = finalResult
+                            print("🔧 NEGATIVE OFFSET: Subtracted unioned stroke from original shape")
+                        } else {
+                            finalPath = shape.path.cgPath
+                            print("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original shape")
+                        }
                     }
+                    
+                    // Create the final offset shape
+                    let offsetVectorPath = VectorPath(cgPath: finalPath)
+                    let offsetShape = VectorShape(
+                        name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
+                        path: offsetVectorPath,
+                        strokeStyle: shape.strokeStyle,
+                        fillStyle: shape.fillStyle,
+                        transform: shape.transform,
+                        opacity: shape.opacity
+                    )
+                    
+                    // Add to document
+                    document.addShape(offsetShape)
+                    newOffsetShapeIDs.insert(offsetShape.id)
+                    
+                } else {
+                    print("⚠️ OUTLINE STROKE UNION: Failed, keeping expanded stroke")
+                    let offsetVectorPath = VectorPath(cgPath: expandedStroke)
+                    let offsetShape = VectorShape(
+                        name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
+                        path: offsetVectorPath,
+                        strokeStyle: shape.strokeStyle,
+                        fillStyle: shape.fillStyle,
+                        transform: shape.transform,
+                        opacity: shape.opacity
+                    )
+                    document.addShape(offsetShape)
+                    newOffsetShapeIDs.insert(offsetShape.id)
                 }
-            }
-            
-            // Convert results back to VectorShapes (now working with CGPaths directly!)
-            for (index, offsetCGPath) in offsetPaths.enumerated() {
-                let offsetVectorPath = VectorPath(cgPath: offsetCGPath)
-                
-                let offsetShape = VectorShape(
-                    name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt\(index > 0 ? " \(index + 1)" : "")",
-                    path: offsetVectorPath,
-                    strokeStyle: shape.strokeStyle,
-                    fillStyle: shape.fillStyle,
-                    transform: shape.transform,
-                    opacity: shape.opacity
-                )
-                
-                // Add to document (will be moved behind original later)
-                document.addShape(offsetShape)
-                newOffsetShapeIDs.insert(offsetShape.id)
+            } else {
+                print("⚠️ OUTLINE STROKE: Failed on original path")
             }
             
         }
         
-        // Move offset shapes behind originals (Adobe Illustrator standard)
+        // Handle stacking order based on offset direction
         if keepOriginalPath {
-            // Send offset shapes to back so they appear behind the originals
-            document.sendSelectedToBack()
+            if offsetDistance >= 0 {
+                // POSITIVE OFFSET: Send offset shapes to back so they appear behind the originals
+                document.sendSelectedToBack()
+                print("🔧 POSITIVE OFFSET: Moved offset shapes to back")
+            } else {
+                // NEGATIVE OFFSET: Keep offset shapes in front of originals (do nothing)
+                print("🔧 NEGATIVE OFFSET: Keeping offset shapes in front")
+            }
         } else {
             // Remove original shapes if not keeping them
             document.removeSelectedShapes()
@@ -320,7 +330,6 @@ struct ProfessionalOffsetPathSection: View {
             selectedJoinType = .miter
             miterLimit = 4.0
             keepOriginalPath = true
-            cleanupOverlaps = false
         }
     }
     
