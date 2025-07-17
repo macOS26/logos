@@ -409,39 +409,47 @@ struct HSBInputSection: View {
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
                             
-                            // Show PMS color names on swatches
+                            // Show PMS color names on swatches - proper multi-line formatting
                             if hsbColor.saturation == 0 && hsbColor.brightness == 0 {
                                 Text("black")
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 7, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(3)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.5)
                                     .multilineTextAlignment(.center)
+                                    .frame(width: 30, height: 30)
+                                    .allowsTightening(true)
                             } else if hsbColor.saturation == 0 && hsbColor.brightness == 1 && hsbColor.alpha == 1 {
                                 Text("white")
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 7, weight: .bold))
                                     .foregroundColor(.black)
                                     .shadow(color: .white, radius: 1, x: 0, y: 0)
                                     .lineLimit(3)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.5)
                                     .multilineTextAlignment(.center)
+                                    .frame(width: 30, height: 30)
+                                    .allowsTightening(true)
                             } else if hsbColor.alpha < 1.0 {
                                 Text("clear")
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 7, weight: .bold))
                                     .foregroundColor(.black)
                                     .shadow(color: .white, radius: 1, x: 0, y: 0)
                                     .lineLimit(3)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.5)
                                     .multilineTextAlignment(.center)
+                                    .frame(width: 30, height: 30)
+                                    .allowsTightening(true)
                             } else if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
                                 Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 7, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(3)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.5)
                                     .multilineTextAlignment(.center)
+                                    .frame(width: 30, height: 30)
+                                    .allowsTightening(true)
                             }
                         }
                     }
