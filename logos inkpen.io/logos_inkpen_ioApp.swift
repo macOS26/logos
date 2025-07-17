@@ -349,10 +349,7 @@ struct logos_inken_ioApp: App {
                 
                 Divider()
                 
-                Button("Path Operations Comparison") {
-                    NotificationCenter.default.post(name: .showPathOperationsComparison, object: nil)
-                }
-                .help("Compare ClipperPath vs CoreGraphics operations")
+
                 
                 Button("Performance Benchmark") {
                     NotificationCenter.default.post(name: .runPathOperationsBenchmark, object: nil)

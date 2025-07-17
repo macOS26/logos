@@ -60,6 +60,5 @@ extension Notification.Name {
     
     // MARK: - Development Commands - CoreGraphics Path Operations Testing
     static let showCoreGraphicsTest = Notification.Name("ShowCoreGraphicsTest")
-    static let showPathOperationsComparison = Notification.Name("ShowPathOperationsComparison")
     static let runPathOperationsBenchmark = Notification.Name("RunPathOperationsBenchmark")
 } 

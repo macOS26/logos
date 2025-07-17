@@ -27,7 +27,6 @@ struct MainView: View {
     
     // MARK: - Development Views State
     @State private var showingCoreGraphicsTest = false
-    @State private var showingPathOperationsComparison = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -165,10 +164,6 @@ struct MainView: View {
         }
         .sheet(isPresented: $showingCoreGraphicsTest) {
             CoreGraphicsPathTestView()
-                .frame(width: 1000, height: 700)
-        }
-        .sheet(isPresented: $showingPathOperationsComparison) {
-            PathOperationsComparisonView(document: document)
                 .frame(width: 1000, height: 700)
         }
         .frame(minWidth: 1200, minHeight: 800)
@@ -474,9 +469,7 @@ struct MainView: View {
             showingCoreGraphicsTest = true
         }
         
-        NotificationCenter.default.addObserver(forName: .showPathOperationsComparison, object: nil, queue: .main) { _ in
-            showingPathOperationsComparison = true
-        }
+
         
         NotificationCenter.default.addObserver(forName: .runPathOperationsBenchmark, object: nil, queue: .main) { _ in
             runPathOperationsBenchmark()
