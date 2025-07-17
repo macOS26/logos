@@ -23,6 +23,9 @@ struct HSBInputSection: View {
     @State private var saturationSlider: Double = 100 // 0-100%
     @State private var brightnessSlider: Double = 100 // 0-100%
     
+    // State for PMS entry
+    @State private var pmsEntryText: String = ""
+    
     // Find closest Pantone color match
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
     
@@ -37,6 +40,11 @@ struct HSBInputSection: View {
     
     private var closestPantoneColor: PantoneLibraryColor? {
         pantoneLibrary.findClosestMatch(to: currentColor)
+    }
+    
+    // Current hue as solid color for H circle
+    private var currentHueColor: Color {
+        Color(hue: (Double(hueValue) ?? 0) / 360.0, saturation: 1.0, brightness: 1.0)
     }
     
     // Helper function to get SwiftUI Color from HSB values
@@ -96,14 +104,7 @@ struct HSBInputSection: View {
                 // Hue Slider
                 HStack(spacing: 6) {
                     Circle()
-                        .fill(
-                            AngularGradient(
-                                gradient: Gradient(colors: [
-                                    .red, .yellow, .green, .cyan, .blue, Color(red: 1, green: 0, blue: 1), .red
-                                ]),
-                                center: .center
-                            )
-                        )
+                        .fill(currentHueColor)
                         .frame(width: 12, height: 12)
                     
                     Text("H")
@@ -136,20 +137,16 @@ struct HSBInputSection: View {
                             .allowsHitTesting(false)
                     }
                     
-                    TextField("", text: $hueValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: hueValue) { _, _ in
-                            if let intValue = Double(hueValue) {
-                                hueSlider = min(360, max(0, intValue))
-                                // ONLY update H - do not touch S or B
+                                            TextField("", text: $hueValue)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 45)
+                            .font(.system(size: 11))
+                            .onChange(of: hueValue) { _, _ in
+                                if let intValue = Double(hueValue) {
+                                    hueSlider = min(360, max(0, intValue))
+                                    // ONLY update H - do not touch S or B
+                                }
                             }
-                        }
-                        
-                    Text("°")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
                 }
                 
                 // Saturation Slider
@@ -206,20 +203,16 @@ struct HSBInputSection: View {
                             .allowsHitTesting(false)
                     }
                     
-                    TextField("", text: $saturationValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: saturationValue) { _, _ in
-                            if let intValue = Double(saturationValue) {
-                                saturationSlider = min(100, max(0, intValue))
-                                // ONLY update S - do not touch H or B
+                                            TextField("", text: $saturationValue)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 45)
+                            .font(.system(size: 11))
+                            .onChange(of: saturationValue) { _, _ in
+                                if let intValue = Double(saturationValue) {
+                                    saturationSlider = min(100, max(0, intValue))
+                                    // ONLY update S - do not touch H or B
+                                }
                             }
-                        }
-                        
-                    Text("%")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
                 }
                 
                 // Brightness Slider
@@ -276,96 +269,104 @@ struct HSBInputSection: View {
                             .allowsHitTesting(false)
                     }
                     
-                    TextField("", text: $brightnessValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
-                        .font(.system(size: 11))
-                        .onChange(of: brightnessValue) { _, _ in
-                            if let intValue = Double(brightnessValue) {
-                                brightnessSlider = min(100, max(0, intValue))
-                                // ONLY update B - do not touch H or S
+                                            TextField("", text: $brightnessValue)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 45)
+                            .font(.system(size: 11))
+                            .onChange(of: brightnessValue) { _, _ in
+                                if let intValue = Double(brightnessValue) {
+                                    brightnessSlider = min(100, max(0, intValue))
+                                    // ONLY update B - do not touch H or S
+                                }
                             }
-                        }
-                        
-                    Text("%")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
                 }
             }
             
-            // Two Swatch Previews: HSB and PMS
-            HStack(spacing: 3) {
-                // HSB Color Swatch Preview
-                Button(action: {
-                    addColorToSwatches()
-                }) {
-                    VStack(spacing: 1) {
-                        Rectangle()
-                            .fill(currentColor.color)
-                            .frame(width: 30, height: 30)
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                        Text("HSB")
-                            .font(.system(size: 6))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help("Click to add HSB color to swatches")
-                
-                // PMS Color Swatch Preview
-                Button(action: {
-                    addPMSColorToSwatches()
-                }) {
-                    VStack(spacing: 1) {
-                        ZStack {
+            // HSB and PMS Swatch Previews with PMS Entry
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    // HSB Color Swatch Preview
+                    Button(action: {
+                        addColorToSwatches()
+                    }) {
+                        VStack(spacing: 2) {
                             Rectangle()
-                                .fill(closestPantoneColor?.color ?? currentColor.color)
-                                .frame(width: 30, height: 30)
+                                .fill(currentColor.color)
+                                .frame(width: 50, height: 50)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
-                            
-                            // Show Pantone number if match found
-                            if let pantoneColor = closestPantoneColor {
-                                Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 6, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
-                            }
+                            Text("HSB")
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary)
                         }
-                        Text("PMS")
-                            .font(.system(size: 6))
-                            .foregroundColor(.secondary)
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Click to add HSB color to swatches")
+                    
+                    // PMS Color Swatch Preview  
+                    Button(action: {
+                        addPMSColorToSwatches()
+                    }) {
+                        VStack(spacing: 2) {
+                            ZStack {
+                                Rectangle()
+                                    .fill(closestPantoneColor?.color ?? currentColor.color)
+                                    .frame(width: 50, height: 50)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                
+                                // Show Pantone number if match found
+                                if let pantoneColor = closestPantoneColor {
+                                    Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
+                                        .font(.system(size: 8, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black, radius: 1, x: 0, y: 0)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.6)
+                                }
+                            }
+                            Text("PMS")
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help("Click to add PMS color to swatches")
+                    
+                    Spacer()
                 }
-                .buttonStyle(PlainButtonStyle())
-                .help("Click to add PMS color to swatches")
                 
-                Button("Add") {
-                    addPMSColorToSwatches()
-                }
-                .font(.system(size: 9))
-                .foregroundColor(.primary)
-                
-                Spacer()
-                
-                Text("#")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                TextField("ff0000", text: $hexValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                // PMS Entry and Hex Row
+                HStack(spacing: 6) {
+                    TextField("PMS # or Name", text: $pmsEntryText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.system(size: 10))
+                        .onSubmit {
+                            searchAndApplyPMSColor()
+                        }
+                    
+                    Button("Add") {
+                        searchAndApplyPMSColor()
+                    }
                     .font(.system(size: 10))
-                    .frame(width: 50)
-                    .onChange(of: hexValue) { _, _ in
-                        updateHSBFromHex()
-                    }
+                    .foregroundColor(.primary)
+                    
+                    Text("#")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    TextField("ff0000", text: $hexValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.system(size: 10))
+                        .frame(width: 60)
+                        .onChange(of: hexValue) { _, _ in
+                            updateHSBFromHex()
+                        }
+                }
             }
             
             // HSB colors with preset hues - PMS Color with Pantone Matching
@@ -374,15 +375,15 @@ struct HSBInputSection: View {
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30)), count: 6), spacing: 4) {
-                ForEach(Array(defaultHSBColors.prefix(18).enumerated()), id: \.offset) { index, hsbColor in
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(50)), count: 4), spacing: 6) {
+                ForEach(Array(defaultHSBColors.prefix(12).enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
                         addSpecificPMSColorToSwatches(hsbColor)
                     }) {
                         ZStack {
                             Rectangle()
                                 .fill(pantoneLibrary.findClosestMatch(to: hsbColor)?.color ?? hsbColor.color)
-                                .frame(width: 30, height: 30)
+                                .frame(width: 50, height: 50)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -391,7 +392,7 @@ struct HSBInputSection: View {
                             // Show Pantone number if match found for this specific color
                             if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
                                 Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 8, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(1)
@@ -581,6 +582,40 @@ struct HSBInputSection: View {
             // Fallback to HSB if no PMS match
             let vectorColor = VectorColor.hsb(hsbColor)
             document.addColorSwatch(vectorColor)
+        }
+    }
+    
+    private func searchAndApplyPMSColor() {
+        let cleanedEntry = pmsEntryText
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        if cleanedEntry.isEmpty { return }
+        
+        // Search for PMS color by number or name
+        let searchResults = pantoneLibrary.searchColors(query: cleanedEntry)
+        
+        if let foundColor = searchResults.first {
+            // Convert PMS color to HSB and update sliders
+            let hsbColor = HSBColorModel.fromRGB(foundColor.rgbEquivalent)
+            
+            // Update all slider values
+            hueValue = String(Int(hsbColor.hue))
+            saturationValue = String(Int(hsbColor.saturation * 100))
+            brightnessValue = String(Int(hsbColor.brightness * 100))
+            hueSlider = hsbColor.hue
+            saturationSlider = hsbColor.saturation * 100
+            brightnessSlider = hsbColor.brightness * 100
+            
+            // Update hex value
+            updateHexFromHSB()
+            
+            // Clear the search field
+            pmsEntryText = ""
+            
+            // Add to swatches
+            let pmsColor = VectorColor.pantone(foundColor)
+            document.addColorSwatch(pmsColor)
         }
     }
 } 
