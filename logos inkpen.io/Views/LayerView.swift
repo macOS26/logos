@@ -95,7 +95,7 @@ struct ShapeView: View {
                     }
                 }
                 // CRITICAL FIX: Let ShapeView handle zoom/offset - only apply group transform here
-                .transformEffect(shape.transform)
+                .transformEffect(shape.transform) // PREVIEW SCALING: Use preview transform during scaling
                 .onAppear {
                     print("🏗️ GROUP FIXED: Rendering group container \(shape.name)")
                     print("   📊 Group bounds: \(shape.bounds)")
@@ -315,18 +315,30 @@ struct SelectionHandlesView: View {
     
     var body: some View {
         ZStack {
-            // Show handles for selected shapes
-        ForEach(document.layers.indices, id: \.self) { layerIndex in
-            let layer = document.layers[layerIndex]
-            ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
-                let shape = layer.shapes[shapeIndex]
-                if document.selectedShapeIDs.contains(shape.id) {
-                    SelectionHandles(
-                            document: document,
-                        shape: shape,
-                            zoomLevel: document.zoomLevel,
-                            canvasOffset: document.canvasOffset
-                        )
+            // Show different handles based on current tool
+            ForEach(document.layers.indices, id: \.self) { layerIndex in
+                let layer = document.layers[layerIndex]
+                ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
+                    let shape = layer.shapes[shapeIndex]
+                    if document.selectedShapeIDs.contains(shape.id) {
+                        // Show different handles based on tool
+                        if document.currentTool == .selection {
+                            // Arrow tool: Only selection outline (no transform handles)
+                            SelectionOutline(
+                                document: document,
+                                shape: shape,
+                                zoomLevel: document.zoomLevel,
+                                canvasOffset: document.canvasOffset
+                            )
+                        } else if document.currentTool == .scale {
+                            // Scale tool: Only corner scaling handles
+                            ScaleHandles(
+                                document: document,
+                                shape: shape,
+                                zoomLevel: document.zoomLevel,
+                                canvasOffset: document.canvasOffset
+                            )
+                        }
                     }
                 }
             }
@@ -335,70 +347,115 @@ struct SelectionHandlesView: View {
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObject = document.textObjects[textIndex]
                 if document.selectedTextIDs.contains(textObject.id) {
-                    TextSelectionHandles(
-                        document: document,
-                        textObject: textObject,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
-                        isEditing: false // Text selection handles are never shown during editing
-                    )
+                    if document.currentTool == .selection {
+                        // Arrow tool: Only text outline (no transform handles)
+                        TextSelectionOutline(
+                            document: document,
+                            textObject: textObject,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset
+                        )
+                    } else if document.currentTool == .scale {
+                        // Scale tool: Text scaling handles
+                        TextScaleHandles(
+                            document: document,
+                            textObject: textObject,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-struct SelectionHandles: View {
+// MARK: - Simple Selection Outline (Arrow Tool)
+struct SelectionOutline: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
     
-    // Professional scaling state management - FIXED: Preview-based scaling
+    var body: some View {
+        // SELECTION TOOL: Just show bounding box outline (no transform handles)
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        
+        Rectangle()
+            .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+            .frame(width: bounds.width, height: bounds.height)
+            .position(center)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
+    }
+}
+
+// MARK: - Scale Tool Handles
+struct ScaleHandles: View {
+    @ObservedObject var document: VectorDocument
+    let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    // Professional scaling state management - NEW CLEAN IMPLEMENTATION
     @State private var isScaling = false
     @State private var scalingStarted = false
     @State private var initialBounds: CGRect = .zero
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
-    @State private var previewTransform: CGAffineTransform = .identity // NEW: Preview only
-    @State private var scalingAnchorPoint: CGPoint = .zero // NEW: Corner pinning
-    
-    // Professional rotation state management
-    @State private var isRotating = false
-    @State private var rotationStarted = false
-    @State private var initialRotation: CGFloat = 0
-    @State private var rotationStartLocation: CGPoint = .zero
+    @State private var previewTransform: CGAffineTransform = .identity
+    @State private var scalingAnchorPoint: CGPoint = .zero
+    @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds
     
     private let handleSize: CGFloat = 8
-    private let rotationHandleOffset: CGFloat = 20
     
     var body: some View {
-        // PROFESSIONAL SCALING: Use appropriate bounds for groups vs individual shapes
+        // SCALE TOOL: Show bounding box outline with 4 corner scaling handles only
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
             // Bounding box outline
             Rectangle()
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+                .stroke(Color.red, lineWidth: 1.0 / zoomLevel) // Red outline for scale tool
                 .frame(width: bounds.width, height: bounds.height)
                 .position(center)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             
-            // Corner resize handles (scale proportionally)
+            // MARQUEE PREVIEW: Show EXACT final destination (PINNED CORRECTLY!)
+            if isScaling && !finalMarqueeBounds.isEmpty {
+                let marqueeCenter = CGPoint(x: finalMarqueeBounds.midX, y: finalMarqueeBounds.midY)
+                Rectangle()
+                    .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .frame(width: finalMarqueeBounds.width, height: finalMarqueeBounds.height)
+                    .position(marqueeCenter)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    // NO transformEffect! Show exact final position
+                    .opacity(0.8) // Semi-transparent for clarity
+            }
+            
+            // 4 Corner scaling handles - GREEN for live, RED for pinned anchor
             ForEach(0..<4) { i in
                 let position = cornerPosition(for: i, in: bounds, center: center)
+                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
+                let handleColor = isPinnedCorner ? Color.red : Color.green
+                
                 Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
+                    .fill(handleColor)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                     .position(position)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(shape.transform)
-                    .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
-                        DragGesture()
+                    .highPriorityGesture(
+                        // Don't allow interaction on pinned corners
+                        isPinnedCorner ? nil : DragGesture()
                             .onChanged { value in
                                 handleCornerScaling(index: i, dragValue: value, bounds: bounds, center: center)
                             }
@@ -407,60 +464,6 @@ struct SelectionHandles: View {
                             }
                     )
             }
-            
-            // Edge resize handles (scale in one direction)  
-            ForEach(0..<4) { i in
-                let position = edgePosition(for: i, in: bounds, center: center)
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
-                    .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
-                        DragGesture()
-                            .onChanged { value in
-                                handleEdgeScaling(index: i, dragValue: value, bounds: bounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishScaling()
-                            }
-                    )
-            }
-            
-            // Rotation handle (small circle above top-center)
-            let rotationPosition = CGPoint(
-                x: center.x,
-                y: bounds.minY - rotationHandleOffset / zoomLevel
-            )
-            Circle()
-                .fill(Color.green)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
-                .position(rotationPosition)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
-                .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
-                    DragGesture()
-                        .onChanged { value in
-                            handleRotation(dragValue: value, bounds: bounds, center: center)
-                        }
-                        .onEnded { _ in
-                            finishRotation()
-                        }
-                )
-            
-            // Rotation indicator line
-            Path { path in
-                let topCenter = CGPoint(x: center.x, y: bounds.minY)
-                path.move(to: topCenter)
-                path.addLine(to: rotationPosition)
-            }
-            .stroke(Color.green, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
         }
         .onAppear {
             initialBounds = shape.bounds
@@ -478,178 +481,99 @@ struct SelectionHandles: View {
             startLocation = dragValue.startLocation
             document.saveToUndoStack()
             
-            // PROFESSIONAL CORNER PINNING: Set anchor point to opposite corner
-            scalingAnchorPoint = getOppositeCorner(for: index, in: bounds)
-            print("🔄 SCALING: Anchored to opposite corner at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+            // NEW: Use selected scaling anchor mode from toolbar
+            scalingAnchorPoint = getAnchorPoint(for: document.scalingAnchor, in: bounds, cornerIndex: index)
+            print("🔄 SCALING START: Corner \(index) → Anchor mode: \(document.scalingAnchor.displayName) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+            print("   📐 Initial bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
+            print("   🖱️ Start cursor: screen(\(String(format: "%.1f", startLocation.x)), \(String(format: "%.1f", startLocation.y)))")
         }
         
-        // PROFESSIONAL SCALING FIX: Use direct cursor tracking (not DragGesture.translation)
-        // This eliminates floating-point accumulation errors and coordinate sync issues
-        let anchorInScreen = CGPoint(
-            x: scalingAnchorPoint.x * zoomLevel + canvasOffset.x,
-            y: scalingAnchorPoint.y * zoomLevel + canvasOffset.y
+        // PROFESSIONAL SCALING: Calculate scale from anchor point to current cursor position
+        // Use direct cursor tracking instead of DragGesture.translation for perfect accuracy
+        let currentLocation = dragValue.location
+        
+        // Convert anchor point to screen coordinates using manual calculation
+        let anchorScreenX = scalingAnchorPoint.x * zoomLevel + canvasOffset.x
+        let anchorScreenY = scalingAnchorPoint.y * zoomLevel + canvasOffset.y
+        
+        // Calculate distances from anchor to start and current positions
+        let startDistance = CGPoint(
+            x: startLocation.x - anchorScreenX,
+            y: startLocation.y - anchorScreenY
         )
         
-        // Calculate cursor movement directly (perfect 1:1 tracking like hand tool)
-        let currentCursorPosition = dragValue.location
-        
-        let initialDistance = distance(startLocation, anchorInScreen)
-        let currentDistance = distance(currentCursorPosition, anchorInScreen)
-        
-        let scaleFactor = max(0.1, currentDistance / max(initialDistance, 1.0))
-        
-        // FIXED: Only calculate preview transform, don't apply to actual shape yet
-        calculatePreviewTransform(scaleX: scaleFactor, scaleY: scaleFactor, anchor: scalingAnchorPoint)
-    }
-    
-    private func handleEdgeScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        if !scalingStarted {
-            scalingStarted = true
-            isScaling = true
-            document.isHandleScalingActive = true // CRITICAL: Prevent canvas drag conflicts
-            initialBounds = bounds
-            initialTransform = shape.transform
-            startLocation = dragValue.startLocation
-            document.saveToUndoStack()
-            
-            // PROFESSIONAL EDGE PINNING: Set anchor point to opposite edge
-            scalingAnchorPoint = getOppositeEdgeAnchor(for: index, in: bounds)
-            print("🔄 EDGE SCALING: Anchored to opposite edge at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
-        }
-        
-        // PROFESSIONAL EDGE SCALING FIX: Use direct cursor tracking (not DragGesture.translation)
-        // Calculate cursor movement directly to eliminate coordinate sync issues
-        let cursorDelta = CGPoint(
-            x: dragValue.location.x - startLocation.x,
-            y: dragValue.location.y - startLocation.y
+        let currentDistance = CGPoint(
+            x: currentLocation.x - anchorScreenX,
+            y: currentLocation.y - anchorScreenY
         )
         
-        // Convert screen delta to canvas delta (accounting for zoom)
-        let canvasDelta = CGPoint(
-            x: cursorDelta.x / zoomLevel,
-            y: cursorDelta.y / zoomLevel
-        )
+        // Calculate scale factors
+        let scaleX = abs(startDistance.x) > 1.0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+        let scaleY = abs(startDistance.y) > 1.0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         
-        var scaleX: CGFloat = 1.0
-        var scaleY: CGFloat = 1.0
+        // Professional logging for tracking
+        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))")
+        print("   🖱️ Cursor: (\(String(format: "%.1f", currentLocation.x)), \(String(format: "%.1f", currentLocation.y))) → Distance: (\(String(format: "%.1f", currentDistance.x)), \(String(format: "%.1f", currentDistance.y)))")
+        print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
         
-        switch index {
-        case 0: // Top edge - pin bottom edge
-            scaleY = max(0.1, (bounds.height - canvasDelta.y) / bounds.height)
-        case 1: // Right edge - pin left edge
-            scaleX = max(0.1, (bounds.width + canvasDelta.x) / bounds.width)
-        case 2: // Bottom edge - pin top edge
-            scaleY = max(0.1, (bounds.height + canvasDelta.y) / bounds.height)
-        case 3: // Left edge - pin right edge
-            scaleX = max(0.1, (bounds.width - canvasDelta.x) / bounds.width)
-        default:
-            break
-        }
-        
-        // FIXED: Only calculate preview transform, don't apply to actual shape yet
+        // Apply preview scaling
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
+    
+
     
     private func finishScaling() {
         scalingStarted = false
         isScaling = false
         document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
         
+        print("🏁 SCALING FINISH: Applying final transform to coordinates")
+        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        print("   🎯 FINAL MARQUEE: Bounds (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
+        
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Adobe Illustrator behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
+            let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            // Reset preview transform
+            let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+            
+            // Reset preview transform and marquee bounds
             previewTransform = .identity
+            finalMarqueeBounds = .zero // Hide marquee
             
             print("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity")
         }
     }
     
-    // MARK: - Professional Rotation Methods (Adobe Illustrator Standards)
+    // MARK: - Scaling Anchor Point Calculation
     
-    private func handleRotation(dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        if !rotationStarted {
-            rotationStarted = true
-            isRotating = true
-            initialBounds = bounds
-            initialTransform = shape.transform
-            rotationStartLocation = dragValue.startLocation
-            
-            // Calculate initial rotation from transform
-            initialRotation = atan2(initialTransform.b, initialTransform.a)
-            
-            document.saveToUndoStack()
-        }
-        
-        // Calculate rotation center in screen coordinates
-        let rotationCenter = CGPoint(
-            x: center.x * zoomLevel + canvasOffset.x,
-            y: center.y * zoomLevel + canvasOffset.y
-        )
-        
-        // Calculate angles
-        let startAngle = atan2(
-            rotationStartLocation.y - rotationCenter.y,
-            rotationStartLocation.x - rotationCenter.x
-        )
-        
-        // PROFESSIONAL ROTATION FIX: Use direct cursor tracking (not DragGesture.translation)
-        // This eliminates coordinate sync issues and mouse drift
-        let currentLocation = dragValue.location
-        
-        let currentAngle = atan2(
-            currentLocation.y - rotationCenter.y,
-            currentLocation.x - rotationCenter.x
-        )
-        
-        // Calculate rotation delta
-        let rotationDelta = currentAngle - startAngle
-        
-        // Apply rotation
-        applyRotation(delta: rotationDelta, center: center)
-    }
-    
-    private func applyRotation(delta: CGFloat, center: CGPoint) {
-        guard let layerIndex = document.selectedLayerIndex,
-              let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else {
-            return
-        }
-        
-        // Calculate rotation center
-        let centerX = initialBounds.midX
-        let centerY = initialBounds.midY
-        
-        // Create rotation transform around center
-        let rotationTransform = CGAffineTransform.identity
-            .translatedBy(x: centerX, y: centerY)
-            .rotated(by: delta)
-            .translatedBy(x: -centerX, y: -centerY)
-        
-        // Combine with initial transform
-        let newTransform = initialTransform.concatenating(rotationTransform)
-        
-        // Apply to shape
-        document.layers[layerIndex].shapes[shapeIndex].transform = newTransform
-        
-        // Force UI update
-        document.objectWillChange.send()
-    }
-    
-    private func finishRotation() {
-        rotationStarted = false
-        isRotating = false
-        
-        // Apply rotation to actual coordinates (Adobe Illustrator behavior)
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
+    /// Get anchor point based on selected scaling mode
+    private func getAnchorPoint(for anchor: ScalingAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
+        switch anchor {
+        case .center:
+            return CGPoint(x: bounds.midX, y: bounds.midY)
+        case .topLeft:
+            return CGPoint(x: bounds.minX, y: bounds.minY)
+        case .topRight:
+            return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case .bottomLeft:
+            return CGPoint(x: bounds.minX, y: bounds.maxY)
+        case .bottomRight:
+            return CGPoint(x: bounds.maxX, y: bounds.maxY)
         }
     }
+
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Adobe Illustrator behavior)
@@ -723,43 +647,7 @@ struct SelectionHandles: View {
         }
     }
     
-    private func edgePosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
-        // PROFESSIONAL COORDINATE SYSTEM: Use logical coordinates, let SwiftUI handle screen positioning
-        switch index {
-        case 0: return CGPoint(x: center.x, y: bounds.minY) // Top
-        case 1: return CGPoint(x: bounds.maxX, y: center.y) // Right
-        case 2: return CGPoint(x: center.x, y: bounds.maxY) // Bottom
-        case 3: return CGPoint(x: bounds.minX, y: center.y) // Left
-        default: return center
-        }
-    }
-    
-    // Distance calculation helper
-    private func distance(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
-        return sqrt(pow(point2.x - point1.x, 2) + pow(point2.y - point1.y, 2))
-    }
-    
-    // Helper to get the opposite corner for corner scaling
-    private func getOppositeCorner(for index: Int, in bounds: CGRect) -> CGPoint {
-        switch index {
-        case 0: return CGPoint(x: bounds.maxX, y: bounds.maxY) // Top-left -> Bottom-right
-        case 1: return CGPoint(x: bounds.minX, y: bounds.maxY) // Top-right -> Bottom-left
-        case 2: return CGPoint(x: bounds.minX, y: bounds.minY) // Bottom-right -> Top-left
-        case 3: return CGPoint(x: bounds.maxX, y: bounds.minY) // Bottom-left -> Top-right
-        default: return CGPoint(x: bounds.midX, y: bounds.midY) // Fallback to center
-        }
-    }
-    
-    // Helper to get the opposite edge anchor for edge scaling
-    private func getOppositeEdgeAnchor(for index: Int, in bounds: CGRect) -> CGPoint {
-        switch index {
-        case 0: return CGPoint(x: bounds.midX, y: bounds.maxY) // Top edge -> Bottom edge
-        case 1: return CGPoint(x: bounds.minX, y: bounds.midY) // Right edge -> Left edge
-        case 2: return CGPoint(x: bounds.midX, y: bounds.minY) // Bottom edge -> Top edge
-        case 3: return CGPoint(x: bounds.maxX, y: bounds.midY) // Left edge -> Right edge
-        default: return CGPoint(x: bounds.midX, y: bounds.midY) // Fallback to center
-        }
-    }
+
     
     // FIXED: Calculate preview transform from anchor point (corner pinning)
     private func calculatePreviewTransform(scaleX: CGFloat, scaleY: CGFloat, anchor: CGPoint) {
@@ -769,49 +657,90 @@ struct SelectionHandles: View {
             .scaledBy(x: scaleX, y: scaleY)
             .translatedBy(x: -anchor.x, y: -anchor.y)
         
-        // Store as preview transform (will be applied at the end)
+        // CRITICAL FIX: Always calculate from initial transform to prevent drift
         previewTransform = initialTransform.concatenating(scaleTransform)
         
-        // CRITICAL: Apply preview to the actual shape for visual feedback
-        // This gets replaced with the final transform in finishScaling
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-        }
+        // MARQUEE FIX: Calculate exact final bounds position (PINNED CORRECTLY!)
+        let currentBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        finalMarqueeBounds = currentBounds.applying(scaleTransform)
         
-        // Force UI update
+        // MARQUEE PREVIEW: Ensure isScaling is true for marquee visibility
+        isScaling = true
+        
+        // MARQUEE LOGGING: Track marquee position vs anchor
+        print("   🎯 MARQUEE PREVIEW:")
+        print("      Original bounds: (\(String(format: "%.1f", currentBounds.minX)), \(String(format: "%.1f", currentBounds.minY))) → (\(String(format: "%.1f", currentBounds.maxX)), \(String(format: "%.1f", currentBounds.maxY)))")
+        print("      Final marquee bounds: (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
+        print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.scalingAnchor.displayName)")
+        print("      Scale factors: X=\(String(format: "%.3f", scaleX)), Y=\(String(format: "%.3f", scaleY))")
+        
+        // CRITICAL FIX: DON'T apply preview to actual shape during dragging (like rectangle tool)
+        // This prevents the transformation box from scaling and eliminates drift
+        // The preview will be applied only at the end in finishScaling
+        
+        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        
+        // Force UI update for preview rendering (without applying to shape)
         document.objectWillChange.send()
+    }
+    
+    /// Check if a corner is the pinned anchor point
+    private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
+        switch document.scalingAnchor {
+        case .center:
+            return false // No corner is pinned when scaling from center
+        case .topLeft:
+            return cornerIndex == 0 // Top-left corner (index 0)
+        case .topRight:
+            return cornerIndex == 1 // Top-right corner (index 1)
+        case .bottomRight:
+            return cornerIndex == 2 // Bottom-right corner (index 2)
+        case .bottomLeft:
+            return cornerIndex == 3 // Bottom-left corner (index 3)
+        }
     }
 }
 
-// MARK: - Professional Text Selection Handles (Adobe Illustrator Standards)
+// MARK: - Text Selection Views
 
-struct TextSelectionHandles: View {
+// Simple text outline for Selection tool
+struct TextSelectionOutline: View {
     @ObservedObject var document: VectorDocument
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let isEditing: Bool
-    
-    private let handleSize: CGFloat = 8
-    private let rotationHandleOffset: CGFloat = 20
-    
-    // Professional scaling state management for text
-    @State private var isScaling = false
-    @State private var scalingStarted = false
-    @State private var initialBounds: CGRect = .zero
-    @State private var initialTransform: CGAffineTransform = .identity
-    @State private var startLocation: CGPoint = .zero
-    
-    // Professional text rotation state management
-    @State private var isTextRotating = false
-    @State private var textRotationStarted = false
-    @State private var textInitialRotation: CGFloat = 0
-    @State private var textRotationStartLocation: CGPoint = .zero
     
     var body: some View {
-        // CRITICAL FIX: Use actual text bounds (not approximation)
-        // Text position is at baseline, bounds are calculated correctly in VectorText
+        // SELECTION TOOL: Just show text bounding box outline (no transform handles)
+        let absoluteBounds = CGRect(
+            x: textObject.position.x + textObject.bounds.minX,
+            y: textObject.position.y + textObject.bounds.minY,
+            width: textObject.bounds.width,
+            height: textObject.bounds.height
+        )
+        let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
+        
+        Rectangle()
+            .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+            .frame(width: absoluteBounds.width, height: absoluteBounds.height)
+            .position(center)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(textObject.transform)
+    }
+}
+
+// Scale handles for text objects with Scale tool
+struct TextScaleHandles: View {
+    @ObservedObject var document: VectorDocument
+    let textObject: VectorText
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    private let handleSize: CGFloat = 8
+    
+    var body: some View {
+        // SCALE TOOL: Show text bounding box outline with 4 corner scaling handles only
         let absoluteBounds = CGRect(
             x: textObject.position.x + textObject.bounds.minX,
             y: textObject.position.y + textObject.bounds.minY,
@@ -821,109 +750,43 @@ struct TextSelectionHandles: View {
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         
         ZStack {
-            // CRITICAL FIX: Hide transformation box when editing text
-            if !isEditing {
-            // Text bounding box outline (blue, professional standard) 
-            // FIXED: Use EXACT SAME coordinate chain as shape selection
+            // Text bounding box outline (red for scale tool)
             Rectangle()
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+                .stroke(Color.red, lineWidth: 1.0 / zoomLevel)
                 .frame(width: absoluteBounds.width, height: absoluteBounds.height)
                 .position(center)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(textObject.transform)
             
-            // Corner resize handles (scale proportionally)
-            // FIXED: Use EXACT SAME coordinate chain as shape selection  
+            // 4 Corner scaling handles ONLY (simplified for now)
             ForEach(0..<4) { i in
                 let position = cornerPosition(for: i, in: absoluteBounds, center: center)
                 Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
+                    .fill(Color.red)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                     .position(position)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(textObject.transform)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                handleTextCornerScaling(index: i, dragValue: value, bounds: absoluteBounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishTextScaling()
-                            }
-                    )
+                                         // TODO: Add text scaling gesture handling
             }
-            
-            // Edge resize handles (scale in one direction)  
-            // FIXED: Use EXACT SAME coordinate chain as shape selection
-            ForEach(0..<4) { i in
-                let position = edgePosition(for: i, in: absoluteBounds, center: center)
-                Rectangle()
-                    .fill(Color.blue)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(textObject.transform)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                handleTextEdgeScaling(index: i, dragValue: value, bounds: absoluteBounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishTextScaling()
-                            }
-                    )
-            }
-            
-            // Rotation handle (small circle above top-center)
-            // FIXED: Use EXACT SAME coordinate chain as shape selection
-            let rotationPosition = CGPoint(
-                x: center.x,
-                y: absoluteBounds.minY - rotationHandleOffset / zoomLevel
-            )
-            Circle()
-                .fill(Color.green)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel) // Scale-independent handle size
-                .position(rotationPosition)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(textObject.transform)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            handleTextRotation(dragValue: value, bounds: absoluteBounds, center: center)
-                        }
-                        .onEnded { _ in
-                            finishTextRotation()
-                        }
-                )
-            
-            // Rotation indicator line
-            // FIXED: Use EXACT SAME coordinate chain as shape selection
-            Path { path in
-                let topCenter = CGPoint(
-                    x: center.x,
-                    y: absoluteBounds.minY
-                )
-                path.move(to: topCenter)
-                path.addLine(to: rotationPosition)
-            }
-            .stroke(Color.green, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(textObject.transform)
-        }
-        // End of editing check - transformation box only shown when not editing
-        }
-        .onAppear {
-            initialBounds = absoluteBounds
-            initialTransform = textObject.transform
         }
     }
     
-    // MARK: - Professional Text Transformation Helper Methods
+    private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.minX, y: bounds.minY) // Top-left
+        case 1: return CGPoint(x: bounds.maxX, y: bounds.minY) // Top-right
+        case 2: return CGPoint(x: bounds.maxX, y: bounds.maxY) // Bottom-right
+        case 3: return CGPoint(x: bounds.minX, y: bounds.maxY) // Bottom-left
+        default: return center
+        }
+    }
+}
+
+// MARK: - Professional Text Transformation Helper Methods (old implementation, TODO: clean up)
     
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         // PROFESSIONAL COORDINATE SYSTEM: Use logical coordinates for text selection handles
@@ -948,205 +811,7 @@ struct TextSelectionHandles: View {
         
         return positions[index]
     }
-    
-    private func handleTextCornerScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        // PROFESSIONAL TEXT SCALING: Maintain proportions for corner scaling
-        if !scalingStarted {
-            scalingStarted = true
-            isScaling = true
-            initialBounds = bounds
-            initialTransform = textObject.transform
-            startLocation = dragValue.startLocation
-            document.saveToUndoStack()
-        }
-        
-        // Calculate scale based on distance from center (proportional scaling)
-        let initialCenter = CGPoint(
-            x: center.x * zoomLevel + canvasOffset.x,
-            y: center.y * zoomLevel + canvasOffset.y
-        )
-        
-        let initialDistance = distance(startLocation, initialCenter)
-        let currentDistance = distance(
-            CGPoint(
-                x: startLocation.x + dragValue.translation.width,
-                y: startLocation.y + dragValue.translation.height
-            ),
-            initialCenter
-        )
-        
-        let scaleFactor = max(0.1, currentDistance / max(initialDistance, 1.0))
-        
-        // Apply uniform scaling for text (Adobe Illustrator behavior)
-        applyTextScaling(scaleX: scaleFactor, scaleY: scaleFactor)
-        
-        print("🔤 Text corner scaling - maintaining proportions (professional standard)")
-    }
-    
-    private func handleTextEdgeScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        // PROFESSIONAL TEXT SCALING: Non-proportional scaling for edge handles
-        if !scalingStarted {
-            scalingStarted = true
-            isScaling = true
-            initialBounds = bounds
-            initialTransform = textObject.transform
-            startLocation = dragValue.startLocation
-            document.saveToUndoStack()
-        }
-        
-        // Calculate edge-based scaling (non-proportional)
-        let translation = CGPoint(
-            x: dragValue.translation.width / zoomLevel,
-            y: dragValue.translation.height / zoomLevel
-        )
-        
-        var scaleX: CGFloat = 1.0
-        var scaleY: CGFloat = 1.0
-        
-        switch index {
-        case 0: // Top edge
-            scaleY = max(0.1, (bounds.height - translation.y) / bounds.height)
-        case 1: // Right edge
-            scaleX = max(0.1, (bounds.width + translation.x) / bounds.width)
-        case 2: // Bottom edge
-            scaleY = max(0.1, (bounds.height + translation.y) / bounds.height)
-        case 3: // Left edge
-            scaleX = max(0.1, (bounds.width - translation.x) / bounds.width)
-        default:
-            break
-        }
-        
-        // Apply non-proportional scaling for text
-        applyTextScaling(scaleX: scaleX, scaleY: scaleY)
-        
-        print("🔤 Text edge scaling - non-proportional (professional standard)")
-    }
-    
-    private func applyTextScaling(scaleX: CGFloat, scaleY: CGFloat) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else {
-            return
-        }
-        
-        // Calculate scaling center
-        let centerX = initialBounds.midX
-        let centerY = initialBounds.midY
-        
-        // Create scaling transform around center
-        let scaleTransform = CGAffineTransform.identity
-            .translatedBy(x: centerX, y: centerY)
-            .scaledBy(x: scaleX, y: scaleY)
-            .translatedBy(x: -centerX, y: -centerY)
-        
-        // Combine with initial transform
-        let newTransform = initialTransform.concatenating(scaleTransform)
-        
-        // Apply to text object
-        document.textObjects[textIndex].transform = newTransform
-        
-        // Force UI update
-        document.objectWillChange.send()
-    }
-    
-    private func finishTextScaling() {
-        isScaling = false
-        scalingStarted = false
-        
-        // Update text bounds after scaling
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].updateBounds()
-        }
-        
-        // Save to undo stack after finishing the scaling operation
-        document.saveToUndoStack()
-    }
-    
-    // Distance calculation helper for text
-    private func distance(_ point1: CGPoint, _ point2: CGPoint) -> CGFloat {
-        return sqrt(pow(point2.x - point1.x, 2) + pow(point2.y - point1.y, 2))
-    }
-    
-    // MARK: - Professional Text Rotation Methods (Adobe Illustrator Standards)
-    
-    private func handleTextRotation(dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        if !textRotationStarted {
-            textRotationStarted = true
-            isTextRotating = true
-            initialBounds = bounds
-            initialTransform = textObject.transform
-            textRotationStartLocation = dragValue.startLocation
-            
-            // Calculate initial rotation from transform
-            textInitialRotation = atan2(initialTransform.b, initialTransform.a)
-            
-            document.saveToUndoStack()
-        }
-        
-        // Calculate rotation center in screen coordinates
-        let rotationCenter = CGPoint(
-            x: center.x * zoomLevel + canvasOffset.x,
-            y: center.y * zoomLevel + canvasOffset.y
-        )
-        
-        // Calculate angles
-        let startAngle = atan2(
-            textRotationStartLocation.y - rotationCenter.y,
-            textRotationStartLocation.x - rotationCenter.x
-        )
-        
-        let currentLocation = CGPoint(
-            x: textRotationStartLocation.x + dragValue.translation.width,
-            y: textRotationStartLocation.y + dragValue.translation.height
-        )
-        
-        let currentAngle = atan2(
-            currentLocation.y - rotationCenter.y,
-            currentLocation.x - rotationCenter.x
-        )
-        
-        // Calculate rotation delta
-        let rotationDelta = currentAngle - startAngle
-        
-        // Apply rotation to text
-        applyTextRotation(delta: rotationDelta, center: center)
-    }
-    
-    private func applyTextRotation(delta: CGFloat, center: CGPoint) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else {
-            return
-        }
-        
-        // Calculate rotation center
-        let centerX = initialBounds.midX
-        let centerY = initialBounds.midY
-        
-        // Create rotation transform around center
-        let rotationTransform = CGAffineTransform.identity
-            .translatedBy(x: centerX, y: centerY)
-            .rotated(by: delta)
-            .translatedBy(x: -centerX, y: -centerY)
-        
-        // Combine with initial transform
-        let newTransform = initialTransform.concatenating(rotationTransform)
-        
-        // Apply to text object
-        document.textObjects[textIndex].transform = newTransform
-        
-        // Force UI update
-        document.objectWillChange.send()
-    }
-    
-    private func finishTextRotation() {
-        textRotationStarted = false
-        isTextRotating = false
-        
-        // Update text bounds after rotation
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].updateBounds()
-        }
-        
-        print("🔄 Text rotation completed")
-    }
-}
+
 
 // Extensions for SwiftUI compatibility
 extension BlendMode {

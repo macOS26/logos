@@ -113,6 +113,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
     @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
     @Published var currentTool: DrawingTool = .selection
+    @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -155,6 +156,7 @@ class VectorDocument: ObservableObject, Codable {
         self.selectedTextIDs = [] // PROFESSIONAL TEXT SUPPORT
         self.textObjects = [] // PROFESSIONAL TEXT OBJECTS
         self.currentTool = .selection
+        self.scalingAnchor = .center
         self.viewMode = .color
         self.zoomLevel = 1.0
         self.canvasOffset = .zero
@@ -2556,6 +2558,7 @@ class VectorDocument: ObservableObject, Codable {
 // MARK: - Drawing Tools
 enum DrawingTool: String, CaseIterable, Codable {
     case selection = "Selection"
+    case scale = "Scale"
     case directSelection = "Direct Selection"
     case convertAnchorPoint = "Convert Anchor Point"
     case bezierPen = "Bezier Pen"
@@ -2572,6 +2575,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     var iconName: String {
         switch self {
         case .selection: return "arrow.up.left"
+        case .scale: return "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
         case .directSelection: return "cursorarrow.and.square.on.square.dashed"
         case .convertAnchorPoint: return "arrow.triangle.turn.up.right.diamond"
         case .bezierPen: return "pencil.tip"
@@ -2590,6 +2594,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     var cursor: NSCursor {
         switch self {
         case .selection: return .arrow
+        case .scale: return .crosshair
         case .directSelection: return .crosshair
         case .convertAnchorPoint: return .pointingHand
         case .bezierPen: return .crosshair
@@ -2603,6 +2608,29 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .hand: return .openHand
         case .zoom: return .crosshair
         }
+    }
+}
+
+// MARK: - Scaling Anchor Modes
+enum ScalingAnchor: String, CaseIterable, Codable {
+    case center = "Center"
+    case topLeft = "Top Left"
+    case topRight = "Top Right"
+    case bottomLeft = "Bottom Left"
+    case bottomRight = "Bottom Right"
+    
+    var iconName: String {
+        switch self {
+        case .center: return "plus.circle"
+        case .topLeft: return "arrow.up.left.circle"
+        case .topRight: return "arrow.up.right.circle"
+        case .bottomLeft: return "arrow.down.left.circle"
+        case .bottomRight: return "arrow.down.right.circle"
+        }
+    }
+    
+    var displayName: String {
+        return self.rawValue
     }
 }
 

@@ -52,6 +52,34 @@ struct VerticalToolbar: View {
             
             Divider()
             
+            // Scaling Anchor Selection (only show when Scale tool is active)
+            if document.currentTool == .scale {
+                ToolSection(title: "Scale From") {
+                    ForEach(ScalingAnchor.allCases, id: \.self) { anchor in
+                        Button {
+                            document.scalingAnchor = anchor
+                            print("🎯 Scaling Anchor: \(anchor.displayName)")
+                        } label: {
+                            Image(systemName: anchor.iconName)
+                                .font(.system(size: 16))
+                                .foregroundColor(document.scalingAnchor == anchor ? .white : .primary)
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    document.scalingAnchor == anchor 
+                                    ? Color.blue.opacity(0.8)
+                                    : Color.clear
+                                )
+                                .cornerRadius(4)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Scale from \(anchor.displayName)")
+                    }
+                }
+                
+                Divider()
+            }
+            
             // Quick Color Swatches
             ToolSection(title: "Colors") {
                 ColorSwatchGrid(document: document)
@@ -72,6 +100,8 @@ struct VerticalToolbar: View {
         switch tool {
         case .selection:
             return "Selection Tool (V) - Select and move objects"
+        case .scale:
+            return "Scale Tool (S) - Scale objects with corner handles"
         case .directSelection:
             return "Direct Selection Tool (A) - Edit individual points and handles"
         case .convertAnchorPoint:
@@ -87,7 +117,7 @@ struct VerticalToolbar: View {
         case .circle:
             return "Circle Tool (C) - Draw circles and ellipses"
         case .star:
-            return "Star Tool (S) - Draw star shapes"
+            return "Star Tool - Draw star shapes"
         case .polygon:
             return "Polygon Tool - Draw polygon shapes"
         case .eyedropper:
