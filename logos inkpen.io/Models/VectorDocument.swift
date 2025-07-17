@@ -97,7 +97,13 @@ struct ZoomRequest: Equatable {
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
     @Published var layers: [VectorLayer]
-    @Published var colorSwatches: [VectorColor]
+    
+    // SIMPLIFIED SWATCH SYSTEM - Four separate modifiable arrays
+    @Published var rgbSwatches: [VectorColor]
+    @Published var cmykSwatches: [VectorColor]
+    @Published var hsbSwatches: [VectorColor]
+    @Published var pantoneSwatches: [VectorColor]
+    
     @Published var selectedLayerIndex: Int?
     @Published var selectedShapeIDs: Set<UUID>
     @Published var selectedTextIDs: Set<UUID> // PROFESSIONAL TEXT SUPPORT
@@ -132,8 +138,11 @@ class VectorDocument: ObservableObject, Codable {
         // Standard layer initialization (no special Canvas layer)
         self.layers = []
         
-        // Load appropriate color swatches based on color mode
-        self.colorSwatches = Self.getDefaultColorSwatchesForMode(settings.colorMode)
+        // Initialize separate swatch arrays with defaults
+        self.rgbSwatches = Self.createDefaultRGBSwatches()
+        self.cmykSwatches = Self.createDefaultCMYKSwatches()
+        self.hsbSwatches = Self.createDefaultHSBSwatches()
+        self.pantoneSwatches = Self.createDefaultPantoneSwatches()
         
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
@@ -163,6 +172,20 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set up settings change observation
         setupSettingsObservation()
+    }
+    
+    // Current color swatches based on mode - computed property
+    var currentSwatches: [VectorColor] {
+        switch settings.colorMode {
+        case .rgb:
+            return rgbSwatches
+        case .cmyk:
+            return cmykSwatches
+        case .hsb:
+            return hsbSwatches
+        case .pantone:
+            return pantoneSwatches
+        }
     }
     
     // MARK: - Canvas Management (User's Brilliant Solution!)
@@ -521,14 +544,20 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, colorSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, pantoneSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
     }
     
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         settings = try container.decode(DocumentSettings.self, forKey: .settings)
         layers = try container.decode([VectorLayer].self, forKey: .layers)
-        colorSwatches = try container.decode([VectorColor].self, forKey: .colorSwatches)
+        
+        // Load separate swatch arrays, fallback to defaults if not found
+        rgbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .rgbSwatches) ?? Self.createDefaultRGBSwatches()
+        cmykSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .cmykSwatches) ?? Self.createDefaultCMYKSwatches()
+        hsbSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .hsbSwatches) ?? Self.createDefaultHSBSwatches()
+        pantoneSwatches = try container.decodeIfPresent([VectorColor].self, forKey: .pantoneSwatches) ?? Self.createDefaultPantoneSwatches()
+        
         selectedLayerIndex = try container.decodeIfPresent(Int.self, forKey: .selectedLayerIndex)
         selectedShapeIDs = try container.decode(Set<UUID>.self, forKey: .selectedShapeIDs)
         selectedTextIDs = try container.decodeIfPresent(Set<UUID>.self, forKey: .selectedTextIDs) ?? []
@@ -558,7 +587,13 @@ class VectorDocument: ObservableObject, Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(settings, forKey: .settings)
         try container.encode(layers, forKey: .layers)
-        try container.encode(colorSwatches, forKey: .colorSwatches)
+        
+        // Save separate swatch arrays
+        try container.encode(rgbSwatches, forKey: .rgbSwatches)
+        try container.encode(cmykSwatches, forKey: .cmykSwatches)
+        try container.encode(hsbSwatches, forKey: .hsbSwatches)
+        try container.encode(pantoneSwatches, forKey: .pantoneSwatches)
+        
         try container.encodeIfPresent(selectedLayerIndex, forKey: .selectedLayerIndex)
         try container.encode(selectedShapeIDs, forKey: .selectedShapeIDs)
         try container.encode(selectedTextIDs, forKey: .selectedTextIDs)
@@ -934,7 +969,10 @@ class VectorDocument: ObservableObject, Codable {
         let previousState = undoStack.removeLast()
         settings = previousState.settings
         layers = previousState.layers
-        colorSwatches = previousState.colorSwatches
+        rgbSwatches = previousState.rgbSwatches
+        cmykSwatches = previousState.cmykSwatches
+        hsbSwatches = previousState.hsbSwatches
+        pantoneSwatches = previousState.pantoneSwatches
         selectedLayerIndex = previousState.selectedLayerIndex
         selectedShapeIDs = previousState.selectedShapeIDs
         currentTool = previousState.currentTool
@@ -969,7 +1007,10 @@ class VectorDocument: ObservableObject, Codable {
         let nextState = redoStack.removeLast()
         settings = nextState.settings
         layers = nextState.layers
-        colorSwatches = nextState.colorSwatches
+        rgbSwatches = nextState.rgbSwatches
+        cmykSwatches = nextState.cmykSwatches
+        hsbSwatches = nextState.hsbSwatches
+        pantoneSwatches = nextState.pantoneSwatches
         selectedLayerIndex = nextState.selectedLayerIndex
         selectedShapeIDs = nextState.selectedShapeIDs
         currentTool = nextState.currentTool
@@ -1483,15 +1524,47 @@ class VectorDocument: ObservableObject, Codable {
         zoomRequest = nil
     }
     
-    // MARK: - Color Management
-    func addColorSwatch(_ color: VectorColor) {
-        if !colorSwatches.contains(color) {
-            colorSwatches.append(color)
+    // MARK: - Color Management - SIMPLIFIED
+    func addColorToCurrentMode(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            if !rgbSwatches.contains(color) {
+                rgbSwatches.append(color)
+            }
+        case .cmyk:
+            if !cmykSwatches.contains(color) {
+                cmykSwatches.append(color)
+            }
+        case .hsb:
+            if !hsbSwatches.contains(color) {
+                hsbSwatches.append(color)
+            }
+        case .pantone:
+            if !pantoneSwatches.contains(color) {
+                pantoneSwatches.append(color)
+            }
         }
     }
     
+    func addColorSwatch(_ color: VectorColor) {
+        addColorToCurrentMode(color)
+    }
+    
     func addColorToSwatches(_ color: VectorColor) {
-        addColorSwatch(color)
+        addColorToCurrentMode(color)
+    }
+    
+    func removeColorFromCurrentMode(_ color: VectorColor) {
+        switch settings.colorMode {
+        case .rgb:
+            rgbSwatches.removeAll { $0 == color }
+        case .cmyk:
+            cmykSwatches.removeAll { $0 == color }
+        case .hsb:
+            hsbSwatches.removeAll { $0 == color }
+        case .pantone:
+            pantoneSwatches.removeAll { $0 == color }
+        }
     }
     
     func setActiveColor(_ color: VectorColor) {
@@ -1527,26 +1600,21 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func removeColorSwatch(_ color: VectorColor) {
-        colorSwatches.removeAll { $0 == color }
+        removeColorFromCurrentMode(color)
     }
     
-    // Load appropriate color swatches based on color mode - SEPARATED by mode
-    static func getDefaultColorSwatchesForMode(_ colorMode: ColorMode) -> [VectorColor] {
+
+    
+    // SIMPLIFIED - No longer needed with separate arrays
+    func updateColorSwatchesForMode() {
+        // Nothing to do - each mode maintains its own array
+        print("🎨 Color mode switched to \(settings.colorMode.rawValue)")
+    }
+    
+    // SIMPLIFIED - Create default arrays for each mode
+    static func createDefaultRGBSwatches() -> [VectorColor] {
         let basicColors: [VectorColor] = [.black, .white, .clear]
-        
-        switch colorMode {
-        case .rgb:
-            return basicColors + createRGBSwatches() + createAppleSystemColorSwatches()
-        case .cmyk:
-            return basicColors + createCMYKSwatches()
-        case .pantone:
-            return basicColors + ColorManagement.loadPantoneColors().map { .pantone($0) }
-        }
-    }
-    
-    // Create RGB-specific color swatches
-    static func createRGBSwatches() -> [VectorColor] {
-        return [
+        let rgbColors: [VectorColor] = [
             .rgb(RGBColor(red: 1, green: 0, blue: 0)),     // Red
             .rgb(RGBColor(red: 0, green: 1, blue: 0)),     // Green
             .rgb(RGBColor(red: 0, green: 0, blue: 1)),     // Blue
@@ -1560,34 +1628,31 @@ class VectorDocument: ObservableObject, Codable {
             .rgb(RGBColor(red: 0, green: 0, blue: 0.5)),   // Dark Blue
             .rgb(RGBColor(red: 0.5, green: 0.5, blue: 0)), // Olive
         ]
-    }
-    
-    // Create Apple System Color swatches
-    static func createAppleSystemColorSwatches() -> [VectorColor] {
-        let systemColors = [
-            AppleSystemColor.systemBlue,
-            AppleSystemColor.systemRed,
-            AppleSystemColor.systemGreen,
-            AppleSystemColor.systemYellow,
-            AppleSystemColor.systemOrange,
-            AppleSystemColor.systemPurple,
-            AppleSystemColor.systemPink,
-            AppleSystemColor.systemTeal,
-            AppleSystemColor.systemIndigo,
-            AppleSystemColor.systemBrown,
-            AppleSystemColor.systemGray,
-            AppleSystemColor.systemGray2,
-            AppleSystemColor.systemGray3,
-            AppleSystemColor.label,
-            AppleSystemColor.secondaryLabel,
-            AppleSystemColor.link
+        
+        let systemColors: [VectorColor] = [
+            .appleSystem(.systemBlue),
+            .appleSystem(.systemRed),
+            .appleSystem(.systemGreen),
+            .appleSystem(.systemYellow),
+            .appleSystem(.systemOrange),
+            .appleSystem(.systemPurple),
+            .appleSystem(.systemPink),
+            .appleSystem(.systemTeal),
+            .appleSystem(.systemIndigo),
+            .appleSystem(.systemBrown),
+            .appleSystem(.systemGray),
+            .appleSystem(.systemGray2),
+            .appleSystem(.systemGray3),
+            .appleSystem(.label),
+            .appleSystem(.secondaryLabel),
+            .appleSystem(.link)
         ]
         
-        return systemColors.map { .appleSystem($0) }
+        return basicColors + rgbColors + systemColors
     }
     
-    // Create professional CMYK color swatches (print-ready colors)
-    static func createCMYKSwatches() -> [VectorColor] {
+    static func createDefaultCMYKSwatches() -> [VectorColor] {
+        let basicColors: [VectorColor] = [.black, .white, .clear]
         var cmykColors: [VectorColor] = []
         
         // Professional CMYK color swatches for print production
@@ -1633,57 +1698,40 @@ class VectorDocument: ObservableObject, Codable {
             cmykColors.append(.cmyk(cmykColor))
         }
         
-        return cmykColors
+        return basicColors + cmykColors
     }
     
-    // Update color swatches when color mode changes - CLEAN SEPARATION
-    func updateColorSwatchesForMode() {
-        // Get mode-specific defaults (separated by mode)
-        let modeDefaults = Self.getDefaultColorSwatchesForMode(settings.colorMode)
-        
-        // Keep only user-added colors that match the current mode
-        let currentSwatches = colorSwatches
-        var userAddedColors: [VectorColor] = []
-        
-        for color in currentSwatches {
-            // Only keep user colors that match the current color mode
-            let matchesMode = colorMatchesCurrentMode(color)
-            let isDefault = modeDefaults.contains(color)
-            
-            if matchesMode && !isDefault {
-                userAddedColors.append(color)
-            }
-        }
-        
-        // Set clean swatches: mode defaults + user-added colors of same mode
-        self.colorSwatches = modeDefaults + userAddedColors
+    static func createDefaultPantoneSwatches() -> [VectorColor] {
+        let basicColors: [VectorColor] = [.black, .white, .clear]
+        let spotColors = SPOTColor.allSPOTColors.map { VectorColor.spot($0) }
+        return basicColors + spotColors
     }
     
-    // Check if a color matches the current color mode
-    private func colorMatchesCurrentMode(_ color: VectorColor) -> Bool {
-        switch settings.colorMode {
-        case .rgb:
-            switch color {
-            case .rgb, .appleSystem, .black, .white, .clear:
-                return true
-            default:
-                return false
-            }
-        case .cmyk:
-            switch color {
-            case .cmyk, .black, .white, .clear:
-                return true
-            default:
-                return false
-            }
-        case .pantone:
-            switch color {
-            case .pantone, .black, .white, .clear:
-                return true
-            default:
-                return false
-            }
+    static func createDefaultHSBSwatches() -> [VectorColor] {
+        let basicColors: [VectorColor] = [.black, .white, .clear]
+        
+        // Create HSB spectrum colors
+        var hsbColors: [VectorColor] = []
+        
+        // Primary hues (every 30 degrees) at full saturation and brightness
+        for hue in stride(from: 0, to: 360, by: 30) {
+            let hsbColor = HSBColorModel(hue: Double(hue), saturation: 1.0, brightness: 1.0)
+            hsbColors.append(.hsb(hsbColor))
         }
+        
+        // Add some desaturated versions
+        for hue in stride(from: 0, to: 360, by: 60) {
+            let hsbColor = HSBColorModel(hue: Double(hue), saturation: 0.5, brightness: 0.8)
+            hsbColors.append(.hsb(hsbColor))
+        }
+        
+        // Add some darker versions
+        for hue in stride(from: 0, to: 360, by: 90) {
+            let hsbColor = HSBColorModel(hue: Double(hue), saturation: 0.8, brightness: 0.5)
+            hsbColors.append(.hsb(hsbColor))
+        }
+        
+        return basicColors + hsbColors
     }
     
     // MARK: - PROFESSIONAL PATHFINDER OPERATIONS (Adobe Illustrator Standards)

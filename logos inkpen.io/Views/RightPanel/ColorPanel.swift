@@ -11,11 +11,13 @@ struct ColorPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
+    @State private var currentPreviewColor: VectorColor = .black // Shared color state
     let onColorSelected: ((VectorColor) -> Void)?
     
     init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil) {
         self.document = document
         self.onColorSelected = onColorSelected
+        self._currentPreviewColor = State(initialValue: document.defaultFillColor)
     }
     
     var body: some View {
@@ -39,7 +41,12 @@ struct ColorPanel: View {
                 Picker("Color Mode", selection: Binding(
                     get: { document.settings.colorMode },
                     set: { newMode in
+                        let oldMode = document.settings.colorMode
                         document.settings.colorMode = newMode
+                        
+                        // Convert current preview color to new mode
+                        currentPreviewColor = convertColorToMode(currentPreviewColor, from: oldMode, to: newMode)
+                        
                         document.updateColorSwatchesForMode()
                     }
                 )) {
@@ -57,7 +64,9 @@ struct ColorPanel: View {
             .padding(.horizontal, 12)
             
             // Mode-specific input sections
-            if document.settings.colorMode == .pantone {
+            if document.settings.colorMode == .hsb {
+                HSBInputSection(document: document, sharedColor: $currentPreviewColor)
+            } else if document.settings.colorMode == .pantone {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Search Pantone Colors")
                         .font(.caption)
@@ -77,10 +86,10 @@ struct ColorPanel: View {
                 }
                 .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
-                CMYKInputSection(document: document)
+                CMYKInputSection(document: document, sharedColor: $currentPreviewColor)
                         .padding(.horizontal, 12)
             } else if document.settings.colorMode == .rgb {
-                RGBInputSection(document: document)
+                RGBInputSection(document: document, sharedColor: $currentPreviewColor)
                         .padding(.horizontal, 12)
             }
                 
@@ -99,6 +108,8 @@ struct ColorPanel: View {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         selectColor(color)
+                        // Update preview color when swatch is clicked
+                        currentPreviewColor = color
                     } label: {
                         ZStack {
                             renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
@@ -109,8 +120,13 @@ struct ColorPanel: View {
                             }
                         }
                     }
-                        .buttonStyle(PlainButtonStyle())
-                        .help(colorDescription(for: color))
+                    .buttonStyle(PlainButtonStyle())
+                    .help(colorDescription(for: color))
+                    .contextMenu {
+                        Button("Delete Swatch") {
+                            document.removeColorSwatch(color)
+                        }
+                    }
                     }
                 }
                 .padding(.horizontal, 12)
@@ -144,16 +160,18 @@ struct ColorPanel: View {
             return "RGB colors for screen display"
         case .cmyk:
             return "CMYK colors for print production"
+        case .hsb:
+            return "HSB colors with SPOT color matching"
         case .pantone:
-            return "Pantone spot colors for professional printing"
+            return "SPOT colors for professional printing"
         }
     }
     
     private var filteredColors: [VectorColor] {
         if searchText.isEmpty {
-            return document.colorSwatches
+            return document.currentSwatches
         } else {
-            return document.colorSwatches.filter { color in
+            return document.currentSwatches.filter { color in
                 colorDescription(for: color).localizedCaseInsensitiveContains(searchText)
             }
         }
@@ -205,12 +223,12 @@ struct ColorPanel: View {
         let allPantoneColors = ColorManagement.loadPantoneColors()
         
         if let foundColor = allPantoneColors.first(where: { 
-            $0.number.localizedCaseInsensitiveContains(searchQuery) ||
+            $0.pantone.localizedCaseInsensitiveContains(searchQuery) ||
             $0.name.localizedCaseInsensitiveContains(searchQuery)
         }) {
             let pantoneColor = VectorColor.pantone(foundColor)
             // Only add to swatches when explicitly searching and finding
-            if !document.colorSwatches.contains(pantoneColor) {
+            if !document.currentSwatches.contains(pantoneColor) {
                 document.addColorSwatch(pantoneColor)
             }
             searchText = ""
@@ -226,8 +244,12 @@ struct ColorPanel: View {
             return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
         case .cmyk(let cmyk): 
             return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
+        case .hsb(let hsb):
+            return "HSB(\(Int(hsb.hue))°, \(Int(hsb.saturation * 100))%, \(Int(hsb.brightness * 100))%)"
         case .pantone(let pantone): 
-            return "PANTONE \(pantone.number) - \(pantone.name)"
+            return "PANTONE \(pantone.pantone) - \(pantone.name)"
+        case .spot(let spot):
+            return "SPOT \(spot.number) - \(spot.name)"
         case .appleSystem(let systemColor): 
             return "Apple \(systemColor.name.capitalized)"
         }
@@ -236,11 +258,99 @@ struct ColorPanel: View {
     @ViewBuilder
     private func overlayText(for color: VectorColor) -> some View {
         if case .pantone(let pantone) = color {
-            Text(pantone.number)
+            Text(pantone.pantone)
                 .font(.system(size: 6))
                 .foregroundColor(.white)
                 .shadow(color: .black, radius: 1)
                 .lineLimit(1)
         }
+    }
+    
+    // MARK: - Color Mode Conversion
+    
+    // Convert a color to a different color mode
+    private func convertColorToMode(_ color: VectorColor, from oldMode: ColorMode, to newMode: ColorMode) -> VectorColor {
+        if oldMode == newMode {
+            return color
+        }
+        
+        // RGB to CMYK conversion
+        if oldMode == .rgb && newMode == .cmyk {
+            switch color {
+            case .rgb(let rgbColor):
+                let cmykColor = ColorManagement.rgbToCMYK(rgbColor)
+                return .cmyk(cmykColor)
+            case .cmyk:
+                return color // Already in CMYK
+            case .hsb(let hsb):
+                let cmykColor = ColorManagement.rgbToCMYK(hsb.rgbColor)
+                return .cmyk(cmykColor)
+            case .pantone(let pantone):
+                return .cmyk(pantone.cmykEquivalent)
+            case .spot(let spot):
+                return .cmyk(spot.cmykEquivalent)
+            case .appleSystem(let system):
+                let cmykColor = ColorManagement.rgbToCMYK(system.rgbEquivalent)
+                return .cmyk(cmykColor)
+            case .clear:
+                return .clear
+            case .black:
+                return .cmyk(CMYKColor(cyan: 0, magenta: 0, yellow: 0, black: 1))
+            case .white:
+                return .cmyk(CMYKColor(cyan: 0, magenta: 0, yellow: 0, black: 0))
+            }
+        }
+        
+        // CMYK to RGB conversion
+        if oldMode == .cmyk && newMode == .rgb {
+            switch color {
+            case .cmyk(let cmykColor):
+                let rgbColor = cmykColor.rgbColor
+                return .rgb(rgbColor)
+            case .rgb:
+                return color // Already in RGB
+            case .hsb(let hsb):
+                return .rgb(hsb.rgbColor)
+            case .pantone(let pantone):
+                return .rgb(pantone.rgbEquivalent)
+            case .spot(let spot):
+                return .rgb(spot.rgbEquivalent)
+            case .appleSystem:
+                return color // Already has RGB representation
+            case .clear:
+                return .clear
+            case .black:
+                return .rgb(RGBColor(red: 0, green: 0, blue: 0))
+            case .white:
+                return .rgb(RGBColor(red: 1, green: 1, blue: 1))
+            }
+        }
+        
+        // HSB conversions
+        if newMode == .hsb {
+            switch color {
+            case .hsb:
+                return color // Already in HSB
+            case .rgb(let rgb):
+                return .hsb(HSBColorModel.fromRGB(rgb))
+            case .cmyk(let cmyk):
+                return .hsb(HSBColorModel.fromRGB(cmyk.rgbColor))
+            case .pantone(let pantone):
+                return .hsb(HSBColorModel.fromRGB(pantone.rgbEquivalent))
+            case .spot(let spot):
+                return .hsb(spot.hsbEquivalent)
+            case .appleSystem(let system):
+                return .hsb(HSBColorModel.fromRGB(system.rgbEquivalent))
+            case .clear:
+                return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0))
+            case .black:
+                return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 0))
+            case .white:
+                return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1))
+            }
+        }
+        
+        // For now, other conversions (to/from SPOT) just return the color
+        return color
     }
 } 

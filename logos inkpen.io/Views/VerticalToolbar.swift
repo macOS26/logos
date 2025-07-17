@@ -263,7 +263,7 @@ struct ColorSwatchGrid: View {
             
             // Color Swatches
             LazyVGrid(columns: columns, spacing: 1) {
-                ForEach(Array(document.colorSwatches.enumerated()), id: \.offset) { index, color in
+                ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
                         // Apply color to the currently active target (fill or stroke)
                         if document.activeColorTarget == .stroke {
@@ -419,7 +419,9 @@ struct ColorSwatchGrid: View {
         case .clear: return "Clear"
         case .rgb(let rgb): return "RGB(\(Int(rgb.red * 255)), \(Int(rgb.green * 255)), \(Int(rgb.blue * 255)))"
         case .cmyk(let cmyk): return "CMYK(\(Int((cmyk.cyan * 100).isFinite ? cmyk.cyan * 100 : 0))%, \(Int((cmyk.magenta * 100).isFinite ? cmyk.magenta * 100 : 0))%, \(Int((cmyk.yellow * 100).isFinite ? cmyk.yellow * 100 : 0))%, \(Int((cmyk.black * 100).isFinite ? cmyk.black * 100 : 0))%)"
-        case .pantone(let pantone): return "Pantone \(pantone.number)"
+        case .hsb(let hsb): return "HSB(\(Int(hsb.hue))°, \(Int(hsb.saturation * 100))%, \(Int(hsb.brightness * 100))%)"
+        case .pantone(let pantone): return "Pantone \(pantone.pantone)"
+        case .spot(let spot): return "SPOT \(spot.number)"
         case .appleSystem(let systemColor): return "Apple \(systemColor.name.capitalized)"
         }
     }

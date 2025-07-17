@@ -563,7 +563,10 @@ struct MainView: View {
         // Update the current document by copying all properties
         document.settings = newDoc.settings
         document.layers = newDoc.layers
-        document.colorSwatches = newDoc.colorSwatches
+        document.rgbSwatches = newDoc.rgbSwatches
+        document.cmykSwatches = newDoc.cmykSwatches
+        document.hsbSwatches = newDoc.hsbSwatches
+        document.pantoneSwatches = newDoc.pantoneSwatches
         document.selectedLayerIndex = newDoc.selectedLayerIndex
         document.selectedShapeIDs = newDoc.selectedShapeIDs
         document.selectedTextIDs = newDoc.selectedTextIDs
@@ -616,7 +619,10 @@ struct MainView: View {
                         // Update the document by copying all properties
                         document.settings = loadedDocument.settings
                         document.layers = loadedDocument.layers
-                        document.colorSwatches = loadedDocument.colorSwatches
+                        document.rgbSwatches = loadedDocument.rgbSwatches
+                        document.cmykSwatches = loadedDocument.cmykSwatches
+                        document.hsbSwatches = loadedDocument.hsbSwatches
+                        document.pantoneSwatches = loadedDocument.pantoneSwatches
                         document.selectedLayerIndex = loadedDocument.selectedLayerIndex
                         document.selectedShapeIDs = loadedDocument.selectedShapeIDs
                         document.selectedTextIDs = loadedDocument.selectedTextIDs

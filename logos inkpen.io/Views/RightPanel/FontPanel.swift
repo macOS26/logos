@@ -233,7 +233,7 @@ struct FontPanel: View {
                 title: "Text Fill Color",
                 onColorSelected: { color in
                     updateTextFillColor(color)
-                    if !document.colorSwatches.contains(color) {
+                    if !document.currentSwatches.contains(color) {
                         document.addColorSwatch(color)
                     }
                 }
@@ -245,7 +245,7 @@ struct FontPanel: View {
                 title: "Text Stroke Color",
                 onColorSelected: { color in
                     updateTextStrokeColor(color)
-                    if !document.colorSwatches.contains(color) {
+                    if !document.currentSwatches.contains(color) {
                         document.addColorSwatch(color)
                     }
                 }

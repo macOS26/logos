@@ -15,6 +15,8 @@ struct RGBColorData: Hashable {
 
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
+    @Binding var sharedColor: VectorColor // Shared color state
+    
     @State private var redValue: String = "133"
     @State private var greenValue: String = "78" 
     @State private var blueValue: String = "68"
@@ -117,6 +119,7 @@ struct RGBInputSection: View {
                             .onChange(of: redSlider) {
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -134,6 +137,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -167,6 +171,7 @@ struct RGBInputSection: View {
                             .onChange(of: greenSlider) {
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -184,6 +189,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -215,6 +221,7 @@ struct RGBInputSection: View {
                             .onChange(of: blueSlider) {
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -232,6 +239,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
+                                updateSharedColor()
                             }
                         }
                 }
@@ -281,11 +289,18 @@ struct RGBInputSection: View {
                     .frame(width: 70)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
+                        updateSharedColor()
                     }
                 
             }
         }
         .padding(.vertical, 8)
+        .onAppear {
+            loadFromSharedColor()
+        }
+        .onChange(of: sharedColor) { _, newColor in
+            loadFromSharedColor()
+        }
     }
     
     private func updateHexFromRGB() {
@@ -316,6 +331,62 @@ struct RGBInputSection: View {
         }
     }
     
+    private func updateSharedColor() {
+        sharedColor = .rgb(currentColor)
+    }
+    
+    private func loadFromSharedColor() {
+        switch sharedColor {
+        case .rgb(let rgb):
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .cmyk(let cmyk):
+            let rgb = cmyk.rgbColor
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .hsb(let hsb):
+            let rgb = hsb.rgbColor
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .pantone(let pantone):
+            let rgb = pantone.rgbEquivalent
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .spot(let spot):
+            let rgb = spot.rgbEquivalent
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .appleSystem(let system):
+            let rgb = system.rgbEquivalent
+            setRGBValues(
+                red: Int(rgb.red * 255),
+                green: Int(rgb.green * 255),
+                blue: Int(rgb.blue * 255)
+            )
+        case .clear:
+            setRGBValues(red: 0, green: 0, blue: 0)
+        case .black:
+            setRGBValues(red: 0, green: 0, blue: 0)
+        case .white:
+            setRGBValues(red: 255, green: 255, blue: 255)
+        }
+    }
+    
     private func setRGBValues(red: Int, green: Int, blue: Int) {
         redValue = String(red)
         greenValue = String(green)
@@ -338,6 +409,6 @@ struct RGBInputSection: View {
 }
 
 #Preview {
-    RGBInputSection(document: VectorDocument())
+    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black))
         .padding()
 }

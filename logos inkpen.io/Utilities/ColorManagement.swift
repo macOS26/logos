@@ -167,94 +167,21 @@ class ColorManagement {
     }
     
     // MARK: - Pantone Colors
-    static func loadPantoneColors() -> [PantoneColor] {
+    static func loadPantoneColors() -> [PantoneLibraryColor] {
         return [
-            // Pantone Color of the Year 2024
-            PantoneColor(
-                name: "PANTONE 13-1023 TPG Peach Fuzz",
-                number: "13-1023 TPG",
-                rgbEquivalent: RGBColor(red: 1.0, green: 0.71, blue: 0.66),
-                cmykEquivalent: CMYKColor(cyan: 0.0, magenta: 0.29, yellow: 0.34, black: 0.0)
-            ),
-            
-            // Classic Pantone Colors
-            PantoneColor(
-                name: "PANTONE Red 032 C",
-                number: "032 C",
-                rgbEquivalent: RGBColor(red: 0.89, green: 0.18, blue: 0.22),
-                cmykEquivalent: CMYKColor(cyan: 0.0, magenta: 0.95, yellow: 0.87, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Blue 072 C",
-                number: "072 C",
-                rgbEquivalent: RGBColor(red: 0.0, green: 0.32, blue: 0.73),
-                cmykEquivalent: CMYKColor(cyan: 1.0, magenta: 0.68, yellow: 0.0, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Yellow 012 C",
-                number: "012 C",
-                rgbEquivalent: RGBColor(red: 1.0, green: 0.87, blue: 0.0),
-                cmykEquivalent: CMYKColor(cyan: 0.0, magenta: 0.13, yellow: 1.0, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Green 354 C",
-                number: "354 C",
-                rgbEquivalent: RGBColor(red: 0.0, green: 0.63, blue: 0.33),
-                cmykEquivalent: CMYKColor(cyan: 0.84, magenta: 0.0, yellow: 0.67, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Orange 021 C",
-                number: "021 C",
-                rgbEquivalent: RGBColor(red: 1.0, green: 0.38, blue: 0.0),
-                cmykEquivalent: CMYKColor(cyan: 0.0, magenta: 0.62, yellow: 1.0, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Purple 2685 C",
-                number: "2685 C",
-                rgbEquivalent: RGBColor(red: 0.44, green: 0.20, blue: 0.66),
-                cmykEquivalent: CMYKColor(cyan: 0.67, magenta: 0.92, yellow: 0.0, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Pink 2375 C",
-                number: "2375 C",
-                rgbEquivalent: RGBColor(red: 0.88, green: 0.42, blue: 0.75),
-                cmykEquivalent: CMYKColor(cyan: 0.0, magenta: 0.58, yellow: 0.0, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Warm Gray 1 C",
-                number: "Warm Gray 1 C",
-                rgbEquivalent: RGBColor(red: 0.88, green: 0.86, blue: 0.82),
-                cmykEquivalent: CMYKColor(cyan: 0.12, magenta: 0.14, yellow: 0.18, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE Cool Gray 9 C",
-                number: "Cool Gray 9 C",
-                rgbEquivalent: RGBColor(red: 0.42, green: 0.43, blue: 0.45),
-                cmykEquivalent: CMYKColor(cyan: 0.58, magenta: 0.57, yellow: 0.55, black: 0.0)
-            ),
-            
-            // Metallics
-            PantoneColor(
-                name: "PANTONE 871 C",
-                number: "871 C",
-                rgbEquivalent: RGBColor(red: 0.68, green: 0.54, blue: 0.27),
-                cmykEquivalent: CMYKColor(cyan: 0.32, magenta: 0.46, yellow: 0.73, black: 0.0)
-            ),
-            
-            PantoneColor(
-                name: "PANTONE 877 C",
-                number: "877 C",
-                rgbEquivalent: RGBColor(red: 0.55, green: 0.58, blue: 0.60),
-                cmykEquivalent: CMYKColor(cyan: 0.45, magenta: 0.42, yellow: 0.40, black: 0.0)
-            )
+            // Sample Pantone colors - this will be replaced by the full library
+            PantoneLibraryColor(pantone: "13-1023 TPG", hex: "#ffb5a7"),
+            PantoneLibraryColor(pantone: "032 C", hex: "#ef3340"),
+            PantoneLibraryColor(pantone: "072 C", hex: "#10069f"),
+            PantoneLibraryColor(pantone: "012 C", hex: "#ffd700"),
+            PantoneLibraryColor(pantone: "354 C", hex: "#00b140"),
+            PantoneLibraryColor(pantone: "021 C", hex: "#fe5000"),
+            PantoneLibraryColor(pantone: "2685 C", hex: "#330072"),
+            PantoneLibraryColor(pantone: "2375 C", hex: "#e277cd"),
+            PantoneLibraryColor(pantone: "Warm Gray 1 C", hex: "#d7d2cb"),
+            PantoneLibraryColor(pantone: "Cool Gray 9 C", hex: "#75787b"),
+            PantoneLibraryColor(pantone: "871 C", hex: "#84754e"),
+            PantoneLibraryColor(pantone: "877 C", hex: "#8a8d8f")
         ]
     }
     

@@ -15,7 +15,7 @@ struct PantoneColorPickerSheet: View {
     
     @State private var searchText = ""
     @State private var selectedCategory: PantoneCategory = .all
-    @State private var selectedColor: PantoneColor?
+    @State private var selectedColor: PantoneLibraryColor?
     
     enum PantoneCategory: String, CaseIterable {
         case all = "All Colors"
@@ -23,29 +23,29 @@ struct PantoneColorPickerSheet: View {
         case metallics = "Metallics"
         case colorOfYear = "Color of the Year"
         
-        func filter(_ colors: [PantoneColor]) -> [PantoneColor] {
+        func filter(_ colors: [PantoneLibraryColor]) -> [PantoneLibraryColor] {
             switch self {
             case .all:
                 return colors
             case .classics:
                 return colors.filter { color in
-                    color.number.contains("C") && 
+                    color.pantone.contains("C") && 
                     !color.name.localizedCaseInsensitiveContains("metallic") &&
                     !color.name.localizedCaseInsensitiveContains("peach fuzz")
                 }
             case .metallics:
-                return colors.filter { $0.number.contains("871") || $0.number.contains("877") }
+                return colors.filter { $0.pantone.contains("871") || $0.pantone.contains("877") }
             case .colorOfYear:
                 return colors.filter { $0.name.localizedCaseInsensitiveContains("peach fuzz") }
             }
         }
     }
     
-    private var allPantoneColors: [PantoneColor] {
+    private var allPantoneColors: [PantoneLibraryColor] {
         ColorManagement.loadPantoneColors()
     }
     
-    private var filteredColors: [PantoneColor] {
+    private var filteredColors: [PantoneLibraryColor] {
         let categoryFiltered = selectedCategory.filter(allPantoneColors)
         
         if searchText.isEmpty {
@@ -53,7 +53,7 @@ struct PantoneColorPickerSheet: View {
         } else {
             return categoryFiltered.filter { color in
                 color.name.localizedCaseInsensitiveContains(searchText) ||
-                color.number.localizedCaseInsensitiveContains(searchText)
+                color.pantone.localizedCaseInsensitiveContains(searchText)
             }
         }
     }
@@ -93,7 +93,7 @@ struct PantoneColorPickerSheet: View {
                             )
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("PANTONE \(selectedColor.number)")
+                            Text("PANTONE \(selectedColor.pantone)")
                                 .font(.headline)
                                 .fontWeight(.bold)
                             
@@ -126,7 +126,7 @@ struct PantoneColorPickerSheet: View {
                 // Color Grid
                 ScrollView {
                     LazyVGrid(columns: Array(repeating: GridItem(.fixed(50), spacing: 8), count: 6), spacing: 8) {
-                        ForEach(filteredColors, id: \.number) { color in
+                        ForEach(filteredColors, id: \.pantone) { color in
                             Button {
                                 selectedColor = color
                             } label: {
@@ -136,18 +136,18 @@ struct PantoneColorPickerSheet: View {
                                         .frame(width: 50, height: 50)
                                         .overlay(
                                             Rectangle()
-                                                .stroke(selectedColor?.number == color.number ? Color.blue : Color.gray, 
-                                                       lineWidth: selectedColor?.number == color.number ? 2 : 1)
+                                                .stroke(selectedColor?.pantone == color.pantone ? Color.blue : Color.gray, 
+                                                       lineWidth: selectedColor?.pantone == color.pantone ? 2 : 1)
                                         )
                                     
-                                    Text(color.number)
+                                    Text(color.pantone)
                                         .font(.system(size: 8))
                                         .foregroundColor(.primary)
                                         .lineLimit(1)
                                 }
         }
         .buttonStyle(PlainButtonStyle())
-                            .help("PANTONE \(color.number) - \(color.name)")
+                            .help("PANTONE \(color.pantone) - \(color.name)")
                         }
                     }
                     .padding(.horizontal)

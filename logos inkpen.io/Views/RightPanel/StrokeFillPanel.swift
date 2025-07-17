@@ -211,7 +211,7 @@ struct StrokeFillPanel: View {
                 onColorSelected: { color in
                     updateStrokeColor(color)
                     // Only add to swatches if not already present
-                    if !document.colorSwatches.contains(color) {
+                    if !document.currentSwatches.contains(color) {
                         document.addColorSwatch(color)
                     }
                 }
@@ -224,7 +224,7 @@ struct StrokeFillPanel: View {
                 onColorSelected: { color in
                     updateFillColor(color)
                     // Only add to swatches if not already present
-                    if !document.colorSwatches.contains(color) {
+                    if !document.currentSwatches.contains(color) {
                         document.addColorSwatch(color)
                     }
                 }
