@@ -126,8 +126,7 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update H - do not touch S or B
                             }
                         
                         // Gradient overlay
@@ -144,8 +143,7 @@ struct HSBInputSection: View {
                         .onChange(of: hueValue) { _, _ in
                             if let intValue = Double(hueValue) {
                                 hueSlider = min(360, max(0, intValue))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update H - do not touch S or B
                             }
                         }
                         
@@ -161,8 +159,8 @@ struct HSBInputSection: View {
                             .fill(
                                 RadialGradient(
                                     gradient: Gradient(colors: [
-                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 0, b: Double(brightnessValue) ?? 100),
-                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 100, b: Double(brightnessValue) ?? 100)
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 100, b: Double(brightnessValue) ?? 100),
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 0, b: Double(brightnessValue) ?? 100)
                                     ]),
                                     center: .center,
                                     startRadius: 2,
@@ -198,8 +196,7 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update S - do not touch H or B
                             }
                         
                         // Gradient overlay
@@ -216,8 +213,7 @@ struct HSBInputSection: View {
                         .onChange(of: saturationValue) { _, _ in
                             if let intValue = Double(saturationValue) {
                                 saturationSlider = min(100, max(0, intValue))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update S - do not touch H or B
                             }
                         }
                         
@@ -233,8 +229,8 @@ struct HSBInputSection: View {
                             .fill(
                                 RadialGradient(
                                     gradient: Gradient(colors: [
-                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 0),
-                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 100)
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 100),
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 0)
                                     ]),
                                     center: .center,
                                     startRadius: 2,
@@ -270,8 +266,7 @@ struct HSBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update B - do not touch H or S
                             }
                         
                         // Gradient overlay
@@ -288,8 +283,7 @@ struct HSBInputSection: View {
                         .onChange(of: brightnessValue) { _, _ in
                             if let intValue = Double(brightnessValue) {
                                 brightnessSlider = min(100, max(0, intValue))
-                                updateHexFromHSB()
-                                updateSharedColor()
+                                // ONLY update B - do not touch H or S
                             }
                         }
                         
@@ -299,13 +293,13 @@ struct HSBInputSection: View {
                 }
             }
             
-            // Compact Hex Input and Swatch Preview
+            // Two Swatch Previews: HSB and PMS
             HStack(spacing: 6) {
-                // Square Color Swatch Preview (30x30)
+                // HSB Color Swatch Preview
                 Button(action: {
-                    addPMSColorToSwatches()
+                    addColorToSwatches()
                 }) {
-                    ZStack {
+                    VStack(spacing: 2) {
                         Rectangle()
                             .fill(currentColor.color)
                             .frame(width: 30, height: 30)
@@ -313,16 +307,41 @@ struct HSBInputSection: View {
                                 Rectangle()
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
-                        
-                        // Show Pantone number if match found
-                        if let pantoneColor = closestPantoneColor {
-                            Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                .font(.system(size: 6, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.6)
+                        Text("HSB")
+                            .font(.system(size: 6))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Click to add HSB color to swatches")
+                
+                // PMS Color Swatch Preview
+                Button(action: {
+                    addPMSColorToSwatches()
+                }) {
+                    VStack(spacing: 2) {
+                        ZStack {
+                            Rectangle()
+                                .fill(closestPantoneColor?.color ?? currentColor.color)
+                                .frame(width: 30, height: 30)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                            
+                            // Show Pantone number if match found
+                            if let pantoneColor = closestPantoneColor {
+                                Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                            }
                         }
+                        Text("PMS")
+                            .font(.system(size: 6))
+                            .foregroundColor(.secondary)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -346,7 +365,6 @@ struct HSBInputSection: View {
                     .frame(width: 55)
                     .onChange(of: hexValue) { _, _ in
                         updateHSBFromHex()
-                        updateSharedColor()
                     }
             }
             
