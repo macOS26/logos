@@ -23,6 +23,9 @@ struct HSBInputSection: View {
     @State private var saturationSlider: Double = 100 // 0-100%
     @State private var brightnessSlider: Double = 100 // 0-100%
     
+    // Find closest Pantone color match
+    @ObservedObject private var pantoneLibrary = PantoneLibrary()
+    
     // Computed color from HSB values
     private var currentColor: HSBColorModel {
         let h = Double(hueValue) ?? 0
@@ -30,6 +33,10 @@ struct HSBInputSection: View {
         let b = (Double(brightnessValue) ?? 0) / 100.0
         
         return HSBColorModel(hue: h, saturation: s, brightness: b)
+    }
+    
+    private var closestPantoneColor: PantoneLibraryColor? {
+        pantoneLibrary.findClosestMatch(to: currentColor)
     }
     
     // Helper function to get SwiftUI Color from HSB values
@@ -149,16 +156,27 @@ struct HSBInputSection: View {
                 
                 // Saturation Slider
                 HStack(spacing: 8) {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [Color.white, Color.gray]),
-                                center: .center,
-                                startRadius: 2,
-                                endRadius: 6
+                    ZStack {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [Color.white, Color.gray]),
+                                    center: .center,
+                                    startRadius: 2,
+                                    endRadius: 6
+                                )
                             )
-                        )
-                        .frame(width: 12, height: 12)
+                            .frame(width: 12, height: 12)
+                        
+                        // Current color preview overlay
+                        Circle()
+                            .fill(currentColor.color)
+                            .frame(width: 8, height: 8)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 0.5)
+                            )
+                    }
                     
                     Text("S")
                         .font(.system(size: 11, weight: .medium))
@@ -210,16 +228,27 @@ struct HSBInputSection: View {
                 
                 // Brightness Slider
                 HStack(spacing: 8) {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [Color.white, Color.black]),
-                                center: .center,
-                                startRadius: 2,
-                                endRadius: 6
+                    ZStack {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    gradient: Gradient(colors: [Color.white, Color.black]),
+                                    center: .center,
+                                    startRadius: 2,
+                                    endRadius: 6
+                                )
                             )
-                        )
-                        .frame(width: 12, height: 12)
+                            .frame(width: 12, height: 12)
+                        
+                        // Current color preview overlay
+                        Circle()
+                            .fill(currentColor.color)
+                            .frame(width: 8, height: 8)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white, lineWidth: 0.5)
+                            )
+                    }
                     
                     Text("B")
                         .font(.system(size: 11, weight: .medium))
@@ -274,22 +303,34 @@ struct HSBInputSection: View {
             HStack(spacing: 8) {
                 // Square Color Swatch Preview (30x30 like RGB)
                 Button(action: {
-                    addColorToSwatches()
+                    addPMSColorToSwatches()
                 }) {
-                    Rectangle()
-                        .fill(currentColor.color)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
+                    ZStack {
+                        Rectangle()
+                            .fill(currentColor.color)
+                            .frame(width: 30, height: 30)
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        
+                        // Show Pantone number if match found
+                        if let pantoneColor = closestPantoneColor {
+                            Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
+                                .font(.system(size: 6, weight: .bold))
+                                .foregroundColor(.white)
+                                .shadow(color: .black, radius: 1, x: 0, y: 0)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                    }
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Click to add color to swatches")
+                .help("Click to add PMS color to swatches")
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Button("Add to Swatches") {
-                        addColorToSwatches()
+                        addPMSColorToSwatches()
                     }
                     .font(.system(size: 10))
                     .foregroundColor(.primary)
@@ -321,15 +362,27 @@ struct HSBInputSection: View {
                 ForEach(defaultHSBColors.indices, id: \.self) { index in
                     Button(action: {
                         let hsbColor = defaultHSBColors[index]
-                        addSpecificHSBColorToSwatches(hsbColor)
+                        addSpecificPMSColorToSwatches(hsbColor)
                     }) {
-                        Rectangle()
-                            .fill(defaultHSBColors[index].color)
-                            .frame(width: 30, height: 30)
-                            .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
+                        ZStack {
+                            Rectangle()
+                                .fill(defaultHSBColors[index].color)
+                                .frame(width: 30, height: 30)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                            
+                            // Show Pantone number if match found for this specific color
+                            if let pantoneMatch = pantoneLibrary.findClosestMatch(to: defaultHSBColors[index]) {
+                                Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
+                                    .font(.system(size: 6, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
+                            }
+                        }
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help("Click to add color to swatches")
@@ -479,8 +532,33 @@ struct HSBInputSection: View {
         document.addColorToSwatches(vectorColor)
     }
     
+    private func addPMSColorToSwatches() {
+        // Add current HSB color as a PMS color using the closest Pantone match name
+        if let pantoneColor = closestPantoneColor {
+            // Create a PMS color based on current HSB values but with Pantone naming
+            let pmsColor = VectorColor.pantone(pantoneColor)
+            document.addColorSwatch(pmsColor)
+        } else {
+            // Fallback: Add as HSB color if no PMS match found
+            let hsbColor = VectorColor.hsb(currentColor)
+            document.addColorSwatch(hsbColor)
+        }
+    }
+    
     private func addSpecificHSBColorToSwatches(_ hsbColor: HSBColorModel) {
         let vectorColor = VectorColor.hsb(hsbColor)
         document.addColorToSwatches(vectorColor)
+    }
+    
+    private func addSpecificPMSColorToSwatches(_ hsbColor: HSBColorModel) {
+        // Find closest PMS match for this specific HSB color
+        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
+            let pmsColor = VectorColor.pantone(pantoneMatch)
+            document.addColorSwatch(pmsColor)
+        } else {
+            // Fallback to HSB if no PMS match
+            let vectorColor = VectorColor.hsb(hsbColor)
+            document.addColorSwatch(vectorColor)
+        }
     }
 } 
