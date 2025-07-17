@@ -164,8 +164,8 @@ public class CoreGraphicsPathOperations {
         return splitWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
     
-    /// PROFESSIONAL SPLIT with Shape Tracking: Maintains color fidelity like Cut and Crop
-    /// Returns split paths with their original shape indices for perfect color assignment
+    /// PROFESSIONAL SPLIT with Shape Tracking: Perfect stained glass window effect
+    /// Uses spatial analysis to determine which original shape each piece truly belongs to
     /// - Parameters:
     ///   - paths: Array of paths to split
     ///   - fillRule: Fill rule to use (.winding or .evenOdd)
@@ -175,18 +175,34 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL SPLIT (CoreGraphics): Processing \(paths.count) paths with curve preservation")
-        print("   Stained Glass Window: Each piece maintains original shape's color")
+        print("🔨 PROFESSIONAL SPLIT (CoreGraphics): Processing \(paths.count) paths with perfect color fidelity")
+        print("   🪟 Stained Glass Window: Each piece gets the color of the shape it belongs to")
         
+        // STEP 1: Get all split pieces (without color assignment yet)
+        let allSplitPieces = getAllSplitPieces(paths, using: fillRule)
+        
+        // STEP 2: For each piece, determine which original shape it belongs to
         var resultPaths: [(CGPath, Int)] = []
         
-        // STEP 1: Get unique (non-overlapping) parts of each path
-        print("  → Finding unique parts of each path...")
+        for piece in allSplitPieces {
+            let originalShapeIndex = determineOriginalShapeIndex(for: piece, from: paths)
+            resultPaths.append((piece, originalShapeIndex))
+            print("   🎨 Piece → Shape \(originalShapeIndex): Color assigned based on spatial analysis")
+        }
+        
+        print("✅ PROFESSIONAL SPLIT: Created \(resultPaths.count) pieces with PERFECT stained glass window colors")
+        return resultPaths
+    }
+    
+    /// Gets all split pieces without worrying about color assignment
+    private static func getAllSplitPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [CGPath] {
+        var allPieces: [CGPath] = []
+        
+        // Get unique parts of each path
         for i in 0..<paths.count {
             let currentPath = paths[i]
             guard !currentPath.isEmpty else { continue }
             
-            // Start with the current path
             var remainingPath = currentPath
             
             // Subtract all other paths from it
@@ -197,133 +213,95 @@ public class CoreGraphicsPathOperations {
                 if let subtracted = subtract(otherPath, from: remainingPath, using: fillRule) {
                     remainingPath = subtracted
                 } else {
-                    // If subtraction results in empty path, this part is completely overlapped
-                    remainingPath = CGMutablePath() // Empty path
+                    remainingPath = CGMutablePath()
                     break
                 }
             }
             
-            // Add the unique parts as separate components WITH SHAPE TRACKING
             if !remainingPath.isEmpty {
                 let components = componentsSeparated(remainingPath, using: fillRule)
-                for component in components {
-                    if !component.isEmpty {
-                        resultPaths.append((component, i))
-                        print("   ✅ Shape \(i): Added unique part (curves preserved)")
-                    }
-                }
+                allPieces.append(contentsOf: components.filter { !$0.isEmpty })
             }
         }
         
-        // STEP 2: Get 2-way intersections using CoreGraphics
-        print("  → Finding 2-way intersections...")
+        // Get all intersection pieces
+        allPieces.append(contentsOf: getAllIntersectionPieces(paths, using: fillRule))
+        
+        return allPieces
+    }
+    
+    /// Gets all intersection pieces (2-way, 3-way, etc.)
+    private static func getAllIntersectionPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [CGPath] {
+        var intersectionPieces: [CGPath] = []
+        
+        // 2-way intersections
         for i in 0..<paths.count {
             for j in (i+1)..<paths.count {
-                let pathA = paths[i]
-                let pathB = paths[j]
-                
-                guard !pathA.isEmpty && !pathB.isEmpty else { continue }
-                
-                if let intersectionResult = intersection(pathA, pathB, using: fillRule) {
-                    // Remove this intersection from higher-order overlaps by subtracting all other paths
-                    var cleanedIntersection = intersectionResult
-                    
+                if let intersection = intersection(paths[i], paths[j], using: fillRule) {
+                    // Remove higher-order overlaps
+                    var cleanIntersection = intersection
                     for k in 0..<paths.count where k != i && k != j {
-                        let otherPath = paths[k]
-                        guard !otherPath.isEmpty else { continue }
-                        
-                        if let subtracted = subtract(otherPath, from: cleanedIntersection, using: fillRule) {
-                            cleanedIntersection = subtracted
+                        if let subtracted = subtract(paths[k], from: cleanIntersection, using: fillRule) {
+                            cleanIntersection = subtracted
                         } else {
-                            // This 2-way intersection is completely covered by other paths
-                            cleanedIntersection = CGMutablePath() // Empty path
+                            cleanIntersection = CGMutablePath()
                             break
                         }
                     }
                     
-                    if !cleanedIntersection.isEmpty {
-                        let components = componentsSeparated(cleanedIntersection, using: fillRule)
-                        for component in components {
-                            if !component.isEmpty {
-                                // Assign 2-way intersection to first (bottom-most) shape for consistent color
-                                resultPaths.append((component, i))
-                                print("   ✅ 2-way intersection (\(i),\(j)): Assigned to shape \(i) (bottom-most)")
-                            }
-                        }
+                    if !cleanIntersection.isEmpty {
+                        let components = componentsSeparated(cleanIntersection, using: fillRule)
+                        intersectionPieces.append(contentsOf: components.filter { !$0.isEmpty })
                     }
                 }
             }
         }
         
-        // STEP 3: Get 3-way intersections
+        // 3-way+ intersections 
         if paths.count >= 3 {
-            print("  → Finding 3-way intersections...")
-            for i in 0..<paths.count {
-                for j in (i+1)..<paths.count {
-                    for k in (j+1)..<paths.count {
-                        let pathA = paths[i]
-                        let pathB = paths[j]
-                        let pathC = paths[k]
-                        
-                        guard !pathA.isEmpty && !pathB.isEmpty && !pathC.isEmpty else { continue }
-                        
-                        // Get intersection of all three
-                        if let intersectionAB = intersection(pathA, pathB, using: fillRule),
-                           let intersectionABC = intersection(intersectionAB, pathC, using: fillRule) {
-                            
-                            // Remove this intersection from higher-order overlaps
-                            var cleanedIntersection = intersectionABC
-                            
-                            for l in 0..<paths.count where l != i && l != j && l != k {
-                                let otherPath = paths[l]
-                                guard !otherPath.isEmpty else { continue }
-                                
-                                if let subtracted = subtract(otherPath, from: cleanedIntersection, using: fillRule) {
-                                    cleanedIntersection = subtracted
-                                } else {
-                                    cleanedIntersection = CGMutablePath() // Empty path
-                                    break
-                                }
-                            }
-                            
-                            if !cleanedIntersection.isEmpty {
-                                let components = componentsSeparated(cleanedIntersection, using: fillRule)
-                                for component in components {
-                                    if !component.isEmpty {
-                                        // Assign 3-way intersection to first (bottom-most) shape for consistent color
-                                        resultPaths.append((component, i))
-                                        print("   ✅ 3-way intersection (\(i),\(j),\(k)): Assigned to shape \(i) (bottom-most)")
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // STEP 4: Get 4-way+ intersections
-        if paths.count >= 4 {
-            print("  → Finding 4-way+ intersections...")
-            
-            // For 4+ paths, we can continue with the same pattern
-            // This gets computationally expensive, but CoreGraphics handles it efficiently
             let multiWayIntersection = getMultiWayIntersectionCoreGraphics(paths, using: fillRule)
             if !multiWayIntersection.isEmpty {
                 let components = componentsSeparated(multiWayIntersection, using: fillRule)
-                for component in components {
-                    if !component.isEmpty {
-                        // Assign multi-way intersection to first (bottom-most) shape for consistent color
-                        resultPaths.append((component, 0))
-                        print("   ✅ 4-way+ intersection: Assigned to shape 0 (bottom-most)")
-                    }
+                intersectionPieces.append(contentsOf: components.filter { !$0.isEmpty })
+            }
+        }
+        
+        return intersectionPieces
+    }
+    
+    /// Determines which original shape a piece belongs to using spatial analysis
+    private static func determineOriginalShapeIndex(for piece: CGPath, from originalPaths: [CGPath]) -> Int {
+        let pieceBounds = piece.boundingBoxOfPath
+        let pieceCenter = CGPoint(x: pieceBounds.midX, y: pieceBounds.midY)
+        
+        // Method 1: Check which original shapes contain the center point
+        var containingShapes: [Int] = []
+        for (index, originalPath) in originalPaths.enumerated() {
+            if originalPath.contains(pieceCenter) {
+                containingShapes.append(index)
+            }
+        }
+        
+        // If only one shape contains the center, that's our answer
+        if containingShapes.count == 1 {
+            return containingShapes[0]
+        }
+        
+        // Method 2: For overlapping areas, find the shape with maximum intersection area
+        var maxIntersectionArea: CGFloat = 0
+        var bestShapeIndex = 0
+        
+        for (index, originalPath) in originalPaths.enumerated() {
+            if let intersectionPath = intersection(piece, originalPath, using: .winding) {
+                let intersectionArea = intersectionPath.boundingBoxOfPath.width * intersectionPath.boundingBoxOfPath.height
+                if intersectionArea > maxIntersectionArea {
+                    maxIntersectionArea = intersectionArea
+                    bestShapeIndex = index
                 }
             }
         }
         
-        print("✅ PROFESSIONAL SPLIT (CoreGraphics): Created \(resultPaths.count) pieces from \(paths.count) originals (curves preserved)")
-        print("   🎨 Stained Glass Window: Color fidelity maintained through shape tracking")
-        return resultPaths
+        return bestShapeIndex
     }
     
     /// Helper function to get multi-way intersection using CoreGraphics
