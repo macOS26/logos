@@ -146,7 +146,10 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity) {
+    // MARK: - Compound Path Properties (Adobe Illustrator Standards)
+    var isCompoundPath: Bool
+    
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -162,6 +165,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.isGroup = isGroup
         self.groupedShapes = groupedShapes
         self.groupTransform = groupTransform
+        self.isCompoundPath = isCompoundPath
     }
     
     var transformedPath: CGPath {
@@ -209,6 +213,11 @@ struct VectorShape: Codable, Hashable, Identifiable {
     /// Check if this shape is a group
     var isGroupContainer: Bool {
         return isGroup && !groupedShapes.isEmpty
+    }
+    
+    /// Check if this shape is a compound path
+    var isCompoundPathContainer: Bool {
+        return isCompoundPath
     }
     
     /// Get bounds of group (union of all child shapes)

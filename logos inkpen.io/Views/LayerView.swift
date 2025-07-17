@@ -65,7 +65,7 @@ struct ShapeView: View {
                 Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }
-                .fill(fillStyle.color.color)
+                .fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
                 .opacity(fillStyle.opacity)
                 .blendMode(fillStyle.blendMode.swiftUIBlendMode)
             }

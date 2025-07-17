@@ -8,6 +8,27 @@
 import Foundation
 import SwiftUI
 
+// MARK: - CGPathFillRule Codable Extension
+extension CGPathFillRule: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(Int32.self)
+        switch rawValue {
+        case 0:
+            self = .winding
+        case 1:
+            self = .evenOdd
+        default:
+            self = .winding
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.rawValue)
+    }
+}
+
 // MARK: - Point Types
 struct VectorPoint: Codable, Hashable {
     var x: Double
@@ -54,19 +75,22 @@ struct VectorPath: Codable, Hashable, Identifiable {
     var id: UUID
     var elements: [PathElement]
     var isClosed: Bool
+    var fillRule: CGPathFillRule
     
-    init(elements: [PathElement] = [], isClosed: Bool = false) {
+    init(elements: [PathElement] = [], isClosed: Bool = false, fillRule: CGPathFillRule = .winding) {
         self.id = UUID()
         self.elements = elements
         self.isClosed = isClosed
+        self.fillRule = fillRule
     }
     
     // PROFESSIONAL CONVENIENCE INITIALIZER: CGPath to VectorPath conversion
     /// Creates a VectorPath from a CGPath (for stroke outlining and other Core Graphics operations)
-    init(cgPath: CGPath) {
+    init(cgPath: CGPath, fillRule: CGPathFillRule = .winding) {
         self.id = UUID()
         self.elements = []
         self.isClosed = false
+        self.fillRule = fillRule
         
         // Convert CGPath to VectorPath elements
         cgPath.applyWithBlock { elementPointer in

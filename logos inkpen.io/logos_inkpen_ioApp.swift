@@ -35,6 +35,8 @@ class DocumentState: ObservableObject {
     @Published var canPaste = false
     @Published var canGroup = false
     @Published var canUngroup = false
+    @Published var canMakeCompoundPath = false
+    @Published var canReleaseCompoundPath = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -76,6 +78,8 @@ class DocumentState: ObservableObject {
             canPaste = false
             canGroup = false
             canUngroup = false
+            canMakeCompoundPath = false
+            canReleaseCompoundPath = false
             return
         }
         
@@ -89,6 +93,10 @@ class DocumentState: ObservableObject {
         canGroup = document.selectedShapeIDs.count > 1
         canUngroup = document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
+        }
+        canMakeCompoundPath = document.selectedShapeIDs.count > 1
+        canReleaseCompoundPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
         }
         
         // Removed excessive logging per user request
@@ -192,6 +200,16 @@ class DocumentState: ObservableObject {
         } else if !document.selectedTextIDs.isEmpty {
             document.duplicateSelectedText()
         }
+        updateAllStates()
+    }
+    
+    func makeCompoundPath() {
+        document?.makeCompoundPath()
+        updateAllStates()
+    }
+    
+    func releaseCompoundPath() {
+        document?.releaseCompoundPath()
         updateAllStates()
     }
 }
@@ -316,6 +334,23 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("d", modifiers: [.command])
                 .disabled(documentState?.hasSelection != true)
+                
+                Divider()
+                
+                // Compound Path Section
+                Button("Make Compound Path") {
+                    documentState?.makeCompoundPath()
+                }
+                .keyboardShortcut("8", modifiers: [.command])
+                .disabled(documentState?.canMakeCompoundPath != true)
+                .help("Combine selected paths into a compound path with holes")
+                
+                Button("Release Compound Path") {
+                    documentState?.releaseCompoundPath()
+                }
+                .keyboardShortcut("8", modifiers: [.command, .option])
+                .disabled(documentState?.canReleaseCompoundPath != true)
+                .help("Break compound path into separate individual paths")
                 
                 Divider()
                 

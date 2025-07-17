@@ -2240,6 +2240,128 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
+    // MARK: - Compound Path Methods (Adobe Illustrator Standards)
+    
+    /// Make compound path from selected objects  
+    func makeCompoundPath() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count > 1 else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes in stacking order
+        let selectedShapes = getSelectedShapesInStackingOrder()
+        
+        // Combine all paths into a single compound path using even-odd fill rule
+        let compoundPath = CGMutablePath()
+        for shape in selectedShapes {
+            compoundPath.addPath(shape.path.cgPath)
+        }
+        
+        // Create compound path shape with even-odd fill rule to create holes
+        let compoundShape = VectorShape(
+            name: "Compound Path",
+            path: VectorPath(cgPath: compoundPath, fillRule: .evenOdd), // CRITICAL: Even-odd fill rule for holes
+            strokeStyle: selectedShapes.last?.strokeStyle, // Use topmost shape's stroke
+            fillStyle: selectedShapes.last?.fillStyle,     // Use topmost shape's fill
+            transform: .identity,
+            isCompoundPath: true
+        )
+        
+        // Remove original shapes
+        removeSelectedShapes()
+        
+        // Add compound path
+        layers[layerIndex].shapes.append(compoundShape)
+        selectedShapeIDs = [compoundShape.id]
+        
+        print("🔗 Made compound path from \(selectedShapes.count) objects")
+    }
+    
+    /// Release compound path back to individual paths
+    func releaseCompoundPath() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count == 1,
+              let selectedShapeID = selectedShapeIDs.first,
+              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }),
+              layers[layerIndex].shapes[shapeIndex].isCompoundPath else { return }
+        
+        saveToUndoStack()
+        
+        let compoundShape = layers[layerIndex].shapes[shapeIndex]
+        
+        // Extract individual subpaths from compound path
+        let subpaths = extractSubpaths(from: compoundShape.path.cgPath)
+        
+        // Create individual shapes from each subpath
+        var newShapes: [VectorShape] = []
+        var newSelectedIDs: Set<UUID> = []
+        
+        for (index, subpath) in subpaths.enumerated() {
+            let individualShape = VectorShape(
+                name: "Path \(index + 1)",
+                path: VectorPath(cgPath: subpath),
+                strokeStyle: compoundShape.strokeStyle,
+                fillStyle: compoundShape.fillStyle,
+                transform: compoundShape.transform,
+                isCompoundPath: false
+            )
+            newShapes.append(individualShape)
+            newSelectedIDs.insert(individualShape.id)
+        }
+        
+        // Remove compound path
+        layers[layerIndex].shapes.remove(at: shapeIndex)
+        
+        // Add individual paths
+        layers[layerIndex].shapes.append(contentsOf: newShapes)
+        selectedShapeIDs = newSelectedIDs
+        
+        print("🔗 Released compound path into \(newShapes.count) individual paths")
+    }
+    
+    // Helper function to extract individual subpaths from a compound CGPath
+    private func extractSubpaths(from cgPath: CGPath) -> [CGPath] {
+        var subpaths: [CGPath] = []
+        var currentPath = CGMutablePath()
+        
+        cgPath.applyWithBlock { elementPtr in
+            let element = elementPtr.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                // If we have a current path, save it and start a new one
+                if !currentPath.isEmpty {
+                    subpaths.append(currentPath)
+                    currentPath = CGMutablePath()
+                }
+                currentPath.move(to: element.points[0])
+                
+            case .addLineToPoint:
+                currentPath.addLine(to: element.points[0])
+                
+            case .addQuadCurveToPoint:
+                currentPath.addQuadCurve(to: element.points[1], control: element.points[0])
+                
+            case .addCurveToPoint:
+                currentPath.addCurve(to: element.points[2], control1: element.points[0], control2: element.points[1])
+                
+            case .closeSubpath:
+                currentPath.closeSubpath()
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        // Don't forget the last path if it exists
+        if !currentPath.isEmpty {
+            subpaths.append(currentPath)
+        }
+        
+        return subpaths
+    }
+    
     // MARK: - Lock/Unlock Methods (Adobe Illustrator Standards)
     
     /// Lock selected objects
