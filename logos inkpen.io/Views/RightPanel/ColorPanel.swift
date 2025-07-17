@@ -214,10 +214,14 @@ struct ColorPanel: View {
     private func overlayText(for color: VectorColor) -> some View {
         if case .pantone(let pantone) = color {
             Text(pantone.pantone)
-                .font(.system(size: 6))
+                .font(.system(size: 7, weight: .bold))
                 .foregroundColor(.white)
-                .shadow(color: .black, radius: 1)
-                .lineLimit(1)
+                .shadow(color: .black, radius: 1, x: 0, y: 0)
+                .lineLimit(3)
+                .minimumScaleFactor(0.5)
+                .multilineTextAlignment(.center)
+                .frame(width: 30, height: 30)
+                .allowsTightening(true)
         }
     }
     

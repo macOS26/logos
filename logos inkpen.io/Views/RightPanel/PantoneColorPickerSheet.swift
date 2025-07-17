@@ -141,9 +141,13 @@ struct PantoneColorPickerSheet: View {
                                         )
                                     
                                     Text(color.pantone)
-                                        .font(.system(size: 8))
+                                        .font(.system(size: 8, weight: .medium))
                                         .foregroundColor(.primary)
-                                        .lineLimit(1)
+                                        .lineLimit(3)
+                                        .minimumScaleFactor(0.5)
+                                        .multilineTextAlignment(.center)
+                                        .frame(width: 50, height: 20)
+                                        .allowsTightening(true)
                                 }
         }
         .buttonStyle(PlainButtonStyle())

@@ -338,15 +338,17 @@ struct HSBInputSection: View {
                                             .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                     )
                                 
-                                // Show Pantone number if match found (live or closest)
+                                // Show Pantone number if match found (live or closest) - proper multi-line formatting
                                 if let pantoneColor = livePreviewColor.pms {
                                     Text(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                        .font(.system(size: 6, weight: .bold))
+                                        .font(.system(size: 7, weight: .bold))
                                         .foregroundColor(.white)
                                         .shadow(color: .black, radius: 1, x: 0, y: 0)
                                         .lineLimit(3)
-                                        .minimumScaleFactor(0.6)
+                                        .minimumScaleFactor(0.5)
                                         .multilineTextAlignment(.center)
+                                        .frame(width: 30, height: 30)
+                                        .allowsTightening(true)
                                 }
                             }
                             Text("PMS")
