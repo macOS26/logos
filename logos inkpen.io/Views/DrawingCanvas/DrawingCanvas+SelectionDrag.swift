@@ -244,6 +244,15 @@ extension DrawingCanvas {
     }
     
     internal func finishSelectionDrag() {
+        // CRITICAL FIX: Don't apply selection drag if handle scaling was active
+        if document.isHandleScalingActive {
+            // Reset state without applying any transforms
+            initialObjectPositions.removeAll()
+            selectionDragStart = CGPoint.zero
+            print("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied")
+            return
+        }
+        
         if !initialObjectPositions.isEmpty {
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points

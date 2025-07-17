@@ -397,7 +397,7 @@ struct SelectionHandles: View {
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(shape.transform)
-                    .gesture(
+                    .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
                         DragGesture()
                             .onChanged { value in
                                 handleCornerScaling(index: i, dragValue: value, bounds: bounds, center: center)
@@ -418,7 +418,7 @@ struct SelectionHandles: View {
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(shape.transform)
-                    .gesture(
+                    .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
                         DragGesture()
                             .onChanged { value in
                                 handleEdgeScaling(index: i, dragValue: value, bounds: bounds, center: center)
@@ -441,7 +441,7 @@ struct SelectionHandles: View {
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
-                .gesture(
+                .highPriorityGesture(  // CRITICAL: Make handles exclusive to prevent canvas drag conflicts
                     DragGesture()
                         .onChanged { value in
                             handleRotation(dragValue: value, bounds: bounds, center: center)
@@ -483,20 +483,18 @@ struct SelectionHandles: View {
             print("🔄 SCALING: Anchored to opposite corner at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
         }
         
-        // PROFESSIONAL SCALING: Calculate scale based on distance from anchor point (not center)
+        // PROFESSIONAL SCALING FIX: Use direct cursor tracking (not DragGesture.translation)
+        // This eliminates floating-point accumulation errors and coordinate sync issues
         let anchorInScreen = CGPoint(
             x: scalingAnchorPoint.x * zoomLevel + canvasOffset.x,
             y: scalingAnchorPoint.y * zoomLevel + canvasOffset.y
         )
         
+        // Calculate cursor movement directly (perfect 1:1 tracking like hand tool)
+        let currentCursorPosition = dragValue.location
+        
         let initialDistance = distance(startLocation, anchorInScreen)
-        let currentDistance = distance(
-            CGPoint(
-                x: startLocation.x + dragValue.translation.width,
-                y: startLocation.y + dragValue.translation.height
-            ),
-            anchorInScreen
-        )
+        let currentDistance = distance(currentCursorPosition, anchorInScreen)
         
         let scaleFactor = max(0.1, currentDistance / max(initialDistance, 1.0))
         
@@ -519,10 +517,17 @@ struct SelectionHandles: View {
             print("🔄 EDGE SCALING: Anchored to opposite edge at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
         }
         
-        // Professional edge scaling: Scale only in the direction of the edge
-        let translation = CGPoint(
-            x: dragValue.translation.width / zoomLevel,
-            y: dragValue.translation.height / zoomLevel
+        // PROFESSIONAL EDGE SCALING FIX: Use direct cursor tracking (not DragGesture.translation)
+        // Calculate cursor movement directly to eliminate coordinate sync issues
+        let cursorDelta = CGPoint(
+            x: dragValue.location.x - startLocation.x,
+            y: dragValue.location.y - startLocation.y
+        )
+        
+        // Convert screen delta to canvas delta (accounting for zoom)
+        let canvasDelta = CGPoint(
+            x: cursorDelta.x / zoomLevel,
+            y: cursorDelta.y / zoomLevel
         )
         
         var scaleX: CGFloat = 1.0
@@ -530,13 +535,13 @@ struct SelectionHandles: View {
         
         switch index {
         case 0: // Top edge - pin bottom edge
-            scaleY = max(0.1, (bounds.height - translation.y) / bounds.height)
+            scaleY = max(0.1, (bounds.height - canvasDelta.y) / bounds.height)
         case 1: // Right edge - pin left edge
-            scaleX = max(0.1, (bounds.width + translation.x) / bounds.width)
+            scaleX = max(0.1, (bounds.width + canvasDelta.x) / bounds.width)
         case 2: // Bottom edge - pin top edge
-            scaleY = max(0.1, (bounds.height + translation.y) / bounds.height)
+            scaleY = max(0.1, (bounds.height + canvasDelta.y) / bounds.height)
         case 3: // Left edge - pin right edge
-            scaleX = max(0.1, (bounds.width - translation.x) / bounds.width)
+            scaleX = max(0.1, (bounds.width - canvasDelta.x) / bounds.width)
         default:
             break
         }
@@ -593,10 +598,9 @@ struct SelectionHandles: View {
             rotationStartLocation.x - rotationCenter.x
         )
         
-        let currentLocation = CGPoint(
-            x: rotationStartLocation.x + dragValue.translation.width,
-            y: rotationStartLocation.y + dragValue.translation.height
-        )
+        // PROFESSIONAL ROTATION FIX: Use direct cursor tracking (not DragGesture.translation)
+        // This eliminates coordinate sync issues and mouse drift
+        let currentLocation = dragValue.location
         
         let currentAngle = atan2(
             currentLocation.y - rotationCenter.y,
