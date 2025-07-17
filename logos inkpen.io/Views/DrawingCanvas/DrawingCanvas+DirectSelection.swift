@@ -30,7 +30,34 @@ extension DrawingCanvas {
                         return true
                     }
                     
-                    // Check each path element for points and handles
+                    // GROUP ANCHOR POINT SELECTION FIX: Handle groups differently
+                    if shape.isGroupContainer {
+                        // For groups, check anchor points in all grouped shapes
+                        print("🔍 Checking anchor points in group '\(shape.name)' with \(shape.groupedShapes.count) shapes")
+                        for groupedShape in shape.groupedShapes {
+                            if !groupedShape.isVisible { continue }
+                            
+                            // Check each path element for points and handles in grouped shapes
+                            if checkAnchorPointsInShape(groupedShape, at: location, tolerance: tolerance) {
+                                return true
+                            }
+                        }
+                    } else {
+                        // For individual shapes, check anchor points normally
+                        if checkAnchorPointsInShape(shape, at: location, tolerance: tolerance) {
+                            return true
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false
+    }
+    
+    /// Helper function to check anchor points in a specific shape
+    private func checkAnchorPointsInShape(_ shape: VectorShape, at location: CGPoint, tolerance: Double) -> Bool {
+        // Check each path element for points and handles
                     for (elementIndex, element) in shape.path.elements.enumerated() {
                         let point: VectorPoint
                         
@@ -186,10 +213,6 @@ extension DrawingCanvas {
                             return true
                         }
                     }
-                }
-            }
-        }
-        
         return false
     }
     
@@ -216,6 +239,40 @@ extension DrawingCanvas {
                     let shapeBounds = shape.bounds.applying(shape.transform)
                     isHit = shapeBounds.contains(location)
                     print("  - Background shape - exact bounds hit test: \(isHit)")
+                } else if shape.isGroupContainer {
+                    // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
+                    print("  - Group container: checking \(shape.groupedShapes.count) grouped shapes")
+                    for groupedShape in shape.groupedShapes {
+                        if !groupedShape.isVisible { continue }
+                        
+                        // Apply the same hit testing logic to grouped shapes
+                        let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
+                        
+                        if isStrokeOnly && groupedShape.strokeStyle != nil {
+                            // Stroke-only shapes: Use stroke-based hit testing
+                            let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
+                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
+                                isHit = true
+                                print("    - Grouped shape '\(groupedShape.name)' stroke hit: \(isHit)")
+                                break
+                            }
+                        } else {
+                            // Regular grouped shapes: Use bounds + path hit testing
+                            let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
+                            let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                            
+                            if expandedBounds.contains(location) {
+                                isHit = true
+                                print("    - Grouped shape '\(groupedShape.name)' bounds hit: \(isHit)")
+                                break
+                            } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
+                                isHit = true
+                                print("    - Grouped shape '\(groupedShape.name)' path hit: \(isHit)")
+                                break
+                            }
+                        }
+                    }
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
