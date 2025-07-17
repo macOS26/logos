@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Professional HSB Input Section with SPOT Color Matching
+// MARK: - Professional PMS Input Section with Pantone Color Matching
 
 struct HSBInputSection: View {
     @ObservedObject var document: VectorDocument
@@ -31,10 +31,9 @@ struct HSBInputSection: View {
         return HSBColorModel(hue: h, saturation: s, brightness: b)
     }
     
-    // Find closest SPOT color match
-    private var closestSPOTColor: SPOTColor {
-        SPOTColor.findClosestMatch(to: currentColor)
-    }
+    // PMS number entry
+    @State private var pmsNumberEntry: String = ""
+    @State private var showingPMSLibrary = false
     
     // Find closest Pantone color match
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
@@ -43,74 +42,41 @@ struct HSBInputSection: View {
         pantoneLibrary.findClosestMatch(to: currentColor)
     }
     
-    // Hue gradient (full spectrum)
-    private var hueGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(hue: 0.0, saturation: 1.0, brightness: 1.0),     // Red
-                Color(hue: 0.17, saturation: 1.0, brightness: 1.0),    // Yellow
-                Color(hue: 0.33, saturation: 1.0, brightness: 1.0),    // Green
-                Color(hue: 0.5, saturation: 1.0, brightness: 1.0),     // Cyan
-                Color(hue: 0.67, saturation: 1.0, brightness: 1.0),    // Blue
-                Color(hue: 0.83, saturation: 1.0, brightness: 1.0),    // Magenta
-                Color(hue: 1.0, saturation: 1.0, brightness: 1.0)      // Red again
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-    }
-    
-    // Saturation gradient (gray to current hue at full saturation)
-    private var saturationGradient: LinearGradient {
-        let currentHue = (Double(hueValue) ?? 0) / 360.0
-        let currentBrightness = (Double(brightnessValue) ?? 0) / 100.0
-        
-        return LinearGradient(
-            colors: [
-                Color(hue: currentHue, saturation: 0.0, brightness: currentBrightness), // Gray
-                Color(hue: currentHue, saturation: 1.0, brightness: currentBrightness)  // Full saturation
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-    }
-    
-    // Brightness gradient (black to current hue/saturation at full brightness)
-    private var brightnessGradient: LinearGradient {
-        let currentHue = (Double(hueValue) ?? 0) / 360.0
-        let currentSaturation = (Double(saturationValue) ?? 0) / 100.0
-        
-        return LinearGradient(
-            colors: [
-                Color(hue: currentHue, saturation: currentSaturation, brightness: 0.0), // Black
-                Color(hue: currentHue, saturation: currentSaturation, brightness: 1.0)  // Full brightness
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-    }
+
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Current Color Preview with SPOT Match
+        VStack(alignment: .leading, spacing: 12) {
+            // PMS Color Preview and Controls
             VStack(alignment: .leading, spacing: 8) {
-                Text("HSB Color")
+                HStack {
+                    Text("PMS Color")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Add to Swatches") {
+                        if let pantoneColor = closestPantoneColor {
+                            let pantColor = VectorColor.pantone(pantoneColor)
+                            document.addColorSwatch(pantColor)
+                        }
+                    }
+                    .buttonStyle(.bordered)
                     .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .disabled(closestPantoneColor == nil)
+                }
                 
-                HStack(spacing: 8) {
-                    // Current HSB Color
+                HStack(spacing: 12) {
+                    // Current PMS Color
                     VStack(spacing: 4) {
-                        Circle()
+                        Rectangle()
                             .fill(currentColor.color)
-                            .frame(width: 40, height: 40)
+                            .frame(width: 50, height: 50)
                             .overlay(
-                                Circle()
+                                Rectangle()
                                     .stroke(Color.gray, lineWidth: 1)
                             )
                         
-                        Text("HSB")
+                        Text("Current")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -120,33 +86,7 @@ struct HSBInputSection: View {
                         .foregroundColor(.secondary)
                         .font(.caption)
                     
-                    // Closest SPOT Color Match
-                    VStack(spacing: 4) {
-                        Button {
-                            // Apply closest SPOT color
-                            let spotColor = VectorColor.spot(closestSPOTColor)
-                            sharedColor = spotColor
-                            document.addColorToCurrentMode(spotColor)
-                            updateHSBFromColor(spotColor)
-                        } label: {
-                            Circle()
-                                .fill(closestSPOTColor.color)
-                                .frame(width: 35, height: 35)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.blue, lineWidth: 2)
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Click to use closest SPOT color: \(closestSPOTColor.number)")
-                        
-                        Text("SPOT")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
-                            .lineLimit(1)
-                    }
-                    
-                    // Closest Pantone Color Match
+                    // Closest PMS Match
                     if let pantoneColor = closestPantoneColor {
                         VStack(spacing: 4) {
                             Button {
@@ -156,47 +96,74 @@ struct HSBInputSection: View {
                                 document.addColorToCurrentMode(pantColor)
                                 updateHSBFromColor(pantColor)
                             } label: {
-                                Circle()
+                                Rectangle()
                                     .fill(pantoneColor.color)
-                                    .frame(width: 35, height: 35)
+                                    .frame(width: 50, height: 50)
                                     .overlay(
-                                        Circle()
+                                        Rectangle()
                                             .stroke(Color.purple, lineWidth: 2)
                                     )
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .help("Click to use closest Pantone color: \(pantoneColor.pantone)")
+                            .help("Click to use closest PMS color: \(pantoneColor.pantone)")
                             
-                            Text("PMS")
+                            Text("PMS \(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))")
                                 .font(.caption2)
                                 .foregroundColor(.purple)
                                 .lineLimit(1)
                         }
+                    } else {
+                        VStack(spacing: 4) {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.gray, lineWidth: 1)
+                                )
+                            
+                            Text("Loading...")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
                     }
+                    
+                    Spacer()
                 }
                 
-                // Color values display
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("H: \(Int(hueSlider))° S: \(Int(saturationSlider))% B: \(Int(brightnessSlider))%")
-                        .font(.caption2)
-                        .foregroundColor(.primary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(4)
-                    
-                    Text("SPOT: \(closestSPOTColor.number) - \(closestSPOTColor.name)")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
-                    
-                    if let pantoneColor = closestPantoneColor {
-                        Text("PMS: \(pantoneColor.pantone) - \(pantoneColor.name)")
-                            .font(.caption2)
-                            .foregroundColor(.purple)
-                    } else {
-                        Text("PMS: Loading Pantone library...")
+                // PMS Number Entry and Library Access
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PMS Number")
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                        
+                        HStack {
+                            TextField("e.g. 185", text: $pmsNumberEntry)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .font(.caption)
+                                .onSubmit {
+                                    searchForPMSNumber()
+                                }
+                            
+                            Button("Find") {
+                                searchForPMSNumber()
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PMS Library")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        
+                        Button("Browse Library") {
+                            showingPMSLibrary = true
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
                     }
                 }
             }
@@ -205,179 +172,100 @@ struct HSBInputSection: View {
             .cornerRadius(8)
             
             // Hue Slider (0-360°)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Circle()
-                        .fill(Color(hue: hueSlider / 360.0, saturation: 1.0, brightness: 1.0))
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(Color.gray, lineWidth: 0.5))
-                    
-                    Text("Hue")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    TextField("H", text: $hueValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 50)
-                        .font(.caption)
-                        .onChange(of: hueValue) { _ in
-                            syncHueSlider()
-                            updateSharedColor()
-                        }
-                    
-                    Text("°")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            HStack {
+                Text("H")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                    .frame(width: 12)
                 
-                HStack(spacing: 0) {
-                    Slider(value: $hueSlider, in: 0...360, step: 1)
-                        .onChange(of: hueSlider) { _ in
-                            syncHueValue()
-                            updateSharedColor()
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(hueGradient)
-                                .frame(height: 8)
-                        )
-                }
+                Slider(value: $hueSlider, in: 0...360, step: 1)
+                    .onChange(of: hueSlider) { _ in
+                        syncHueValue()
+                        updateSharedColor()
+                    }
+                
+                TextField("", text: $hueValue)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 45)
+                    .font(.caption)
+                    .onChange(of: hueValue) { _ in
+                        syncHueSlider()
+                        updateSharedColor()
+                    }
+                
+                Text("°")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 15)
             }
             
             // Saturation Slider (0-100%)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Circle()
-                        .fill(Color(hue: hueSlider / 360.0, saturation: saturationSlider / 100.0, brightness: brightnessSlider / 100.0))
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(Color.gray, lineWidth: 0.5))
-                    
-                    Text("Saturation")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    TextField("S", text: $saturationValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 50)
-                        .font(.caption)
-                        .onChange(of: saturationValue) { _ in
-                            syncSaturationSlider()
-                            updateSharedColor()
-                        }
-                    
-                    Text("%")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+            HStack {
+                Text("S")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                    .frame(width: 12)
                 
-                HStack(spacing: 0) {
-                    Slider(value: $saturationSlider, in: 0...100, step: 1)
-                        .onChange(of: saturationSlider) { _ in
-                            syncSaturationValue()
-                            updateSharedColor()
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(saturationGradient)
-                                .frame(height: 8)
-                        )
-                }
+                Slider(value: $saturationSlider, in: 0...100, step: 1)
+                    .onChange(of: saturationSlider) { _ in
+                        syncSaturationValue()
+                        updateSharedColor()
+                    }
+                
+                TextField("", text: $saturationValue)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 45)
+                    .font(.caption)
+                    .onChange(of: saturationValue) { _ in
+                        syncSaturationSlider()
+                        updateSharedColor()
+                    }
+                
+                Text("%")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 15)
             }
             
             // Brightness Slider (0-100%)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Circle()
-                        .fill(Color(hue: hueSlider / 360.0, saturation: saturationSlider / 100.0, brightness: brightnessSlider / 100.0))
-                        .frame(width: 16, height: 16)
-                        .overlay(Circle().stroke(Color.gray, lineWidth: 0.5))
-                    
-                    Text("Brightness")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                    
-                    Spacer()
-                    
-                    TextField("B", text: $brightnessValue)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 50)
-                        .font(.caption)
-                        .onChange(of: brightnessValue) { _ in
-                            syncBrightnessSlider()
-                            updateSharedColor()
-                        }
-                    
-                    Text("%")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                HStack(spacing: 0) {
-                    Slider(value: $brightnessSlider, in: 0...100, step: 1)
-                        .onChange(of: brightnessSlider) { _ in
-                            syncBrightnessValue()
-                            updateSharedColor()
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(brightnessGradient)
-                                .frame(height: 8)
-                        )
-                }
-            }
-            
-            // SPOT Color Presets (Popular colors for quick access)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Popular SPOT Colors")
+            HStack {
+                Text("B")
                     .font(.caption)
-                    .fontWeight(.semibold)
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
+                    .frame(width: 12)
                 
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8), spacing: 4) {
-                    let popularColors = [
-                        SPOTColor.allSPOTColors.first { $0.number == "032" }!, // Reflex Blue
-                        SPOTColor.allSPOTColors.first { $0.number == "185" }!, // Red
-                        SPOTColor.allSPOTColors.first { $0.number == "355" }!, // Green
-                        SPOTColor.allSPOTColors.first { $0.number == "Yellow" }!, // Yellow
-                        SPOTColor.allSPOTColors.first { $0.number == "286" }!, // Blue
-                        SPOTColor.allSPOTColors.first { $0.number == "2587" }!, // Purple
-                        SPOTColor.allSPOTColors.first { $0.number == "021" }!, // Orange
-                        SPOTColor.allSPOTColors.first { $0.number == "Cool Gray 9" }! // Gray
-                    ]
-                    
-                    ForEach(popularColors, id: \.number) { spotColor in
-                        Button {
-                            let vectorColor = VectorColor.spot(spotColor)
-                            sharedColor = vectorColor
-                            document.addColorToCurrentMode(vectorColor)
-                            updateHSBFromColor(vectorColor)
-                        } label: {
-                            Rectangle()
-                                .fill(spotColor.color)
-                                .frame(width: 30, height: 30)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.gray, lineWidth: 0.5)
-                                )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("SPOT \(spotColor.number): \(spotColor.name)")
+                Slider(value: $brightnessSlider, in: 0...100, step: 1)
+                    .onChange(of: brightnessSlider) { _ in
+                        syncBrightnessValue()
+                        updateSharedColor()
                     }
-                }
+                
+                TextField("", text: $brightnessValue)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 45)
+                    .font(.caption)
+                    .onChange(of: brightnessValue) { _ in
+                        syncBrightnessSlider()
+                        updateSharedColor()
+                    }
+                
+                Text("%")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .frame(width: 15)
             }
-            .padding(8)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-            .cornerRadius(8)
         }
         .onAppear {
             updateHSBFromSharedColor()
         }
         .onChange(of: sharedColor) { _ in
             updateHSBFromSharedColor()
+        }
+        .sheet(isPresented: $showingPMSLibrary) {
+            PantoneColorPickerSheet(document: document)
         }
     }
     
@@ -419,6 +307,25 @@ struct HSBInputSection: View {
     
     private func updateHSBFromSharedColor() {
         updateHSBFromColor(sharedColor)
+    }
+    
+    private func searchForPMSNumber() {
+        let cleanedNumber = pmsNumberEntry
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        
+        if cleanedNumber.isEmpty { return }
+        
+        // Search for PMS color by number
+        let searchResults = pantoneLibrary.searchColors(query: cleanedNumber)
+        
+        if let foundColor = searchResults.first {
+            let pantoneColor = VectorColor.pantone(foundColor)
+            sharedColor = pantoneColor
+            document.addColorToCurrentMode(pantoneColor)
+            updateHSBFromColor(pantoneColor)
+            pmsNumberEntry = "" // Clear the search field
+        }
     }
     
     private func updateHSBFromColor(_ color: VectorColor) {

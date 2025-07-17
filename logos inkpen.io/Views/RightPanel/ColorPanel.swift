@@ -64,7 +64,7 @@ struct ColorPanel: View {
             .padding(.horizontal, 12)
             
             // Mode-specific input sections
-            if document.settings.colorMode == .hsb {
+            if document.settings.colorMode == .pms {
                 HSBInputSection(document: document, sharedColor: $currentPreviewColor)
             } else if document.settings.colorMode == .pantone {
                 VStack(alignment: .leading, spacing: 4) {
@@ -160,8 +160,8 @@ struct ColorPanel: View {
             return "RGB colors for screen display"
         case .cmyk:
             return "CMYK colors for print production"
-        case .hsb:
-            return "HSB colors with SPOT color matching"
+        case .pms:
+            return "PMS colors with Pantone matching"
         case .pantone:
             return "SPOT colors for professional printing"
         }
@@ -326,8 +326,8 @@ struct ColorPanel: View {
             }
         }
         
-        // HSB conversions
-        if newMode == .hsb {
+        // PMS conversions (HSB-based)
+        if newMode == .pms {
             switch color {
             case .hsb:
                 return color // Already in HSB

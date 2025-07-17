@@ -12,14 +12,14 @@ import SwiftUI
 enum ColorMode: String, CaseIterable, Codable {
     case rgb = "RGB"
     case cmyk = "CMYK"
-    case hsb = "HSB"
+    case pms = "PMS"
     case pantone = "SPOT"
     
     var iconName: String {
         switch self {
         case .rgb: return "display"
         case .cmyk: return "printer"
-        case .hsb: return "slider.horizontal.3"
+        case .pms: return "slider.horizontal.3"
         case .pantone: return "paintbrush"
         }
     }
@@ -467,8 +467,14 @@ struct PantoneLibraryColor: Codable, Hashable {
     var hsbEquivalent: HSBColorModel
     
     init(pantone: String, hex: String) {
-        self.pantone = pantone
-        self.name = "Pantone \(pantone.uppercased())"
+        // Clean up pantone number - remove "-c" and " C" suffixes
+        let cleanedPantone = pantone
+            .replacingOccurrences(of: "-c", with: "")
+            .replacingOccurrences(of: " C", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        self.pantone = cleanedPantone
+        self.name = "Pantone \(cleanedPantone.uppercased())"
         self.hex = hex
         self.rgbEquivalent = PantoneLibraryColor.hexToRGB(hex)
         self.cmykEquivalent = PantoneLibraryColor.rgbToCMYK(self.rgbEquivalent)

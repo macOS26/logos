@@ -181,7 +181,7 @@ class VectorDocument: ObservableObject, Codable {
             return rgbSwatches
         case .cmyk:
             return cmykSwatches
-        case .hsb:
+        case .pms:
             return hsbSwatches
         case .pantone:
             return pantoneSwatches
@@ -1535,7 +1535,7 @@ class VectorDocument: ObservableObject, Codable {
             if !cmykSwatches.contains(color) {
                 cmykSwatches.append(color)
             }
-        case .hsb:
+        case .pms:
             if !hsbSwatches.contains(color) {
                 hsbSwatches.append(color)
             }
@@ -1560,7 +1560,7 @@ class VectorDocument: ObservableObject, Codable {
             rgbSwatches.removeAll { $0 == color }
         case .cmyk:
             cmykSwatches.removeAll { $0 == color }
-        case .hsb:
+        case .pms:
             hsbSwatches.removeAll { $0 == color }
         case .pantone:
             pantoneSwatches.removeAll { $0 == color }
