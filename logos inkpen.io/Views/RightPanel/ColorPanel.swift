@@ -66,6 +66,7 @@ struct ColorPanel: View {
             // Mode-specific input sections
             if document.settings.colorMode == .pms {
                 HSBInputSection(document: document, sharedColor: $currentPreviewColor)
+                    .padding(.horizontal, 12)
             } else if document.settings.colorMode == .pantone {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Search Pantone Colors")
