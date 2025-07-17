@@ -563,7 +563,7 @@ class PantoneLibrary: ObservableObject {
         }
         
         allColors = pantoneData.map { rawColor in
-            PantoneLibraryColor(pantone: rawColor.pantone, hex: rawColor.hex)
+            PantoneLibraryColor(pantone: rawColor.pms, hex: rawColor.hex)
         }
         
         print("✅ Loaded \(allColors.count) Pantone colors from library")
@@ -616,7 +616,7 @@ class PantoneLibrary: ObservableObject {
 
 // MARK: - Raw Pantone Data Structure (for JSON loading)
 struct PantoneRawData: Codable {
-    let pantone: String
+    let pms: String
     let hex: String
 }
 
