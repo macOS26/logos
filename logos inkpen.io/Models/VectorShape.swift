@@ -185,15 +185,15 @@ struct VectorShape: Codable, Hashable, Identifiable {
     /// Create a group from multiple shapes
     static func group(from shapes: [VectorShape], name: String = "Group") -> VectorShape {
         // Calculate group bounds
-        var groupBounds = CGRect.null
+        var calculatedGroupBounds = CGRect.null
         for shape in shapes {
-            groupBounds = groupBounds.union(shape.bounds)
+            calculatedGroupBounds = calculatedGroupBounds.union(shape.bounds)
         }
         
         // Create empty path for group container
         let groupPath = VectorPath(elements: [], isClosed: false)
         
-        return VectorShape(
+        var groupShape = VectorShape(
             name: name,
             path: groupPath,
             geometricType: nil,
@@ -208,6 +208,11 @@ struct VectorShape: Codable, Hashable, Identifiable {
             groupedShapes: shapes,
             groupTransform: .identity
         )
+        
+        // Set the group bounds manually
+        groupShape.bounds = calculatedGroupBounds
+        
+        return groupShape
     }
     
     /// Check if this shape is a group

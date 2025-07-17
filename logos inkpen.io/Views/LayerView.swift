@@ -58,41 +58,110 @@ struct ShapeView: View {
     
     var body: some View {
         ZStack {
-            // Fill - only show in color view mode (or always for Canvas)
-            if effectiveViewMode == .color,
-               let fillStyle = shape.fillStyle, 
-               fillStyle.color != .clear {
-                Path { path in
-                    addPathElements(shape.path.elements, to: &path)
+            // GROUPED SHAPES RENDERING: If this is a group container, render all grouped shapes
+            if shape.isGroupContainer {
+                // CRITICAL FIX: Render grouped shapes WITHOUT zoom/offset (prevent double application)
+                ZStack {
+                    ForEach(shape.groupedShapes, id: \.id) { groupedShape in
+                        // Render shapes directly - NO coordinate system nesting
+                        ZStack {
+                            // Fill - only show in color view mode (or always for Canvas)
+                            if effectiveViewMode == .color,
+                               let fillStyle = groupedShape.fillStyle, 
+                               fillStyle.color != .clear {
+                                Path { path in
+                                    addPathElements(groupedShape.path.elements, to: &path)
+                                }
+                                .fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: groupedShape.path.fillRule == .evenOdd))
+                                .opacity(fillStyle.opacity)
+                                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+                            }
+                            
+                            // Stroke rendering - improved for keyline mode and placement  
+                            if effectiveViewMode == .keyline {
+                                Path { path in
+                                    addPathElements(groupedShape.path.elements, to: &path)
+                                }
+                                .stroke(Color.black, lineWidth: 1.0)
+                            } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
+                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
+                                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                                    .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
+                            }
+                        }
+                        // CRITICAL: Only apply individual shape transform - NO zoom/offset here
+                        .transformEffect(groupedShape.transform)
+                        .opacity(groupedShape.opacity)
+                    }
                 }
-                .fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
-                .opacity(fillStyle.opacity)
-                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+                // CRITICAL FIX: Let ShapeView handle zoom/offset - only apply group transform here
+                .transformEffect(shape.transform)
+                .onAppear {
+                    print("🏗️ GROUP FIXED: Rendering group container \(shape.name)")
+                    print("   📊 Group bounds: \(shape.bounds)")
+                    print("   🔄 Group transform: \(shape.transform)")
+                    print("   🔍 Zoom level: \(zoomLevel)")
+                    print("   📍 Canvas offset: \(canvasOffset)")
+                    print("   👥 Contains \(shape.groupedShapes.count) grouped shapes")
+                    print("   ✅ COORDINATE FIX: Zoom/offset applied ONCE at group level")
+                    
+                    for (index, groupedShape) in shape.groupedShapes.enumerated() {
+                        print("   🔥 Grouped shape \(index): \(groupedShape.name)")
+                        print("      📊 Bounds: \(groupedShape.bounds)")
+                        print("      🔄 Transform: \(groupedShape.transform)")
+                        print("      ✅ NO double zoom/offset application")
+                    }
+                }
+            } else {
+                // REGULAR SHAPE RENDERING: Render individual shape path
+                
+                // Fill - only show in color view mode (or always for Canvas)
+                if effectiveViewMode == .color,
+                   let fillStyle = shape.fillStyle, 
+                   fillStyle.color != .clear {
+                    Path { path in
+                        addPathElements(shape.path.elements, to: &path)
+                    }
+                    .fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
+                    .opacity(fillStyle.opacity)
+                    .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+                }
+                
+                // Stroke rendering - improved for keyline mode and placement
+                if effectiveViewMode == .keyline {
+                    // In keyline mode, always show a stroke regardless of original stroke style
+                    // (Canvas and Pasteboard objects will never reach this branch)
+                    Path { path in
+                        addPathElements(shape.path.elements, to: &path)
+                    }
+                    .stroke(Color.black, lineWidth: 1.0)
+                } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
+                    // In color mode, show the actual stroke with proper placement and transparency
+                    renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
+                        // CRITICAL FIX: Don't apply opacity here for outside strokes - handled internally
+                        .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
+                        .blendMode(strokeStyle.blendMode.swiftUIBlendMode) // PROFESSIONAL STROKE BLEND MODES
+                }
             }
             
-            // Stroke rendering - improved for keyline mode and placement
-            if effectiveViewMode == .keyline {
-                // In keyline mode, always show a stroke regardless of original stroke style
-                // (Canvas and Pasteboard objects will never reach this branch)
-                Path { path in
-                    addPathElements(shape.path.elements, to: &path)
-                }
-                .stroke(Color.black, lineWidth: 1.0)
-            } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
-                // In color mode, show the actual stroke with proper placement and transparency
-                renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
-                    // CRITICAL FIX: Don't apply opacity here for outside strokes - handled internally
-                    .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                    .blendMode(strokeStyle.blendMode.swiftUIBlendMode) // PROFESSIONAL STROKE BLEND MODES
-            }
-            
-            // Selection outline
+            // GROUP SELECTION OUTLINE: Show selection outline for the entire group bounds
             if isSelected {
-                Path { path in
-                    addPathElements(shape.path.elements, to: &path)
+                if shape.isGroupContainer {
+                    // For groups, show selection outline around group bounds
+                    let groupBounds = shape.groupBounds
+                    Rectangle()
+                        .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+                        .frame(width: groupBounds.width, height: groupBounds.height)
+                        .position(x: groupBounds.midX, y: groupBounds.midY)
+                        .opacity(0.7)
+                } else {
+                    // For individual shapes, show selection outline around shape path
+                    Path { path in
+                        addPathElements(shape.path.elements, to: &path)
+                    }
+                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+                    .opacity(0.7)
                 }
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                .opacity(0.7)
             }
         }
         // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first, then shape transform
@@ -302,8 +371,8 @@ struct SelectionHandles: View {
     @State private var rotationStartLocation: CGPoint = .zero
     
     var body: some View {
-        // PROFESSIONAL SCALING: Use original bounds for consistent scaling
-        let bounds = shape.bounds
+        // PROFESSIONAL SCALING: Use appropriate bounds for groups vs individual shapes
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
