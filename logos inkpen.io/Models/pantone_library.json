@@ -1,5367 +1,5667 @@
 
 [
   {
-    "pantone":"100",
+    "pms":"100",
     "hex":"#f6eb61"
   },
   {
-    "pantone":"101",
+    "pms":"101",
     "hex":"#f7ea48"
   },
   {
-    "pantone":"102",
+    "pms":"102",
     "hex":"#fce300"
   },
   {
-    "pantone":"103",
+    "pms":"103",
     "hex":"#c5a900"
   },
   {
-    "pantone":"104",
+    "pms":"104",
     "hex":"#af9800"
   },
   {
-    "pantone":"105",
+    "pms":"105",
     "hex":"#897a27"
   },
   {
-    "pantone":"7401",
+    "pms":"7401",
     "hex":"#f5e1a4"
   },
   {
-    "pantone":"7402",
+    "pms":"7402",
     "hex":"#ecd898"
   },
   {
-    "pantone":"7403",
+    "pms":"7403",
     "hex":"#eed484"
   },
   {
-    "pantone":"7404",
+    "pms":"7404",
     "hex":"#f4da40"
   },
   {
-    "pantone":"7405",
+    "pms":"7405",
     "hex":"#f2cd00"
   },
   {
-    "pantone":"7406",
+    "pms":"7406",
     "hex":"#f1c400"
   },
   {
-    "pantone":"7407",
+    "pms":"7407",
     "hex":"#cba052"
   },
   {
-    "pantone":"106",
+    "pms":"106",
     "hex":"#f9e547"
   },
   {
-    "pantone":"107",
+    "pms":"107",
     "hex":"#fbe122"
   },
   {
-    "pantone":"108",
+    "pms":"108",
     "hex":"#fedb00"
   },
   {
-    "pantone":"109",
+    "pms":"109",
     "hex":"#ffd100"
   },
   {
-    "pantone":"110",
+    "pms":"110",
     "hex":"#daaa00"
   },
   {
-    "pantone":"111",
+    "pms":"111",
     "hex":"#aa8a00"
   },
   {
-    "pantone":"112",
+    "pms":"112",
     "hex":"#9c8412"
   },
   {
-    "pantone":"113",
+    "pms":"113",
     "hex":"#fae053"
   },
   {
-    "pantone":"114",
+    "pms":"114",
     "hex":"#fbdd40"
   },
   {
-    "pantone":"115",
+    "pms":"115",
     "hex":"#fdda24"
   },
   {
-    "pantone":"116",
+    "pms":"116",
     "hex":"#ffcd00"
   },
   {
-    "pantone":"117",
+    "pms":"117",
     "hex":"#c99700"
   },
   {
-    "pantone":"118",
+    "pms":"118",
     "hex":"#ac8400"
   },
   {
-    "pantone":"119",
+    "pms":"119",
     "hex":"#897322"
   },
   {
-    "pantone":"127",
+    "pms":"127",
     "hex":"#f3dd6d"
   },
   {
-    "pantone":"128",
+    "pms":"128",
     "hex":"#f3d54e"
   },
   {
-    "pantone":"129",
+    "pms":"129",
     "hex":"#f3d03e"
   },
   {
-    "pantone":"130",
+    "pms":"130",
     "hex":"#f2a900"
   },
   {
-    "pantone":"131",
+    "pms":"131",
     "hex":"#cc8a00"
   },
   {
-    "pantone":"132",
+    "pms":"132",
     "hex":"#a07400"
   },
   {
-    "pantone":"133",
+    "pms":"133",
     "hex":"#6c571b"
   },
   {
-    "pantone":"1205",
+    "pms":"1205",
     "hex":"#f8e08e"
   },
   {
-    "pantone":"1215",
+    "pms":"1215",
     "hex":"#fbd872"
   },
   {
-    "pantone":"1225",
+    "pms":"1225",
     "hex":"#ffc845"
   },
   {
-    "pantone":"1235",
+    "pms":"1235",
     "hex":"#ffb81c"
   },
   {
-    "pantone":"1245",
+    "pms":"1245",
     "hex":"#c69214"
   },
   {
-    "pantone":"1255",
+    "pms":"1255",
     "hex":"#ad841f"
   },
   {
-    "pantone":"1265",
+    "pms":"1265",
     "hex":"#886b25"
   },
   {
-    "pantone":"120",
+    "pms":"120",
     "hex":"#fbdb65"
   },
   {
-    "pantone":"121",
+    "pms":"121",
     "hex":"#fdd757"
   },
   {
-    "pantone":"122",
+    "pms":"122",
     "hex":"#fed141"
   },
   {
-    "pantone":"123",
+    "pms":"123",
     "hex":"#ffc72c"
   },
   {
-    "pantone":"124",
+    "pms":"124",
     "hex":"#eaaa00"
   },
   {
-    "pantone":"125",
+    "pms":"125",
     "hex":"#b58500"
   },
   {
-    "pantone":"126",
+    "pms":"126",
     "hex":"#9a7611"
   },
   {
-    "pantone":"7548",
+    "pms":"7548",
     "hex":"#ffc600"
   },
   {
-    "pantone":"7549",
+    "pms":"7549",
     "hex":"#ffb500"
   },
   {
-    "pantone":"7550",
+    "pms":"7550",
     "hex":"#d19000"
   },
   {
-    "pantone":"7551",
+    "pms":"7551",
     "hex":"#b47e00"
   },
   {
-    "pantone":"7552",
+    "pms":"7552",
     "hex":"#73531d"
   },
   {
-    "pantone":"7553",
+    "pms":"7553",
     "hex":"#5a4522"
   },
   {
-    "pantone":"7554",
+    "pms":"7554",
     "hex":"#4b3d2a"
   },
   {
-    "pantone":"7555",
+    "pms":"7555",
     "hex":"#d29f13"
   },
   {
-    "pantone":"7556",
+    "pms":"7556",
     "hex":"#b78b20"
   },
   {
-    "pantone":"7557",
+    "pms":"7557",
     "hex":"#9f7d23"
   },
   {
-    "pantone":"7558",
+    "pms":"7558",
     "hex":"#967126"
   },
   {
-    "pantone":"7559",
+    "pms":"7559",
     "hex":"#8f6a2a"
   },
   {
-    "pantone":"7560",
+    "pms":"7560",
     "hex":"#7d622e"
   },
   {
-    "pantone":"7561",
+    "pms":"7561",
     "hex":"#6c5d34"
   },
   {
-    "pantone":"134",
+    "pms":"134",
     "hex":"#fdd26e"
   },
   {
-    "pantone":"135",
+    "pms":"135",
     "hex":"#ffc658"
   },
   {
-    "pantone":"136",
+    "pms":"136",
     "hex":"#ffbf3f"
   },
   {
-    "pantone":"137",
+    "pms":"137",
     "hex":"#ffa300"
   },
   {
-    "pantone":"138",
+    "pms":"138",
     "hex":"#de7c00"
   },
   {
-    "pantone":"139",
+    "pms":"139",
     "hex":"#af6d04"
   },
   {
-    "pantone":"140",
+    "pms":"140",
     "hex":"#74531c"
   },
   {
-    "pantone":"1345",
+    "pms":"1345",
     "hex":"#fdd086"
   },
   {
-    "pantone":"1355",
+    "pms":"1355",
     "hex":"#ffc56e"
   },
   {
-    "pantone":"1365",
+    "pms":"1365",
     "hex":"#ffb549"
   },
   {
-    "pantone":"1375",
+    "pms":"1375",
     "hex":"#ff9e1b"
   },
   {
-    "pantone":"1385",
+    "pms":"1385",
     "hex":"#d57800"
   },
   {
-    "pantone":"1395",
+    "pms":"1395",
     "hex":"#996017"
   },
   {
-    "pantone":"1405",
+    "pms":"1405",
     "hex":"#6e4c1e"
   },
   {
-    "pantone":"141",
+    "pms":"141",
     "hex":"#f2c75c"
   },
   {
-    "pantone":"142",
+    "pms":"142",
     "hex":"#f1be48"
   },
   {
-    "pantone":"143",
+    "pms":"143",
     "hex":"#f1b434"
   },
   {
-    "pantone":"144",
+    "pms":"144",
     "hex":"#ed8b00"
   },
   {
-    "pantone":"145",
+    "pms":"145",
     "hex":"#cf7f00"
   },
   {
-    "pantone":"146",
+    "pms":"146",
     "hex":"#a76d11"
   },
   {
-    "pantone":"147",
+    "pms":"147",
     "hex":"#715c2a"
   },
   {
-    "pantone":"7408",
+    "pms":"7408",
     "hex":"#f6be00"
   },
   {
-    "pantone":"7409",
+    "pms":"7409",
     "hex":"#f0b323"
   },
   {
-    "pantone":"7410",
+    "pms":"7410",
     "hex":"#fead77"
   },
   {
-    "pantone":"7411",
+    "pms":"7411",
     "hex":"#e6a65d"
   },
   {
-    "pantone":"7412",
+    "pms":"7412",
     "hex":"#d38235"
   },
   {
-    "pantone":"7413",
+    "pms":"7413",
     "hex":"#dc8633"
   },
   {
-    "pantone":"7414",
+    "pms":"7414",
     "hex":"#c16c18"
   },
   {
-    "pantone":"7562",
+    "pms":"7562",
     "hex":"#bd9b60"
   },
   {
-    "pantone":"7563",
+    "pms":"7563",
     "hex":"#d69a2d"
   },
   {
-    "pantone":"7564",
+    "pms":"7564",
     "hex":"#db8a06"
   },
   {
-    "pantone":"7565",
+    "pms":"7565",
     "hex":"#cd7925"
   },
   {
-    "pantone":"7566",
+    "pms":"7566",
     "hex":"#ad6433"
   },
   {
-    "pantone":"7567",
+    "pms":"7567",
     "hex":"#89532f"
   },
   {
-    "pantone":"7568",
+    "pms":"7568",
     "hex":"#775135"
   },
   {
-    "pantone":"7569",
+    "pms":"7569",
     "hex":"#d78825"
   },
   {
-    "pantone":"7570",
+    "pms":"7570",
     "hex":"#d3832b"
   },
   {
-    "pantone":"7571",
+    "pms":"7571",
     "hex":"#c67d30"
   },
   {
-    "pantone":"7572",
+    "pms":"7572",
     "hex":"#b67233"
   },
   {
-    "pantone":"7573",
+    "pms":"7573",
     "hex":"#a7662b"
   },
   {
-    "pantone":"7574",
+    "pms":"7574",
     "hex":"#9e6a38"
   },
   {
-    "pantone":"7575",
+    "pms":"7575",
     "hex":"#835d32"
   },
   {
-    "pantone":"712",
+    "pms":"712",
     "hex":"#fcc89b"
   },
   {
-    "pantone":"713",
+    "pms":"713",
     "hex":"#fdbe87"
   },
   {
-    "pantone":"714",
+    "pms":"714",
     "hex":"#fdaa63"
   },
   {
-    "pantone":"715",
+    "pms":"715",
     "hex":"#f68d2e"
   },
   {
-    "pantone":"716",
+    "pms":"716",
     "hex":"#ea7600"
   },
   {
-    "pantone":"717",
+    "pms":"717",
     "hex":"#d45d00"
   },
   {
-    "pantone":"718",
+    "pms":"718",
     "hex":"#be4d00"
   },
   {
-    "pantone":"148",
+    "pms":"148",
     "hex":"#fecb8b"
   },
   {
-    "pantone":"149",
+    "pms":"149",
     "hex":"#ffc27b"
   },
   {
-    "pantone":"150",
+    "pms":"150",
     "hex":"#ffb25b"
   },
   {
-    "pantone":"151",
+    "pms":"151",
     "hex":"#ff8200"
   },
   {
-    "pantone":"152",
+    "pms":"152",
     "hex":"#e57200"
   },
   {
-    "pantone":"153",
+    "pms":"153",
     "hex":"#be6a14"
   },
   {
-    "pantone":"154",
+    "pms":"154",
     "hex":"#9b5a1a"
   },
   {
-    "pantone":"155",
+    "pms":"155",
     "hex":"#efd19f"
   },
   {
-    "pantone":"156",
+    "pms":"156",
     "hex":"#efbe7d"
   },
   {
-    "pantone":"157",
+    "pms":"157",
     "hex":"#eca154"
   },
   {
-    "pantone":"158",
+    "pms":"158",
     "hex":"#e87722"
   },
   {
-    "pantone":"159",
+    "pms":"159",
     "hex":"#cb6015"
   },
   {
-    "pantone":"160",
+    "pms":"160",
     "hex":"#a1561c"
   },
   {
-    "pantone":"161",
+    "pms":"161",
     "hex":"#603d20"
   },
   {
-    "pantone":"1485",
+    "pms":"1485",
     "hex":"#ffae62"
   },
   {
-    "pantone":"1495",
+    "pms":"1495",
     "hex":"#ff8f1c"
   },
   {
-    "pantone":"1505",
+    "pms":"1505",
     "hex":"#ff6900"
   },
   {
-    "pantone":"1525",
+    "pms":"1525",
     "hex":"#b94700"
   },
   {
-    "pantone":"1535",
+    "pms":"1535",
     "hex":"#94450b"
   },
   {
-    "pantone":"1545",
+    "pms":"1545",
     "hex":"#653819"
   },
   {
-    "pantone":"1555",
+    "pms":"1555",
     "hex":"#ffb990"
   },
   {
-    "pantone":"1565",
+    "pms":"1565",
     "hex":"#ffa06a"
   },
   {
-    "pantone":"1575",
+    "pms":"1575",
     "hex":"#ff7f32"
   },
   {
-    "pantone":"1585",
+    "pms":"1585",
     "hex":"#ff6a13"
   },
   {
-    "pantone":"1595",
+    "pms":"1595",
     "hex":"#d86018"
   },
   {
-    "pantone":"1605",
+    "pms":"1605",
     "hex":"#a65523"
   },
   {
-    "pantone":"1615",
+    "pms":"1615",
     "hex":"#8b4720"
   },
   {
-    "pantone":"162",
+    "pms":"162",
     "hex":"#ffbe9f"
   },
   {
-    "pantone":"163",
+    "pms":"163",
     "hex":"#ff9d6e"
   },
   {
-    "pantone":"164",
+    "pms":"164",
     "hex":"#ff7f41"
   },
   {
-    "pantone":"165",
+    "pms":"165",
     "hex":"#ff671f"
   },
   {
-    "pantone":"166",
+    "pms":"166",
     "hex":"#e35205"
   },
   {
-    "pantone":"167",
+    "pms":"167",
     "hex":"#be531c"
   },
   {
-    "pantone":"168",
+    "pms":"168",
     "hex":"#73381d"
   },
   {
-    "pantone":"7576",
+    "pms":"7576",
     "hex":"#db864e"
   },
   {
-    "pantone":"7577",
+    "pms":"7577",
     "hex":"#e07e3c"
   },
   {
-    "pantone":"7578",
+    "pms":"7578",
     "hex":"#dc6b2f"
   },
   {
-    "pantone":"7579",
+    "pms":"7579",
     "hex":"#dc582a"
   },
   {
-    "pantone":"7580",
+    "pms":"7580",
     "hex":"#c05131"
   },
   {
-    "pantone":"7581",
+    "pms":"7581",
     "hex":"#864a33"
   },
   {
-    "pantone":"7582",
+    "pms":"7582",
     "hex":"#674736"
   },
   {
-    "pantone":"1625",
+    "pms":"1625",
     "hex":"#ffa38b"
   },
   {
-    "pantone":"1635",
+    "pms":"1635",
     "hex":"#ff8d6d"
   },
   {
-    "pantone":"1645",
+    "pms":"1645",
     "hex":"#ff6a39"
   },
   {
-    "pantone":"1655",
+    "pms":"1655",
     "hex":"#fc4c02"
   },
   {
-    "pantone":"1665",
+    "pms":"1665",
     "hex":"#dc4405"
   },
   {
-    "pantone":"1675",
+    "pms":"1675",
     "hex":"#a9431e"
   },
   {
-    "pantone":"1685",
+    "pms":"1685",
     "hex":"#833921"
   },
   {
-    "pantone":"169",
+    "pms":"169",
     "hex":"#ffb3ab"
   },
   {
-    "pantone":"170",
+    "pms":"170",
     "hex":"#ff8674"
   },
   {
-    "pantone":"171",
+    "pms":"171",
     "hex":"#ff5c39"
   },
   {
-    "pantone":"172",
+    "pms":"172",
     "hex":"#fa4616"
   },
   {
-    "pantone":"173",
+    "pms":"173",
     "hex":"#cf4520"
   },
   {
-    "pantone":"174",
+    "pms":"174",
     "hex":"#963821"
   },
   {
-    "pantone":"175",
+    "pms":"175",
     "hex":"#6b3529"
   },
   {
-    "pantone":"7583",
+    "pms":"7583",
     "hex":"#c4622d"
   },
   {
-    "pantone":"7584",
+    "pms":"7584",
     "hex":"#ba5826"
   },
   {
-    "pantone":"7585",
+    "pms":"7585",
     "hex":"#af5c37"
   },
   {
-    "pantone":"7586",
+    "pms":"7586",
     "hex":"#9e5330"
   },
   {
-    "pantone":"7587",
+    "pms":"7587",
     "hex":"#924c2e"
   },
   {
-    "pantone":"7588",
+    "pms":"7588",
     "hex":"#7b4d35"
   },
   {
-    "pantone":"7589",
+    "pms":"7589",
     "hex":"#5c4738"
   },
   {
-    "pantone":"7590",
+    "pms":"7590",
     "hex":"#d4b59e"
   },
   {
-    "pantone":"7591",
+    "pms":"7591",
     "hex":"#c07d59"
   },
   {
-    "pantone":"7592",
+    "pms":"7592",
     "hex":"#b15533"
   },
   {
-    "pantone":"7593",
+    "pms":"7593",
     "hex":"#9d432c"
   },
   {
-    "pantone":"7594",
+    "pms":"7594",
     "hex":"#7c3a2d"
   },
   {
-    "pantone":"7595",
+    "pms":"7595",
     "hex":"#6b3d2e"
   },
   {
-    "pantone":"7596",
+    "pms":"7596",
     "hex":"#5c3d31"
   },
   {
-    "pantone":"7597",
+    "pms":"7597",
     "hex":"#d14124"
   },
   {
-    "pantone":"7598",
+    "pms":"7598",
     "hex":"#bd472a"
   },
   {
-    "pantone":"7599",
+    "pms":"7599",
     "hex":"#b33d26"
   },
   {
-    "pantone":"7600",
+    "pms":"7600",
     "hex":"#8d3f2b"
   },
   {
-    "pantone":"7601",
+    "pms":"7601",
     "hex":"#83412c"
   },
   {
-    "pantone":"7602",
+    "pms":"7602",
     "hex":"#7b4931"
   },
   {
-    "pantone":"7603",
+    "pms":"7603",
     "hex":"#674230"
   },
   {
-    "pantone":"7604",
+    "pms":"7604",
     "hex":"#e4d5d3"
   },
   {
-    "pantone":"7605",
+    "pms":"7605",
     "hex":"#e1bbb4"
   },
   {
-    "pantone":"7606",
+    "pms":"7606",
     "hex":"#d6938a"
   },
   {
-    "pantone":"7607",
+    "pms":"7607",
     "hex":"#c26e60"
   },
   {
-    "pantone":"7608",
+    "pms":"7608",
     "hex":"#a4493d"
   },
   {
-    "pantone":"7609",
+    "pms":"7609",
     "hex":"#823b34"
   },
   {
-    "pantone":"7610",
+    "pms":"7610",
     "hex":"#683431"
   },
   {
-    "pantone":"7611",
+    "pms":"7611",
     "hex":"#ddbcb0"
   },
   {
-    "pantone":"7612",
+    "pms":"7612",
     "hex":"#ca9a8e"
   },
   {
-    "pantone":"7613",
+    "pms":"7613",
     "hex":"#bc8a7e"
   },
   {
-    "pantone":"7614",
+    "pms":"7614",
     "hex":"#a37f74"
   },
   {
-    "pantone":"7615",
+    "pms":"7615",
     "hex":"#866761"
   },
   {
-    "pantone":"7616",
+    "pms":"7616",
     "hex":"#6b4c4c"
   },
   {
-    "pantone":"7617",
+    "pms":"7617",
     "hex":"#583d3e"
   },
   {
-    "pantone":"7520",
+    "pms":"7520",
     "hex":"#eabeb0"
   },
   {
-    "pantone":"7521",
+    "pms":"7521",
     "hex":"#c09c83"
   },
   {
-    "pantone":"7522",
+    "pms":"7522",
     "hex":"#b46a55"
   },
   {
-    "pantone":"7523",
+    "pms":"7523",
     "hex":"#ab5c57"
   },
   {
-    "pantone":"7524",
+    "pms":"7524",
     "hex":"#a45248"
   },
   {
-    "pantone":"7525",
+    "pms":"7525",
     "hex":"#9a6a4f"
   },
   {
-    "pantone":"7526",
+    "pms":"7526",
     "hex":"#8a391b"
   },
   {
-    "pantone":"489",
+    "pms":"489",
     "hex":"#ecc3b2"
   },
   {
-    "pantone":"488",
+    "pms":"488",
     "hex":"#ecbaa8"
   },
   {
-    "pantone":"487",
+    "pms":"487",
     "hex":"#eaa794"
   },
   {
-    "pantone":"486",
+    "pms":"486",
     "hex":"#e8927c"
   },
   {
-    "pantone":"485",
+    "pms":"485",
     "hex":"#da291c"
   },
   {
-    "pantone":"484",
+    "pms":"484",
     "hex":"#9a3324"
   },
   {
-    "pantone":"483",
+    "pms":"483",
     "hex":"#653024"
   },
   {
-    "pantone":"176",
+    "pms":"176",
     "hex":"#ffb1bb"
   },
   {
-    "pantone":"177",
+    "pms":"177",
     "hex":"#ff808b"
   },
   {
-    "pantone":"178",
+    "pms":"178",
     "hex":"#ff585d"
   },
   {
-    "pantone":"179",
+    "pms":"179",
     "hex":"#e03c31"
   },
   {
-    "pantone":"180",
+    "pms":"180",
     "hex":"#be3a34"
   },
   {
-    "pantone":"181",
+    "pms":"181",
     "hex":"#81312f"
   },
   {
-    "pantone":"1765",
+    "pms":"1765",
     "hex":"#ffa3b5"
   },
   {
-    "pantone":"1775",
+    "pms":"1775",
     "hex":"#ff8da1"
   },
   {
-    "pantone":"1785",
+    "pms":"1785",
     "hex":"#f8485e"
   },
   {
-    "pantone":"1788",
+    "pms":"1788",
     "hex":"#ee2737"
   },
   {
-    "pantone":"1795",
+    "pms":"1795",
     "hex":"#d22630"
   },
   {
-    "pantone":"1805",
+    "pms":"1805",
     "hex":"#af272f"
   },
   {
-    "pantone":"1815",
+    "pms":"1815",
     "hex":"#7c2529"
   },
   {
-    "pantone":"1767",
+    "pms":"1767",
     "hex":"#fcafc0"
   },
   {
-    "pantone":"1777",
+    "pms":"1777",
     "hex":"#fb637e"
   },
   {
-    "pantone":"1787",
+    "pms":"1787",
     "hex":"#f4364c"
   },
   {
-    "pantone":"1797",
+    "pms":"1797",
     "hex":"#cb333b"
   },
   {
-    "pantone":"1807",
+    "pms":"1807",
     "hex":"#a4343a"
   },
   {
-    "pantone":"1817",
+    "pms":"1817",
     "hex":"#643335"
   },
   {
-    "pantone":"7618",
+    "pms":"7618",
     "hex":"#c66e4e"
   },
   {
-    "pantone":"7619",
+    "pms":"7619",
     "hex":"#c04c36"
   },
   {
-    "pantone":"7620",
+    "pms":"7620",
     "hex":"#b7312c"
   },
   {
-    "pantone":"7621",
+    "pms":"7621",
     "hex":"#ab2328"
   },
   {
-    "pantone":"7622",
+    "pms":"7622",
     "hex":"#93272c"
   },
   {
-    "pantone":"7623",
+    "pms":"7623",
     "hex":"#8a2a2b"
   },
   {
-    "pantone":"7624",
+    "pms":"7624",
     "hex":"#802f2d"
   },
   {
-    "pantone":"7625",
+    "pms":"7625",
     "hex":"#e1523d"
   },
   {
-    "pantone":"7626",
+    "pms":"7626",
     "hex":"#c63527"
   },
   {
-    "pantone":"7627",
+    "pms":"7627",
     "hex":"#a72b2a"
   },
   {
-    "pantone":"7628",
+    "pms":"7628",
     "hex":"#9e2a2b"
   },
   {
-    "pantone":"7629",
+    "pms":"7629",
     "hex":"#6d3332"
   },
   {
-    "pantone":"7630",
+    "pms":"7630",
     "hex":"#633231"
   },
   {
-    "pantone":"7631",
+    "pms":"7631",
     "hex":"#572d2d"
   },
   {
-    "pantone":"7415",
+    "pms":"7415",
     "hex":"#e6baa8"
   },
   {
-    "pantone":"7416",
+    "pms":"7416",
     "hex":"#e56a54"
   },
   {
-    "pantone":"7417",
+    "pms":"7417",
     "hex":"#e04e39"
   },
   {
-    "pantone":"7418",
+    "pms":"7418",
     "hex":"#cd545b"
   },
   {
-    "pantone":"7419",
+    "pms":"7419",
     "hex":"#b04a5a"
   },
   {
-    "pantone":"7420",
+    "pms":"7420",
     "hex":"#9b2242"
   },
   {
-    "pantone":"7421",
+    "pms":"7421",
     "hex":"#651d32"
   },
   {
-    "pantone":"182",
+    "pms":"182",
     "hex":"#fabbcb"
   },
   {
-    "pantone":"183",
+    "pms":"183",
     "hex":"#fc9bb3"
   },
   {
-    "pantone":"184",
+    "pms":"184",
     "hex":"#f65275"
   },
   {
-    "pantone":"185",
+    "pms":"185",
     "hex":"#e4002b"
   },
   {
-    "pantone":"186",
+    "pms":"186",
     "hex":"#c8102e"
   },
   {
-    "pantone":"187",
+    "pms":"187",
     "hex":"#a6192e"
   },
   {
-    "pantone":"188",
+    "pms":"188",
     "hex":"#76232f"
   },
   {
-    "pantone":"196",
+    "pms":"196",
     "hex":"#ecc7cd"
   },
   {
-    "pantone":"197",
+    "pms":"197",
     "hex":"#e89cae"
   },
   {
-    "pantone":"198",
+    "pms":"198",
     "hex":"#df4661"
   },
   {
-    "pantone":"199",
+    "pms":"199",
     "hex":"#d50032"
   },
   {
-    "pantone":"200",
+    "pms":"200",
     "hex":"#ba0c2f"
   },
   {
-    "pantone":"201",
+    "pms":"201",
     "hex":"#9d2235"
   },
   {
-    "pantone":"202",
+    "pms":"202",
     "hex":"#862633"
   },
   {
-    "pantone":"189",
+    "pms":"189",
     "hex":"#f8a3bc"
   },
   {
-    "pantone":"190",
+    "pms":"190",
     "hex":"#f67599"
   },
   {
-    "pantone":"191",
+    "pms":"191",
     "hex":"#ef426f"
   },
   {
-    "pantone":"192",
+    "pms":"192",
     "hex":"#e40046"
   },
   {
-    "pantone":"193",
+    "pms":"193",
     "hex":"#bf0d3e"
   },
   {
-    "pantone":"194",
+    "pms":"194",
     "hex":"#9b2743"
   },
   {
-    "pantone":"195",
+    "pms":"195",
     "hex":"#782f40"
   },
   {
-    "pantone":"1895",
+    "pms":"1895",
     "hex":"#f5b6cd"
   },
   {
-    "pantone":"1905",
+    "pms":"1905",
     "hex":"#f59bbb"
   },
   {
-    "pantone":"1915",
+    "pms":"1915",
     "hex":"#ef4a81"
   },
   {
-    "pantone":"1925",
+    "pms":"1925",
     "hex":"#e0004d"
   },
   {
-    "pantone":"1935",
+    "pms":"1935",
     "hex":"#c5003e"
   },
   {
-    "pantone":"1945",
+    "pms":"1945",
     "hex":"#a6093d"
   },
   {
-    "pantone":"1955",
+    "pms":"1955",
     "hex":"#8a1538"
   },
   {
-    "pantone":"705",
+    "pms":"705",
     "hex":"#f5dadf"
   },
   {
-    "pantone":"706",
+    "pms":"706",
     "hex":"#f7ced7"
   },
   {
-    "pantone":"707",
+    "pms":"707",
     "hex":"#f9b5c4"
   },
   {
-    "pantone":"708",
+    "pms":"708",
     "hex":"#f890a5"
   },
   {
-    "pantone":"709",
+    "pms":"709",
     "hex":"#ef6079"
   },
   {
-    "pantone":"710",
+    "pms":"710",
     "hex":"#e03e52"
   },
   {
-    "pantone":"711",
+    "pms":"711",
     "hex":"#cb2c30"
   },
   {
-    "pantone":"698",
+    "pms":"698",
     "hex":"#f2d4d7"
   },
   {
-    "pantone":"699",
+    "pms":"699",
     "hex":"#f4c3cc"
   },
   {
-    "pantone":"700",
+    "pms":"700",
     "hex":"#f2acb9"
   },
   {
-    "pantone":"701",
+    "pms":"701",
     "hex":"#e68699"
   },
   {
-    "pantone":"702",
+    "pms":"702",
     "hex":"#d25b73"
   },
   {
-    "pantone":"703",
+    "pms":"703",
     "hex":"#b83a4b"
   },
   {
-    "pantone":"704",
+    "pms":"704",
     "hex":"#9e2a2f"
   },
   {
-    "pantone":"203",
+    "pms":"203",
     "hex":"#ecb3cb"
   },
   {
-    "pantone":"204",
+    "pms":"204",
     "hex":"#e782a9"
   },
   {
-    "pantone":"205",
+    "pms":"205",
     "hex":"#e0457b"
   },
   {
-    "pantone":"206",
+    "pms":"206",
     "hex":"#ce0037"
   },
   {
-    "pantone":"207",
+    "pms":"207",
     "hex":"#a50034"
   },
   {
-    "pantone":"208",
+    "pms":"208",
     "hex":"#861f41"
   },
   {
-    "pantone":"209",
+    "pms":"209",
     "hex":"#6f263d"
   },
   {
-    "pantone":"210",
+    "pms":"210",
     "hex":"#f99fc9"
   },
   {
-    "pantone":"211",
+    "pms":"211",
     "hex":"#f57eb6"
   },
   {
-    "pantone":"212",
+    "pms":"212",
     "hex":"#f04e98"
   },
   {
-    "pantone":"213",
+    "pms":"213",
     "hex":"#e31c79"
   },
   {
-    "pantone":"214",
+    "pms":"214",
     "hex":"#ce0f69"
   },
   {
-    "pantone":"215",
+    "pms":"215",
     "hex":"#ac145a"
   },
   {
-    "pantone":"216",
+    "pms":"216",
     "hex":"#7d2248"
   },
   {
-    "pantone":"7422",
+    "pms":"7422",
     "hex":"#f4cdd4"
   },
   {
-    "pantone":"7423",
+    "pms":"7423",
     "hex":"#e06287"
   },
   {
-    "pantone":"7424",
+    "pms":"7424",
     "hex":"#e24585"
   },
   {
-    "pantone":"7425",
+    "pms":"7425",
     "hex":"#b52555"
   },
   {
-    "pantone":"7426",
+    "pms":"7426",
     "hex":"#a4123f"
   },
   {
-    "pantone":"7427",
+    "pms":"7427",
     "hex":"#971b2f"
   },
   {
-    "pantone":"7428",
+    "pms":"7428",
     "hex":"#6a2c3e"
   },
   {
-    "pantone":"7632",
+    "pms":"7632",
     "hex":"#d6c9ca"
   },
   {
-    "pantone":"7633",
+    "pms":"7633",
     "hex":"#c4a4a7"
   },
   {
-    "pantone":"7634",
+    "pms":"7634",
     "hex":"#c16784"
   },
   {
-    "pantone":"7635",
+    "pms":"7635",
     "hex":"#c63663"
   },
   {
-    "pantone":"7636",
+    "pms":"7636",
     "hex":"#bc204b"
   },
   {
-    "pantone":"7637",
+    "pms":"7637",
     "hex":"#912f46"
   },
   {
-    "pantone":"7638",
+    "pms":"7638",
     "hex":"#7e2d40"
   },
   {
-    "pantone":"217",
+    "pms":"217",
     "hex":"#eabedb"
   },
   {
-    "pantone":"218",
+    "pms":"218",
     "hex":"#e56db1"
   },
   {
-    "pantone":"219",
+    "pms":"219",
     "hex":"#da1884"
   },
   {
-    "pantone":"220",
+    "pms":"220",
     "hex":"#a50050"
   },
   {
-    "pantone":"221",
+    "pms":"221",
     "hex":"#910048"
   },
   {
-    "pantone":"222",
+    "pms":"222",
     "hex":"#6c1d45"
   },
   {
-    "pantone":"7639",
+    "pms":"7639",
     "hex":"#936d73"
   },
   {
-    "pantone":"7640",
+    "pms":"7640",
     "hex":"#934054"
   },
   {
-    "pantone":"7641",
+    "pms":"7641",
     "hex":"#8e2c48"
   },
   {
-    "pantone":"7642",
+    "pms":"7642",
     "hex":"#732e4a"
   },
   {
-    "pantone":"7643",
+    "pms":"7643",
     "hex":"#672e45"
   },
   {
-    "pantone":"7644",
+    "pms":"7644",
     "hex":"#582d40"
   },
   {
-    "pantone":"7645",
+    "pms":"7645",
     "hex":"#502b3a"
   },
   {
-    "pantone":"223",
+    "pms":"223",
     "hex":"#ef95cf"
   },
   {
-    "pantone":"224",
+    "pms":"224",
     "hex":"#eb6fbd"
   },
   {
-    "pantone":"225",
+    "pms":"225",
     "hex":"#df1995"
   },
   {
-    "pantone":"226",
+    "pms":"226",
     "hex":"#d0006f"
   },
   {
-    "pantone":"227",
+    "pms":"227",
     "hex":"#aa0061"
   },
   {
-    "pantone":"228",
+    "pms":"228",
     "hex":"#890c58"
   },
   {
-    "pantone":"229",
+    "pms":"229",
     "hex":"#672146"
   },
   {
-    "pantone":"230",
+    "pms":"230",
     "hex":"#f4a6d7"
   },
   {
-    "pantone":"231",
+    "pms":"231",
     "hex":"#f277c6"
   },
   {
-    "pantone":"232",
+    "pms":"232",
     "hex":"#e93cac"
   },
   {
-    "pantone":"233",
+    "pms":"233",
     "hex":"#c6007e"
   },
   {
-    "pantone":"234",
+    "pms":"234",
     "hex":"#a20067"
   },
   {
-    "pantone":"235",
+    "pms":"235",
     "hex":"#840b55"
   },
   {
-    "pantone":"670",
+    "pms":"670",
     "hex":"#ead3e2"
   },
   {
-    "pantone":"671",
+    "pms":"671",
     "hex":"#e6bcd8"
   },
   {
-    "pantone":"672",
+    "pms":"672",
     "hex":"#dfa0c9"
   },
   {
-    "pantone":"673",
+    "pms":"673",
     "hex":"#d986ba"
   },
   {
-    "pantone":"674",
+    "pms":"674",
     "hex":"#c6579a"
   },
   {
-    "pantone":"675",
+    "pms":"675",
     "hex":"#ae2573"
   },
   {
-    "pantone":"676",
+    "pms":"676",
     "hex":"#960051"
   },
   {
-    "pantone":"677",
+    "pms":"677",
     "hex":"#e5cedb"
   },
   {
-    "pantone":"678",
+    "pms":"678",
     "hex":"#e3c8d8"
   },
   {
-    "pantone":"679",
+    "pms":"679",
     "hex":"#debed2"
   },
   {
-    "pantone":"680",
+    "pms":"680",
     "hex":"#c996b6"
   },
   {
-    "pantone":"681",
+    "pms":"681",
     "hex":"#b06c96"
   },
   {
-    "pantone":"682",
+    "pms":"682",
     "hex":"#994878"
   },
   {
-    "pantone":"683",
+    "pms":"683",
     "hex":"#7c2855"
   },
   {
-    "pantone":"684",
+    "pms":"684",
     "hex":"#e4c6d4"
   },
   {
-    "pantone":"685",
+    "pms":"685",
     "hex":"#dcb6c9"
   },
   {
-    "pantone":"686",
+    "pms":"686",
     "hex":"#d0a1ba"
   },
   {
-    "pantone":"687",
+    "pms":"687",
     "hex":"#be84a3"
   },
   {
-    "pantone":"688",
+    "pms":"688",
     "hex":"#a76389"
   },
   {
-    "pantone":"689",
+    "pms":"689",
     "hex":"#893b67"
   },
   {
-    "pantone":"690",
+    "pms":"690",
     "hex":"#612141"
   },
   {
-    "pantone":"510",
+    "pms":"510",
     "hex":"#ebbecb"
   },
   {
-    "pantone":"509",
+    "pms":"509",
     "hex":"#e8b3c3"
   },
   {
-    "pantone":"508",
+    "pms":"508",
     "hex":"#e4a9bb"
   },
   {
-    "pantone":"507",
+    "pms":"507",
     "hex":"#d592aa"
   },
   {
-    "pantone":"506",
+    "pms":"506",
     "hex":"#84344e"
   },
   {
-    "pantone":"505",
+    "pms":"505",
     "hex":"#6f2c3f"
   },
   {
-    "pantone":"504",
+    "pms":"504",
     "hex":"#572932"
   },
   {
-    "pantone":"7429",
+    "pms":"7429",
     "hex":"#e2bccb"
   },
   {
-    "pantone":"7430",
+    "pms":"7430",
     "hex":"#dca9bf"
   },
   {
-    "pantone":"7431",
+    "pms":"7431",
     "hex":"#c9809e"
   },
   {
-    "pantone":"7432",
+    "pms":"7432",
     "hex":"#b55c80"
   },
   {
-    "pantone":"7433",
+    "pms":"7433",
     "hex":"#a73a64"
   },
   {
-    "pantone":"7434",
+    "pms":"7434",
     "hex":"#9b3259"
   },
   {
-    "pantone":"7435",
+    "pms":"7435",
     "hex":"#872651"
   },
   {
-    "pantone":"691",
+    "pms":"691",
     "hex":"#e9cdd0"
   },
   {
-    "pantone":"692",
+    "pms":"692",
     "hex":"#e4bec3"
   },
   {
-    "pantone":"693",
+    "pms":"693",
     "hex":"#d7a3ab"
   },
   {
-    "pantone":"694",
+    "pms":"694",
     "hex":"#c48490"
   },
   {
-    "pantone":"695",
+    "pms":"695",
     "hex":"#b46b7a"
   },
   {
-    "pantone":"696",
+    "pms":"696",
     "hex":"#984856"
   },
   {
-    "pantone":"697",
+    "pms":"697",
     "hex":"#893c47"
   },
   {
-    "pantone":"496",
+    "pms":"496",
     "hex":"#f2c6cf"
   },
   {
-    "pantone":"495",
+    "pms":"495",
     "hex":"#f1bdc8"
   },
   {
-    "pantone":"494",
+    "pms":"494",
     "hex":"#e9a2b2"
   },
   {
-    "pantone":"493",
+    "pms":"493",
     "hex":"#dc8699"
   },
   {
-    "pantone":"492",
+    "pms":"492",
     "hex":"#8f3237"
   },
   {
-    "pantone":"491",
+    "pms":"491",
     "hex":"#7f3035"
   },
   {
-    "pantone":"490",
+    "pms":"490",
     "hex":"#5d2a2c"
   },
   {
-    "pantone":"503",
+    "pms":"503",
     "hex":"#e9c4c7"
   },
   {
-    "pantone":"502",
+    "pms":"502",
     "hex":"#e5bac1"
   },
   {
-    "pantone":"501",
+    "pms":"501",
     "hex":"#daa5ad"
   },
   {
-    "pantone":"500",
+    "pms":"500",
     "hex":"#c6858f"
   },
   {
-    "pantone":"499",
+    "pms":"499",
     "hex":"#7a3e3a"
   },
   {
-    "pantone":"498",
+    "pms":"498",
     "hex":"#6a3735"
   },
   {
-    "pantone":"497",
+    "pms":"497",
     "hex":"#512f2e"
   },
   {
-    "pantone":"5035",
+    "pms":"5035",
     "hex":"#dfc2c3"
   },
   {
-    "pantone":"5025",
+    "pms":"5025",
     "hex":"#dbb7bb"
   },
   {
-    "pantone":"5015",
+    "pms":"5015",
     "hex":"#cca1a6"
   },
   {
-    "pantone":"5005",
+    "pms":"5005",
     "hex":"#b07c83"
   },
   {
-    "pantone":"4995",
+    "pms":"4995",
     "hex":"#9c6169"
   },
   {
-    "pantone":"4985",
+    "pms":"4985",
     "hex":"#874b52"
   },
   {
-    "pantone":"4975",
+    "pms":"4975",
     "hex":"#3f2021"
   },
   {
-    "pantone":"236",
+    "pms":"236",
     "hex":"#f1a7dc"
   },
   {
-    "pantone":"237",
+    "pms":"237",
     "hex":"#ec86d0"
   },
   {
-    "pantone":"238",
+    "pms":"238",
     "hex":"#e45dbf"
   },
   {
-    "pantone":"239",
+    "pms":"239",
     "hex":"#db3eb1"
   },
   {
-    "pantone":"240",
+    "pms":"240",
     "hex":"#c5299b"
   },
   {
-    "pantone":"241",
+    "pms":"241",
     "hex":"#af1685"
   },
   {
-    "pantone":"242",
+    "pms":"242",
     "hex":"#80225f"
   },
   {
-    "pantone":"2365",
+    "pms":"2365",
     "hex":"#efbae1"
   },
   {
-    "pantone":"2375",
+    "pms":"2375",
     "hex":"#e277cd"
   },
   {
-    "pantone":"2385",
+    "pms":"2385",
     "hex":"#d539b5"
   },
   {
-    "pantone":"2395",
+    "pms":"2395",
     "hex":"#c800a1"
   },
   {
-    "pantone":"2405",
+    "pms":"2405",
     "hex":"#b0008e"
   },
   {
-    "pantone":"2415",
+    "pms":"2415",
     "hex":"#9e007e"
   },
   {
-    "pantone":"2425",
+    "pms":"2425",
     "hex":"#830065"
   },
   {
-    "pantone":"243",
+    "pms":"243",
     "hex":"#eab8e4"
   },
   {
-    "pantone":"244",
+    "pms":"244",
     "hex":"#e59bdc"
   },
   {
-    "pantone":"245",
+    "pms":"245",
     "hex":"#dd7fd3"
   },
   {
-    "pantone":"246",
+    "pms":"246",
     "hex":"#c724b1"
   },
   {
-    "pantone":"247",
+    "pms":"247",
     "hex":"#bb16a3"
   },
   {
-    "pantone":"248",
+    "pms":"248",
     "hex":"#a51890"
   },
   {
-    "pantone":"249",
+    "pms":"249",
     "hex":"#80276c"
   },
   {
-    "pantone":"7646",
+    "pms":"7646",
     "hex":"#a56e87"
   },
   {
-    "pantone":"7647",
+    "pms":"7647",
     "hex":"#a83d72"
   },
   {
-    "pantone":"7648",
+    "pms":"7648",
     "hex":"#991e66"
   },
   {
-    "pantone":"7649",
+    "pms":"7649",
     "hex":"#8a1b61"
   },
   {
-    "pantone":"7650",
+    "pms":"7650",
     "hex":"#722257"
   },
   {
-    "pantone":"7651",
+    "pms":"7651",
     "hex":"#6a2a5b"
   },
   {
-    "pantone":"7652",
+    "pms":"7652",
     "hex":"#5e2751"
   },
   {
-    "pantone":"250",
+    "pms":"250",
     "hex":"#e7bae4"
   },
   {
-    "pantone":"251",
+    "pms":"251",
     "hex":"#dd9cdf"
   },
   {
-    "pantone":"252",
+    "pms":"252",
     "hex":"#c964cf"
   },
   {
-    "pantone":"253",
+    "pms":"253",
     "hex":"#ad1aac"
   },
   {
-    "pantone":"254",
+    "pms":"254",
     "hex":"#981d97"
   },
   {
-    "pantone":"255",
+    "pms":"255",
     "hex":"#72246c"
   },
   {
-    "pantone":"517",
+    "pms":"517",
     "hex":"#ebc6df"
   },
   {
-    "pantone":"516",
+    "pms":"516",
     "hex":"#e6bedd"
   },
   {
-    "pantone":"515",
+    "pms":"515",
     "hex":"#e2acd7"
   },
   {
-    "pantone":"514",
+    "pms":"514",
     "hex":"#d48bc8"
   },
   {
-    "pantone":"513",
+    "pms":"513",
     "hex":"#93328e"
   },
   {
-    "pantone":"512",
+    "pms":"512",
     "hex":"#833177"
   },
   {
-    "pantone":"511",
+    "pms":"511",
     "hex":"#612c51"
   },
   {
-    "pantone":"7436",
+    "pms":"7436",
     "hex":"#eedaea"
   },
   {
-    "pantone":"7437",
+    "pms":"7437",
     "hex":"#ccaed0"
   },
   {
-    "pantone":"7438",
+    "pms":"7438",
     "hex":"#d59ed7"
   },
   {
-    "pantone":"7439",
+    "pms":"7439",
     "hex":"#b288b9"
   },
   {
-    "pantone":"7440",
+    "pms":"7440",
     "hex":"#a277a6"
   },
   {
-    "pantone":"7441",
+    "pms":"7441",
     "hex":"#9f5cc0"
   },
   {
-    "pantone":"7442",
+    "pms":"7442",
     "hex":"#963cbd"
   },
   {
-    "pantone":"2562",
+    "pms":"2562",
     "hex":"#d7a9e3"
   },
   {
-    "pantone":"2572",
+    "pms":"2572",
     "hex":"#c98bdb"
   },
   {
-    "pantone":"2582",
+    "pms":"2582",
     "hex":"#ac4fc6"
   },
   {
-    "pantone":"2592",
+    "pms":"2592",
     "hex":"#9b26b6"
   },
   {
-    "pantone":"2602",
+    "pms":"2602",
     "hex":"#87189d"
   },
   {
-    "pantone":"2612",
+    "pms":"2612",
     "hex":"#772583"
   },
   {
-    "pantone":"2622",
+    "pms":"2622",
     "hex":"#653165"
   },
   {
-    "pantone":"7653",
+    "pms":"7653",
     "hex":"#948794"
   },
   {
-    "pantone":"7654",
+    "pms":"7654",
     "hex":"#a2789c"
   },
   {
-    "pantone":"7655",
+    "pms":"7655",
     "hex":"#a15a95"
   },
   {
-    "pantone":"7656",
+    "pms":"7656",
     "hex":"#8e3a80"
   },
   {
-    "pantone":"7657",
+    "pms":"7657",
     "hex":"#6e2b62"
   },
   {
-    "pantone":"7658",
+    "pms":"7658",
     "hex":"#6a3460"
   },
   {
-    "pantone":"7659",
+    "pms":"7659",
     "hex":"#5d3754"
   },
   {
-    "pantone":"524",
+    "pms":"524",
     "hex":"#d5c2d8"
   },
   {
-    "pantone":"523",
+    "pms":"523",
     "hex":"#c9b1d0"
   },
   {
-    "pantone":"522",
+    "pms":"522",
     "hex":"#ba9cc5"
   },
   {
-    "pantone":"521",
+    "pms":"521",
     "hex":"#a57fb2"
   },
   {
-    "pantone":"520",
+    "pms":"520",
     "hex":"#642f6c"
   },
   {
-    "pantone":"519",
+    "pms":"519",
     "hex":"#59315f"
   },
   {
-    "pantone":"518",
+    "pms":"518",
     "hex":"#4b3048"
   },
   {
-    "pantone":"5245",
+    "pms":"5245",
     "hex":"#dbcdd3"
   },
   {
-    "pantone":"5235",
+    "pms":"5235",
     "hex":"#d0bec7"
   },
   {
-    "pantone":"5225",
+    "pms":"5225",
     "hex":"#c6b0bc"
   },
   {
-    "pantone":"5215",
+    "pms":"5215",
     "hex":"#af95a6"
   },
   {
-    "pantone":"5205",
+    "pms":"5205",
     "hex":"#86647a"
   },
   {
-    "pantone":"5195",
+    "pms":"5195",
     "hex":"#66435a"
   },
   {
-    "pantone":"5185",
+    "pms":"5185",
     "hex":"#4a3041"
   },
   {
-    "pantone":"5175",
+    "pms":"5175",
     "hex":"#d8c8d1"
   },
   {
-    "pantone":"5165",
+    "pms":"5165",
     "hex":"#d3c0cd"
   },
   {
-    "pantone":"5155",
+    "pms":"5155",
     "hex":"#bfa5b8"
   },
   {
-    "pantone":"5145",
+    "pms":"5145",
     "hex":"#9b7793"
   },
   {
-    "pantone":"5135",
+    "pms":"5135",
     "hex":"#7e5475"
   },
   {
-    "pantone":"5125",
+    "pms":"5125",
     "hex":"#693c5e"
   },
   {
-    "pantone":"5115",
+    "pms":"5115",
     "hex":"#512a44"
   },
   {
-    "pantone":"531",
+    "pms":"531",
     "hex":"#dfc8e7"
   },
   {
-    "pantone":"530",
+    "pms":"530",
     "hex":"#d7b9e4"
   },
   {
-    "pantone":"529",
+    "pms":"529",
     "hex":"#caa2dd"
   },
   {
-    "pantone":"528",
+    "pms":"528",
     "hex":"#b580d1"
   },
   {
-    "pantone":"527",
+    "pms":"527",
     "hex":"#8031a7"
   },
   {
-    "pantone":"526",
+    "pms":"526",
     "hex":"#702f8a"
   },
   {
-    "pantone":"525",
+    "pms":"525",
     "hex":"#572c5f"
   },
   {
-    "pantone":"256",
+    "pms":"256",
     "hex":"#d6bfdd"
   },
   {
-    "pantone":"257",
+    "pms":"257",
     "hex":"#c6a1cf"
   },
   {
-    "pantone":"258",
+    "pms":"258",
     "hex":"#8c4799"
   },
   {
-    "pantone":"259",
+    "pms":"259",
     "hex":"#6d2077"
   },
   {
-    "pantone":"260",
+    "pms":"260",
     "hex":"#642667"
   },
   {
-    "pantone":"261",
+    "pms":"261",
     "hex":"#5d285f"
   },
   {
-    "pantone":"262",
+    "pms":"262",
     "hex":"#51284f"
   },
   {
-    "pantone":"2563",
+    "pms":"2563",
     "hex":"#cba3d8"
   },
   {
-    "pantone":"2573",
+    "pms":"2573",
     "hex":"#b884cb"
   },
   {
-    "pantone":"2583",
+    "pms":"2583",
     "hex":"#a05eb5"
   },
   {
-    "pantone":"2593",
+    "pms":"2593",
     "hex":"#84329b"
   },
   {
-    "pantone":"2603",
+    "pms":"2603",
     "hex":"#702082"
   },
   {
-    "pantone":"2613",
+    "pms":"2613",
     "hex":"#671e75"
   },
   {
-    "pantone":"2623",
+    "pms":"2623",
     "hex":"#5f2167"
   },
   {
-    "pantone":"7660",
+    "pms":"7660",
     "hex":"#9991a4"
   },
   {
-    "pantone":"7661",
+    "pms":"7661",
     "hex":"#8d6e97"
   },
   {
-    "pantone":"7662",
+    "pms":"7662",
     "hex":"#7a4183"
   },
   {
-    "pantone":"7663",
+    "pms":"7663",
     "hex":"#6b3077"
   },
   {
-    "pantone":"7664",
+    "pms":"7664",
     "hex":"#653279"
   },
   {
-    "pantone":"7665",
+    "pms":"7665",
     "hex":"#5e366e"
   },
   {
-    "pantone":"7666",
+    "pms":"7666",
     "hex":"#5c4e63"
   },
   {
-    "pantone":"2567",
+    "pms":"2567",
     "hex":"#c1a0da"
   },
   {
-    "pantone":"2577",
+    "pms":"2577",
     "hex":"#a77bca"
   },
   {
-    "pantone":"2587",
+    "pms":"2587",
     "hex":"#8246af"
   },
   {
-    "pantone":"2597",
+    "pms":"2597",
     "hex":"#5c068c"
   },
   {
-    "pantone":"2607",
+    "pms":"2607",
     "hex":"#500778"
   },
   {
-    "pantone":"2617",
+    "pms":"2617",
     "hex":"#470a68"
   },
   {
-    "pantone":"2627",
+    "pms":"2627",
     "hex":"#3c1053"
   },
   {
-    "pantone":"263",
+    "pms":"263",
     "hex":"#d7c6e6"
   },
   {
-    "pantone":"264",
+    "pms":"264",
     "hex":"#c1a7e2"
   },
   {
-    "pantone":"265",
+    "pms":"265",
     "hex":"#9063cd"
   },
   {
-    "pantone":"266",
+    "pms":"266",
     "hex":"#753bbd"
   },
   {
-    "pantone":"267",
+    "pms":"267",
     "hex":"#5f259f"
   },
   {
-    "pantone":"268",
+    "pms":"268",
     "hex":"#582c83"
   },
   {
-    "pantone":"269",
+    "pms":"269",
     "hex":"#512d6d"
   },
   {
-    "pantone":"2635",
+    "pms":"2635",
     "hex":"#c5b4e3"
   },
   {
-    "pantone":"2645",
+    "pms":"2645",
     "hex":"#ad96dc"
   },
   {
-    "pantone":"2655",
+    "pms":"2655",
     "hex":"#9678d3"
   },
   {
-    "pantone":"2665",
+    "pms":"2665",
     "hex":"#7d55c7"
   },
   {
-    "pantone":"2685",
+    "pms":"2685",
     "hex":"#330072"
   },
   {
-    "pantone":"2695",
+    "pms":"2695",
     "hex":"#2e1a47"
   },
   {
-    "pantone":"270",
+    "pms":"270",
     "hex":"#b4b5df"
   },
   {
-    "pantone":"271",
+    "pms":"271",
     "hex":"#9595d2"
   },
   {
-    "pantone":"272",
+    "pms":"272",
     "hex":"#7474c1"
   },
   {
-    "pantone":"273",
+    "pms":"273",
     "hex":"#24135f"
   },
   {
-    "pantone":"274",
+    "pms":"274",
     "hex":"#211551"
   },
   {
-    "pantone":"275",
+    "pms":"275",
     "hex":"#201747"
   },
   {
-    "pantone":"276",
+    "pms":"276",
     "hex":"#221c35"
   },
   {
-    "pantone":"2705",
+    "pms":"2705",
     "hex":"#a7a4e0"
   },
   {
-    "pantone":"2715",
+    "pms":"2715",
     "hex":"#8b84d7"
   },
   {
-    "pantone":"2725",
+    "pms":"2725",
     "hex":"#685bc7"
   },
   {
-    "pantone":"2735",
+    "pms":"2735",
     "hex":"#2e008b"
   },
   {
-    "pantone":"2745",
+    "pms":"2745",
     "hex":"#280071"
   },
   {
-    "pantone":"2755",
+    "pms":"2755",
     "hex":"#250e62"
   },
   {
-    "pantone":"2765",
+    "pms":"2765",
     "hex":"#201547"
   },
   {
-    "pantone":"7667",
+    "pms":"7667",
     "hex":"#6e7ca0"
   },
   {
-    "pantone":"7668",
+    "pms":"7668",
     "hex":"#686e9f"
   },
   {
-    "pantone":"7669",
+    "pms":"7669",
     "hex":"#615e9b"
   },
   {
-    "pantone":"7670",
+    "pms":"7670",
     "hex":"#565294"
   },
   {
-    "pantone":"7671",
+    "pms":"7671",
     "hex":"#514689"
   },
   {
-    "pantone":"7672",
+    "pms":"7672",
     "hex":"#4c4184"
   },
   {
-    "pantone":"7673",
+    "pms":"7673",
     "hex":"#535486"
   },
   {
-    "pantone":"7443",
+    "pms":"7443",
     "hex":"#dddae8"
   },
   {
-    "pantone":"7444",
+    "pms":"7444",
     "hex":"#b6b8dc"
   },
   {
-    "pantone":"7445",
+    "pms":"7445",
     "hex":"#a7a2c3"
   },
   {
-    "pantone":"7446",
+    "pms":"7446",
     "hex":"#8986ca"
   },
   {
-    "pantone":"7447",
+    "pms":"7447",
     "hex":"#5d4777"
   },
   {
-    "pantone":"7448",
+    "pms":"7448",
     "hex":"#4b384c"
   },
   {
-    "pantone":"7449",
+    "pms":"7449",
     "hex":"#41273b"
   },
   {
-    "pantone":"7674",
+    "pms":"7674",
     "hex":"#878cb4"
   },
   {
-    "pantone":"7675",
+    "pms":"7675",
     "hex":"#7c7fab"
   },
   {
-    "pantone":"7676",
+    "pms":"7676",
     "hex":"#7566a0"
   },
   {
-    "pantone":"7677",
+    "pms":"7677",
     "hex":"#6f5091"
   },
   {
-    "pantone":"7678",
+    "pms":"7678",
     "hex":"#68478d"
   },
   {
-    "pantone":"7679",
+    "pms":"7679",
     "hex":"#563d82"
   },
   {
-    "pantone":"7680",
+    "pms":"7680",
     "hex":"#523178"
   },
   {
-    "pantone":"663",
+    "pms":"663",
     "hex":"#e5e1e6"
   },
   {
-    "pantone":"664",
+    "pms":"664",
     "hex":"#e0dbe3"
   },
   {
-    "pantone":"665",
+    "pms":"665",
     "hex":"#c6bcd0"
   },
   {
-    "pantone":"666",
+    "pms":"666",
     "hex":"#a192b2"
   },
   {
-    "pantone":"667",
+    "pms":"667",
     "hex":"#7c6992"
   },
   {
-    "pantone":"668",
+    "pms":"668",
     "hex":"#614b79"
   },
   {
-    "pantone":"669",
+    "pms":"669",
     "hex":"#3f2a56"
   },
   {
-    "pantone":"5315",
+    "pms":"5315",
     "hex":"#d8d7df"
   },
   {
-    "pantone":"5305",
+    "pms":"5305",
     "hex":"#c6c4d2"
   },
   {
-    "pantone":"5295",
+    "pms":"5295",
     "hex":"#b3b0c4"
   },
   {
-    "pantone":"5285",
+    "pms":"5285",
     "hex":"#8d89a5"
   },
   {
-    "pantone":"5275",
+    "pms":"5275",
     "hex":"#595478"
   },
   {
-    "pantone":"5265",
+    "pms":"5265",
     "hex":"#403a60"
   },
   {
-    "pantone":"5255",
+    "pms":"5255",
     "hex":"#1e1a34"
   },
   {
-    "pantone":"538",
+    "pms":"538",
     "hex":"#c5cfda"
   },
   {
-    "pantone":"537",
+    "pms":"537",
     "hex":"#bbc7d6"
   },
   {
-    "pantone":"536",
+    "pms":"536",
     "hex":"#a2b2c8"
   },
   {
-    "pantone":"535",
+    "pms":"535",
     "hex":"#8e9fbc"
   },
   {
-    "pantone":"534",
+    "pms":"534",
     "hex":"#1b365d"
   },
   {
-    "pantone":"533",
+    "pms":"533",
     "hex":"#1f2a44"
   },
   {
-    "pantone":"532",
+    "pms":"532",
     "hex":"#1c1f2a"
   },
   {
-    "pantone":"7541",
+    "pms":"7541",
     "hex":"#d9e1e2"
   },
   {
-    "pantone":"7542",
+    "pms":"7542",
     "hex":"#a4bcc2"
   },
   {
-    "pantone":"7543",
+    "pms":"7543",
     "hex":"#98a4ae"
   },
   {
-    "pantone":"7544",
+    "pms":"7544",
     "hex":"#768692"
   },
   {
-    "pantone":"7545",
+    "pms":"7545",
     "hex":"#425563"
   },
   {
-    "pantone":"7546",
+    "pms":"7546",
     "hex":"#253746"
   },
   {
-    "pantone":"7547",
+    "pms":"7547",
     "hex":"#131e29"
   },
   {
-    "pantone":"552",
+    "pms":"552",
     "hex":"#b9d3dc"
   },
   {
-    "pantone":"551",
+    "pms":"551",
     "hex":"#a3c7d2"
   },
   {
-    "pantone":"550",
+    "pms":"550",
     "hex":"#8db9ca"
   },
   {
-    "pantone":"549",
+    "pms":"549",
     "hex":"#6ba4b8"
   },
   {
-    "pantone":"548",
+    "pms":"548",
     "hex":"#003d4c"
   },
   {
-    "pantone":"547",
+    "pms":"547",
     "hex":"#00313c"
   },
   {
-    "pantone":"546",
+    "pms":"546",
     "hex":"#072b31"
   },
   {
-    "pantone":"5455",
+    "pms":"5455",
     "hex":"#bfced6"
   },
   {
-    "pantone":"5445",
+    "pms":"5445",
     "hex":"#b7c9d3"
   },
   {
-    "pantone":"5435",
+    "pms":"5435",
     "hex":"#a6bbc8"
   },
   {
-    "pantone":"5425",
+    "pms":"5425",
     "hex":"#7a99ac"
   },
   {
-    "pantone":"5415",
+    "pms":"5415",
     "hex":"#5b7f95"
   },
   {
-    "pantone":"5405",
+    "pms":"5405",
     "hex":"#4f758b"
   },
   {
-    "pantone":"5395",
+    "pms":"5395",
     "hex":"#081f2c"
   },
   {
-    "pantone":"642",
+    "pms":"642",
     "hex":"#d1dde6"
   },
   {
-    "pantone":"643",
+    "pms":"643",
     "hex":"#c6d6e3"
   },
   {
-    "pantone":"644",
+    "pms":"644",
     "hex":"#9bb8d3"
   },
   {
-    "pantone":"645",
+    "pms":"645",
     "hex":"#7da1c4"
   },
   {
-    "pantone":"646",
+    "pms":"646",
     "hex":"#5e8ab4"
   },
   {
-    "pantone":"647",
+    "pms":"647",
     "hex":"#236192"
   },
   {
-    "pantone":"648",
+    "pms":"648",
     "hex":"#002e5d"
   },
   {
-    "pantone":"649",
+    "pms":"649",
     "hex":"#dbe2e9"
   },
   {
-    "pantone":"650",
+    "pms":"650",
     "hex":"#ced9e5"
   },
   {
-    "pantone":"651",
+    "pms":"651",
     "hex":"#a7bcd6"
   },
   {
-    "pantone":"652",
+    "pms":"652",
     "hex":"#7d9bc1"
   },
   {
-    "pantone":"653",
+    "pms":"653",
     "hex":"#326295"
   },
   {
-    "pantone":"654",
+    "pms":"654",
     "hex":"#003a70"
   },
   {
-    "pantone":"655",
+    "pms":"655",
     "hex":"#002554"
   },
   {
-    "pantone":"656",
+    "pms":"656",
     "hex":"#dde5ed"
   },
   {
-    "pantone":"657",
+    "pms":"657",
     "hex":"#c8d8eb"
   },
   {
-    "pantone":"658",
+    "pms":"658",
     "hex":"#b1c9e8"
   },
   {
-    "pantone":"659",
+    "pms":"659",
     "hex":"#7ba4db"
   },
   {
-    "pantone":"660",
+    "pms":"660",
     "hex":"#407ec9"
   },
   {
-    "pantone":"661",
+    "pms":"661",
     "hex":"#003594"
   },
   {
-    "pantone":"662",
+    "pms":"662",
     "hex":"#001a70"
   },
   {
-    "pantone":"7450",
+    "pms":"7450",
     "hex":"#bdc5db"
   },
   {
-    "pantone":"7451",
+    "pms":"7451",
     "hex":"#89abe3"
   },
   {
-    "pantone":"7452",
+    "pms":"7452",
     "hex":"#8094dd"
   },
   {
-    "pantone":"7453",
+    "pms":"7453",
     "hex":"#7ba6de"
   },
   {
-    "pantone":"7454",
+    "pms":"7454",
     "hex":"#5f8fb4"
   },
   {
-    "pantone":"7455",
+    "pms":"7455",
     "hex":"#3a5dae"
   },
   {
-    "pantone":"7456",
+    "pms":"7456",
     "hex":"#606eb2"
   },
   {
-    "pantone":"2706",
+    "pms":"2706",
     "hex":"#cbd3eb"
   },
   {
-    "pantone":"2716",
+    "pms":"2716",
     "hex":"#9faee5"
   },
   {
-    "pantone":"2726",
+    "pms":"2726",
     "hex":"#485cc7"
   },
   {
-    "pantone":"2736",
+    "pms":"2736",
     "hex":"#1e22aa"
   },
   {
-    "pantone":"2746",
+    "pms":"2746",
     "hex":"#171c8f"
   },
   {
-    "pantone":"2756",
+    "pms":"2756",
     "hex":"#151f6d"
   },
   {
-    "pantone":"2766",
+    "pms":"2766",
     "hex":"#141b4d"
   },
   {
-    "pantone":"2708",
+    "pms":"2708",
     "hex":"#b8ccea"
   },
   {
-    "pantone":"2718",
+    "pms":"2718",
     "hex":"#5c88da"
   },
   {
-    "pantone":"2728",
+    "pms":"2728",
     "hex":"#0047bb"
   },
   {
-    "pantone":"2738",
+    "pms":"2738",
     "hex":"#06038d"
   },
   {
-    "pantone":"2748",
+    "pms":"2748",
     "hex":"#001871"
   },
   {
-    "pantone":"2758",
+    "pms":"2758",
     "hex":"#001e62"
   },
   {
-    "pantone":"2768",
+    "pms":"2768",
     "hex":"#071d49"
   },
   {
-    "pantone":"2707",
+    "pms":"2707",
     "hex":"#c3d7ee"
   },
   {
-    "pantone":"2717",
+    "pms":"2717",
     "hex":"#a7c6ed"
   },
   {
-    "pantone":"2727",
+    "pms":"2727",
     "hex":"#307fe2"
   },
   {
-    "pantone":"2747",
+    "pms":"2747",
     "hex":"#001a72"
   },
   {
-    "pantone":"2757",
+    "pms":"2757",
     "hex":"#001e60"
   },
   {
-    "pantone":"2767",
+    "pms":"2767",
     "hex":"#13294b"
   },
   {
-    "pantone":"277",
+    "pms":"277",
     "hex":"#abcae9"
   },
   {
-    "pantone":"278",
+    "pms":"278",
     "hex":"#8bb8e8"
   },
   {
-    "pantone":"279",
+    "pms":"279",
     "hex":"#418fde"
   },
   {
-    "pantone":"280",
+    "pms":"280",
     "hex":"#012169"
   },
   {
-    "pantone":"281",
+    "pms":"281",
     "hex":"#00205b"
   },
   {
-    "pantone":"282",
+    "pms":"282",
     "hex":"#041e42"
   },
   {
-    "pantone":"283",
+    "pms":"283",
     "hex":"#92c1e9"
   },
   {
-    "pantone":"284",
+    "pms":"284",
     "hex":"#6cace4"
   },
   {
-    "pantone":"285",
+    "pms":"285",
     "hex":"#0072ce"
   },
   {
-    "pantone":"286",
+    "pms":"286",
     "hex":"#0033a0"
   },
   {
-    "pantone":"287",
+    "pms":"287",
     "hex":"#003087"
   },
   {
-    "pantone":"288",
+    "pms":"288",
     "hex":"#002d72"
   },
   {
-    "pantone":"289",
+    "pms":"289",
     "hex":"#0c2340"
   },
   {
-    "pantone":"7681",
+    "pms":"7681",
     "hex":"#94a9cb"
   },
   {
-    "pantone":"7682",
+    "pms":"7682",
     "hex":"#6787b7"
   },
   {
-    "pantone":"7683",
+    "pms":"7683",
     "hex":"#426da9"
   },
   {
-    "pantone":"7684",
+    "pms":"7684",
     "hex":"#385e9d"
   },
   {
-    "pantone":"7685",
+    "pms":"7685",
     "hex":"#2c5697"
   },
   {
-    "pantone":"7686",
+    "pms":"7686",
     "hex":"#1d4f91"
   },
   {
-    "pantone":"7687",
+    "pms":"7687",
     "hex":"#1d428a"
   },
   {
-    "pantone":"545",
+    "pms":"545",
     "hex":"#c6dae7"
   },
   {
-    "pantone":"544",
+    "pms":"544",
     "hex":"#bdd6e6"
   },
   {
-    "pantone":"543",
+    "pms":"543",
     "hex":"#a4c8e1"
   },
   {
-    "pantone":"542",
+    "pms":"542",
     "hex":"#7bafd4"
   },
   {
-    "pantone":"541",
+    "pms":"541",
     "hex":"#003c71"
   },
   {
-    "pantone":"540",
+    "pms":"540",
     "hex":"#003057"
   },
   {
-    "pantone":"539",
+    "pms":"539",
     "hex":"#00263a"
   },
   {
-    "pantone":"290",
+    "pms":"290",
     "hex":"#b9d9eb"
   },
   {
-    "pantone":"291",
+    "pms":"291",
     "hex":"#9bcbeb"
   },
   {
-    "pantone":"292",
+    "pms":"292",
     "hex":"#69b3e7"
   },
   {
-    "pantone":"293",
+    "pms":"293",
     "hex":"#003da5"
   },
   {
-    "pantone":"294",
+    "pms":"294",
     "hex":"#002f6c"
   },
   {
-    "pantone":"295",
+    "pms":"295",
     "hex":"#002855"
   },
   {
-    "pantone":"296",
+    "pms":"296",
     "hex":"#041c2c"
   },
   {
-    "pantone":"2905",
+    "pms":"2905",
     "hex":"#8dc8e8"
   },
   {
-    "pantone":"2915",
+    "pms":"2915",
     "hex":"#62b5e5"
   },
   {
-    "pantone":"2925",
+    "pms":"2925",
     "hex":"#009cde"
   },
   {
-    "pantone":"2935",
+    "pms":"2935",
     "hex":"#0057b8"
   },
   {
-    "pantone":"2945",
+    "pms":"2945",
     "hex":"#004c97"
   },
   {
-    "pantone":"2955",
+    "pms":"2955",
     "hex":"#003865"
   },
   {
-    "pantone":"2965",
+    "pms":"2965",
     "hex":"#00263e"
   },
   {
-    "pantone":"297",
+    "pms":"297",
     "hex":"#71c5e8"
   },
   {
-    "pantone":"298",
+    "pms":"298",
     "hex":"#41b6e6"
   },
   {
-    "pantone":"299",
+    "pms":"299",
     "hex":"#00a3e0"
   },
   {
-    "pantone":"300",
+    "pms":"300",
     "hex":"#005eb8"
   },
   {
-    "pantone":"301",
+    "pms":"301",
     "hex":"#004b87"
   },
   {
-    "pantone":"302",
+    "pms":"302",
     "hex":"#003b5c"
   },
   {
-    "pantone":"303",
+    "pms":"303",
     "hex":"#002a3a"
   },
   {
-    "pantone":"7688",
+    "pms":"7688",
     "hex":"#4698cb"
   },
   {
-    "pantone":"7689",
+    "pms":"7689",
     "hex":"#298fc2"
   },
   {
-    "pantone":"7690",
+    "pms":"7690",
     "hex":"#0076a8"
   },
   {
-    "pantone":"7691",
+    "pms":"7691",
     "hex":"#006298"
   },
   {
-    "pantone":"7692",
+    "pms":"7692",
     "hex":"#005587"
   },
   {
-    "pantone":"7693",
+    "pms":"7693",
     "hex":"#004976"
   },
   {
-    "pantone":"7694",
+    "pms":"7694",
     "hex":"#01426a"
   },
   {
-    "pantone":"2975",
+    "pms":"2975",
     "hex":"#99d6ea"
   },
   {
-    "pantone":"2985",
+    "pms":"2985",
     "hex":"#5bc2e7"
   },
   {
-    "pantone":"2995",
+    "pms":"2995",
     "hex":"#00a9e0"
   },
   {
-    "pantone":"3005",
+    "pms":"3005",
     "hex":"#0077c8"
   },
   {
-    "pantone":"3015",
+    "pms":"3015",
     "hex":"#00629b"
   },
   {
-    "pantone":"3025",
+    "pms":"3025",
     "hex":"#004f71"
   },
   {
-    "pantone":"3035",
+    "pms":"3035",
     "hex":"#003e51"
   },
   {
-    "pantone":"7695",
+    "pms":"7695",
     "hex":"#7ba7bc"
   },
   {
-    "pantone":"7696",
+    "pms":"7696",
     "hex":"#6399ae"
   },
   {
-    "pantone":"7697",
+    "pms":"7697",
     "hex":"#4e87a0"
   },
   {
-    "pantone":"7698",
+    "pms":"7698",
     "hex":"#41748d"
   },
   {
-    "pantone":"7699",
+    "pms":"7699",
     "hex":"#34657f"
   },
   {
-    "pantone":"7700",
+    "pms":"7700",
     "hex":"#165c7d"
   },
   {
-    "pantone":"7701",
+    "pms":"7701",
     "hex":"#005776"
   },
   {
-    "pantone":"7457",
+    "pms":"7457",
     "hex":"#bbdde6"
   },
   {
-    "pantone":"7458",
+    "pms":"7458",
     "hex":"#71b2c9"
   },
   {
-    "pantone":"7459",
+    "pms":"7459",
     "hex":"#4298b5"
   },
   {
-    "pantone":"7460",
+    "pms":"7460",
     "hex":"#0086bf"
   },
   {
-    "pantone":"7461",
+    "pms":"7461",
     "hex":"#007dba"
   },
   {
-    "pantone":"7462",
+    "pms":"7462",
     "hex":"#00558c"
   },
   {
-    "pantone":"7463",
+    "pms":"7463",
     "hex":"#002b49"
   },
   {
-    "pantone":"304",
+    "pms":"304",
     "hex":"#9adbe8"
   },
   {
-    "pantone":"305",
+    "pms":"305",
     "hex":"#59cbe8"
   },
   {
-    "pantone":"306",
+    "pms":"306",
     "hex":"#00b5e2"
   },
   {
-    "pantone":"307",
+    "pms":"307",
     "hex":"#006ba6"
   },
   {
-    "pantone":"308",
+    "pms":"308",
     "hex":"#00587c"
   },
   {
-    "pantone":"309",
+    "pms":"309",
     "hex":"#003b49"
   },
   {
-    "pantone":"635",
+    "pms":"635",
     "hex":"#a4dbe8"
   },
   {
-    "pantone":"636",
+    "pms":"636",
     "hex":"#8bd3e6"
   },
   {
-    "pantone":"637",
+    "pms":"637",
     "hex":"#4ec3e0"
   },
   {
-    "pantone":"638",
+    "pms":"638",
     "hex":"#00afd7"
   },
   {
-    "pantone":"639",
+    "pms":"639",
     "hex":"#0095c8"
   },
   {
-    "pantone":"640",
+    "pms":"640",
     "hex":"#0082ba"
   },
   {
-    "pantone":"641",
+    "pms":"641",
     "hex":"#0067a0"
   },
   {
-    "pantone":"7702",
+    "pms":"7702",
     "hex":"#48a9c5"
   },
   {
-    "pantone":"7703",
+    "pms":"7703",
     "hex":"#009cbd"
   },
   {
-    "pantone":"7704",
+    "pms":"7704",
     "hex":"#0085ad"
   },
   {
-    "pantone":"7705",
+    "pms":"7705",
     "hex":"#007096"
   },
   {
-    "pantone":"7706",
+    "pms":"7706",
     "hex":"#006a8e"
   },
   {
-    "pantone":"7707",
+    "pms":"7707",
     "hex":"#00617f"
   },
   {
-    "pantone":"7708",
+    "pms":"7708",
     "hex":"#005670"
   },
   {
-    "pantone":"628",
+    "pms":"628",
     "hex":"#b8dde1"
   },
   {
-    "pantone":"629",
+    "pms":"629",
     "hex":"#9bd3dd"
   },
   {
-    "pantone":"630",
+    "pms":"630",
     "hex":"#77c5d5"
   },
   {
-    "pantone":"631",
+    "pms":"631",
     "hex":"#3eb1c8"
   },
   {
-    "pantone":"632",
+    "pms":"632",
     "hex":"#0093b2"
   },
   {
-    "pantone":"633",
+    "pms":"633",
     "hex":"#007396"
   },
   {
-    "pantone":"634",
+    "pms":"634",
     "hex":"#005f83"
   },
   {
-    "pantone":"310",
+    "pms":"310",
     "hex":"#6ad1e3"
   },
   {
-    "pantone":"311",
+    "pms":"311",
     "hex":"#05c3de"
   },
   {
-    "pantone":"312",
+    "pms":"312",
     "hex":"#00a9ce"
   },
   {
-    "pantone":"313",
+    "pms":"313",
     "hex":"#0092bc"
   },
   {
-    "pantone":"314",
+    "pms":"314",
     "hex":"#007fa3"
   },
   {
-    "pantone":"315",
+    "pms":"315",
     "hex":"#00677f"
   },
   {
-    "pantone":"316",
+    "pms":"316",
     "hex":"#004851"
   },
   {
-    "pantone":"3105",
+    "pms":"3105",
     "hex":"#68d2df"
   },
   {
-    "pantone":"3115",
+    "pms":"3115",
     "hex":"#00c1d5"
   },
   {
-    "pantone":"3125",
+    "pms":"3125",
     "hex":"#00aec7"
   },
   {
-    "pantone":"3135",
+    "pms":"3135",
     "hex":"#008eaa"
   },
   {
-    "pantone":"3145",
+    "pms":"3145",
     "hex":"#00778b"
   },
   {
-    "pantone":"3155",
+    "pms":"3155",
     "hex":"#006272"
   },
   {
-    "pantone":"3165",
+    "pms":"3165",
     "hex":"#004f59"
   },
   {
-    "pantone":"7709",
+    "pms":"7709",
     "hex":"#63b1bc"
   },
   {
-    "pantone":"7710",
+    "pms":"7710",
     "hex":"#00a7b5"
   },
   {
-    "pantone":"7711",
+    "pms":"7711",
     "hex":"#0097a9"
   },
   {
-    "pantone":"7712",
+    "pms":"7712",
     "hex":"#00859b"
   },
   {
-    "pantone":"7713",
+    "pms":"7713",
     "hex":"#007d8a"
   },
   {
-    "pantone":"7714",
+    "pms":"7714",
     "hex":"#007680"
   },
   {
-    "pantone":"7715",
+    "pms":"7715",
     "hex":"#006269"
   },
   {
-    "pantone":"317",
+    "pms":"317",
     "hex":"#b1e4e3"
   },
   {
-    "pantone":"318",
+    "pms":"318",
     "hex":"#88dbdf"
   },
   {
-    "pantone":"319",
+    "pms":"319",
     "hex":"#2dccd3"
   },
   {
-    "pantone":"320",
+    "pms":"320",
     "hex":"#009ca6"
   },
   {
-    "pantone":"321",
+    "pms":"321",
     "hex":"#008c95"
   },
   {
-    "pantone":"322",
+    "pms":"322",
     "hex":"#007377"
   },
   {
-    "pantone":"323",
+    "pms":"323",
     "hex":"#005f61"
   },
   {
-    "pantone":"7464",
+    "pms":"7464",
     "hex":"#a0d1ca"
   },
   {
-    "pantone":"7465",
+    "pms":"7465",
     "hex":"#40c1ac"
   },
   {
-    "pantone":"7466",
+    "pms":"7466",
     "hex":"#00b0b9"
   },
   {
-    "pantone":"7467",
+    "pms":"7467",
     "hex":"#00a3ad"
   },
   {
-    "pantone":"7468",
+    "pms":"7468",
     "hex":"#007398"
   },
   {
-    "pantone":"7469",
+    "pms":"7469",
     "hex":"#005f86"
   },
   {
-    "pantone":"7470",
+    "pms":"7470",
     "hex":"#005a70"
   },
   {
-    "pantone":"7471",
+    "pms":"7471",
     "hex":"#7eddd3"
   },
   {
-    "pantone":"7472",
+    "pms":"7472",
     "hex":"#5cb8b2"
   },
   {
-    "pantone":"7473",
+    "pms":"7473",
     "hex":"#279989"
   },
   {
-    "pantone":"7474",
+    "pms":"7474",
     "hex":"#007681"
   },
   {
-    "pantone":"7475",
+    "pms":"7475",
     "hex":"#487a7b"
   },
   {
-    "pantone":"7476",
+    "pms":"7476",
     "hex":"#0d5257"
   },
   {
-    "pantone":"7477",
+    "pms":"7477",
     "hex":"#244c5a"
   },
   {
-    "pantone":"5523",
+    "pms":"5523",
     "hex":"#b6cfd0"
   },
   {
-    "pantone":"5513",
+    "pms":"5513",
     "hex":"#abc7ca"
   },
   {
-    "pantone":"5503",
+    "pms":"5503",
     "hex":"#94b7bb"
   },
   {
-    "pantone":"5493",
+    "pms":"5493",
     "hex":"#7fa9ae"
   },
   {
-    "pantone":"5483",
+    "pms":"5483",
     "hex":"#4f868e"
   },
   {
-    "pantone":"5473",
+    "pms":"5473",
     "hex":"#115e67"
   },
   {
-    "pantone":"5463",
+    "pms":"5463",
     "hex":"#07272d"
   },
   {
-    "pantone":"7716",
+    "pms":"7716",
     "hex":"#00968f"
   },
   {
-    "pantone":"7717",
+    "pms":"7717",
     "hex":"#00857d"
   },
   {
-    "pantone":"7718",
+    "pms":"7718",
     "hex":"#007672"
   },
   {
-    "pantone":"7719",
+    "pms":"7719",
     "hex":"#006d68"
   },
   {
-    "pantone":"7720",
+    "pms":"7720",
     "hex":"#00635b"
   },
   {
-    "pantone":"7721",
+    "pms":"7721",
     "hex":"#005e5d"
   },
   {
-    "pantone":"7722",
+    "pms":"7722",
     "hex":"#005151"
   },
   {
-    "pantone":"324",
+    "pms":"324",
     "hex":"#9cdbd9"
   },
   {
-    "pantone":"325",
+    "pms":"325",
     "hex":"#64ccc9"
   },
   {
-    "pantone":"326",
+    "pms":"326",
     "hex":"#00b2a9"
   },
   {
-    "pantone":"327",
+    "pms":"327",
     "hex":"#008675"
   },
   {
-    "pantone":"328",
+    "pms":"328",
     "hex":"#007367"
   },
   {
-    "pantone":"329",
+    "pms":"329",
     "hex":"#00685e"
   },
   {
-    "pantone":"330",
+    "pms":"330",
     "hex":"#00534c"
   },
   {
-    "pantone":"3242",
+    "pms":"3242",
     "hex":"#71dbd4"
   },
   {
-    "pantone":"3252",
+    "pms":"3252",
     "hex":"#2ad2c9"
   },
   {
-    "pantone":"3262",
+    "pms":"3262",
     "hex":"#00bfb3"
   },
   {
-    "pantone":"3272",
+    "pms":"3272",
     "hex":"#00a499"
   },
   {
-    "pantone":"3282",
+    "pms":"3282",
     "hex":"#008578"
   },
   {
-    "pantone":"3292",
+    "pms":"3292",
     "hex":"#00594f"
   },
   {
-    "pantone":"3302",
+    "pms":"3302",
     "hex":"#004c45"
   },
   {
-    "pantone":"3245",
+    "pms":"3245",
     "hex":"#7ce0d3"
   },
   {
-    "pantone":"3255",
+    "pms":"3255",
     "hex":"#2cd5c4"
   },
   {
-    "pantone":"3265",
+    "pms":"3265",
     "hex":"#00c7b1"
   },
   {
-    "pantone":"3275",
+    "pms":"3275",
     "hex":"#00b398"
   },
   {
-    "pantone":"3285",
+    "pms":"3285",
     "hex":"#009681"
   },
   {
-    "pantone":"3295",
+    "pms":"3295",
     "hex":"#007864"
   },
   {
-    "pantone":"3305",
+    "pms":"3305",
     "hex":"#004e42"
   },
   {
-    "pantone":"3248",
+    "pms":"3248",
     "hex":"#6dcdb8"
   },
   {
-    "pantone":"3258",
+    "pms":"3258",
     "hex":"#49c5b1"
   },
   {
-    "pantone":"3268",
+    "pms":"3268",
     "hex":"#00ab8e"
   },
   {
-    "pantone":"3278",
+    "pms":"3278",
     "hex":"#009b77"
   },
   {
-    "pantone":"3288",
+    "pms":"3288",
     "hex":"#008264"
   },
   {
-    "pantone":"3298",
+    "pms":"3298",
     "hex":"#006a52"
   },
   {
-    "pantone":"3308",
+    "pms":"3308",
     "hex":"#034638"
   },
   {
-    "pantone":"566",
+    "pms":"566",
     "hex":"#b9dcd2"
   },
   {
-    "pantone":"565",
+    "pms":"565",
     "hex":"#a1d6ca"
   },
   {
-    "pantone":"564",
+    "pms":"564",
     "hex":"#86c8bc"
   },
   {
-    "pantone":"563",
+    "pms":"563",
     "hex":"#6bbbae"
   },
   {
-    "pantone":"562",
+    "pms":"562",
     "hex":"#006f62"
   },
   {
-    "pantone":"561",
+    "pms":"561",
     "hex":"#00594c"
   },
   {
-    "pantone":"560",
+    "pms":"560",
     "hex":"#1d3c34"
   },
   {
-    "pantone":"573",
+    "pms":"573",
     "hex":"#b5e3d8"
   },
   {
-    "pantone":"572",
+    "pms":"572",
     "hex":"#a5dfd3"
   },
   {
-    "pantone":"571",
+    "pms":"571",
     "hex":"#98dbce"
   },
   {
-    "pantone":"570",
+    "pms":"570",
     "hex":"#6bcaba"
   },
   {
-    "pantone":"569",
+    "pms":"569",
     "hex":"#00816d"
   },
   {
-    "pantone":"568",
+    "pms":"568",
     "hex":"#006c5b"
   },
   {
-    "pantone":"567",
+    "pms":"567",
     "hex":"#173f35"
   },
   {
-    "pantone":"559",
+    "pms":"559",
     "hex":"#adcab8"
   },
   {
-    "pantone":"558",
+    "pms":"558",
     "hex":"#9abeaa"
   },
   {
-    "pantone":"557",
+    "pms":"557",
     "hex":"#85b09a"
   },
   {
-    "pantone":"556",
+    "pms":"556",
     "hex":"#6fa287"
   },
   {
-    "pantone":"555",
+    "pms":"555",
     "hex":"#28724f"
   },
   {
-    "pantone":"554",
+    "pms":"554",
     "hex":"#205c40"
   },
   {
-    "pantone":"553",
+    "pms":"553",
     "hex":"#284734"
   },
   {
-    "pantone":"5595",
+    "pms":"5595",
     "hex":"#bfcec2"
   },
   {
-    "pantone":"5585",
+    "pms":"5585",
     "hex":"#a7bdb1"
   },
   {
-    "pantone":"5575",
+    "pms":"5575",
     "hex":"#92aca0"
   },
   {
-    "pantone":"5565",
+    "pms":"5565",
     "hex":"#7f9c90"
   },
   {
-    "pantone":"5555",
+    "pms":"5555",
     "hex":"#5c7f71"
   },
   {
-    "pantone":"5545",
+    "pms":"5545",
     "hex":"#43695b"
   },
   {
-    "pantone":"5535",
+    "pms":"5535",
     "hex":"#183028"
   },
   {
-    "pantone":"5665",
+    "pms":"5665",
     "hex":"#bac5b9"
   },
   {
-    "pantone":"5655",
+    "pms":"5655",
     "hex":"#b0bdb0"
   },
   {
-    "pantone":"5645",
+    "pms":"5645",
     "hex":"#a3b2a4"
   },
   {
-    "pantone":"5635",
+    "pms":"5635",
     "hex":"#94a596"
   },
   {
-    "pantone":"5625",
+    "pms":"5625",
     "hex":"#708573"
   },
   {
-    "pantone":"5615",
+    "pms":"5615",
     "hex":"#5e7461"
   },
   {
-    "pantone":"5605",
+    "pms":"5605",
     "hex":"#22372b"
   },
   {
-    "pantone":"5527",
+    "pms":"5527",
     "hex":"#bcc9c5"
   },
   {
-    "pantone":"5517",
+    "pms":"5517",
     "hex":"#b1c0bc"
   },
   {
-    "pantone":"5507",
+    "pms":"5507",
     "hex":"#9db0ac"
   },
   {
-    "pantone":"5497",
+    "pms":"5497",
     "hex":"#829995"
   },
   {
-    "pantone":"5487",
+    "pms":"5487",
     "hex":"#5d7975"
   },
   {
-    "pantone":"5477",
+    "pms":"5477",
     "hex":"#3e5d58"
   },
   {
-    "pantone":"5467",
+    "pms":"5467",
     "hex":"#18332f"
   },
   {
-    "pantone":"621",
+    "pms":"621",
     "hex":"#d1e0d7"
   },
   {
-    "pantone":"622",
+    "pms":"622",
     "hex":"#b7cdc2"
   },
   {
-    "pantone":"623",
+    "pms":"623",
     "hex":"#9ab9ad"
   },
   {
-    "pantone":"624",
+    "pms":"624",
     "hex":"#789f90"
   },
   {
-    "pantone":"625",
+    "pms":"625",
     "hex":"#507f70"
   },
   {
-    "pantone":"626",
+    "pms":"626",
     "hex":"#285c4d"
   },
   {
-    "pantone":"627",
+    "pms":"627",
     "hex":"#13322b"
   },
   {
-    "pantone":"331",
+    "pms":"331",
     "hex":"#a7e6d7"
   },
   {
-    "pantone":"332",
+    "pms":"332",
     "hex":"#8ce2d0"
   },
   {
-    "pantone":"333",
+    "pms":"333",
     "hex":"#3cdbc0"
   },
   {
-    "pantone":"334",
+    "pms":"334",
     "hex":"#009775"
   },
   {
-    "pantone":"335",
+    "pms":"335",
     "hex":"#007b5f"
   },
   {
-    "pantone":"336",
+    "pms":"336",
     "hex":"#00664f"
   },
   {
-    "pantone":"337",
+    "pms":"337",
     "hex":"#8fd6bd"
   },
   {
-    "pantone":"338",
+    "pms":"338",
     "hex":"#6eceb2"
   },
   {
-    "pantone":"339",
+    "pms":"339",
     "hex":"#00b388"
   },
   {
-    "pantone":"340",
+    "pms":"340",
     "hex":"#00965e"
   },
   {
-    "pantone":"341",
+    "pms":"341",
     "hex":"#007a53"
   },
   {
-    "pantone":"342",
+    "pms":"342",
     "hex":"#006747"
   },
   {
-    "pantone":"343",
+    "pms":"343",
     "hex":"#115740"
   },
   {
-    "pantone":"7723",
+    "pms":"7723",
     "hex":"#50a684"
   },
   {
-    "pantone":"7724",
+    "pms":"7724",
     "hex":"#00966c"
   },
   {
-    "pantone":"7725",
+    "pms":"7725",
     "hex":"#008755"
   },
   {
-    "pantone":"7726",
+    "pms":"7726",
     "hex":"#007b4b"
   },
   {
-    "pantone":"7727",
+    "pms":"7727",
     "hex":"#006f44"
   },
   {
-    "pantone":"7728",
+    "pms":"7728",
     "hex":"#006845"
   },
   {
-    "pantone":"7729",
+    "pms":"7729",
     "hex":"#005844"
   },
   {
-    "pantone":"3375",
+    "pms":"3375",
     "hex":"#7ae1bf"
   },
   {
-    "pantone":"3385",
+    "pms":"3385",
     "hex":"#47d7ac"
   },
   {
-    "pantone":"3395",
+    "pms":"3395",
     "hex":"#00c389"
   },
   {
-    "pantone":"3405",
+    "pms":"3405",
     "hex":"#00af66"
   },
   {
-    "pantone":"3415",
+    "pms":"3415",
     "hex":"#007749"
   },
   {
-    "pantone":"3425",
+    "pms":"3425",
     "hex":"#006341"
   },
   {
-    "pantone":"3435",
+    "pms":"3435",
     "hex":"#154734"
   },
   {
-    "pantone":"344",
+    "pms":"344",
     "hex":"#a0dab3"
   },
   {
-    "pantone":"345",
+    "pms":"345",
     "hex":"#91d6ac"
   },
   {
-    "pantone":"346",
+    "pms":"346",
     "hex":"#71cc98"
   },
   {
-    "pantone":"347",
+    "pms":"347",
     "hex":"#009a44"
   },
   {
-    "pantone":"348",
+    "pms":"348",
     "hex":"#00843d"
   },
   {
-    "pantone":"349",
+    "pms":"349",
     "hex":"#046a38"
   },
   {
-    "pantone":"350",
+    "pms":"350",
     "hex":"#2c5234"
   },
   {
-    "pantone":"351",
+    "pms":"351",
     "hex":"#a2e4b8"
   },
   {
-    "pantone":"352",
+    "pms":"352",
     "hex":"#8fe2b0"
   },
   {
-    "pantone":"353",
+    "pms":"353",
     "hex":"#80e0a7"
   },
   {
-    "pantone":"354",
+    "pms":"354",
     "hex":"#00b140"
   },
   {
-    "pantone":"355",
+    "pms":"355",
     "hex":"#009639"
   },
   {
-    "pantone":"356",
+    "pms":"356",
     "hex":"#007a33"
   },
   {
-    "pantone":"357",
+    "pms":"357",
     "hex":"#215732"
   },
   {
-    "pantone":"7478",
+    "pms":"7478",
     "hex":"#9be3bf"
   },
   {
-    "pantone":"7479",
+    "pms":"7479",
     "hex":"#26d07c"
   },
   {
-    "pantone":"7480",
+    "pms":"7480",
     "hex":"#00bf6f"
   },
   {
-    "pantone":"7481",
+    "pms":"7481",
     "hex":"#00b74f"
   },
   {
-    "pantone":"7482",
+    "pms":"7482",
     "hex":"#009f4d"
   },
   {
-    "pantone":"7483",
+    "pms":"7483",
     "hex":"#275d38"
   },
   {
-    "pantone":"7484",
+    "pms":"7484",
     "hex":"#00573f"
   },
   {
-    "pantone":"7730",
+    "pms":"7730",
     "hex":"#4b9560"
   },
   {
-    "pantone":"7731",
+    "pms":"7731",
     "hex":"#228848"
   },
   {
-    "pantone":"7732",
+    "pms":"7732",
     "hex":"#007a3e"
   },
   {
-    "pantone":"7733",
+    "pms":"7733",
     "hex":"#007041"
   },
   {
-    "pantone":"7734",
+    "pms":"7734",
     "hex":"#286140"
   },
   {
-    "pantone":"7735",
+    "pms":"7735",
     "hex":"#36573b"
   },
   {
-    "pantone":"7736",
+    "pms":"7736",
     "hex":"#395542"
   },
   {
-    "pantone":"7737",
+    "pms":"7737",
     "hex":"#6ba539"
   },
   {
-    "pantone":"7738",
+    "pms":"7738",
     "hex":"#48a23f"
   },
   {
-    "pantone":"7739",
+    "pms":"7739",
     "hex":"#319b42"
   },
   {
-    "pantone":"7740",
+    "pms":"7740",
     "hex":"#3a913f"
   },
   {
-    "pantone":"7741",
+    "pms":"7741",
     "hex":"#44883e"
   },
   {
-    "pantone":"7742",
+    "pms":"7742",
     "hex":"#4a773c"
   },
   {
-    "pantone":"7743",
+    "pms":"7743",
     "hex":"#44693d"
   },
   {
-    "pantone":"358",
+    "pms":"358",
     "hex":"#addc91"
   },
   {
-    "pantone":"359",
+    "pms":"359",
     "hex":"#a1d884"
   },
   {
-    "pantone":"360",
+    "pms":"360",
     "hex":"#6cc24a"
   },
   {
-    "pantone":"361",
+    "pms":"361",
     "hex":"#43b02a"
   },
   {
-    "pantone":"362",
+    "pms":"362",
     "hex":"#509e2f"
   },
   {
-    "pantone":"363",
+    "pms":"363",
     "hex":"#4c8c2b"
   },
   {
-    "pantone":"364",
+    "pms":"364",
     "hex":"#4a7729"
   },
   {
-    "pantone":"7485",
+    "pms":"7485",
     "hex":"#d0debb"
   },
   {
-    "pantone":"7486",
+    "pms":"7486",
     "hex":"#bce194"
   },
   {
-    "pantone":"7487",
+    "pms":"7487",
     "hex":"#8edd65"
   },
   {
-    "pantone":"7488",
+    "pms":"7488",
     "hex":"#78d64b"
   },
   {
-    "pantone":"7489",
+    "pms":"7489",
     "hex":"#74aa50"
   },
   {
-    "pantone":"7490",
+    "pms":"7490",
     "hex":"#719949"
   },
   {
-    "pantone":"7491",
+    "pms":"7491",
     "hex":"#79863c"
   },
   {
-    "pantone":"365",
+    "pms":"365",
     "hex":"#c2e189"
   },
   {
-    "pantone":"366",
+    "pms":"366",
     "hex":"#b7dd79"
   },
   {
-    "pantone":"367",
+    "pms":"367",
     "hex":"#a4d65e"
   },
   {
-    "pantone":"368",
+    "pms":"368",
     "hex":"#78be20"
   },
   {
-    "pantone":"369",
+    "pms":"369",
     "hex":"#64a70b"
   },
   {
-    "pantone":"370",
+    "pms":"370",
     "hex":"#658d1b"
   },
   {
-    "pantone":"371",
+    "pms":"371",
     "hex":"#546223"
   },
   {
-    "pantone":"372",
+    "pms":"372",
     "hex":"#d4eb8e"
   },
   {
-    "pantone":"373",
+    "pms":"373",
     "hex":"#cdea80"
   },
   {
-    "pantone":"374",
+    "pms":"374",
     "hex":"#c5e86c"
   },
   {
-    "pantone":"375",
+    "pms":"375",
     "hex":"#97d700"
   },
   {
-    "pantone":"376",
+    "pms":"376",
     "hex":"#84bd00"
   },
   {
-    "pantone":"377",
+    "pms":"377",
     "hex":"#7a9a01"
   },
   {
-    "pantone":"378",
+    "pms":"378",
     "hex":"#59621d"
   },
   {
-    "pantone":"580",
+    "pms":"580",
     "hex":"#c4d6a4"
   },
   {
-    "pantone":"579",
+    "pms":"579",
     "hex":"#bcd19b"
   },
   {
-    "pantone":"578",
+    "pms":"578",
     "hex":"#b7ce95"
   },
   {
-    "pantone":"577",
+    "pms":"577",
     "hex":"#a9c47f"
   },
   {
-    "pantone":"576",
+    "pms":"576",
     "hex":"#789d4a"
   },
   {
-    "pantone":"575",
+    "pms":"575",
     "hex":"#67823a"
   },
   {
-    "pantone":"574",
+    "pms":"574",
     "hex":"#4e5b31"
   },
   {
-    "pantone":"5807",
+    "pms":"5807",
     "hex":"#d0d1ab"
   },
   {
-    "pantone":"5797",
+    "pms":"5797",
     "hex":"#c6c89b"
   },
   {
-    "pantone":"5787",
+    "pms":"5787",
     "hex":"#babd8b"
   },
   {
-    "pantone":"5777",
+    "pms":"5777",
     "hex":"#a2a569"
   },
   {
-    "pantone":"5767",
+    "pms":"5767",
     "hex":"#8a8d4a"
   },
   {
-    "pantone":"5757",
+    "pms":"5757",
     "hex":"#6d712e"
   },
   {
-    "pantone":"5747",
+    "pms":"5747",
     "hex":"#3d441e"
   },
   {
-    "pantone":"5875",
+    "pms":"5875",
     "hex":"#d2ce9e"
   },
   {
-    "pantone":"5865",
+    "pms":"5865",
     "hex":"#cbc793"
   },
   {
-    "pantone":"5855",
+    "pms":"5855",
     "hex":"#c0bb87"
   },
   {
-    "pantone":"5845",
+    "pms":"5845",
     "hex":"#afa96e"
   },
   {
-    "pantone":"5835",
+    "pms":"5835",
     "hex":"#a09958"
   },
   {
-    "pantone":"5825",
+    "pms":"5825",
     "hex":"#89813d"
   },
   {
-    "pantone":"5815",
+    "pms":"5815",
     "hex":"#555025"
   },
   {
-    "pantone":"5803",
+    "pms":"5803",
     "hex":"#c3c6a8"
   },
   {
-    "pantone":"5793",
+    "pms":"5793",
     "hex":"#b3b995"
   },
   {
-    "pantone":"5783",
+    "pms":"5783",
     "hex":"#a3aa83"
   },
   {
-    "pantone":"5773",
+    "pms":"5773",
     "hex":"#899064"
   },
   {
-    "pantone":"5763",
+    "pms":"5763",
     "hex":"#737b4c"
   },
   {
-    "pantone":"5753",
+    "pms":"5753",
     "hex":"#5e6738"
   },
   {
-    "pantone":"5743",
+    "pms":"5743",
     "hex":"#3e4827"
   },
   {
-    "pantone":"7492",
+    "pms":"7492",
     "hex":"#bfcc80"
   },
   {
-    "pantone":"7493",
+    "pms":"7493",
     "hex":"#bbc592"
   },
   {
-    "pantone":"7494",
+    "pms":"7494",
     "hex":"#9caf88"
   },
   {
-    "pantone":"7495",
+    "pms":"7495",
     "hex":"#8f993e"
   },
   {
-    "pantone":"7496",
+    "pms":"7496",
     "hex":"#76881d"
   },
   {
-    "pantone":"7497",
+    "pms":"7497",
     "hex":"#7a7256"
   },
   {
-    "pantone":"7498",
+    "pms":"7498",
     "hex":"#5b6236"
   },
   {
-    "pantone":"7744",
+    "pms":"7744",
     "hex":"#babc16"
   },
   {
-    "pantone":"7745",
+    "pms":"7745",
     "hex":"#abad23"
   },
   {
-    "pantone":"7746",
+    "pms":"7746",
     "hex":"#999b30"
   },
   {
-    "pantone":"7747",
+    "pms":"7747",
     "hex":"#888d30"
   },
   {
-    "pantone":"7748",
+    "pms":"7748",
     "hex":"#7c8034"
   },
   {
-    "pantone":"7749",
+    "pms":"7749",
     "hex":"#727337"
   },
   {
-    "pantone":"7750",
+    "pms":"7750",
     "hex":"#656635"
   },
   {
-    "pantone":"379",
+    "pms":"379",
     "hex":"#e2e868"
   },
   {
-    "pantone":"380",
+    "pms":"380",
     "hex":"#dbe442"
   },
   {
-    "pantone":"381",
+    "pms":"381",
     "hex":"#cedc00"
   },
   {
-    "pantone":"382",
+    "pms":"382",
     "hex":"#c4d600"
   },
   {
-    "pantone":"383",
+    "pms":"383",
     "hex":"#a8ad00"
   },
   {
-    "pantone":"384",
+    "pms":"384",
     "hex":"#949300"
   },
   {
-    "pantone":"385",
+    "pms":"385",
     "hex":"#787121"
   },
   {
-    "pantone":"386",
+    "pms":"386",
     "hex":"#e9ec6b"
   },
   {
-    "pantone":"387",
+    "pms":"387",
     "hex":"#e3e935"
   },
   {
-    "pantone":"388",
+    "pms":"388",
     "hex":"#e0e721"
   },
   {
-    "pantone":"389",
+    "pms":"389",
     "hex":"#d0df00"
   },
   {
-    "pantone":"390",
+    "pms":"390",
     "hex":"#b5bd00"
   },
   {
-    "pantone":"391",
+    "pms":"391",
     "hex":"#9a9500"
   },
   {
-    "pantone":"392",
+    "pms":"392",
     "hex":"#827a04"
   },
   {
-    "pantone":"587",
+    "pms":"587",
     "hex":"#e3e48d"
   },
   {
-    "pantone":"586",
+    "pms":"586",
     "hex":"#e0e27c"
   },
   {
-    "pantone":"585",
+    "pms":"585",
     "hex":"#dbde70"
   },
   {
-    "pantone":"584",
+    "pms":"584",
     "hex":"#d2d755"
   },
   {
-    "pantone":"583",
+    "pms":"583",
     "hex":"#b7bf10"
   },
   {
-    "pantone":"582",
+    "pms":"582",
     "hex":"#8e8c13"
   },
   {
-    "pantone":"581",
+    "pms":"581",
     "hex":"#625d20"
   },
   {
-    "pantone":"393",
+    "pms":"393",
     "hex":"#f0ec74"
   },
   {
-    "pantone":"394",
+    "pms":"394",
     "hex":"#ede939"
   },
   {
-    "pantone":"395",
+    "pms":"395",
     "hex":"#ece81a"
   },
   {
-    "pantone":"396",
+    "pms":"396",
     "hex":"#e1e000"
   },
   {
-    "pantone":"397",
+    "pms":"397",
     "hex":"#bfb800"
   },
   {
-    "pantone":"398",
+    "pms":"398",
     "hex":"#ada400"
   },
   {
-    "pantone":"399",
+    "pms":"399",
     "hex":"#a09200"
   },
   {
-    "pantone":"3935",
+    "pms":"3935",
     "hex":"#f3ea5d"
   },
   {
-    "pantone":"3945",
+    "pms":"3945",
     "hex":"#f3e500"
   },
   {
-    "pantone":"3955",
+    "pms":"3955",
     "hex":"#efdf00"
   },
   {
-    "pantone":"3965",
+    "pms":"3965",
     "hex":"#eedc00"
   },
   {
-    "pantone":"3975",
+    "pms":"3975",
     "hex":"#bba600"
   },
   {
-    "pantone":"3985",
+    "pms":"3985",
     "hex":"#9a8700"
   },
   {
-    "pantone":"3995",
+    "pms":"3995",
     "hex":"#685c20"
   },
   {
-    "pantone":"600",
+    "pms":"600",
     "hex":"#f1eb9c"
   },
   {
-    "pantone":"601",
+    "pms":"601",
     "hex":"#f0e991"
   },
   {
-    "pantone":"602",
+    "pms":"602",
     "hex":"#f0e87b"
   },
   {
-    "pantone":"603",
+    "pms":"603",
     "hex":"#ede04b"
   },
   {
-    "pantone":"604",
+    "pms":"604",
     "hex":"#eada24"
   },
   {
-    "pantone":"605",
+    "pms":"605",
     "hex":"#e1cd00"
   },
   {
-    "pantone":"606",
+    "pms":"606",
     "hex":"#cfb500"
   },
   {
-    "pantone":"607",
+    "pms":"607",
     "hex":"#ebe49a"
   },
   {
-    "pantone":"608",
+    "pms":"608",
     "hex":"#e9e186"
   },
   {
-    "pantone":"609",
+    "pms":"609",
     "hex":"#e6de77"
   },
   {
-    "pantone":"610",
+    "pms":"610",
     "hex":"#e1d555"
   },
   {
-    "pantone":"611",
+    "pms":"611",
     "hex":"#d7c826"
   },
   {
-    "pantone":"612",
+    "pms":"612",
     "hex":"#c4b000"
   },
   {
-    "pantone":"613",
+    "pms":"613",
     "hex":"#b39b00"
   },
   {
-    "pantone":"461",
+    "pms":"461",
     "hex":"#e9df97"
   },
   {
-    "pantone":"460",
+    "pms":"460",
     "hex":"#e4d77e"
   },
   {
-    "pantone":"459",
+    "pms":"459",
     "hex":"#decd63"
   },
   {
-    "pantone":"458",
+    "pms":"458",
     "hex":"#d9c756"
   },
   {
-    "pantone":"457",
+    "pms":"457",
     "hex":"#b89d18"
   },
   {
-    "pantone":"456",
+    "pms":"456",
     "hex":"#a28e2a"
   },
   {
-    "pantone":"455",
+    "pms":"455",
     "hex":"#695b24"
   },
   {
-    "pantone":"614",
+    "pms":"614",
     "hex":"#dcd59a"
   },
   {
-    "pantone":"615",
+    "pms":"615",
     "hex":"#d6cf8d"
   },
   {
-    "pantone":"616",
+    "pms":"616",
     "hex":"#d0c883"
   },
   {
-    "pantone":"617",
+    "pms":"617",
     "hex":"#c0b561"
   },
   {
-    "pantone":"618",
+    "pms":"618",
     "hex":"#ac9f3c"
   },
   {
-    "pantone":"619",
+    "pms":"619",
     "hex":"#9f912a"
   },
   {
-    "pantone":"620",
+    "pms":"620",
     "hex":"#8a7b19"
   },
   {
-    "pantone":"7751",
+    "pms":"7751",
     "hex":"#cab64b"
   },
   {
-    "pantone":"7752",
+    "pms":"7752",
     "hex":"#cfb023"
   },
   {
-    "pantone":"7753",
+    "pms":"7753",
     "hex":"#c1a01e"
   },
   {
-    "pantone":"7754",
+    "pms":"7754",
     "hex":"#a08629"
   },
   {
-    "pantone":"7755",
+    "pms":"7755",
     "hex":"#897630"
   },
   {
-    "pantone":"7756",
+    "pms":"7756",
     "hex":"#736635"
   },
   {
-    "pantone":"7757",
+    "pms":"7757",
     "hex":"#675e33"
   },
   {
-    "pantone":"7758",
+    "pms":"7758",
     "hex":"#d4c304"
   },
   {
-    "pantone":"7759",
+    "pms":"7759",
     "hex":"#c4b200"
   },
   {
-    "pantone":"7760",
+    "pms":"7760",
     "hex":"#91852c"
   },
   {
-    "pantone":"7761",
+    "pms":"7761",
     "hex":"#747136"
   },
   {
-    "pantone":"7762",
+    "pms":"7762",
     "hex":"#5d6439"
   },
   {
-    "pantone":"7763",
+    "pms":"7763",
     "hex":"#585c3b"
   },
   {
-    "pantone":"7764",
+    "pms":"7764",
     "hex":"#535435"
   },
   {
-    "pantone":"7765",
+    "pms":"7765",
     "hex":"#bbb323"
   },
   {
-    "pantone":"7766",
+    "pms":"7766",
     "hex":"#b4a91f"
   },
   {
-    "pantone":"7767",
+    "pms":"7767",
     "hex":"#aa9d2e"
   },
   {
-    "pantone":"7768",
+    "pms":"7768",
     "hex":"#8f7e35"
   },
   {
-    "pantone":"7769",
+    "pms":"7769",
     "hex":"#716135"
   },
   {
-    "pantone":"7770",
+    "pms":"7770",
     "hex":"#635939"
   },
   {
-    "pantone":"7771",
+    "pms":"7771",
     "hex":"#4e4934"
   },
   {
-    "pantone":"4545",
+    "pms":"4545",
     "hex":"#d5cb9f"
   },
   {
-    "pantone":"4535",
+    "pms":"4535",
     "hex":"#cfc493"
   },
   {
-    "pantone":"4525",
+    "pms":"4525",
     "hex":"#c5b783"
   },
   {
-    "pantone":"4515",
+    "pms":"4515",
     "hex":"#b3a369"
   },
   {
-    "pantone":"4505",
+    "pms":"4505",
     "hex":"#998542"
   },
   {
-    "pantone":"4495",
+    "pms":"4495",
     "hex":"#8c7732"
   },
   {
-    "pantone":"4485",
+    "pms":"4485",
     "hex":"#614f25"
   },
   {
-    "pantone":"454",
+    "pms":"454",
     "hex":"#cac7a7"
   },
   {
-    "pantone":"453",
+    "pms":"453",
     "hex":"#bfbb98"
   },
   {
-    "pantone":"452",
+    "pms":"452",
     "hex":"#b0aa7e"
   },
   {
-    "pantone":"451",
+    "pms":"451",
     "hex":"#9b945f"
   },
   {
-    "pantone":"450",
+    "pms":"450",
     "hex":"#594a25"
   },
   {
-    "pantone":"449",
+    "pms":"449",
     "hex":"#524727"
   },
   {
-    "pantone":"448",
+    "pms":"448",
     "hex":"#4a412a"
   },
   {
-    "pantone":"7499",
+    "pms":"7499",
     "hex":"#f1e6b2"
   },
   {
-    "pantone":"7500",
+    "pms":"7500",
     "hex":"#dfd1a7"
   },
   {
-    "pantone":"7501",
+    "pms":"7501",
     "hex":"#d9c89e"
   },
   {
-    "pantone":"7502",
+    "pms":"7502",
     "hex":"#ceb888"
   },
   {
-    "pantone":"7503",
+    "pms":"7503",
     "hex":"#a89968"
   },
   {
-    "pantone":"7504",
+    "pms":"7504",
     "hex":"#94795d"
   },
   {
-    "pantone":"7505",
+    "pms":"7505",
     "hex":"#816040"
   },
   {
-    "pantone":"468",
+    "pms":"468",
     "hex":"#ddcba4"
   },
   {
-    "pantone":"467",
+    "pms":"467",
     "hex":"#d3bc8d"
   },
   {
-    "pantone":"466",
+    "pms":"466",
     "hex":"#c6aa76"
   },
   {
-    "pantone":"465",
+    "pms":"465",
     "hex":"#b9975b"
   },
   {
-    "pantone":"464",
+    "pms":"464",
     "hex":"#8b5b29"
   },
   {
-    "pantone":"463",
+    "pms":"463",
     "hex":"#744f28"
   },
   {
-    "pantone":"462",
+    "pms":"462",
     "hex":"#5c462b"
   },
   {
-    "pantone":"7506",
+    "pms":"7506",
     "hex":"#efdbb2"
   },
   {
-    "pantone":"7507",
+    "pms":"7507",
     "hex":"#fcd299"
   },
   {
-    "pantone":"7508",
+    "pms":"7508",
     "hex":"#e1b87f"
   },
   {
-    "pantone":"7509",
+    "pms":"7509",
     "hex":"#d6a461"
   },
   {
-    "pantone":"7510",
+    "pms":"7510",
     "hex":"#c6893f"
   },
   {
-    "pantone":"7511",
+    "pms":"7511",
     "hex":"#b77729"
   },
   {
-    "pantone":"7512",
+    "pms":"7512",
     "hex":"#a6631b"
   },
   {
-    "pantone":"719",
+    "pms":"719",
     "hex":"#edc8a3"
   },
   {
-    "pantone":"720",
+    "pms":"720",
     "hex":"#e7b78a"
   },
   {
-    "pantone":"721",
+    "pms":"721",
     "hex":"#dda46f"
   },
   {
-    "pantone":"722",
+    "pms":"722",
     "hex":"#c88242"
   },
   {
-    "pantone":"723",
+    "pms":"723",
     "hex":"#b36924"
   },
   {
-    "pantone":"724",
+    "pms":"724",
     "hex":"#934d11"
   },
   {
-    "pantone":"725",
+    "pms":"725",
     "hex":"#7d3f16"
   },
   {
-    "pantone":"475",
+    "pms":"475",
     "hex":"#f3cfb3"
   },
   {
-    "pantone":"474",
+    "pms":"474",
     "hex":"#f1c6a7"
   },
   {
-    "pantone":"473",
+    "pms":"473",
     "hex":"#f0bf9b"
   },
   {
-    "pantone":"472",
+    "pms":"472",
     "hex":"#e59e6d"
   },
   {
-    "pantone":"471",
+    "pms":"471",
     "hex":"#b86125"
   },
   {
-    "pantone":"470",
+    "pms":"470",
     "hex":"#a45a2a"
   },
   {
-    "pantone":"469",
+    "pms":"469",
     "hex":"#693f23"
   },
   {
-    "pantone":"726",
+    "pms":"726",
     "hex":"#e0c09f"
   },
   {
-    "pantone":"727",
+    "pms":"727",
     "hex":"#d9b48f"
   },
   {
-    "pantone":"728",
+    "pms":"728",
     "hex":"#cda077"
   },
   {
-    "pantone":"729",
+    "pms":"729",
     "hex":"#b58150"
   },
   {
-    "pantone":"730",
+    "pms":"730",
     "hex":"#9e652e"
   },
   {
-    "pantone":"731",
+    "pms":"731",
     "hex":"#774212"
   },
   {
-    "pantone":"732",
+    "pms":"732",
     "hex":"#623412"
   },
   {
-    "pantone":"4685",
+    "pms":"4685",
     "hex":"#e0c6ad"
   },
   {
-    "pantone":"4675",
+    "pms":"4675",
     "hex":"#dcbfa6"
   },
   {
-    "pantone":"4665",
+    "pms":"4665",
     "hex":"#cda788"
   },
   {
-    "pantone":"4655",
+    "pms":"4655",
     "hex":"#bf9474"
   },
   {
-    "pantone":"4645",
+    "pms":"4645",
     "hex":"#ad7c59"
   },
   {
-    "pantone":"4635",
+    "pms":"4635",
     "hex":"#946037"
   },
   {
-    "pantone":"4625",
+    "pms":"4625",
     "hex":"#4f2c1d"
   },
   {
-    "pantone":"7513",
+    "pms":"7513",
     "hex":"#e1b7a7"
   },
   {
-    "pantone":"7514",
+    "pms":"7514",
     "hex":"#d5a286"
   },
   {
-    "pantone":"7515",
+    "pms":"7515",
     "hex":"#c58b68"
   },
   {
-    "pantone":"7516",
+    "pms":"7516",
     "hex":"#99552b"
   },
   {
-    "pantone":"7517",
+    "pms":"7517",
     "hex":"#85431e"
   },
   {
-    "pantone":"7518",
+    "pms":"7518",
     "hex":"#6d4f47"
   },
   {
-    "pantone":"7519",
+    "pms":"7519",
     "hex":"#5e4b3c"
   },
   {
-    "pantone":"4755",
+    "pms":"4755",
     "hex":"#d7c4b7"
   },
   {
-    "pantone":"4745",
+    "pms":"4745",
     "hex":"#cdb5a7"
   },
   {
-    "pantone":"4735",
+    "pms":"4735",
     "hex":"#c0a392"
   },
   {
-    "pantone":"4725",
+    "pms":"4725",
     "hex":"#ae8a79"
   },
   {
-    "pantone":"4715",
+    "pms":"4715",
     "hex":"#956c58"
   },
   {
-    "pantone":"4705",
+    "pms":"4705",
     "hex":"#7c4d3a"
   },
   {
-    "pantone":"4695",
+    "pms":"4695",
     "hex":"#5b3427"
   },
   {
-    "pantone":"482",
+    "pms":"482",
     "hex":"#dbc8b6"
   },
   {
-    "pantone":"481",
+    "pms":"481",
     "hex":"#d3bba8"
   },
   {
-    "pantone":"480",
+    "pms":"480",
     "hex":"#c6a992"
   },
   {
-    "pantone":"479",
+    "pms":"479",
     "hex":"#aa8066"
   },
   {
-    "pantone":"478",
+    "pms":"478",
     "hex":"#703f2a"
   },
   {
-    "pantone":"477",
+    "pms":"477",
     "hex":"#623b2a"
   },
   {
-    "pantone":"476",
+    "pms":"476",
     "hex":"#4e3629"
   },
   {
-    "pantone":"7527",
+    "pms":"7527",
     "hex":"#d6d2c4"
   },
   {
-    "pantone":"7528",
+    "pms":"7528",
     "hex":"#c5b9ac"
   },
   {
-    "pantone":"7529",
+    "pms":"7529",
     "hex":"#b7a99a"
   },
   {
-    "pantone":"7530",
+    "pms":"7530",
     "hex":"#a39382"
   },
   {
-    "pantone":"7531",
+    "pms":"7531",
     "hex":"#7a6855"
   },
   {
-    "pantone":"7532",
+    "pms":"7532",
     "hex":"#63513d"
   },
   {
-    "pantone":"7533",
+    "pms":"7533",
     "hex":"#473729"
   },
   {
-    "pantone":"7534",
+    "pms":"7534",
     "hex":"#d1ccbd"
   },
   {
-    "pantone":"7535",
+    "pms":"7535",
     "hex":"#b7b09c"
   },
   {
-    "pantone":"7536",
+    "pms":"7536",
     "hex":"#a69f88"
   },
   {
-    "pantone":"7537",
+    "pms":"7537",
     "hex":"#a7aca2"
   },
   {
-    "pantone":"7538",
+    "pms":"7538",
     "hex":"#949a90"
   },
   {
-    "pantone":"7539",
+    "pms":"7539",
     "hex":"#8e9089"
   },
   {
-    "pantone":"7540",
+    "pms":"7540",
     "hex":"#4b4f54"
   },
   {
-    "pantone":"427",
+    "pms":"427",
     "hex":"#d0d3d4"
   },
   {
-    "pantone":"428",
+    "pms":"428",
     "hex":"#c1c6c8"
   },
   {
-    "pantone":"429",
+    "pms":"429",
     "hex":"#a2aaad"
   },
   {
-    "pantone":"430",
+    "pms":"430",
     "hex":"#7c878e"
   },
   {
-    "pantone":"431",
+    "pms":"431",
     "hex":"#5b6770"
   },
   {
-    "pantone":"432",
+    "pms":"432",
     "hex":"#333f48"
   },
   {
-    "pantone":"433",
+    "pms":"433",
     "hex":"#1d252d"
   },
   {
-    "pantone":"420",
+    "pms":"420",
     "hex":"#c7c9c7"
   },
   {
-    "pantone":"421",
+    "pms":"421",
     "hex":"#b2b4b2"
   },
   {
-    "pantone":"422",
+    "pms":"422",
     "hex":"#9ea2a2"
   },
   {
-    "pantone":"423",
+    "pms":"423",
     "hex":"#898d8d"
   },
   {
-    "pantone":"424",
+    "pms":"424",
     "hex":"#707372"
   },
   {
-    "pantone":"425",
+    "pms":"425",
     "hex":"#54585a"
   },
   {
-    "pantone":"426",
+    "pms":"426",
     "hex":"#25282a"
   },
   {
-    "pantone":"441",
+    "pms":"441",
     "hex":"#bec6c4"
   },
   {
-    "pantone":"442",
+    "pms":"442",
     "hex":"#a2acab"
   },
   {
-    "pantone":"443",
+    "pms":"443",
     "hex":"#919d9d"
   },
   {
-    "pantone":"444",
+    "pms":"444",
     "hex":"#717c7d"
   },
   {
-    "pantone":"445",
+    "pms":"445",
     "hex":"#505759"
   },
   {
-    "pantone":"446",
+    "pms":"446",
     "hex":"#3f4444"
   },
   {
-    "pantone":"447",
+    "pms":"447",
     "hex":"#373a36"
   },
   {
-    "pantone":"413",
+    "pms":"413",
     "hex":"#babbb1"
   },
   {
-    "pantone":"414",
+    "pms":"414",
     "hex":"#a8a99e"
   },
   {
-    "pantone":"415",
+    "pms":"415",
     "hex":"#919388"
   },
   {
-    "pantone":"416",
+    "pms":"416",
     "hex":"#7e7f74"
   },
   {
-    "pantone":"417",
+    "pms":"417",
     "hex":"#65665c"
   },
   {
-    "pantone":"418",
+    "pms":"418",
     "hex":"#51534a"
   },
   {
-    "pantone":"419",
+    "pms":"419",
     "hex":"#212322"
   },
   {
-    "pantone":"400",
+    "pms":"400",
     "hex":"#c4bfb6"
   },
   {
-    "pantone":"401",
+    "pms":"401",
     "hex":"#afa9a0"
   },
   {
-    "pantone":"402",
+    "pms":"402",
     "hex":"#9d968d"
   },
   {
-    "pantone":"403",
+    "pms":"403",
     "hex":"#8c857b"
   },
   {
-    "pantone":"404",
+    "pms":"404",
     "hex":"#776e64"
   },
   {
-    "pantone":"405",
+    "pms":"405",
     "hex":"#696158"
   },
   {
-    "pantone":"406",
+    "pms":"406",
     "hex":"#c4bcb7"
   },
   {
-    "pantone":"407",
+    "pms":"407",
     "hex":"#b2a8a2"
   },
   {
-    "pantone":"408",
+    "pms":"408",
     "hex":"#978c87"
   },
   {
-    "pantone":"409",
+    "pms":"409",
     "hex":"#857874"
   },
   {
-    "pantone":"410",
+    "pms":"410",
     "hex":"#746661"
   },
   {
-    "pantone":"411",
+    "pms":"411",
     "hex":"#5e514d"
   },
   {
-    "pantone":"412",
+    "pms":"412",
     "hex":"#382f2d"
   },
   {
-    "pantone":"434",
+    "pms":"434",
     "hex":"#d0c4c5"
   },
   {
-    "pantone":"435",
+    "pms":"435",
     "hex":"#c1b2b6"
   },
   {
-    "pantone":"436",
+    "pms":"436",
     "hex":"#ab989d"
   },
   {
-    "pantone":"437",
+    "pms":"437",
     "hex":"#7b6469"
   },
   {
-    "pantone":"438",
+    "pms":"438",
     "hex":"#584446"
   },
   {
-    "pantone":"439",
+    "pms":"439",
     "hex":"#453536"
   },
   {
-    "pantone":"440",
+    "pms":"440",
     "hex":"#382e2c"
   },
   {
-    "pantone":"warm gray 1",
+    "pms":"warm gray 1",
     "hex":"#d7d2cb"
   },
   {
-    "pantone":"warm gray 2",
+    "pms":"warm gray 2",
     "hex":"#cbc4bc"
   },
   {
-    "pantone":"warm gray 3",
+    "pms":"warm gray 3",
     "hex":"#bfb8af"
   },
   {
-    "pantone":"warm gray 4",
+    "pms":"warm gray 4",
     "hex":"#b6ada5"
   },
   {
-    "pantone":"warm gray 5",
+    "pms":"warm gray 5",
     "hex":"#aca39a"
   },
   {
-    "pantone":"warm gray 6",
+    "pms":"warm gray 6",
     "hex":"#a59c94"
   },
   {
-    "pantone":"warm gray 7",
+    "pms":"warm gray 7",
     "hex":"#968c83"
   },
   {
-    "pantone":"warm gray 8",
+    "pms":"warm gray 8",
     "hex":"#8c8279"
   },
   {
-    "pantone":"warm gray 9",
+    "pms":"warm gray 9",
     "hex":"#83786f"
   },
   {
-    "pantone":"warm gray 10",
+    "pms":"warm gray 10",
     "hex":"#796e65"
   },
   {
-    "pantone":"warm gray 11",
+    "pms":"warm gray 11",
     "hex":"#6e6259"
   },
   {
-    "pantone":"cool gray 1",
+    "pms":"cool gray 1",
     "hex":"#d9d9d6"
   },
   {
-    "pantone":"cool gray 2",
+    "pms":"cool gray 2",
     "hex":"#d0d0ce"
   },
   {
-    "pantone":"cool gray 3",
+    "pms":"cool gray 3",
     "hex":"#c8c9c7"
   },
   {
-    "pantone":"cool gray 4",
+    "pms":"cool gray 4",
     "hex":"#bbbcbc"
   },
   {
-    "pantone":"cool gray 5",
+    "pms":"cool gray 5",
     "hex":"#b1b3b3"
   },
   {
-    "pantone":"cool gray 6",
+    "pms":"cool gray 6",
     "hex":"#a7a8aa"
   },
   {
-    "pantone":"cool gray 7",
+    "pms":"cool gray 7",
     "hex":"#97999b"
   },
   {
-    "pantone":"cool gray 8",
+    "pms":"cool gray 8",
     "hex":"#888b8d"
   },
   {
-    "pantone":"cool gray 9",
+    "pms":"cool gray 9",
     "hex":"#75787b"
   },
   {
-    "pantone":"cool gray 10",
+    "pms":"cool gray 10",
     "hex":"#63666a"
   },
   {
-    "pantone":"cool gray 11",
+    "pms":"cool gray 11",
     "hex":"#53565a"
   },
   {
-    "pantone":"black 2",
+    "pms":"black 2",
     "hex":"#332f21"
   },
   {
-    "pantone":"black 3",
+    "pms":"black 3",
     "hex":"#212721"
   },
   {
-    "pantone":"black 4",
+    "pms":"black 4",
     "hex":"#31261d"
   },
   {
-    "pantone":"black 5",
+    "pms":"black 5",
     "hex":"#3e2b2e"
   },
   {
-    "pantone":"black 6",
+    "pms":"black 6",
     "hex":"#101820"
   },
   {
-    "pantone":"black 7",
+    "pms":"black 7",
     "hex":"#3d3935"
   },
   {
-    "pantone":"yellow",
+    "pms":"yellow",
     "hex":"#fedd00"
   },
   {
-    "pantone":"yellow 012",
+    "pms":"yellow 012",
     "hex":"#ffd700"
   },
   {
-    "pantone":"orange 021",
+    "pms":"orange 021",
     "hex":"#fe5000"
   },
   {
-    "pantone":"warm red",
+    "pms":"warm red",
     "hex":"#f9423a"
   },
   {
-    "pantone":"red 032",
+    "pms":"red 032",
     "hex":"#ef3340"
   },
   {
-    "pantone":"rubine red",
+    "pms":"rubine red",
     "hex":"#ce0058"
   },
   {
-    "pantone":"rhodamine red",
+    "pms":"rhodamine red",
     "hex":"#e10098"
   },
   {
-    "pantone":"purple",
+    "pms":"purple",
     "hex":"#bb29bb"
   },
   {
-    "pantone":"violet",
+    "pms":"violet",
     "hex":"#440099"
   },
   {
-    "pantone":"blue 072",
+    "pms":"blue 072",
     "hex":"#10069f"
   },
   {
-    "pantone":"reflex blue",
+    "pms":"reflex blue",
     "hex":"#001489"
   },
   {
-    "pantone":"process blue",
+    "pms":"process blue",
     "hex":"#0085ca"
   },
   {
-    "pantone":"green",
+    "pms":"green",
     "hex":"#00ab84"
   },
   {
-    "pantone":"black",
+    "pms":"black",
     "hex":"#2d2926"
   },
   {
-    "pantone":"yellow 0131",
+    "pms":"yellow 0131",
     "hex":"#f2f0a1"
   },
   {
-    "pantone":"red 0331",
+    "pms":"red 0331",
     "hex":"#fcaebb"
   },
   {
-    "pantone":"magenta 0521",
+    "pms":"magenta 0521",
     "hex":"#f1b2dc"
   },
   {
-    "pantone":"violet 0631",
+    "pms":"violet 0631",
     "hex":"#bf9bde"
   },
   {
-    "pantone":"blue 0821",
+    "pms":"blue 0821",
     "hex":"#74d1ea"
   },
   {
-    "pantone":"green 0921",
+    "pms":"green 0921",
     "hex":"#9de7d7"
   },
   {
-    "pantone":"black 0961",
+    "pms":"black 0961",
     "hex":"#9e978e"
   },
   {
-    "pantone":"801",
+    "pms":"801",
     "hex":"#009ace"
   },
   {
-    "pantone":"802",
+    "pms":"802",
     "hex":"#44d62c"
   },
   {
-    "pantone":"803",
+    "pms":"803",
     "hex":"#ffe900"
   },
   {
-    "pantone":"804",
+    "pms":"804",
     "hex":"#ffaa4d"
   },
   {
-    "pantone":"805",
+    "pms":"805",
     "hex":"#ff7276"
   },
   {
-    "pantone":"806",
+    "pms":"806",
     "hex":"#ff3eb5"
   },
   {
-    "pantone":"807",
+    "pms":"807",
     "hex":"#ea27c2"
   },
   {
-    "pantone":"871",
+    "pms":"871",
     "hex":"#84754e"
   },
   {
-    "pantone":"872",
+    "pms":"872",
     "hex":"#85714d"
   },
   {
-    "pantone":"873",
+    "pms":"873",
     "hex":"#866d4b"
   },
   {
-    "pantone":"874",
+    "pms":"874",
     "hex":"#8b6f4e"
   },
   {
-    "pantone":"875",
+    "pms":"875",
     "hex":"#87674f"
   },
   {
-    "pantone":"876",
+    "pms":"876",
     "hex":"#8b634b"
   },
   {
-    "pantone":"877",
+    "pms":"877",
     "hex":"#8a8d8f"
   },
   {
-    "pantone":"medium yellow",
+    "pms":"medium yellow",
     "hex":"#ffd900"
   },
   {
-    "pantone":"bright orange",
+    "pms":"bright orange",
     "hex":"#ff5e00"
   },
   {
-    "pantone":"bright red",
+    "pms":"bright red",
     "hex":"#f93822"
   },
   {
-    "pantone":"strong red",
+    "pms":"strong red",
     "hex":"#ce0056"
   },
   {
-    "pantone":"pink",
+    "pms":"pink",
     "hex":"#d62598"
   },
   {
-    "pantone":"medium purple",
+    "pms":"medium purple",
     "hex":"#4e008e"
   },
   {
-    "pantone":"dark blue",
+    "pms":"dark blue",
     "hex":"#00239c"
   },
   {
-    "pantone":"medium blue",
+    "pms":"medium blue",
     "hex":"#0084ca"
   },
   {
-    "pantone":"bright green",
+    "pms":"bright green",
     "hex":"#00b08b"
   },
   {
-    "pantone":"neutral black",
+    "pms":"neutral black",
     "hex":"#222223"
+  },
+  {
+    "pms":"silver 10077 c",
+    "hex":"#a8a9ad"
+  },
+  {
+    "pms":"10142",
+    "hex":"#c8c9ca"
+  },
+  {
+    "pms":"10158",
+    "hex":"#b8bdc2"
+  },
+  {
+    "pms":"10214",
+    "hex":"#d4d6d7"
+  },
+  {
+    "pms":"8721",
+    "hex":"#8f6c3d"
+  },
+  {
+    "pms":"8722",
+    "hex":"#7d5f37"
+  },
+  {
+    "pms":"878 c",
+    "hex":"#af9a84"
+  },
+  {
+    "pms":"879 c",
+    "hex":"#73593a"
+  },
+  {
+    "pms":"neon yellow",
+    "hex":"#e0e722"
+  },
+  {
+    "pms":"neon green",
+    "hex":"#44d62c"
+  },
+  {
+    "pms":"neon orange",
+    "hex":"#ffad00"
+  },
+  {
+    "pms":"neon red",
+    "hex":"#d22730"
+  },
+  {
+    "pms":"neon pink",
+    "hex":"#ff00cc"
+  },
+  {
+    "pms":"neon blue",
+    "hex":"#4d4dff"
+  },
+  {
+    "pms":"neon purple",
+    "hex":"#c724b1"
+  },
+  {
+    "pms":"electric blue",
+    "hex":"#0099ff"
+  },
+  {
+    "pms":"electric green",
+    "hex":"#00ff33"
+  },
+  {
+    "pms":"electric yellow",
+    "hex":"#ffff33"
+  },
+  {
+    "pms":"bright white",
+    "hex":"#ffffff"
+  },
+  {
+    "pms":"ultra white",
+    "hex":"#fefefe"
+  },
+  {
+    "pms":"platinum",
+    "hex":"#e5e4e2"
+  },
+  {
+    "pms":"light silver",
+    "hex":"#d3d3d3"
+  },
+  {
+    "pms":"pale silver",
+    "hex":"#c9c0bb"
+  },
+  {
+    "pms":"metallic silver",
+    "hex":"#bfc1c2"
+  },
+  {
+    "pms":"metallic gold",
+    "hex":"#d4af37"
+  },
+  {
+    "pms":"rose gold",
+    "hex":"#e8b4b8"
+  },
+  {
+    "pms":"copper",
+    "hex":"#b87333"
+  },
+  {
+    "pms":"bronze",
+    "hex":"#cd7f32"
+  },
+  {
+    "pms":"champagne",
+    "hex":"#f7e7ce"
+  },
+  {
+    "pms":"pastel blue",
+    "hex":"#a8e6cf"
+  },
+  {
+    "pms":"pastel pink",
+    "hex":"#ffb3ba"
+  },
+  {
+    "pms":"pastel green",
+    "hex":"#bae1b3"
+  },
+  {
+    "pms":"pastel yellow",
+    "hex":"#fff3cd"
+  },
+  {
+    "pms":"pastel purple",
+    "hex":"#d4b5f9"
+  },
+  {
+    "pms":"pastel orange",
+    "hex":"#ffcc99"
+  },
+  {
+    "pms":"mint green",
+    "hex":"#98fb98"
+  },
+  {
+    "pms":"lavender",
+    "hex":"#e6e6fa"
+  },
+  {
+    "pms":"baby blue",
+    "hex":"#89cff0"
+  },
+  {
+    "pms":"powder blue",
+    "hex":"#b0e0e6"
+  },
+  {
+    "pms":"pale pink",
+    "hex":"#fadadd"
+  },
+  {
+    "pms":"blush",
+    "hex":"#de5d83"
+  },
+  {
+    "pms":"seafoam",
+    "hex":"#93e9be"
+  },
+  {
+    "pms":"sage green",
+    "hex":"#9caf88"
+  },
+  {
+    "pms":"dusty rose",
+    "hex":"#dcae96"
+  },
+  {
+    "pms":"periwinkle",
+    "hex":"#ccccff"
+  },
+  {
+    "pms":"peach fuzz",
+    "hex":"#ffbe98"
+  },
+  {
+    "pms":"coral pink",
+    "hex":"#f88379"
+  },
+  {
+    "pms":"sky blue",
+    "hex":"#87ceeb"
+  },
+  {
+    "pms":"sunshine yellow",
+    "hex":"#fffd37"
+  },
+  {
+    "pms":"lime green",
+    "hex":"#32cd32"
+  },
+  {
+    "pms":"hot pink",
+    "hex":"#ff69b4"
+  },
+  {
+    "pms":"turquoise",
+    "hex":"#40e0d0"
+  },
+  {
+    "pms":"aqua blue",
+    "hex":"#00ffff"
+  },
+  {
+    "pms":"emerald green",
+    "hex":"#50c878"
+  },
+  {
+    "pms":"ruby red",
+    "hex":"#9b111e"
+  },
+  {
+    "pms":"sapphire blue",
+    "hex":"#0f52ba"
+  },
+  {
+    "pms":"amethyst",
+    "hex":"#9966cc"
+  },
+  {
+    "pms":"citrine",
+    "hex":"#e4d00a"
+  },
+  {
+    "pms":"topaz",
+    "hex":"#ffc87c"
+  },
+  {
+    "pms":"opal",
+    "hex":"#a8c3bc"
+  },
+  {
+    "pms":"pearl",
+    "hex":"#fdeef4"
+  },
+  {
+    "pms":"moonstone",
+    "hex":"#3aa8c1"
+  },
+  {
+    "pms":"jade",
+    "hex":"#00a86b"
+  },
+  {
+    "pms":"crystal",
+    "hex":"#a7d8de"
+  },
+  {
+    "pms":"diamond",
+    "hex":"#b9f2ff"
+  },
+  {
+    "pms":"starlight",
+    "hex":"#f4f0ec"
+  },
+  {
+    "pms":"moonbeam",
+    "hex":"#f2f5a9"
+  },
+  {
+    "pms":"aurora",
+    "hex":"#da70d6"
+  },
+  {
+    "pms":"cosmic blue",
+    "hex":"#2e5894"
+  },
+  {
+    "pms":"galaxy purple",
+    "hex":"#6f2da8"
+  },
+  {
+    "pms":"nebula pink",
+    "hex":"#e4b7e5"
+  },
+  {
+    "pms":"solar yellow",
+    "hex":"#ffef00"
+  },
+  {
+    "pms":"meteor gray",
+    "hex":"#6c7b7f"
+  },
+  {
+    "pms":"comet white",
+    "hex":"#f8f8ff"
+  },
+  {
+    "pms":"constellation",
+    "hex":"#0d1b2a"
   }
 ]
