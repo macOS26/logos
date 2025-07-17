@@ -768,7 +768,7 @@ struct MainView: View {
     
     private func runPathOperationsBenchmark() {
         print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
-        print("Comparing ClipperPath vs CoreGraphics performance...")
+        print("Benchmarking CoreGraphics performance...")
         
         // Create test paths
         let testCases = [
@@ -853,21 +853,7 @@ struct MainView: View {
         }
         let coreGraphicsTime = CFAbsoluteTimeGetCurrent() - coreGraphicsStart
         
-        // Benchmark ClipperPath (convert to ClipperPath first)
-        let clipperPathA = pathA.toClipperPath()
-        let clipperPathB = pathB.toClipperPath()
-        
-        let clipperStart = CFAbsoluteTimeGetCurrent()
-        for _ in 0..<iterations {
-            let _ = clipperPathA.union(clipperPathB)
-            let _ = clipperPathA.intersection(clipperPathB)
-            let _ = clipperPathA.difference(clipperPathB)
-        }
-        let clipperTime = CFAbsoluteTimeGetCurrent() - clipperStart
-        
-        print("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s")
-        print("  ClipperPath:  \(String(format: "%.4f", clipperTime))s")
-        print("  Speedup: \(String(format: "%.2f", clipperTime / coreGraphicsTime))x")
+        print("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s (\(iterations) iterations)")
     }
     
     // MARK: - Professional DWG Export
