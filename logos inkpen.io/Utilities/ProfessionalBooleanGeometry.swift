@@ -475,34 +475,22 @@ class ProfessionalBooleanGeometry {
 
 extension ProfessionalPathOperations {
     
-    /// PROFESSIONAL UNION: Combines two or more paths into a single path (Adobe Illustrator "Union")
-    /// When there are exactly 2 paths, behaves like merge for consistency
+    /// PROFESSIONAL UNION: Combines exactly two paths into a single path (Adobe Illustrator "Union")
     static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
-        guard !paths.isEmpty else { return nil }
+        guard paths.count == 2 else { return nil }
         
         let validPaths = paths.filter { !$0.isEmpty }
-        guard !validPaths.isEmpty else { return nil }
+        guard validPaths.count == 2 else { return nil }
         
-        if validPaths.count == 1 {
-            return validPaths.first
+        print("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...")
+        
+        if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
+            print("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)")
+            return coreGraphicsResult
+        } else {
+            print("❌ PROFESSIONAL UNION: CoreGraphics operation failed")
+            return nil
         }
-        
-        // Use CoreGraphics for 2-path operations (much faster and preserves curves)
-        if validPaths.count == 2 {
-            print("🔨 PROFESSIONAL UNION (2 paths): Using CoreGraphics...")
-            
-            if let coreGraphicsResult = CoreGraphicsPathOperations.union(validPaths[0], validPaths[1], using: .winding) {
-                print("✅ PROFESSIONAL UNION: CoreGraphics success (preserves smooth curves)")
-                return coreGraphicsResult
-            } else {
-                print("⚠️ CoreGraphics union failed, falling back to convex hull")
-                return convexHullFallback(validPaths)
-            }
-        }
-        
-        // For multiple paths, fall back to convex hull
-        print("⚠️ PROFESSIONAL UNION: Multiple paths, falling back to convex hull")
-        return convexHullFallback(validPaths)
     }
     
 
@@ -745,22 +733,45 @@ extension ProfessionalPathOperations {
 
     
     /// PROFESSIONAL MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
-    /// Uses the same CoreGraphics Union implementation for better performance and curve preservation
-    static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
-        guard paths.count >= 2 else { return paths }
-        
-        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths")
-        
-        // Adobe Illustrator Merge: Unite all objects into single shape, no interior lines
-        // Now uses the same CoreGraphics Union implementation as Union operation
-        
-        if let unionResult = professionalUnion(paths) {
-            print("✅ PROFESSIONAL MERGE (CoreGraphics): Merged into single unified shape")
-            return [unionResult]
+    /// Groups shapes by color and merges each color group separately using CoreGraphics operations
+    static func professionalMergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor]) -> [(CGPath, Int)] {
+        guard paths.count >= 2 && colors.count == paths.count else { 
+            return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("❌ PROFESSIONAL MERGE (CoreGraphics): Failed to merge, returning original paths")
-        return paths
+        print("🔨 PROFESSIONAL MERGE: Using CoreGraphics with color-based merging...")
+        
+        // Use the new CoreGraphics merge operation with color tracking
+        let result = CoreGraphicsPathOperations.mergeWithShapeTracking(paths, colors: colors, using: .winding)
+        
+        if !result.isEmpty {
+            print("✅ PROFESSIONAL MERGE: CoreGraphics success - \(result.count) color groups merged")
+            return result
+        } else {
+            print("⚠️ CoreGraphics merge returned empty result")
+            return paths.enumerated().map { (index, path) in (path, index) }
+        }
+    }
+    
+    /// PROFESSIONAL MERGE: Legacy wrapper that returns only paths (for compatibility)
+    static func professionalMerge(_ paths: [CGPath]) -> [CGPath] {
+        // This legacy version can't do color-based merging without color information
+        // Just do a simple union of all paths as fallback
+        guard paths.count >= 2 else { return paths }
+        
+        let validPaths = paths.filter { !$0.isEmpty }
+        guard validPaths.count >= 2 else { return paths }
+        
+        print("⚠️ PROFESSIONAL MERGE: Legacy mode - no color information, merging all paths")
+        
+        var result = validPaths[0]
+        for i in 1..<validPaths.count {
+            if let unionResult = CoreGraphicsPathOperations.union(result, validPaths[i], using: .winding) {
+                result = unionResult
+            }
+        }
+        
+        return [result]
     }
     
     /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")

@@ -450,6 +450,85 @@ public class CoreGraphicsPathOperations {
         return cutWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
     
+    // MARK: - Merge Operations (CoreGraphics Alternative for Color-Based Merging)
+    
+    /// Merge operation: Groups shapes by color and merges each color group separately
+    /// Adobe Illustrator Merge: Unite objects of same color, remove strokes between overlapping areas
+    /// - Parameters:
+    ///   - paths: Array of paths to merge
+    ///   - colors: Array of fill colors (same order as paths)
+    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
+    /// - Returns: Array of tuples: (mergedPath, originalShapeIndex)
+    static func mergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
+        guard paths.count >= 2 && colors.count == paths.count else {
+            return paths.enumerated().map { (index, path) in (path, index) }
+        }
+        
+        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with color-based merging")
+        print("   Adobe Illustrator Merge: Group by color, merge each group, remove interior strokes")
+        
+        // STEP 1: Group shapes by fill color
+        var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
+        
+        for (index, (path, color)) in zip(paths, colors).enumerated() {
+            if colorGroups[color] == nil {
+                colorGroups[color] = []
+            }
+            colorGroups[color]?.append((path, index))
+        }
+        
+        print("   🎨 Found \(colorGroups.count) color groups:")
+        for (color, group) in colorGroups {
+            print("     Color \(color): \(group.count) shapes")
+        }
+        
+        var resultPaths: [(CGPath, Int)] = []
+        
+        // STEP 2: Merge each color group separately
+        for (color, group) in colorGroups {
+            if group.count == 1 {
+                // Single shape in this color group - keep as-is
+                let (path, originalIndex) = group[0]
+                resultPaths.append((path, originalIndex))
+                print("   ✅ Color \(color): Single shape, keeping as-is")
+            } else {
+                // Multiple shapes in this color group - merge them
+                print("   🔧 Color \(color): Merging \(group.count) shapes...")
+                
+                var mergedPath = group[0].0  // Start with first path
+                let representativeIndex = group[0].1  // Use first shape's index as representative
+                
+                // Iteratively merge all paths in this color group
+                for i in 1..<group.count {
+                    let (pathToMerge, _) = group[i]
+                    
+                    if let unionResult = union(mergedPath, pathToMerge, using: fillRule) {
+                        mergedPath = unionResult
+                        print("     → Merged shape \(i + 1) of \(group.count)")
+                    } else {
+                        print("     ⚠️ Failed to merge shape \(i + 1), continuing...")
+                    }
+                }
+                
+                resultPaths.append((mergedPath, representativeIndex))
+                print("   ✅ Color \(color): Merged \(group.count) shapes into 1 unified shape")
+            }
+        }
+        
+        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) merged shapes")
+        return resultPaths
+    }
+    
+    /// Merge operation: Simplified version that returns only paths  
+    /// - Parameters:
+    ///   - paths: Array of paths to merge
+    ///   - colors: Array of fill colors (same order as paths)
+    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
+    /// - Returns: Array of merged paths
+    static func merge(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
+        return mergeWithShapeTracking(paths, colors: colors, using: fillRule).map { $0.0 }
+    }
+
     // MARK: - Crop Operations (CoreGraphics Alternative to ClipperPath)
     
     /// Crop operation: CoreGraphics-based alternative to ClipperPath with curve preservation

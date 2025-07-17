@@ -1687,7 +1687,7 @@ class VectorDocument: ObservableObject, Codable {
         switch operation {
         // SHAPE MODES (Adobe Illustrator)
         case .union:
-            // UNION: Combines all shapes, result takes color of TOPMOST object
+            // UNION: Combines exactly two shapes, result takes color of TOPMOST object
             if let unionPath = ProfessionalPathOperations.union(paths) {
                 let topmostShape = selectedShapes.last! // Last in array = topmost in stacking order
                 let unionShape = VectorShape(
@@ -1839,24 +1839,39 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes")
             
         case .merge:
-            // MERGE: Like trim but merges objects of same color, removes strokes
-            let mergedPaths = ProfessionalPathOperations.merge(paths)
+            // MERGE: Adobe Illustrator Merge - groups by color and merges each color group separately
+            let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
             
-            for (index, mergedPath) in mergedPaths.enumerated() {
-                // For merge, we assume same color objects get merged into one
-                let representativeShape = selectedShapes.first!
+            guard colors.count == selectedShapes.count else {
+                print("❌ MERGE: Could not extract colors from all shapes")
+                return false
+            }
+            
+            let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
+            
+            // Adobe Illustrator Merge: Each resulting piece maintains the color of its original shape, removes strokes
+            var shapeCounters: [Int: Int] = [:]
+            
+            for (mergedPath, originalShapeIndex) in mergeResults {
+                guard originalShapeIndex < selectedShapes.count else { continue }
+                
+                let originalShape = selectedShapes[originalShapeIndex]
+                
+                // Track how many pieces we've created from this original shape
+                shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
+                let pieceNumber = shapeCounters[originalShapeIndex]!
                 
                 let mergedShape = VectorShape(
-                    name: "Merged Shape \(index + 1)",
+                    name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
                     path: VectorPath(cgPath: mergedPath),
                     strokeStyle: nil, // MERGE removes strokes (Adobe Illustrator standard)
-                    fillStyle: representativeShape.fillStyle,
+                    fillStyle: originalShape.fillStyle,
                     transform: .identity,
-                    opacity: representativeShape.opacity
+                    opacity: originalShape.opacity
                 )
                 resultShapes.append(mergedShape)
             }
-            print("✅ MERGE: Created \(resultShapes.count) merged shapes, removed strokes")
+            print("✅ MERGE: Created \(resultShapes.count) merged shapes with color-based grouping, removed strokes")
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.

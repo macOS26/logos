@@ -52,7 +52,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     
     var description: String {
         switch self {
-        case .union: return "Combines two shapes into a single shape (behaves like merge when exactly 2 shapes)"
+        case .union: return "Combines exactly two shapes into a single shape"
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
@@ -416,7 +416,7 @@ class ProfessionalPathOperations {
         case .split, .cut, .merge, .crop:
             return paths.count >= 2
         case .union: 
-            return paths.count >= 2  // Changed from == 2 to >= 2 to match merge behavior
+            return paths.count == 2  // Union now only works with exactly 2 shapes
         case .minusFront, .intersect, .exclude, .minusBack:
             return paths.count == 2
         case .dieline:
