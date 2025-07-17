@@ -428,12 +428,12 @@ struct ScaleHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             
-            // CENTER POINT: Green if live, red if pinned anchor
+            // CENTER POINT: Square same size as corners - Green if live, red if pinned anchor
             let isCenterPinned = document.scalingAnchor == .center
-            Circle()
+            Rectangle()
                 .fill(isCenterPinned ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: 6 / zoomLevel, height: 6 / zoomLevel)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
@@ -460,12 +460,12 @@ struct ScaleHandles: View {
                     // NO transformEffect! Show exact final position
                     .opacity(0.8) // Semi-transparent for clarity
                 
-                // MARQUEE CENTER POINT: Green if live, red if pinned
+                // MARQUEE CENTER POINT: Square same size as corners - Green if live, red if pinned
                 let isCenterPinned = document.scalingAnchor == .center
-                Circle()
+                Rectangle()
                     .fill(isCenterPinned ? Color.red : Color.green)
                     .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: 6 / zoomLevel, height: 6 / zoomLevel)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                     .position(marqueeCenter)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
@@ -558,9 +558,17 @@ struct ScaleHandles: View {
             y: currentLocation.y - anchorScreenY
         )
         
-        // Calculate scale factors
-        var scaleX = abs(startDistance.x) > 1.0 ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-        var scaleY = abs(startDistance.y) > 1.0 ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+        // Calculate scale factors with reasonable bounds to prevent extreme values
+        let minDistance: CGFloat = 20.0 // Minimum distance threshold for reliable scaling
+        let maxScale: CGFloat = 10.0    // Maximum scale factor to prevent extreme scaling
+        let minScale: CGFloat = 0.1     // Minimum scale factor to prevent inversion
+        
+        var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+        var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+        
+        // Clamp scale factors to reasonable bounds
+        scaleX = min(max(scaleX, minScale), maxScale)
+        scaleY = min(max(scaleY, minScale), maxScale)
         
         // PROPORTIONAL SCALING: When shift is held, use uniform scaling
         if isShiftPressed {
