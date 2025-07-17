@@ -17,6 +17,8 @@ struct HSBInputSection: View {
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
     @State private var hexValue: String = "ff0000"
+    @State private var isUpdatingHexFromHSB: Bool = false // Flag to prevent feedback loops
+    @State private var allowHSBUpdatesFromSharedColor: Bool = true // Allow updates only during mode switching
     
     // Slider values
     @State private var hueSlider: Double = 0        // 0-360 degrees
@@ -32,28 +34,41 @@ struct HSBInputSection: View {
     // Find closest Pantone color match
     @ObservedObject private var pantoneLibrary = PantoneLibrary()
     
-    // Computed color from HSB values
+    // Computed color from HSB values - preserves exact user input
     private var currentColor: HSBColorModel {
         let h = Double(hueValue) ?? 0
         let s = (Double(saturationValue) ?? 0) / 100.0
         let b = (Double(brightnessValue) ?? 0) / 100.0
         
+        // Create HSBColorModel that preserves exact hue value (no normalization)
         return HSBColorModel(hue: h, saturation: s, brightness: b)
     }
     
     private var closestPantoneColor: PantoneLibraryColor? {
-        pantoneLibrary.findClosestMatch(to: currentColor)
+        // Use preserved user input for PMS matching, but normalize H=360 to 0 for calculation
+        let userHue = Double(hueValue) ?? 0
+        let normalizedHue = userHue >= 360 ? 0 : userHue
+        let s = (Double(saturationValue) ?? 0) / 100.0
+        let b = (Double(brightnessValue) ?? 0) / 100.0
+        
+        let matchingColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
+        return pantoneLibrary.findClosestMatch(to: matchingColor)
     }
     
-    // Live preview color - either from live PMS search or current HSB
+    // Live preview color - either from live PMS search or current HSB (preserves exact user input)
     private var livePreviewColor: (pms: PantoneLibraryColor?, hsb: HSBColorModel) {
         if let livePMS = livePMSPreview {
             // Show live PMS match and its HSB approximation
             let hsbApproximation = HSBColorModel.fromRGB(livePMS.rgbEquivalent)
             return (pms: livePMS, hsb: hsbApproximation)
         } else {
-            // Show current HSB color and closest PMS match
-            return (pms: closestPantoneColor, hsb: currentColor)
+            // PRESERVE USER INPUT: Show HSB color with exact user values (H=360 stays 360)
+            let userHue = Double(hueValue) ?? 0  // Keep exact user input
+            let s = (Double(saturationValue) ?? 0) / 100.0
+            let b = (Double(brightnessValue) ?? 0) / 100.0
+            let preservedHSB = HSBColorModel(hue: userHue, saturation: s, brightness: b)
+            
+            return (pms: closestPantoneColor, hsb: preservedHSB)
         }
     }
     
@@ -165,6 +180,7 @@ struct HSBInputSection: View {
                                 updateHexFromHSB()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
+                                // DO NOT call updateSharedColor() here - keep sliders isolated
                             }
                         
                         // Gradient overlay
@@ -184,6 +200,7 @@ struct HSBInputSection: View {
                                     updateHexFromHSB()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
+                                    // NO updateSharedColor() - HSB sliders are isolated
                                 }
                             }
                 }
@@ -389,9 +406,11 @@ struct HSBInputSection: View {
                         .font(.system(size: 10))
                         .frame(width: 60)
                         .onChange(of: hexValue) { _, _ in
-                            updateHSBFromHex()
-                            // Clear live PMS preview when manually adjusting hex
-                            livePMSPreview = nil
+                            // NEVER update HSB from hex - user explicitly forbids this
+                            // Only clear live PMS preview when manually adjusting hex
+                            if !isUpdatingHexFromHSB {
+                                livePMSPreview = nil
+                            }
                         }
                 }
             }
@@ -465,11 +484,15 @@ struct HSBInputSection: View {
         .padding(.vertical, 6)
         .onAppear {
             loadFromSharedColor()
-            // Ensure initial color displays with proper PMS matching
-            updateSharedColor()
+            // HSB sliders stay isolated - no updateSharedColor() here
         }
         .onChange(of: sharedColor) { _, newColor in
-            loadFromSharedColor()
+            // Only load from shared color when legitimate mode switching occurs
+            if allowHSBUpdatesFromSharedColor {
+                loadFromSharedColor()
+            }
+            // Reset flag after potential update
+            allowHSBUpdatesFromSharedColor = false
         }
     }
     
@@ -488,11 +511,26 @@ struct HSBInputSection: View {
     // MARK: - Helper Methods
     
     private func updateHexFromHSB() {
-        let rgbColor = currentColor.rgbColor
+        // PRESERVE EXACT USER INPUT: Handle H=360 specially to prevent normalization to 0
+        let userHue = Double(hueValue) ?? 0
+        let normalizedHue = userHue >= 360 ? 0 : userHue  // Only normalize for calculation, preserve user input
+        let s = (Double(saturationValue) ?? 0) / 100.0
+        let b = (Double(brightnessValue) ?? 0) / 100.0
+        
+        // Create HSB with normalized hue for calculation only
+        let calculationColor = HSBColorModel(hue: normalizedHue, saturation: s, brightness: b)
+        let rgbColor = calculationColor.rgbColor
         let r = Int(rgbColor.red * 255)
         let g = Int(rgbColor.green * 255)
-        let b = Int(rgbColor.blue * 255)
-        hexValue = String(format: "%02x%02x%02x", r, g, b)
+        let b_value = Int(rgbColor.blue * 255)
+        
+        // Set flag to prevent feedback loop
+        isUpdatingHexFromHSB = true
+        hexValue = String(format: "%02x%02x%02x", r, g, b_value)
+        isUpdatingHexFromHSB = false
+        
+        // CRITICAL: Never modify hueValue, saturationValue, or brightnessValue here
+        // User's H=360 stays exactly as H=360, never normalized to 0
     }
     
     private func updateHSBFromHex() {
@@ -635,7 +673,7 @@ struct HSBInputSection: View {
             // Update hex value to match
             updateHexFromHSB()
             
-            // Update shared color to sync with other color modes
+            // Update shared color to sync with other color modes (only when manually typing PMS)
             updateSharedColor()
         } else {
             // Clear live preview if no match found
