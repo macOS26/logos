@@ -160,7 +160,10 @@ struct HSBInputSection: View {
                         Circle()
                             .fill(
                                 RadialGradient(
-                                    gradient: Gradient(colors: [Color.white, Color.gray]),
+                                    gradient: Gradient(colors: [
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 0, b: Double(brightnessValue) ?? 100),
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: 100, b: Double(brightnessValue) ?? 100)
+                                    ]),
                                     center: .center,
                                     startRadius: 2,
                                     endRadius: 6
@@ -229,7 +232,10 @@ struct HSBInputSection: View {
                         Circle()
                             .fill(
                                 RadialGradient(
-                                    gradient: Gradient(colors: [Color.white, Color.black]),
+                                    gradient: Gradient(colors: [
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 0),
+                                        swiftUIColor(h: Double(hueValue) ?? 0, s: Double(saturationValue) ?? 100, b: 100)
+                                    ]),
                                     center: .center,
                                     startRadius: 2,
                                     endRadius: 6
