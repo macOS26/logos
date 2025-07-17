@@ -90,11 +90,11 @@ struct HSBInputSection: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             // HSB Sliders with Native Apple Sliders and Gradients (matching RGB style)
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 // Hue Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Circle()
                         .fill(
                             AngularGradient(
@@ -153,7 +153,7 @@ struct HSBInputSection: View {
                 }
                 
                 // Saturation Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ZStack {
                         Circle()
                             .fill(
@@ -223,7 +223,7 @@ struct HSBInputSection: View {
                 }
                 
                 // Brightness Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ZStack {
                         Circle()
                             .fill(
@@ -294,7 +294,7 @@ struct HSBInputSection: View {
             }
             
             // Two Swatch Previews: HSB and PMS
-            HStack(spacing: 4) {
+            HStack(spacing: 3) {
                 // HSB Color Swatch Preview
                 Button(action: {
                     addColorToSwatches()
@@ -368,35 +368,34 @@ struct HSBInputSection: View {
                     }
             }
             
-            // HSB colors with preset hues at full saturation and brightness
+            // HSB colors with preset hues
             Text("HSB colors with preset hues")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary)
                 .padding(.top, 8)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30)), count: 8), spacing: 4) {
-                ForEach(defaultHSBColors.indices, id: \.self) { index in
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(24)), count: 6), spacing: 3) {
+                ForEach(Array(defaultHSBColors.prefix(18).enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
-                        let hsbColor = defaultHSBColors[index]
                         addSpecificPMSColorToSwatches(hsbColor)
                     }) {
                         ZStack {
                             Rectangle()
-                                .fill(defaultHSBColors[index].color)
-                                .frame(width: 30, height: 30)
+                                .fill(hsbColor.color)
+                                .frame(width: 24, height: 24)
                                 .overlay(
                                     Rectangle()
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
                             
                             // Show Pantone number if match found for this specific color
-                            if let pantoneMatch = pantoneLibrary.findClosestMatch(to: defaultHSBColors[index]) {
+                            if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
                                 Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 6, weight: .bold))
+                                    .font(.system(size: 4, weight: .bold))
                                     .foregroundColor(.white)
                                     .shadow(color: .black, radius: 1, x: 0, y: 0)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.6)
+                                    .minimumScaleFactor(0.4)
                             }
                         }
                     }
@@ -405,7 +404,7 @@ struct HSBInputSection: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
         .onAppear {
             loadFromSharedColor()
             // Ensure initial color displays with proper PMS matching
