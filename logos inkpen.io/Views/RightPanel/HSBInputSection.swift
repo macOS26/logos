@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Professional PMS Input Section with Pantone Color Matching
+// MARK: - Professional HSB Input Section
 
 struct HSBInputSection: View {
     @ObservedObject var document: VectorDocument
@@ -16,6 +16,7 @@ struct HSBInputSection: View {
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
+    @State private var hexValue: String = "ff0000"
     
     // Slider values
     @State private var hueSlider: Double = 0        // 0-360 degrees
@@ -31,363 +32,379 @@ struct HSBInputSection: View {
         return HSBColorModel(hue: h, saturation: s, brightness: b)
     }
     
-    // PMS number entry
-    @State private var pmsNumberEntry: String = ""
-    @State private var showingPMSLibrary = false
-    
-    // Find closest Pantone color match
-    @ObservedObject private var pantoneLibrary = PantoneLibrary()
-    
-    private var closestPantoneColor: PantoneLibraryColor? {
-        pantoneLibrary.findClosestMatch(to: currentColor)
+    // Helper function to get SwiftUI Color from HSB values
+    private func swiftUIColor(h: Double, s: Double, b: Double) -> Color {
+        return Color(hue: h/360.0, saturation: s/100.0, brightness: b/100.0)
     }
     
-
+    // Hue slider gradient (full rainbow)
+    private var hueGradient: LinearGradient {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(hue: 0.0, saturation: 1.0, brightness: 1.0),    // Red
+                Color(hue: 0.167, saturation: 1.0, brightness: 1.0),  // Orange
+                Color(hue: 0.333, saturation: 1.0, brightness: 1.0),  // Yellow
+                Color(hue: 0.5, saturation: 1.0, brightness: 1.0),    // Green
+                Color(hue: 0.667, saturation: 1.0, brightness: 1.0),  // Cyan
+                Color(hue: 0.833, saturation: 1.0, brightness: 1.0),  // Blue
+                Color(hue: 1.0, saturation: 1.0, brightness: 1.0)     // Magenta
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    // Saturation slider gradient (from gray to current hue at full saturation)
+    private var saturationGradient: LinearGradient {
+        let h = Double(hueValue) ?? 0
+        let b = Double(brightnessValue) ?? 100
+        return LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColor(h: h, s: 0, b: b),
+                swiftUIColor(h: h, s: 100, b: b)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
+    
+    // Brightness slider gradient (from black to current hue/saturation at full brightness)
+    private var brightnessGradient: LinearGradient {
+        let h = Double(hueValue) ?? 0
+        let s = Double(saturationValue) ?? 100
+        return LinearGradient(
+            gradient: Gradient(colors: [
+                swiftUIColor(h: h, s: s, b: 0),
+                swiftUIColor(h: h, s: s, b: 100)
+            ]),
+            startPoint: .leading,
+            endPoint: .trailing
+        )
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // PMS Color Preview and Controls
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("PMS Color")
-                        .font(.caption)
-                        .fontWeight(.semibold)
+            // HSB Sliders with Native Apple Sliders and Gradients (matching RGB style)
+            VStack(spacing: 8) {
+                // Hue Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(
+                            AngularGradient(
+                                gradient: Gradient(colors: [
+                                    .red, .yellow, .green, .cyan, .blue, Color(red: 1, green: 0, blue: 1), .red
+                                ]),
+                                center: .center
+                            )
+                        )
+                        .frame(width: 12, height: 12)
+                    
+                    Text("H")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Add to Swatches") {
-                        // Add current HSB color as a PMS color using the closest Pantone match name
-                        if let pantoneColor = closestPantoneColor {
-                            // Create a PMS color based on current HSB values but with Pantone naming
-                            let pmsColor = VectorColor.pantone(pantoneColor)
-                            document.addColorSwatch(pmsColor)
-                        } else {
-                            // Fallback: Add as HSB color with PMS-style naming
-                            let hsbColor = VectorColor.hsb(currentColor)
-                            document.addColorSwatch(hsbColor)
-                        }
-                    }
-                    .buttonStyle(.bordered)
-                    .font(.caption)
-                    .disabled(closestPantoneColor == nil)
-                }
-                
-                HStack(spacing: 12) {
-                    // Current PMS Color
-                    VStack(spacing: 4) {
-                        Rectangle()
-                            .fill(currentColor.color)
-                            .frame(width: 50, height: 50)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
                             .overlay(
-                                Rectangle()
-                                    .stroke(Color.gray, lineWidth: 1)
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
                         
-                        Text("Current")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        // Native Apple Slider
+                        Slider(value: $hueSlider, in: 0...360)
+                            .tint(Color.clear)
+                            .onChange(of: hueSlider) { _, _ in
+                                hueValue = String(Int(hueSlider))
+                                updateHexFromHSB()
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(hueGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
                     }
                     
-                    // Arrow
-                    Image(systemName: "arrow.right")
+                    TextField("", text: $hueValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: hueValue) { _, _ in
+                            if let intValue = Double(hueValue) {
+                                hueSlider = min(360, max(0, intValue))
+                                updateHexFromHSB()
+                                updateSharedColor()
+                            }
+                        }
+                        
+                    Text("°")
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
-                        .font(.caption)
-                    
-                    // Closest PMS Match
-                    if let pantoneColor = closestPantoneColor {
-                        VStack(spacing: 4) {
-                            Button {
-                                // Apply closest Pantone color using PMS naming
-                                let pmsColor = VectorColor.pantone(pantoneColor)
-                                sharedColor = pmsColor
-                                document.addColorToCurrentMode(pmsColor)
-                                updateHSBFromColor(pmsColor)
-                            } label: {
-                                Rectangle()
-                                    .fill(pantoneColor.color)
-                                    .frame(width: 50, height: 50)
-                                    .overlay(
-                                        Rectangle()
-                                            .stroke(Color.purple, lineWidth: 2)
-                                    )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Click to use closest PMS color: \(pantoneColor.pantone)")
-                            
-                            Text("PMS \(pantoneColor.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))")
-                                .font(.caption2)
-                                .foregroundColor(.purple)
-                                .lineLimit(1)
-                        }
-                    } else {
-                        VStack(spacing: 4) {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 50, height: 50)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
-                            
-                            Text("Loading...")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Spacer()
                 }
                 
-                // PMS Number Entry and Library Access
+                // Saturation Slider
                 HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("PMS Number")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [Color.white, Color.gray]),
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: 6
+                            )
+                        )
+                        .frame(width: 12, height: 12)
+                    
+                    Text("S")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
                         
-                        HStack {
-                            TextField("e.g. 185", text: $pmsNumberEntry)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .font(.caption)
-                                .onSubmit {
-                                    searchForPMSNumber()
-                                }
-                            
-                            Button("Find") {
-                                searchForPMSNumber()
+                        // Native Apple Slider
+                        Slider(value: $saturationSlider, in: 0...100)
+                            .tint(Color.clear)
+                            .onChange(of: saturationSlider) { _, _ in
+                                saturationValue = String(Int(saturationSlider))
+                                updateHexFromHSB()
+                                updateSharedColor()
                             }
-                            .buttonStyle(.bordered)
-                            .font(.caption)
-                        }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(saturationGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
                     }
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Current Color")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            Button("Use Current") {
-                                // Add current HSB color with PMS naming
-                                if let pantoneColor = closestPantoneColor {
-                                    let pmsColor = VectorColor.pantone(pantoneColor)
-                                    sharedColor = pmsColor
-                                    document.addColorToCurrentMode(pmsColor)
-                                } else {
-                                    // Create custom PMS-style color from HSB
-                                    let hsbColor = VectorColor.hsb(currentColor)
-                                    sharedColor = hsbColor
-                                    document.addColorToCurrentMode(hsbColor)
-                                }
+                    TextField("", text: $saturationValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: saturationValue) { _, _ in
+                            if let intValue = Double(saturationValue) {
+                                saturationSlider = min(100, max(0, intValue))
+                                updateHexFromHSB()
+                                updateSharedColor()
                             }
-                            .buttonStyle(.bordered)
-                            .font(.caption)
-                            
-                            Button("Browse Library") {
-                                showingPMSLibrary = true
-                            }
-                            .buttonStyle(.bordered)
-                            .font(.caption)
                         }
+                        
+                    Text("%")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+                
+                // Brightness Slider
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [Color.white, Color.black]),
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: 6
+                            )
+                        )
+                        .frame(width: 12, height: 12)
+                    
+                    Text("B")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 12)
+                    
+                    ZStack {
+                        // White background for slider track
+                        Capsule()
+                            .fill(Color.white)
+                            .frame(height: 6)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
+                            )
+                        
+                        // Native Apple Slider
+                        Slider(value: $brightnessSlider, in: 0...100)
+                            .tint(Color.clear)
+                            .onChange(of: brightnessSlider) { _, _ in
+                                brightnessValue = String(Int(brightnessSlider))
+                                updateHexFromHSB()
+                                updateSharedColor()
+                            }
+                        
+                        // Gradient overlay
+                        Capsule()
+                            .fill(brightnessGradient)
+                            .frame(height: 6)
+                            .allowsHitTesting(false)
                     }
+                    
+                    TextField("", text: $brightnessValue)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 45)
+                        .font(.system(size: 11))
+                        .onChange(of: brightnessValue) { _, _ in
+                            if let intValue = Double(brightnessValue) {
+                                brightnessSlider = min(100, max(0, intValue))
+                                updateHexFromHSB()
+                                updateSharedColor()
+                            }
+                        }
+                        
+                    Text("%")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
             }
-            .padding(12)
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
-            .cornerRadius(8)
             
-            // Hue Slider (0-360°)
-            HStack {
-                Text("H")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-                    .frame(width: 12)
+            // Compact Hex Input and Swatch Preview (matching RGB style)
+            HStack(spacing: 8) {
+                // Square Color Swatch Preview (30x30 like RGB)
+                Button(action: {
+                    applyColorToActiveSelection()
+                }) {
+                    Rectangle()
+                        .fill(currentColor.color)
+                        .frame(width: 30, height: 30)
+                        .overlay(
+                            Rectangle()
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Click to apply color to active fill or stroke")
                 
-                Slider(value: $hueSlider, in: 0...360, step: 1)
-                    .onChange(of: hueSlider) { _ in
-                        syncHueValue()
-                        updateSharedColor()
+                VStack(alignment: .leading, spacing: 2) {
+                    Button("Add to Swatches") {
+                        addColorToSwatches()
                     }
+                    .font(.system(size: 10))
+                    .foregroundColor(.primary)
+                }
                 
-                TextField("", text: $hueValue)
+                Spacer()
+                
+                Text("#")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                TextField("ff0000", text: $hexValue)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(width: 45)
-                    .font(.caption)
-                    .onChange(of: hueValue) { _ in
-                        syncHueSlider()
+                    .font(.system(size: 11))
+                    .frame(width: 70)
+                    .onChange(of: hexValue) { _, _ in
+                        updateHSBFromHex()
                         updateSharedColor()
                     }
-                
-                Text("°")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 15)
-            }
-            
-            // Saturation Slider (0-100%)
-            HStack {
-                Text("S")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-                    .frame(width: 12)
-                
-                Slider(value: $saturationSlider, in: 0...100, step: 1)
-                    .onChange(of: saturationSlider) { _ in
-                        syncSaturationValue()
-                        updateSharedColor()
-                    }
-                
-                TextField("", text: $saturationValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(width: 45)
-                    .font(.caption)
-                    .onChange(of: saturationValue) { _ in
-                        syncSaturationSlider()
-                        updateSharedColor()
-                    }
-                
-                Text("%")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 15)
-            }
-            
-            // Brightness Slider (0-100%)
-            HStack {
-                Text("B")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-                    .frame(width: 12)
-                
-                Slider(value: $brightnessSlider, in: 0...100, step: 1)
-                    .onChange(of: brightnessSlider) { _ in
-                        syncBrightnessValue()
-                        updateSharedColor()
-                    }
-                
-                TextField("", text: $brightnessValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(width: 45)
-                    .font(.caption)
-                    .onChange(of: brightnessValue) { _ in
-                        syncBrightnessSlider()
-                        updateSharedColor()
-                    }
-                
-                Text("%")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: 15)
             }
         }
+        .padding(.vertical, 8)
         .onAppear {
-            updateHSBFromSharedColor()
+            loadFromSharedColor()
         }
-        .onChange(of: sharedColor) { _ in
-            updateHSBFromSharedColor()
-        }
-        .sheet(isPresented: $showingPMSLibrary) {
-            PantoneColorPickerSheet(document: document)
+        .onChange(of: sharedColor) { _, newColor in
+            loadFromSharedColor()
         }
     }
     
     // MARK: - Helper Methods
     
-    private func syncHueValue() {
-        hueValue = String(Int(hueSlider))
+    private func updateHexFromHSB() {
+        let rgbColor = currentColor.rgbColor
+        let r = Int(rgbColor.red * 255)
+        let g = Int(rgbColor.green * 255)
+        let b = Int(rgbColor.blue * 255)
+        hexValue = String(format: "%02x%02x%02x", r, g, b)
     }
     
-    private func syncHueSlider() {
-        if let value = Double(hueValue) {
-            hueSlider = max(0, min(360, value))
-        }
-    }
-    
-    private func syncSaturationValue() {
-        saturationValue = String(Int(saturationSlider))
-    }
-    
-    private func syncSaturationSlider() {
-        if let value = Double(saturationValue) {
-            saturationSlider = max(0, min(100, value))
-        }
-    }
-    
-    private func syncBrightnessValue() {
-        brightnessValue = String(Int(brightnessSlider))
-    }
-    
-    private func syncBrightnessSlider() {
-        if let value = Double(brightnessValue) {
-            brightnessSlider = max(0, min(100, value))
+    private func updateHSBFromHex() {
+        let cleanHex = hexValue.replacingOccurrences(of: "#", with: "")
+        if cleanHex.count == 6 {
+            let scanner = Scanner(string: cleanHex)
+            var hexNumber: UInt64 = 0
+            
+            if scanner.scanHexInt64(&hexNumber) {
+                let r = Double((hexNumber & 0xff0000) >> 16) / 255.0
+                let g = Double((hexNumber & 0x00ff00) >> 8) / 255.0
+                let b = Double(hexNumber & 0x0000ff) / 255.0
+                
+                let rgbColor = RGBColor(red: r, green: g, blue: b, alpha: 1.0)
+                let hsbColor = HSBColorModel.fromRGB(rgbColor)
+                
+                setHSBValues(
+                    hue: hsbColor.hue,
+                    saturation: hsbColor.saturation * 100,
+                    brightness: hsbColor.brightness * 100
+                )
+            }
         }
     }
     
     private func updateSharedColor() {
-        // Always try to match to PMS first, fallback to HSB
-        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: currentColor) {
-            sharedColor = .pantone(pantoneMatch)
-        } else {
-            sharedColor = .hsb(currentColor)
-        }
+        sharedColor = .hsb(currentColor)
     }
     
-    private func updateHSBFromSharedColor() {
-        updateHSBFromColor(sharedColor)
-    }
-    
-    private func searchForPMSNumber() {
-        let cleanedNumber = pmsNumberEntry
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        
-        if cleanedNumber.isEmpty { return }
-        
-        // Search for PMS color by number
-        let searchResults = pantoneLibrary.searchColors(query: cleanedNumber)
-        
-        if let foundColor = searchResults.first {
-            let pantoneColor = VectorColor.pantone(foundColor)
-            sharedColor = pantoneColor
-            document.addColorToCurrentMode(pantoneColor)
-            updateHSBFromColor(pantoneColor)
-            pmsNumberEntry = "" // Clear the search field
-        }
-    }
-    
-    private func updateHSBFromColor(_ color: VectorColor) {
+    private func loadFromSharedColor() {
         var hsbColor: HSBColorModel
         
-        switch color {
+        switch sharedColor {
         case .hsb(let hsb):
             hsbColor = hsb
         case .rgb(let rgb):
             hsbColor = HSBColorModel.fromRGB(rgb)
         case .cmyk(let cmyk):
             hsbColor = HSBColorModel.fromRGB(cmyk.rgbColor)
-        case .spot(let spot):
-            hsbColor = spot.hsbEquivalent
         case .pantone(let pantone):
             hsbColor = HSBColorModel.fromRGB(pantone.rgbEquivalent)
+        case .spot(let spot):
+            hsbColor = spot.hsbEquivalent
         case .appleSystem(let system):
             hsbColor = HSBColorModel.fromRGB(system.rgbEquivalent)
+        case .clear:
+            hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
         case .black:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 0)
         case .white:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
-        case .clear:
-            hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
         }
         
-        // Update sliders and text fields
-        hueSlider = hsbColor.hue
-        saturationSlider = hsbColor.saturation * 100
-        brightnessSlider = hsbColor.brightness * 100
-        
-        hueValue = String(Int(hueSlider))
-        saturationValue = String(Int(saturationSlider))
-        brightnessValue = String(Int(brightnessSlider))
+        setHSBValues(
+            hue: hsbColor.hue,
+            saturation: hsbColor.saturation * 100,
+            brightness: hsbColor.brightness * 100
+        )
+    }
+    
+    private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
+        hueValue = String(Int(hue))
+        saturationValue = String(Int(saturation))
+        brightnessValue = String(Int(brightness))
+        hueSlider = hue
+        saturationSlider = saturation
+        brightnessSlider = brightness
+        updateHexFromHSB()
+    }
+    
+    private func applyColorToActiveSelection() {
+        let vectorColor = VectorColor.hsb(currentColor)
+        document.setActiveColor(vectorColor)
+    }
+    
+    private func addColorToSwatches() {
+        let vectorColor = VectorColor.hsb(currentColor)
+        document.addColorToSwatches(vectorColor)
     }
 } 
