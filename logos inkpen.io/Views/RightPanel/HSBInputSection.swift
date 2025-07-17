@@ -401,12 +401,7 @@ struct HSBInputSection: View {
                 }
             }
             
-            // PMS Color
-            Text("PMS Color")
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
-                .padding(.top, 8)
-            
+            // Bottom color swatches with PMS names
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 4), spacing: 4) {
                 ForEach(Array(defaultHSBColors.enumerated()), id: \.offset) { index, hsbColor in
                     Button(action: {
@@ -421,7 +416,7 @@ struct HSBInputSection: View {
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
                             
-                            // Show descriptive name for special colors
+                            // Show PMS color names on swatches
                             if hsbColor.saturation == 0 && hsbColor.brightness == 0 {
                                 Text("black")
                                     .font(.system(size: 6, weight: .bold))
@@ -430,7 +425,7 @@ struct HSBInputSection: View {
                                     .lineLimit(3)
                                     .minimumScaleFactor(0.6)
                                     .multilineTextAlignment(.center)
-                            } else if hsbColor.saturation == 0 && hsbColor.brightness == 1 {
+                            } else if hsbColor.saturation == 0 && hsbColor.brightness == 1 && hsbColor.alpha == 1 {
                                 Text("white")
                                     .font(.system(size: 6, weight: .bold))
                                     .foregroundColor(.black)
@@ -461,6 +456,8 @@ struct HSBInputSection: View {
                     .help("Click to add PMS color to swatches")
                 }
             }
+            .padding(.top, 8)
+
         }
         .padding(.vertical, 6)
         .onAppear {
