@@ -163,7 +163,6 @@ struct HSBInputSection: View {
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
                                 updateHexFromHSB()
-                                updateSharedColor()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -183,7 +182,6 @@ struct HSBInputSection: View {
                                 if let intValue = Double(hueValue) {
                                     hueSlider = min(360, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -221,7 +219,6 @@ struct HSBInputSection: View {
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
                                 updateHexFromHSB()
-                                updateSharedColor()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -241,7 +238,6 @@ struct HSBInputSection: View {
                                 if let intValue = Double(saturationValue) {
                                     saturationSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -279,7 +275,6 @@ struct HSBInputSection: View {
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))
                                 updateHexFromHSB()
-                                updateSharedColor()
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -299,7 +294,6 @@ struct HSBInputSection: View {
                                 if let intValue = Double(brightnessValue) {
                                     brightnessSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor()
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -394,7 +388,6 @@ struct HSBInputSection: View {
                         .frame(width: 60)
                         .onChange(of: hexValue) { _, _ in
                             updateHSBFromHex()
-                            updateSharedColor()
                             // Clear live PMS preview when manually adjusting hex
                             livePMSPreview = nil
                         }
