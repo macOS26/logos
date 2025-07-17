@@ -168,14 +168,11 @@ struct HSBInputSection: View {
                             )
                             .frame(width: 12, height: 12)
                         
-                        // Current color preview overlay
+                        // Current color preview overlay - same size with darken blend
                         Circle()
                             .fill(currentColor.color)
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 0.5)
-                            )
+                            .frame(width: 12, height: 12)
+                            .blendMode(.multiply)
                     }
                     
                     Text("S")
@@ -240,14 +237,11 @@ struct HSBInputSection: View {
                             )
                             .frame(width: 12, height: 12)
                         
-                        // Current color preview overlay
+                        // Current color preview overlay - same size with darken blend
                         Circle()
                             .fill(currentColor.color)
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: 0.5)
-                            )
+                            .frame(width: 12, height: 12)
+                            .blendMode(.multiply)
                     }
                     
                     Text("B")
@@ -299,9 +293,9 @@ struct HSBInputSection: View {
                 }
             }
             
-            // Compact Hex Input and Swatch Preview (matching RGB style)
-            HStack(spacing: 8) {
-                // Square Color Swatch Preview (30x30 like RGB)
+            // Compact Hex Input and Swatch Preview
+            HStack(spacing: 6) {
+                // Square Color Swatch Preview (30x30)
                 Button(action: {
                     addPMSColorToSwatches()
                 }) {
@@ -328,13 +322,11 @@ struct HSBInputSection: View {
                 .buttonStyle(PlainButtonStyle())
                 .help("Click to add PMS color to swatches")
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Button("Add to Swatches") {
-                        addPMSColorToSwatches()
-                    }
-                    .font(.system(size: 10))
-                    .foregroundColor(.primary)
+                Button("Add") {
+                    addPMSColorToSwatches()
                 }
+                .font(.system(size: 10))
+                .foregroundColor(.primary)
                 
                 Spacer()
                 
@@ -345,7 +337,7 @@ struct HSBInputSection: View {
                 TextField("ff0000", text: $hexValue)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .font(.system(size: 11))
-                    .frame(width: 70)
+                    .frame(width: 55)
                     .onChange(of: hexValue) { _, _ in
                         updateHSBFromHex()
                         updateSharedColor()
@@ -392,6 +384,8 @@ struct HSBInputSection: View {
         .padding(.vertical, 8)
         .onAppear {
             loadFromSharedColor()
+            // Ensure initial color displays with proper PMS matching
+            updateSharedColor()
         }
         .onChange(of: sharedColor) { _, newColor in
             loadFromSharedColor()
@@ -478,7 +472,12 @@ struct HSBInputSection: View {
     }
     
     private func updateSharedColor() {
-        sharedColor = .hsb(currentColor)
+        // Always try to match to PMS first, fallback to HSB
+        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: currentColor) {
+            sharedColor = .pantone(pantoneMatch)
+        } else {
+            sharedColor = .hsb(currentColor)
+        }
     }
     
     private func loadFromSharedColor() {
