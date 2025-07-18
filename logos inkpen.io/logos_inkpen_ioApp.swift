@@ -35,6 +35,8 @@ class DocumentState: ObservableObject {
     @Published var canPaste = false
     @Published var canGroup = false
     @Published var canUngroup = false
+    @Published var canFlatten = false
+    @Published var canUnflatten = false
     @Published var canMakeCompoundPath = false
     @Published var canReleaseCompoundPath = false
     @Published var canMakeLoopingPath = false
@@ -80,6 +82,8 @@ class DocumentState: ObservableObject {
             canPaste = false
             canGroup = false
             canUngroup = false
+            canFlatten = false
+            canUnflatten = false
             canMakeCompoundPath = false
             canReleaseCompoundPath = false
             canMakeLoopingPath = false
@@ -97,6 +101,10 @@ class DocumentState: ObservableObject {
         canGroup = document.selectedShapeIDs.count > 1
         canUngroup = document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
+        }
+        canFlatten = document.selectedShapeIDs.count > 1
+        canUnflatten = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroup == true
         }
         canMakeCompoundPath = document.selectedShapeIDs.count > 1
         canReleaseCompoundPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
@@ -198,6 +206,16 @@ class DocumentState: ObservableObject {
     
     func ungroupObjects() {
         document?.ungroupSelectedObjects()
+        updateAllStates()
+    }
+    
+    func flattenObjects() {
+        document?.flattenSelectedObjects()
+        updateAllStates()
+    }
+    
+    func unflattenObjects() {
+        document?.unflattenSelectedObjects()
         updateAllStates()
     }
     
@@ -343,6 +361,23 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("g", modifiers: [.command, .shift])
                 .disabled(documentState?.canUngroup != true)
+                
+                Divider()
+                
+                // Flatten Section (Adobe Illustrator Style - Preserves Colors, Enables Transforms)
+                Button("Flatten") {
+                    documentState?.flattenObjects()
+                }
+                .keyboardShortcut("f", modifiers: [.command, .option])
+                .disabled(documentState?.canFlatten != true)
+                .help("Flatten multiple shapes - preserves individual colors while enabling Scale, Rotate and Shear tools")
+                
+                Button("Unflatten") {
+                    documentState?.unflattenObjects()
+                }
+                .keyboardShortcut("f", modifiers: [.command, .option, .shift])
+                .disabled(documentState?.canUnflatten != true)
+                .help("Restore flattened group back to individual shapes with original colors")
                 
                 Divider()
                 

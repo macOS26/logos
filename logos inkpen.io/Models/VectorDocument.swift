@@ -2267,6 +2267,51 @@ class VectorDocument: ObservableObject, Codable {
         print("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'")
     }
     
+    /// Flatten selected objects (preserves individual colors, enables transform tools)
+    func flattenSelectedObjects() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count > 1 else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes in stacking order
+        let selectedShapes = getSelectedShapesInStackingOrder()
+        
+        // Calculate overall bounding box for the flattened group
+        var combinedBounds = CGRect.zero
+        for shape in selectedShapes {
+            let shapeBounds = shape.bounds
+            if combinedBounds == .zero {
+                combinedBounds = shapeBounds
+            } else {
+                combinedBounds = combinedBounds.union(shapeBounds)
+            }
+        }
+        
+        // Create flattened group - preserves all individual shapes and their colors
+        // Uses isGroup=true so it transforms as a unit with Scale/Rotate/Shear tools
+        // But stores individual shapes in groupedShapes to preserve colors during rendering
+        let flattenedShape = VectorShape(
+            name: "Flattened Group",
+            path: VectorPath(cgPath: CGPath(rect: combinedBounds, transform: nil)), // Invisible container path
+            strokeStyle: nil, // No stroke on container - individual shapes have their own
+            fillStyle: nil,   // No fill on container - individual shapes have their own
+            transform: .identity,
+            isGroup: true,    // This makes it work with transform tools as a single unit
+            groupedShapes: selectedShapes, // PRESERVE all individual shapes and their colors
+            isCompoundPath: false
+        )
+        
+        // Remove original shapes
+        removeSelectedShapes()
+        
+        // Add flattened group
+        layers[layerIndex].shapes.append(flattenedShape)
+        selectedShapeIDs = [flattenedShape.id]
+        
+        print("🎨 Flattened \(selectedShapes.count) objects - preserving all colors, enabling transform tools")
+    }
+    
     /// Ungroup selected objects
     func ungroupSelectedObjects() {
         guard let layerIndex = selectedLayerIndex,
@@ -2316,6 +2361,43 @@ class VectorDocument: ObservableObject, Codable {
         } else {
             print("📦 No groups found in selection")
         }
+    }
+    
+    /// Unflatten selected objects (restore flattened groups to individual shapes)
+    func unflattenSelectedObjects() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count == 1,
+              let selectedShapeID = selectedShapeIDs.first,
+              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }) else { return }
+        
+        let flattenedGroup = layers[layerIndex].shapes[shapeIndex]
+        
+        // Only unflatten actual groups (flattened shapes)
+        guard flattenedGroup.isGroup && !flattenedGroup.groupedShapes.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Restore original individual shapes with all their colors preserved
+        let restoredShapes = flattenedGroup.groupedShapes
+        var newSelectedIDs: Set<UUID> = []
+        
+        // Generate new IDs for the restored shapes to avoid conflicts
+        var shapesToAdd: [VectorShape] = []
+        for originalShape in restoredShapes {
+            var restoredShape = originalShape
+            restoredShape.id = UUID() // New ID to avoid conflicts
+            shapesToAdd.append(restoredShape)
+            newSelectedIDs.insert(restoredShape.id)
+        }
+        
+        // Remove flattened group
+        layers[layerIndex].shapes.remove(at: shapeIndex)
+        
+        // Add restored individual shapes
+        layers[layerIndex].shapes.append(contentsOf: shapesToAdd)
+        selectedShapeIDs = newSelectedIDs
+        
+        print("🎨 Unflattened group - restored \(shapesToAdd.count) individual shapes with original colors")
     }
     
     // MARK: - Compound Path Methods (Adobe Illustrator Standards)
