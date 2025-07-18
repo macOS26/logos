@@ -74,6 +74,10 @@ struct VerticalToolbar: View {
             return "Selection Tool (V) - Select and move objects"
         case .scale:
             return "Scale Tool (S) - Scale objects with corner handles"
+        case .rotate:
+            return "Rotate Tool (R) - Rotate objects around anchor points"
+        case .shear:
+            return "Shear Tool (X) - Shear/skew objects around anchor points"
         case .directSelection:
             return "Direct Selection Tool (A) - Edit individual points and handles"
         case .convertAnchorPoint:

@@ -33,8 +33,10 @@ extension DrawingCanvas {
         bezierControlHandles()
         bezierClosePathHint()
         
-        // Selection handles for selected shapes (EXCEPT during pen tool drawing)
-        if !(document.currentTool == .bezierPen && isBezierDrawing) {
+        // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
+        // PROFESSIONAL UX: Hide selection dots during movement (Adobe Illustrator standard)
+        if !(document.currentTool == .bezierPen && isBezierDrawing) && 
+           !(document.currentTool == .selection && isDrawing) {
             SelectionHandlesView(
                 document: document,
                 geometry: geometry

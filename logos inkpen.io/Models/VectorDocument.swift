@@ -114,6 +114,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
     @Published var currentTool: DrawingTool = .selection
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
+    @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
+    @Published var shearAnchor: ShearAnchor = .center // NEW: Shear anchor point selection
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -2559,6 +2561,8 @@ class VectorDocument: ObservableObject, Codable {
 enum DrawingTool: String, CaseIterable, Codable {
     case selection = "Selection"
     case scale = "Scale"
+    case rotate = "Rotate"
+    case shear = "Shear"
     case directSelection = "Direct Selection"
     case convertAnchorPoint = "Convert Anchor Point"
     case bezierPen = "Bezier Pen"
@@ -2576,6 +2580,8 @@ enum DrawingTool: String, CaseIterable, Codable {
         switch self {
         case .selection: return "arrow.up.left"
         case .scale: return "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
+        case .rotate: return "arrow.clockwise"
+        case .shear: return "skew"
         case .directSelection: return "cursorarrow.and.square.on.square.dashed"
         case .convertAnchorPoint: return "arrow.triangle.turn.up.right.diamond"
         case .bezierPen: return "pencil.tip"
@@ -2595,6 +2601,8 @@ enum DrawingTool: String, CaseIterable, Codable {
         switch self {
         case .selection: return .arrow
         case .scale: return .crosshair
+        case .rotate: return .crosshair
+        case .shear: return .crosshair
         case .directSelection: return .crosshair
         case .convertAnchorPoint: return .pointingHand
         case .bezierPen: return .crosshair
@@ -2611,8 +2619,52 @@ enum DrawingTool: String, CaseIterable, Codable {
     }
 }
 
-// MARK: - Scaling Anchor Modes
+// MARK: - Transformation Anchor Modes
 enum ScalingAnchor: String, CaseIterable, Codable {
+    case center = "Center"
+    case topLeft = "Top Left"
+    case topRight = "Top Right"
+    case bottomLeft = "Bottom Left"
+    case bottomRight = "Bottom Right"
+    
+    var iconName: String {
+        switch self {
+        case .center: return "plus.circle"
+        case .topLeft: return "arrow.up.left.circle"
+        case .topRight: return "arrow.up.right.circle"
+        case .bottomLeft: return "arrow.down.left.circle"
+        case .bottomRight: return "arrow.down.right.circle"
+        }
+    }
+    
+    var displayName: String {
+        return self.rawValue
+    }
+}
+
+enum RotationAnchor: String, CaseIterable, Codable {
+    case center = "Center"
+    case topLeft = "Top Left"
+    case topRight = "Top Right"
+    case bottomLeft = "Bottom Left"
+    case bottomRight = "Bottom Right"
+    
+    var iconName: String {
+        switch self {
+        case .center: return "plus.circle"
+        case .topLeft: return "arrow.up.left.circle"
+        case .topRight: return "arrow.up.right.circle"
+        case .bottomLeft: return "arrow.down.left.circle"
+        case .bottomRight: return "arrow.down.right.circle"
+        }
+    }
+    
+    var displayName: String {
+        return self.rawValue
+    }
+}
+
+enum ShearAnchor: String, CaseIterable, Codable {
     case center = "Center"
     case topLeft = "Top Left"
     case topRight = "Top Right"

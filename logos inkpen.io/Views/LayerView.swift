@@ -339,6 +339,22 @@ struct SelectionHandlesView: View {
                                 zoomLevel: document.zoomLevel,
                                 canvasOffset: document.canvasOffset
                             )
+                        } else if document.currentTool == .rotate {
+                            // Rotate tool: Rotation handles with anchor point
+                            RotateHandles(
+                                document: document,
+                                shape: shape,
+                                zoomLevel: document.zoomLevel,
+                                canvasOffset: document.canvasOffset
+                            )
+                        } else if document.currentTool == .shear {
+                            // Shear tool: Shear handles with anchor point
+                            ShearHandles(
+                                document: document,
+                                shape: shape,
+                                zoomLevel: document.zoomLevel,
+                                canvasOffset: document.canvasOffset
+                            )
                         }
                     }
                 }
@@ -359,6 +375,22 @@ struct SelectionHandlesView: View {
                     } else if document.currentTool == .scale {
                         // Scale tool: Text scaling handles
                         TextScaleHandles(
+                            document: document,
+                            textObject: textObject,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset
+                        )
+                    } else if document.currentTool == .rotate {
+                        // Rotate tool: Text rotation handles
+                        TextRotateHandles(
+                            document: document,
+                            textObject: textObject,
+                            zoomLevel: document.zoomLevel,
+                            canvasOffset: document.canvasOffset
+                        )
+                    } else if document.currentTool == .shear {
+                        // Shear tool: Text shear handles
+                        TextShearHandles(
                             document: document,
                             textObject: textObject,
                             zoomLevel: document.zoomLevel,
@@ -835,6 +867,730 @@ struct ScaleHandles: View {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
         }
+    }
+}
+
+// MARK: - Rotate Tool Handles
+struct RotateHandles: View {
+    @ObservedObject var document: VectorDocument
+    let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    // Professional rotation state management
+    @State private var isRotating = false
+    @State private var rotationStarted = false
+    @State private var initialBounds: CGRect = .zero
+    @State private var initialTransform: CGAffineTransform = .identity
+    @State private var startLocation: CGPoint = .zero
+    @State private var previewTransform: CGAffineTransform = .identity
+    @State private var rotationAnchorPoint: CGPoint = .zero
+    @State private var startAngle: CGFloat = 0.0
+    @State private var isShiftPressed = false  // For 15-degree increment snapping
+    
+    private let handleSize: CGFloat = 8
+    
+    var body: some View {
+        // ROTATE TOOL: Show bounding box with rotation handles
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        
+        ZStack {
+            // Bounding box outline
+            Rectangle()
+                .stroke(Color.orange, lineWidth: 1.0 / zoomLevel) // Orange outline for rotate tool
+                .frame(width: bounds.width, height: bounds.height)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+            
+            // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE
+            if isRotating && !previewTransform.isIdentity {
+                // Show the actual rotated shape path, not just bounds
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                }
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(previewTransform) // Show the actual rotated shape
+                .opacity(0.8)
+                
+                // MARQUEE CENTER POINT: Show on the rotated shape center
+                let rotatedBounds = shape.bounds.applying(previewTransform.concatenating(shape.transform.inverted()))
+                let marqueeCenter = CGPoint(x: rotatedBounds.midX, y: rotatedBounds.midY)
+                let isCenterPinned = document.rotationAnchor == .center
+                Rectangle()
+                    .fill(isCenterPinned ? Color.red : Color.green)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .position(marqueeCenter)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+            }
+            
+            // CENTER POINT: Green if live, red if pinned anchor
+            let isCenterPinned = document.rotationAnchor == .center
+            Rectangle()
+                .fill(isCenterPinned ? Color.red : Color.green)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isRotating {
+                        document.rotationAnchor = .center
+                        print("🎯 ANCHOR CHANGED: Center rotation selected")
+                    }
+                }
+            
+            // 4 Corner handles with color coding
+            ForEach(0..<4) { i in
+                let position = cornerPosition(for: i, in: bounds, center: center)
+                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
+                let handleColor = isPinnedCorner ? Color.red : Color.green
+                
+                Rectangle()
+                    .fill(handleColor)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .position(position)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
+                    .highPriorityGesture(
+                        // Don't allow interaction on pinned corners
+                        isPinnedCorner ? nil : DragGesture()
+                            .onChanged { value in
+                                handleCornerRotation(index: i, dragValue: value, bounds: bounds, center: center)
+                            }
+                            .onEnded { _ in
+                                finishRotation()
+                            }
+                    )
+                    .onTapGesture {
+                        if !isRotating {
+                            document.rotationAnchor = getAnchorForCorner(index: i)
+                            print("🎯 ANCHOR CHANGED: \(getAnchorForCorner(index: i).displayName) rotation selected")
+                        }
+                    }
+            }
+        }
+        .onAppear {
+            initialBounds = shape.bounds
+            initialTransform = shape.transform
+            setupKeyEventMonitoring()
+        }
+        .onDisappear {
+            teardownKeyEventMonitoring()
+        }
+    }
+    
+    // Handle rotation from corner
+    private func handleCornerRotation(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !rotationStarted {
+            startRotation(cornerIndex: index, bounds: bounds, dragValue: dragValue)
+        }
+        
+        let currentLocation = dragValue.location
+        let rotationCenter = rotationAnchorPoint
+        
+        // Calculate angle from anchor point to current position
+        let currentVector = CGPoint(x: currentLocation.x - rotationCenter.x, y: currentLocation.y - rotationCenter.y)
+        let startVector = CGPoint(x: startLocation.x - rotationCenter.x, y: startLocation.y - rotationCenter.y)
+        
+        let currentAngle = atan2(currentVector.y, currentVector.x)
+        let initialAngle = atan2(startVector.y, startVector.x)
+        var rotationAngle = currentAngle - initialAngle
+        
+        // Shift key for 15-degree increments
+        if isShiftPressed {
+            let increment: CGFloat = .pi / 12  // 15 degrees
+            rotationAngle = round(rotationAngle / increment) * increment
+        }
+        
+        print("🔄 ROTATING: angle=\(String(format: "%.1f", rotationAngle * 180 / .pi))°, shift=\(isShiftPressed)")
+        
+        calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
+    }
+    
+    private func startRotation(cornerIndex: Int, bounds: CGRect, dragValue: DragGesture.Value) {
+        rotationStarted = true
+        document.isHandleScalingActive = true
+        startLocation = dragValue.location
+        initialBounds = bounds
+        initialTransform = shape.transform
+        
+        rotationAnchorPoint = getAnchorPoint(for: document.rotationAnchor, in: bounds, cornerIndex: cornerIndex)
+        print("🔄 ROTATION START: Corner \(cornerIndex) → Anchor mode: \(document.rotationAnchor.displayName)")
+    }
+    
+    private func calculatePreviewRotation(angle: CGFloat, anchor: CGPoint) {
+        // Create rotation transform around the anchor point
+        let rotationTransform = CGAffineTransform.identity
+            .translatedBy(x: anchor.x, y: anchor.y)
+            .rotated(by: angle)
+            .translatedBy(x: -anchor.x, y: -anchor.y)
+        
+        previewTransform = initialTransform.concatenating(rotationTransform)
+        isRotating = true
+        
+        print("   📊 Rotation preview updated: angle=\(String(format: "%.1f", angle * 180 / .pi))° - showing ROTATED SHAPE outline")
+    }
+    
+    private func finishRotation() {
+        rotationStarted = false
+        isRotating = false
+        document.isHandleScalingActive = false
+        
+        print("🏁 ROTATION FINISH: Applying final transform to coordinates")
+        
+        // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
+        // This ensures object origin stays with object after rotation (Adobe Illustrator behavior)
+        if let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            
+            print("✅ ROTATION FINISHED: Applied rotation to coordinates and reset transform to identity")
+        }
+        
+        previewTransform = .identity
+    }
+    
+    // Helper functions (similar to ScaleHandles)
+    private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
+        case 1: return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case 2: return CGPoint(x: bounds.maxX, y: bounds.maxY)
+        case 3: return CGPoint(x: bounds.minX, y: bounds.maxY)
+        default: return center
+        }
+    }
+    
+    private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
+        switch document.rotationAnchor {
+        case .center: return false
+        case .topLeft: return cornerIndex == 0
+        case .topRight: return cornerIndex == 1
+        case .bottomRight: return cornerIndex == 2
+        case .bottomLeft: return cornerIndex == 3
+        }
+    }
+    
+    private func getAnchorForCorner(index: Int) -> RotationAnchor {
+        switch index {
+        case 0: return .topLeft
+        case 1: return .topRight
+        case 2: return .bottomRight
+        case 3: return .bottomLeft
+        default: return .center
+        }
+    }
+    
+    private func getAnchorPoint(for anchor: RotationAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
+        switch anchor {
+        case .center: return CGPoint(x: bounds.midX, y: bounds.midY)
+        case .topLeft: return CGPoint(x: bounds.minX, y: bounds.minY)
+        case .topRight: return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case .bottomLeft: return CGPoint(x: bounds.minX, y: bounds.maxY)
+        case .bottomRight: return CGPoint(x: bounds.maxX, y: bounds.maxY)
+        }
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
+    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let currentTransform = transform ?? shape.transform
+        
+        // Don't apply identity transforms
+        if currentTransform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying rotation transform to shape coordinates: \(shape.name)")
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated after rotation - object origin stays with object")
+    }
+    
+    // Shift Key Monitoring
+    @State private var keyEventMonitor: Any?
+    
+    private func setupKeyEventMonitoring() {
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+            }
+            return event
+        }
+    }
+    
+    private func teardownKeyEventMonitoring() {
+        if let monitor = keyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyEventMonitor = nil
+        }
+    }
+}
+
+// MARK: - Shear Tool Handles
+struct ShearHandles: View {
+    @ObservedObject var document: VectorDocument
+    let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    // Professional shear state management
+    @State private var isShearing = false
+    @State private var shearStarted = false
+    @State private var initialBounds: CGRect = .zero
+    @State private var initialTransform: CGAffineTransform = .identity
+    @State private var startLocation: CGPoint = .zero
+    @State private var previewTransform: CGAffineTransform = .identity
+    @State private var shearAnchorPoint: CGPoint = .zero
+    @State private var isShiftPressed = false  // For constrained shearing
+    
+    private let handleSize: CGFloat = 8
+    
+    var body: some View {
+        // SHEAR TOOL: Show bounding box with shear handles
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        
+        ZStack {
+            // Bounding box outline
+            Rectangle()
+                .stroke(Color.purple, lineWidth: 1.0 / zoomLevel) // Purple outline for shear tool
+                .frame(width: bounds.width, height: bounds.height)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+            
+            // MARQUEE PREVIEW: Show ACTUAL SHEARED SHAPE OUTLINE
+            if isShearing && !previewTransform.isIdentity {
+                // Show the actual sheared shape path, not just bounds
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                }
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(previewTransform) // FIXED: Use exact same transform order as actual shapes
+                .opacity(0.8)
+                
+                // MARQUEE CENTER POINT: Show on the sheared shape center - FIXED COORDINATE CALCULATION
+                let originalBounds = shape.bounds
+                let transformedBounds = originalBounds.applying(previewTransform)
+                let marqueeCenter = CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
+                let isCenterPinned = document.shearAnchor == .center
+                Rectangle()
+                    .fill(isCenterPinned ? Color.red : Color.green)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .position(marqueeCenter)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+            }
+            
+            // CENTER POINT: Green if live, red if pinned anchor
+            let isCenterPinned = document.shearAnchor == .center
+            Rectangle()
+                .fill(isCenterPinned ? Color.red : Color.green)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isShearing {
+                        document.shearAnchor = .center
+                        print("🎯 ANCHOR CHANGED: Center shear selected")
+                    }
+                }
+            
+            // 4 Corner handles with color coding
+            ForEach(0..<4) { i in
+                let position = cornerPosition(for: i, in: bounds, center: center)
+                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
+                let handleColor = isPinnedCorner ? Color.red : Color.green
+                
+                Rectangle()
+                    .fill(handleColor)
+                    .stroke(Color.white, lineWidth: 1.0)
+                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                    .position(position)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
+                    .highPriorityGesture(
+                        isPinnedCorner ? nil : DragGesture()
+                            .onChanged { value in
+                                handleCornerShear(index: i, dragValue: value, bounds: bounds, center: center)
+                            }
+                            .onEnded { _ in
+                                finishShear()
+                            }
+                    )
+                    .onTapGesture {
+                        if !isShearing {
+                            document.shearAnchor = getAnchorForCorner(index: i)
+                            print("🎯 ANCHOR CHANGED: \(getAnchorForCorner(index: i).displayName) shear selected")
+                        }
+                    }
+            }
+        }
+        .onAppear {
+            initialBounds = shape.bounds
+            initialTransform = shape.transform
+            setupKeyEventMonitoring()
+        }
+        .onDisappear {
+            teardownKeyEventMonitoring()
+        }
+    }
+    
+    private func handleCornerShear(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !shearStarted {
+            startShear(cornerIndex: index, bounds: bounds, dragValue: dragValue)
+        }
+        
+        // CRITICAL FIX: Convert screen coordinates to canvas coordinates (like DrawingCanvas precision fixes)
+        // The drag coordinates are in screen space but we need shape-local coordinates for accurate shear
+        let screenDelta = CGPoint(
+            x: dragValue.location.x - startLocation.x,
+            y: dragValue.location.y - startLocation.y
+        )
+        
+        // Convert screen delta to canvas delta (accounting for zoom - same precision as DrawingCanvas)
+        let preciseZoom = Double(zoomLevel)
+        let canvasDelta = CGPoint(
+            x: screenDelta.x / preciseZoom,
+            y: screenDelta.y / preciseZoom
+        )
+        
+        // Calculate shear factors based on canvas movement (not screen movement)
+        let shearFactorX = bounds.height > 0 ? canvasDelta.x / bounds.height : 0
+        let shearFactorY = bounds.width > 0 ? canvasDelta.y / bounds.width : 0
+        
+        // Apply shift key constraint for horizontal/vertical only shearing
+        var finalShearX = shearFactorX
+        var finalShearY = shearFactorY
+        
+        if isShiftPressed {
+            // Constrain to dominant direction
+            if abs(shearFactorX) > abs(shearFactorY) {
+                finalShearY = 0
+            } else {
+                finalShearX = 0
+            }
+        }
+        
+        print("🔄 SHEARING: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY)), shift=\(isShiftPressed)")
+        
+        calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
+    }
+    
+    private func startShear(cornerIndex: Int, bounds: CGRect, dragValue: DragGesture.Value) {
+        shearStarted = true
+        document.isHandleScalingActive = true
+        startLocation = dragValue.location
+        initialBounds = bounds
+        initialTransform = shape.transform
+        
+        shearAnchorPoint = getAnchorPoint(for: document.shearAnchor, in: bounds, cornerIndex: cornerIndex)
+        print("🔄 SHEAR START: Corner \(cornerIndex) → Anchor mode: \(document.shearAnchor.displayName)")
+    }
+    
+    private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
+        // Create shear transform around the anchor point
+        let shearTransform = CGAffineTransform(a: 1, b: shearY, c: shearX, d: 1, tx: 0, ty: 0)
+        let anchorTransform = CGAffineTransform.identity
+            .translatedBy(x: anchor.x, y: anchor.y)
+            .concatenating(shearTransform)
+            .translatedBy(x: -anchor.x, y: -anchor.y)
+        
+        previewTransform = initialTransform.concatenating(anchorTransform)
+        isShearing = true
+        
+        print("   📊 Shear preview updated: X=\(String(format: "%.3f", shearX)), Y=\(String(format: "%.3f", shearY)) - showing SHEARED SHAPE outline")
+    }
+    
+    private func finishShear() {
+        shearStarted = false
+        isShearing = false
+        document.isHandleScalingActive = false
+        
+        print("🏁 SHEAR FINISH: Applying final transform to coordinates")
+        
+        // CRITICAL FIX: Apply shear to actual coordinates, not just transform
+        // This ensures object origin stays with object after shearing (Adobe Illustrator behavior)
+        if let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            
+            print("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity")
+        }
+        
+        previewTransform = .identity
+    }
+    
+    // Helper functions (similar to RotateHandles)
+    private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
+        switch index {
+        case 0: return CGPoint(x: bounds.minX, y: bounds.minY)
+        case 1: return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case 2: return CGPoint(x: bounds.maxX, y: bounds.maxY)
+        case 3: return CGPoint(x: bounds.minX, y: bounds.maxY)
+        default: return center
+        }
+    }
+    
+    private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
+        switch document.shearAnchor {
+        case .center: return false
+        case .topLeft: return cornerIndex == 0
+        case .topRight: return cornerIndex == 1
+        case .bottomRight: return cornerIndex == 2
+        case .bottomLeft: return cornerIndex == 3
+        }
+    }
+    
+    private func getAnchorForCorner(index: Int) -> ShearAnchor {
+        switch index {
+        case 0: return .topLeft
+        case 1: return .topRight
+        case 2: return .bottomRight
+        case 3: return .bottomLeft
+        default: return .center
+        }
+    }
+    
+    private func getAnchorPoint(for anchor: ShearAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
+        switch anchor {
+        case .center: return CGPoint(x: bounds.midX, y: bounds.midY)
+        case .topLeft: return CGPoint(x: bounds.minX, y: bounds.minY)
+        case .topRight: return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case .bottomLeft: return CGPoint(x: bounds.minX, y: bounds.maxY)
+        case .bottomRight: return CGPoint(x: bounds.maxX, y: bounds.maxY)
+        }
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
+    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let currentTransform = transform ?? shape.transform
+        
+        // Don't apply identity transforms
+        if currentTransform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying shear transform to shape coordinates: \(shape.name)")
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated after shear - object origin stays with object")
+    }
+    
+    // Shift Key Monitoring
+    @State private var keyEventMonitor: Any?
+    
+    private func setupKeyEventMonitoring() {
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+            }
+            return event
+        }
+    }
+    
+    private func teardownKeyEventMonitoring() {
+        if let monitor = keyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyEventMonitor = nil
+        }
+    }
+}
+
+// MARK: - Text Rotation and Shear Handles
+struct TextRotateHandles: View {
+    @ObservedObject var document: VectorDocument
+    let textObject: VectorText
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    var body: some View {
+        // Simplified text rotation handles - just show outline for now
+        let absoluteBounds = CGRect(
+            x: textObject.position.x + textObject.bounds.minX,
+            y: textObject.position.y + textObject.bounds.minY,
+            width: textObject.bounds.width,
+            height: textObject.bounds.height
+        )
+        let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
+        
+        Rectangle()
+            .stroke(Color.orange, lineWidth: 1.0 / zoomLevel)
+            .frame(width: absoluteBounds.width, height: absoluteBounds.height)
+            .position(center)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(textObject.transform)
+    }
+}
+
+struct TextShearHandles: View {
+    @ObservedObject var document: VectorDocument
+    let textObject: VectorText
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    var body: some View {
+        // Simplified text shear handles - just show outline for now
+        let absoluteBounds = CGRect(
+            x: textObject.position.x + textObject.bounds.minX,
+            y: textObject.position.y + textObject.bounds.minY,
+            width: textObject.bounds.width,
+            height: textObject.bounds.height
+        )
+        let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
+        
+        Rectangle()
+            .stroke(Color.purple, lineWidth: 1.0 / zoomLevel)
+            .frame(width: absoluteBounds.width, height: absoluteBounds.height)
+            .position(center)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(textObject.transform)
     }
 }
 
