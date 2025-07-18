@@ -37,6 +37,8 @@ class DocumentState: ObservableObject {
     @Published var canUngroup = false
     @Published var canMakeCompoundPath = false
     @Published var canReleaseCompoundPath = false
+    @Published var canMakeLoopingPath = false
+    @Published var canReleaseLoopingPath = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -80,6 +82,8 @@ class DocumentState: ObservableObject {
             canUngroup = false
             canMakeCompoundPath = false
             canReleaseCompoundPath = false
+            canMakeLoopingPath = false
+            canReleaseLoopingPath = false
             return
         }
         
@@ -96,6 +100,10 @@ class DocumentState: ObservableObject {
         }
         canMakeCompoundPath = document.selectedShapeIDs.count > 1
         canReleaseCompoundPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
+        }
+        canMakeLoopingPath = document.selectedShapeIDs.count > 1
+        canReleaseLoopingPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
         }
         
@@ -210,6 +218,16 @@ class DocumentState: ObservableObject {
     
     func releaseCompoundPath() {
         document?.releaseCompoundPath()
+        updateAllStates()
+    }
+    
+    func makeLoopingPath() {
+        document?.makeLoopingPath()
+        updateAllStates()
+    }
+    
+    func releaseLoopingPath() {
+        document?.releaseLoopingPath()
         updateAllStates()
     }
 }
@@ -351,6 +369,23 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("8", modifiers: [.command, .option])
                 .disabled(documentState?.canReleaseCompoundPath != true)
                 .help("Break compound path into separate individual paths")
+                
+                Divider()
+                
+                // Looping Path Section (Winding Fill Rule)
+                Button("Make Looping Path") {
+                    documentState?.makeLoopingPath()
+                }
+                .keyboardShortcut("9", modifiers: [.command])
+                .disabled(documentState?.canMakeLoopingPath != true)
+                .help("Combine selected paths into a looping path with winding fill rule")
+                
+                Button("Release Looping Path") {
+                    documentState?.releaseLoopingPath()
+                }
+                .keyboardShortcut("9", modifiers: [.command, .option])
+                .disabled(documentState?.canReleaseLoopingPath != true)
+                .help("Break looping path into separate individual paths")
                 
                 Divider()
                 

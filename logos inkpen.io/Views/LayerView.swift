@@ -783,25 +783,35 @@ struct ScaleHandles: View {
             y: screenDelta.y / preciseZoom
         )
         
-        // Calculate scale factors based on mouse movement relative to object size (like shear tool)
-        // Use the larger dimension to prevent extreme scaling on thin objects
-        let objectSize = max(bounds.width, bounds.height)
-        guard objectSize > 10.0 else { return } // Avoid division by zero for tiny objects
+        // Calculate scale factors based on mouse movement relative to object size
+        guard bounds.width > 10.0 && bounds.height > 10.0 else { return } // Avoid division by zero for tiny objects
         
-        // Scale factor: 1.0 = no change, positive = larger, negative = smaller
-        // Movement of half the object size = 50% scale change (1.5x or 0.5x)
-        let scaleFactor = canvasDelta.x / objectSize  // Use horizontal movement for uniform scaling
+        // Calculate independent X and Y scale factors (more sensitive for better control)
+        let scaleFactorX = (canvasDelta.x / bounds.width) * 2.0  // 2x multiplier for better sensitivity
+        let scaleFactorY = (canvasDelta.y / bounds.height) * 2.0  // 2x multiplier for better sensitivity
+        
         let baseScale: CGFloat = 1.0
-        let newScale = baseScale + scaleFactor
+        let newScaleX = baseScale + scaleFactorX
+        let newScaleY = baseScale + scaleFactorY
         
-        // Clamp to reasonable bounds
-        let clampedScale = min(max(newScale, 0.1), 5.0)
+        // PROFESSIONAL SCALING BEHAVIOR: 
+        // NO SHIFT = Independent X/Y scaling (like Adobe Illustrator)
+        // SHIFT = Uniform scaling (constrained proportions)
+        var scaleX: CGFloat
+        var scaleY: CGFloat
         
-        // For now, use uniform scaling (like when shift is held)
-        let scaleX = clampedScale
-        let scaleY = clampedScale
-        
-        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (uniform)")
+        if isShiftPressed {
+            // SHIFT: Use uniform scaling - use the larger movement for both axes
+            let uniformScale = abs(scaleFactorX) > abs(scaleFactorY) ? newScaleX : newScaleY
+            scaleX = min(max(uniformScale, 0.1), 5.0)
+            scaleY = scaleX
+            print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (UNIFORM - shift pressed)")
+        } else {
+            // NO SHIFT: Independent X/Y scaling
+            scaleX = min(max(newScaleX, 0.1), 5.0)
+            scaleY = min(max(newScaleY, 0.1), 5.0)
+                         print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (INDEPENDENT X/Y)")
+         }
         
         // Apply preview scaling using the same transform calculation as rotate/shear
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)

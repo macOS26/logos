@@ -2356,6 +2356,42 @@ class VectorDocument: ObservableObject, Codable {
         print("🔗 Made compound path from \(selectedShapes.count) objects")
     }
     
+    /// Make looping path from selected objects (uses winding fill rule instead of even-odd)
+    func makeLoopingPath() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count > 1 else { return }
+        
+        saveToUndoStack()
+        
+        // Get selected shapes in stacking order
+        let selectedShapes = getSelectedShapesInStackingOrder()
+        
+        // Combine all paths into a single compound path using winding fill rule
+        let loopingPath = CGMutablePath()
+        for shape in selectedShapes {
+            loopingPath.addPath(shape.path.cgPath)
+        }
+        
+        // Create looping path shape with winding fill rule for overlapping fills
+        let loopingShape = VectorShape(
+            name: "Looping Path",
+            path: VectorPath(cgPath: loopingPath, fillRule: .winding), // CRITICAL: Winding fill rule for overlapping fills
+            strokeStyle: selectedShapes.last?.strokeStyle, // Use topmost shape's stroke
+            fillStyle: selectedShapes.last?.fillStyle,     // Use topmost shape's fill
+            transform: .identity,
+            isCompoundPath: true // Use same flag as compound path for compatibility
+        )
+        
+        // Remove original shapes
+        removeSelectedShapes()
+        
+        // Add looping path
+        layers[layerIndex].shapes.append(loopingShape)
+        selectedShapeIDs = [loopingShape.id]
+        
+        print("🔄 Made looping path from \(selectedShapes.count) objects using winding fill rule")
+    }
+    
     /// Release compound path back to individual paths
     func releaseCompoundPath() {
         guard let layerIndex = selectedLayerIndex,
@@ -2396,6 +2432,48 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs = newSelectedIDs
         
         print("🔗 Released compound path into \(newShapes.count) individual paths")
+    }
+    
+    /// Release looping path back to individual paths
+    func releaseLoopingPath() {
+        guard let layerIndex = selectedLayerIndex,
+              selectedShapeIDs.count == 1,
+              let selectedShapeID = selectedShapeIDs.first,
+              let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == selectedShapeID }),
+              layers[layerIndex].shapes[shapeIndex].isCompoundPath else { return }
+        
+        saveToUndoStack()
+        
+        let loopingShape = layers[layerIndex].shapes[shapeIndex]
+        
+        // Extract individual subpaths from looping path
+        let subpaths = extractSubpaths(from: loopingShape.path.cgPath)
+        
+        // Create individual shapes from each subpath
+        var newShapes: [VectorShape] = []
+        var newSelectedIDs: Set<UUID> = []
+        
+        for (index, subpath) in subpaths.enumerated() {
+            let individualShape = VectorShape(
+                name: "Path \(index + 1)",
+                path: VectorPath(cgPath: subpath),
+                strokeStyle: loopingShape.strokeStyle,
+                fillStyle: loopingShape.fillStyle,
+                transform: loopingShape.transform,
+                isCompoundPath: false
+            )
+            newShapes.append(individualShape)
+            newSelectedIDs.insert(individualShape.id)
+        }
+        
+        // Remove looping path
+        layers[layerIndex].shapes.remove(at: shapeIndex)
+        
+        // Add individual paths
+        layers[layerIndex].shapes.append(contentsOf: newShapes)
+        selectedShapeIDs = newSelectedIDs
+        
+        print("🔄 Released looping path into \(newShapes.count) individual paths")
     }
     
     // Helper function to extract individual subpaths from a compound CGPath
