@@ -874,7 +874,7 @@ struct ScaleHandles: View {
     }
 }
 
-// MARK: - Rotate Tool Handles
+// MARK: - Rotate Tool Handles  
 struct RotateHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
@@ -893,17 +893,23 @@ struct RotateHandles: View {
     @State private var isShiftPressed = false  // For 15-degree increment snapping
     @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds like scale tool
     
+    // POINT-BASED SELECTION SYSTEM: Select actual path points + center for rotation anchor
+    @State private var selectedAnchorPointIndex: Int? = nil // Which point is selected as anchor (nil = center)
+    @State private var pathPoints: [VectorPoint] = []  // Extracted path points for display
+    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
+    @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
+    
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // ROTATE TOOL: Show bounding box with rotation handles
+        // ROTATE TOOL: Show actual path points + center point for precise anchor selection
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // Bounding box outline
+            // Light outline to show shape bounds (less prominent than corner handles)
             Rectangle()
-                .stroke(Color.orange, lineWidth: 1.0 / zoomLevel) // Orange outline for rotate tool
+                .stroke(Color.orange.opacity(0.3), lineWidth: 1.0 / zoomLevel)
                 .frame(width: bounds.width, height: bounds.height)
                 .position(center)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
@@ -961,10 +967,13 @@ struct RotateHandles: View {
                     }
             }
             
-            // CENTER POINT: Green if live, red if pinned anchor
-            let isCenterPinned = document.rotationAnchor == .center
+            // SHOW ALL PATH POINTS + CENTER POINT for anchor selection
+            pathPointsView()
+            
+            // CENTER POINT: Always available as rotation anchor
+            let isCenterSelected = selectedAnchorPointIndex == nil
             Rectangle()
-                .fill(isCenterPinned ? Color.red : Color.green)
+                .fill(isCenterSelected ? Color.red : Color.green)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
@@ -973,57 +982,93 @@ struct RotateHandles: View {
                 .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isRotating {
-                        document.rotationAnchor = .center
-                        print("🎯 ANCHOR CHANGED: Center rotation selected")
+                        selectedAnchorPointIndex = nil // Select center
+                        print("🎯 ANCHOR SELECTED: Center point")
                     }
                 }
-            
-            // 4 Corner handles with color coding
-            ForEach(0..<4) { i in
-                let position = rotationCornerPosition(for: i, in: bounds, center: center)
-                let isPinnedCorner = isRotationPinnedAnchorCorner(cornerIndex: i)
-                let handleColor = isPinnedCorner ? Color.red : Color.green
-                
-                Rectangle()
-                    .fill(handleColor)
-                    .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
-                    .highPriorityGesture(
-                        // Don't allow interaction on pinned corners
-                        isPinnedCorner ? nil : DragGesture()
-                            .onChanged { value in
-                                handleCornerRotation(index: i, dragValue: value, bounds: bounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishRotation()
-                            }
-                    )
-                    .onTapGesture {
-                        if !isRotating {
-                            document.rotationAnchor = getRotationAnchorForCorner(index: i)
-                            print("🎯 ANCHOR CHANGED: \(getRotationAnchorForCorner(index: i).displayName) rotation selected")
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointRotation(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
                         }
-                    }
-            }
+                        .onEnded { _ in
+                            finishRotation()
+                        }
+                )
         }
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
             setupRotationKeyEventMonitoring()
+            extractPathPoints()
         }
         .onDisappear {
             teardownRotationKeyEventMonitoring()
         }
+        .id("rotation-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
     
-    // Handle rotation from corner
-    private func handleCornerRotation(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+    // MARK: - Point-Based Rotation System
+    
+    /// Extract all path points for selection display
+    private func extractPathPoints() {
+        pathPoints.removeAll()
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue // Skip close elements
+            }
+        }
+        
+        // Update center point based on current bounds
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
+        
+        print("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection")
+    }
+    
+    /// Display all path points as selectable anchors
+    @ViewBuilder
+    private func pathPointsView() -> some View {
+        ForEach(pathPoints.indices, id: \.self) { index in
+            let point = pathPoints[index]
+            let isSelected = selectedAnchorPointIndex == index
+            
+            Rectangle()
+                .fill(isSelected ? Color.red : Color.green)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(CGPoint(x: point.x, y: point.y))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isRotating {
+                        selectedAnchorPointIndex = index
+                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointRotation(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                        }
+                        .onEnded { _ in
+                            finishRotation()
+                        }
+                )
+        }
+    }
+    
+    // Handle rotation from selected point
+    private func handlePointRotation(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !rotationStarted {
-            startRotation(cornerIndex: index, bounds: bounds, dragValue: dragValue)
+            startPointRotation(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
         }
         
         // ROTATION FIX: Convert anchor point to screen coordinates like scale tool
@@ -1052,6 +1097,55 @@ struct RotateHandles: View {
         print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
         
         calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
+    }
+    
+    private func startPointRotation(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
+        rotationStarted = true
+        document.isHandleScalingActive = true
+        startLocation = dragValue.location
+        initialBounds = bounds
+        initialTransform = shape.transform
+        document.saveToUndoStack()
+        
+        // POINT-BASED ANCHOR: Use selected point or center
+        if let pointIndex = anchorPointIndex {
+            let point = pathPoints[pointIndex]
+            rotationAnchorPoint = CGPoint(x: point.x, y: point.y)
+            print("🔄 ROTATION START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
+        } else {
+            rotationAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            print("🔄 ROTATION START: Anchored to center point at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
+        }
+        
+        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
+    }
+    
+    private func updatePathPointsAfterRotation() {
+        // FORCE REFRESH: Clear current points and re-extract from transformed object
+        pathPoints.removeAll()
+        
+        // Re-extract all path points from the NOW-TRANSFORMED shape
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue
+            }
+        }
+        
+        // Update center point based on NEW bounds after rotation
+        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
+        
+        // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
+        pointsRefreshTrigger += 1
+        
+        print("🔄 FORCE UPDATED rotation points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
+        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+        print("   🔄 View refresh trigger: \(pointsRefreshTrigger)")
     }
     
     // MARK: - Rotation Anchor Point Calculation (Rotation-specific versions)
@@ -1259,6 +1353,12 @@ struct RotateHandles: View {
             previewTransform = .identity
             
             print("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity")
+            
+            // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
+            // This updates the points to match the rotated object positions
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.updatePathPointsAfterRotation()
+            }
         }
         
         previewTransform = .identity
