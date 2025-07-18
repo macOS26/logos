@@ -473,33 +473,33 @@ struct ScaleHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     
-    // Professional scaling state management - NEW CLEAN IMPLEMENTATION
+    // Professional scaling state management - FIXED IMPLEMENTATION
     @State private var isScaling = false
     @State private var scalingStarted = false
     @State private var initialBounds: CGRect = .zero
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
-    @State private var scalingAnchorPoint: CGPoint = .zero
-    @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds
-    @State private var isShiftPressed = false  // PROPORTIONAL SCALING: Track shift key state
+    @State private var scalingAnchorPoint: CGPoint = .zero  // This is the LOCKED/PIN point (RED)
+    @State private var finalMarqueeBounds: CGRect = .zero
+    @State private var isShiftPressed = false
+    @State private var isCapsLockPressed = false  // NEW: Track caps-lock for locking pin point
     
-    // POINT-BASED SELECTION SYSTEM: Select actual path points + center for scale anchor (same as rotate/shear tools)
-    @State private var selectedAnchorPointIndex: Int? = nil // Which point is selected as anchor (nil = center)
-    @State private var pathPoints: [VectorPoint] = []  // Extracted path points for display
-    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
-    @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
+    // CORRECTED POINT SYSTEM: Lock point vs scale points
+    @State private var lockedPinPointIndex: Int? = nil // Which point is LOCKED (RED) - set by single click
+    @State private var pathPoints: [VectorPoint] = []  // All path points for display
+    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Center point
+    @State private var pointsRefreshTrigger: Int = 0
     
     private let handleSize: CGFloat = 8
-    
+
     var body: some View {
-        // SCALE TOOL: Show actual path points + center point for precise anchor selection (same as rotate/shear tools)
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        // SCALE TOOL: Show all path points + center point with correct colors
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // ACTUAL OBJECT OUTLINE: Show the real shape paths (individual shapes for groups/flattened)
+            // ACTUAL OBJECT OUTLINE: Show the real shape paths
             if shape.isGroup && !shape.groupedShapes.isEmpty {
                 // GROUP/FLATTENED SHAPE: Show outline of each individual shape
                 ForEach(shape.groupedShapes.indices, id: \.self) { index in
@@ -520,7 +520,7 @@ struct ScaleHandles: View {
                             }
                         }
                     }
-                    .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for each individual shape
+                    .stroke(Color.red, lineWidth: 2.0 / zoomLevel)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     .transformEffect(groupedShape.transform)
@@ -543,16 +543,16 @@ struct ScaleHandles: View {
                         }
                     }
                 }
-                .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for scale tool selection
+                .stroke(Color.red, lineWidth: 2.0 / zoomLevel)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             }
             
-            // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate/shear tools)
+            // SHOW ALL PATH POINTS + CENTER POINT with correct colors
             pathPointsView()
             
-            // GROUP BOUNDS FEATURES: For groups/flattened objects, also show bounds points and green marquee
+            // GROUP BOUNDS FEATURES: For groups/flattened objects, also show bounds points
             if shape.isGroup && !shape.groupedShapes.isEmpty {
                 // GREEN BOUNDS MARQUEE: Show the overall bounding box
                 Rectangle()
@@ -567,10 +567,10 @@ struct ScaleHandles: View {
                 ForEach(0..<4) { i in
                     let cornerPos = cornerPosition(for: i, in: bounds, center: center)
                     let cornerIndex = pathPoints.count + i // Offset to avoid conflicts with path points
-                    let isCornerSelected = selectedAnchorPointIndex == cornerIndex
+                    let isLockedPin = lockedPinPointIndex == cornerIndex
                     
                     Rectangle()
-                        .fill(isCornerSelected ? Color.green : Color.orange)
+                        .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                         .position(cornerPos)
@@ -579,14 +579,15 @@ struct ScaleHandles: View {
                         .transformEffect(shape.transform)
                         .onTapGesture {
                             if !isScaling {
-                                selectedAnchorPointIndex = cornerIndex
-                                print("🎯 ANCHOR SELECTED: Bounds corner \\(i) at (\\(String(format: \"%.1f\", cornerPos.x)), \\(String(format: \"%.1f\", cornerPos.y)))")
+                                // SINGLE CLICK: Set this as the locked pin point (RED)
+                                setLockedPinPoint(cornerIndex)
                             }
                         }
                         .highPriorityGesture(
                             DragGesture()
                                 .onChanged { value in
-                                    handlePointScaling(anchorPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
+                                    // DRAG: Scale away from the locked pin point
+                                    handleScalingFromPoint(draggedPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
                                 }
                                 .onEnded { _ in
                                     finishScaling()
@@ -595,10 +596,10 @@ struct ScaleHandles: View {
                 }
             }
             
-            // CENTER POINT: Always available as scale anchor (same as rotate/shear tools)
-            let isCenterSelected = selectedAnchorPointIndex == nil
+            // CENTER POINT: Always available (GREEN if not locked, RED if locked)
+            let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
             Rectangle()
-                .fill(isCenterSelected ? Color.green : Color.red)
+                .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
@@ -607,20 +608,21 @@ struct ScaleHandles: View {
                 .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isScaling {
-                        selectedAnchorPointIndex = nil // Select center
-                        print("🎯 ANCHOR SELECTED: Center point")
+                        // SINGLE CLICK: Set center as the locked pin point (RED)
+                        setLockedPinPoint(nil) // nil = center
                     }
                 }
                 .highPriorityGesture(
                     DragGesture()
                         .onChanged { value in
-                            handlePointScaling(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
+                            // DRAG: Scale away from the locked pin point
+                            handleScalingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
                         }
                         .onEnded { _ in
                             finishScaling()
                         }
                 )
-            
+
             // MARQUEE PREVIEW: Show ACTUAL SCALED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isScaling && !previewTransform.isIdentity {
                 if shape.isGroup && !shape.groupedShapes.isEmpty {
@@ -712,6 +714,12 @@ struct ScaleHandles: View {
             initialTransform = shape.transform
             setupScaleKeyEventMonitoring()
             extractPathPoints()
+            
+            // Set default locked pin point to center if none is set
+            if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
+                setLockedPinPoint(nil) // nil = center point
+                print("🔴 SCALE TOOL: Default locked pin set to center")
+            }
         }
         .onDisappear {
             teardownScaleKeyEventMonitoring()
@@ -881,15 +889,15 @@ struct ScaleHandles: View {
         print("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection")
     }
     
-    /// Display all path points as selectable anchors (same as rotate/shear tools)
+    /// Display all path points with correct colors: GREEN = scalable, RED = locked pin
     @ViewBuilder
     private func pathPointsView() -> some View {
         ForEach(pathPoints.indices, id: \.self) { index in
             let point = pathPoints[index]
-            let isSelected = selectedAnchorPointIndex == index
+            let isLockedPin = lockedPinPointIndex == index
             
             Rectangle()
-                .fill(isSelected ? Color.green : Color.red)
+                .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(CGPoint(x: point.x, y: point.y))
@@ -898,14 +906,15 @@ struct ScaleHandles: View {
                 .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isScaling {
-                        selectedAnchorPointIndex = index
-                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                        // SINGLE CLICK: Set this as the locked pin point (RED)
+                        setLockedPinPoint(index)
                     }
                 }
                 .highPriorityGesture(
                     DragGesture()
                         .onChanged { value in
-                            handlePointScaling(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            // DRAG: Scale away from the locked pin point
+                            handleScalingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
                         .onEnded { _ in
                             finishScaling()
@@ -914,60 +923,95 @@ struct ScaleHandles: View {
         }
     }
     
-    // Handle scaling from selected point (same structure as rotate/shear tools)
-    private func handlePointScaling(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+    // MARK: - Lock Pin Point Management
+    
+    /// Set which point is the locked pin point (RED) - stays stationary during scaling
+    private func setLockedPinPoint(_ pointIndex: Int?) {
+        lockedPinPointIndex = pointIndex
+        
+        // Update the scaling anchor point to the locked pin location
+        if let index = pointIndex {
+            if index < pathPoints.count {
+                // Path point
+                let point = pathPoints[index]
+                scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
+                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+            } else {
+                // Bounds corner point
+                let cornerIndex = index - pathPoints.count
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                let center = CGPoint(x: bounds.midX, y: bounds.midY)
+                scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
+                print("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+            }
+        } else {
+            // Center point
+            scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            print("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+        }
+    }
+    
+    // CORRECTED: Handle scaling away from the locked pin point
+    private func handleScalingFromPoint(draggedPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !scalingStarted {
-            startPointScaling(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
+            startScalingFromPoint(draggedPointIndex: draggedPointIndex, bounds: bounds, dragValue: dragValue)
         }
         
-        // PROFESSIONAL SCALING: Use the same approach as shear tool - calculate based on bounds and mouse delta
-        // This gives predictable, controllable scaling without extreme sensitivity issues
-        let screenDelta = CGPoint(
-            x: dragValue.location.x - startLocation.x,
-            y: dragValue.location.y - startLocation.y
-        )
+        // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
+        if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
+            // Caps-lock is active: locked pin point cannot be changed, only scale away from it
+            print("🔒 CAPS-LOCK ACTIVE: Pin point locked, scaling away from locked point")
+        }
         
+        // PROFESSIONAL SCALING: Scale away from the LOCKED PIN POINT (not the dragged point)
+        // The locked pin point (RED) stays stationary, we scale away from it toward the drag location
+        
+        let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
-        let canvasDelta = CGPoint(
-            x: screenDelta.x / preciseZoom,
-            y: screenDelta.y / preciseZoom
+        
+        // Convert locked pin point (anchor) to screen coordinates
+        let anchorScreenX = scalingAnchorPoint.x * preciseZoom + canvasOffset.x
+        let anchorScreenY = scalingAnchorPoint.y * preciseZoom + canvasOffset.y
+        
+        // Calculate distance from locked pin to start drag location
+        let startDistance = CGPoint(
+            x: startLocation.x - anchorScreenX,
+            y: startLocation.y - anchorScreenY
         )
         
-        // Calculate scale factors based on mouse movement relative to object size
-        guard bounds.width > 10.0 && bounds.height > 10.0 else { return } // Avoid division by zero for tiny objects
+        // Calculate distance from locked pin to current drag location
+        let currentDistance = CGPoint(
+            x: currentLocation.x - anchorScreenX,
+            y: currentLocation.y - anchorScreenY
+        )
         
-        // Calculate independent X and Y scale factors (more sensitive for better control)
-        let scaleFactorX = (canvasDelta.x / bounds.width) * 2.0  // 2x multiplier for better sensitivity
-        let scaleFactorY = (canvasDelta.y / bounds.height) * 2.0  // 2x multiplier for better sensitivity
+        // Calculate scale factors: how much bigger/smaller relative to the locked pin point
+        let minDistance: CGFloat = 10.0 // Minimum distance to prevent extreme scaling
+        let maxScale: CGFloat = 10.0
+        let minScale: CGFloat = 0.1
         
-        let baseScale: CGFloat = 1.0
-        let newScaleX = baseScale + scaleFactorX
-        let newScaleY = baseScale + scaleFactorY
+        var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+        var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         
-        // PROFESSIONAL SCALING BEHAVIOR: 
-        // NO SHIFT = Independent X/Y scaling (like Adobe Illustrator)
-        // SHIFT = Uniform scaling (constrained proportions)
-        var scaleX: CGFloat
-        var scaleY: CGFloat
+        // Clamp scale factors
+        scaleX = min(max(scaleX, minScale), maxScale)
+        scaleY = min(max(scaleY, minScale), maxScale)
         
+        // PROPORTIONAL SCALING: When shift is held, use uniform scaling
         if isShiftPressed {
-            // SHIFT: Use uniform scaling - use the larger movement for both axes
-            let uniformScale = abs(scaleFactorX) > abs(scaleFactorY) ? newScaleX : newScaleY
-            scaleX = min(max(uniformScale, 0.1), 5.0)
-            scaleY = scaleX
-            print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (UNIFORM - shift pressed)")
+            let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
+            scaleX = uniformScale
+            scaleY = uniformScale
+            print("🔢 SCALING AWAY FROM PIN: Uniform scale \(String(format: "%.3f", uniformScale)) (shift pressed)")
         } else {
-            // NO SHIFT: Independent X/Y scaling
-            scaleX = min(max(newScaleX, 0.1), 5.0)
-            scaleY = min(max(newScaleY, 0.1), 5.0)
-                         print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (INDEPENDENT X/Y)")
-         }
+            print("🔢 SCALING AWAY FROM PIN: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))")
+        }
         
-        // Apply preview scaling using the same transform calculation as rotate/shear
+        // Apply preview scaling with the LOCKED PIN POINT as anchor (it stays stationary)
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
     }
     
-    private func startPointScaling(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
+    private func startScalingFromPoint(draggedPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
         scalingStarted = true
         isScaling = true
         document.isHandleScalingActive = true
@@ -976,30 +1020,21 @@ struct ScaleHandles: View {
         startLocation = dragValue.startLocation
         document.saveToUndoStack()
         
-        // AUTO-SELECT: Make the dragged point green (selected) automatically (same as rotate/shear tools)
-        selectedAnchorPointIndex = anchorPointIndex
-        
-        // POINT-BASED ANCHOR: Use selected point or center
-        if let pointIndex = anchorPointIndex {
-            if pointIndex < pathPoints.count {
-                // PATH POINT: Use actual path point
-                let point = pathPoints[pointIndex]
-                scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
-            } else {
-                // BOUNDS CORNER: Calculate corner position  
-                let cornerIndex = pointIndex - pathPoints.count
-                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-                let center = CGPoint(x: bounds.midX, y: bounds.midY)
-                scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
-            }
-            print("🔄 SCALING START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
-        } else {
-            scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔄 SCALING START: Anchored to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+        // CORRECTED LOGIC: Don't change the locked pin point when starting to drag
+        // The locked pin point should already be set by a previous single click
+        // If no locked pin point is set, default to center
+        if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
+            // Default to center if no pin point was explicitly set
+            setLockedPinPoint(nil) // nil = center
+            print("🔄 SCALING START: No pin point set, defaulting to center")
         }
         
+        print("🔄 SCALING START: Dragging from point \(draggedPointIndex?.description ?? "center"), scaling away from LOCKED PIN at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+        print("   🔴 Locked pin point index: \(lockedPinPointIndex?.description ?? "center")")
+        print("   🟢 Dragging from point index: \(draggedPointIndex?.description ?? "center")")
+        
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+        print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
     }
     
     private func updatePathPointsAfterScaling() {
@@ -1055,6 +1090,12 @@ struct ScaleHandles: View {
         scaleKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
             DispatchQueue.main.async {
                 self.isShiftPressed = event.modifierFlags.contains(.shift)
+                self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
+                
+                // Debug logging for caps-lock state
+                if self.isCapsLockPressed {
+                    print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
+                }
             }
             return event
         }
