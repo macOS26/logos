@@ -1503,22 +1503,41 @@ struct ShearHandles: View {
     @State private var shearAnchorPoint: CGPoint = .zero
     @State private var isShiftPressed = false  // For constrained shearing
     
+    // POINT-BASED SELECTION SYSTEM: Select actual path points + center for shear anchor (same as rotate tool)
+    @State private var selectedAnchorPointIndex: Int? = nil // Which point is selected as anchor (nil = center)
+    @State private var pathPoints: [VectorPoint] = []  // Extracted path points for display
+    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
+    @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
+    
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // SHEAR TOOL: Show bounding box with shear handles
+        // SHEAR TOOL: Show actual path points + center point for precise anchor selection (same as rotate tool)
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // Bounding box outline
-            Rectangle()
-                .stroke(Color.purple, lineWidth: 1.0 / zoomLevel) // Purple outline for shear tool
-                .frame(width: bounds.width, height: bounds.height)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+            // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box (same as rotate tool)
+            Path { path in
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        path.move(to: to.cgPoint)
+                    case .line(let to):
+                        path.addLine(to: to.cgPoint)
+                    case .curve(let to, let control1, let control2):
+                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                    case .quadCurve(let to, let control):
+                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            .stroke(Color.purple, lineWidth: 2.0 / zoomLevel) // Purple outline for shear tool selection
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
             
             // MARQUEE PREVIEW: Show ACTUAL SHEARED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isShearing && !previewTransform.isIdentity {
@@ -1564,10 +1583,13 @@ struct ShearHandles: View {
                     .position(x: anchorScreenX, y: anchorScreenY)
             }
             
-            // CENTER POINT: Green if live, red if pinned anchor
-            let isCenterPinned = document.shearAnchor == .center
+            // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate tool)
+            pathPointsView()
+            
+            // CENTER POINT: Always available as shear anchor (same as rotate tool)
+            let isCenterSelected = selectedAnchorPointIndex == nil
             Rectangle()
-                .fill(isCenterPinned ? Color.red : Color.green)
+                .fill(isCenterSelected ? Color.green : Color.purple)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
@@ -1576,50 +1598,30 @@ struct ShearHandles: View {
                 .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isShearing {
-                        document.shearAnchor = .center
-                        print("🎯 ANCHOR CHANGED: Center shear selected")
+                        selectedAnchorPointIndex = nil // Select center
+                        print("🎯 ANCHOR SELECTED: Center point")
                     }
                 }
-            
-            // 4 Corner handles with color coding
-            ForEach(0..<4) { i in
-                let position = cornerPosition(for: i, in: bounds, center: center)
-                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
-                let handleColor = isPinnedCorner ? Color.red : Color.green
-                
-                Rectangle()
-                    .fill(handleColor)
-                    .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
-                    .highPriorityGesture(
-                        isPinnedCorner ? nil : DragGesture()
-                            .onChanged { value in
-                                handleCornerShear(index: i, dragValue: value, bounds: bounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishShear()
-                            }
-                    )
-                    .onTapGesture {
-                        if !isShearing {
-                            document.shearAnchor = getAnchorForCorner(index: i)
-                            print("🎯 ANCHOR CHANGED: \(getAnchorForCorner(index: i).displayName) shear selected")
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointShear(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
                         }
-                    }
-            }
+                        .onEnded { _ in
+                            finishShear()
+                        }
+                )
         }
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
-            setupKeyEventMonitoring()
+            setupShearKeyEventMonitoring()
+            extractPathPoints()
         }
         .onDisappear {
-            teardownKeyEventMonitoring()
+            teardownShearKeyEventMonitoring()
         }
+        .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
     
     private func handleCornerShear(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
@@ -1712,9 +1714,177 @@ struct ShearHandles: View {
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             print("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity")
+            
+            // CRITICAL FIX: Force refresh of point selection system (same as rotation tool)
+            // This updates the points to match the sheared object positions
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.updatePathPointsAfterShear()
+            }
         }
         
         previewTransform = .identity
+    }
+    
+    // MARK: - Point-Based Shear System (same as rotate tool)
+    
+    /// Extract all path points for selection display
+    private func extractPathPoints() {
+        pathPoints.removeAll()
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue // Skip close elements
+            }
+        }
+        
+        // Update center point based on current bounds
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
+        
+        print("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection")
+    }
+    
+    /// Display all path points as selectable anchors (same as rotate tool)
+    @ViewBuilder
+    private func pathPointsView() -> some View {
+        ForEach(pathPoints.indices, id: \.self) { index in
+            let point = pathPoints[index]
+            let isSelected = selectedAnchorPointIndex == index
+            
+            Rectangle()
+                .fill(isSelected ? Color.green : Color.purple)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(CGPoint(x: point.x, y: point.y))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isShearing {
+                        selectedAnchorPointIndex = index
+                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointShear(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                        }
+                        .onEnded { _ in
+                            finishShear()
+                        }
+                )
+        }
+    }
+    
+    // Handle shear from selected point (same structure as rotate tool)
+    private func handlePointShear(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !shearStarted {
+            startPointShear(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
+        }
+        
+        // Use the same shear calculation logic but with point-based anchor
+        let screenDelta = CGPoint(
+            x: dragValue.location.x - startLocation.x,
+            y: dragValue.location.y - startLocation.y
+        )
+        
+        let preciseZoom = Double(zoomLevel)
+        let canvasDelta = CGPoint(
+            x: screenDelta.x / preciseZoom,
+            y: screenDelta.y / preciseZoom
+        )
+        
+        let shearFactorX = bounds.height > 0 ? canvasDelta.x / bounds.height : 0
+        let shearFactorY = bounds.width > 0 ? canvasDelta.y / bounds.width : 0
+        
+        var finalShearX = shearFactorX
+        var finalShearY = shearFactorY
+        
+        if isShiftPressed {
+            if abs(shearFactorX) > abs(shearFactorY) {
+                finalShearY = 0
+            } else {
+                finalShearX = 0
+            }
+        }
+        
+        print("🔄 SHEARING: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY))\(isShiftPressed ? ", shift=true" : ", shift=false")")
+        
+        calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
+    }
+    
+    private func startPointShear(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
+        shearStarted = true
+        document.isHandleScalingActive = true
+        startLocation = dragValue.location
+        initialBounds = bounds
+        initialTransform = shape.transform
+        document.saveToUndoStack()
+        
+        // AUTO-SELECT: Make the dragged point green (selected) automatically (same as rotate tool)
+        selectedAnchorPointIndex = anchorPointIndex
+        
+        // POINT-BASED ANCHOR: Use selected point or center
+        if let pointIndex = anchorPointIndex {
+            let point = pathPoints[pointIndex]
+            shearAnchorPoint = CGPoint(x: point.x, y: point.y)
+            print("🔄 SHEAR START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        } else {
+            shearAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            print("🔄 SHEAR START: Anchored to center point at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        }
+        
+        // CRITICAL FIX: Use ORIGINAL bounds (no transform applied) to prevent anchor drift
+        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+    }
+    
+    private func updatePathPointsAfterShear() {
+        // FORCE REFRESH: Clear current points and re-extract from transformed object
+        pathPoints.removeAll()
+        
+        // Re-extract all path points from the NOW-TRANSFORMED shape
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue
+            }
+        }
+        
+        // Update center point based on NEW bounds after shear
+        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
+        
+        // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
+        pointsRefreshTrigger += 1
+        
+        print("🔄 FORCE UPDATED shear points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
+        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+    }
+    
+    // MARK: - Key Event Monitoring (same as rotate tool)
+    
+    private func setupShearKeyEventMonitoring() {
+        NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
+            if event.keyCode == 56 { // Shift key
+                self.isShiftPressed = (event.type == .keyDown)
+            }
+            return event
+        }
+    }
+    
+    private func teardownShearKeyEventMonitoring() {
+        // Key monitoring is automatically cleaned up when view disappears
     }
     
     // Helper functions (similar to RotateHandles)
