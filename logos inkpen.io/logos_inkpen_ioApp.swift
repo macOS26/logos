@@ -41,6 +41,7 @@ class DocumentState: ObservableObject {
     @Published var canReleaseCompoundPath = false
     @Published var canMakeLoopingPath = false
     @Published var canReleaseLoopingPath = false
+    @Published var canUnwrapWarpObject = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -88,6 +89,7 @@ class DocumentState: ObservableObject {
             canReleaseCompoundPath = false
             canMakeLoopingPath = false
             canReleaseLoopingPath = false
+            canUnwrapWarpObject = false
             return
         }
         
@@ -113,6 +115,9 @@ class DocumentState: ObservableObject {
         canMakeLoopingPath = document.selectedShapeIDs.count > 1
         canReleaseLoopingPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
+        }
+        canUnwrapWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
         }
         
         // Removed excessive logging per user request
@@ -246,6 +251,11 @@ class DocumentState: ObservableObject {
     
     func releaseLoopingPath() {
         document?.releaseLoopingPath()
+        updateAllStates()
+    }
+    
+    func unwrapWarpObject() {
+        document?.unwrapWarpObject()
         updateAllStates()
     }
 }
@@ -421,6 +431,16 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("9", modifiers: [.command, .option])
                 .disabled(documentState?.canReleaseLoopingPath != true)
                 .help("Break looping path into separate individual paths")
+                
+                Divider()
+                
+                // Warp Object Section
+                Button("Unwrap Warp Object") {
+                    documentState?.unwrapWarpObject()
+                }
+                .keyboardShortcut("w", modifiers: [.command, .option, .shift])
+                .disabled(documentState?.canUnwrapWarpObject != true)
+                .help("Unwrap the selected warp object back to its original shape")
                 
                 Divider()
                 

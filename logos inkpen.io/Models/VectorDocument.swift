@@ -2600,6 +2600,36 @@ class VectorDocument: ObservableObject, Codable {
         return subpaths
     }
     
+    // MARK: - Warp Object Methods
+    
+    /// Unwrap selected warp object back to its original shape
+    func unwrapWarpObject() {
+        guard !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        for layerIndex in layers.indices {
+            for shapeIndex in layers[layerIndex].shapes.indices {
+                let shape = layers[layerIndex].shapes[shapeIndex]
+                
+                if selectedShapeIDs.contains(shape.id) && shape.isWarpObject {
+                    if let unwrappedShape = shape.unwrapWarpObject() {
+                        // Replace warp object with unwrapped shape
+                        layers[layerIndex].shapes[shapeIndex] = unwrappedShape
+                        
+                        // Update selection to the unwrapped shape
+                        selectedShapeIDs.remove(shape.id)
+                        selectedShapeIDs.insert(unwrappedShape.id)
+                        
+                        print("✅ UNWRAPPED WARP OBJECT: \(shape.name) → \(unwrappedShape.name)")
+                    }
+                }
+            }
+        }
+        
+        objectWillChange.send()
+    }
+    
     // MARK: - Lock/Unlock Methods (Adobe Illustrator Standards)
     
     /// Lock selected objects

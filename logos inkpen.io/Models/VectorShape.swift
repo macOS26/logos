@@ -149,7 +149,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
     // MARK: - Compound Path Properties (Adobe Illustrator Standards)
     var isCompoundPath: Bool
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false) {
+    // MARK: - Warp Object Properties (Professional Envelope Warping)
+    var isWarpObject: Bool
+    var originalPath: VectorPath?  // Original unwrapped path
+    var warpEnvelope: [CGPoint]    // 4 corner points defining the warp envelope
+    
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = []) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -166,6 +171,9 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.groupedShapes = groupedShapes
         self.groupTransform = groupTransform
         self.isCompoundPath = isCompoundPath
+        self.isWarpObject = isWarpObject
+        self.originalPath = originalPath
+        self.warpEnvelope = warpEnvelope
     }
     
     var transformedPath: CGPath {
@@ -249,6 +257,38 @@ struct VectorShape: Codable, Hashable, Identifiable {
             groupBounds = groupBounds.union(shape.bounds)
         }
         return groupBounds
+    }
+    
+    // MARK: - Warp Object Methods
+    
+    /// Create a warp object from this shape with the given warped path and envelope
+    func createWarpObject(warpedPath: VectorPath, warpEnvelope: [CGPoint]) -> VectorShape {
+        var warpObject = self
+        warpObject.id = UUID() // New ID for the warp object
+        warpObject.name = "Warped " + self.name
+        warpObject.isWarpObject = true
+        warpObject.originalPath = self.path  // Store original path
+        warpObject.path = warpedPath         // Use warped path as current path
+        warpObject.warpEnvelope = warpEnvelope // Store envelope corners
+        warpObject.transform = .identity     // Reset transform since coordinates are already warped
+        warpObject.updateBounds()
+        return warpObject
+    }
+    
+    /// Unwrap this warp object back to its original shape
+    func unwrapWarpObject() -> VectorShape? {
+        guard isWarpObject, let originalPath = originalPath else { return nil }
+        
+        var unwrappedShape = self
+        unwrappedShape.id = UUID() // New ID for the unwrapped shape
+        unwrappedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "")
+        unwrappedShape.isWarpObject = false
+        unwrappedShape.originalPath = nil
+        unwrappedShape.path = originalPath   // Restore original path
+        unwrappedShape.warpEnvelope = []     // Clear envelope
+        unwrappedShape.transform = .identity
+        unwrappedShape.updateBounds()
+        return unwrappedShape
     }
     
     // Factory methods for common shapes

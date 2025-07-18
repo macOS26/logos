@@ -154,6 +154,19 @@ extension DrawingCanvas {
                         // Reset group transform to identity (no double transformation)
                         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
                         
+                        // WARP OBJECT FIX: Update warp envelope coordinates when moving warp objects
+                        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+                            var updatedWarpEnvelope: [CGPoint] = []
+                            for envelopePoint in shape.warpEnvelope {
+                                updatedWarpEnvelope.append(CGPoint(
+                                    x: envelopePoint.x + offset.x,
+                                    y: envelopePoint.y + offset.y
+                                ))
+                            }
+                            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+                            print("📐 WARP ENVELOPE MOVED: Updated envelope coordinates by offset (\(String(format: "%.1f", offset.x)), \(String(format: "%.1f", offset.y)))")
+                        }
+                        
                         // Update group bounds
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     }
@@ -213,6 +226,19 @@ extension DrawingCanvas {
                         
                         // Reset transform to identity (no double transformation)
                         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+                        
+                        // WARP OBJECT FIX: Update warp envelope coordinates when moving warp objects
+                        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+                            var updatedWarpEnvelope: [CGPoint] = []
+                            for envelopePoint in shape.warpEnvelope {
+                                updatedWarpEnvelope.append(CGPoint(
+                                    x: envelopePoint.x + offset.x,
+                                    y: envelopePoint.y + offset.y
+                                ))
+                            }
+                            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+                            print("📐 WARP ENVELOPE MOVED: Updated envelope coordinates by offset (\(String(format: "%.1f", offset.x)), \(String(format: "%.1f", offset.y)))")
+                        }
                         
                         // Update bounds to match new coordinates
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
