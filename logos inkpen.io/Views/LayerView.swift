@@ -483,27 +483,49 @@ struct ScaleHandles: View {
     @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds
     @State private var isShiftPressed = false  // PROPORTIONAL SCALING: Track shift key state
     
+    // POINT-BASED SELECTION SYSTEM: Select actual path points + center for scale anchor (same as rotate/shear tools)
+    @State private var selectedAnchorPointIndex: Int? = nil // Which point is selected as anchor (nil = center)
+    @State private var pathPoints: [VectorPoint] = []  // Extracted path points for display
+    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
+    @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
+    
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // SCALE TOOL: Show bounding box outline with 4 corner scaling handles only
+        // SCALE TOOL: Show actual path points + center point for precise anchor selection (same as rotate/shear tools)
         let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // Bounding box outline
-            Rectangle()
-                .stroke(Color.red, lineWidth: 1.0 / zoomLevel) // Red outline for scale tool
-                .frame(width: bounds.width, height: bounds.height)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+            // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box (same as rotate/shear tools)
+            Path { path in
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        path.move(to: to.cgPoint)
+                    case .line(let to):
+                        path.addLine(to: to.cgPoint)
+                    case .curve(let to, let control1, let control2):
+                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                    case .quadCurve(let to, let control):
+                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for scale tool selection
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
             
-            // CENTER POINT: Square same size as corners - Green if live, red if pinned anchor
-            let isCenterPinned = document.scalingAnchor == .center
+            // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate/shear tools)
+            pathPointsView()
+            
+            // CENTER POINT: Always available as scale anchor (same as rotate/shear tools)
+            let isCenterSelected = selectedAnchorPointIndex == nil
             Rectangle()
-                .fill(isCenterPinned ? Color.red : Color.green)
+                .fill(isCenterSelected ? Color.green : Color.red)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
@@ -511,87 +533,67 @@ struct ScaleHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
                 .onTapGesture {
-                    // Allow clicking center to set center anchor
                     if !isScaling {
-                        document.scalingAnchor = .center
-                        print("🎯 ANCHOR CHANGED: Center scaling selected")
+                        selectedAnchorPointIndex = nil // Select center
+                        print("🎯 ANCHOR SELECTED: Center point")
                     }
                 }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointScaling(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
+                        }
+                        .onEnded { _ in
+                            finishScaling()
+                        }
+                )
             
-            // MARQUEE PREVIEW: Show EXACT final destination (PINNED CORRECTLY!)
-            if isScaling && !finalMarqueeBounds.isEmpty {
-                let marqueeCenter = CGPoint(x: finalMarqueeBounds.midX, y: finalMarqueeBounds.midY)
-                
-                // Marquee outline
-                Rectangle()
-                    .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                    .frame(width: finalMarqueeBounds.width, height: finalMarqueeBounds.height)
-                    .position(marqueeCenter)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    // NO transformEffect! Show exact final position
-                    .opacity(0.8) // Semi-transparent for clarity
-                
-                // MARQUEE CENTER POINT: Square same size as corners - Green if live, red if pinned
-                let isCenterPinned = document.scalingAnchor == .center
-                Rectangle()
-                    .fill(isCenterPinned ? Color.red : Color.green)
-                    .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(marqueeCenter)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .onTapGesture {
-                        // Allow clicking center to set center anchor
-                        if !isScaling {
-                            document.scalingAnchor = .center
-                            print("🎯 ANCHOR CHANGED: Center scaling selected")
+            // MARQUEE PREVIEW: Show ACTUAL SCALED SHAPE OUTLINE (EXACTLY like the final object will be)
+            if isScaling && !previewTransform.isIdentity {
+                // CRITICAL FIX: Apply the SAME transformation that will be applied to the actual object
+                // Transform the path coordinates directly (same as finishScaling does)
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.move(to: transformedPoint)
+                        case .line(let to):
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.addLine(to: transformedPoint)
+                        case .curve(let to, let control1, let control2):
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                            let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                            path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
+                        case .quadCurve(let to, let control):
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                            path.addQuadCurve(to: transformedTo, control: transformedControl)
+                        case .close:
+                            path.closeSubpath()
                         }
                     }
-            }
-            
-            // 4 Corner scaling handles - GREEN for live, RED for pinned anchor
-            ForEach(0..<4) { i in
-                let position = cornerPosition(for: i, in: bounds, center: center)
-                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
-                let handleColor = isPinnedCorner ? Color.red : Color.green
+                }
+                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                // NO .transformEffect! Coordinates already transformed above (same as actual object)
+                .opacity(0.8)
                 
-                Rectangle()
-                    .fill(handleColor)
-                    .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
-                    .onTapGesture {
-                        // Allow clicking corner to set anchor point
-                        if !isScaling {
-                            let newAnchor = getAnchorForCorner(index: i)
-                            document.scalingAnchor = newAnchor
-                            print("🎯 ANCHOR CHANGED: \(newAnchor.displayName) selected via corner \(i)")
-                        }
-                    }
-                    .highPriorityGesture(
-                        // Don't allow scaling from pinned corners
-                        isPinnedCorner ? nil : DragGesture()
-                            .onChanged { value in
-                                handleCornerScaling(index: i, dragValue: value, bounds: bounds, center: center)
-                            }
-                            .onEnded { _ in
-                                finishScaling()
-                            }
-                    )
+                // Marquee shows scaling preview without additional handles (handled by point system below)
             }
         }
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
-            setupKeyEventMonitoring()
+            setupScaleKeyEventMonitoring()
+            extractPathPoints()
         }
         .onDisappear {
-            teardownKeyEventMonitoring()
+            teardownScaleKeyEventMonitoring()
         }
+        .id("scale-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
     
     private func handleCornerScaling(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
@@ -696,7 +698,178 @@ struct ScaleHandles: View {
             finalMarqueeBounds = .zero // Hide marquee
             
             print("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity")
+            
+            // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
+            // This updates the points to match the scaled object positions
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.updatePathPointsAfterScaling()
+            }
         }
+    }
+    
+    // MARK: - Point-Based Scale System (same as rotate/shear tools)
+    
+    /// Extract all path points for selection display
+    private func extractPathPoints() {
+        pathPoints.removeAll()
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue // Skip close elements
+            }
+        }
+        
+        // Update center point based on current bounds
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
+        
+        print("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection")
+    }
+    
+    /// Display all path points as selectable anchors (same as rotate/shear tools)
+    @ViewBuilder
+    private func pathPointsView() -> some View {
+        ForEach(pathPoints.indices, id: \.self) { index in
+            let point = pathPoints[index]
+            let isSelected = selectedAnchorPointIndex == index
+            
+            Rectangle()
+                .fill(isSelected ? Color.green : Color.red)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(CGPoint(x: point.x, y: point.y))
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isScaling {
+                        selectedAnchorPointIndex = index
+                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            handlePointScaling(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                        }
+                        .onEnded { _ in
+                            finishScaling()
+                        }
+                )
+        }
+    }
+    
+    // Handle scaling from selected point (same structure as rotate/shear tools)
+    private func handlePointScaling(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+        if !scalingStarted {
+            startPointScaling(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
+        }
+        
+        // PROFESSIONAL SCALING: Calculate scale from anchor point distance change
+        // Use the same direct approach as rotate/shear tools for consistency
+        let currentLocation = dragValue.location
+        
+        // Calculate current distance from anchor to cursor (screen coordinates)
+        let anchorScreenX = scalingAnchorPoint.x * zoomLevel + canvasOffset.x
+        let anchorScreenY = scalingAnchorPoint.y * zoomLevel + canvasOffset.y
+        
+        let startDistanceFromAnchor = sqrt(
+            pow(startLocation.x - anchorScreenX, 2) + 
+            pow(startLocation.y - anchorScreenY, 2)
+        )
+        
+        let currentDistanceFromAnchor = sqrt(
+            pow(currentLocation.x - anchorScreenX, 2) + 
+            pow(currentLocation.y - anchorScreenY, 2)
+        )
+        
+        // Calculate uniform scale factor from distance change
+        guard startDistanceFromAnchor > 2.0 else { return } // Avoid division by zero with minimal threshold
+        
+        let uniformScale = currentDistanceFromAnchor / startDistanceFromAnchor
+        let clampedScale = min(max(uniformScale, 0.1), 10.0)
+        
+        // For now, use uniform scaling (like when shift is held)
+        let scaleX = clampedScale
+        let scaleY = clampedScale
+        
+        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY)) (uniform)")
+        
+        // Apply preview scaling using the same transform calculation as rotate/shear
+        calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
+    }
+    
+    private func startPointScaling(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
+        scalingStarted = true
+        isScaling = true
+        document.isHandleScalingActive = true
+        initialBounds = bounds
+        initialTransform = shape.transform
+        startLocation = dragValue.startLocation
+        document.saveToUndoStack()
+        
+        // AUTO-SELECT: Make the dragged point green (selected) automatically (same as rotate/shear tools)
+        selectedAnchorPointIndex = anchorPointIndex
+        
+        // POINT-BASED ANCHOR: Use selected point or center
+        if let pointIndex = anchorPointIndex {
+            let point = pathPoints[pointIndex]
+            scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
+            print("🔄 SCALING START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+        } else {
+            scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            print("🔄 SCALING START: Anchored to center point at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
+        }
+        
+        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+    }
+    
+    private func updatePathPointsAfterScaling() {
+        // FORCE REFRESH: Clear current points and re-extract from transformed object
+        pathPoints.removeAll()
+        
+        // Re-extract all path points from the NOW-TRANSFORMED shape
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to), .line(let to):
+                pathPoints.append(to)
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                pathPoints.append(to)
+            case .close:
+                continue
+            }
+        }
+        
+        // Update center point based on NEW bounds after scaling
+        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
+        
+        // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
+        pointsRefreshTrigger += 1
+        
+        print("🔄 FORCE UPDATED scale points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
+        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+    }
+    
+    // MARK: - Key Event Monitoring (same as rotate/shear tools)
+    
+    private func setupScaleKeyEventMonitoring() {
+        NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
+            if event.keyCode == 56 { // Shift key
+                self.isShiftPressed = (event.type == .keyDown)
+            }
+            return event
+        }
+    }
+    
+    private func teardownScaleKeyEventMonitoring() {
+        // Key monitoring is automatically cleaned up when view disappears
     }
     
     // MARK: - Scaling Anchor Point Calculation
@@ -2218,3 +2391,4 @@ extension CGLineJoin {
         }
     }
 }
+
