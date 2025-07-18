@@ -770,29 +770,32 @@ struct ScaleHandles: View {
             startPointScaling(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
         }
         
-        // PROFESSIONAL SCALING: Calculate scale from anchor point distance change
-        // Use the same direct approach as rotate/shear tools for consistency
-        let currentLocation = dragValue.location
-        
-        // Calculate current distance from anchor to cursor (screen coordinates)
-        let anchorScreenX = scalingAnchorPoint.x * zoomLevel + canvasOffset.x
-        let anchorScreenY = scalingAnchorPoint.y * zoomLevel + canvasOffset.y
-        
-        let startDistanceFromAnchor = sqrt(
-            pow(startLocation.x - anchorScreenX, 2) + 
-            pow(startLocation.y - anchorScreenY, 2)
+        // PROFESSIONAL SCALING: Use the same approach as shear tool - calculate based on bounds and mouse delta
+        // This gives predictable, controllable scaling without extreme sensitivity issues
+        let screenDelta = CGPoint(
+            x: dragValue.location.x - startLocation.x,
+            y: dragValue.location.y - startLocation.y
         )
         
-        let currentDistanceFromAnchor = sqrt(
-            pow(currentLocation.x - anchorScreenX, 2) + 
-            pow(currentLocation.y - anchorScreenY, 2)
+        let preciseZoom = Double(zoomLevel)
+        let canvasDelta = CGPoint(
+            x: screenDelta.x / preciseZoom,
+            y: screenDelta.y / preciseZoom
         )
         
-        // Calculate uniform scale factor from distance change
-        guard startDistanceFromAnchor > 2.0 else { return } // Avoid division by zero with minimal threshold
+        // Calculate scale factors based on mouse movement relative to object size (like shear tool)
+        // Use the larger dimension to prevent extreme scaling on thin objects
+        let objectSize = max(bounds.width, bounds.height)
+        guard objectSize > 10.0 else { return } // Avoid division by zero for tiny objects
         
-        let uniformScale = currentDistanceFromAnchor / startDistanceFromAnchor
-        let clampedScale = min(max(uniformScale, 0.1), 10.0)
+        // Scale factor: 1.0 = no change, positive = larger, negative = smaller
+        // Movement of half the object size = 50% scale change (1.5x or 0.5x)
+        let scaleFactor = canvasDelta.x / objectSize  // Use horizontal movement for uniform scaling
+        let baseScale: CGFloat = 1.0
+        let newScale = baseScale + scaleFactor
+        
+        // Clamp to reasonable bounds
+        let clampedScale = min(max(newScale, 0.1), 5.0)
         
         // For now, use uniform scaling (like when shift is held)
         let scaleX = clampedScale
