@@ -13,7 +13,6 @@ import SwiftUI
 
 // MARK: - Professional Vector Path Structure
 
-/// Professional vector path implementing Adobe Illustrator, FreeHand, and CorelDRAW standards
 /// Uses advanced bezier mathematics and professional anchor point types
 struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     var id: UUID
@@ -27,7 +26,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
         var tension: Double = 0.33                          // Default tension for auto-generated handles
         var handleVisibility: HandleVisibility = .selected  // When to show handles
         var snapToGrid: Bool = false                        // Professional grid snapping
-        var smartGuides: Bool = true                        // Adobe Illustrator-style smart guides
+        var smartGuides: Bool = true                        // smart guides
         var precisionMode: Bool = false                     // High precision calculation mode
         
         enum HandleVisibility: String, Codable, CaseIterable {
@@ -144,7 +143,7 @@ struct ProfessionalVectorPath: Codable, Hashable, Identifiable {
     
     // MARK: - Professional Handle Operations
     
-    /// Generate smooth handles for all points using Adobe Illustrator algorithm
+    /// Generate smooth handles for all points using algorithm
     mutating func generateSmoothHandles() {
         for i in 0..<points.count {
             let previousPoint = (i > 0) ? points[i - 1].point : (isClosed ? points.last?.point : nil)

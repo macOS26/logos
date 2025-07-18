@@ -72,7 +72,7 @@ struct DocumentSettings: Codable, Hashable {
     }
 }
 
-// MARK: - Zoom Request System (Professional Adobe Illustrator Standards)
+// MARK: - Zoom Request System
 enum ZoomMode: Equatable {
     case zoomIn
     case zoomOut
@@ -132,13 +132,13 @@ class VectorDocument: ObservableObject, Codable {
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
     
-    // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
+    // DEFAULT COLORS FOR NEW SHAPES
     @Published var defaultFillColor: VectorColor = .white // Professional default: white fill
     @Published var defaultStrokeColor: VectorColor = .black // Professional default: black stroke
     @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     
-    // ACTIVE COLOR STATE (Adobe Illustrator Standard)
+    // ACTIVE COLOR STATE
     @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
     
     private let maxUndoStackSize = 50
@@ -333,7 +333,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Document Properties for Professional Export
     
-    /// Professional document unit system (Adobe Illustrator standard)
+    /// Professional document unit system
     var documentUnits: VectorUnit {
         get {
             switch settings.unit {
@@ -347,7 +347,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    /// Calculate document bounds encompassing all content (Adobe Illustrator method)
+    /// Calculate document bounds encompassing all content
     func getDocumentBounds() -> CGRect {
         var documentBounds = CGRect.zero
         var hasContent = false
@@ -382,7 +382,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // If no content, use document settings as bounds (Adobe Illustrator behavior)
+        // If no content, use document settings as bounds
         if !hasContent {
             documentBounds = CGRect(origin: .zero, size: settings.sizeInPoints)
         }
@@ -482,7 +482,7 @@ class VectorDocument: ObservableObject, Codable {
                 layers[layerIndex].shapes[shapeIndex].transform = newTransform
                 
                 // CRITICAL FIX: Apply transform to actual coordinates after scaling
-                // This ensures object origin stays with object (Adobe Illustrator behavior)
+                // This ensures object origin stays with object
                 applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
                 
                 // Force UI update
@@ -493,7 +493,7 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
-    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    /// This ensures object origin moves with the object
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         let shape = layers[layerIndex].shapes[shapeIndex]
         let transform = shape.transform
@@ -581,7 +581,7 @@ class VectorDocument: ObservableObject, Codable {
         redoStack = []
         fontManager = FontManager() // PROFESSIONAL FONT MANAGEMENT
         
-        // DEFAULT COLORS FOR NEW SHAPES (Adobe Illustrator Standards)
+        // DEFAULT COLORS FOR NEW SHAPES
         defaultFillColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultFillColor) ?? .white // Professional default
         defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black // Professional default
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
@@ -801,7 +801,7 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     /// Gets all currently selected shapes in correct STACKING ORDER (bottom→top)
-    /// This is critical for Adobe Illustrator pathfinder operations
+    /// This is critical for pathfinder operations
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
         var stackingOrderShapes: [VectorShape] = []
         
@@ -830,7 +830,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedTextIDs.removeAll() // Clear text selection (mutually exclusive)
     }
     
-    /// PROFESSIONAL SELECT ALL (Adobe Illustrator Standard)
+    /// PROFESSIONAL SELECT ALL
     func selectAll() {
         guard let layerIndex = selectedLayerIndex else { return }
         
@@ -873,10 +873,10 @@ class VectorDocument: ObservableObject, Codable {
         
         for shape in shapesToDuplicate {
             var newShape = shape
-            newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate (Adobe Illustrator standard)
+            newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate
             
             // PROFESSIONAL COORDINATE SYSTEM: Apply offset to actual coordinates instead of using transform
-            // This ensures object origin follows object position (Adobe Illustrator behavior)
+            // This ensures object origin follows object position
             let offsetTransform = CGAffineTransform(translationX: 10, y: 10)
             newShape = applyTransformToShapeCoordinates(shape: newShape, transform: offsetTransform)
             newShape.updateBounds()
@@ -1026,7 +1026,7 @@ class VectorDocument: ObservableObject, Codable {
         snapToGrid = nextState.snapToGrid
     }
     
-    // MARK: - Professional Text Management (Adobe Illustrator / FreeHand Standards)
+    // MARK: - Professional Text Management
     func addText(_ text: VectorText) {
         saveToUndoStack()
         textObjects.append(text)
@@ -1074,7 +1074,7 @@ class VectorDocument: ObservableObject, Codable {
         
         for textID in selectedTextIDs {
             if let originalText = textObjects.first(where: { $0.id == textID }) {
-                // Create duplicate with slight offset (Adobe Illustrator behavior)
+                // Create duplicate with slight offset
                 var duplicateText = originalText
                 duplicateText.id = UUID() // New unique ID
                 duplicateText.position = CGPoint(
@@ -1105,7 +1105,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Critical Adobe Illustrator Feature)
+    // PROFESSIONAL TEXT TO OUTLINES CONVERSION
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
         saveToUndoStack()
@@ -1191,7 +1191,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    // CRITICAL PROFESSIONAL FEATURE: Text to Outlines Conversion (Adobe Illustrator / FreeHand)
+    // CRITICAL PROFESSIONAL FEATURE: Text to Outlines Conversion
     func convertTextToOutlines(_ textID: UUID) {
         saveToUndoStack()
         
@@ -1315,13 +1315,7 @@ class VectorDocument: ObservableObject, Codable {
             
             // Select the created outline shape
             selectedShapeIDs = [outlineShape.id]
-            
-            print("✅ Successfully converted text '\(textObject.content)' to single vector outline shape")
-            print("🎯 Adobe Illustrator standard text-to-outlines conversion complete!")
-        } else {
-            print("❌ Failed to create outline paths for text '\(textObject.content)'")
         }
-        
         // Force UI update
         objectWillChange.send()
     }
@@ -1416,8 +1410,7 @@ class VectorDocument: ObservableObject, Codable {
         return VectorPath(elements: elements, isClosed: elements.contains { if case .close = $0 { return true }; return false })
     }
     
-    // MARK: - PROFESSIONAL STROKE OUTLINING (Adobe Illustrator Standard)
-    
+    // MARK: - PROFESSIONAL STROKE OUTLINING
     /// Converts selected strokes to outlined filled paths ("Outline Stroke" feature)
     /// This is critical for professional vector graphics workflows
     func outlineSelectedStrokes() {
@@ -1439,7 +1432,6 @@ class VectorDocument: ObservableObject, Codable {
                 path: shape.path.cgPath,
                 strokeStyle: strokeStyle
             ) {
-                // ADOBE ILLUSTRATOR BEHAVIOR: Create stroke outline as separate shape
                 // 1. Create new shape with outlined stroke path as fill
                 var strokeShape = VectorShape(
                     name: "\(shape.name) Stroke",
@@ -1473,7 +1465,7 @@ class VectorDocument: ObservableObject, Codable {
                         layers[layerIndex].shapes[shapeIndex] = fillShape
                         originalShapeIDs.insert(fillShape.id)
                         
-                        // Add stroke shape ABOVE the fill shape (Adobe Illustrator behavior)
+                        // Add stroke shape ABOVE the fill shape
                         layers[layerIndex].shapes.insert(strokeShape, at: shapeIndex + 1)
                         newShapeIDs.insert(strokeShape.id)
                     }
@@ -1516,7 +1508,7 @@ class VectorDocument: ObservableObject, Codable {
         }.count
     }
     
-    // MARK: - Professional Zoom Management (Adobe Illustrator Standards)
+    // MARK: - Professional Zoom Management
     
     /// Request a coordinated zoom operation that maintains proper focal point
     func requestZoom(to targetZoom: CGFloat, mode: ZoomMode) {
@@ -1728,14 +1720,13 @@ class VectorDocument: ObservableObject, Codable {
         return basicColors + hsbColors
     }
     
-    // MARK: - PROFESSIONAL PATHFINDER OPERATIONS (Adobe Illustrator Standards)
+    // MARK: - PROFESSIONAL PATHFINDER OPERATIONS
     
     /// Performs pathfinder operations following exact Adobe Illustrator behavior
     /// Returns true if the operation was successful, false otherwise
     func performPathfinderOperation(_ operation: PathfinderOperation) -> Bool {
-        print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
         
-        // Get selected shapes in correct STACKING ORDER (Adobe Illustrator standard)
+        // Get selected shapes in correct STACKING ORDER
         let selectedShapes = getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
             print("❌ No shapes selected for pathfinder operation")
@@ -1763,7 +1754,7 @@ class VectorDocument: ObservableObject, Codable {
         var resultShapes: [VectorShape] = []
         
         switch operation {
-        // SHAPE MODES (Adobe Illustrator)
+        // SHAPE MODES
         case .union:
             // UNION: Combines exactly two shapes, result takes color of TOPMOST object
             if let unionPath = ProfessionalPathOperations.union(paths) {
@@ -1802,7 +1793,7 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
             
-            // Result takes style of BACK object (Adobe Illustrator standard)
+            // Result takes style of BACK object
             let resultShape = VectorShape(
                 name: "Minus Front Result",
                 path: VectorPath(cgPath: resultPath),
@@ -1858,12 +1849,12 @@ class VectorDocument: ObservableObject, Codable {
             }
             print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
-        // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
+        // PATHFINDER EFFECTS - These retain original colors
         case .split:
             // SPLIT: CoreGraphics-based alternative to Divide with curve preservation and perfect color fidelity
             let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
-            // Adobe Illustrator Split: Each resulting piece maintains the color of its original shape (like stained glass)
+            // Split: Each resulting piece maintains the color of its original shape (like stained glass)
             var shapeCounters: [Int: Int] = [:]
             
             for (splitPath, originalShapeIndex) in splitResults {
@@ -1891,7 +1882,7 @@ class VectorDocument: ObservableObject, Codable {
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
             
-            // Adobe Illustrator Cut: Each resulting piece maintains the color of its original shape (with curves preserved)
+            // Cut: Each resulting piece maintains the color of its original shape (with curves preserved)
             var shapeCounters: [Int: Int] = [:]
             
             for (cutPath, originalShapeIndex) in cutResults {
@@ -1906,7 +1897,7 @@ class VectorDocument: ObservableObject, Codable {
                 let cutShape = VectorShape(
                     name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
                     path: VectorPath(cgPath: cutPath),
-                    strokeStyle: nil, // CUT removes strokes (Adobe Illustrator standard)
+                    strokeStyle: nil, // CUT removes strokes
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
@@ -1917,7 +1908,7 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes")
             
         case .merge:
-            // MERGE: Adobe Illustrator Merge - cut all shapes first (maintain appearance), then merge same colors
+            // MERGE: Merge - cut all shapes first (maintain appearance), then merge same colors
             let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
             
             guard colors.count == selectedShapes.count else {
@@ -1927,7 +1918,7 @@ class VectorDocument: ObservableObject, Codable {
             
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
             
-            // Adobe Illustrator Merge: Cut-first approach maintains appearance, then same colors get unified, removes strokes
+            // Merge: Cut-first approach maintains appearance, then same colors get unified, removes strokes
             var shapeCounters: [Int: Int] = [:]
             
             for (mergedPath, originalShapeIndex) in mergeResults {
@@ -1942,7 +1933,7 @@ class VectorDocument: ObservableObject, Codable {
                 let mergedShape = VectorShape(
                     name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
                     path: VectorPath(cgPath: mergedPath),
-                    strokeStyle: nil, // MERGE removes strokes (Adobe Illustrator standard)
+                    strokeStyle: nil, // MERGE removes strokes
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
@@ -1955,7 +1946,7 @@ class VectorDocument: ObservableObject, Codable {
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
             
-            // Adobe Illustrator Crop: Each resulting piece maintains the color of its original shape
+            // Crop: Each resulting piece maintains the color of its original shape
             var shapeCounters: [Int: Int] = [:]
             
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
@@ -1983,7 +1974,7 @@ class VectorDocument: ObservableObject, Codable {
                     let croppedShape = VectorShape(
                         name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
                         path: VectorPath(cgPath: croppedPath),
-                        strokeStyle: nil, // CROP removes strokes (Adobe Illustrator standard)
+                        strokeStyle: nil, // CROP removes strokes
                         fillStyle: originalShape.fillStyle,
                         transform: .identity,
                         opacity: originalShape.opacity
@@ -2065,7 +2056,6 @@ class VectorDocument: ObservableObject, Codable {
             selectedShapeIDs.insert(resultShape.id)
         }
         
-        print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
         return true
     }
     
@@ -2160,7 +2150,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    // MARK: - Object Arrangement Methods (Adobe Illustrator Standards)
+    // MARK: - Object Arrangement Methods
     
     /// Bring selected shapes to front
     func bringSelectedToFront() {
@@ -2242,7 +2232,7 @@ class VectorDocument: ObservableObject, Codable {
         print("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects")
     }
     
-    // MARK: - Object Grouping Methods (Adobe Illustrator Standards)
+    // MARK: - Object Grouping Methods
     
     /// Group selected objects
     func groupSelectedObjects() {
@@ -2400,7 +2390,7 @@ class VectorDocument: ObservableObject, Codable {
         print("🎨 Unflattened group - restored \(shapesToAdd.count) individual shapes with original colors")
     }
     
-    // MARK: - Compound Path Methods (Adobe Illustrator Standards)
+    // MARK: - Compound Path Methods
     
     /// Make compound path from selected objects  
     func makeCompoundPath() {
@@ -2630,7 +2620,7 @@ class VectorDocument: ObservableObject, Codable {
         objectWillChange.send()
     }
     
-    // MARK: - Lock/Unlock Methods (Adobe Illustrator Standards)
+    // MARK: - Lock/Unlock Methods
     
     /// Lock selected objects
     func lockSelectedObjects() {
@@ -2688,7 +2678,7 @@ class VectorDocument: ObservableObject, Codable {
         print("🔓 Unlocked \(unlockedCount) objects")
     }
     
-    // MARK: - Hide/Show Methods (Adobe Illustrator Standards)
+    // MARK: - Hide/Show Methods
     
     /// Hide selected objects
     func hideSelectedObjects() {

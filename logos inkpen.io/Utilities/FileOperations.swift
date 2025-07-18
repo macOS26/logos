@@ -12,7 +12,6 @@ import PDFKit
 
 // MARK: - PROFESSIONAL VECTOR GRAPHICS IMPORT SYSTEM
 // Supports: SVG, PDF, Adobe Illustrator (.AI), and prepares for DWG/DXF
-// Follows Adobe Illustrator, CorelDRAW, and Macromedia FreeHand standards
 
 /// Professional file format support matching industry standards
 enum VectorFileFormat: String, CaseIterable {
@@ -81,7 +80,7 @@ struct VectorImportMetadata {
     let documentVersion: String?
 }
 
-/// Professional vector graphics units (Adobe Illustrator standard)
+/// Professional vector graphics units
 enum VectorUnit: String, CaseIterable {
     case points = "pt"        // 1/72 inch (PostScript standard)
     case inches = "in"        // Imperial
@@ -141,7 +140,6 @@ enum VectorImportError: Error, LocalizedError {
 }
 
 /// PROFESSIONAL VECTOR GRAPHICS IMPORT MANAGER
-/// Matches Adobe Illustrator, CorelDRAW, and Macromedia FreeHand standards
 class VectorImportManager {
     
     static let shared = VectorImportManager()
@@ -391,7 +389,6 @@ class VectorImportManager {
     }
     
     // MARK: - Adobe Illustrator Import (Professional Standard)
-    
     private func importAdobeIllustrator(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
@@ -399,7 +396,6 @@ class VectorImportManager {
         print("📊 Importing Adobe Illustrator file...")
         print("💡 Adobe Illustrator files contain embedded PDF data")
         
-        // Adobe Illustrator files contain embedded PDF that we can extract
         do {
             let aiContent = try parseAdobeIllustratorFile(url)
             

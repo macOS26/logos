@@ -60,7 +60,7 @@ struct StrokeStyle: Codable, Hashable {
     var lineCap: CGLineCap
     var lineJoin: CGLineJoin
     var miterLimit: Double
-    var opacity: Double // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
+    var opacity: Double // PROFESSIONAL STROKE TRANSPARENCY
     var blendMode: BlendMode // PROFESSIONAL STROKE BLEND MODES
     
     init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
@@ -141,12 +141,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var blendMode: BlendMode
     var bounds: CGRect
     
-    // MARK: - Group Properties (Adobe Illustrator Standards)
+    // MARK: - Group Properties
     var isGroup: Bool
     var groupedShapes: [VectorShape]
     var groupTransform: CGAffineTransform
     
-    // MARK: - Compound Path Properties (Adobe Illustrator Standards)
+    // MARK: - Compound Path Properties
     var isCompoundPath: Bool
     
     // MARK: - Warp Object Properties (Professional Envelope Warping)
@@ -203,7 +203,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         }
     }
     
-    // MARK: - Group Methods (Adobe Illustrator Standards)
+    // MARK: - Group Methods
     
     /// Create a group from multiple shapes
     static func group(from shapes: [VectorShape], name: String = "Group") -> VectorShape {
@@ -302,7 +302,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
             .close
         ], isClosed: true)
         
-        // PROFESSIONAL DEFAULTS (Adobe Illustrator Standards) - ALWAYS VISIBLE
+        // PROFESSIONAL DEFAULTS - ALWAYS VISIBLE
         return VectorShape(
             name: "Rectangle", 
             path: path, 
@@ -330,7 +330,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
             .close
         ], isClosed: true)
         
-        // PROFESSIONAL DEFAULTS (Adobe Illustrator Standards) - ALWAYS VISIBLE
+        // PROFESSIONAL DEFAULTS - ALWAYS VISIBLE
         return VectorShape(
             name: "Circle", 
             path: path, 

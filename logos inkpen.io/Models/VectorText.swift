@@ -10,7 +10,7 @@ import SwiftUI
 import CoreText
 import CoreGraphics
 
-// MARK: - Professional Text Alignment (Adobe Illustrator / FreeHand Standards)
+// MARK: - Professional Text Alignment
 enum TextAlignment: String, CaseIterable, Codable {
     case left = "Left"
     case center = "Center"
@@ -112,7 +112,7 @@ struct TypographyProperties: Codable, Hashable {
     var fillColor: VectorColor
     var fillOpacity: Double
     
-    // PROFESSIONAL DEFAULTS INITIALIZER (Adobe Illustrator Standards)
+    // PROFESSIONAL DEFAULTS INITIALIZER
     init(
         fontFamily: String = "Helvetica",
         fontWeight: FontWeight = .regular,
@@ -183,7 +183,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     var isEditing: Bool // For inline text editing
     var layerIndex: Int? // Which layer this text belongs to
     
-    // PROFESSIONAL TEXT TOOL PROPERTIES (Adobe Illustrator/FreeHand Standards)
+    // PROFESSIONAL TEXT TOOL PROPERTIES
     var isPointText: Bool // Point text (expands as you type) vs Area text (fixed area)
     var cursorPosition: Int // Current cursor position for inline editing
     var areaSize: CGSize? // Area size for area text (nil for point text)
@@ -285,7 +285,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
     }
     
-    // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
+    // PROFESSIONAL TEXT TO OUTLINES CONVERSION
     func convertToOutlines() -> VectorShape? {
         let attributedString = NSAttributedString(string: content, attributes: [
             .font: typography.nsFont,

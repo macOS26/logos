@@ -374,7 +374,6 @@ public class CoreGraphicsPathOperations {
         }
         
         print("🔨 PROFESSIONAL CUT (CoreGraphics): Processing \(paths.count) paths with curve preservation")
-        print("   Adobe Illustrator Cut: Removing HIDDEN parts, keeping visible appearance")
         
         var resultPaths: [(CGPath, Int)] = []
         
@@ -456,7 +455,6 @@ public class CoreGraphicsPathOperations {
     // MARK: - Merge Operations (CoreGraphics Alternative for Color-Based Merging)
     
     /// Merge operation: Applies Cut to all shapes first, then merges same colors
-    /// Adobe Illustrator Merge: 1) Cut all shapes (maintain appearance), 2) Union same colors
     /// - Parameters:
     ///   - paths: Array of paths to merge
     ///   - colors: Array of fill colors (same order as paths)
@@ -468,7 +466,6 @@ public class CoreGraphicsPathOperations {
         }
         
         print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with two-step process")
-        print("   Adobe Illustrator Merge: 1) Cut all shapes (maintain appearance), 2) Merge same colors")
         
         // STEP 1: Apply Cut logic to ALL shapes to remove hidden overlaps and maintain visual appearance
         print("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...")
@@ -558,9 +555,8 @@ public class CoreGraphicsPathOperations {
         }
         
         print("🔨 PROFESSIONAL CROP (CoreGraphics): Processing \(paths.count) paths with curve preservation")
-        print("   Adobe Illustrator Crop: Top shape becomes invisible, others cropped to boundary, then cut")
         
-        let cropShape = paths.last!  // Top shape is the crop shape (Adobe Illustrator standard)
+        let cropShape = paths.last!  // Top shape is the crop shape
         let shapesToCrop = Array(paths.dropLast())
         let cropShapeIndex = paths.count - 1
         

@@ -120,7 +120,7 @@ private func analyzeCoincidentPoints()
 - Reduces time spent on path cleanup and debugging
 
 ### 3. Professional Standards
-- Matches behavior of Adobe Illustrator and other professional tools
+- Matches behavior of professional tools
 - Maintains vector precision and accuracy
 - Supports complex path editing workflows
 
