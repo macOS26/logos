@@ -2140,75 +2140,38 @@ struct ShearHandles: View {
         .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
     
-    private func handleCornerShear(index: Int, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
-        if !shearStarted {
-            startShear(cornerIndex: index, bounds: bounds, dragValue: dragValue)
-        }
-        
-        // CRITICAL FIX: Convert screen coordinates to canvas coordinates (like DrawingCanvas precision fixes)
-        // The drag coordinates are in screen space but we need shape-local coordinates for accurate shear
-        let screenDelta = CGPoint(
-            x: dragValue.location.x - startLocation.x,
-            y: dragValue.location.y - startLocation.y
-        )
-        
-        // Convert screen delta to canvas delta (accounting for zoom - same precision as DrawingCanvas)
-        let preciseZoom = Double(zoomLevel)
-        let canvasDelta = CGPoint(
-            x: screenDelta.x / preciseZoom,
-            y: screenDelta.y / preciseZoom
-        )
-        
-        // Calculate shear factors based on canvas movement (not screen movement)
-        let shearFactorX = bounds.height > 0 ? canvasDelta.x / bounds.height : 0
-        let shearFactorY = bounds.width > 0 ? canvasDelta.y / bounds.width : 0
-        
-        // Apply shift key constraint for horizontal/vertical only shearing
-        var finalShearX = shearFactorX
-        var finalShearY = shearFactorY
-        
-        if isShiftPressed {
-            // Constrain to dominant direction
-            if abs(shearFactorX) > abs(shearFactorY) {
-                finalShearY = 0
-            } else {
-                finalShearX = 0
-            }
-        }
-        
-        print("🔄 SHEARING: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY)), shift=\(isShiftPressed)")
-        
-        calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
-    }
+
     
-    private func startShear(cornerIndex: Int, bounds: CGRect, dragValue: DragGesture.Value) {
-        shearStarted = true
-        document.isHandleScalingActive = true
-        startLocation = dragValue.location
-        initialBounds = bounds
-        initialTransform = shape.transform
-        document.saveToUndoStack()
-        
-        // CRITICAL FIX: Use ORIGINAL bounds (no transform applied) for anchor calculation
-        // This prevents anchor drift after multiple transformations
-        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        shearAnchorPoint = getAnchorPoint(for: document.shearAnchor, in: originalBounds, cornerIndex: cornerIndex)
-        print("🔄 SHEAR START: Corner \(cornerIndex) → Anchor mode: \(document.shearAnchor.displayName) at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
-        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
-    }
-    
+    // FIXED: Calculate shear transform with TRUE pin point (different from scale tool approach)
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
-        // Create shear transform around the anchor point
-        let shearTransform = CGAffineTransform(a: 1, b: shearY, c: shearX, d: 1, tx: 0, ty: 0)
-        let anchorTransform = CGAffineTransform.identity
-            .translatedBy(x: anchor.x, y: anchor.y)
-            .concatenating(shearTransform)
-            .translatedBy(x: -anchor.x, y: -anchor.y)
+        // SHEAR-SPECIFIC PIN POINT CALCULATION:
+        // Unlike scaling, shear transforms move ALL points including the intended anchor
+        // We need to calculate the shear, then compensate to keep the pin point stationary
         
-        previewTransform = initialTransform.concatenating(anchorTransform)
+        // Step 1: Create the base shear transformation
+        let baseShearTransform = CGAffineTransform(a: 1, b: shearY, c: shearX, d: 1, tx: 0, ty: 0)
+        
+        // Step 2: Calculate where the anchor point would move to with this shear
+        let sheared_anchor = anchor.applying(baseShearTransform)
+        
+        // Step 3: Calculate the translation needed to move it back to original position
+        let compensationTranslation = CGAffineTransform(translationX: anchor.x - sheared_anchor.x, y: anchor.y - sheared_anchor.y)
+        
+        // Step 4: Combine shear + compensation translation to pin the anchor point
+        let pinPointShearTransform = baseShearTransform.concatenating(compensationTranslation)
+        
+        // Step 5: Apply to initial transform to prevent drift
+        previewTransform = initialTransform.concatenating(pinPointShearTransform)
+        
+        // Ensure isShearing is true for preview visibility
         isShearing = true
         
-        print("   📊 Shear preview updated: X=\(String(format: "%.3f", shearX)), Y=\(String(format: "%.3f", shearY)) - showing SHEARED SHAPE outline")
+        print("   📊 PIN-POINT SHEAR preview updated:")
+        print("      Shear factors: X=\(String(format: "%.3f", shearX)), Y=\(String(format: "%.3f", shearY))")
+        print("      📍 Original anchor: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
+        print("      📐 Would move to: (\(String(format: "%.1f", sheared_anchor.x)), \(String(format: "%.1f", sheared_anchor.y)))")
+        print("      🔧 Compensation: (\(String(format: "%.1f", anchor.x - sheared_anchor.x)), \(String(format: "%.1f", anchor.y - sheared_anchor.y)))")
+        print("      🔒 RESULT: Pin point stays at (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
     }
     
     private func finishShear() {
@@ -2356,23 +2319,39 @@ struct ShearHandles: View {
             print("🔒 CAPS-LOCK ACTIVE: Pin point locked, shearing away from locked point")
         }
         
-        // PROFESSIONAL SHEARING: Shear away from the LOCKED PIN POINT (not the dragged point)
-        // The locked pin point (RED) stays stationary, we shear away from it toward the drag location
+        // PROFESSIONAL SHEARING: Shear relative to the LOCKED PIN POINT (similar to scale tool)
+        // The locked pin point (RED) stays stationary, we calculate shear based on movement relative to it
         
-        let screenDelta = CGPoint(
-            x: dragValue.location.x - startLocation.x,
-            y: dragValue.location.y - startLocation.y
-        )
-        
+        let currentLocation = dragValue.location
         let preciseZoom = Double(zoomLevel)
-        let canvasDelta = CGPoint(
-            x: screenDelta.x / preciseZoom,
-            y: screenDelta.y / preciseZoom
+        
+        // Convert locked pin point (anchor) to screen coordinates
+        let anchorScreenX = shearAnchorPoint.x * preciseZoom + canvasOffset.x
+        let anchorScreenY = shearAnchorPoint.y * preciseZoom + canvasOffset.y
+        
+        // Calculate distance from locked pin to start drag location
+        let startDistance = CGPoint(
+            x: startLocation.x - anchorScreenX,
+            y: startLocation.y - anchorScreenY
         )
         
-        // Calculate shear factors: how much to shear relative to the locked pin point
-        let shearFactorX = bounds.height > 0 ? canvasDelta.x / bounds.height : 0
-        let shearFactorY = bounds.width > 0 ? canvasDelta.y / bounds.width : 0
+        // Calculate distance from locked pin to current drag location
+        let currentDistance = CGPoint(
+            x: currentLocation.x - anchorScreenX,
+            y: currentLocation.y - anchorScreenY
+        )
+        
+        // Calculate shear factors based on movement relative to pin point
+        // Using the same sensitivity approach as the scale tool
+        let minDistance: CGFloat = 20.0 // Minimum distance to prevent extreme shearing
+        let sensitivity: CGFloat = 0.002 // Shear sensitivity factor
+        
+        let deltaX = currentDistance.x - startDistance.x
+        let deltaY = currentDistance.y - startDistance.y
+        
+        // Calculate shear factors: how much to shear based on pin-relative movement
+        let shearFactorX = deltaY * sensitivity  // Horizontal shear based on vertical movement
+        let shearFactorY = deltaX * sensitivity  // Vertical shear based on horizontal movement
         
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
@@ -2501,35 +2480,9 @@ struct ShearHandles: View {
         }
     }
     
-    private func isPinnedAnchorCorner(cornerIndex: Int) -> Bool {
-        switch document.shearAnchor {
-        case .center: return false
-        case .topLeft: return cornerIndex == 0
-        case .topRight: return cornerIndex == 1
-        case .bottomRight: return cornerIndex == 2
-        case .bottomLeft: return cornerIndex == 3
-        }
-    }
+
     
-    private func getAnchorForCorner(index: Int) -> ShearAnchor {
-        switch index {
-        case 0: return .topLeft
-        case 1: return .topRight
-        case 2: return .bottomRight
-        case 3: return .bottomLeft
-        default: return .center
-        }
-    }
-    
-    private func getAnchorPoint(for anchor: ShearAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
-        switch anchor {
-        case .center: return CGPoint(x: bounds.midX, y: bounds.midY)
-        case .topLeft: return CGPoint(x: bounds.minX, y: bounds.minY)
-        case .topRight: return CGPoint(x: bounds.maxX, y: bounds.minY)
-        case .bottomLeft: return CGPoint(x: bounds.minX, y: bounds.maxY)
-        case .bottomRight: return CGPoint(x: bounds.maxX, y: bounds.maxY)
-        }
-    }
+
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
     /// This ensures object origin moves with the object (Adobe Illustrator behavior)
