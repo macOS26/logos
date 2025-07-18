@@ -102,6 +102,9 @@ struct VerticalToolbar: View {
             return "Hand Tool (H) - Pan the canvas"
         case .zoom:
             return "Zoom Tool (Z) - Zoom in and out"
+        case .envelope:
+            return "Envelope Tool"
+
         }
     }
 }

@@ -355,6 +355,14 @@ struct SelectionHandlesView: View {
                                 zoomLevel: document.zoomLevel,
                                 canvasOffset: document.canvasOffset
                             )
+                        } else if document.currentTool == .envelope {
+                            // Envelope tool: Envelope warping with bounding box manipulation
+                            EnvelopeHandles(
+                                document: document,
+                                shape: shape,
+                                zoomLevel: document.zoomLevel,
+                                canvasOffset: document.canvasOffset
+                            )
                         }
                     }
                 }
@@ -2560,6 +2568,451 @@ struct ShearHandles: View {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
+        }
+    }
+}
+
+// MARK: - Envelope Warping Tool Handles
+struct EnvelopeHandles: View {
+    @ObservedObject var document: VectorDocument
+    let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    // Professional envelope warping state management
+    @State private var isWarping = false
+    @State private var warpingStarted = false
+    @State private var initialBounds: CGRect = .zero
+    @State private var initialTransform: CGAffineTransform = .identity
+    @State private var startLocation: CGPoint = .zero
+    @State private var previewPath: VectorPath? = nil
+    @State private var isShiftPressed = false  // For proportional warping
+    @State private var isCapsLockPressed = false  // For locking corners
+    
+    // ENVELOPE BOUNDING BOX SYSTEM: 4 corner points that define the warp envelope
+    @State private var originalCorners: [CGPoint] = []  // Original bounding box corners
+    @State private var warpedCorners: [CGPoint] = []    // Current warped positions
+    @State private var draggingCornerIndex: Int? = nil  // Which corner is being dragged
+    @State private var lockedCornerIndex: Int? = nil    // Which corner is locked (RED)
+    @State private var pointsRefreshTrigger: Int = 0
+    
+    private let handleSize: CGFloat = 8
+    
+    var body: some View {
+        // ENVELOPE TOOL: Show bounding box corners with correct colors
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        
+        ZStack {
+            // ACTUAL OBJECT OUTLINE: Show the real shape paths
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // GROUP/FLATTENED SHAPE: Show outline of each individual shape
+                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                    let groupedShape = shape.groupedShapes[index]
+                    Path { path in
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                path.move(to: to.cgPoint)
+                            case .line(let to):
+                                path.addLine(to: to.cgPoint)
+                            case .curve(let to, let control1, let control2):
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            case .quadCurve(let to, let control):
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                    }
+                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(groupedShape.transform)
+                }
+            } else {
+                // REGULAR SHAPE: Show single path outline
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
+                    }
+                }
+                .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+            }
+            
+            // ENVELOPE BOUNDING BOX: Show the 4 corner handles
+            envelopeCornerHandles()
+            
+            // ENVELOPE GRID: Show the warp grid when warping
+            if isWarping {
+                envelopeGridPreview()
+            }
+            
+            // WARPED PREVIEW: Show the warped shape when dragging
+            if isWarping && previewPath != nil {
+                warpedShapePreview()
+            }
+        }
+        .onAppear {
+            initialBounds = bounds
+            initialTransform = shape.transform
+            setupEnvelopeKeyEventMonitoring()
+            initializeEnvelopeCorners()
+        }
+        .onDisappear {
+            teardownEnvelopeKeyEventMonitoring()
+        }
+        .onChange(of: shape.bounds) { oldBounds, newBounds in
+            // MOVEMENT FIX: When shape bounds change, refresh the envelope corners
+            if !isWarping && oldBounds != newBounds {
+                initializeEnvelopeCorners()
+                pointsRefreshTrigger += 1
+                print("🔄 ENVELOPE TOOL: Shape bounds changed, refreshed corners")
+            }
+        }
+        .id("envelope-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
+    }
+    
+    // MARK: - Envelope Corner Handles
+    
+    @ViewBuilder
+    private func envelopeCornerHandles() -> some View {
+        ForEach(0..<4) { cornerIndex in
+            let cornerPos = warpedCorners.indices.contains(cornerIndex) ? warpedCorners[cornerIndex] : CGPoint.zero
+            let isLockedCorner = lockedCornerIndex == cornerIndex
+            
+            Rectangle()
+                .fill(isLockedCorner ? Color.red : Color.green)  // RED = locked, GREEN = warpable
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(cornerPos)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isWarping {
+                        // SINGLE CLICK: Set this corner as locked (RED)
+                        setLockedCorner(cornerIndex)
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            // DRAG: Warp envelope from this corner
+                            handleEnvelopeWarp(cornerIndex: cornerIndex, dragValue: value)
+                        }
+                        .onEnded { _ in
+                            finishEnvelopeWarp()
+                        }
+                )
+        }
+    }
+    
+    @ViewBuilder
+    private func envelopeGridPreview() -> some View {
+        // Show a 3x3 or 4x4 grid overlay showing the warp distortion
+        let gridLines = 4
+        
+        // Horizontal grid lines
+        ForEach(0..<gridLines) { row in
+            let t = CGFloat(row) / CGFloat(gridLines - 1)
+            Path { path in
+                let startPoint = bilinearInterpolation(
+                    topLeft: warpedCorners[0],
+                    topRight: warpedCorners[1], 
+                    bottomLeft: warpedCorners[3],
+                    bottomRight: warpedCorners[2],
+                    u: 0.0, v: t
+                )
+                let endPoint = bilinearInterpolation(
+                    topLeft: warpedCorners[0],
+                    topRight: warpedCorners[1],
+                    bottomLeft: warpedCorners[3], 
+                    bottomRight: warpedCorners[2],
+                    u: 1.0, v: t
+                )
+                path.move(to: startPoint)
+                path.addLine(to: endPoint)
+            }
+            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
+            .opacity(0.6)
+        }
+        
+        // Vertical grid lines
+        ForEach(0..<gridLines) { col in
+            let u = CGFloat(col) / CGFloat(gridLines - 1)
+            Path { path in
+                let startPoint = bilinearInterpolation(
+                    topLeft: warpedCorners[0],
+                    topRight: warpedCorners[1],
+                    bottomLeft: warpedCorners[3],
+                    bottomRight: warpedCorners[2],
+                    u: u, v: 0.0
+                )
+                let endPoint = bilinearInterpolation(
+                    topLeft: warpedCorners[0],
+                    topRight: warpedCorners[1],
+                    bottomLeft: warpedCorners[3],
+                    bottomRight: warpedCorners[2],
+                    u: u, v: 1.0
+                )
+                path.move(to: startPoint)
+                path.addLine(to: endPoint)
+            }
+            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
+            .opacity(0.6)
+        }
+    }
+    
+    @ViewBuilder
+    private func warpedShapePreview() -> some View {
+        if let warpedPath = previewPath {
+            Path { path in
+                for element in warpedPath.elements {
+                    switch element {
+                    case .move(let to):
+                        path.move(to: to.cgPoint)
+                    case .line(let to):
+                        path.addLine(to: to.cgPoint)
+                    case .curve(let to, let control1, let control2):
+                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                    case .quadCurve(let to, let control):
+                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .opacity(0.8)
+        }
+    }
+    
+    // MARK: - Envelope Warping Logic
+    
+    private func initializeEnvelopeCorners() {
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        
+        // Initialize the 4 corners of the bounding box
+        originalCorners = [
+            CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
+            CGPoint(x: bounds.maxX, y: bounds.minY), // Top-right  
+            CGPoint(x: bounds.maxX, y: bounds.maxY), // Bottom-right
+            CGPoint(x: bounds.minX, y: bounds.maxY)  // Bottom-left
+        ]
+        
+        // Initially, warped corners match original corners
+        warpedCorners = originalCorners
+        
+        print("🔧 ENVELOPE: Initialized corners for bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
+    }
+    
+    private func setLockedCorner(_ cornerIndex: Int) {
+        lockedCornerIndex = cornerIndex
+        let cornerPos = warpedCorners[cornerIndex]
+        print("🔴 LOCKED CORNER: Set corner \(cornerIndex) at (\(String(format: "%.1f", cornerPos.x)), \(String(format: "%.1f", cornerPos.y)))")
+    }
+    
+    private func handleEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
+        if !warpingStarted {
+            startEnvelopeWarp(cornerIndex: cornerIndex, dragValue: dragValue)
+        }
+        
+        // CRITICAL: Check if caps-lock is pressed to prevent moving locked corner
+        if isCapsLockPressed && cornerIndex == lockedCornerIndex {
+            print("🔒 CAPS-LOCK ACTIVE: Cannot move locked corner \(cornerIndex)")
+            return
+        }
+        
+        // Convert drag location to canvas coordinates
+        let currentLocation = dragValue.location
+        let preciseZoom = Double(zoomLevel)
+        let canvasLocation = CGPoint(
+            x: (currentLocation.x - canvasOffset.x) / preciseZoom,
+            y: (currentLocation.y - canvasOffset.y) / preciseZoom
+        )
+        
+        // Update the warped corner position
+        warpedCorners[cornerIndex] = canvasLocation
+        
+        print("🔄 ENVELOPE WARP: Corner \(cornerIndex) moved to (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))")
+        
+        // Calculate the warped shape preview
+        calculateEnvelopeWarpPreview()
+    }
+    
+    private func startEnvelopeWarp(cornerIndex: Int, dragValue: DragGesture.Value) {
+        warpingStarted = true
+        isWarping = true
+        document.isHandleScalingActive = true // Prevent canvas dragging
+        initialBounds = shape.bounds
+        initialTransform = shape.transform
+        startLocation = dragValue.startLocation
+        draggingCornerIndex = cornerIndex
+        document.saveToUndoStack()
+        
+        print("🔄 ENVELOPE WARP START: Dragging corner \(cornerIndex)")
+        print("   🔴 Locked corner: \(lockedCornerIndex?.description ?? "none")")
+        print("   📐 Original bounds: (\(String(format: "%.1f", initialBounds.minX)), \(String(format: "%.1f", initialBounds.minY))) → (\(String(format: "%.1f", initialBounds.maxX)), \(String(format: "%.1f", initialBounds.maxY)))")
+    }
+    
+    private func calculateEnvelopeWarpPreview() {
+        // Apply bilinear transformation to create warped shape
+        guard originalCorners.count == 4 && warpedCorners.count == 4 else { return }
+        
+        let warpedElements = warpPathElements(shape.path.elements)
+        previewPath = VectorPath(elements: warpedElements, isClosed: shape.path.isClosed)
+        
+        print("   📊 Envelope warp preview updated - showing warped shape")
+    }
+    
+    private func warpPathElements(_ elements: [PathElement]) -> [PathElement] {
+        var warpedElements: [PathElement] = []
+        
+        for element in elements {
+            switch element {
+            case .move(let to):
+                let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
+                warpedElements.append(.move(to: VectorPoint(warpedPoint)))
+                
+            case .line(let to):
+                let warpedPoint = warpPoint(CGPoint(x: to.x, y: to.y))
+                warpedElements.append(.line(to: VectorPoint(warpedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
+                let warpedControl1 = warpPoint(CGPoint(x: control1.x, y: control1.y))
+                let warpedControl2 = warpPoint(CGPoint(x: control2.x, y: control2.y))
+                warpedElements.append(.curve(
+                    to: VectorPoint(warpedTo),
+                    control1: VectorPoint(warpedControl1),
+                    control2: VectorPoint(warpedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let warpedTo = warpPoint(CGPoint(x: to.x, y: to.y))
+                let warpedControl = warpPoint(CGPoint(x: control.x, y: control.y))
+                warpedElements.append(.quadCurve(
+                    to: VectorPoint(warpedTo),
+                    control: VectorPoint(warpedControl)
+                ))
+                
+            case .close:
+                warpedElements.append(.close)
+            }
+        }
+        
+        return warpedElements
+    }
+    
+    private func warpPoint(_ point: CGPoint) -> CGPoint {
+        // Convert point from original bounding box to normalized coordinates (0-1)
+        let bounds = initialBounds
+        let u = (point.x - bounds.minX) / bounds.width
+        let v = (point.y - bounds.minY) / bounds.height
+        
+        // Use bilinear interpolation to map to warped quadrilateral
+        return bilinearInterpolation(
+            topLeft: warpedCorners[0],     // Top-left
+            topRight: warpedCorners[1],    // Top-right
+            bottomLeft: warpedCorners[3],  // Bottom-left
+            bottomRight: warpedCorners[2], // Bottom-right
+            u: u, v: v
+        )
+    }
+    
+    // MARK: - Bilinear Interpolation Math
+    
+    private func bilinearInterpolation(topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint, u: CGFloat, v: CGFloat) -> CGPoint {
+        // Standard bilinear interpolation formula
+        let top = CGPoint(
+            x: topLeft.x * (1 - u) + topRight.x * u,
+            y: topLeft.y * (1 - u) + topRight.y * u
+        )
+        let bottom = CGPoint(
+            x: bottomLeft.x * (1 - u) + bottomRight.x * u,
+            y: bottomLeft.y * (1 - u) + bottomRight.y * u
+        )
+        
+        return CGPoint(
+            x: top.x * (1 - v) + bottom.x * v,
+            y: top.y * (1 - v) + bottom.y * v
+        )
+    }
+    
+    private func finishEnvelopeWarp() {
+        warpingStarted = false
+        isWarping = false
+        document.isHandleScalingActive = false
+        draggingCornerIndex = nil
+        
+        print("🏁 ENVELOPE WARP FINISH: Applying final warped coordinates")
+        
+        // Apply the warped path to the actual shape
+        if let finalWarpedPath = previewPath,
+           let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            
+            document.layers[layerIndex].shapes[shapeIndex].path = finalWarpedPath
+            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            print("✅ ENVELOPE WARP FINISHED: Applied warped coordinates to shape")
+            
+            // Reset the envelope to match the new shape bounds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.initializeEnvelopeCorners()
+                self.pointsRefreshTrigger += 1
+            }
+        }
+        
+        previewPath = nil
+    }
+    
+    // MARK: - Key Event Monitoring
+    
+    @State private var envelopeKeyEventMonitor: Any?
+    
+    private func setupEnvelopeKeyEventMonitoring() {
+        envelopeKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+                self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
+                
+                // Debug logging for caps-lock state
+                if self.isCapsLockPressed {
+                    print("🔒 CAPS-LOCK ACTIVE: Corner locking enabled")
+                }
+            }
+            return event
+        }
+    }
+    
+    private func teardownEnvelopeKeyEventMonitoring() {
+        if let monitor = envelopeKeyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            envelopeKeyEventMonitor = nil
         }
     }
 }
