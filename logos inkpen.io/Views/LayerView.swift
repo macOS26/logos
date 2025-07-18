@@ -1963,52 +1963,110 @@ struct ShearHandles: View {
     let zoomLevel: Double
     let canvasOffset: CGPoint
     
-    // Professional shear state management
+    // Professional shear state management - FIXED IMPLEMENTATION (same as scale tool)
     @State private var isShearing = false
     @State private var shearStarted = false
     @State private var initialBounds: CGRect = .zero
     @State private var initialTransform: CGAffineTransform = .identity
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
-    @State private var shearAnchorPoint: CGPoint = .zero
+    @State private var shearAnchorPoint: CGPoint = .zero  // This is the LOCKED/PIN point (RED)
     @State private var isShiftPressed = false  // For constrained shearing
+    @State private var isCapsLockPressed = false  // NEW: Track caps-lock for locking pin point
     
-    // POINT-BASED SELECTION SYSTEM: Select actual path points + center for shear anchor (same as rotate tool)
-    @State private var selectedAnchorPointIndex: Int? = nil // Which point is selected as anchor (nil = center)
-    @State private var pathPoints: [VectorPoint] = []  // Extracted path points for display
-    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Always include center
-    @State private var pointsRefreshTrigger: Int = 0 // Force view refresh after transformation
+    // CORRECTED POINT SYSTEM: Lock point vs shear points (same as scale tool)
+    @State private var lockedPinPointIndex: Int? = nil // Which point is LOCKED (RED) - set by single click
+    @State private var pathPoints: [VectorPoint] = []  // All path points for display
+    @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Center point
+    @State private var pointsRefreshTrigger: Int = 0
     
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // SHEAR TOOL: Show actual path points + center point for precise anchor selection (same as rotate tool)
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        // SHEAR TOOL: Show all path points + center point with correct colors (same as scale tool)
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box (same as rotate tool)
-            Path { path in
-                for element in shape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        path.move(to: to.cgPoint)
-                    case .line(let to):
-                        path.addLine(to: to.cgPoint)
-                    case .curve(let to, let control1, let control2):
-                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                    case .quadCurve(let to, let control):
-                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-                    case .close:
-                        path.closeSubpath()
+            // ACTUAL OBJECT OUTLINE: Show the real shape paths
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // GROUP/FLATTENED SHAPE: Show outline of each individual shape
+                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                    let groupedShape = shape.groupedShapes[index]
+                    Path { path in
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                path.move(to: to.cgPoint)
+                            case .line(let to):
+                                path.addLine(to: to.cgPoint)
+                            case .curve(let to, let control1, let control2):
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            case .quadCurve(let to, let control):
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                    }
+                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(groupedShape.transform)
+                }
+            } else {
+                // REGULAR SHAPE: Show single path outline
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
                     }
                 }
+                .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
             }
-            .stroke(Color.purple, lineWidth: 2.0 / zoomLevel) // Purple outline for shear tool selection
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
+            
+            // SHOW ALL PATH POINTS + CENTER POINT with correct colors
+            pathPointsView()
+            
+            // CENTER POINT: Always available (GREEN if not locked, RED if locked)
+            let isCenterLockedPin = (lockedPinPointIndex == nil) // nil represents center as locked pin
+            Rectangle()
+                .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = shearable
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                .position(center)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
+                .onTapGesture {
+                    if !isShearing {
+                        // SINGLE CLICK: Set center as the locked pin point (RED)
+                        setLockedPinPoint(nil) // nil = center
+                    }
+                }
+                .highPriorityGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            // DRAG: Shear away from the locked pin point
+                            handleShearingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
+                        }
+                        .onEnded { _ in
+                            finishShear()
+                        }
+                )
             
             // MARQUEE PREVIEW: Show ACTUAL SHEARED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isShearing && !previewTransform.isIdentity {
@@ -2054,43 +2112,30 @@ struct ShearHandles: View {
                     .position(x: anchorScreenX, y: anchorScreenY)
             }
             
-            // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate tool)
-            pathPointsView()
-            
-            // CENTER POINT: Always available as shear anchor (same as rotate tool)
-            let isCenterSelected = selectedAnchorPointIndex == nil
-            Rectangle()
-                .fill(isCenterSelected ? Color.green : Color.purple)
-                .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
-                .onTapGesture {
-                    if !isShearing {
-                        selectedAnchorPointIndex = nil // Select center
-                        print("🎯 ANCHOR SELECTED: Center point")
-                    }
-                }
-                .highPriorityGesture(
-                    DragGesture()
-                        .onChanged { value in
-                            handlePointShear(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
-                        }
-                        .onEnded { _ in
-                            finishShear()
-                        }
-                )
+
         }
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
             setupShearKeyEventMonitoring()
             extractPathPoints()
+            
+            // Set default locked pin point to center if none is set
+            if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
+                setLockedPinPoint(nil) // nil = center point
+                print("🔴 SHEAR TOOL: Default locked pin set to center")
+            }
         }
         .onDisappear {
             teardownShearKeyEventMonitoring()
+        }
+        .onChange(of: shape.bounds) { oldBounds, newBounds in
+            // MOVEMENT FIX: When shape bounds change (e.g., after moving), refresh the shear points
+            if !isShearing && oldBounds != newBounds {
+                extractPathPoints()
+                pointsRefreshTrigger += 1
+                print("🔄 SHEAR TOOL: Shape bounds changed, refreshed points")
+            }
         }
         .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
@@ -2202,34 +2247,51 @@ struct ShearHandles: View {
     private func extractPathPoints() {
         pathPoints.removeAll()
         
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to), .line(let to):
-                pathPoints.append(to)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                pathPoints.append(to)
-            case .close:
-                continue // Skip close elements
+        // FLATTENED SHAPE FIX: Extract points from individual grouped shapes, not container
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // For flattened shapes, extract points from all grouped shapes
+            for groupedShape in shape.groupedShapes {
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to), .line(let to):
+                        pathPoints.append(to)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        pathPoints.append(to)
+                    case .close:
+                        continue // Skip close elements
+                    }
+                }
+            }
+        } else {
+            // Regular shape: Extract from main path
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to), .line(let to):
+                    pathPoints.append(to)
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    pathPoints.append(to)
+                case .close:
+                    continue // Skip close elements
+                }
             }
         }
         
         // Update center point based on current bounds
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         print("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection")
     }
     
-    /// Display all path points as selectable anchors (same as rotate tool)
+    /// Display all path points with correct colors: GREEN = shearable, RED = locked pin
     @ViewBuilder
     private func pathPointsView() -> some View {
         ForEach(pathPoints.indices, id: \.self) { index in
             let point = pathPoints[index]
-            let isSelected = selectedAnchorPointIndex == index
+            let isLockedPin = lockedPinPointIndex == index
             
             Rectangle()
-                .fill(isSelected ? Color.green : Color.purple)
+                .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = shearable
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(CGPoint(x: point.x, y: point.y))
@@ -2238,14 +2300,15 @@ struct ShearHandles: View {
                 .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isShearing {
-                        selectedAnchorPointIndex = index
-                        print("🎯 ANCHOR SELECTED: Path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                        // SINGLE CLICK: Set this as the locked pin point (RED)
+                        setLockedPinPoint(index)
                     }
                 }
                 .highPriorityGesture(
                     DragGesture()
                         .onChanged { value in
-                            handlePointShear(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            // DRAG: Shear away from the locked pin point
+                            handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
                         .onEnded { _ in
                             finishShear()
@@ -2254,13 +2317,48 @@ struct ShearHandles: View {
         }
     }
     
-    // Handle shear from selected point (same structure as rotate tool)
-    private func handlePointShear(anchorPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
+    // MARK: - Lock Pin Point Management (same as scale tool)
+    
+    /// Set which point is the locked pin point (RED) - stays stationary during shearing
+    private func setLockedPinPoint(_ pointIndex: Int?) {
+        lockedPinPointIndex = pointIndex
+        
+        // Update the shearing anchor point to the locked pin location
+        if let index = pointIndex {
+            if index < pathPoints.count {
+                // Path point
+                let point = pathPoints[index]
+                shearAnchorPoint = CGPoint(x: point.x, y: point.y)
+                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+            } else {
+                // Bounds corner point (if we add them later)
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                let center = CGPoint(x: bounds.midX, y: bounds.midY)
+                shearAnchorPoint = center // Fallback to center
+                print("🔴 LOCKED PIN: Set to bounds point (fallback to center)")
+            }
+        } else {
+            // Center point
+            shearAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
+            print("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        }
+    }
+    
+    // CORRECTED: Handle shearing away from the locked pin point (same as scale tool)
+    private func handleShearingFromPoint(draggedPointIndex: Int?, dragValue: DragGesture.Value, bounds: CGRect, center: CGPoint) {
         if !shearStarted {
-            startPointShear(anchorPointIndex: anchorPointIndex, bounds: bounds, dragValue: dragValue)
+            startShearingFromPoint(draggedPointIndex: draggedPointIndex, bounds: bounds, dragValue: dragValue)
         }
         
-        // Use the same shear calculation logic but with point-based anchor
+        // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
+        if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
+            // Caps-lock is active: locked pin point cannot be changed, only shear away from it
+            print("🔒 CAPS-LOCK ACTIVE: Pin point locked, shearing away from locked point")
+        }
+        
+        // PROFESSIONAL SHEARING: Shear away from the LOCKED PIN POINT (not the dragged point)
+        // The locked pin point (RED) stays stationary, we shear away from it toward the drag location
+        
         let screenDelta = CGPoint(
             x: dragValue.location.x - startLocation.x,
             y: dragValue.location.y - startLocation.y
@@ -2272,69 +2370,91 @@ struct ShearHandles: View {
             y: screenDelta.y / preciseZoom
         )
         
+        // Calculate shear factors: how much to shear relative to the locked pin point
         let shearFactorX = bounds.height > 0 ? canvasDelta.x / bounds.height : 0
         let shearFactorY = bounds.width > 0 ? canvasDelta.y / bounds.width : 0
         
         var finalShearX = shearFactorX
         var finalShearY = shearFactorY
         
+        // CONSTRAINED SHEARING: When shift is held, constrain to dominant direction
         if isShiftPressed {
             if abs(shearFactorX) > abs(shearFactorY) {
                 finalShearY = 0
+                print("🔄 SHEARING AWAY FROM PIN: X=\(String(format: "%.3f", finalShearX)), Y=0 (shift constrained - horizontal)")
             } else {
                 finalShearX = 0
+                print("🔄 SHEARING AWAY FROM PIN: X=0, Y=\(String(format: "%.3f", finalShearY)) (shift constrained - vertical)")
             }
+        } else {
+            print("🔄 SHEARING AWAY FROM PIN: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY))")
         }
         
-        print("🔄 SHEARING: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY))\(isShiftPressed ? ", shift=true" : ", shift=false")")
-        
+        // Apply preview shearing with the LOCKED PIN POINT as anchor (it stays stationary)
         calculatePreviewShear(shearX: finalShearX, shearY: finalShearY, anchor: shearAnchorPoint)
     }
     
-    private func startPointShear(anchorPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
+    private func startShearingFromPoint(draggedPointIndex: Int?, bounds: CGRect, dragValue: DragGesture.Value) {
         shearStarted = true
+        isShearing = true
         document.isHandleScalingActive = true
-        startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
+        startLocation = dragValue.location
         document.saveToUndoStack()
         
-        // AUTO-SELECT: Make the dragged point green (selected) automatically (same as rotate tool)
-        selectedAnchorPointIndex = anchorPointIndex
-        
-        // POINT-BASED ANCHOR: Use selected point or center
-        if let pointIndex = anchorPointIndex {
-            let point = pathPoints[pointIndex]
-            shearAnchorPoint = CGPoint(x: point.x, y: point.y)
-            print("🔄 SHEAR START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
-        } else {
-            shearAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔄 SHEAR START: Anchored to center point at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        // CORRECTED LOGIC: Don't change the locked pin point when starting to drag
+        // The locked pin point should already be set by a previous single click
+        // If no locked pin point is set, default to center
+        if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
+            // Default to center if no pin point was explicitly set
+            setLockedPinPoint(nil) // nil = center
+            print("🔄 SHEAR START: No pin point set, defaulting to center")
         }
         
-        // CRITICAL FIX: Use ORIGINAL bounds (no transform applied) to prevent anchor drift
+        print("🔄 SHEAR START: Dragging from point \(draggedPointIndex?.description ?? "center"), shearing away from LOCKED PIN at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        print("   🔴 Locked pin point index: \(lockedPinPointIndex?.description ?? "center")")
+        print("   🟢 Dragging from point index: \(draggedPointIndex?.description ?? "center")")
+        
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+        print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
     }
     
     private func updatePathPointsAfterShear() {
         // FORCE REFRESH: Clear current points and re-extract from transformed object
         pathPoints.removeAll()
         
-        // Re-extract all path points from the NOW-TRANSFORMED shape
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to), .line(let to):
-                pathPoints.append(to)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                pathPoints.append(to)
-            case .close:
-                continue
+        // FLATTENED SHAPE FIX: Extract points from individual grouped shapes, not container
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // For flattened shapes, extract points from all grouped shapes
+            for groupedShape in shape.groupedShapes {
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to), .line(let to):
+                        pathPoints.append(to)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        pathPoints.append(to)
+                    case .close:
+                        continue
+                    }
+                }
+            }
+        } else {
+            // Regular shape: Re-extract all path points from the NOW-TRANSFORMED shape
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to), .line(let to):
+                    pathPoints.append(to)
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    pathPoints.append(to)
+                case .close:
+                    continue
+                }
             }
         }
         
         // Update center point based on NEW bounds after shear
-        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let newBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
         
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
@@ -2344,19 +2464,30 @@ struct ShearHandles: View {
         print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
     }
     
-    // MARK: - Key Event Monitoring (same as rotate tool)
+    // MARK: - Key Event Monitoring (same as scale tool)
+    
+    @State private var shearKeyEventMonitor: Any?
     
     private func setupShearKeyEventMonitoring() {
-        NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
-            if event.keyCode == 56 { // Shift key
-                self.isShiftPressed = (event.type == .keyDown)
+        shearKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+                self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
+                
+                // Debug logging for caps-lock state
+                if self.isCapsLockPressed {
+                    print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
+                }
             }
             return event
         }
     }
     
     private func teardownShearKeyEventMonitoring() {
-        // Key monitoring is automatically cleaned up when view disappears
+        if let monitor = shearKeyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            shearKeyEventMonitor = nil
+        }
     }
     
     // Helper functions (similar to RotateHandles)
