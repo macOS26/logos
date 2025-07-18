@@ -19,8 +19,12 @@ extension DrawingCanvas {
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
         
-        // Only handle selection for selection tool
-        guard document.currentTool == .selection else { return }
+        // Only handle selection for selection and transform tools
+        guard document.currentTool == .selection || 
+              document.currentTool == .scale || 
+              document.currentTool == .rotate || 
+              document.currentTool == .shear || 
+              document.currentTool == .envelope else { return }
         
         // CRITICAL FIX: Check for text objects FIRST (they should be selectable with selection tool!)
         if let textID = findTextAt(location: location) {

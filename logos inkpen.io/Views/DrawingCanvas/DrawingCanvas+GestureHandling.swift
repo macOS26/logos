@@ -36,6 +36,15 @@ extension DrawingCanvas {
                 case .convertAnchorPoint:
                     if isBezierDrawing { cancelBezierDrawing() }
                     handleConvertAnchorPointTap(at: canvasLocation)
+                case .rotate:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleSelectionTap(at: canvasLocation)
+                case .shear:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleSelectionTap(at: canvasLocation)
+                case .envelope:
+                    if isBezierDrawing { cancelBezierDrawing() }
+                    handleSelectionTap(at: canvasLocation)
                 case .bezierPen:
                     // ✅ ISOLATION FIX: Pen tool works the same everywhere - canvas or pasteboard
                     // Never automatically finish paths - only add points for continuous tracing
@@ -174,6 +183,36 @@ extension DrawingCanvas {
                     selectObjectAt(startLocation)
                 }
             }
+        case .rotate:
+            // Rotate tool doesn't handle drag gestures directly - rotation is handled by the rotation handles
+            // Just handle selection like the selection tool
+            if !isDrawing {
+                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                
+                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
+                    selectObjectAt(startLocation)
+                }
+            }
+        case .shear:
+            // Shear tool doesn't handle drag gestures directly - shearing is handled by the shear handles
+            // Just handle selection like the selection tool
+            if !isDrawing {
+                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                
+                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
+                    selectObjectAt(startLocation)
+                }
+            }
+        case .envelope:
+            // Envelope tool doesn't handle drag gestures directly - warping is handled by the envelope handles
+            // Just handle selection like the selection tool
+            if !isDrawing {
+                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                
+                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
+                    selectObjectAt(startLocation)
+                }
+            }
         case .directSelection:
             // Handle direct selection dragging for moving points and handles
             handleDirectSelectionDrag(value: value, geometry: geometry)
@@ -209,6 +248,24 @@ extension DrawingCanvas {
             handleSelectionTap(at: canvasLocation)
         case .scale:
             // Scale tool handles selection just like selection tool
+            if isBezierDrawing {
+                cancelBezierDrawing()
+            }
+            handleSelectionTap(at: canvasLocation)
+        case .rotate:
+            // Rotate tool handles selection just like selection tool
+            if isBezierDrawing {
+                cancelBezierDrawing()
+            }
+            handleSelectionTap(at: canvasLocation)
+        case .shear:
+            // Shear tool handles selection just like selection tool
+            if isBezierDrawing {
+                cancelBezierDrawing()
+            }
+            handleSelectionTap(at: canvasLocation)
+        case .envelope:
+            // Envelope tool handles selection just like selection tool
             if isBezierDrawing {
                 cancelBezierDrawing()
             }
