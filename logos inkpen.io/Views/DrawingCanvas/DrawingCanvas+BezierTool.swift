@@ -123,11 +123,38 @@ extension DrawingCanvas {
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
         
-        // First point creation is now handled in handleBezierPenTap()
-        // This drag handler only deals with subsequent points and handle manipulation
+        // Handle first point creation if no bezier path is active (fixes gesture ordering issue)
         if !isBezierDrawing {
-            print("⚠️ Warning: Drag detected but no bezier path active - first point should be created in tap handler")
-            return
+            // Create the first point immediately at the start location
+            let firstPoint = VectorPoint(startLocation)
+            bezierPath = VectorPath(elements: [.move(to: firstPoint)])
+            bezierPoints = [firstPoint]
+            isBezierDrawing = true
+            activeBezierPointIndex = 0
+            bezierHandles.removeAll()
+            
+            // Create real VectorShape with document default colors
+            let strokeStyle = StrokeStyle(
+                color: document.defaultStrokeColor,
+                width: 1.0,
+                opacity: document.defaultStrokeOpacity
+            )
+            let fillStyle = FillStyle(
+                color: document.defaultFillColor,
+                opacity: document.defaultFillOpacity
+            )
+            
+            activeBezierShape = VectorShape(
+                name: "Bezier Path",
+                path: bezierPath!,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            // Add the real shape to the document immediately
+            document.addShape(activeBezierShape!)
+            
+            print("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(startLocation)")
         }
         
         // Regular bezier pen drag handling (for existing paths)
