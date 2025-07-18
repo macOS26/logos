@@ -907,14 +907,27 @@ struct RotateHandles: View {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // Light outline to show shape bounds (less prominent than corner handles)
-            Rectangle()
-                .stroke(Color.orange.opacity(0.3), lineWidth: 1.0 / zoomLevel)
-                .frame(width: bounds.width, height: bounds.height)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+            // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box
+            Path { path in
+                for element in shape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        path.move(to: to.cgPoint)
+                    case .line(let to):
+                        path.addLine(to: to.cgPoint)
+                    case .curve(let to, let control1, let control2):
+                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                    case .quadCurve(let to, let control):
+                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                    case .close:
+                        path.closeSubpath()
+                    }
+                }
+            }
+            .stroke(Color.orange, lineWidth: 2.0 / zoomLevel) // Orange outline for rotate tool selection
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(shape.transform)
             
             // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isRotating && !previewTransform.isIdentity {
@@ -949,22 +962,7 @@ struct RotateHandles: View {
                 // NO .transformEffect! Coordinates already transformed above (same as actual object)
                 .opacity(0.8)
                 
-                // MARQUEE CENTER POINT: Show the rotation anchor point (stays fixed during rotation)
-                let anchorScreenX = rotationAnchorPoint.x * zoomLevel + canvasOffset.x
-                let anchorScreenY = rotationAnchorPoint.y * zoomLevel + canvasOffset.y
-                let isCenterPinned = document.rotationAnchor == .center
-                Rectangle()
-                    .fill(isCenterPinned ? Color.red : Color.green)
-                    .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(x: anchorScreenX, y: anchorScreenY)
-                    .onTapGesture {
-                        // Allow clicking center to set center anchor
-                        if !isRotating {
-                            document.rotationAnchor = .center
-                            print("🎯 ANCHOR CHANGED: Center rotation selected")
-                        }
-                    }
+                // Marquee shows rotation preview without additional handles (handled by point system below)
             }
             
             // SHOW ALL PATH POINTS + CENTER POINT for anchor selection
@@ -973,7 +971,7 @@ struct RotateHandles: View {
             // CENTER POINT: Always available as rotation anchor
             let isCenterSelected = selectedAnchorPointIndex == nil
             Rectangle()
-                .fill(isCenterSelected ? Color.red : Color.green)
+                .fill(isCenterSelected ? Color.green : Color.orange)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(center)
@@ -1040,7 +1038,7 @@ struct RotateHandles: View {
             let isSelected = selectedAnchorPointIndex == index
             
             Rectangle()
-                .fill(isSelected ? Color.red : Color.green)
+                .fill(isSelected ? Color.green : Color.orange)
                 .stroke(Color.white, lineWidth: 1.0)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(CGPoint(x: point.x, y: point.y))
@@ -1107,14 +1105,17 @@ struct RotateHandles: View {
         initialTransform = shape.transform
         document.saveToUndoStack()
         
+        // AUTO-SELECT: Make the dragged point green (selected) automatically
+        selectedAnchorPointIndex = anchorPointIndex
+        
         // POINT-BASED ANCHOR: Use selected point or center
         if let pointIndex = anchorPointIndex {
             let point = pathPoints[pointIndex]
             rotationAnchorPoint = CGPoint(x: point.x, y: point.y)
-            print("🔄 ROTATION START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
+            print("🔄 ROTATION START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y))) - AUTO-SELECTED GREEN")
         } else {
             rotationAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔄 ROTATION START: Anchored to center point at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
+            print("🔄 ROTATION START: Anchored to center point at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y))) - AUTO-SELECTED GREEN")
         }
         
         print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
