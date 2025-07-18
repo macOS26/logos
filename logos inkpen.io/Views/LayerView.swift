@@ -414,7 +414,8 @@ struct SelectionOutline: View {
     
     var body: some View {
         // SELECTION TOOL: Show bounding box outline with blue corner handles and center point
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -493,7 +494,8 @@ struct ScaleHandles: View {
     
     var body: some View {
         // SCALE TOOL: Show actual path points + center point for precise anchor selection (same as rotate/shear tools)
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -592,6 +594,14 @@ struct ScaleHandles: View {
         }
         .onDisappear {
             teardownScaleKeyEventMonitoring()
+        }
+        .onChange(of: shape.bounds) { oldBounds, newBounds in
+            // MOVEMENT FIX: When shape bounds change (e.g., after moving), refresh the scale points
+            if !isScaling && oldBounds != newBounds {
+                extractPathPoints()
+                pointsRefreshTrigger += 1
+                print("🔄 SCALE TOOL: Shape bounds changed, refreshed points")
+            }
         }
         .id("scale-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
     }
@@ -713,19 +723,38 @@ struct ScaleHandles: View {
     private func extractPathPoints() {
         pathPoints.removeAll()
         
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to), .line(let to):
-                pathPoints.append(to)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                pathPoints.append(to)
-            case .close:
-                continue // Skip close elements
+        // FLATTENED SHAPE FIX: Extract points from individual grouped shapes, not container
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // For flattened shapes, extract points from all grouped shapes
+            for groupedShape in shape.groupedShapes {
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to), .line(let to):
+                        pathPoints.append(to)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        pathPoints.append(to)
+                    case .close:
+                        continue // Skip close elements
+                    }
+                }
+            }
+        } else {
+            // Regular shape: Extract from main path
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to), .line(let to):
+                    pathPoints.append(to)
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    pathPoints.append(to)
+                case .close:
+                    continue // Skip close elements
+                }
             }
         }
         
         // Update center point based on current bounds
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         print("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection")
@@ -847,20 +876,38 @@ struct ScaleHandles: View {
         // FORCE REFRESH: Clear current points and re-extract from transformed object
         pathPoints.removeAll()
         
-        // Re-extract all path points from the NOW-TRANSFORMED shape
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to), .line(let to):
-                pathPoints.append(to)
-            case .curve(let to, _, _), .quadCurve(let to, _):
-                pathPoints.append(to)
-            case .close:
-                continue
+        // FLATTENED SHAPE FIX: Extract points from individual grouped shapes, not container
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // For flattened shapes, extract points from all grouped shapes
+            for groupedShape in shape.groupedShapes {
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to), .line(let to):
+                        pathPoints.append(to)
+                    case .curve(let to, _, _), .quadCurve(let to, _):
+                        pathPoints.append(to)
+                    case .close:
+                        continue
+                    }
+                }
+            }
+        } else {
+            // Regular shape: Re-extract all path points from the NOW-TRANSFORMED shape
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to), .line(let to):
+                    pathPoints.append(to)
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    pathPoints.append(to)
+                case .close:
+                    continue
+                }
             }
         }
         
         // Update center point based on NEW bounds after scaling
-        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let newBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
         
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
@@ -916,6 +963,65 @@ struct ScaleHandles: View {
         }
         
         print("🔧 Applying scaling transform to shape coordinates: \(shape.name)")
+        
+        // FLATTENED SHAPE FIX: Apply transform to individual grouped shapes, not container
+        if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // Transform each individual shape within the flattened group
+            var transformedGroupedShapes: [VectorShape] = []
+            
+            for var groupedShape in shape.groupedShapes {
+                // Transform all path elements of this grouped shape
+                var transformedElements: [PathElement] = []
+                
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                        transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                        
+                    case .line(let to):
+                        let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                        transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                        
+                    case .curve(let to, let control1, let control2):
+                        let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                        let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
+                        let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
+                        transformedElements.append(.curve(
+                            to: VectorPoint(transformedTo),
+                            control1: VectorPoint(transformedControl1),
+                            control2: VectorPoint(transformedControl2)
+                        ))
+                        
+                    case .quadCurve(let to, let control):
+                        let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                        let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
+                        transformedElements.append(.quadCurve(
+                            to: VectorPoint(transformedTo),
+                            control: VectorPoint(transformedControl)
+                        ))
+                        
+                    case .close:
+                        transformedElements.append(.close)
+                    }
+                }
+                
+                // Update this grouped shape with transformed coordinates
+                groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                groupedShape.transform = .identity
+                groupedShape.updateBounds()
+                
+                transformedGroupedShapes.append(groupedShape)
+            }
+            
+            // Update the flattened group with the transformed individual shapes
+            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = transformedGroupedShapes
+            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            print("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes")
+            return
+        }
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -1089,7 +1195,8 @@ struct RotateHandles: View {
     
     var body: some View {
         // ROTATE TOOL: Show actual path points + center point for precise anchor selection
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -1210,7 +1317,8 @@ struct RotateHandles: View {
         }
         
         // Update center point based on current bounds
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         print("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection")
@@ -1699,7 +1807,8 @@ struct ShearHandles: View {
     
     var body: some View {
         // SHEAR TOOL: Show actual path points + center point for precise anchor selection (same as rotate tool)
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -1929,7 +2038,8 @@ struct ShearHandles: View {
         }
         
         // Update center point based on current bounds
-        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         print("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection")

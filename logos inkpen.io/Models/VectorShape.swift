@@ -174,10 +174,25 @@ struct VectorShape: Codable, Hashable, Identifiable {
     }
     
     mutating func updateBounds() {
-        // Use original path bounds, not transformed bounds
-        // This prevents double transformation issues during rendering
-        bounds = path.cgPath.boundingBoxOfPath
-        // Transform is applied separately during rendering via .transformEffect()
+        // FLATTENED SHAPE FIX: For flattened groups, calculate bounds from grouped shapes, not container path
+        if isGroup && !groupedShapes.isEmpty {
+            // Flattened shape: Use union of all grouped shapes' bounds
+            var calculatedBounds = CGRect.zero
+            for (index, shape) in groupedShapes.enumerated() {
+                let shapeBounds = shape.bounds
+                if index == 0 {
+                    calculatedBounds = shapeBounds
+                } else {
+                    calculatedBounds = calculatedBounds.union(shapeBounds)
+                }
+            }
+            bounds = calculatedBounds
+        } else {
+            // Regular shape: Use original path bounds, not transformed bounds
+            // This prevents double transformation issues during rendering
+            bounds = path.cgPath.boundingBoxOfPath
+            // Transform is applied separately during rendering via .transformEffect()
+        }
     }
     
     // MARK: - Group Methods (Adobe Illustrator Standards)

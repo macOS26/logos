@@ -28,7 +28,8 @@ extension DrawingCanvas {
                 let shape = document.layers[layerIndex].shapes[shapeIndex]
                 
                 // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 let centerX = bounds.midX
                 let centerY = bounds.midY
                 initialObjectPositions[shapeID] = CGPoint(x: centerX, y: centerY)
