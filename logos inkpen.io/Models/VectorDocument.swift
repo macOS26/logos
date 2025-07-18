@@ -1211,9 +1211,9 @@ class VectorDocument: ObservableObject, Codable {
         
         print("🎯 Converting text '\(textObject.content)' to vector outlines...")
         
-        // Create NSAttributedString with typography properties
+        // CRITICAL FIX: Use the proper nsFont from typography which includes weight and style
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont(name: textObject.typography.fontFamily, size: textObject.typography.fontSize) ?? NSFont.systemFont(ofSize: textObject.typography.fontSize),
+            .font: textObject.typography.nsFont, // This includes proper weight and style
             .kern: textObject.typography.letterSpacing
         ]
         

@@ -16,6 +16,18 @@ struct FontPanel: View {
         document.textObjects.first { document.selectedTextIDs.contains($0.id) }
     }
     
+    private var currentFontFamily: String {
+        selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily
+    }
+    
+    private var availableFontWeights: [FontWeight] {
+        document.fontManager.getAvailableWeights(for: currentFontFamily)
+    }
+    
+    private var availableFontStyles: [FontStyle] {
+        document.fontManager.getAvailableStyles(for: currentFontFamily)
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -47,7 +59,7 @@ struct FontPanel: View {
                                 )) {
                                     ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
                                         Text(fontFamily)
-                                            .font(.custom(fontFamily, size: 12))
+                                            .font(.custom(fontFamily, size: 12)) // Show font name in actual font
                                             .tag(fontFamily)
                                     }
                                 }
@@ -71,7 +83,8 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        ForEach(FontWeight.allCases, id: \.self) { weight in
+                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family
+                                        ForEach(availableFontWeights, id: \.self) { weight in
                                             Text(weight.rawValue)
                                                 .tag(weight)
                                         }
@@ -93,7 +106,8 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        ForEach(FontStyle.allCases, id: \.self) { style in
+                                        // DYNAMIC FONT STYLES: Only show styles available for this font family
+                                        ForEach(availableFontStyles, id: \.self) { style in
                                             Text(style.rawValue)
                                                 .tag(style)
                                         }

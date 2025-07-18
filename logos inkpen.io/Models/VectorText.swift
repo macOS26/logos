@@ -515,6 +515,40 @@ class FontManager: ObservableObject {
         default: return .black
         }
     }
+    
+    // Get font styles available for a family
+    func getAvailableStyles(for family: String) -> [FontStyle] {
+        let fontManager = NSFontManager.shared
+        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
+        
+        var styles: Set<FontStyle> = []
+        for member in members {
+            if let traits = member[3] as? NSNumber {
+                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
+                
+                if traitMask.contains(.italic) {
+                    styles.insert(.italic)
+                } else {
+                    styles.insert(.normal)
+                }
+                
+                // Check for oblique - this is harder to detect, but we can include it if the font name suggests it
+                if let fontName = member[1] as? String,
+                   fontName.lowercased().contains("oblique") {
+                    styles.insert(.oblique)
+                }
+            }
+        }
+        
+        // Always include normal if we found any fonts
+        if !styles.isEmpty {
+            styles.insert(.normal)
+        }
+        
+        return Array(styles).sorted { style1, style2 in
+            FontStyle.allCases.firstIndex(of: style1)! < FontStyle.allCases.firstIndex(of: style2)!
+        }
+    }
 }
 
 // MARK: - Extensions for NSBezierPath CGPath conversion
