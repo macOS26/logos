@@ -552,6 +552,49 @@ struct ScaleHandles: View {
             // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate/shear tools)
             pathPointsView()
             
+            // GROUP BOUNDS FEATURES: For groups/flattened objects, also show bounds points and green marquee
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // GREEN BOUNDS MARQUEE: Show the overall bounding box
+                Rectangle()
+                    .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [3.0 / zoomLevel, 3.0 / zoomLevel]))
+                    .frame(width: bounds.width, height: bounds.height)
+                    .position(center)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
+                
+                // BOUNDS CORNER POINTS: Show the 4 corner points of the bounding box
+                ForEach(0..<4) { i in
+                    let cornerPos = cornerPosition(for: i, in: bounds, center: center)
+                    let cornerIndex = pathPoints.count + i // Offset to avoid conflicts with path points
+                    let isCornerSelected = selectedAnchorPointIndex == cornerIndex
+                    
+                    Rectangle()
+                        .fill(isCornerSelected ? Color.green : Color.orange)
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                        .position(cornerPos)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                        .onTapGesture {
+                            if !isScaling {
+                                selectedAnchorPointIndex = cornerIndex
+                                print("🎯 ANCHOR SELECTED: Bounds corner \\(i) at (\\(String(format: \"%.1f\", cornerPos.x)), \\(String(format: \"%.1f\", cornerPos.y)))")
+                            }
+                        }
+                        .highPriorityGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    handlePointScaling(anchorPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
+                                }
+                                .onEnded { _ in
+                                    finishScaling()
+                                }
+                        )
+                }
+            }
+            
             // CENTER POINT: Always available as scale anchor (same as rotate/shear tools)
             let isCenterSelected = selectedAnchorPointIndex == nil
             Rectangle()
@@ -643,6 +686,22 @@ struct ScaleHandles: View {
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                     // NO .transformEffect! Coordinates already transformed above (same as actual object)
                     .opacity(0.8)
+                }
+                
+                // GREEN BOUNDS MARQUEE PREVIEW: Show live scaling bounds for groups/flattened objects
+                if shape.isGroup && !shape.groupedShapes.isEmpty {
+                    // Calculate transformed bounds for the green marquee preview
+                    let transformedBounds = bounds.applying(previewTransform)
+                    let transformedCenter = CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
+                    
+                    Rectangle()
+                        .stroke(Color.green, style: SwiftUI.StrokeStyle(lineWidth: 1.5 / zoomLevel, dash: [3.0 / zoomLevel, 3.0 / zoomLevel]))
+                        .frame(width: transformedBounds.width, height: transformedBounds.height)
+                        .position(transformedCenter)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        // NO .transformEffect! Bounds already transformed above
+                        .opacity(0.6)
                 }
                 
                 // Marquee shows scaling preview without additional handles (handled by point system below)
@@ -922,8 +981,17 @@ struct ScaleHandles: View {
         
         // POINT-BASED ANCHOR: Use selected point or center
         if let pointIndex = anchorPointIndex {
-            let point = pathPoints[pointIndex]
-            scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
+            if pointIndex < pathPoints.count {
+                // PATH POINT: Use actual path point
+                let point = pathPoints[pointIndex]
+                scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
+            } else {
+                // BOUNDS CORNER: Calculate corner position  
+                let cornerIndex = pointIndex - pathPoints.count
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                let center = CGPoint(x: bounds.midX, y: bounds.midY)
+                scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
+            }
             print("🔄 SCALING START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
         } else {
             scalingAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
@@ -981,17 +1049,22 @@ struct ScaleHandles: View {
     
     // MARK: - Key Event Monitoring (same as rotate/shear tools)
     
+    @State private var scaleKeyEventMonitor: Any?
+    
     private func setupScaleKeyEventMonitoring() {
-        NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { event in
-            if event.keyCode == 56 { // Shift key
-                self.isShiftPressed = (event.type == .keyDown)
+        scaleKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
             }
             return event
         }
     }
     
     private func teardownScaleKeyEventMonitoring() {
-        // Key monitoring is automatically cleaned up when view disappears
+        if let monitor = scaleKeyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            scaleKeyEventMonitor = nil
+        }
     }
     
     // MARK: - Scaling Anchor Point Calculation
