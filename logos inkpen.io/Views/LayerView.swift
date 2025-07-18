@@ -499,27 +499,55 @@ struct ScaleHandles: View {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
-            // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box (same as rotate/shear tools)
-            Path { path in
-                for element in shape.path.elements {
-                    switch element {
-                    case .move(let to):
-                        path.move(to: to.cgPoint)
-                    case .line(let to):
-                        path.addLine(to: to.cgPoint)
-                    case .curve(let to, let control1, let control2):
-                        path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-                    case .quadCurve(let to, let control):
-                        path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-                    case .close:
-                        path.closeSubpath()
+            // ACTUAL OBJECT OUTLINE: Show the real shape paths (individual shapes for groups/flattened)
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                // GROUP/FLATTENED SHAPE: Show outline of each individual shape
+                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                    let groupedShape = shape.groupedShapes[index]
+                    Path { path in
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                path.move(to: to.cgPoint)
+                            case .line(let to):
+                                path.addLine(to: to.cgPoint)
+                            case .curve(let to, let control1, let control2):
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            case .quadCurve(let to, let control):
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                    }
+                    .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for each individual shape
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(groupedShape.transform)
+                }
+            } else {
+                // REGULAR SHAPE: Show single path outline
+                Path { path in
+                    for element in shape.path.elements {
+                        switch element {
+                        case .move(let to):
+                            path.move(to: to.cgPoint)
+                        case .line(let to):
+                            path.addLine(to: to.cgPoint)
+                        case .curve(let to, let control1, let control2):
+                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                        case .quadCurve(let to, let control):
+                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                        case .close:
+                            path.closeSubpath()
+                        }
                     }
                 }
+                .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for scale tool selection
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .transformEffect(shape.transform)
             }
-            .stroke(Color.red, lineWidth: 2.0 / zoomLevel) // Red outline for scale tool selection
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
             
             // SHOW ALL PATH POINTS + CENTER POINT for anchor selection (same as rotate/shear tools)
             pathPointsView()
@@ -552,36 +580,70 @@ struct ScaleHandles: View {
             
             // MARQUEE PREVIEW: Show ACTUAL SCALED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isScaling && !previewTransform.isIdentity {
-                // CRITICAL FIX: Apply the SAME transformation that will be applied to the actual object
-                // Transform the path coordinates directly (same as finishScaling does)
-                Path { path in
-                    for element in shape.path.elements {
-                        switch element {
-                        case .move(let to):
-                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.move(to: transformedPoint)
-                        case .line(let to):
-                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            path.addLine(to: transformedPoint)
-                        case .curve(let to, let control1, let control2):
-                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
-                            let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
-                            path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
-                        case .quadCurve(let to, let control):
-                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
-                            let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
-                            path.addQuadCurve(to: transformedTo, control: transformedControl)
-                        case .close:
-                            path.closeSubpath()
+                if shape.isGroup && !shape.groupedShapes.isEmpty {
+                    // GROUP/FLATTENED SHAPE: Show marquee preview for each individual shape
+                    ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                        let groupedShape = shape.groupedShapes[index]
+                        Path { path in
+                            for element in groupedShape.path.elements {
+                                switch element {
+                                case .move(let to):
+                                    let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    path.move(to: transformedPoint)
+                                case .line(let to):
+                                    let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    path.addLine(to: transformedPoint)
+                                case .curve(let to, let control1, let control2):
+                                    let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                                    let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                                    path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
+                                case .quadCurve(let to, let control):
+                                    let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                    let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                                    path.addQuadCurve(to: transformedTo, control: transformedControl)
+                                case .close:
+                                    path.closeSubpath()
+                                }
+                            }
+                        }
+                        .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        // NO .transformEffect! Coordinates already transformed above (same as actual object)
+                        .opacity(0.8)
+                    }
+                } else {
+                    // REGULAR SHAPE: Show single marquee preview
+                    Path { path in
+                        for element in shape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                path.move(to: transformedPoint)
+                            case .line(let to):
+                                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                path.addLine(to: transformedPoint)
+                            case .curve(let to, let control1, let control2):
+                                let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                                path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
+                            case .quadCurve(let to, let control):
+                                let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                                let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                                path.addQuadCurve(to: transformedTo, control: transformedControl)
+                            case .close:
+                                path.closeSubpath()
+                            }
                         }
                     }
+                    .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    // NO .transformEffect! Coordinates already transformed above (same as actual object)
+                    .opacity(0.8)
                 }
-                .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                // NO .transformEffect! Coordinates already transformed above (same as actual object)
-                .opacity(0.8)
                 
                 // Marquee shows scaling preview without additional handles (handled by point system below)
             }
