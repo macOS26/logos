@@ -631,12 +631,15 @@ struct ScaleHandles: View {
         )
         
         // Calculate scale factors with reasonable bounds to prevent extreme values
-        let minDistance: CGFloat = 20.0 // Minimum distance threshold for reliable scaling
+        // ADAPTIVE MINIMUM DISTANCE: Base threshold on object size to handle thin/narrow objects
+        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        let adaptiveMinDistanceX = min(20.0, max(2.0, abs(baseBounds.width) * 0.05))  // 5% of width, min 2pt, max 20pt
+        let adaptiveMinDistanceY = min(20.0, max(2.0, abs(baseBounds.height) * 0.05)) // 5% of height, min 2pt, max 20pt
         let maxScale: CGFloat = 10.0    // Maximum scale factor to prevent extreme scaling
         let minScale: CGFloat = 0.1     // Minimum scale factor to prevent inversion
         
-        var scaleX = abs(startDistance.x) > minDistance ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
-        var scaleY = abs(startDistance.y) > minDistance ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
+        var scaleX = abs(startDistance.x) > adaptiveMinDistanceX ? abs(currentDistance.x) / abs(startDistance.x) : 1.0
+        var scaleY = abs(startDistance.y) > adaptiveMinDistanceY ? abs(currentDistance.y) / abs(startDistance.y) : 1.0
         
         // Clamp scale factors to reasonable bounds
         scaleX = min(max(scaleX, minScale), maxScale)
@@ -654,6 +657,7 @@ struct ScaleHandles: View {
         print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))\(isShiftPressed ? " (PROPORTIONAL)" : "")")
         print("   🖱️ Cursor: (\(String(format: "%.1f", currentLocation.x)), \(String(format: "%.1f", currentLocation.y))) → Distance: (\(String(format: "%.1f", currentDistance.x)), \(String(format: "%.1f", currentDistance.y)))")
         print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
+        print("   🎯 Adaptive thresholds: X=\(String(format: "%.1f", adaptiveMinDistanceX))pt, Y=\(String(format: "%.1f", adaptiveMinDistanceY))pt (based on bounds: \(String(format: "%.1f", baseBounds.width))×\(String(format: "%.1f", baseBounds.height)))")
         
         // Apply preview scaling
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
@@ -887,6 +891,7 @@ struct RotateHandles: View {
     @State private var rotationAnchorPoint: CGPoint = .zero
     @State private var startAngle: CGFloat = 0.0
     @State private var isShiftPressed = false  // For 15-degree increment snapping
+    @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds like scale tool
     
     private let handleSize: CGFloat = 8
     
@@ -905,20 +910,28 @@ struct RotateHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             
-            // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE
+            // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isRotating && !previewTransform.isIdentity {
-                // Show the actual rotated shape path, not just bounds
+                // CRITICAL FIX: Apply the SAME transformation that will be applied to the actual object
+                // Transform the path coordinates directly (same as finishRotation does)
                 Path { path in
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            path.move(to: to.cgPoint)
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.move(to: transformedPoint)
                         case .line(let to):
-                            path.addLine(to: to.cgPoint)
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.addLine(to: transformedPoint)
                         case .curve(let to, let control1, let control2):
-                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                            let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                            path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
                         case .quadCurve(let to, let control):
-                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                            path.addQuadCurve(to: transformedTo, control: transformedControl)
                         case .close:
                             path.closeSubpath()
                         }
@@ -927,20 +940,25 @@ struct RotateHandles: View {
                 .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(previewTransform) // Show the actual rotated shape
+                // NO .transformEffect! Coordinates already transformed above (same as actual object)
                 .opacity(0.8)
                 
-                // MARQUEE CENTER POINT: Show on the rotated shape center
-                let rotatedBounds = shape.bounds.applying(previewTransform.concatenating(shape.transform.inverted()))
-                let marqueeCenter = CGPoint(x: rotatedBounds.midX, y: rotatedBounds.midY)
+                // MARQUEE CENTER POINT: Show the rotation anchor point (stays fixed during rotation)
+                let anchorScreenX = rotationAnchorPoint.x * zoomLevel + canvasOffset.x
+                let anchorScreenY = rotationAnchorPoint.y * zoomLevel + canvasOffset.y
                 let isCenterPinned = document.rotationAnchor == .center
                 Rectangle()
                     .fill(isCenterPinned ? Color.red : Color.green)
                     .stroke(Color.white, lineWidth: 1.0)
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(marqueeCenter)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .position(x: anchorScreenX, y: anchorScreenY)
+                    .onTapGesture {
+                        // Allow clicking center to set center anchor
+                        if !isRotating {
+                            document.rotationAnchor = .center
+                            print("🎯 ANCHOR CHANGED: Center rotation selected")
+                        }
+                    }
             }
             
             // CENTER POINT: Green if live, red if pinned anchor
@@ -962,8 +980,8 @@ struct RotateHandles: View {
             
             // 4 Corner handles with color coding
             ForEach(0..<4) { i in
-                let position = cornerPosition(for: i, in: bounds, center: center)
-                let isPinnedCorner = isPinnedAnchorCorner(cornerIndex: i)
+                let position = rotationCornerPosition(for: i, in: bounds, center: center)
+                let isPinnedCorner = isRotationPinnedAnchorCorner(cornerIndex: i)
                 let handleColor = isPinnedCorner ? Color.red : Color.green
                 
                 Rectangle()
@@ -986,8 +1004,8 @@ struct RotateHandles: View {
                     )
                     .onTapGesture {
                         if !isRotating {
-                            document.rotationAnchor = getAnchorForCorner(index: i)
-                            print("🎯 ANCHOR CHANGED: \(getAnchorForCorner(index: i).displayName) rotation selected")
+                            document.rotationAnchor = getRotationAnchorForCorner(index: i)
+                            print("🎯 ANCHOR CHANGED: \(getRotationAnchorForCorner(index: i).displayName) rotation selected")
                         }
                     }
             }
@@ -995,10 +1013,10 @@ struct RotateHandles: View {
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
-            setupKeyEventMonitoring()
+            setupRotationKeyEventMonitoring()
         }
         .onDisappear {
-            teardownKeyEventMonitoring()
+            teardownRotationKeyEventMonitoring()
         }
     }
     
@@ -1008,8 +1026,13 @@ struct RotateHandles: View {
             startRotation(cornerIndex: index, bounds: bounds, dragValue: dragValue)
         }
         
+        // ROTATION FIX: Convert anchor point to screen coordinates like scale tool
         let currentLocation = dragValue.location
-        let rotationCenter = rotationAnchorPoint
+        
+        // Convert anchor point to screen coordinates using manual calculation (same as scale tool)
+        let anchorScreenX = rotationAnchorPoint.x * zoomLevel + canvasOffset.x
+        let anchorScreenY = rotationAnchorPoint.y * zoomLevel + canvasOffset.y
+        let rotationCenter = CGPoint(x: anchorScreenX, y: anchorScreenY)
         
         // Calculate angle from anchor point to current position
         let currentVector = CGPoint(x: currentLocation.x - rotationCenter.x, y: currentLocation.y - rotationCenter.y)
@@ -1026,8 +1049,145 @@ struct RotateHandles: View {
         }
         
         print("🔄 ROTATING: angle=\(String(format: "%.1f", rotationAngle * 180 / .pi))°, shift=\(isShiftPressed)")
+        print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
         
         calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
+    }
+    
+    // MARK: - Rotation Anchor Point Calculation (Rotation-specific versions)
+    
+    /// Get anchor point based on selected rotation mode
+    private func getRotationAnchorPoint(for anchor: RotationAnchor, in bounds: CGRect, cornerIndex: Int) -> CGPoint {
+        switch anchor {
+        case .center:
+            return CGPoint(x: bounds.midX, y: bounds.midY)
+        case .topLeft:
+            return CGPoint(x: bounds.minX, y: bounds.minY)
+        case .topRight:
+            return CGPoint(x: bounds.maxX, y: bounds.minY)
+        case .bottomLeft:
+            return CGPoint(x: bounds.minX, y: bounds.maxY)
+        case .bottomRight:
+            return CGPoint(x: bounds.maxX, y: bounds.maxY)
+        }
+    }
+    
+    /// Check if a corner is the pinned anchor point for rotation
+    private func isRotationPinnedAnchorCorner(cornerIndex: Int) -> Bool {
+        switch document.rotationAnchor {
+        case .center:
+            return false // No corner is pinned when rotating from center
+        case .topLeft:
+            return cornerIndex == 0 // Top-left corner (index 0)
+        case .topRight:
+            return cornerIndex == 1 // Top-right corner (index 1)
+        case .bottomRight:
+            return cornerIndex == 2 // Bottom-right corner (index 2)
+        case .bottomLeft:
+            return cornerIndex == 3 // Bottom-left corner (index 3)
+        }
+    }
+    
+    /// Get rotation anchor for a corner index
+    private func getRotationAnchorForCorner(index: Int) -> RotationAnchor {
+        switch index {
+        case 0: return .topLeft      // Top-left corner
+        case 1: return .topRight     // Top-right corner
+        case 2: return .bottomRight  // Bottom-right corner
+        case 3: return .bottomLeft   // Bottom-left corner
+        default: return .center      // Fallback
+        }
+    }
+    
+    private func rotationCornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
+        // PROFESSIONAL COORDINATE SYSTEM: Use logical coordinates, let SwiftUI handle screen positioning
+        // This prevents off-screen handle positioning issues
+        switch index {
+        case 0: return CGPoint(x: bounds.minX, y: bounds.minY) // Top-left
+        case 1: return CGPoint(x: bounds.maxX, y: bounds.minY) // Top-right
+        case 2: return CGPoint(x: bounds.maxX, y: bounds.maxY) // Bottom-right
+        case 3: return CGPoint(x: bounds.minX, y: bounds.maxY) // Bottom-left
+        default: return center
+        }
+    }
+    
+    /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates (Rotation version)
+    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    private func applyRotationTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let currentTransform = transform ?? shape.transform
+        
+        // Don't apply identity transforms
+        if currentTransform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying rotation transform to shape coordinates: \(shape.name)")
+        
+        // Transform all path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(currentTransform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(currentTransform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(currentTransform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(currentTransform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated after rotation - object origin stays with object")
+    }
+    
+    // MARK: - Rotation Key Event Monitoring
+    @State private var rotationKeyEventMonitor: Any?
+    
+    private func setupRotationKeyEventMonitoring() {
+        rotationKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+            DispatchQueue.main.async {
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+            }
+            return event
+        }
+    }
+    
+    private func teardownRotationKeyEventMonitoring() {
+        if let monitor = rotationKeyEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            rotationKeyEventMonitor = nil
+        }
     }
     
     private func startRotation(cornerIndex: Int, bounds: CGRect, dragValue: DragGesture.Value) {
@@ -1036,9 +1196,14 @@ struct RotateHandles: View {
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
+        document.saveToUndoStack()
         
-        rotationAnchorPoint = getAnchorPoint(for: document.rotationAnchor, in: bounds, cornerIndex: cornerIndex)
-        print("🔄 ROTATION START: Corner \(cornerIndex) → Anchor mode: \(document.rotationAnchor.displayName)")
+        // CRITICAL FIX: Use ORIGINAL bounds (no transform applied) for anchor calculation  
+        // This prevents anchor drift after multiple transformations
+        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        rotationAnchorPoint = getRotationAnchorPoint(for: document.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
+        print("🔄 ROTATION START: Corner \(cornerIndex) → Anchor mode: \(document.rotationAnchor.displayName) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
+        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
     }
     
     private func calculatePreviewRotation(angle: CGFloat, anchor: CGPoint) {
@@ -1048,10 +1213,21 @@ struct RotateHandles: View {
             .rotated(by: angle)
             .translatedBy(x: -anchor.x, y: -anchor.y)
         
+        // CRITICAL FIX: Always calculate from initial transform to prevent drift
         previewTransform = initialTransform.concatenating(rotationTransform)
+        
+        // MARQUEE PREVIEW: Ensure isRotating is true for marquee visibility
         isRotating = true
         
+        // ROTATION LOGGING: Track rotation details
+        print("   🔄 ROTATION PREVIEW:")
+        print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.rotationAnchor.displayName)")
+        print("      Rotation angle: \(String(format: "%.1f", angle * 180 / .pi))°")
+        
         print("   📊 Rotation preview updated: angle=\(String(format: "%.1f", angle * 180 / .pi))° - showing ROTATED SHAPE outline")
+        
+        // Force UI update for preview rendering (without applying to shape)
+        document.objectWillChange.send()
     }
     
     private func finishRotation() {
@@ -1060,19 +1236,29 @@ struct RotateHandles: View {
         document.isHandleScalingActive = false
         
         print("🏁 ROTATION FINISH: Applying final transform to coordinates")
+        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
         
         // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
         // This ensures object origin stays with object after rotation (Adobe Illustrator behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
+            let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
             document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
             
             // Apply the final transform to coordinates and reset transform to identity
-            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            print("✅ ROTATION FINISHED: Applied rotation to coordinates and reset transform to identity")
+            let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+            
+            // Reset preview transform
+            previewTransform = .identity
+            
+            print("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity")
         }
         
         previewTransform = .identity
@@ -1258,18 +1444,15 @@ struct ShearHandles: View {
                 .transformEffect(previewTransform) // FIXED: Use exact same transform order as actual shapes
                 .opacity(0.8)
                 
-                // MARQUEE CENTER POINT: Show on the sheared shape center - FIXED COORDINATE CALCULATION
-                let originalBounds = shape.bounds
-                let transformedBounds = originalBounds.applying(previewTransform)
-                let marqueeCenter = CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
+                // MARQUEE CENTER POINT: Show the shear anchor point (stays fixed during shearing)
+                let anchorScreenX = shearAnchorPoint.x * zoomLevel + canvasOffset.x
+                let anchorScreenY = shearAnchorPoint.y * zoomLevel + canvasOffset.y
                 let isCenterPinned = document.shearAnchor == .center
                 Rectangle()
                     .fill(isCenterPinned ? Color.red : Color.green)
                     .stroke(Color.white, lineWidth: 1.0)
                     .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(marqueeCenter)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .position(x: anchorScreenX, y: anchorScreenY)
             }
             
             // CENTER POINT: Green if live, red if pinned anchor
@@ -1377,9 +1560,14 @@ struct ShearHandles: View {
         startLocation = dragValue.location
         initialBounds = bounds
         initialTransform = shape.transform
+        document.saveToUndoStack()
         
-        shearAnchorPoint = getAnchorPoint(for: document.shearAnchor, in: bounds, cornerIndex: cornerIndex)
-        print("🔄 SHEAR START: Corner \(cornerIndex) → Anchor mode: \(document.shearAnchor.displayName)")
+        // CRITICAL FIX: Use ORIGINAL bounds (no transform applied) for anchor calculation
+        // This prevents anchor drift after multiple transformations
+        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        shearAnchorPoint = getAnchorPoint(for: document.shearAnchor, in: originalBounds, cornerIndex: cornerIndex)
+        print("🔄 SHEAR START: Corner \(cornerIndex) → Anchor mode: \(document.shearAnchor.displayName) at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
     }
     
     private func calculatePreviewShear(shearX: CGFloat, shearY: CGFloat, anchor: CGPoint) {
