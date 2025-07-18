@@ -1520,20 +1520,28 @@ struct ShearHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
             
-            // MARQUEE PREVIEW: Show ACTUAL SHEARED SHAPE OUTLINE
+            // MARQUEE PREVIEW: Show ACTUAL SHEARED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isShearing && !previewTransform.isIdentity {
-                // Show the actual sheared shape path, not just bounds
+                // CRITICAL FIX: Apply the SAME transformation that will be applied to the actual object
+                // Transform the path coordinates directly (same as finishShear does)
                 Path { path in
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
-                            path.move(to: to.cgPoint)
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.move(to: transformedPoint)
                         case .line(let to):
-                            path.addLine(to: to.cgPoint)
+                            let transformedPoint = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            path.addLine(to: transformedPoint)
                         case .curve(let to, let control1, let control2):
-                            path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(previewTransform)
+                            let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(previewTransform)
+                            path.addCurve(to: transformedTo, control1: transformedControl1, control2: transformedControl2)
                         case .quadCurve(let to, let control):
-                            path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            let transformedTo = CGPoint(x: to.x, y: to.y).applying(previewTransform)
+                            let transformedControl = CGPoint(x: control.x, y: control.y).applying(previewTransform)
+                            path.addQuadCurve(to: transformedTo, control: transformedControl)
                         case .close:
                             path.closeSubpath()
                         }
@@ -1542,7 +1550,7 @@ struct ShearHandles: View {
                 .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [4.0 / zoomLevel, 4.0 / zoomLevel]))
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(previewTransform) // FIXED: Use exact same transform order as actual shapes
+                // NO .transformEffect! Coordinates already transformed above (same as actual object)
                 .opacity(0.8)
                 
                 // MARQUEE CENTER POINT: Show the shear anchor point (stays fixed during shearing)
