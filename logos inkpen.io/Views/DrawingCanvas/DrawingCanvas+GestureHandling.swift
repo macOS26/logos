@@ -173,16 +173,7 @@ extension DrawingCanvas {
             if isDrawing {
                 handleSelectionDrag(value: value, geometry: geometry)
             }
-        case .scale:
-            // Scale tool doesn't handle drag gestures directly - scaling is handled by the scale handles
-            // Just handle selection like the selection tool
-            if !isDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                
-                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
-                    selectObjectAt(startLocation)
-                }
-            }
+
         case .rotate:
             // Rotate tool doesn't handle drag gestures directly - rotation is handled by the rotation handles
             // Just handle selection like the selection tool
