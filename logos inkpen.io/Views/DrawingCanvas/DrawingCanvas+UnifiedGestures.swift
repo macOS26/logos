@@ -88,8 +88,10 @@ extension DrawingCanvas {
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let tapThreshold: Double = 3.0 // Very small movement counts as a tap
         
-        // If this was essentially a tap (minimal movement), handle as tap
-        if dragDistance <= tapThreshold {
+        // BEZIER PEN EXCEPTION: Don't convert small drags to taps for bezier pen
+        // The bezier pen tool has its own sophisticated tap vs drag detection
+        // Converting small drags to taps can cause duplicate path creation
+        if dragDistance <= tapThreshold && document.currentTool != .bezierPen {
             print("🎯 UNIFIED: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) converted to tap")
             handleUnifiedTap(at: value.startLocation, geometry: geometry)
             return

@@ -42,37 +42,41 @@ extension DrawingCanvas {
         if !isBezierDrawing {
             // CREATE FIRST POINT IMMEDIATELY: Handle both canvas and pasteboard areas consistently
             // This allows click-and-drag for smooth points or simple clicks for corner points
-            
-            // Create the bezier path and add the first point as a corner point
-            bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
-            bezierPoints = [VectorPoint(location)]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0 // First point is active (solid)
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: 1.0,
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: document.defaultFillColor,
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            
-            print("🎯 CREATED FIRST POINT: Started new path at \(location)")
-            print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            // SAFETY CHECK: Only create if we haven't already started a path
+            if activeBezierShape == nil {
+                // Create the bezier path and add the first point as a corner point
+                bezierPath = VectorPath(elements: [.move(to: VectorPoint(location))])
+                bezierPoints = [VectorPoint(location)]
+                isBezierDrawing = true
+                activeBezierPointIndex = 0 // First point is active (solid)
+                bezierHandles.removeAll()
+                
+                // Create real VectorShape with document default colors
+                let strokeStyle = StrokeStyle(
+                    color: document.defaultStrokeColor,
+                    width: 1.0,
+                    opacity: document.defaultStrokeOpacity
+                )
+                let fillStyle = FillStyle(
+                    color: document.defaultFillColor,
+                    opacity: document.defaultFillOpacity
+                )
+                
+                activeBezierShape = VectorShape(
+                    name: "Bezier Path",
+                    path: bezierPath!,
+                    strokeStyle: strokeStyle,
+                    fillStyle: fillStyle
+                )
+                
+                // Add the real shape to the document immediately
+                document.addShape(activeBezierShape!)
+                
+                print("🎯 CREATED FIRST POINT: Started new path at \(location)")
+                print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+            } else {
+                print("🎯 BEZIER PEN TAP: Path already started - ignoring duplicate creation attempt")
+            }
             return
         } else {
             // PURE CLICK: Add corner point (no handles)
@@ -124,7 +128,8 @@ extension DrawingCanvas {
         let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
         
         // Handle first point creation if no bezier path is active (fixes gesture ordering issue)
-        if !isBezierDrawing {
+        // SAFETY CHECK: Only create if we haven't already started a path
+        if !isBezierDrawing && activeBezierShape == nil {
             // Create the first point immediately at the start location
             let firstPoint = VectorPoint(startLocation)
             bezierPath = VectorPath(elements: [.move(to: firstPoint)])
@@ -155,6 +160,8 @@ extension DrawingCanvas {
             document.addShape(activeBezierShape!)
             
             print("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(startLocation)")
+        } else if !isBezierDrawing && activeBezierShape != nil {
+            print("🎯 BEZIER PEN DRAG: Path already started by tap handler - continuing with existing path")
         }
         
         // Regular bezier pen drag handling (for existing paths)
