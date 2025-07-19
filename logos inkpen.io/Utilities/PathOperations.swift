@@ -21,7 +21,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
     case split = "Mosaic"                   // CoreGraphics "Mosaic" - True stained glass: preserve ALL visible areas, no subtraction
     case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
-    case merge = "Merge"                    // Adobe Illustrator "Merge" - Unite + remove strokes
+    case merge = "Merge"                    // Adobe Illustrator "Merge" - Cut + group by color (no joining)
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
     case minusBack = "Kick"                 // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
@@ -58,7 +58,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
         case .split: return "Creates stained glass effect - preserves ALL visible areas, breaks at intersections, no subtraction (CoreGraphics)"
         case .cut: return "Removes hidden parts with curve preservation (CoreGraphics)"
-        case .merge: return "Maintains composite appearance then merges same colors: 1) Cut all shapes, 2) Union same colors"
+        case .merge: return "Maintains composite appearance, keeps all pieces separate: 1) Cut all shapes, 2) Group by color (no joining)"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
@@ -107,13 +107,10 @@ class ProfessionalPathOperations {
         return ProfessionalPathOperations.professionalCut(paths)
     }
     
-    /// MERGE: Combines shapes and removes strokes between overlapping areas (Adobe Illustrator "Merge")
-    /// Uses the same CoreGraphics Union implementation for better performance and curve preservation
+    /// MERGE: Applies Cut operation, keeps all pieces separate (no joining)
+    /// Uses CoreGraphics Cut operation - all pieces remain separate
     static func merge(_ paths: [CGPath]) -> [CGPath] {
-        if let unionResult = professionalUnion(paths) {
-            return [unionResult]
-        }
-        return []
+        return professionalCut(paths)
     }
     
     /// CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")

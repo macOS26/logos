@@ -447,18 +447,18 @@ public class CoreGraphicsPathOperations {
     
     // MARK: - Merge Operations (CoreGraphics Alternative for Color-Based Merging)
     
-    /// Merge operation: Applies Cut to all shapes first, then merges same colors
+    /// Merge operation: Applies Cut to all shapes first, keeps all pieces separate (no joining)
     /// - Parameters:
     ///   - paths: Array of paths to merge
     ///   - colors: Array of fill colors (same order as paths)
     ///   - fillRule: Fill rule to use (.winding or .evenOdd)
-    /// - Returns: Array of tuples: (mergedPath, originalShapeIndex)
+    /// - Returns: Array of tuples: (cutPath, originalShapeIndex)
     static func mergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor], using fillRule: CGPathFillRule = .winding) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with two-step process")
+        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with CUT - no joining")
         
         // STEP 1: Apply Cut logic to ALL shapes to remove hidden overlaps and maintain visual appearance
         print("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...")
@@ -466,8 +466,8 @@ public class CoreGraphicsPathOperations {
         
         print("   ✅ Cut produced \(cutResults.count) pieces from \(paths.count) original shapes")
         
-        // STEP 2: Group cut results by color and merge same colors
-        print("   🎨 STEP 2: Grouping cut results by color and merging same colors...")
+        // STEP 2: Group cut results by color but keep all pieces separate
+        print("   🎨 STEP 2: Grouping cut results by color (keeping all pieces separate)...")
         
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
         
@@ -486,38 +486,16 @@ public class CoreGraphicsPathOperations {
         
         var resultPaths: [(CGPath, Int)] = []
         
-        // STEP 3: Union pieces within each color group
+        // STEP 3: Keep all pieces separate - DO NOT join elements together
         for (color, group) in colorGroups {
-            if group.count == 1 {
-                // Single piece in this color group - keep as-is
-                let (path, originalIndex) = group[0]
+            // Add each piece separately - never merge/union them
+            for (path, originalIndex) in group {
                 resultPaths.append((path, originalIndex))
-                print("   ✅ Color \(color): Single piece, keeping as-is")
-            } else {
-                // Multiple pieces in this color group - union them together
-                print("   🔧 Color \(color): Unioning \(group.count) cut pieces...")
-                
-                var mergedPath = group[0].0  // Start with first piece
-                let representativeIndex = group[0].1  // Use first piece's index as representative
-                
-                // Union all pieces in this color group
-                for i in 1..<group.count {
-                    let (pieceToMerge, _) = group[i]
-                    
-                    if let unionResult = union(mergedPath, pieceToMerge, using: fillRule) {
-                        mergedPath = unionResult
-                        print("     → Unioned piece \(i + 1) of \(group.count)")
-                    } else {
-                        print("     ⚠️ Failed to union piece \(i + 1), continuing...")
-                    }
-                }
-                
-                resultPaths.append((mergedPath, representativeIndex))
-                print("   ✅ Color \(color): Merged \(group.count) pieces into 1 unified shape")
             }
+            print("   ✅ Color \(color): Kept \(group.count) pieces separate (no joining)")
         }
         
-        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) color-unified shapes with maintained appearance")
+        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) separate pieces with maintained appearance (no joining)")
         return resultPaths
     }
     
