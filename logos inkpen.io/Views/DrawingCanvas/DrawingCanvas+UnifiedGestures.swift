@@ -83,20 +83,11 @@ extension DrawingCanvas {
     }
     
     /// UNIFIED DRAG ENDED HANDLER - Works consistently for all areas
-    /// FIXED: Proper drag-to-tap conversion without bouncing
+    /// CRITICAL FIX: NO drag-to-tap conversion to prevent interrupting real drags
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Calculate drag distance to determine if this was a tap or drag
+        // FIXED: Always handle as completed drag - NO conversion to tap
+        // This prevents drags from getting "lost" mid-operation
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let tapThreshold: Double = 3.0 // Very small movement counts as a tap
-        
-        if dragDistance <= tapThreshold {
-            // This was essentially a tap - handle as unified tap
-            print("🎯 UNIFIED: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) - converting to tap")
-            handleUnifiedTap(at: value.startLocation, geometry: geometry)
-            return
-        }
-        
-        // Handle as completed drag
         print("🎯 UNIFIED: Drag ended - handling as completed drag operation (\(String(format: "%.1f", dragDistance))px)")
         
         // Handle as completed drag

@@ -184,9 +184,9 @@ extension DrawingCanvas {
                 handleHover(phase: phase, geometry: geometry)
             }
             .simultaneousGesture(
-                // UNIFIED DRAG GESTURE - Handles both taps and drags
-                // CRITICAL: Use minimumDistance: 0 for immediate response
-                DragGesture(minimumDistance: 0)
+                // UNIFIED DRAG GESTURE - FIXED: Use reasonable minimum distance 
+                // This prevents tiny movements from interrupting real drags
+                DragGesture(minimumDistance: 3)
                     .onChanged { value in
                         handleUnifiedDragChanged(value: value, geometry: geometry)
                     }
@@ -204,6 +204,10 @@ extension DrawingCanvas {
                         handleZoomGestureEnded(value: value, geometry: geometry)
                     }
             )
+            .onTapGesture { location in
+                // SINGLE TAP: Selection/deselection - SEPARATED from drag gesture
+                handleUnifiedTap(at: location, geometry: geometry)
+            }
             .onTapGesture(count: 2) { location in
                 // DOUBLE TAP: Fit to page - RESTORED with proper gesture ordering
                 fitToPage(geometry: geometry)
