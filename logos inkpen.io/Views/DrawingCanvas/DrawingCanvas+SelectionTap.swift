@@ -86,15 +86,15 @@ extension DrawingCanvas {
                 // FIXED: Proper hit testing logic for stroke vs filled shapes
                 var isHit = false
                 
-                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) should NEVER be selectable
+                // They should always trigger deselection like clicking on empty space
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 
                 if isBackgroundShape {
-                    // Background shapes: Use EXACT bounds checking - no tolerance!
-                    // This ensures Canvas/Pasteboard only respond to clicks EXACTLY within their bounds
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    isHit = shapeBounds.contains(location)
-                    print("  - Background shape hit test: \(isHit)")
+                    // SKIP background shapes entirely - they should not be selectable
+                    // This ensures clicking on Canvas/Pasteboard always deselects, never selects
+                    print("  - Background shape '\(shape.name)' SKIPPED - not selectable")
+                    continue
                 } else if shape.isGroupContainer {
                     // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
                     print("  - Group container: checking \(shape.groupedShapes.count) grouped shapes")
@@ -206,17 +206,16 @@ extension DrawingCanvas {
             }
         } else {
             // NO OBJECT HIT: Clicking on background or empty space
-            let documentBounds = document.documentBounds
-            let isOutsideDocument = !documentBounds.contains(location)
-            
-            if isOutsideDocument {
-                // Clicking in gray background area outside document always deselects
+            // FIXED: Always deselect when clicking empty areas, regardless of location
+            // This ensures Canvas AND Pasteboard areas both deselect properly
+            if !isShiftPressed && !isCommandPressed {
+                print("🎯 SELECTION TAP: DESELECTING - clicked on empty area at \(location)")
+                print("🎯 SELECTION TAP: Before deselect - selected shapes: \(document.selectedShapeIDs.count), selected text: \(document.selectedTextIDs.count)")
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
-            } else if !isShiftPressed && !isCommandPressed {
-                // Clicking inside document bounds on empty space deselects
-                document.selectedShapeIDs.removeAll()
-                document.selectedTextIDs.removeAll()
+                print("🎯 SELECTION TAP: After deselect - selected shapes: \(document.selectedShapeIDs.count), selected text: \(document.selectedTextIDs.count)")
+            } else {
+                print("🎯 SELECTION TAP: MODIFIER HELD - keeping selection (shift/cmd)")
             }
         }
         

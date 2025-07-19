@@ -122,13 +122,13 @@ extension DrawingCanvas {
                 var isHit = false
                 
                 // Use the same hit testing logic as selection tool
-                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) need special handling
+                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) should NEVER be selectable
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                 
                 if isBackgroundShape {
-                    // Background shapes: Use EXACT bounds checking - no tolerance!
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    isHit = shapeBounds.contains(location)
+                    // SKIP background shapes entirely - they should not be selectable
+                    print("  - Background shape '\(shape.name)' SKIPPED - not selectable")
+                    continue
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil

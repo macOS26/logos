@@ -37,6 +37,7 @@ struct MainView: View {
                     .frame(width: 48)
                     .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
                     .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
+                    .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
                 
                                 // Center Drawing Area - Flexible width - STRICTLY CONSTRAINED TO CENTER COLUMN
                 GeometryReader { geometry in
@@ -49,19 +50,23 @@ struct MainView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .allowsHitTesting(false) // Background doesn't capture gestures
                             
-                            // Main Drawing Canvas - PROPERLY CLIPPED TO CENTER COLUMN ONLY
+                            // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
                             DrawingCanvas(document: document)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .clipped() // CRITICAL: Clip to view bounds - prevents extending under toolbar
+                                .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
                                 .background(Color.clear) // Ensure no background extension
                                 .padding(.top, document.showRulers ? 20 : 0)
                                 .padding(.leading, document.showRulers ? 20 : 0)
+                                .zIndex(1) // CRITICAL: Canvas below panels but above background
+                                .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
                             
-                            // Rulers
+                            // Rulers - CRITICAL: Above canvas but below panels 
                             RulersView(document: document, geometry: geometry)
+                                .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
+                                .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped() // DOUBLE CLIP: Ensure entire ZStack is clipped
+                        // CRITICAL FIX: NO CLIPPING - use zIndex to layer toolbar above DrawingCanvas
                         
                         // Status Bar at bottom
                         StatusBar(document: document)
@@ -70,10 +75,12 @@ struct MainView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
+                .allowsHitTesting(true) // CRITICAL: Center column captures all gestures
                 
                 // Right Panel - Fixed width, hugs right
                 RightPanel(document: document)
                     .frame(width: 280)
+                    .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

@@ -164,7 +164,7 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
         canvasBaseContent(geometry: geometry)
-            .clipped()
+            // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
             .onAppear {
                 setupCanvas(geometry: geometry)
                 setupKeyEventMonitoring()
@@ -177,10 +177,6 @@ extension DrawingCanvas {
             .onChange(of: document.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
             }
-            .onTapGesture { location in
-                // UNIFIED GESTURE SYSTEM: Handle ALL clicks consistently
-                handleUnifiedTap(at: location, geometry: geometry)
-            }
             .onHover { isHovering in
                 // Enable mouse tracking for rubber band preview
             }
@@ -188,9 +184,9 @@ extension DrawingCanvas {
                 handleHover(phase: phase, geometry: geometry)
             }
             .simultaneousGesture(
-                // UNIFIED DRAG GESTURE - Consistent behavior for all areas
-                // CRITICAL FIX: Use minimum distance to prevent selection tool bouncing
-                DragGesture(minimumDistance: 5)
+                // UNIFIED DRAG GESTURE - Handles both taps and drags
+                // CRITICAL: Use minimumDistance: 0 for immediate response
+                DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         handleUnifiedDragChanged(value: value, geometry: geometry)
                     }
@@ -209,6 +205,7 @@ extension DrawingCanvas {
                     }
             )
             .onTapGesture(count: 2) { location in
+                // DOUBLE TAP: Fit to page - RESTORED with proper gesture ordering
                 fitToPage(geometry: geometry)
             }
             .onChange(of: document.zoomRequest) {
