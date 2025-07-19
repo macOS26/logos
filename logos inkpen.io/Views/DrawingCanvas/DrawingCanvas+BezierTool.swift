@@ -235,16 +235,28 @@ extension DrawingCanvas {
             if !isDraggingBezierHandle {
                 isDraggingBezierHandle = true
                 
-                // ✨ NEW BEHAVIOR: First plot the new anchor point at click location
-                let newPoint = VectorPoint(startLocation)
-                bezierPoints.append(newPoint)
-                activeBezierPointIndex = bezierPoints.count - 1
+                // DUPLICATE POINT FIX: Check if the last point was just created at this location
+                // This prevents duplicate points when both tap and drag handlers fire
+                let lastPoint = bezierPoints.last
+                let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
                 
-                // Add the new point to the path as a line segment initially
-                bezierPath?.addElement(.line(to: newPoint))
-                
-                print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
-                print("📏 Now creating smooth curve handles as user drags...")
+                if distanceToLastPoint > 5.0 {
+                    // Only add new point if it's not too close to the last one
+                    let newPoint = VectorPoint(startLocation)
+                    bezierPoints.append(newPoint)
+                    activeBezierPointIndex = bezierPoints.count - 1
+                    
+                    // Add the new point to the path as a line segment initially
+                    bezierPath?.addElement(.line(to: newPoint))
+                    
+                    print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
+                    print("📏 Now creating smooth curve handles as user drags...")
+                } else {
+                    // Point already exists nearby (probably from tap handler)
+                    activeBezierPointIndex = bezierPoints.count - 1
+                    print("🎯 EXISTING POINT: Using last point at (\(String(format: "%.1f", lastPoint?.x ?? 0)), \(String(format: "%.1f", lastPoint?.y ?? 0))) - no duplicate created")
+                    print("📏 Creating smooth curve handles as user drags...")
+                }
             }
             
             // Create handles for the newly placed point based on drag direction
