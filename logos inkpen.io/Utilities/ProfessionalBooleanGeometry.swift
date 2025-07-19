@@ -566,18 +566,18 @@ extension ProfessionalPathOperations {
     
     // MARK: - PROFESSIONAL DIVIDE & SPLIT OPERATIONS
     
-    /// PROFESSIONAL MOSAIC: CoreGraphics-based alternative to Divide with curve preservation (formerly "Split")
+    /// PROFESSIONAL MOSAIC: True stained glass effect - preserves ALL visible areas, no subtraction
     /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
     static func professionalSplit(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        print("🔨 PROFESSIONAL MOSAIC: Using CoreGraphics with curve preservation...")
+        print("🔨 PROFESSIONAL MOSAIC: True stained glass - preserving ALL visible areas...")
         
         // Use the new CoreGraphics split operation
         let result = CoreGraphicsPathOperations.split(paths, using: .winding)
         
         if !result.isEmpty {
-            print("✅ PROFESSIONAL MOSAIC: CoreGraphics success - \(result.count) pieces (curves preserved)")
+            print("✅ PROFESSIONAL MOSAIC: SUCCESS - \(result.count) pieces (ALL areas preserved)")
             return result
         } else {
             print("⚠️ CoreGraphics mosaic returned empty result")

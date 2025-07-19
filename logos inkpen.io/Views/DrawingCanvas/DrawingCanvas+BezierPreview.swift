@@ -217,20 +217,22 @@ extension DrawingCanvas {
             ZStack {
                 // Green circle indicating close path area - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                 Circle()
-                    .stroke(Color.green, lineWidth: 2.0 / document.zoomLevel) // Scale-independent
+                    .stroke(Color.green, lineWidth: 2.0)
                     .fill(Color.green.opacity(0.1))
-                    .frame(width: 16 / document.zoomLevel, height: 16 / document.zoomLevel) // Scale-independent
-                    .position(closePathHintLocation)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    .frame(width: 16, height: 16) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: closePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
+                        y: closePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                    ))
                 
                 // Small "close" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                 Image(systemName: "multiply.circle.fill")
                     .foregroundColor(.green)
-                    .font(.system(size: 12 / document.zoomLevel)) // Scale-independent
-                    .position(closePathHintLocation)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    .font(.system(size: 12)) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: closePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
+                        y: closePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                    ))
             }
             .animation(.easeInOut(duration: 0.2), value: showClosePathHint)
         }
@@ -258,10 +260,11 @@ extension DrawingCanvas {
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
                             .fill(Color.blue)
-                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                            .position(control1Location)
-                            .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                            .frame(width: 4, height: 4) // Fixed UI size - does not scale with artwork
+                            .position(CGPoint(
+                                x: control1Location.x * document.zoomLevel + document.canvasOffset.x,
+                                y: control1Location.y * document.zoomLevel + document.canvasOffset.y
+                            ))
                     }
                     
                     if let control2 = handleInfo.control2 {
@@ -277,10 +280,11 @@ extension DrawingCanvas {
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
                             .fill(Color.blue)
-                            .frame(width: 4 / document.zoomLevel, height: 4 / document.zoomLevel) // Scale-independent
-                            .position(control2Location)
-                            .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                            .frame(width: 4, height: 4) // Fixed UI size - does not scale with artwork
+                            .position(CGPoint(
+                                x: control2Location.x * document.zoomLevel + document.canvasOffset.x,
+                                y: control2Location.y * document.zoomLevel + document.canvasOffset.y
+                            ))
                     }
                 }
             }
@@ -296,10 +300,6 @@ extension DrawingCanvas {
                 let pointLocation = CGPoint(x: point.x, y: point.y)
                 let isActive = activeBezierPointIndex == index
                 
-                // PROFESSIONAL SCALE-INDEPENDENT SIZING (Adobe Illustrator Standards)
-                let anchorSize = 6.0 / document.zoomLevel  // Scale-independent anchor point size
-                let lineWidth = 1.0 / document.zoomLevel   // Scale-independent stroke width
-                
                 // PROFESSIONAL ANCHOR POINT RENDERING - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                 // Active point: solid black square with white stroke
                 // Inactive point: hollow white square with black stroke
@@ -308,12 +308,13 @@ extension DrawingCanvas {
                     .fill(isActive ? Color.black : Color.white)
                     .overlay(
                         Rectangle()
-                            .stroke(isActive ? Color.white : Color.black, lineWidth: lineWidth)
+                            .stroke(isActive ? Color.white : Color.black, lineWidth: 1.0)
                     )
-                    .frame(width: anchorSize, height: anchorSize)
-                    .position(pointLocation)
-                    .scaleEffect(document.zoomLevel, anchor: .topLeading)   // ✅ FIXED: Added missing anchor
-                    .offset(x: document.canvasOffset.x, y: document.canvasOffset.y) // Same as arrow tool
+                    .frame(width: 6, height: 6) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
+                        y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
+                    ))
             }
         }
     }

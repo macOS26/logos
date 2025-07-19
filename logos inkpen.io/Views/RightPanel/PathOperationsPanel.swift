@@ -265,7 +265,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(splitShape)
             }
-            print("✅ MOSAIC: Created \(resultShapes.count) pieces with PERFECT stained glass window colors (topmost shape wins in overlaps)")
+            print("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)")
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation

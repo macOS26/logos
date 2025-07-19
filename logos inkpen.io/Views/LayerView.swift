@@ -451,11 +451,11 @@ struct SelectionOutline: View {
             Rectangle()
                 .fill(Color.blue)
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                .position(CGPoint(
+                    x: center.x * zoomLevel + canvasOffset.x,
+                    y: center.y * zoomLevel + canvasOffset.y
+                ))
             
             // 4 Corner handles - ALL BLUE
             ForEach(0..<4) { i in
@@ -464,11 +464,11 @@ struct SelectionOutline: View {
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
-                    .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                    .position(position)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
+                    .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: position.x * zoomLevel + canvasOffset.x,
+                        y: position.y * zoomLevel + canvasOffset.y
+                    ))
             }
         }
     }
@@ -591,11 +591,11 @@ struct ScaleHandles: View {
                     Rectangle()
                         .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                         .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                        .position(cornerPos)
-                        .scaleEffect(zoomLevel, anchor: .topLeading)
-                        .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .transformEffect(shape.transform)
+                        .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                        .position(CGPoint(
+                            x: cornerPos.x * zoomLevel + canvasOffset.x,
+                            y: cornerPos.y * zoomLevel + canvasOffset.y
+                        ))
                         .onTapGesture {
                             if !isScaling {
                                 // SINGLE CLICK: Set this as the locked pin point (RED)
@@ -603,7 +603,7 @@ struct ScaleHandles: View {
                             }
                         }
                         .highPriorityGesture(
-                            DragGesture()
+                            DragGesture(minimumDistance: 3)
                                 .onChanged { value in
                                     // DRAG: Scale away from the locked pin point
                                     handleScalingFromPoint(draggedPointIndex: cornerIndex, dragValue: value, bounds: bounds, center: center)
@@ -620,11 +620,11 @@ struct ScaleHandles: View {
             Rectangle()
                 .fill(isCenterLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
                 .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                .position(CGPoint(
+                    x: center.x * zoomLevel + canvasOffset.x,
+                    y: center.y * zoomLevel + canvasOffset.y
+                ))
                 .onTapGesture {
                     if !isScaling {
                         // SINGLE CLICK: Set center as the locked pin point (RED)
@@ -632,7 +632,7 @@ struct ScaleHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Scale away from the locked pin point
                             handleScalingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
@@ -930,7 +930,7 @@ struct ScaleHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Scale away from the locked pin point
                             handleScalingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
@@ -1473,7 +1473,7 @@ struct RotateHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             handlePointRotation(anchorPointIndex: nil, dragValue: value, bounds: bounds, center: center)
                         }
@@ -1541,7 +1541,7 @@ struct RotateHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             handlePointRotation(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
@@ -2077,7 +2077,7 @@ struct ShearHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Shear away from the locked pin point
                             handleShearingFromPoint(draggedPointIndex: nil, dragValue: value, bounds: bounds, center: center)
@@ -2287,7 +2287,7 @@ struct ShearHandles: View {
                     }
                 }
                 .highPriorityGesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Shear away from the locked pin point
                             handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
@@ -2753,7 +2753,7 @@ struct EnvelopeHandles: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(shape.transform)
                 .gesture(
-                    DragGesture()
+                    DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Warp envelope from this corner
                             handleEnvelopeWarp(cornerIndex: cornerIndex, dragValue: value)
