@@ -333,6 +333,9 @@ struct RGBInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .rgb(currentColor)
+        // FIXED: Also update the document's default color when RGB values change
+        let vectorColor = VectorColor.rgb(currentColor)
+        document.setActiveColor(vectorColor)
     }
     
     private func loadFromSharedColor() {

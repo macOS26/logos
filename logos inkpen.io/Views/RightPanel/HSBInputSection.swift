@@ -553,6 +553,9 @@ struct HSBInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .hsb(currentColor)
+        // FIXED: Also update the document's default color when HSB values change
+        let vectorColor = VectorColor.hsb(currentColor)
+        document.setActiveColor(vectorColor)
     }
     
     private func loadFromSharedColor() {

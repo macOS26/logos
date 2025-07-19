@@ -19,12 +19,12 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
     
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
-    case split = "Split"                    // CoreGraphics "Split" - Break at intersections (curves preserved)
+    case split = "Mosaic"                   // CoreGraphics "Mosaic" (formerly "Split") - Break at intersections (curves preserved)
     case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
     case merge = "Merge"                    // Adobe Illustrator "Merge" - Unite + remove strokes
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
-    case minusBack = "Minus Back"           // Adobe Illustrator "Minus Back" - Back subtracts from front
+    case minusBack = "Kick"                 // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
     
     var iconName: String {
         switch self {
@@ -56,7 +56,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
-        case .split: return "Breaks shapes at intersections with curve preservation (CoreGraphics)"
+        case .split: return "Creates mosaic effect by breaking shapes at intersections with curve preservation (CoreGraphics)"
         case .cut: return "Removes hidden parts with curve preservation (CoreGraphics)"
         case .merge: return "Maintains composite appearance then merges same colors: 1) Cut all shapes, 2) Union same colors"
         case .crop: return "Uses top shape to crop shapes beneath it"
@@ -96,7 +96,7 @@ class ProfessionalPathOperations {
     
     // MARK: - ADOBE ILLUSTRATOR PATHFINDER EFFECTS
     
-    /// SPLIT: CoreGraphics-based path breaking with curve preservation (replaces Divide)
+    /// MOSAIC: CoreGraphics-based path breaking with curve preservation (formerly "Split", replaces Divide)
     static func split(_ paths: [CGPath]) -> [CGPath] {
         // Use professional CoreGraphics implementation
         return ProfessionalPathOperations.professionalSplit(paths)
@@ -126,7 +126,7 @@ class ProfessionalPathOperations {
         return professionalDieline(paths)
     }
     
-    /// MINUS BACK: Back shape subtracts from front shape (Adobe Illustrator "Minus Back")
+    /// KICK: Back shape subtracts from front shape (Adobe Illustrator "Kick", formerly "Minus Back")
     static func minusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         // This is the opposite of Punch
         return professionalMinusFront(backPath, from: frontPath)

@@ -151,10 +151,24 @@ struct ColorPanel: View {
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
-            // Otherwise, apply color to selected objects based on modifier keys
+            // FIXED: Always update the default color for new shapes based on active target
+            if NSEvent.modifierFlags.contains(.option) {
+                // Option+Click = stroke color
+                document.defaultStrokeColor = color
+                document.activeColorTarget = .stroke
+                print("🎨 PRESET: Set default stroke color: \(color)")
+            } else {
+                // Regular click = fill color  
+                document.defaultFillColor = color
+                document.activeColorTarget = .fill
+                print("🎨 PRESET: Set default fill color: \(color)")
+            }
+            
+            // Apply to selected objects based on modifier keys
             if !document.selectedShapeIDs.isEmpty {
                 // Apply to shapes
                 guard let layerIndex = document.selectedLayerIndex else { return }
+                document.saveToUndoStack()
                 
                 for shapeID in document.selectedShapeIDs {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
@@ -179,6 +193,12 @@ struct ColorPanel: View {
             
             if !document.selectedTextIDs.isEmpty {
                 // Apply to text
+                if !document.selectedShapeIDs.isEmpty {
+                    // Don't save to undo stack twice
+                } else {
+                    document.saveToUndoStack()
+                }
+                
                 for textID in document.selectedTextIDs {
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                         document.textObjects[textIndex].typography.fillColor = color

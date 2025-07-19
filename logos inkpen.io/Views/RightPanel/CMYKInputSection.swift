@@ -372,6 +372,9 @@ struct CMYKInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .cmyk(currentColor)
+        // FIXED: Also update the document's default color when CMYK values change
+        let vectorColor = VectorColor.cmyk(currentColor)
+        document.setActiveColor(vectorColor)
     }
     
     private func loadFromSharedColor() {

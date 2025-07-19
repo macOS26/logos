@@ -8,6 +8,24 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Hashable CGPoint Wrapper for macOS < 15.0 Compatibility
+struct HashableCGPoint: Hashable, Equatable {
+    let point: CGPoint
+    
+    init(_ point: CGPoint) {
+        self.point = point
+    }
+    
+    static func == (lhs: HashableCGPoint, rhs: HashableCGPoint) -> Bool {
+        return lhs.point.x == rhs.point.x && lhs.point.y == rhs.point.y
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(point.x)
+        hasher.combine(point.y)
+    }
+}
+
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @State internal var currentPath: VectorPath?
@@ -77,7 +95,7 @@ struct DrawingCanvas: View {
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT
     // This handles the case where multiple points exist at the same X,Y coordinates
     // Essential for maintaining continuity in closed paths (circles, etc.)
-    @State internal var coincidentPointClusters: [CGPoint: [PointID]] = [:]
+    @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointRadius: CGFloat = 2.0 // Points within this radius are considered coincident
     @State internal var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
     

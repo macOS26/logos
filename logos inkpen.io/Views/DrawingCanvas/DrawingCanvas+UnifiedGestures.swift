@@ -82,22 +82,13 @@ extension DrawingCanvas {
     }
     
     /// UNIFIED DRAG ENDED HANDLER - Works consistently for all areas
-    /// Removes pasteboard tap simulation and uses clean logic
+    /// FIXED: No more drag-to-tap conversion to prevent selection bouncing
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Calculate drag distance to determine if this was a tap or drag
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let tapThreshold: Double = 3.0 // Very small movement counts as a tap
+        // CRITICAL FIX: Removed drag-to-tap conversion that was causing bouncing behavior
+        // Now that we use minimumDistance: 5, we don't need fallback conversion
+        print("🎯 UNIFIED: Drag ended - handling as completed drag operation")
         
-        // BEZIER PEN EXCEPTION: Don't convert small drags to taps for bezier pen
-        // The bezier pen tool has its own sophisticated tap vs drag detection
-        // Converting small drags to taps can cause duplicate path creation
-        if dragDistance <= tapThreshold && document.currentTool != .bezierPen {
-            print("🎯 UNIFIED: Zero-distance drag (\(String(format: "%.1f", dragDistance))px) converted to tap")
-            handleUnifiedTap(at: value.startLocation, geometry: geometry)
-            return
-        }
-        
-        // Otherwise handle as completed drag
+        // Handle as completed drag
         switch document.currentTool {
         case .hand:
             finishPanGesture()
@@ -123,22 +114,10 @@ extension DrawingCanvas {
     
     // MARK: - Unified Selection Drag Handler
     
-    /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas
+    /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas  
+    /// FIXED: Simplified logic to prevent bouncing behavior
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-        
-        // Calculate drag distance for small movement detection
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let minimumDragThreshold: Double = 8.0
-        
-        // Small movements should attempt selection first
-        if dragDistance < minimumDragThreshold {
-            if document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty {
-                print("🎯 UNIFIED: Small movement (\(String(format: "%.1f", dragDistance))px) - attempting selection")
-                selectObjectAt(startLocation)
-                return
-            }
-        }
         
         // Start drag if not already dragging
         if !isDrawing {

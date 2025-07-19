@@ -189,7 +189,8 @@ extension DrawingCanvas {
             }
             .simultaneousGesture(
                 // UNIFIED DRAG GESTURE - Consistent behavior for all areas
-                DragGesture(minimumDistance: 0)
+                // CRITICAL FIX: Use minimum distance to prevent selection tool bouncing
+                DragGesture(minimumDistance: 5)
                     .onChanged { value in
                         handleUnifiedDragChanged(value: value, geometry: geometry)
                     }

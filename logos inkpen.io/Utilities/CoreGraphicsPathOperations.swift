@@ -154,7 +154,7 @@ public class CoreGraphicsPathOperations {
     
     // MARK: - Split Operations (NEW! - CoreGraphics Alternative to Divide)
     
-    /// PROFESSIONAL SPLIT: CoreGraphics-based alternative to Divide that preserves curves
+    /// PROFESSIONAL MOSAIC: CoreGraphics-based alternative to Divide that preserves curves (formerly "Split")
     /// Uses native line intersection/subtraction operations to split paths at their intersections
     /// - Parameters:
     ///   - paths: Array of paths to split
@@ -164,7 +164,7 @@ public class CoreGraphicsPathOperations {
         return splitWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
     
-    /// PROFESSIONAL SPLIT with Shape Tracking: Perfect stained glass window effect
+    /// PROFESSIONAL MOSAIC with Shape Tracking: Perfect stained glass window effect (formerly "Split")
     /// Uses spatial analysis to determine which original shape each piece truly belongs to
     /// - Parameters:
     ///   - paths: Array of paths to split
@@ -175,7 +175,7 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL SPLIT (CoreGraphics): Processing \(paths.count) paths with perfect color fidelity")
+        print("🔨 PROFESSIONAL MOSAIC (CoreGraphics): Processing \(paths.count) paths with perfect color fidelity")
         print("   🪟 Stained Glass Window: Each piece gets the color of the shape it belongs to")
         
         // STEP 1: Get all split pieces (without color assignment yet)
@@ -190,7 +190,7 @@ public class CoreGraphicsPathOperations {
             print("   🎨 Piece → Shape \(originalShapeIndex): Color assigned based on spatial analysis")
         }
         
-        print("✅ PROFESSIONAL SPLIT: Created \(resultPaths.count) pieces with PERFECT stained glass window colors")
+        print("✅ PROFESSIONAL MOSAIC: Created \(resultPaths.count) pieces with PERFECT stained glass window colors")
         return resultPaths
     }
     

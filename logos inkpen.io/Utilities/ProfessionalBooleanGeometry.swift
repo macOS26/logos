@@ -558,7 +558,7 @@ extension ProfessionalPathOperations {
         return []
     }
     
-    /// PROFESSIONAL MINUS BACK: Back subtracts from front (Adobe Illustrator "Minus Back")
+    /// PROFESSIONAL KICK: Back subtracts from front (Adobe Illustrator "Kick", formerly "Minus Back")
     static func professionalMinusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         // This is just the reverse of Punch
         return professionalMinusFront(backPath, from: frontPath)
@@ -566,21 +566,21 @@ extension ProfessionalPathOperations {
     
     // MARK: - PROFESSIONAL DIVIDE & SPLIT OPERATIONS
     
-    /// PROFESSIONAL SPLIT: CoreGraphics-based alternative to Divide with curve preservation (NEW!)
+    /// PROFESSIONAL MOSAIC: CoreGraphics-based alternative to Divide with curve preservation (formerly "Split")
     /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
     static func professionalSplit(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
-        print("🔨 PROFESSIONAL SPLIT: Using CoreGraphics with curve preservation...")
+        print("🔨 PROFESSIONAL MOSAIC: Using CoreGraphics with curve preservation...")
         
         // Use the new CoreGraphics split operation
         let result = CoreGraphicsPathOperations.split(paths, using: .winding)
         
         if !result.isEmpty {
-            print("✅ PROFESSIONAL SPLIT: CoreGraphics success - \(result.count) pieces (curves preserved)")
+            print("✅ PROFESSIONAL MOSAIC: CoreGraphics success - \(result.count) pieces (curves preserved)")
             return result
         } else {
-            print("⚠️ CoreGraphics split returned empty result")
+            print("⚠️ CoreGraphics mosaic returned empty result")
             return []
             }
         }
@@ -801,17 +801,17 @@ extension ProfessionalPathOperations {
         return professionalCropWithShapeTracking(paths).map { $0.0 }
     }
     
-    /// PROFESSIONAL DIELINE: Applies Split then converts all results to 1px black strokes with no fill
-    /// This is much more useful than Adobe's outline - it combines split power with dieline visualization
+    /// PROFESSIONAL DIELINE: Applies Mosaic then converts all results to 1px black strokes with no fill
+    /// This is much more useful than Adobe's outline - it combines mosaic power with dieline visualization
     static func professionalDieline(_ paths: [CGPath]) -> [CGPath] {
         guard !paths.isEmpty else { return [] }
         
         print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
         
-        // Step 1: Apply Split operation to cut everything at intersections (with curve preservation)
+        // Step 1: Apply Mosaic operation to cut everything at intersections (with curve preservation)
         let splitPaths = professionalSplit(paths)
         
-        print("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) split shapes ready for dieline conversion")
+        print("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) mosaic shapes ready for dieline conversion")
         return splitPaths
     }
 } 

@@ -248,15 +248,15 @@ struct PathOperationsPanel: View {
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
         case .split:
-            // SPLIT: CoreGraphics-based alternative to Divide with PERFECT stained glass effect
+            // MOSAIC: CoreGraphics-based alternative to Divide with PERFECT stained glass effect
             let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
             for (index, (splitPath, originalShapeIndex)) in splitResults.enumerated() {
                 // Use the exact original shape determined by stained glass tracking
                 let originalShape = selectedShapes[originalShapeIndex]
                 
-                let splitShape = VectorShape(
-                    name: "Split Piece \(index + 1)",
+                                let splitShape = VectorShape(
+                name: "Mosaic Piece \(index + 1)",
                     path: VectorPath(cgPath: splitPath),
                     strokeStyle: originalShape.strokeStyle,
                     fillStyle: originalShape.fillStyle,
@@ -265,7 +265,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(splitShape)
             }
-            print("✅ SPLIT: Created \(resultShapes.count) pieces with PERFECT stained glass window colors (topmost shape wins in overlaps)")
+            print("✅ MOSAIC: Created \(resultShapes.count) pieces with PERFECT stained glass window colors (topmost shape wins in overlaps)")
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
@@ -396,16 +396,16 @@ struct PathOperationsPanel: View {
             print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
             
         case .minusBack:
-            // MINUS BACK: Back objects subtract from front object, result takes color of FRONT object
+            // KICK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
-                print("❌ MINUS BACK requires at least 2 shapes")
+                print("❌ KICK requires at least 2 shapes")
                 return
             }
             
             let frontShape = selectedShapes.last!     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            print("🔪 MINUS BACK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
+            print("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
             
             var resultPath = frontShape.path.cgPath
             
@@ -419,7 +419,7 @@ struct PathOperationsPanel: View {
             
             // Result takes style of FRONT object (Adobe Illustrator standard)
             let resultShape = VectorShape(
-                name: "Minus Back Result",
+                name: "Kick Result",
                 path: VectorPath(cgPath: resultPath),
                 strokeStyle: frontShape.strokeStyle,
                 fillStyle: frontShape.fillStyle,
@@ -427,7 +427,7 @@ struct PathOperationsPanel: View {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ MINUS BACK: Result takes front object's color (\(frontShape.name))")
+            print("✅ KICK: Result takes front object's color (\(frontShape.name))")
         }
         
         guard !resultShapes.isEmpty else {
