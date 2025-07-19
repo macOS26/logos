@@ -20,34 +20,21 @@ extension DrawingCanvas {
         print("🎯 UNIFIED TAP at screen: \(location) canvas: \(canvasLocation)")
         print("🎯 UNIFIED: This is a SINGLE CLICK, not a drag")
         
+        // Cancel bezier drawing for all tools except bezier pen
+        if document.currentTool != .bezierPen && isBezierDrawing {
+            cancelBezierDrawing()
+        }
+        
         // Route to appropriate tool handler based on current tool
         switch document.currentTool {
-        case .selection:
-            if isBezierDrawing { cancelBezierDrawing() }
-            handleSelectionTap(at: canvasLocation)
-            
-        case .scale:
-            if isBezierDrawing { cancelBezierDrawing() }
-            handleSelectionTap(at: canvasLocation)
-            
-        case .rotate:
-            if isBezierDrawing { cancelBezierDrawing() }
-            handleSelectionTap(at: canvasLocation)
-            
-        case .shear:
-            if isBezierDrawing { cancelBezierDrawing() }
-            handleSelectionTap(at: canvasLocation)
-            
-        case .envelope:
-            if isBezierDrawing { cancelBezierDrawing() }
+        case .selection, .scale, .rotate, .shear, .envelope:
+            // All transform tools use selection logic
             handleSelectionTap(at: canvasLocation)
             
         case .directSelection:
-            if isBezierDrawing { cancelBezierDrawing() }
             handleDirectSelectionTap(at: canvasLocation)
             
         case .convertAnchorPoint:
-            if isBezierDrawing { cancelBezierDrawing() }
             handleConvertAnchorPointTap(at: canvasLocation)
             
         case .bezierPen:
@@ -58,11 +45,9 @@ extension DrawingCanvas {
             
         case .line, .rectangle, .circle, .star, .polygon:
             // Shape tools are drag-only - ignore taps
-            if isBezierDrawing { cancelBezierDrawing() }
             print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
             
         default:
-            if isBezierDrawing { cancelBezierDrawing() }
             break
         }
     }
@@ -70,9 +55,6 @@ extension DrawingCanvas {
     /// UNIFIED DRAG CHANGED HANDLER - Works consistently for all areas
     /// Uses Drawing Canvas logic as the ideal template  
     internal func handleUnifiedDragChanged(value: DragGesture.Value, geometry: GeometryProxy) {
-        // Calculate drag distance for tap vs drag detection
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        
         // Route to appropriate tool handler based on current tool
         switch document.currentTool {
         case .hand:
@@ -82,7 +64,7 @@ extension DrawingCanvas {
             handleShapeDrawing(value: value, geometry: geometry)
             
         case .selection:
-            handleUnifiedSelectionDrag(value: value, geometry: geometry, dragDistance: dragDistance)
+            handleUnifiedSelectionDrag(value: value, geometry: geometry)
             
         case .directSelection:
             handleDirectSelectionDrag(value: value, geometry: geometry)
@@ -90,8 +72,11 @@ extension DrawingCanvas {
         case .bezierPen:
             handleBezierPenDrag(value: value, geometry: geometry)
             
+        case .scale, .rotate, .shear, .envelope:
+            // Transform tools don't use drag gestures - handled by their own handles
+            break
+            
         default:
-            // Transform tools (scale, rotate, shear, envelope) don't use drag gestures
             break
         }
     }
@@ -137,10 +122,11 @@ extension DrawingCanvas {
     // MARK: - Unified Selection Drag Handler
     
     /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas
-    private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy, dragDistance: Double) {
+    private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         
-        // Use consistent threshold for all areas
+        // Calculate drag distance for small movement detection
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         let minimumDragThreshold: Double = 8.0
         
         // Small movements should attempt selection first
