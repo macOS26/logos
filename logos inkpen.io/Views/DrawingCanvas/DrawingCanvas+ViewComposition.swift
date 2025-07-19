@@ -208,10 +208,6 @@ extension DrawingCanvas {
                 // SINGLE TAP: Selection/deselection - SEPARATED from drag gesture
                 handleUnifiedTap(at: location, geometry: geometry)
             }
-            .onTapGesture(count: 2) { location in
-                // DOUBLE TAP: Fit to page - RESTORED with proper gesture ordering
-                fitToPage(geometry: geometry)
-            }
             .onChange(of: document.zoomRequest) {
                 if let request = document.zoomRequest {
                     handleZoomRequest(request, geometry: geometry)
