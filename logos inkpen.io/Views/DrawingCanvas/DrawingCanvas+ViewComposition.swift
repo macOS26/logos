@@ -178,10 +178,8 @@ extension DrawingCanvas {
                 handleToolChange(oldTool: oldTool, newTool: newTool)
             }
             .onTapGesture { location in
-                // UNIFIED COORDINATE SYSTEM: Handle ALL clicks (canvas + pasteboard) with SwiftUI
-                // This gives perfect accuracy everywhere using the same coordinate system
-                print("🎯 UNIFIED TAP GESTURE at screen: \(location)")
-                handleTap(at: location, geometry: geometry)
+                // UNIFIED GESTURE SYSTEM: Handle ALL clicks consistently
+                handleUnifiedTap(at: location, geometry: geometry)
             }
             .onHover { isHovering in
                 // Enable mouse tracking for rubber band preview
@@ -190,15 +188,13 @@ extension DrawingCanvas {
                 handleHover(phase: phase, geometry: geometry)
             }
             .simultaneousGesture(
-                // PROFESSIONAL DRAG GESTURE - Only for canvas operations, doesn't block UI
-                // PASTEBOARD FIX: Use 0-pixel threshold for maximum sensitivity on pasteboard
-                // Canvas vs Pasteboard handling is done in the drag logic
+                // UNIFIED DRAG GESTURE - Consistent behavior for all areas
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
-                        handleDragChanged(value: value, geometry: geometry)
+                        handleUnifiedDragChanged(value: value, geometry: geometry)
                     }
                     .onEnded { value in
-                        handleDragEnded(value: value, geometry: geometry)
+                        handleUnifiedDragEnded(value: value, geometry: geometry)
                     }
             )
             .simultaneousGesture(
