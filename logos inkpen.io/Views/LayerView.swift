@@ -2362,7 +2362,6 @@ struct ShearHandles: View {
         
         // Calculate shear factors based on movement relative to pin point
         // Using the same sensitivity approach as the scale tool
-        let minDistance: CGFloat = 20.0 // Minimum distance to prevent extreme shearing
         let sensitivity: CGFloat = 0.002 // Shear sensitivity factor
         
         let deltaX = currentDistance.x - startDistance.x
@@ -2771,7 +2770,7 @@ struct EnvelopeHandles: View {
         let gridLines = 4
         
         // Horizontal grid lines
-        ForEach(0..<gridLines) { row in
+        ForEach(0..<4) { row in
             let t = CGFloat(row) / CGFloat(gridLines - 1)
             Path { path in
                 let startPoint = bilinearInterpolation(
@@ -2799,7 +2798,7 @@ struct EnvelopeHandles: View {
         }
         
         // Vertical grid lines
-        ForEach(0..<gridLines) { col in
+        ForEach(0..<4) { col in
             let u = CGFloat(col) / CGFloat(gridLines - 1)
             Path { path in
                 let startPoint = bilinearInterpolation(
@@ -3297,7 +3296,7 @@ struct PersistentWarpMarquee: View {
             let corners = shape.warpEnvelope
             
             // Horizontal grid lines
-            ForEach(0..<gridLines) { row in
+            ForEach(0..<4) { row in
                 let t = CGFloat(row) / CGFloat(gridLines - 1)
                 Path { path in
                     let startPoint = bilinearInterpolation(
@@ -3325,7 +3324,7 @@ struct PersistentWarpMarquee: View {
             }
             
             // Vertical grid lines
-            ForEach(0..<gridLines) { col in
+            ForEach(0..<4) { col in
                 let u = CGFloat(col) / CGFloat(gridLines - 1)
                 Path { path in
                     let startPoint = bilinearInterpolation(

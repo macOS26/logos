@@ -63,7 +63,7 @@ struct PathOperationsPanel: View {
                     .padding(.horizontal, 12)
                 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-                                            ForEach([PathfinderOperation.split, .cut, .merge, .crop, .dieline, .minusBack], id: \.self) { operation in
+                                            ForEach([PathfinderOperation.split, .cut, .merge, .separate, .crop, .dieline, .minusBack], id: \.self) { operation in
                         PathfinderOperationButton(
                             operation: operation,
                             isEnabled: canPerformOperation(operation)
@@ -394,6 +394,37 @@ struct PathOperationsPanel: View {
                 resultShapes.append(dielineShape)
             }
             print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
+            
+        case .separate:
+            // SEPARATE: Break compound paths into individual components
+            var separatedShapes: [VectorShape] = []
+            
+            for (shapeIndex, shape) in selectedShapes.enumerated() {
+                let components = CoreGraphicsPathOperations.componentsSeparated(shape.path.cgPath, using: .winding)
+                
+                if components.count <= 1 {
+                    // No separation needed, keep original
+                    separatedShapes.append(shape)
+                    print("   Shape \(shapeIndex + 1): No components to separate")
+                } else {
+                    // Create separate shapes for each component
+                    for (componentIndex, component) in components.enumerated() {
+                        let separatedShape = VectorShape(
+                            name: components.count > 1 ? "\(shape.name) Component \(componentIndex + 1)" : shape.name,
+                            path: VectorPath(cgPath: component),
+                            strokeStyle: shape.strokeStyle,
+                            fillStyle: shape.fillStyle,
+                            transform: .identity,
+                            opacity: shape.opacity
+                        )
+                        separatedShapes.append(separatedShape)
+                    }
+                    print("   Shape \(shapeIndex + 1): Separated into \(components.count) components")
+                }
+            }
+            
+            resultShapes = separatedShapes
+            print("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths")
             
         case .minusBack:
             // KICK: Back objects subtract from front object, result takes color of FRONT object

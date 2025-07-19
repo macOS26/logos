@@ -814,4 +814,30 @@ extension ProfessionalPathOperations {
         print("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) mosaic shapes ready for dieline conversion")
         return splitPaths
     }
+    
+    /// PROFESSIONAL SEPARATE: Separates compound paths into individual components
+    static func professionalSeparate(_ paths: [CGPath]) -> [CGPath] {
+        guard !paths.isEmpty else { return [] }
+        
+        print("🔨 PROFESSIONAL SEPARATE: Processing \(paths.count) paths")
+        
+        var separatedPaths: [CGPath] = []
+        
+        for (index, path) in paths.enumerated() {
+            let components = CoreGraphicsPathOperations.componentsSeparated(path, using: .winding)
+            
+            if components.count <= 1 {
+                // No separation needed, keep original
+                separatedPaths.append(path)
+                print("   Path \(index + 1): No components to separate")
+            } else {
+                // Add all components
+                separatedPaths.append(contentsOf: components.filter { !$0.isEmpty })
+                print("   Path \(index + 1): Separated into \(components.count) components")
+            }
+        }
+        
+        print("✅ PROFESSIONAL SEPARATE: Created \(separatedPaths.count) individual paths from \(paths.count) compound paths")
+        return separatedPaths
+    }
 } 

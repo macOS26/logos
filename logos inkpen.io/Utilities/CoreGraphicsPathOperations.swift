@@ -185,66 +185,102 @@ public class CoreGraphicsPathOperations {
         return allPieces
     }
     
-    /// Gets all mosaic pieces - simple approach based on CUT but breaking at intersections
+    /// Gets all mosaic pieces - TRUE STAINED GLASS: Complete planar subdivision
+    /// EVERY region becomes its own object - no large interior pieces remain
     private static func getAllMosaicPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [(CGPath, Int)] {
         guard !paths.isEmpty else { return [] }
         
-        print("   🪟 MOSAIC: Breaking each shape at intersections with all other shapes")
+        print("   🪟 MOSAIC: TRUE stained glass - complete planar subdivision")
         
-        var resultPieces: [(CGPath, Int)] = []
+        var allPieces: [(CGPath, Int)] = []
         
-        // Process each shape individually (like CUT does)
-        for i in 0..<paths.count {
-            let currentPath = paths[i]
-            guard !currentPath.isEmpty else { continue }
+        // GENERATE ALL POSSIBLE INTERSECTION COMBINATIONS
+        // For n shapes, we need to check 2^n - 1 possible combinations (excluding empty set)
+        let shapeCount = paths.count
+        
+        for mask in 1..<(1 << shapeCount) {
+            var intersectingIndices: [Int] = []
             
-            print("   🎯 Shape \(i): Processing intersections...")
+            // Find which shapes are in this combination
+            for i in 0..<shapeCount {
+                if (mask & (1 << i)) != 0 {
+                    intersectingIndices.append(i)
+                }
+            }
             
-            // Start with the complete shape
-            var currentPieces = [currentPath]
+            guard !intersectingIndices.isEmpty else { continue }
             
-            // Break this shape against ALL other shapes (simple iterative approach)
-            for j in 0..<paths.count where j != i {
-                let otherPath = paths[j]
-                guard !otherPath.isEmpty else { continue }
+            if intersectingIndices.count == 1 {
+                // Single shape - subtract all other shapes to get exclusive part
+                let shapeIndex = intersectingIndices[0]
+                let currentPath = paths[shapeIndex]
+                var exclusivePath = currentPath
                 
-                var newPieces: [CGPath] = []
-                
-                // Process each current piece against this other shape
-                for piece in currentPieces {
-                    if let intersection = intersection(piece, otherPath, using: fillRule),
-                       !intersection.isEmpty {
-                        
-                        // Break the piece: add both intersection and remainder
-                        let intersectionComponents = componentsSeparated(intersection, using: fillRule)
-                        newPieces.append(contentsOf: intersectionComponents.filter { !$0.isEmpty })
-                        
-                        if let remainder = subtract(intersection, from: piece, using: fillRule),
-                           !remainder.isEmpty {
-                            let remainderComponents = componentsSeparated(remainder, using: fillRule)
-                            newPieces.append(contentsOf: remainderComponents.filter { !$0.isEmpty })
+                // Subtract all OTHER shapes
+                for otherIndex in 0..<shapeCount {
+                    if otherIndex != shapeIndex {
+                        if let subtracted = subtract(paths[otherIndex], from: exclusivePath, using: fillRule) {
+                            exclusivePath = subtracted
                         }
-                    } else {
-                        // No intersection, keep piece as-is
-                        newPieces.append(piece)
+                        if exclusivePath.isEmpty { break }
                     }
                 }
                 
-                currentPieces = newPieces
-            }
-            
-            // Add all pieces from this shape with original shape index
-            for piece in currentPieces {
-                if !piece.isEmpty {
-                    resultPieces.append((piece, i))
+                // Add exclusive parts
+                if !exclusivePath.isEmpty {
+                    let components = componentsSeparated(exclusivePath, using: fillRule)
+                    for component in components {
+                        if !component.isEmpty {
+                            allPieces.append((component, shapeIndex))
+                        }
+                    }
+                    print("   ✅ Shape \(shapeIndex): Added exclusive parts")
+                }
+                
+            } else {
+                // Multiple shapes - find intersection of ALL shapes in this combination
+                var intersectionPath = paths[intersectingIndices[0]]
+                
+                for i in 1..<intersectingIndices.count {
+                    let shapeIndex = intersectingIndices[i]
+                    if let newIntersection = intersection(intersectionPath, paths[shapeIndex], using: fillRule) {
+                        intersectionPath = newIntersection
+                    } else {
+                        intersectionPath = CGMutablePath() // Empty
+                        break
+                    }
+                    if intersectionPath.isEmpty { break }
+                }
+                
+                // Now subtract all shapes NOT in this combination to get the EXCLUSIVE intersection
+                for excludeIndex in 0..<shapeCount {
+                    if !intersectingIndices.contains(excludeIndex) {
+                        if let subtracted = subtract(paths[excludeIndex], from: intersectionPath, using: fillRule) {
+                            intersectionPath = subtracted
+                        }
+                        if intersectionPath.isEmpty { break }
+                    }
+                }
+                
+                // Add intersection pieces
+                if !intersectionPath.isEmpty {
+                    let components = componentsSeparated(intersectionPath, using: fillRule)
+                    for component in components {
+                        if !component.isEmpty {
+                            // Use topmost shape's index for color
+                            let topmostIndex = intersectingIndices.max() ?? intersectingIndices[0]
+                            allPieces.append((component, topmostIndex))
+                        }
+                    }
+                    
+                    let shapeList = intersectingIndices.map { "\($0)" }.joined(separator: ",")
+                    print("   🔗 Intersection [\(shapeList)]: Added as separate object")
                 }
             }
-            
-            print("   ✅ Shape \(i): Created \(currentPieces.count) pieces")
         }
         
-        print("   ✅ MOSAIC: \(resultPieces.count) total pieces with original colors preserved")
-        return resultPieces
+        print("   ✅ MOSAIC: \(allPieces.count) pieces - COMPLETE planar subdivision (true stained glass)!")
+        return allPieces
     }
     
 

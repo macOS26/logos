@@ -25,6 +25,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
     case minusBack = "Kick"                 // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
+    case separate = "Separate"              // CoreGraphics "Components Separated" - Break compound paths into individual components
     
     var iconName: String {
         switch self {
@@ -38,6 +39,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .crop: return "crop"
         case .dieline: return "circle.dashed"
         case .minusBack: return "minus.circle.fill"
+        case .separate: return "square.split.2x1"
         }
     }
     
@@ -45,7 +47,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         switch self {
         case .union, .minusFront, .intersect, .exclude:
             return true
-        case .split, .cut, .merge, .crop, .dieline, .minusBack:
+        case .split, .cut, .merge, .crop, .dieline, .minusBack, .separate:
             return false
         }
     }
@@ -62,6 +64,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
         case .minusBack: return "Back shape cuts holes in front shape"
+        case .separate: return "Separates compound paths into individual components (CoreGraphics)"
         }
     }
 }
@@ -121,6 +124,11 @@ class ProfessionalPathOperations {
     /// DIELINE: Applies Divide then converts all results to 1px black strokes with no fill
     static func dieline(_ paths: [CGPath]) -> [CGPath] {
         return professionalDieline(paths)
+    }
+    
+    /// SEPARATE: Separates compound paths into individual components using CoreGraphics
+    static func separate(_ paths: [CGPath]) -> [CGPath] {
+        return ProfessionalPathOperations.professionalSeparate(paths)
     }
     
     /// KICK: Back shape subtracts from front shape (Adobe Illustrator "Kick", formerly "Minus Back")
@@ -418,6 +426,8 @@ class ProfessionalPathOperations {
             return paths.count == 2
         case .dieline:
             return paths.count >= 1
+        case .separate:
+            return !paths.isEmpty
         }
     }
     

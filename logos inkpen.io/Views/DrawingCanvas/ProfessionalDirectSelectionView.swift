@@ -71,7 +71,7 @@ struct ProfessionalDirectSelectionView: View {
             // HIGHLIGHT INDIVIDUALLY SELECTED ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
             ForEach(Array(selectedPoints), id: \.self) { pointID in
                 if let pointLocation = getPointLocation(pointID),
-                   let shape = getShapeForPoint(pointID) {
+                   let _ = getShapeForPoint(pointID) {
                     Rectangle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
