@@ -1772,16 +1772,16 @@ class VectorDocument: ObservableObject, Codable {
             }
             
         case .minusFront:
-            // MINUS FRONT: Front objects subtract from back object, result takes color of BACK object
+            // PUNCH: Front objects subtract from back object, result takes color of BACK object
             guard selectedShapes.count >= 2 else { 
-                print("❌ MINUS FRONT requires at least 2 shapes")
+                print("❌ PUNCH requires at least 2 shapes")
                 return false 
             }
             
             let backShape = selectedShapes.first!    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            print("🔪 MINUS FRONT: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
+            print("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
             
             var resultPath = backShape.path.cgPath
             
@@ -1795,7 +1795,7 @@ class VectorDocument: ObservableObject, Codable {
             
             // Result takes style of BACK object
             let resultShape = VectorShape(
-                name: "Minus Front Result",
+                name: "Punch Result",
                 path: VectorPath(cgPath: resultPath),
                 strokeStyle: backShape.strokeStyle,
                 fillStyle: backShape.fillStyle,
@@ -1803,7 +1803,7 @@ class VectorDocument: ObservableObject, Codable {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ MINUS FRONT: Result takes back object's color (\(backShape.name))")
+            print("✅ PUNCH: Result takes back object's color (\(backShape.name))")
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object

@@ -14,7 +14,7 @@ import CoreGraphics
 enum PathfinderOperation: String, CaseIterable, Codable {
     // SHAPE MODES (Create compound shapes that can be edited)
     case union = "Union"                    // Adobe Illustrator "Union" - Combines shapes
-    case minusFront = "Minus Front"         // Adobe Illustrator "Minus Front" - Front subtracts from back  
+    case minusFront = "Punch"               // Adobe Illustrator "Punch" (formerly "Minus Front") - Front subtracts from back  
     case intersect = "Intersect"            // Adobe Illustrator "Intersect" - Only overlapping areas
     case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
     
@@ -78,7 +78,7 @@ class ProfessionalPathOperations {
         return professionalUnion(paths)
     }
     
-    /// MINUS FRONT: Front shape subtracts from back shape (Adobe Illustrator "Minus Front")
+    /// PUNCH: Front shape subtracts from back shape (Adobe Illustrator "Punch", formerly "Minus Front")
     /// This is one of the most frequently used operations in professional design
     static func minusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return professionalMinusFront(frontPath, from: backPath)
@@ -128,7 +128,7 @@ class ProfessionalPathOperations {
     
     /// MINUS BACK: Back shape subtracts from front shape (Adobe Illustrator "Minus Back")
     static func minusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
-        // This is the opposite of Minus Front
+        // This is the opposite of Punch
         return professionalMinusFront(backPath, from: frontPath)
     }
     

@@ -135,7 +135,7 @@ class ProfessionalBooleanGeometry {
         return performBooleanOperation(subject, clip, .union)
     }
     
-    /// Adobe Illustrator MINUS FRONT operation
+    /// Adobe Illustrator PUNCH operation (formerly MINUS FRONT)
     static func difference(_ subject: Polygon, _ clip: Polygon) -> Polygon {
         return performBooleanOperation(subject, clip, .difference)
     }
@@ -495,19 +495,19 @@ extension ProfessionalPathOperations {
     
 
     
-    /// PROFESSIONAL MINUS FRONT: Front subtracts from back (Adobe Illustrator "Minus Front")
+    /// PROFESSIONAL PUNCH: Front subtracts from back (Adobe Illustrator "Punch", formerly "Minus Front")
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
-        print("🔨 PROFESSIONAL MINUS FRONT: Using CoreGraphics...")
+        print("🔨 PROFESSIONAL PUNCH: Using CoreGraphics...")
         
         // Use CoreGraphics (much faster and preserves curves)
         if let coreGraphicsResult = CoreGraphicsPathOperations.subtract(frontPath, from: backPath, using: .winding) {
-            print("✅ PROFESSIONAL MINUS FRONT: CoreGraphics success (preserves smooth curves)")
+            print("✅ PROFESSIONAL PUNCH: CoreGraphics success (preserves smooth curves)")
             return coreGraphicsResult
         }
         
-        print("⚠️ PROFESSIONAL MINUS FRONT: CoreGraphics operation failed")
+        print("⚠️ PROFESSIONAL PUNCH: CoreGraphics operation failed")
         return nil
     }
     
@@ -560,7 +560,7 @@ extension ProfessionalPathOperations {
     
     /// PROFESSIONAL MINUS BACK: Back subtracts from front (Adobe Illustrator "Minus Back")
     static func professionalMinusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
-        // This is just the reverse of Minus Front
+        // This is just the reverse of Punch
         return professionalMinusFront(backPath, from: frontPath)
     }
     
