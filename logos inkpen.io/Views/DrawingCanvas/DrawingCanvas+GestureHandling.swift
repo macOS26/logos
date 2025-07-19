@@ -174,16 +174,7 @@ extension DrawingCanvas {
                 handleSelectionDrag(value: value, geometry: geometry)
             }
 
-        case .rotate:
-            // Rotate tool doesn't handle drag gestures directly - rotation is handled by the rotation handles
-            // Just handle selection like the selection tool
-            if !isDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                
-                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
-                    selectObjectAt(startLocation)
-                }
-            }
+
         case .shear:
             // Shear tool doesn't handle drag gestures directly - shearing is handled by the shear handles
             // Just handle selection like the selection tool
