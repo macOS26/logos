@@ -16,13 +16,6 @@ extension DrawingCanvas {
     func handleFontToolTap(at location: CGPoint) {
         print("🎯 FONT TOOL TAP at: \(location)")
         
-        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
-        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
-        let isInCanvasArea = canvasBounds.contains(location)
-        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
-        
-        print("🎯 FONT TOOL TAP at: \(location) in \(areaType)")
-        
         // Check if tapping on existing text to edit it
         if let existingTextID = findTextAt(location: location) {
             startEditingText(textID: existingTextID, at: location)
