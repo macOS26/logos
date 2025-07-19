@@ -176,129 +176,80 @@ public class CoreGraphicsPathOperations {
         }
         
         print("🔨 PROFESSIONAL MOSAIC (CoreGraphics): Processing \(paths.count) paths - TRUE stained glass")
-        print("   🪟 Preserving ALL visible areas, using CUT-style algorithm with shape identity")
+        print("   🪟 Preserving ALL visible areas, breaking at intersections only")
         
-        // STEP 1: Get all pieces with their original shape identities preserved
-        let allPiecesWithIdentity = getAllSplitPieces(paths, using: fillRule)
+        // Use same approach as CUT but break at intersections instead of subtracting
+        let allPieces = getAllMosaicPieces(paths, using: fillRule)
         
-        // STEP 2: Handle overlapping pieces - topmost shape wins
-        print("   🔄 Resolving overlapping pieces using stacking order...")
-        let finalPieces = resolveOverlappingPieces(allPiecesWithIdentity, originalPaths: paths)
-        
-        print("✅ PROFESSIONAL MOSAIC: Created \(finalPieces.count) pieces - CUT-style with original colors preserved")
-        return finalPieces
+        print("✅ PROFESSIONAL MOSAIC: Created \(allPieces.count) pieces - ALL areas preserved with correct colors")
+        return allPieces
     }
     
-    /// Gets all mosaic pieces using CUT-style algorithm that preserves original shape identity
-    private static func getAllSplitPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [(CGPath, Int)] {
+    /// Gets all mosaic pieces - simple approach based on CUT but breaking at intersections
+    private static func getAllMosaicPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [(CGPath, Int)] {
         guard !paths.isEmpty else { return [] }
         
-        print("   🪟 MOSAIC ALGORITHM: Breaking shapes at intersections while preserving original identity")
+        print("   🪟 MOSAIC: Breaking each shape at intersections with all other shapes")
         
         var resultPieces: [(CGPath, Int)] = []
         
-        // Process each shape similar to CUT, but break at intersections instead of subtracting
+        // Process each shape individually (like CUT does)
         for i in 0..<paths.count {
             let currentPath = paths[i]
             guard !currentPath.isEmpty else { continue }
             
-            print("   🎯 Processing shape \(i)")
+            print("   🎯 Shape \(i): Processing intersections...")
             
             // Start with the complete shape
-            var piecesToProcess = [currentPath]
+            var currentPieces = [currentPath]
             
-            // Split this shape against all OTHER shapes (both in front and behind)
+            // Break this shape against ALL other shapes (simple iterative approach)
             for j in 0..<paths.count where j != i {
                 let otherPath = paths[j]
                 guard !otherPath.isEmpty else { continue }
                 
                 var newPieces: [CGPath] = []
                 
-                for piece in piecesToProcess {
-                    // Find intersection between this piece and the other shape
+                // Process each current piece against this other shape
+                for piece in currentPieces {
                     if let intersection = intersection(piece, otherPath, using: fillRule),
                        !intersection.isEmpty {
                         
-                        // Split the piece: keep non-overlapping part + intersection part
+                        // Break the piece: add both intersection and remainder
+                        let intersectionComponents = componentsSeparated(intersection, using: fillRule)
+                        newPieces.append(contentsOf: intersectionComponents.filter { !$0.isEmpty })
+                        
                         if let remainder = subtract(intersection, from: piece, using: fillRule),
                            !remainder.isEmpty {
                             let remainderComponents = componentsSeparated(remainder, using: fillRule)
                             newPieces.append(contentsOf: remainderComponents.filter { !$0.isEmpty })
                         }
-                        
-                        let intersectionComponents = componentsSeparated(intersection, using: fillRule)
-                        newPieces.append(contentsOf: intersectionComponents.filter { !$0.isEmpty })
                     } else {
                         // No intersection, keep piece as-is
                         newPieces.append(piece)
                     }
                 }
                 
-                piecesToProcess = newPieces
+                currentPieces = newPieces
             }
             
-            // All pieces from this shape keep the original shape index
-            for piece in piecesToProcess {
+            // Add all pieces from this shape with original shape index
+            for piece in currentPieces {
                 if !piece.isEmpty {
                     resultPieces.append((piece, i))
                 }
             }
             
-            print("   ✅ Shape \(i): Created \(piecesToProcess.count) pieces")
+            print("   ✅ Shape \(i): Created \(currentPieces.count) pieces")
         }
         
-        print("   ✅ MOSAIC PIECES: \(resultPieces.count) total pieces with original shape identity preserved")
+        print("   ✅ MOSAIC: \(resultPieces.count) total pieces with original colors preserved")
         return resultPieces
     }
     
 
     
-    /// Resolves overlapping pieces by keeping only the topmost shape's version in each area
-    private static func resolveOverlappingPieces(_ pieces: [(CGPath, Int)], originalPaths: [CGPath]) -> [(CGPath, Int)] {
-        var finalPieces: [(CGPath, Int)] = []
-        
-        // Group pieces by spatial location to find overlaps
-        for (i, (currentPiece, currentShapeIndex)) in pieces.enumerated() {
-            var keepPiece = true
-            var conflictingPieces: [(Int, Int)] = [] // (pieceIndex, shapeIndex)
-            
-            // Check against all other pieces for overlaps
-            for (j, (otherPiece, otherShapeIndex)) in pieces.enumerated() {
-                guard i != j else { continue }
-                
-                // Check if pieces overlap significantly
-                if let intersectionPath = intersection(currentPiece, otherPiece, using: .winding),
-                   !intersectionPath.isEmpty {
-                    let intersectionArea = intersectionPath.boundingBoxOfPath.width * intersectionPath.boundingBoxOfPath.height
-                    let currentArea = currentPiece.boundingBoxOfPath.width * currentPiece.boundingBoxOfPath.height
-                    
-                    // If intersection is substantial (>50% of current piece), consider it overlapping
-                    if intersectionArea > (currentArea * 0.5) {
-                        conflictingPieces.append((j, otherShapeIndex))
-                        
-                        // If other piece is from a higher-indexed (topmost) shape, don't keep current piece
-                        if otherShapeIndex > currentShapeIndex {
-                            keepPiece = false
-                        }
-                    }
-                }
-            }
-            
-            if keepPiece {
-                finalPieces.append((currentPiece, currentShapeIndex))
-                if !conflictingPieces.isEmpty {
-                    let conflictShapeIndices = conflictingPieces.map { $0.1 }
-                    print("   🏆 Piece from shape \(currentShapeIndex) wins over shapes \(conflictShapeIndices) (higher stacking order)")
-                }
-            } else {
-                let higherShapeIndices = conflictingPieces.compactMap { $0.1 > currentShapeIndex ? $0.1 : nil }
-                print("   ❌ Piece from shape \(currentShapeIndex) hidden by higher shapes \(higherShapeIndices)")
-            }
-        }
-        
-        print("   🎯 Final result: \(finalPieces.count) pieces after resolving overlaps")
-        return finalPieces
-    }
+
     
     /// Helper function to get multi-way intersection using CoreGraphics
     private static func getMultiWayIntersectionCoreGraphics(_ paths: [CGPath], using fillRule: CGPathFillRule) -> CGPath {
