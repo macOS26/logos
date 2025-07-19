@@ -176,16 +176,7 @@ extension DrawingCanvas {
 
 
 
-        case .envelope:
-            // Envelope tool doesn't handle drag gestures directly - warping is handled by the envelope handles
-            // Just handle selection like the selection tool
-            if !isDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                
-                if (document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty) || !isDraggingSelectedObject(at: startLocation) {
-                    selectObjectAt(startLocation)
-                }
-            }
+
         case .directSelection:
             // Handle direct selection dragging for moving points and handles
             handleDirectSelectionDrag(value: value, geometry: geometry)
