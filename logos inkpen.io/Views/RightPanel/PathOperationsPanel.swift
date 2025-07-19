@@ -63,7 +63,7 @@ struct PathOperationsPanel: View {
                     .padding(.horizontal, 12)
                 
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
-                                            ForEach([PathfinderOperation.split, .cut, .merge, .separate, .crop, .dieline, .minusBack], id: \.self) { operation in
+                                            ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick], id: \.self) { operation in
                         PathfinderOperationButton(
                             operation: operation,
                             isEnabled: canPerformOperation(operation)
@@ -247,23 +247,23 @@ struct PathOperationsPanel: View {
             print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
-        case .split:
+        case .mosaic:
             // MOSAIC: CoreGraphics-based alternative to Divide with PERFECT stained glass effect
-            let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
+            let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
-            for (index, (splitPath, originalShapeIndex)) in splitResults.enumerated() {
+            for (index, (mosaicPath, originalShapeIndex)) in mosaicResults.enumerated() {
                 // Use the exact original shape determined by stained glass tracking
                 let originalShape = selectedShapes[originalShapeIndex]
                 
-                                let splitShape = VectorShape(
+                                let mosaicShape = VectorShape(
                 name: "Mosaic Piece \(index + 1)",
-                    path: VectorPath(cgPath: splitPath),
+                    path: VectorPath(cgPath: mosaicPath),
                     strokeStyle: originalShape.strokeStyle,
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
-                resultShapes.append(splitShape)
+                resultShapes.append(mosaicShape)
             }
             print("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)")
             
@@ -426,7 +426,7 @@ struct PathOperationsPanel: View {
             resultShapes = separatedShapes
             print("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths")
             
-        case .minusBack:
+        case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
                 print("❌ KICK requires at least 2 shapes")
@@ -442,7 +442,7 @@ struct PathOperationsPanel: View {
             
             // Subtract each back shape from the result
             for backShape in backShapes {
-                if let subtractedPath = ProfessionalPathOperations.minusBack(resultPath, from: backShape.path.cgPath) {
+                if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
                     print("  ⚡ Subtracted '\(backShape.name)' from result")
                 }

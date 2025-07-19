@@ -19,12 +19,12 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
     
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
-    case split = "Mosaic"                   // CoreGraphics "Mosaic" - True stained glass: preserve ALL visible areas, no subtraction
+    case mosaic = "Mosaic"                  // CoreGraphics "Mosaic" - True stained glass: preserve ALL visible areas, no subtraction
     case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
     case merge = "Merge"                    // Adobe Illustrator "Merge" - Cut + group by color (no joining)
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
-    case minusBack = "Kick"                 // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
+    case kick = "Kick"                      // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
     case separate = "Separate"              // CoreGraphics "Components Separated" - Break compound paths into individual components
     
     var iconName: String {
@@ -33,12 +33,12 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .minusFront: return "minus.circle"
         case .intersect: return "circle.circle"
         case .exclude: return "xmark.circle"
-        case .split: return "square.split.diagonal"
-        case .cut: return "scissors.badge.ellipsis"
-        case .merge: return "arrow.merge"
+        case .mosaic: return "mosaic.fill"
+        case .cut: return "scissors"
+        case .merge: return "arrow.triangle.merge"
         case .crop: return "crop"
-        case .dieline: return "circle.dashed"
-        case .minusBack: return "minus.circle.fill"
+        case .dieline: return "line.3.crossed.swirl.circle"
+        case .kick: return "minus.circle.fill"
         case .separate: return "square.split.2x1"
         }
     }
@@ -47,7 +47,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         switch self {
         case .union, .minusFront, .intersect, .exclude:
             return true
-        case .split, .cut, .merge, .crop, .dieline, .minusBack, .separate:
+        case .mosaic, .cut, .merge, .crop, .dieline, .kick, .separate:
             return false
         }
     }
@@ -58,12 +58,12 @@ enum PathfinderOperation: String, CaseIterable, Codable {
         case .minusFront: return "Front shape cuts holes in back shape"
         case .intersect: return "Creates a shape from only the overlapping areas"
         case .exclude: return "Removes overlapping areas, keeps non-overlapping parts"
-        case .split: return "Creates stained glass effect - preserves ALL visible areas, breaks at intersections, no subtraction (CoreGraphics)"
+        case .mosaic: return "Creates stained glass effect - preserves ALL visible areas, breaks at intersections, no subtraction (CoreGraphics)"
         case .cut: return "Removes hidden parts with curve preservation (CoreGraphics)"
         case .merge: return "Maintains composite appearance, keeps all pieces separate: 1) Cut all shapes, 2) Group by color (no joining)"
         case .crop: return "Uses top shape to crop shapes beneath it"
         case .dieline: return "Divide shapes then convert to 1px black strokes"
-        case .minusBack: return "Back shape cuts holes in front shape"
+        case .kick: return "Back shape cuts holes in front shape"
         case .separate: return "Separates compound paths into individual components (CoreGraphics)"
         }
     }
@@ -100,9 +100,9 @@ class ProfessionalPathOperations {
     // MARK: - ADOBE ILLUSTRATOR PATHFINDER EFFECTS
     
     /// MOSAIC: True stained glass effect - preserves ALL visible areas, no subtraction
-    static func split(_ paths: [CGPath]) -> [CGPath] {
+    static func mosaic(_ paths: [CGPath]) -> [CGPath] {
         // Use professional CoreGraphics implementation
-        return ProfessionalPathOperations.professionalSplit(paths)
+        return ProfessionalPathOperations.professionalMosaic(paths)
     }
     
     /// CUT: CoreGraphics-based alternative to Trim with curve preservation (NEW!)
@@ -132,7 +132,7 @@ class ProfessionalPathOperations {
     }
     
     /// KICK: Back shape subtracts from front shape (Adobe Illustrator "Kick", formerly "Minus Back")
-    static func minusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
+    static func kick(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         // This is the opposite of Punch
         return professionalMinusFront(backPath, from: frontPath)
     }
@@ -418,11 +418,11 @@ class ProfessionalPathOperations {
     
     static func canPerformOperation(_ operation: PathfinderOperation, on paths: [CGPath]) -> Bool {
         switch operation {
-        case .split, .cut, .merge, .crop:
+        case .mosaic, .cut, .merge, .crop:
             return paths.count >= 2
         case .union: 
             return paths.count == 2  // Union now only works with exactly 2 shapes
-        case .minusFront, .intersect, .exclude, .minusBack:
+        case .minusFront, .intersect, .exclude, .kick:
             return paths.count == 2
         case .dieline:
             return paths.count >= 1
@@ -502,7 +502,7 @@ class PathOperations {
     }
     
     static func split(_ paths: [CGPath]) -> [CGPath] {
-        return ProfessionalPathOperations.split(paths)
+        return ProfessionalPathOperations.mosaic(paths)
     }
     
     static func cut(_ paths: [CGPath]) -> [CGPath] {
@@ -519,7 +519,7 @@ class PathOperations {
         case .union: return ProfessionalPathOperations.canPerformOperation(.union, on: paths)
         case .intersect: return ProfessionalPathOperations.canPerformOperation(.intersect, on: paths)
         case .frontMinusBack: return ProfessionalPathOperations.canPerformOperation(.minusFront, on: paths)
-        case .backMinusFront: return ProfessionalPathOperations.canPerformOperation(.minusBack, on: paths)
+        case .backMinusFront: return ProfessionalPathOperations.canPerformOperation(.kick, on: paths)
         case .exclude: return ProfessionalPathOperations.canPerformOperation(.exclude, on: paths)
 
         }

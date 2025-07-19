@@ -1850,14 +1850,14 @@ class VectorDocument: ObservableObject, Codable {
             print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
         
         // PATHFINDER EFFECTS - These retain original colors
-        case .split:
+        case .mosaic:
             // MOSAIC: CoreGraphics-based alternative to Divide with curve preservation and perfect color fidelity
-            let splitResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
+            let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
             
             // Mosaic: Each resulting piece maintains the color of its original shape (like stained glass)
             var shapeCounters: [Int: Int] = [:]
             
-            for (splitPath, originalShapeIndex) in splitResults {
+            for (mosaicPath, originalShapeIndex) in mosaicResults {
                 guard originalShapeIndex < selectedShapes.count else { continue }
                 
                 let originalShape = selectedShapes[originalShapeIndex]
@@ -1866,15 +1866,15 @@ class VectorDocument: ObservableObject, Codable {
                 shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
                 let pieceNumber = shapeCounters[originalShapeIndex]!
                 
-                let splitShape = VectorShape(
+                let mosaicShape = VectorShape(
                     name: pieceNumber > 1 ? "Mosaic \(originalShape.name) (\(pieceNumber))" : "Mosaic \(originalShape.name)",
-                    path: VectorPath(cgPath: splitPath),
+                    path: VectorPath(cgPath: mosaicPath),
                     strokeStyle: originalShape.strokeStyle,
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
-                resultShapes.append(splitShape)
+                resultShapes.append(mosaicShape)
             }
             print("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)")
             
@@ -2038,7 +2038,7 @@ class VectorDocument: ObservableObject, Codable {
             resultShapes = separatedShapes
             print("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths")
             
-        case .minusBack:
+        case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
                 print("❌ KICK requires at least 2 shapes")
@@ -2054,7 +2054,7 @@ class VectorDocument: ObservableObject, Codable {
             
             // Subtract each back shape from the result
             for backShape in backShapes {
-                if let subtractedPath = ProfessionalPathOperations.minusBack(resultPath, from: backShape.path.cgPath) {
+                if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
                     print("  ⚡ Subtracted '\(backShape.name)' from result")
                 }

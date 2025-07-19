@@ -568,7 +568,7 @@ extension ProfessionalPathOperations {
     
     /// PROFESSIONAL MOSAIC: True stained glass effect - preserves ALL visible areas, no subtraction
     /// Uses native CoreGraphics boolean operations instead of tessellated ClipperPath
-    static func professionalSplit(_ paths: [CGPath]) -> [CGPath] {
+    static func professionalMosaic(_ paths: [CGPath]) -> [CGPath] {
         guard paths.count >= 2 else { return paths }
         
         print("🔨 PROFESSIONAL MOSAIC: True stained glass - preserving ALL visible areas...")
@@ -809,7 +809,7 @@ extension ProfessionalPathOperations {
         print("🔨 PROFESSIONAL DIELINE: Processing \(paths.count) paths")
         
         // Step 1: Apply Mosaic operation to cut everything at intersections (with curve preservation)
-        let splitPaths = professionalSplit(paths)
+        let splitPaths = professionalMosaic(paths)
         
         print("✅ PROFESSIONAL DIELINE: Created \(splitPaths.count) mosaic shapes ready for dieline conversion")
         return splitPaths
