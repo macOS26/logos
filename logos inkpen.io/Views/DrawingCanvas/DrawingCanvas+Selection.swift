@@ -9,22 +9,9 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func selectObjectAt(_ location: CGPoint) {
-        // DETAILED LOGGING: Determine if this is canvas or pasteboard area
-        let canvasBounds = CGRect(x: 0, y: 0, width: 792, height: 612) // Standard canvas
-        let isInCanvasArea = canvasBounds.contains(location)
-        let areaType = isInCanvasArea ? "CANVAS AREA" : "PASTEBOARD AREA"
-        
-        print("🎯 SELECT OBJECT AT FUNCTION CALLED at: \(location) in \(areaType)")
-        
-        if !isInCanvasArea {
-            print("🎯 PASTEBOARD: Prioritizing object selection with optimized hit testing")
-            // PASTEBOARD OPTIMIZATION: Use selection tap logic directly for better object detection
-            handleSelectionTap(at: location)
-        } else {
-            print("🎯 CANVAS: Using standard drag-based selection")
-            // Reuse the selection tap logic for canvas
-            handleSelectionTap(at: location)
-        }
+        // Unified selection logic for all areas - no area-specific behavior needed
+        print("🎯 SELECT OBJECT AT: \(location) - using unified selection logic")
+        handleSelectionTap(at: location)
     }
 }
 
