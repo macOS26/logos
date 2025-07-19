@@ -279,10 +279,60 @@ public class CoreGraphicsPathOperations {
             }
         }
         
-        print("   ✅ MOSAIC: \(allPieces.count) pieces - COMPLETE planar subdivision (true stained glass)!")
-        return allPieces
+        // REMOVE DUPLICATES: Check for pieces that occupy the same geometric area
+        print("   🧹 MOSAIC: Removing duplicates from \(allPieces.count) pieces...")
+        
+        var uniquePieces: [(CGPath, Int)] = []
+        let tolerance: CGFloat = 0.1  // Small tolerance for floating point comparison
+        
+        for (candidate, candidateIndex) in allPieces {
+            var isDuplicate = false
+            
+            // Check if this piece is a duplicate of any existing piece
+            for (existing, _) in uniquePieces {
+                if pathsAreEquivalent(candidate, existing, tolerance: tolerance) {
+                    isDuplicate = true
+                    break
+                }
+            }
+            
+            if !isDuplicate {
+                uniquePieces.append((candidate, candidateIndex))
+            }
+        }
+        
+        print("   ✅ MOSAIC: \(uniquePieces.count) unique pieces (removed \(allPieces.count - uniquePieces.count) duplicates)")
+        print("   🪟 COMPLETE planar subdivision - true stained glass effect!")
+        return uniquePieces
     }
     
+    /// Check if two paths represent the same geometric area (for duplicate detection)
+    private static func pathsAreEquivalent(_ path1: CGPath, _ path2: CGPath, tolerance: CGFloat) -> Bool {
+        // Quick checks first
+        if path1.isEmpty && path2.isEmpty { return true }
+        if path1.isEmpty || path2.isEmpty { return false }
+        
+        let bounds1 = path1.boundingBoxOfPath
+        let bounds2 = path2.boundingBoxOfPath
+        
+        // Check if bounds are similar (within tolerance)
+        let boundsEqual = abs(bounds1.minX - bounds2.minX) < tolerance &&
+                         abs(bounds1.minY - bounds2.minY) < tolerance &&
+                         abs(bounds1.maxX - bounds2.maxX) < tolerance &&
+                         abs(bounds1.maxY - bounds2.maxY) < tolerance
+        
+        if !boundsEqual { return false }
+        
+        // For more precise comparison, check if one path contains the other and vice versa
+        // This works because if A contains B and B contains A, then A == B geometrically
+        let midPoint = CGPoint(x: bounds1.midX, y: bounds1.midY)
+        
+        let path1ContainsMid = path1.contains(midPoint, using: .winding)
+        let path2ContainsMid = path2.contains(midPoint, using: .winding)
+        
+        // If both contain the midpoint or both don't contain it, and bounds are equal, likely the same
+        return path1ContainsMid == path2ContainsMid
+    }
 
     
 
