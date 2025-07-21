@@ -113,7 +113,7 @@ struct CoreGraphicsTextView: NSViewRepresentable {
 
 class CoreGraphicsTextNSView: NSView {
     var text: String = ""
-    var typography: TypographyProperties = TypographyProperties()
+    var typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black)  // Fallback for preview only
     var position: CGPoint = .zero
     
     override var isFlipped: Bool {

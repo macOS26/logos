@@ -112,7 +112,7 @@ struct TypographyProperties: Codable, Hashable {
     var fillColor: VectorColor
     var fillOpacity: Double
     
-    // PROFESSIONAL DEFAULTS INITIALIZER
+    // NO DEFAULT FONT COLORS - COLORS MUST BE EXPLICITLY PROVIDED
     init(
         fontFamily: String = "Helvetica",
         fontWeight: FontWeight = .regular,
@@ -122,10 +122,10 @@ struct TypographyProperties: Codable, Hashable {
         letterSpacing: Double = 0.0,
         alignment: TextAlignment = .left,
         hasStroke: Bool = false,
-        strokeColor: VectorColor = .black,
+        strokeColor: VectorColor,  // NO DEFAULT - MUST BE PROVIDED
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
-        fillColor: VectorColor = .white, // Default to white (will be overridden by drawing app colors)
+        fillColor: VectorColor,    // NO DEFAULT - MUST BE PROVIDED
         fillOpacity: Double = 1.0
     ) {
         self.fontFamily = fontFamily
@@ -212,7 +212,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     
     init(
         content: String = "Text",
-        typography: TypographyProperties = TypographyProperties(),
+        typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),  // Fallback for manual creation only
         position: CGPoint = .zero,
         transform: CGAffineTransform = .identity,
         isVisible: Bool = true,

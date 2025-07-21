@@ -77,18 +77,16 @@ extension DrawingCanvas {
     func createNewTextAt(location: CGPoint) {
         print("✨ Creating new text at: \(location)")
         
-        // Use document default colors from drawing app (exactly like pen tool and shape tools)
-        let fillColor = document.defaultFillColor
-        
+        // NO DEFAULT FONT COLORS - USE CURRENT TOOLBAR COLORS DIRECTLY  
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
             hasStroke: false, // SURGICAL FIX: Stroke off by default (professional standard)
-            strokeColor: document.defaultStrokeColor,
+            strokeColor: document.defaultStrokeColor,  // Current toolbar stroke color
             strokeOpacity: document.defaultStrokeOpacity,
-            fillColor: fillColor,
+            fillColor: document.defaultFillColor,      // Current toolbar fill color
             fillOpacity: document.defaultFillOpacity
         )
         
