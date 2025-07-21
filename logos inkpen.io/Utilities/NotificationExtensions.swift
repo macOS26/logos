@@ -8,8 +8,7 @@
 import Foundation
 
 extension Notification.Name {
-    // MARK: - Tool Commands
-    static let switchTool = Notification.Name("SwitchTool")
+    // MARK: - Tool Commands (REMOVED - unused dead code, tools are switched directly in VerticalToolbar)
     
     // MARK: - Selection Commands (REMOVED - using DocumentState methods directly)
     

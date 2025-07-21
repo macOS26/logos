@@ -206,24 +206,7 @@ struct MainView: View {
     // MARK: - Professional Menu Command System (Adobe Illustrator Standards)
     
     private func setupMenuCommandObservers() {
-        // Tool Commands
-        NotificationCenter.default.addObserver(forName: .switchTool, object: nil, queue: .main) { notification in
-            if let tool = notification.object as? DrawingTool {
-                // SAFE CURSOR MANAGEMENT
-                var popCount = 0
-                while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                    NSCursor.pop()
-                    popCount += 1
-                }
-                if NSCursor.current != NSCursor.arrow {
-                    NSCursor.arrow.set()
-                }
-                
-                document.currentTool = tool
-                tool.cursor.push()
-                print("🛠️ Menu: Switched to tool: \(tool.rawValue)")
-            }
-        }
+        // Tool Commands (REMOVED - unused dead code, tools are switched directly in VerticalToolbar)
         
         // Selection Commands (REMOVED - using DocumentState.selectAll/deselectAll directly from Edit menu)
         
