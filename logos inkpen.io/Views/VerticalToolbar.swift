@@ -408,8 +408,11 @@ struct ColorSwatchGrid: View {
             
             for textID in document.selectedTextIDs {
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    print("🎨 VERTICAL TOOLBAR: Setting text fill color to \(color)")
+                    print("   Before: \(document.textObjects[textIndex].typography.fillColor)")
                     document.textObjects[textIndex].typography.fillColor = color
                     document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
+                    print("   After: \(document.textObjects[textIndex].typography.fillColor)")
                     document.textObjects[textIndex].updateBounds()
                 }
             }

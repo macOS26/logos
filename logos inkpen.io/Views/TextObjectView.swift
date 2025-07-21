@@ -164,9 +164,9 @@ class CoreGraphicsTextNSView: NSView {
         // STEP 8: Position text at baseline (adjusted for flipped coordinates)
         let drawPoint = CGPoint(x: position.x, y: position.y)
         
-        // STEP 9: FIXED CORE GRAPHICS COLOR HANDLING  
+        // STEP 9: NUCLEAR OPTION - ALWAYS RENDER FILL COLORS
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
-        let hasFill = typography.fillColor != .clear
+        let hasFill = true // NUCLEAR: Always render fill, ignore clear detection for now
         
         // Convert colors using direct cgColor (no NSColor conversion)
         let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
@@ -174,7 +174,11 @@ class CoreGraphicsTextNSView: NSView {
         
         print("🎨 FIXED CORE GRAPHICS RENDERING:")
         print("   Fill: \(typography.fillColor) -> CGColor: \(fillCGColor)")
+        print("   Fill Color Components: R=\(fillCGColor.components?[0] ?? 0), G=\(fillCGColor.components?[1] ?? 0), B=\(fillCGColor.components?[2] ?? 0), A=\(fillCGColor.components?[3] ?? 0)")
         print("   Has Fill: \(hasFill), Has Stroke: \(hasStroke)")
+        print("   Fill Opacity: \(typography.fillOpacity)")
+        print("   Typography Fill == .clear: \(typography.fillColor == .clear)")
+        print("   Typography Fill == .black: \(typography.fillColor == .black)")
         
         if hasStroke && hasFill {
             // Both fill and stroke - draw separately for color accuracy

@@ -82,6 +82,13 @@ extension DrawingCanvas {
         // REMOVED BAD LOGIC: No longer force black when default fill is white/clear
         let fillColor = document.defaultFillColor
         
+        print("🎨 TEXT CREATION: Using document default fill color: \(fillColor)")
+        print("   Document default fill: \(document.defaultFillColor)")
+        print("   Document default stroke: \(document.defaultStrokeColor)")
+        print("   Fill == .clear: \(fillColor == .clear)")
+        print("   Fill == .black: \(fillColor == .black)")
+        print("   Fill == .white: \(fillColor == .white)")
+        
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontWeight: document.fontManager.selectedFontWeight,
