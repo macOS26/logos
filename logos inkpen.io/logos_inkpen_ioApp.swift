@@ -690,20 +690,18 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut(";", modifiers: [.command])
             }
             
-            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing
+            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState (no more notifications!)
             CommandMenu("Development") {
                 Button("CoreGraphics Path Operations Test") {
-                    NotificationCenter.default.post(name: .showCoreGraphicsTest, object: nil)
+                    appState.showCoreGraphicsTest()
                 }
                 .keyboardShortcut("t", modifiers: [.command, .shift, .option])
                 .help("Test new CoreGraphics boolean operations (macOS 14+)")
                 
                 Divider()
                 
-
-                
                 Button("Performance Benchmark") {
-                    NotificationCenter.default.post(name: .runPathOperationsBenchmark, object: nil)
+                    appState.runPathOperationsBenchmark()
                 }
                 .help("Benchmark ClipperPath vs CoreGraphics performance")
             }

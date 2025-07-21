@@ -29,7 +29,5 @@ extension Notification.Name {
     
     // MARK: - Panel Commands (REMOVED - using AppState with @Observable instead)
     
-    // MARK: - Development Commands - CoreGraphics Path Operations Testing
-    static let showCoreGraphicsTest = Notification.Name("ShowCoreGraphicsTest")
-    static let runPathOperationsBenchmark = Notification.Name("RunPathOperationsBenchmark")
+    // MARK: - Development Commands (REMOVED - using AppState methods directly)
 } 

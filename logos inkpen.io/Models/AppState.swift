@@ -29,4 +29,21 @@ class AppState {
         selectedPanelTab = .font
         print("🎨 AppState: Switched to font panel")
     }
+    
+    // MARK: - Development Actions
+    var showingCoreGraphicsTest = false
+    
+    func showCoreGraphicsTest() {
+        showingCoreGraphicsTest = true
+        print("🧪 AppState: Showing CoreGraphics test")
+    }
+    
+    func runPathOperationsBenchmark() {
+        print("⚡ AppState: Running path operations benchmark")
+        // TODO: Move benchmark logic to a utility class
+        // For now, just print a message
+        print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
+        print("📊 Benchmark functionality to be implemented in utility class")
+        print("✅ BENCHMARK PLACEHOLDER COMPLETE")
+    }
 } 

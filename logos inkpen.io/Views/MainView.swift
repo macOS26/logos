@@ -12,6 +12,7 @@ import UniformTypeIdentifiers
 struct MainView: View {
     @StateObject private var document = TemplateManager.shared.createBlankDocument()
     @StateObject private var documentState = DocumentState()
+    @Environment(AppState.self) private var appState
     @State private var showingDocumentSettings = false
     @State private var showingExportDialog = false
     @State private var showingColorPicker = false
@@ -25,8 +26,7 @@ struct MainView: View {
     @State private var showingDWGExportDialog = false
     @State private var dwgExportOptions = DWGExportOptions()
     
-    // MARK: - Development Views State
-    @State private var showingCoreGraphicsTest = false
+    // MARK: - Development Views State (moved to AppState)
     
     var body: some View {
         VStack(spacing: 0) {
@@ -169,7 +169,10 @@ struct MainView: View {
                 exportToDWG(with: finalOptions)
             }
         }
-        .sheet(isPresented: $showingCoreGraphicsTest) {
+        .sheet(isPresented: Binding(
+            get: { appState.showingCoreGraphicsTest },
+            set: { appState.showingCoreGraphicsTest = $0 }
+        )) {
             CoreGraphicsPathTestView()
                 .frame(width: 1000, height: 700)
         }
@@ -238,17 +241,7 @@ struct MainView: View {
         
         // Window Commands - Panel Switching (Removed - using direct AppState actions from menu commands)
         
-        // MARK: - Development Commands - CoreGraphics Path Operations Testing
-        
-        NotificationCenter.default.addObserver(forName: .showCoreGraphicsTest, object: nil, queue: .main) { _ in
-            showingCoreGraphicsTest = true
-        }
-        
-
-        
-        NotificationCenter.default.addObserver(forName: .runPathOperationsBenchmark, object: nil, queue: .main) { _ in
-            runPathOperationsBenchmark()
-        }
+        // MARK: - Development Commands (REMOVED - using AppState methods directly from Development menu)
     }
     
     private func teardownMenuCommandObservers() {
