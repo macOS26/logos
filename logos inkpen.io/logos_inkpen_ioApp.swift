@@ -12,12 +12,7 @@ import Combine
 // MARK: - AppDelegate to Remove Default Menus
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillUpdate(_ notification: Notification) {
-        if let menu = NSApplication.shared.mainMenu {
-            // Remove Apple's default Edit menu (grayed out and useless)
-            if let edit = menu.items.first(where: { $0.title == "Edit"}) {
-                menu.removeItem(edit)
-            }
-        }
+       
     }
 }
 
@@ -378,12 +373,22 @@ struct logos_inken_ioApp: App {
         }
         .commands {
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
-            CommandMenu("Edit ") {
+            CommandMenu("Edit") {
                 Button("Undo") {
                     documentState?.undo()
                 }
                 .keyboardShortcut("z", modifiers: [.command])
                 .disabled(documentState?.canUndo != true)
+                .onAppear {
+                    if let menu = NSApplication.shared.mainMenu {
+                        // Remove Apple's default Edit menu (grayed out and useless)
+                        if let edit = menu.items.first(where: { $0.title == "Edit"}) {
+                            menu.removeItem(edit)
+                            
+                            
+                        }
+                    }
+                }
                 
                 Button("Redo") {
                     documentState?.redo()
@@ -436,6 +441,7 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("a", modifiers: [.command, .shift])
                 .disabled(documentState?.hasSelection != true)
             }
+            
             
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {

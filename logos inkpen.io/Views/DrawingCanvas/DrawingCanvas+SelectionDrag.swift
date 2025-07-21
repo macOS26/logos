@@ -18,6 +18,9 @@ extension DrawingCanvas {
             return
         }
         
+        // CRITICAL FIX: Save to undo stack BEFORE making any changes
+        document.saveToUndoStack()
+        
         // PROFESSIONAL OBJECT DRAGGING: Save initial positions (not transforms)
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
@@ -285,10 +288,7 @@ extension DrawingCanvas {
             // This ensures each new drag operation starts with fresh reference points
             let movedObjects = initialObjectPositions.count
             
-            // Save to undo stack if we moved objects
-            if movedObjects > 0 {
-                document.saveToUndoStack()
-            }
+            // REMOVED: saveToUndoStack() - now called at START of drag operation, not end
             
             // Reset state
             initialObjectPositions.removeAll()

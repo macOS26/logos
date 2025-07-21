@@ -271,6 +271,9 @@ struct FontPanel: View {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        document.saveToUndoStack()
+        
         // Update the text object's typography
         document.textObjects[textIndex].typography.fontFamily = document.fontManager.selectedFontFamily
         document.textObjects[textIndex].typography.fontWeight = document.fontManager.selectedFontWeight
@@ -298,6 +301,9 @@ struct FontPanel: View {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        document.saveToUndoStack()
+        
         document.textObjects[textIndex].typography.hasStroke = hasStroke
         if hasStroke {
             document.textObjects[textIndex].typography.strokeColor = document.defaultStrokeColor
@@ -318,6 +324,9 @@ struct FontPanel: View {
     private func updateTextStrokeWidth(_ width: Double) {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        document.saveToUndoStack()
         
         document.textObjects[textIndex].typography.strokeWidth = width
         document.textObjects[textIndex].updateBounds()

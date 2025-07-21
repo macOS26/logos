@@ -1131,6 +1131,9 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func updateTextContent(_ textID: UUID, content: String) {
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        saveToUndoStack()
+        
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].content = content
             textObjects[index].updateBounds()
@@ -1138,14 +1141,19 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func setTextEditing(_ textID: UUID, isEditing: Bool) {
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        saveToUndoStack()
+        
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].isEditing = isEditing
         }
     }
     
     func updateTextTypography(_ textID: UUID, update: (inout TypographyProperties) -> Void) {
+        // CRITICAL FIX: Save to undo stack BEFORE making changes
+        saveToUndoStack()
+        
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
-            saveToUndoStack()
             update(&textObjects[index].typography)
             textObjects[index].updateBounds()
         }

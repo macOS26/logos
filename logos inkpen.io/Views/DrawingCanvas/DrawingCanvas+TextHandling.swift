@@ -118,6 +118,10 @@ extension DrawingCanvas {
     
     func finishTextEditing() {
         if let editingID = editingTextID {
+            // CRITICAL FIX: Save to undo stack when finishing text editing
+            // This captures all the text changes made during the editing session
+            document.saveToUndoStack()
+            
             // Mark text as not editing
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
                 document.textObjects[textIndex].isEditing = false
