@@ -226,26 +226,7 @@ struct MainView: View {
         
         // Object Commands - Arrange (REMOVED - using DocumentState methods directly from Object menu)
         
-        // Object Commands - Lock/Hide
-        NotificationCenter.default.addObserver(forName: .lockObjects, object: nil, queue: .main) { _ in
-            document.lockSelectedObjects()
-            print("📝 MENU: Lock Objects")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .unlockAll, object: nil, queue: .main) { _ in
-            document.unlockAllObjects()
-            print("📝 MENU: Unlock All")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .hideObjects, object: nil, queue: .main) { _ in
-            document.hideSelectedObjects()
-            print("📝 MENU: Hide Objects")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .showAll, object: nil, queue: .main) { _ in
-            document.showAllObjects()
-            print("📝 MENU: Show All")
-        }
+        // Object Commands - Lock/Hide (REMOVED - using DocumentState methods directly from Object menu)
         
         // View Commands - Zoom - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .zoomIn, object: nil, queue: .main) { _ in

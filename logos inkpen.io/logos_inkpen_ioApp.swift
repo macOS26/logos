@@ -258,6 +258,26 @@ class DocumentState: ObservableObject {
         document?.unwrapWarpObject()
         updateAllStates()
     }
+    
+    func lockSelectedObjects() {
+        document?.lockSelectedObjects()
+        updateAllStates()
+    }
+    
+    func unlockAllObjects() {
+        document?.unlockAllObjects()
+        updateAllStates()
+    }
+    
+    func hideSelectedObjects() {
+        document?.hideSelectedObjects()
+        updateAllStates()
+    }
+    
+    func showAllObjects() {
+        document?.showAllObjects()
+        updateAllStates()
+    }
 }
 
 @main
@@ -399,6 +419,35 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("d", modifiers: [.command])
                 .disabled(documentState?.hasSelection != true)
+                
+                Divider()
+                
+                // Lock/Hide Section
+                Button("Lock") {
+                    documentState?.lockSelectedObjects()
+                }
+                .keyboardShortcut("2", modifiers: [.command])
+                .disabled(documentState?.hasSelection != true)
+                .help("Lock selected objects")
+                
+                Button("Unlock All") {
+                    documentState?.unlockAllObjects()
+                }
+                .keyboardShortcut("2", modifiers: [.command, .option])
+                .help("Unlock all objects in the document")
+                
+                Button("Hide") {
+                    documentState?.hideSelectedObjects()
+                }
+                .keyboardShortcut("3", modifiers: [.command])
+                .disabled(documentState?.hasSelection != true)
+                .help("Hide selected objects")
+                
+                Button("Show All") {
+                    documentState?.showAllObjects()
+                }
+                .keyboardShortcut("3", modifiers: [.command, .option])
+                .help("Show all hidden objects")
                 
                 Divider()
                 

@@ -15,11 +15,7 @@ extension Notification.Name {
     
     // MARK: - Object Commands - Arrange (REMOVED - using DocumentState methods directly)
     
-    // MARK: - Object Commands - Lock/Hide
-    static let lockObjects = Notification.Name("LockObjects")
-    static let unlockAll = Notification.Name("UnlockAll")
-    static let hideObjects = Notification.Name("HideObjects")
-    static let showAll = Notification.Name("ShowAll")
+    // MARK: - Object Commands - Lock/Hide (REMOVED - using DocumentState methods directly)
     
     // MARK: - View Commands - Zoom
     static let zoomIn = Notification.Name("ZoomIn")
