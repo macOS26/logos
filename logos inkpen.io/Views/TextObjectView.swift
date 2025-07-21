@@ -164,33 +164,23 @@ class CoreGraphicsTextNSView: NSView {
         // STEP 8: Position text at baseline (adjusted for flipped coordinates)
         let drawPoint = CGPoint(x: position.x, y: position.y)
         
-        // STEP 9: NUCLEAR OPTION - ALWAYS RENDER FILL COLORS
+        // STEP 9: USE DRAWING APP COLOR SYSTEM
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
-        let hasFill = true // NUCLEAR: Always render fill, ignore clear detection for now
+        let hasFill = true // Always render fill using drawing app colors
         
         // Convert colors using direct cgColor (no NSColor conversion)
         let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
         let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
         
-        print("🎨 FIXED CORE GRAPHICS RENDERING:")
-        print("   Fill: \(typography.fillColor) -> CGColor: \(fillCGColor)")
-        print("   Fill Color Components: R=\(fillCGColor.components?[0] ?? 0), G=\(fillCGColor.components?[1] ?? 0), B=\(fillCGColor.components?[2] ?? 0), A=\(fillCGColor.components?[3] ?? 0)")
-        print("   Has Fill: \(hasFill), Has Stroke: \(hasStroke)")
-        print("   Fill Opacity: \(typography.fillOpacity)")
-        print("   Typography Fill == .clear: \(typography.fillColor == .clear)")
-        print("   Typography Fill == .black: \(typography.fillColor == .black)")
+        // Clean rendering using drawing app color system
         
         if hasStroke && hasFill {
             // Both fill and stroke - draw separately for color accuracy
-            print("   Mode: Fill + Stroke (separate drawing)")
-            
-            // Draw fill first
             context.setTextDrawingMode(.fill)
             context.setFillColor(fillCGColor)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
             
-            // Draw stroke on top
             context.setTextDrawingMode(.stroke)
             context.setStrokeColor(strokeCGColor)
             context.setLineWidth(typography.strokeWidth)
@@ -199,37 +189,16 @@ class CoreGraphicsTextNSView: NSView {
             
         } else if hasStroke {
             // Stroke only
-            print("   Mode: Stroke only")
             context.setTextDrawingMode(.stroke)
             context.setStrokeColor(strokeCGColor)
             context.setLineWidth(typography.strokeWidth)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
             
-        } else if hasFill {
-            // Fill only
-            print("   Mode: Fill only")
+        } else {
+            // Fill only - always use drawing app colors
             context.setTextDrawingMode(.fill)
             context.setFillColor(fillCGColor)
-            context.textPosition = drawPoint
-            CTLineDraw(line, context)
-            
-        } else {
-            // CRITICAL FIX: Handle case where no fill/stroke is specified
-            // This was the missing else clause causing black text!
-            print("   Mode: DEFAULT FILL (was missing - this caused black text!)")
-            
-            // If fill color is clear, use a fallback visible color for text
-            let finalFillColor: CGColor
-            if typography.fillColor == .clear {
-                print("   WARNING: Fill color is clear, using black fallback for visibility")
-                finalFillColor = CGColor.black
-            } else {
-                finalFillColor = fillCGColor
-            }
-            
-            context.setTextDrawingMode(.fill)
-            context.setFillColor(finalFillColor)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
         }

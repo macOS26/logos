@@ -77,17 +77,8 @@ extension DrawingCanvas {
     func createNewTextAt(location: CGPoint) {
         print("✨ Creating new text at: \(location)")
         
-        // FIXED: Use document default colors from toolbar (exactly like pen tool and shape tools)
-        // Create typography using document defaults or user-selected font properties
-        // REMOVED BAD LOGIC: No longer force black when default fill is white/clear
+        // Use document default colors from drawing app (exactly like pen tool and shape tools)
         let fillColor = document.defaultFillColor
-        
-        print("🎨 TEXT CREATION: Using document default fill color: \(fillColor)")
-        print("   Document default fill: \(document.defaultFillColor)")
-        print("   Document default stroke: \(document.defaultStrokeColor)")
-        print("   Fill == .clear: \(fillColor == .clear)")
-        print("   Fill == .black: \(fillColor == .black)")
-        print("   Fill == .white: \(fillColor == .white)")
         
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
@@ -101,8 +92,7 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         
-        print("🎨 FONT TOOL COLORS: fill=\(fillColor) (default was \(document.defaultFillColor)), stroke=\(document.defaultStrokeColor)")
-        print("🎨 FONT TOOL OPACITIES: fillOpacity=\(document.defaultFillOpacity), strokeOpacity=\(document.defaultStrokeOpacity)")
+        // Clean text creation using drawing app color system
         
         // Create new text object with initial placeholder text
         let newText = VectorText(

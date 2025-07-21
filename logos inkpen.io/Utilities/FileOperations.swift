@@ -849,7 +849,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         let typography = TypographyProperties(
             fontFamily: fontFamily,
             fontSize: fontSize,
-            fillColor: parseColor(fill) ?? .rgb(RGBColor(red: 0, green: 0, blue: 0, alpha: 1)) // Fallback only for SVG import
+            fillColor: parseColor(fill) ?? .white // Use white as fallback for SVG import
         )
         
         let textObject = VectorText(
