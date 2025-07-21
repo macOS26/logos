@@ -134,81 +134,89 @@ class CoreGraphicsTextNSView: NSView {
         // STEP 1: Create font with proper weight and style
         let font = createCoreTextFont()
         
-        // STEP 2: CRITICAL FIX - Core Text REQUIRES foregroundColor in NSAttributedString
-        // Graphics context fill color is IGNORED by Core Text!
-        let nsColor = NSColor(cgColor: typography.fillColor.cgColor) ?? NSColor.red // Red fallback to debug failures
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .kern: typography.letterSpacing,
-            .foregroundColor: nsColor
-        ]
+        // STEP 2: Determine fill and stroke requirements
+        let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
+        let hasFill = typography.fillColor != .clear
         
-        // Core Text uses NSAttributedString.foregroundColor, not graphics context colors
-        
-        // STEP 3: Create attributed string WITH color information (required by Core Text)
-        let attributedString = NSAttributedString(string: text, attributes: attributes)
-        
-        // STEP 4: Create CTLine for precise text layout
-        let line = CTLineCreateWithAttributedString(attributedString)
-        
-        // STEP 5: Calculate text metrics for proper positioning
-        let ascent = CTFontGetAscent(font)
-        let descent = CTFontGetDescent(font)
-        let leading = CTFontGetLeading(font)
-        let _ = ascent + descent + leading // Line height calculation (for future use)
-        
-        // STEP 6: Save graphics state and fix coordinate system
+        // ALWAYS use Core Graphics approach - CTLineDraw doesn't support stroke properly
+        drawWithCoreGraphics(context: context, font: font, hasStroke: hasStroke, hasFill: hasFill)
+    }
+    
+    private func drawWithCoreGraphics(context: CGContext, font: CTFont, hasStroke: Bool, hasFill: Bool) {
+        // CORE GRAPHICS + CORE TEXT HYBRID: Use Core Text for layout, Core Graphics for rendering
         context.saveGState()
         
-        // STEP 7: Fix coordinate system - Core Graphics Y-axis is flipped from SwiftUI
+        // Create Core Text line for proper text layout
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .kern: typography.letterSpacing
+        ]
+        
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        // Get glyph runs for manual drawing
+        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
+        
+        // Set text matrix (flip Y for proper orientation)
         context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
         
-        // STEP 8: Position text at baseline (adjusted for flipped coordinates)
-        let drawPoint = CGPoint(x: position.x, y: position.y)
-        
-        // STEP 9: USE DRAWING APP COLOR SYSTEM - DEBUG COLORS
-        let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
-        let hasFill = true // Always render fill using drawing app colors
-        
-        // Convert colors for stroke (Core Text handles fill via NSAttributedString)
+        // Convert colors to Core Graphics
+        let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
         let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
         
-        // Clean rendering using drawing app color system
+        // Position text at baseline
+        let drawPoint = CGPoint(x: position.x, y: position.y)
         
-                // SIMPLIFIED: Core Text handles color via NSAttributedString.foregroundColor
-        // No need to set graphics context colors since Core Text ignores them
-        context.textPosition = drawPoint
+        // Draw each glyph run manually for proper fill/stroke control
+        var xOffset: CGFloat = 0
         
-        if hasStroke && hasFill {
-            // Both fill and stroke - Core Text handles fill, we add stroke manually
-            CTLineDraw(line, context) // Fill handled by NSAttributedString.foregroundColor
+        for run in runs {
+            let glyphCount = CTRunGetGlyphCount(run)
+            var glyphs = Array<CGGlyph>(repeating: 0, count: glyphCount)
+            var positions = Array<CGPoint>(repeating: .zero, count: glyphCount)
             
-            // Add stroke manually
-            context.setTextDrawingMode(.stroke)
-            context.setStrokeColor(strokeCGColor)
-            context.setLineWidth(typography.strokeWidth)
-            context.textPosition = drawPoint
-            CTLineDraw(line, context)
-
-
-        } else if hasStroke {
-            // Stroke only - override NSAttributedString color with stroke
-            context.setTextDrawingMode(.stroke)
-            context.setStrokeColor(strokeCGColor)
-            context.setLineWidth(typography.strokeWidth)
-            context.textPosition = drawPoint
-            CTLineDraw(line, context)
-
-
-        } else {
-            // Fill only - Core Text handles everything via NSAttributedString.foregroundColor
-            CTLineDraw(line, context)
-
+            CTRunGetGlyphs(run, CFRangeMake(0, 0), &glyphs)
+            CTRunGetPositions(run, CFRangeMake(0, 0), &positions)
+            
+            // Get font for this run
+            let runAttributes = CTRunGetAttributes(run) as! [String: Any]
+            let runFont = runAttributes[kCTFontAttributeName as String] as! CTFont
+            
+            // Set drawing mode and colors
+            if hasStroke && hasFill {
+                context.setTextDrawingMode(.fillStroke)
+                context.setFillColor(fillCGColor)
+                context.setStrokeColor(strokeCGColor)
+                context.setLineWidth(typography.strokeWidth)
+            } else if hasStroke {
+                context.setTextDrawingMode(.stroke)
+                context.setStrokeColor(strokeCGColor)
+                context.setLineWidth(typography.strokeWidth)
+            } else if hasFill {
+                context.setTextDrawingMode(.fill)
+                context.setFillColor(fillCGColor)
+            }
+            
+            // Draw glyphs with proper positioning
+            for i in 0..<glyphCount {
+                var glyphPosition = CGPoint(
+                    x: drawPoint.x + positions[i].x + xOffset,
+                    y: drawPoint.y + positions[i].y
+                )
+                context.textPosition = glyphPosition
+                CTFontDrawGlyphs(runFont, &glyphs[i], &glyphPosition, 1, context)
+            }
+            
+            // Update offset for next run
+            if glyphCount > 0 {
+                xOffset += positions[glyphCount - 1].x
+            }
         }
         
-        // STEP 10: Restore graphics state
         context.restoreGState()
     }
+
     
     private func createCoreTextFont() -> CTFont {
         // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
