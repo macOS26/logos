@@ -330,6 +330,14 @@ class DocumentState: ObservableObject {
         document?.snapToGrid.toggle()
         print("🧲 MENU: Snap to Grid \(document?.snapToGrid == true ? "enabled" : "disabled")")
     }
+    
+    // MARK: - Text Commands
+    func createOutlines() {
+        guard let document = document, !document.selectedTextIDs.isEmpty else { return }
+        document.convertSelectedTextToOutlines()
+        updateAllStates()
+        print("📝 MENU: Converted selected text to outlines")
+    }
 }
 
 @main
@@ -500,6 +508,16 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("3", modifiers: [.command, .option])
                 .help("Show all hidden objects")
+                
+                Divider()
+                
+                // Text Section
+                Button("Create Outlines") {
+                    documentState?.createOutlines()
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .disabled(!(documentState?.document?.selectedTextIDs.isEmpty == false))
+                .help("Convert selected text objects to vector outlines")
                 
                 Divider()
                 

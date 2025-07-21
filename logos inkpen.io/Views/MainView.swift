@@ -232,12 +232,7 @@ struct MainView: View {
         
         // View Commands - Show/Hide (REMOVED - using DocumentState methods directly from View menu)
         
-        // Text Commands
-        NotificationCenter.default.addObserver(forName: .createOutlines, object: nil, queue: .main) { _ in
-            if !document.selectedTextIDs.isEmpty {
-                document.convertSelectedTextToOutlines()
-            }
-        }
+        // Text Commands (REMOVED - using DocumentState.createOutlines directly from Object menu)
         
         // MARK: - Path Cleanup Commands (Professional Tools)
         

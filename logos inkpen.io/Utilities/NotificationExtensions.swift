@@ -23,8 +23,7 @@ extension Notification.Name {
     
     // MARK: - View Commands - Show/Hide (REMOVED - using DocumentState methods directly)
     
-    // MARK: - Text Commands
-    static let createOutlines = Notification.Name("CreateOutlines")
+    // MARK: - Text Commands (REMOVED - using DocumentState methods directly)
     
     // MARK: - Path Cleanup Commands (Professional Tools)
     static let cleanupDuplicatePoints = Notification.Name("cleanupDuplicatePoints")
