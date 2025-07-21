@@ -398,7 +398,7 @@ struct ColorSwatchGrid: View {
             }
         }
         
-        // FIXED: Also apply to selected text objects
+        // FIXED: Also apply to selected text objects - SAME LOGIC AS STROKE
         if !document.selectedTextIDs.isEmpty {
             if !document.selectedShapeIDs.isEmpty {
                 // Don't save to undo stack twice
@@ -408,9 +408,11 @@ struct ColorSwatchGrid: View {
             
             for textID in document.selectedTextIDs {
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    // MATCH STROKE LOGIC: Always ensure fill is active when setting fill color
                     document.textObjects[textIndex].typography.fillColor = color
                     document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
                     document.textObjects[textIndex].updateBounds()
+                    print("🎨 APPLIED FILL to text: \(color) with opacity \(document.defaultFillOpacity)")
                 }
             }
             document.objectWillChange.send()
