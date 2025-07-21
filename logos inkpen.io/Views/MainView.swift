@@ -408,11 +408,22 @@ struct MainView: View {
                 showingImportProgress = false
                 
                 if result.success {
-                    // Add imported shapes to current layer
+                    // CRITICAL FIX: Save to undo stack ONCE before importing all shapes
+                    document.saveToUndoStack()
+                    
+                    // Add imported shapes to current layer without individual undo saves
+                    guard let layerIndex = document.selectedLayerIndex else { return }
+                    var newShapeIDs: Set<UUID> = []
+                    
                     for shape in result.shapes {
-                        document.addShape(shape)
+                        document.layers[layerIndex].addShape(shape)
+                        newShapeIDs.insert(shape.id)
                     }
-                    print("✅ Import successful: \(result.shapes.count) shapes imported")
+                    
+                    // Select all imported shapes
+                    document.selectedShapeIDs = newShapeIDs
+                    
+                    print("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack")
                     
                     // PROFESSIONAL IMPORT BEHAVIOR: Auto-fit to page after import (like Adobe Illustrator)
                     // Use a small delay to ensure the shapes are added before fitting
