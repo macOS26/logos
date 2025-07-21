@@ -103,12 +103,17 @@ extension DrawingCanvas {
         // Add to document and associate with current layer
         document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex)
         
+        // CRITICAL FIX: Select the text so toolbar colors apply to it immediately
+        document.selectedTextIDs = [newText.id]
+        document.selectedShapeIDs.removeAll()  // Clear shape selection
+        
         // Set editing state
         isEditingText = true
         editingTextID = newText.id
         textCursorPosition = 0
         
         print("✅ Created new editable text object with ID: \(newText.id) on layer \(document.selectedLayerIndex ?? -1)")
+        print("🎯 Text automatically selected for immediate color application")
     }
     
     func finishTextEditing() {
