@@ -25,10 +25,7 @@ extension Notification.Name {
     
     // MARK: - Text Commands (REMOVED - using DocumentState methods directly)
     
-    // MARK: - Path Cleanup Commands (Professional Tools)
-    static let cleanupDuplicatePoints = Notification.Name("cleanupDuplicatePoints")
-    static let cleanupAllDuplicatePoints = Notification.Name("cleanupAllDuplicatePoints")
-    static let testDuplicatePointMerger = Notification.Name("testDuplicatePointMerger")
+    // MARK: - Path Cleanup Commands (REMOVED - using DocumentState methods directly)
     
     // MARK: - Panel Commands (REMOVED - using AppState with @Observable instead)
     

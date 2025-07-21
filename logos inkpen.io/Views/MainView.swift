@@ -234,30 +234,7 @@ struct MainView: View {
         
         // Text Commands (REMOVED - using DocumentState.createOutlines directly from Object menu)
         
-        // MARK: - Path Cleanup Commands (Professional Tools)
-        
-        // Clean up duplicate points in selected shapes
-        NotificationCenter.default.addObserver(forName: .cleanupDuplicatePoints, object: nil, queue: .main) { _ in
-            if !document.selectedShapeIDs.isEmpty {
-                ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
-                print("🧹 MENU: Cleaned duplicate points in selected shapes")
-            } else {
-                ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-                print("🧹 MENU: Cleaned duplicate points in all shapes")
-            }
-        }
-        
-        // Clean up duplicate points in all shapes
-        NotificationCenter.default.addObserver(forName: .cleanupAllDuplicatePoints, object: nil, queue: .main) { _ in
-            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
-            print("🧹 MENU: Cleaned duplicate points in all document shapes")
-        }
-        
-        // Test duplicate point merger (for verification)
-        NotificationCenter.default.addObserver(forName: .testDuplicatePointMerger, object: nil, queue: .main) { _ in
-            ProfessionalPathOperations.testDuplicatePointMerger()
-            print("🧪 MENU: Ran duplicate point merger test")
-        }
+        // MARK: - Path Cleanup Commands (REMOVED - using DocumentState methods directly from Object menu)
         
         // Window Commands - Panel Switching (Removed - using direct AppState actions from menu commands)
         

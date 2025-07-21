@@ -338,6 +338,31 @@ class DocumentState: ObservableObject {
         updateAllStates()
         print("📝 MENU: Converted selected text to outlines")
     }
+    
+    // MARK: - Path Cleanup Commands (Professional Tools)
+    func cleanupDuplicatePoints() {
+        guard let document = document else { return }
+        if !document.selectedShapeIDs.isEmpty {
+            ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+            print("🧹 MENU: Cleaned duplicate points in selected shapes")
+        } else {
+            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+            print("🧹 MENU: Cleaned duplicate points in all shapes")
+        }
+        updateAllStates()
+    }
+    
+    func cleanupAllDuplicatePoints() {
+        guard let document = document else { return }
+        ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+        print("🧹 MENU: Cleaned duplicate points in all document shapes")
+        updateAllStates()
+    }
+    
+    func testDuplicatePointMerger() {
+        ProfessionalPathOperations.testDuplicatePointMerger()
+        print("🧪 MENU: Ran duplicate point merger test")
+    }
 }
 
 @main
@@ -565,21 +590,21 @@ struct logos_inken_ioApp: App {
                 
                 Divider()
                 
-                // Path Cleanup Section
+                // Path Cleanup Section (Professional Tools)
                 Button("Clean Duplicate Points") {
-                    NotificationCenter.default.post(name: .cleanupDuplicatePoints, object: nil)
+                    documentState?.cleanupDuplicatePoints()
                 }
                 .keyboardShortcut("k", modifiers: [.command, .shift])
                 .help("Remove overlapping points and merge their curve data smoothly")
                 
                 Button("Clean All Duplicate Points") {
-                    NotificationCenter.default.post(name: .cleanupAllDuplicatePoints, object: nil)
+                    documentState?.cleanupAllDuplicatePoints()
                 }
                 .keyboardShortcut("k", modifiers: [.command, .option])
                 .help("Clean duplicate points in all shapes in the document")
                 
                 Button("Test Duplicate Point Merger") {
-                    NotificationCenter.default.post(name: .testDuplicatePointMerger, object: nil)
+                    documentState?.testDuplicatePointMerger()
                 }
                 .keyboardShortcut("k", modifiers: [.command, .shift, .option])
                 .help("Run a test to verify the duplicate point merger works correctly")
