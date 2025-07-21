@@ -11,9 +11,7 @@ extension Notification.Name {
     // MARK: - Tool Commands
     static let switchTool = Notification.Name("SwitchTool")
     
-    // MARK: - Selection Commands
-    static let selectAll = Notification.Name("SelectAll")
-    static let deselectAll = Notification.Name("DeselectAll")
+    // MARK: - Selection Commands (REMOVED - using DocumentState methods directly)
     
     // MARK: - Object Commands - Arrange
     static let bringToFront = Notification.Name("BringToFront")

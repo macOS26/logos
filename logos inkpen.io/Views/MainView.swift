@@ -222,28 +222,7 @@ struct MainView: View {
             }
         }
         
-        // Selection Commands - PROPERLY IMPLEMENTED
-        NotificationCenter.default.addObserver(forName: .selectAll, object: nil, queue: .main) { _ in
-            // Select all shapes and text objects
-            for layerIndex in 0..<document.layers.count {
-                let layer = document.layers[layerIndex]
-                for shape in layer.shapes {
-                    document.selectedShapeIDs.insert(shape.id)
-                }
-            }
-            for textObj in document.textObjects {
-                document.selectedTextIDs.insert(textObj.id)
-            }
-            print("📝 MENU: Selected all objects (\(document.selectedShapeIDs.count) shapes, \(document.selectedTextIDs.count) text)")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .deselectAll, object: nil, queue: .main) { _ in
-            let shapeCount = document.selectedShapeIDs.count
-            let textCount = document.selectedTextIDs.count
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
-            print("📝 MENU: Deselected all objects (\(shapeCount) shapes, \(textCount) text)")
-        }
+        // Selection Commands (REMOVED - using DocumentState.selectAll/deselectAll directly from Edit menu)
         
         // Object Commands - Arrange - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .bringToFront, object: nil, queue: .main) { _ in
