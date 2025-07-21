@@ -216,9 +216,6 @@ extension DrawingCanvas {
             .contextMenu {
                 directSelectionContextMenu
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("FitCanvasToPage"))) { _ in
-                // Auto-center view after canvas fit operation
-                fitToPage(geometry: geometry)
-            }
+            // REMOVED: FitCanvasToPage notification - unused dead code (never posted)
     }
 } 
