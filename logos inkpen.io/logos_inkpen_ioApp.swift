@@ -278,6 +278,43 @@ class DocumentState: ObservableObject {
         document?.showAllObjects()
         updateAllStates()
     }
+    
+    // MARK: - View Commands
+    func zoomIn() {
+        guard let document = document else { return }
+        let oldZoom = document.zoomLevel
+        let newZoom = min(document.zoomLevel * 1.25, 50.0)
+        document.zoomLevel = newZoom
+        print("🔍 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
+    }
+    
+    func zoomOut() {
+        guard let document = document else { return }
+        let oldZoom = document.zoomLevel
+        let newZoom = max(document.zoomLevel / 1.25, 0.01)
+        document.zoomLevel = newZoom
+        print("🔍 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
+    }
+    
+    func fitToPage() {
+        document?.requestZoom(to: 0.0, mode: .fitToPage)
+        print("📐 MENU: Fit to Page")
+    }
+    
+    func actualSize() {
+        document?.zoomLevel = 1.0
+        print("📏 MENU: Actual Size (100%)")
+    }
+    
+    func switchToColorView() {
+        document?.viewMode = .color
+        print("🎨 MENU: Switched to Color View")
+    }
+    
+    func switchToKeylineView() {
+        document?.viewMode = .keyline
+        print("📝 MENU: Switched to Keyline View")
+    }
 }
 
 @main
@@ -541,6 +578,41 @@ struct logos_inken_ioApp: App {
                     appState.showFontPanel()
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
+            }
+            
+            // VIEW MENU - Zoom and View Mode using DocumentState (no more notifications!)
+            CommandMenu("View") {
+                Button("Zoom In") {
+                    documentState?.zoomIn()
+                }
+                .keyboardShortcut("=", modifiers: [.command])
+                
+                Button("Zoom Out") {
+                    documentState?.zoomOut()
+                }
+                .keyboardShortcut("-", modifiers: [.command])
+                
+                Button("Fit to Page") {
+                    documentState?.fitToPage()
+                }
+                .keyboardShortcut("0", modifiers: [.command])
+                
+                Button("Actual Size") {
+                    documentState?.actualSize()
+                }
+                .keyboardShortcut("1", modifiers: [.command])
+                
+                Divider()
+                
+                Button("Color View") {
+                    documentState?.switchToColorView()
+                }
+                .keyboardShortcut("y", modifiers: [.command])
+                
+                Button("Keyline View") {
+                    documentState?.switchToKeylineView()
+                }
+                .keyboardShortcut("y", modifiers: [.command, .shift])
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing

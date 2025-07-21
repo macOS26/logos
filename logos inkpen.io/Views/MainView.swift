@@ -228,41 +228,7 @@ struct MainView: View {
         
         // Object Commands - Lock/Hide (REMOVED - using DocumentState methods directly from Object menu)
         
-        // View Commands - Zoom - PROPERLY IMPLEMENTED
-        NotificationCenter.default.addObserver(forName: .zoomIn, object: nil, queue: .main) { _ in
-            let oldZoom = document.zoomLevel
-            let newZoom = min(document.zoomLevel * 1.25, 50.0)
-            document.zoomLevel = newZoom
-            print("📝 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .zoomOut, object: nil, queue: .main) { _ in
-            let oldZoom = document.zoomLevel
-            let newZoom = max(document.zoomLevel / 1.25, 0.01)
-            document.zoomLevel = newZoom
-            print("📝 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .fitToPage, object: nil, queue: .main) { _ in
-            fitToPage()
-            print("📝 MENU: Fit to Page")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .actualSize, object: nil, queue: .main) { _ in
-            document.zoomLevel = 1.0
-            print("📝 MENU: Actual Size (100%)")
-        }
-        
-        // View Commands - View Mode - PROPERLY IMPLEMENTED
-        NotificationCenter.default.addObserver(forName: .colorView, object: nil, queue: .main) { _ in
-            document.viewMode = .color
-            print("📝 MENU: Switched to Color View")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .keylineView, object: nil, queue: .main) { _ in
-            document.viewMode = .keyline
-            print("📝 MENU: Switched to Keyline View")
-        }
+        // View Commands - Zoom and View Mode (REMOVED - using DocumentState methods directly from View menu)
         
         // View Commands - Show/Hide - PROPERLY IMPLEMENTED
         NotificationCenter.default.addObserver(forName: .toggleRulers, object: nil, queue: .main) { _ in

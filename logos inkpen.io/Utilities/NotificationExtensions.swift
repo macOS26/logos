@@ -17,15 +17,9 @@ extension Notification.Name {
     
     // MARK: - Object Commands - Lock/Hide (REMOVED - using DocumentState methods directly)
     
-    // MARK: - View Commands - Zoom
-    static let zoomIn = Notification.Name("ZoomIn")
-    static let zoomOut = Notification.Name("ZoomOut")
-    static let fitToPage = Notification.Name("FitToPage")
-    static let actualSize = Notification.Name("ActualSize")
+    // MARK: - View Commands - Zoom (REMOVED - using DocumentState methods directly)
     
-    // MARK: - View Commands - View Mode
-    static let colorView = Notification.Name("ColorView")
-    static let keylineView = Notification.Name("KeylineView")
+    // MARK: - View Commands - View Mode (REMOVED - using DocumentState methods directly)
     
     // MARK: - View Commands - Show/Hide
     static let toggleRulers = Notification.Name("ToggleRulers")
