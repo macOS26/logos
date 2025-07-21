@@ -13,11 +13,7 @@ extension Notification.Name {
     
     // MARK: - Selection Commands (REMOVED - using DocumentState methods directly)
     
-    // MARK: - Object Commands - Arrange
-    static let bringToFront = Notification.Name("BringToFront")
-    static let bringForward = Notification.Name("BringForward")
-    static let sendBackward = Notification.Name("SendBackward")
-    static let sendToBack = Notification.Name("SendToBack")
+    // MARK: - Object Commands - Arrange (REMOVED - using DocumentState methods directly)
     
     // MARK: - Object Commands - Lock/Hide
     static let lockObjects = Notification.Name("LockObjects")
