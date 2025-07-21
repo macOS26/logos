@@ -125,7 +125,7 @@ struct TypographyProperties: Codable, Hashable {
         strokeColor: VectorColor = .black,
         strokeWidth: Double = 1.0,
         strokeOpacity: Double = 1.0,
-        fillColor: VectorColor = .black,
+        fillColor: VectorColor = .rgb(RGBColor(red: 0, green: 0, blue: 0, alpha: 1)), // Default to black but allow override
         fillOpacity: Double = 1.0
     ) {
         self.fontFamily = fontFamily

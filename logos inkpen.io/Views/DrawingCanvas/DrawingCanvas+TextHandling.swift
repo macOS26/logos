@@ -79,8 +79,8 @@ extension DrawingCanvas {
         
         // FIXED: Use document default colors from toolbar (exactly like pen tool and shape tools)
         // Create typography using document defaults or user-selected font properties
-        // CRITICAL: Ensure text is visible by using black if default fill is white/clear
-        let fillColor = (document.defaultFillColor == .white || document.defaultFillColor == .clear) ? .black : document.defaultFillColor
+        // REMOVED BAD LOGIC: No longer force black when default fill is white/clear
+        let fillColor = document.defaultFillColor
         
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,

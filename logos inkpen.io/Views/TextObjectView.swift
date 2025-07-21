@@ -164,7 +164,7 @@ class CoreGraphicsTextNSView: NSView {
         // STEP 8: Position text at baseline (adjusted for flipped coordinates)
         let drawPoint = CGPoint(x: position.x, y: position.y)
         
-        // STEP 9: PURE CORE GRAPHICS COLOR HANDLING
+        // STEP 9: FIXED CORE GRAPHICS COLOR HANDLING  
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
         let hasFill = typography.fillColor != .clear
         
@@ -172,7 +172,7 @@ class CoreGraphicsTextNSView: NSView {
         let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
         let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
         
-        print("🎨 PURE CORE GRAPHICS RENDERING:")
+        print("🎨 FIXED CORE GRAPHICS RENDERING:")
         print("   Fill: \(typography.fillColor) -> CGColor: \(fillCGColor)")
         print("   Has Fill: \(hasFill), Has Stroke: \(hasStroke)")
         
@@ -207,6 +207,25 @@ class CoreGraphicsTextNSView: NSView {
             print("   Mode: Fill only")
             context.setTextDrawingMode(.fill)
             context.setFillColor(fillCGColor)
+            context.textPosition = drawPoint
+            CTLineDraw(line, context)
+            
+        } else {
+            // CRITICAL FIX: Handle case where no fill/stroke is specified
+            // This was the missing else clause causing black text!
+            print("   Mode: DEFAULT FILL (was missing - this caused black text!)")
+            
+            // If fill color is clear, use a fallback visible color for text
+            let finalFillColor: CGColor
+            if typography.fillColor == .clear {
+                print("   WARNING: Fill color is clear, using black fallback for visibility")
+                finalFillColor = CGColor.black
+            } else {
+                finalFillColor = fillCGColor
+            }
+            
+            context.setTextDrawingMode(.fill)
+            context.setFillColor(finalFillColor)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
         }
