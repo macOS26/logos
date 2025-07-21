@@ -9,8 +9,7 @@ import SwiftUI
 
 struct FontPanel: View {
     @ObservedObject var document: VectorDocument
-    @State private var showingTextFillColorPicker = false
-    @State private var showingTextStrokeColorPicker = false
+    // REMOVED: Separate color pickers - use main color system instead
     
     private var selectedText: VectorText? {
         document.textObjects.first { document.selectedTextIDs.contains($0.id) }
@@ -143,24 +142,43 @@ struct FontPanel: View {
                             if let selectedText = selectedText {
                                 Divider()
                                 
-                                // Text Fill Color
+                                // SIMPLIFIED: Text Colors (shows current colors, use main color panels to change)
                                 HStack {
-                                    Text("Fill")
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.secondary)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Colors")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.secondary)
+                                        
+                                        Text("Use Stroke/Fill panel to change")
+                                            .font(.caption2)
+                                            .foregroundColor(.gray)
+                                    }
                                     
                                     Spacer()
                                     
-                                    Button {
-                                        showingTextFillColorPicker = true
-                                    } label: {
-                                        renderColorSwatchRightPanel(selectedText.typography.fillColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
+                                    HStack(spacing: 4) {
+                                        // Current Fill Color (read-only indicator)
+                                        VStack(spacing: 2) {
+                                            renderColorSwatchRightPanel(selectedText.typography.fillColor, width: 20, height: 20, cornerRadius: 0, borderWidth: 1)
+                                            Text("Fill")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        
+                                        // Current Stroke Color (if enabled)
+                                        if selectedText.typography.hasStroke {
+                                            VStack(spacing: 2) {
+                                                renderColorSwatchRightPanel(selectedText.typography.strokeColor, width: 20, height: 20, cornerRadius: 0, borderWidth: 1)
+                                                Text("Stroke")
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
                                     }
-                                    .buttonStyle(.plain)
                                 }
                                 
-                                // Text Stroke Toggle and Color
+                                // Text Stroke Toggle (simplified)
                                 HStack {
                                     Toggle("Stroke", isOn: Binding(
                                         get: { selectedText.typography.hasStroke },
@@ -173,15 +191,6 @@ struct FontPanel: View {
                                     .foregroundColor(.secondary)
                                     
                                     Spacer()
-                                    
-                                    if selectedText.typography.hasStroke {
-                                        Button {
-                                            showingTextStrokeColorPicker = true
-                                        } label: {
-                                            renderColorSwatchRightPanel(selectedText.typography.strokeColor, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
                                 }
                                 
                                 // Text Stroke Width (NEW)
@@ -241,30 +250,7 @@ struct FontPanel: View {
                 Spacer()
             }
         }
-        .sheet(isPresented: $showingTextFillColorPicker) {
-            ColorPickerModal(
-                document: document,
-                title: "Text Fill Color",
-                onColorSelected: { color in
-                    updateTextFillColor(color)
-                    if !document.currentSwatches.contains(color) {
-                        document.addColorSwatch(color)
-                    }
-                }
-            )
-        }
-        .sheet(isPresented: $showingTextStrokeColorPicker) {
-            ColorPickerModal(
-                document: document,
-                title: "Text Stroke Color",
-                onColorSelected: { color in
-                    updateTextStrokeColor(color)
-                    if !document.currentSwatches.contains(color) {
-                        document.addColorSwatch(color)
-                    }
-                }
-            )
-        }
+        // REMOVED: Separate color picker sheets - use main color system instead
     }
     
     private func updateSelectedTextFont() {
@@ -287,15 +273,7 @@ struct FontPanel: View {
         document.objectWillChange.send()
     }
     
-    private func updateTextFillColor(_ color: VectorColor) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.fillColor = color
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
+    // REMOVED: updateTextFillColor - now handled by main color system (StrokeFillPanel, ColorPanel, VerticalToolbar)
     
     private func updateTextStroke(hasStroke: Bool) {
         guard let textID = document.selectedTextIDs.first,
@@ -311,15 +289,7 @@ struct FontPanel: View {
         document.objectWillChange.send()
     }
     
-    private func updateTextStrokeColor(_ color: VectorColor) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.strokeColor = color
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
+    // REMOVED: updateTextStrokeColor - now handled by main color system (StrokeFillPanel, ColorPanel, VerticalToolbar)
     
     private func updateTextStrokeWidth(_ width: Double) {
         guard let textID = document.selectedTextIDs.first,

@@ -159,43 +159,75 @@ struct ColorSwatchGrid: View {
         GridItem(.fixed(10), spacing: 1)
     ]
     
-    // FIXED: Show document's default colors (what will be used for new shapes)
+    // FIXED: Show current colors from text OR shapes
     private var currentFillColor: VectorColor {
-        // If shapes are selected, show their color, otherwise show default
+        // PRIORITY 1: If text objects are selected, show their fill color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillColor
+        }
+        
+        // PRIORITY 2: If shapes are selected, show their color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
            let fillColor = shape.fillStyle?.color {
             return fillColor
         }
-        return document.defaultFillColor  // Show default color for new shapes
+        
+        // PRIORITY 3: Show default color for new shapes
+        return document.defaultFillColor
     }
     
-    // FIXED: Show document's default colors (what will be used for new shapes)
+    // FIXED: Show current colors from text OR shapes  
     private var currentStrokeColor: VectorColor {
-        // If shapes are selected, show their color, otherwise show default
+        // PRIORITY 1: If text objects are selected, show their stroke color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.strokeColor
+        }
+        
+        // PRIORITY 2: If shapes are selected, show their color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
            let strokeColor = shape.strokeStyle?.color {
             return strokeColor
         }
-        return document.defaultStrokeColor  // Show default color for new shapes
+        
+        // PRIORITY 3: Show default color for new shapes
+        return document.defaultStrokeColor
     }
     
-    // Get current fill opacity (from selected shapes or default)
+    // Get current fill opacity (from text OR shapes)
     private var currentFillOpacity: Double {
+        // PRIORITY 1: If text objects are selected, show their fill opacity
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillOpacity
+        }
+        
+        // PRIORITY 2: If shapes are selected, show their opacity
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
            let opacity = shape.fillStyle?.opacity {
             return opacity
         }
+        
+        // PRIORITY 3: Show default opacity
         return document.defaultFillOpacity
     }
     
-    // Get current stroke opacity (from selected shapes or default)
+    // Get current stroke opacity (from text OR shapes)
     private var currentStrokeOpacity: Double {
+        // PRIORITY 1: If text objects are selected, show their stroke opacity
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.strokeOpacity
+        }
+        
+        // PRIORITY 2: If shapes are selected, show their opacity
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),

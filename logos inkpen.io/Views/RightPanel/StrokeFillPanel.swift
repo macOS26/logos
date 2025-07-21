@@ -14,6 +14,13 @@ struct StrokeFillPanel: View {
     
     // FIXED: Show current colors - from selected shapes or defaults for new shapes
     private var selectedStrokeColor: VectorColor {
+        // FIXED: Support both text and shapes  
+        // If text objects are selected, show their stroke color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.strokeColor
+        }
+        
         // If shapes are selected, show their color, otherwise show default
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
@@ -25,6 +32,13 @@ struct StrokeFillPanel: View {
     }
     
     private var selectedFillColor: VectorColor {
+        // FIXED: Support both text and shapes
+        // If text objects are selected, show their fill color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillColor
+        }
+        
         // If shapes are selected, show their color, otherwise show default
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
@@ -238,9 +252,24 @@ struct StrokeFillPanel: View {
         document.defaultFillColor = color
         print("🎨 Set default fill color: \(color)")
         
+        // FIXED: Update selected text objects first
+        if !document.selectedTextIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.fillColor = color
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+        }
+        
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            if document.selectedTextIDs.isEmpty {
+                // Only save to undo stack if we didn't already save for text
+                document.saveToUndoStack()
+            }
             
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
@@ -280,9 +309,25 @@ struct StrokeFillPanel: View {
         document.defaultStrokeColor = color
         print("🎨 Set default stroke color: \(color)")
         
+        // FIXED: Update selected text objects first  
+        if !document.selectedTextIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.hasStroke = true
+                    document.textObjects[textIndex].typography.strokeColor = color
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+        }
+        
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            document.saveToUndoStack()
+            if document.selectedTextIDs.isEmpty {
+                // Only save to undo stack if we didn't already save for text
+                document.saveToUndoStack()
+            }
             
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
