@@ -9,16 +9,19 @@ import SwiftUI
 
 struct RightPanel: View {
     @ObservedObject var document: VectorDocument
-    @State private var selectedTab: PanelTab = .layers
+    @Environment(AppState.self) private var appState
     
     var body: some View {
         VStack(spacing: 0) {
             // Tab Bar
-            PanelTabBar(selectedTab: $selectedTab)
+            PanelTabBar(selectedTab: Binding(
+                get: { appState.selectedPanelTab },
+                set: { appState.selectedPanelTab = $0 }
+            ))
             
             // Content
             Group {
-                switch selectedTab {
+                switch appState.selectedPanelTab {
                 case .layers:
                     LayersPanel(document: document)
                 case .properties:
@@ -38,18 +41,7 @@ struct RightPanel: View {
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
             alignment: .leading
         )
-        .onAppear {
-            // PROFESSIONAL PANEL SWITCHING (Adobe Illustrator Standards)
-            NotificationCenter.default.addObserver(forName: .switchToPanel, object: nil, queue: .main) { notification in
-                if let panelTab = notification.object as? PanelTab {
-                    selectedTab = panelTab
-                    print("🎨 Menu: Switched to panel: \(panelTab.rawValue)")
-                }
-            }
-        }
-        .onDisappear {
-            NotificationCenter.default.removeObserver(self)
-        }
+
     }
 }
 

@@ -451,24 +451,7 @@ struct MainView: View {
             print("🧪 MENU: Ran duplicate point merger test")
         }
         
-        // Window Commands - Panel Switching
-        NotificationCenter.default.addObserver(forName: .showLayersPanel, object: nil, queue: .main) { _ in
-            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.layers)
-        }
-        
-        NotificationCenter.default.addObserver(forName: .showColorPanel, object: nil, queue: .main) { _ in
-            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.color)
-        }
-        
-        NotificationCenter.default.addObserver(forName: .showStrokeFillPanel, object: nil, queue: .main) { _ in
-            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.properties)
-        }
-        
-        // TYPOGRAPHY PANEL REMOVED
-        
-        NotificationCenter.default.addObserver(forName: .showPathOpsPanel, object: nil, queue: .main) { _ in
-            NotificationCenter.default.post(name: .switchToPanel, object: PanelTab.pathOps)
-        }
+        // Window Commands - Panel Switching (Removed - using direct AppState actions from menu commands)
         
         // MARK: - Development Commands - CoreGraphics Path Operations Testing
         

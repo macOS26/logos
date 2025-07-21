@@ -264,10 +264,12 @@ class DocumentState: ObservableObject {
 struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
+    @State private var appState = AppState()
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(appState)
         }
         .commands {
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
@@ -462,6 +464,34 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("k", modifiers: [.command, .shift, .option])
                 .help("Run a test to verify the duplicate point merger works correctly")
+            }
+            
+            // WINDOW MENU - Panel Switching using AppState (no more notifications!)
+            CommandMenu("Window") {
+                Button("Show Layers Panel") {
+                    appState.showLayersPanel()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+                
+                Button("Show Color Panel") {
+                    appState.showColorPanel()
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+                
+                Button("Show Stroke/Fill Panel") {
+                    appState.showStrokeFillPanel()
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                
+                Button("Show Path Ops Panel") {
+                    appState.showPathOpsPanel()
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                
+                Button("Show Font Panel") {
+                    appState.showFontPanel()
+                }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing

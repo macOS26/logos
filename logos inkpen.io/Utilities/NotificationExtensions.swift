@@ -50,13 +50,7 @@ extension Notification.Name {
     static let cleanupAllDuplicatePoints = Notification.Name("cleanupAllDuplicatePoints")
     static let testDuplicatePointMerger = Notification.Name("testDuplicatePointMerger")
     
-    // MARK: - Panel Commands
-    static let showLayersPanel = Notification.Name("ShowLayersPanel")
-    static let showColorPanel = Notification.Name("ShowColorPanel")
-    static let showStrokeFillPanel = Notification.Name("ShowStrokeFillPanel")
-    static let showTypographyPanel = Notification.Name("ShowTypographyPanel")
-    static let showPathOpsPanel = Notification.Name("ShowPathOpsPanel")
-    static let switchToPanel = Notification.Name("SwitchToPanel")
+    // MARK: - Panel Commands (REMOVED - using AppState with @Observable instead)
     
     // MARK: - Development Commands - CoreGraphics Path Operations Testing
     static let showCoreGraphicsTest = Notification.Name("ShowCoreGraphicsTest")
