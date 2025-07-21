@@ -143,7 +143,7 @@ class CoreGraphicsTextNSView: NSView {
             .foregroundColor: nsColor
         ]
         
-        print("🎨 CORE TEXT FIX: Using NSAttributedString.foregroundColor=\(nsColor) instead of graphics context")
+        // Core Text uses NSAttributedString.foregroundColor, not graphics context colors
         
         // STEP 3: Create attributed string WITH color information (required by Core Text)
         let attributedString = NSAttributedString(string: text, attributes: attributes)
@@ -170,19 +170,8 @@ class CoreGraphicsTextNSView: NSView {
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
         let hasFill = true // Always render fill using drawing app colors
         
-        // DEBUG: Print actual colors being used
-        print("🎨 TEXT RENDER: fillColor=\(typography.fillColor), strokeColor=\(typography.strokeColor)")
-        print("🎨 TEXT RENDER: hasStroke=\(hasStroke), hasFill=\(hasFill)")
-        
-        // Convert colors using direct cgColor (no NSColor conversion)
-        let baseFillCGColor = typography.fillColor.cgColor
-        let fillCGColor = baseFillCGColor.copy(alpha: typography.fillOpacity) ?? baseFillCGColor
-        let baseStrokeCGColor = typography.strokeColor.cgColor  
-        let strokeCGColor = baseStrokeCGColor.copy(alpha: typography.strokeOpacity) ?? baseStrokeCGColor
-        
-        // DEBUG: Print actual CGColor values being used
-        print("🎨 CGColor DEBUG: baseFillCGColor=\(baseFillCGColor), finalFillCGColor=\(fillCGColor)")
-        print("🎨 CGColor DEBUG: baseStrokeCGColor=\(baseStrokeCGColor), finalStrokeCGColor=\(strokeCGColor)")
+        // Convert colors for stroke (Core Text handles fill via NSAttributedString)
+        let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
         
         // Clean rendering using drawing app color system
         
@@ -200,7 +189,7 @@ class CoreGraphicsTextNSView: NSView {
             context.setLineWidth(typography.strokeWidth)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
-            print("🎨 CORE TEXT: Fill via NSAttributedString + manual stroke")
+
 
         } else if hasStroke {
             // Stroke only - override NSAttributedString color with stroke
@@ -209,12 +198,12 @@ class CoreGraphicsTextNSView: NSView {
             context.setLineWidth(typography.strokeWidth)
             context.textPosition = drawPoint
             CTLineDraw(line, context)
-            print("🎨 CORE TEXT: Stroke only override")
+
 
         } else {
             // Fill only - Core Text handles everything via NSAttributedString.foregroundColor
             CTLineDraw(line, context)
-            print("🎨 CORE TEXT: Fill via NSAttributedString.foregroundColor")
+
         }
         
         // STEP 10: Restore graphics state

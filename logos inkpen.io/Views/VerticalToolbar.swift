@@ -412,7 +412,7 @@ struct ColorSwatchGrid: View {
                     document.textObjects[textIndex].typography.fillColor = color
                     document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
                     document.textObjects[textIndex].updateBounds()
-                    print("🎨 APPLIED FILL to text: \(color) with opacity \(document.defaultFillOpacity)")
+
                 }
             }
             document.objectWillChange.send()

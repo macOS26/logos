@@ -78,7 +78,7 @@ extension DrawingCanvas {
         print("✨ Creating new text at: \(location)")
         
         // NO DEFAULT FONT COLORS - USE CURRENT TOOLBAR COLORS DIRECTLY  
-        print("🎨 TEXT CREATE: Using defaultFillColor=\(document.defaultFillColor), defaultStrokeColor=\(document.defaultStrokeColor)")
+
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontWeight: document.fontManager.selectedFontWeight,
