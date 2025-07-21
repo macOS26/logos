@@ -99,10 +99,13 @@ struct DrawingCanvas: View {
     @State internal var coincidentPointRadius: CGFloat = 2.0 // Points within this radius are considered coincident
     @State internal var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
     
-    // FONT TOOL STATE (Core Graphics based - no Core Text)
+    // ENHANCED TEXT EDITING STATE (Professional Core Graphics Text Editing)
     @State internal var isEditingText = false
     @State internal var editingTextID: UUID? = nil
-    @State internal var textCursorPosition: Int = 0
+    @State internal var textCursorPosition: Int = 0 // Legacy - replaced by enhanced state
+    @State internal var currentCursorPosition: Int = 0
+    @State internal var currentSelectionRange: NSRange = NSRange(location: 0, length: 0)
+    @State internal var lastTapLocation: CGPoint = .zero
     
     // Point and handle identification moved to PointAndHandleID.swift
     var body: some View {

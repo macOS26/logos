@@ -2,7 +2,7 @@
 //  TextObjectView.swift
 //  logos
 //
-//  Pure SwiftUI Text Rendering - SAME AS SHAPES
+//  Professional Core Graphics Text Editing - SAME AS SHAPES
 //  COORDINATE SYSTEM: EXACTLY MATCHES SHAPES AND PEN TOOL
 //
 
@@ -17,6 +17,11 @@ struct TextObjectView: View {
     let isSelected: Bool
     let isEditing: Bool
     
+    // NEW: Enhanced editing state
+    @State private var cursorPosition: Int = 0
+    @State private var selectionRange: NSRange = NSRange(location: 0, length: 0)
+    @State private var showCursor: Bool = true
+    
     var body: some View {
         ZStack {
             // PURE SWIFTUI TEXT RENDERING - EXACT SAME AS SHAPES!
@@ -29,10 +34,8 @@ struct TextObjectView: View {
             .offset(x: canvasOffset.x, y: canvasOffset.y)
             .transformEffect(textObject.transform)
             
-            // FIXED: Selection outline using EXACT coordinate system as shapes
+            // ENHANCED: Professional selection outline using EXACT coordinate system as shapes
             if isSelected && !isEditing {
-                // CRITICAL FIX: Text bounds are relative to position, not absolute
-                // Position is baseline point, bounds are relative to that baseline
                 let absoluteBounds = CGRect(
                     x: textObject.position.x,
                     y: textObject.position.y + textObject.bounds.minY,
@@ -44,46 +47,150 @@ struct TextObjectView: View {
                     path.addRect(absoluteBounds)
                 }
                 .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                // EXACT SAME coordinate chain as shapes in ShapeView
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 .transformEffect(textObject.transform)
                 .opacity(0.7)
             }
             
-            // FIXED: Editing cursor using EXACT coordinate system as shapes
+            // ENHANCED: Professional text selection highlighting
+            if isEditing && selectionRange.length > 0 {
+                drawTextSelection()
+            }
+            
+            // ENHANCED: Professional I-beam cursor with precise positioning
+            if isEditing && selectionRange.length == 0 && showCursor {
+                drawTextCursor()
+            }
+        }
+        .onAppear {
             if isEditing {
-                let cursorX = textObject.position.x + getCursorXPosition()
-                let cursorRect = CGRect(
-                    x: cursorX,
-                    y: textObject.position.y + textObject.bounds.minY,
-                    width: 1.0,
-                    height: textObject.bounds.height
-                )
-                
-                Path { path in
-                    path.addRect(cursorRect)
-                }
-                .fill(Color.blue)
-                // EXACT SAME coordinate chain as shapes in ShapeView
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(textObject.transform)
-                .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: isEditing)
+                startCursorAnimation()
+            }
+        }
+        .onChange(of: isEditing) { oldValue, newValue in
+            if newValue {
+                startCursorAnimation()
+                cursorPosition = textObject.content.count
+            } else {
+                stopCursorAnimation()
             }
         }
     }
     
-    private func getCursorXPosition() -> CGFloat {
-        // Simple cursor positioning - place at end of text for now
-        let nsString = NSString(string: textObject.content)
-        // CRITICAL: Use typography.nsFont which includes weight and style
+    // MARK: - Enhanced Text Selection
+    @ViewBuilder
+    private func drawTextSelection() -> some View {
+        let selectionRects = getSelectionRects()
+        ForEach(selectionRects.indices, id: \.self) { index in
+            Path { path in
+                path.addRect(selectionRects[index])
+            }
+            .fill(Color.blue.opacity(0.3))
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(textObject.transform)
+        }
+    }
+    
+    // MARK: - Enhanced I-beam Cursor  
+    @ViewBuilder
+    private func drawTextCursor() -> some View {
+        let cursorRect = getCursorRect()
+        
+        Path { path in
+            path.addRect(cursorRect)
+        }
+        .fill(Color.blue)
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .transformEffect(textObject.transform)
+    }
+    
+    // MARK: - Professional Text Metrics Calculations
+    
+    private func getCursorRect() -> CGRect {
+        let cursorX = textObject.position.x + getCursorXPosition(at: cursorPosition)
+        
+        return CGRect(
+            x: cursorX - 0.5, // Center the 1pt cursor line
+            y: textObject.position.y + textObject.bounds.minY,
+            width: 1.0,
+            height: textObject.bounds.height
+        )
+    }
+    
+    private func getCursorXPosition(at position: Int) -> CGFloat {
+        guard position > 0 && position <= textObject.content.count else { return 0 }
+        
+        let substring = String(textObject.content.prefix(position))
+        let nsString = NSString(string: substring)
         let font = textObject.typography.nsFont
-        let textSize = nsString.size(withAttributes: [.font: font])
+        let textSize = nsString.size(withAttributes: [
+            .font: font,
+            .kern: textObject.typography.letterSpacing
+        ])
         return textSize.width
     }
     
-    // MARK: - SwiftUI Canvas Text Rendering (Exact same approach as shapes!)
+    private func getSelectionRects() -> [CGRect] {
+        guard selectionRange.length > 0,
+              selectionRange.location >= 0,
+              selectionRange.location + selectionRange.length <= textObject.content.count else {
+            return []
+        }
+        
+        let startX = getCursorXPosition(at: selectionRange.location)
+        let endX = getCursorXPosition(at: selectionRange.location + selectionRange.length)
+        
+        let selectionRect = CGRect(
+            x: textObject.position.x + startX,
+            y: textObject.position.y + textObject.bounds.minY,
+            width: endX - startX,
+            height: textObject.bounds.height
+        )
+        
+        return [selectionRect]
+    }
+    
+    // MARK: - Text Position Calculations (Core Graphics Integration)
+    
+    func getCharacterIndex(at point: CGPoint) -> Int {
+        // Convert point from view coordinates to text-relative coordinates
+        let relativePoint = CGPoint(
+            x: point.x - textObject.position.x,
+            y: point.y - textObject.position.y
+        )
+        
+        // Use Core Text to find character index
+        let nsFont = textObject.typography.nsFont
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: nsFont,
+            .kern: textObject.typography.letterSpacing
+        ]
+        
+        let attributedString = NSAttributedString(string: textObject.content, attributes: attributes)
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        // Get character index at the relative point
+        let index = CTLineGetStringIndexForPosition(line, relativePoint)
+        return max(0, min(textObject.content.count, index))
+    }
+    
+    // MARK: - Cursor Animation
+    
+    private func startCursorAnimation() {
+        showCursor = true
+        withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+            showCursor.toggle()
+        }
+    }
+    
+    private func stopCursorAnimation() {
+        showCursor = false
+    }
+    
+    // MARK: - Core Graphics Text Rendering (Same approach as shapes!)
     private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String, position: CGPoint) {
         // Determine fill and stroke requirements
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
@@ -135,5 +242,37 @@ struct TextObjectView: View {
             let fillText = baseText.foregroundColor(Color(typography.fillColor.color))
             context.draw(fillText, at: position, anchor: .topLeading)
         }
+    }
+}
+
+// MARK: - Text Editing Extensions
+extension TextObjectView {
+    
+    // NEW: Professional text editing methods
+    func insertText(at position: Int, text: String) -> VectorText {
+        var newContent = textObject.content
+        let insertIndex = newContent.index(newContent.startIndex, offsetBy: min(position, newContent.count))
+        newContent.insert(contentsOf: text, at: insertIndex)
+        
+        var updatedText = textObject
+        updatedText.content = newContent
+        updatedText.updateBounds()
+        return updatedText
+    }
+    
+    func deleteText(in range: NSRange) -> VectorText {
+        guard range.location >= 0 && range.location + range.length <= textObject.content.count else {
+            return textObject
+        }
+        
+        var newContent = textObject.content
+        let startIndex = newContent.index(newContent.startIndex, offsetBy: range.location)
+        let endIndex = newContent.index(startIndex, offsetBy: range.length)
+        newContent.removeSubrange(startIndex..<endIndex)
+        
+        var updatedText = textObject
+        updatedText.content = newContent
+        updatedText.updateBounds()
+        return updatedText
     }
 } 
