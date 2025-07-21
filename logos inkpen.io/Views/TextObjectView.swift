@@ -19,14 +19,12 @@ struct TextObjectView: View {
     
     var body: some View {
         ZStack {
-            // PURE SWIFTUI TEXT RENDERING - SAME APPROACH AS SHAPES!
-            // Uses SwiftUI Canvas for crisp text at all zoom levels, just like shapes use SwiftUI Path
+            // PURE SWIFTUI TEXT RENDERING - EXACT SAME AS SHAPES!
+            // Canvas draws text at textObject.position, just like Path draws path elements at their coordinates
             Canvas { context, size in
-                drawTextWithSwiftUI(context: context, typography: textObject.typography, text: textObject.content.isEmpty ? "Text" : textObject.content)
+                drawTextWithSwiftUI(context: context, typography: textObject.typography, text: textObject.content.isEmpty ? "Text" : textObject.content, position: textObject.position)
             }
-            // Position at text baseline, just like shapes are positioned at their path coordinates
-            .position(x: textObject.position.x, y: textObject.position.y)
-            // EXACT SAME coordinate chain as shapes in ShapeView  
+            // EXACT SAME coordinate chain as shapes in ShapeView - NO .position() modifier!
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
             .transformEffect(textObject.transform)
@@ -85,8 +83,8 @@ struct TextObjectView: View {
         return textSize.width
     }
     
-    // MARK: - SwiftUI Canvas Text Rendering (Same approach as shapes!)
-    private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String) {
+    // MARK: - SwiftUI Canvas Text Rendering (Exact same approach as shapes!)
+    private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String, position: CGPoint) {
         // Determine fill and stroke requirements
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
         let hasFill = typography.fillColor != .clear
@@ -103,7 +101,7 @@ struct TextObjectView: View {
             // Both stroke and fill - use fill color (stroke approximation with shadows)
             let fillText = baseText
                 .foregroundColor(Color(typography.fillColor.color))
-            context.draw(fillText, at: CGPoint.zero, anchor: .topLeading)
+            context.draw(fillText, at: position, anchor: .topLeading)
             
             // Add stroke effect using multiple shadows
             let strokeWidth = typography.strokeWidth
@@ -115,7 +113,7 @@ struct TextObjectView: View {
                 let offsetY = sin(radians) * strokeWidth * 0.5
                 
                 let strokeText = baseText.foregroundColor(strokeColor)
-                context.draw(strokeText, at: CGPoint(x: offsetX, y: offsetY), anchor: .topLeading)
+                context.draw(strokeText, at: CGPoint(x: position.x + offsetX, y: position.y + offsetY), anchor: .topLeading)
             }
             
         } else if hasStroke {
@@ -129,13 +127,13 @@ struct TextObjectView: View {
                 let offsetY = sin(radians) * strokeWidth * 0.5
                 
                 let strokeText = baseText.foregroundColor(strokeColor)
-                context.draw(strokeText, at: CGPoint(x: offsetX, y: offsetY), anchor: .topLeading)
+                context.draw(strokeText, at: CGPoint(x: position.x + offsetX, y: position.y + offsetY), anchor: .topLeading)
             }
             
         } else if hasFill {
             // Fill only - use fill color
             let fillText = baseText.foregroundColor(Color(typography.fillColor.color))
-            context.draw(fillText, at: CGPoint.zero, anchor: .topLeading)
+            context.draw(fillText, at: position, anchor: .topLeading)
         }
     }
 } 
