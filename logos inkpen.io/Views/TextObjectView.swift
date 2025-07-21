@@ -2,7 +2,7 @@
 //  TextObjectView.swift
 //  logos
 //
-//  Core Graphics Text Rendering - NATIVE CORE GRAPHICS
+//  Pure SwiftUI Text Rendering - SAME AS SHAPES
 //  COORDINATE SYSTEM: EXACTLY MATCHES SHAPES AND PEN TOOL
 //
 
@@ -19,14 +19,14 @@ struct TextObjectView: View {
     
     var body: some View {
         ZStack {
-            // NATIVE CORE GRAPHICS TEXT RENDERING - NO RASTERIZATION!
-            // Uses direct Core Graphics drawing for crisp text at all zoom levels
-            CoreGraphicsTextView(
-                text: textObject.content.isEmpty ? "Text" : textObject.content,
-                typography: textObject.typography,
-                position: textObject.position
-            )
-            // EXACT SAME coordinate chain as shapes in ShapeView
+            // PURE SWIFTUI TEXT RENDERING - SAME APPROACH AS SHAPES!
+            // Uses SwiftUI Canvas for crisp text at all zoom levels, just like shapes use SwiftUI Path
+            Canvas { context, size in
+                drawTextWithSwiftUI(context: context, typography: textObject.typography, text: textObject.content.isEmpty ? "Text" : textObject.content)
+            }
+            // Position at text baseline, just like shapes are positioned at their path coordinates
+            .position(x: textObject.position.x, y: textObject.position.y)
+            // EXACT SAME coordinate chain as shapes in ShapeView  
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
             .transformEffect(textObject.transform)
@@ -84,154 +84,58 @@ struct TextObjectView: View {
         let textSize = nsString.size(withAttributes: [.font: font])
         return textSize.width
     }
-}
-
-// MARK: - Native Core Graphics Text Renderer
-
-struct CoreGraphicsTextView: NSViewRepresentable {
-    let text: String
-    let typography: TypographyProperties
-    let position: CGPoint
     
-    func makeNSView(context: Context) -> CoreGraphicsTextNSView {
-        let view = CoreGraphicsTextNSView()
-        view.text = text
-        view.typography = typography
-        view.position = position
-        return view
-    }
-    
-    func updateNSView(_ nsView: CoreGraphicsTextNSView, context: Context) {
-        nsView.text = text
-        nsView.typography = typography
-        nsView.position = position
-        nsView.needsDisplay = true
-    }
-}
-
-// MARK: - Native Core Graphics Text NSView
-
-class CoreGraphicsTextNSView: NSView {
-    var text: String = ""
-    var typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black)  // Fallback for preview only
-    var position: CGPoint = .zero
-    
-    override var isFlipped: Bool {
-        return true // Use flipped coordinates to match SwiftUI
-    }
-    
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-        
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
-        
-        // PROFESSIONAL CORE GRAPHICS TEXT RENDERING
-        // This gives us crisp, scalable text at all zoom levels
-        drawTextWithCoreGraphics(context: context)
-    }
-    
-    private func drawTextWithCoreGraphics(context: CGContext) {
-        // STEP 1: Create font with proper weight and style
-        let font = createCoreTextFont()
-        
-        // STEP 2: Determine fill and stroke requirements
+    // MARK: - SwiftUI Canvas Text Rendering (Same approach as shapes!)
+    private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String) {
+        // Determine fill and stroke requirements
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
         let hasFill = typography.fillColor != .clear
         
-        // ALWAYS use Core Graphics approach - CTLineDraw doesn't support stroke properly
-        drawWithCoreGraphics(context: context, font: font, hasStroke: hasStroke, hasFill: hasFill)
-    }
-    
-    private func drawWithCoreGraphics(context: CGContext, font: CTFont, hasStroke: Bool, hasFill: Bool) {
-        // SIMPLIFIED CORE GRAPHICS: Use Core Text for layout, simple glyph drawing for colors
-        context.saveGState()
+        // Create the text to render
+        let nsFont = typography.nsFont
+        let attributedString = AttributedString(text)
         
-        // Create Core Text line for proper text layout
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .kern: typography.letterSpacing
-        ]
+        // Create base text
+        let baseText = Text(attributedString).font(Font(nsFont))
         
-        let attributedString = NSAttributedString(string: text, attributes: attributes)
-        let line = CTLineCreateWithAttributedString(attributedString)
-        
-        // Set text matrix (flip Y for proper orientation)
-        context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
-        
-        // Convert colors to Core Graphics
-        let fillCGColor = typography.fillColor.cgColor.copy(alpha: typography.fillOpacity) ?? typography.fillColor.cgColor
-        let strokeCGColor = typography.strokeColor.cgColor.copy(alpha: typography.strokeOpacity) ?? typography.strokeColor.cgColor
-        
-        // Position text at baseline
-        let drawPoint = CGPoint(x: position.x, y: position.y)
-        context.textPosition = drawPoint
-        
-        // Set drawing mode and colors ONCE for the entire line
+        // Apply colors based on stroke/fill requirements and draw
         if hasStroke && hasFill {
-            context.setTextDrawingMode(.fillStroke)
-            context.setFillColor(fillCGColor)
-            context.setStrokeColor(strokeCGColor)
-            context.setLineWidth(typography.strokeWidth)
-        } else if hasStroke {
-            context.setTextDrawingMode(.stroke)
-            context.setStrokeColor(strokeCGColor)
-            context.setLineWidth(typography.strokeWidth)
-        } else if hasFill {
-            context.setTextDrawingMode(.fill)
-            context.setFillColor(fillCGColor)
-        }
-        
-        // Draw the entire line at once with proper colors
-        // This preserves Core Text's spacing and positioning
-        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
-        
-        for run in runs {
-            let glyphCount = CTRunGetGlyphCount(run)
-            var glyphs = Array<CGGlyph>(repeating: 0, count: glyphCount)
-            var positions = Array<CGPoint>(repeating: .zero, count: glyphCount)
+            // Both stroke and fill - use fill color (stroke approximation with shadows)
+            let fillText = baseText
+                .foregroundColor(Color(typography.fillColor.color))
+            context.draw(fillText, at: CGPoint.zero, anchor: .topLeading)
             
-            CTRunGetGlyphs(run, CFRangeMake(0, 0), &glyphs)
-            CTRunGetPositions(run, CFRangeMake(0, 0), &positions)
+            // Add stroke effect using multiple shadows
+            let strokeWidth = typography.strokeWidth
+            let strokeColor = Color(typography.strokeColor.color)
             
-            // Get font for this run
-            let runAttributes = CTRunGetAttributes(run) as! [String: Any]
-            let runFont = runAttributes[kCTFontAttributeName as String] as! CTFont
-            
-            // Convert positions to absolute coordinates
-            var absolutePositions = Array<CGPoint>(repeating: .zero, count: glyphCount)
-            for i in 0..<glyphCount {
-                absolutePositions[i] = CGPoint(
-                    x: drawPoint.x + positions[i].x,
-                    y: drawPoint.y + positions[i].y
-                )
+            for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
+                let radians = angle * .pi / 180.0
+                let offsetX = cos(radians) * strokeWidth * 0.5
+                let offsetY = sin(radians) * strokeWidth * 0.5
+                
+                let strokeText = baseText.foregroundColor(strokeColor)
+                context.draw(strokeText, at: CGPoint(x: offsetX, y: offsetY), anchor: .topLeading)
             }
             
-            // Draw all glyphs in this run at once
-            CTFontDrawGlyphs(runFont, glyphs, absolutePositions, glyphCount, context)
+        } else if hasStroke {
+            // Stroke only - use stroke color with shadow effect
+            let strokeWidth = typography.strokeWidth
+            let strokeColor = Color(typography.strokeColor.color)
+            
+            for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
+                let radians = angle * .pi / 180.0
+                let offsetX = cos(radians) * strokeWidth * 0.5
+                let offsetY = sin(radians) * strokeWidth * 0.5
+                
+                let strokeText = baseText.foregroundColor(strokeColor)
+                context.draw(strokeText, at: CGPoint(x: offsetX, y: offsetY), anchor: .topLeading)
+            }
+            
+        } else if hasFill {
+            // Fill only - use fill color
+            let fillText = baseText.foregroundColor(Color(typography.fillColor.color))
+            context.draw(fillText, at: CGPoint.zero, anchor: .topLeading)
         }
-        
-        context.restoreGState()
     }
-
-    
-    private func createCoreTextFont() -> CTFont {
-        // SURGICAL FIX: Use the existing nsFont property from TypographyProperties
-        // This already handles weight and style correctly using SwiftUI's font system
-        let nsFont = typography.nsFont
-        
-        // Convert NSFont to CTFont
-        return CTFontCreateWithName(nsFont.fontName as CFString, typography.fontSize, nil)
-    }
-    
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
-        return true
-    }
-    
-    override var acceptsFirstResponder: Bool {
-        return true
-    }
-}
-
-// MARK: - Legacy SwiftUI Canvas Implementation (REMOVED)
-// The old PureSwiftUITextView has been removed because it caused rasterization
-// Native Core Graphics rendering above provides crisp text at all zoom levels 
+} 
