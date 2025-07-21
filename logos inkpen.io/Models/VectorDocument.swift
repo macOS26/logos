@@ -170,8 +170,7 @@ class VectorDocument: ObservableObject, Codable {
         self.undoStack = []
         self.redoStack = []
         
-        // Add notification observers for scaling operations
-        setupNotificationObservers()
+        // REMOVED: setupNotificationObservers() call - notification observers no longer needed
         
         // Create canvas layer + default working layer
         createCanvasAndWorkingLayers()
@@ -412,48 +411,9 @@ class VectorDocument: ObservableObject, Codable {
         print("🔄 Settings changed - updated pasteboard layer")
     }
     
-    private func setupNotificationObservers() {
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("ApplyScaling"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            self?.handleScalingNotification(notification)
-        }
-        
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("FinishScaling"),
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            self?.handleFinishScalingNotification()
-        }
-    }
+    // REMOVED: setupNotificationObservers() - unused dead code for scaling notifications that are never posted
     
-    private func handleScalingNotification(_ notification: Notification) {
-        guard let userInfo = notification.userInfo,
-              let shapeId = userInfo["shapeId"] as? UUID,
-              let scaleX = userInfo["scaleX"] as? CGFloat,
-              let scaleY = userInfo["scaleY"] as? CGFloat,
-              let initialTransform = userInfo["initialTransform"] as? CGAffineTransform,
-              let initialBounds = userInfo["initialBounds"] as? CGRect else {
-            print("Invalid scaling notification data")
-            return
-        }
-        
-        applyScalingToShape(
-            shapeId: shapeId,
-            scaleX: scaleX,
-            scaleY: scaleY,
-            initialTransform: initialTransform,
-            initialBounds: initialBounds
-        )
-    }
-    
-    private func handleFinishScalingNotification() {
-        // Save the scaling operation to undo stack
-        saveToUndoStack()
-    }
+    // REMOVED: handleScalingNotification & handleFinishScalingNotification - unused dead code
     
     private func applyScalingToShape(
         shapeId: UUID,
@@ -587,7 +547,7 @@ class VectorDocument: ObservableObject, Codable {
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
         
-        setupNotificationObservers()
+        // REMOVED: setupNotificationObservers() call - notification observers no longer needed
     }
     
 

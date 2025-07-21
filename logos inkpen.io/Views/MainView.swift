@@ -182,9 +182,6 @@ struct MainView: View {
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
             
-            // Set up notification observers for menu commands
-            setupMenuCommandObservers()
-            
             setupDocument()
             
             // Auto-fit to page on startup for professional presentation
@@ -204,28 +201,6 @@ struct MainView: View {
     }
     
     // MARK: - Professional Menu Command System (Adobe Illustrator Standards)
-    
-    private func setupMenuCommandObservers() {
-        // Tool Commands (REMOVED - unused dead code, tools are switched directly in VerticalToolbar)
-        
-        // Selection Commands (REMOVED - using DocumentState.selectAll/deselectAll directly from Edit menu)
-        
-        // Object Commands - Arrange (REMOVED - using DocumentState methods directly from Object menu)
-        
-        // Object Commands - Lock/Hide (REMOVED - using DocumentState methods directly from Object menu)
-        
-        // View Commands - Zoom and View Mode (REMOVED - using DocumentState methods directly from View menu)
-        
-        // View Commands - Show/Hide (REMOVED - using DocumentState methods directly from View menu)
-        
-        // Text Commands (REMOVED - using DocumentState.createOutlines directly from Object menu)
-        
-        // MARK: - Path Cleanup Commands (REMOVED - using DocumentState methods directly from Object menu)
-        
-        // Window Commands - Panel Switching (Removed - using direct AppState actions from menu commands)
-        
-        // MARK: - Development Commands (REMOVED - using AppState methods directly from Development menu)
-    }
     
     private func teardownMenuCommandObservers() {
         NotificationCenter.default.removeObserver(self)
