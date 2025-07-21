@@ -21,10 +21,7 @@ extension Notification.Name {
     
     // MARK: - View Commands - View Mode (REMOVED - using DocumentState methods directly)
     
-    // MARK: - View Commands - Show/Hide
-    static let toggleRulers = Notification.Name("ToggleRulers")
-    static let toggleGrid = Notification.Name("ToggleGrid")
-    static let toggleSnapToGrid = Notification.Name("ToggleSnapToGrid")
+    // MARK: - View Commands - Show/Hide (REMOVED - using DocumentState methods directly)
     
     // MARK: - Text Commands
     static let createOutlines = Notification.Name("CreateOutlines")

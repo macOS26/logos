@@ -315,6 +315,21 @@ class DocumentState: ObservableObject {
         document?.viewMode = .keyline
         print("📝 MENU: Switched to Keyline View")
     }
+    
+    func toggleRulers() {
+        document?.showRulers.toggle()
+        print("📏 MENU: Rulers \(document?.showRulers == true ? "shown" : "hidden")")
+    }
+    
+    func toggleGrid() {
+        document?.settings.showGrid.toggle()
+        print("🔲 MENU: Grid \(document?.settings.showGrid == true ? "shown" : "hidden")")
+    }
+    
+    func toggleSnapToGrid() {
+        document?.snapToGrid.toggle()
+        print("🧲 MENU: Snap to Grid \(document?.snapToGrid == true ? "enabled" : "disabled")")
+    }
 }
 
 @main
@@ -613,6 +628,23 @@ struct logos_inken_ioApp: App {
                     documentState?.switchToKeylineView()
                 }
                 .keyboardShortcut("y", modifiers: [.command, .shift])
+                
+                Divider()
+                
+                Button("Toggle Rulers") {
+                    documentState?.toggleRulers()
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+                
+                Button("Toggle Grid") {
+                    documentState?.toggleGrid()
+                }
+                .keyboardShortcut("'", modifiers: [.command])
+                
+                Button("Toggle Snap to Grid") {
+                    documentState?.toggleSnapToGrid()
+                }
+                .keyboardShortcut(";", modifiers: [.command])
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing

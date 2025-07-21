@@ -230,21 +230,7 @@ struct MainView: View {
         
         // View Commands - Zoom and View Mode (REMOVED - using DocumentState methods directly from View menu)
         
-        // View Commands - Show/Hide - PROPERLY IMPLEMENTED
-        NotificationCenter.default.addObserver(forName: .toggleRulers, object: nil, queue: .main) { _ in
-            document.showRulers.toggle()
-            print("📝 MENU: Rulers \(document.showRulers ? "shown" : "hidden")")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .toggleGrid, object: nil, queue: .main) { _ in
-            document.settings.showGrid.toggle()
-            print("📝 MENU: Grid \(document.settings.showGrid ? "shown" : "hidden")")
-        }
-        
-        NotificationCenter.default.addObserver(forName: .toggleSnapToGrid, object: nil, queue: .main) { _ in
-            document.snapToGrid.toggle()
-            print("📝 MENU: Snap to Grid \(document.snapToGrid ? "enabled" : "disabled")")
-        }
+        // View Commands - Show/Hide (REMOVED - using DocumentState methods directly from View menu)
         
         // Text Commands
         NotificationCenter.default.addObserver(forName: .createOutlines, object: nil, queue: .main) { _ in
