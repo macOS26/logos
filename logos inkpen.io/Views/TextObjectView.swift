@@ -143,7 +143,7 @@ class CoreGraphicsTextNSView: NSView {
     }
     
     private func drawWithCoreGraphics(context: CGContext, font: CTFont, hasStroke: Bool, hasFill: Bool) {
-        // CORE GRAPHICS + CORE TEXT HYBRID: Use Core Text for layout, Core Graphics for rendering
+        // SIMPLIFIED CORE GRAPHICS: Use Core Text for layout, simple glyph drawing for colors
         context.saveGState()
         
         // Create Core Text line for proper text layout
@@ -155,9 +155,6 @@ class CoreGraphicsTextNSView: NSView {
         let attributedString = NSAttributedString(string: text, attributes: attributes)
         let line = CTLineCreateWithAttributedString(attributedString)
         
-        // Get glyph runs for manual drawing
-        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
-        
         // Set text matrix (flip Y for proper orientation)
         context.textMatrix = CGAffineTransform(scaleX: 1.0, y: -1.0)
         
@@ -167,9 +164,26 @@ class CoreGraphicsTextNSView: NSView {
         
         // Position text at baseline
         let drawPoint = CGPoint(x: position.x, y: position.y)
+        context.textPosition = drawPoint
         
-        // Draw each glyph run manually for proper fill/stroke control
-        var xOffset: CGFloat = 0
+        // Set drawing mode and colors ONCE for the entire line
+        if hasStroke && hasFill {
+            context.setTextDrawingMode(.fillStroke)
+            context.setFillColor(fillCGColor)
+            context.setStrokeColor(strokeCGColor)
+            context.setLineWidth(typography.strokeWidth)
+        } else if hasStroke {
+            context.setTextDrawingMode(.stroke)
+            context.setStrokeColor(strokeCGColor)
+            context.setLineWidth(typography.strokeWidth)
+        } else if hasFill {
+            context.setTextDrawingMode(.fill)
+            context.setFillColor(fillCGColor)
+        }
+        
+        // Draw the entire line at once with proper colors
+        // This preserves Core Text's spacing and positioning
+        let runs = CTLineGetGlyphRuns(line) as! [CTRun]
         
         for run in runs {
             let glyphCount = CTRunGetGlyphCount(run)
@@ -183,35 +197,17 @@ class CoreGraphicsTextNSView: NSView {
             let runAttributes = CTRunGetAttributes(run) as! [String: Any]
             let runFont = runAttributes[kCTFontAttributeName as String] as! CTFont
             
-            // Set drawing mode and colors
-            if hasStroke && hasFill {
-                context.setTextDrawingMode(.fillStroke)
-                context.setFillColor(fillCGColor)
-                context.setStrokeColor(strokeCGColor)
-                context.setLineWidth(typography.strokeWidth)
-            } else if hasStroke {
-                context.setTextDrawingMode(.stroke)
-                context.setStrokeColor(strokeCGColor)
-                context.setLineWidth(typography.strokeWidth)
-            } else if hasFill {
-                context.setTextDrawingMode(.fill)
-                context.setFillColor(fillCGColor)
-            }
-            
-            // Draw glyphs with proper positioning
+            // Convert positions to absolute coordinates
+            var absolutePositions = Array<CGPoint>(repeating: .zero, count: glyphCount)
             for i in 0..<glyphCount {
-                var glyphPosition = CGPoint(
-                    x: drawPoint.x + positions[i].x + xOffset,
+                absolutePositions[i] = CGPoint(
+                    x: drawPoint.x + positions[i].x,
                     y: drawPoint.y + positions[i].y
                 )
-                context.textPosition = glyphPosition
-                CTFontDrawGlyphs(runFont, &glyphs[i], &glyphPosition, 1, context)
             }
             
-            // Update offset for next run
-            if glyphCount > 0 {
-                xOffset += positions[glyphCount - 1].x
-            }
+            // Draw all glyphs in this run at once
+            CTFontDrawGlyphs(runFont, glyphs, absolutePositions, glyphCount, context)
         }
         
         context.restoreGState()
