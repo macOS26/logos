@@ -380,3 +380,101 @@ extension DrawingCanvas {
         }
     }
 } 
+
+// MARK: - NEW: Text Box System Integration
+extension DrawingCanvas {
+    
+    func handleTextSelectionChange(textID: UUID, isSelected: Bool) {
+        if isSelected {
+            // Select the text
+            document.selectedTextIDs.insert(textID)
+            document.selectedShapeIDs.removeAll() // Clear shape selection
+            print("🎯 NEW TEXT BOX: Selected text \(textID)")
+        } else {
+            // Deselect the text
+            document.selectedTextIDs.remove(textID)
+            print("🎯 NEW TEXT BOX: Deselected text \(textID)")
+        }
+        document.objectWillChange.send()
+    }
+    
+    func handleTextEditingChange(textID: UUID, isEditing: Bool) {
+        if isEditing {
+            // Start editing
+            document.saveToUndoStack()
+            isEditingText = true
+            editingTextID = textID
+            
+            // Mark text as editing in document
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                document.textObjects[textIndex].isEditing = true
+            }
+            
+            // Select the text
+            document.selectedTextIDs.insert(textID)
+            document.selectedShapeIDs.removeAll()
+            
+            print("✏️ NEW TEXT BOX: Started editing text \(textID)")
+        } else {
+            // Stop editing
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                document.textObjects[textIndex].isEditing = false
+                
+                // If text is empty, remove it
+                if document.textObjects[textIndex].content.isEmpty {
+                    document.textObjects.remove(at: textIndex)
+                    document.selectedTextIDs.remove(textID)
+                    print("🗑️ NEW TEXT BOX: Removed empty text object")
+                }
+            }
+            
+            // Clear editing state
+            if editingTextID == textID {
+                isEditingText = false
+                editingTextID = nil
+                currentCursorPosition = 0
+                currentSelectionRange = NSRange(location: 0, length: 0)
+            }
+            
+            print("✅ NEW TEXT BOX: Finished editing text \(textID)")
+        }
+        document.objectWillChange.send()
+    }
+    
+    func handleTextContentChange(textID: UUID, newContent: String) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        // Update text content
+        document.textObjects[textIndex].content = newContent
+        document.textObjects[textIndex].updateBounds()
+        
+        print("📝 NEW TEXT BOX: Updated text content to '\(newContent)'")
+        document.objectWillChange.send()
+    }
+    
+    func handleTextPositionChange(textID: UUID, newPosition: CGPoint) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        // Update text position
+        document.textObjects[textIndex].position = newPosition
+        
+        print("📍 NEW TEXT BOX: Updated text position to \(newPosition)")
+        document.objectWillChange.send()
+    }
+    
+    func handleTextBoundsChange(textID: UUID, newBounds: CGRect) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        // Update text bounds
+        document.textObjects[textIndex].bounds = newBounds
+        
+        print("📏 NEW TEXT BOX: Updated text bounds to \(newBounds)")
+        document.objectWillChange.send()
+    }
+} 

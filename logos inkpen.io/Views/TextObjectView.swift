@@ -26,10 +26,39 @@ struct TextObjectView: View {
     @State private var resizeOffset: CGSize = .zero
     @FocusState private var isFocused: Bool
     
+    // NEW: Document communication closures
+    let onTextSelectionChange: (UUID, Bool) -> Void
+    let onTextEditingChange: (UUID, Bool) -> Void
+    let onTextContentChange: (UUID, String) -> Void
+    let onTextPositionChange: (UUID, CGPoint) -> Void
+    let onTextBoundsChange: (UUID, CGRect) -> Void
+    
     enum TextBoxState {
         case gray    // Initial state - no selection, no editing
         case green   // Selected - can double-click or drag
         case blue    // Editing mode
+    }
+    
+    init(textObject: VectorText, 
+         zoomLevel: Double, 
+         canvasOffset: CGPoint, 
+         isSelected: Bool, 
+         isEditing: Bool,
+         onTextSelectionChange: @escaping (UUID, Bool) -> Void = { _, _ in },
+         onTextEditingChange: @escaping (UUID, Bool) -> Void = { _, _ in },
+         onTextContentChange: @escaping (UUID, String) -> Void = { _, _ in },
+         onTextPositionChange: @escaping (UUID, CGPoint) -> Void = { _, _ in },
+         onTextBoundsChange: @escaping (UUID, CGRect) -> Void = { _, _ in }) {
+        self.textObject = textObject
+        self.zoomLevel = zoomLevel
+        self.canvasOffset = canvasOffset
+        self.isSelected = isSelected
+        self.isEditing = isEditing
+        self.onTextSelectionChange = onTextSelectionChange
+        self.onTextEditingChange = onTextEditingChange
+        self.onTextContentChange = onTextContentChange
+        self.onTextPositionChange = onTextPositionChange
+        self.onTextBoundsChange = onTextBoundsChange
     }
     
     var body: some View {
@@ -65,7 +94,7 @@ struct TextObjectView: View {
                 .onTapGesture(count: 1) {
                     // Single click selects
                     if textBoxState == .gray {
-                        textBoxState = .green
+                        selectText()
                     }
                 }
             
@@ -116,7 +145,7 @@ struct TextObjectView: View {
         }
         .onChange(of: textEditorViewModel.text) { _, newText in
             // Sync back to VectorText when text changes
-            syncToVectorText()
+            onTextContentChange(textObject.id, newText)
         }
         .onChange(of: textEditorViewModel.fontSize) { _, _ in
             syncToVectorText()
@@ -156,27 +185,48 @@ struct TextObjectView: View {
     }
     
     private func updateTextBoxState() {
+        let newState: TextBoxState
+        
         if isEditing {
-            textBoxState = .blue
-            isFocused = true
+            newState = .blue
         } else if isSelected {
-            textBoxState = .green
+            newState = .green
         } else {
-            textBoxState = .gray
-            isFocused = false
+            newState = .gray
         }
+        
+        // Only update if state changed
+        if textBoxState != newState {
+            textBoxState = newState
+            
+            // Update focus state
+            if textBoxState == .blue {
+                isFocused = true
+                textEditorViewModel.startEditing()
+            } else {
+                isFocused = false
+                textEditorViewModel.stopEditing()
+            }
+        }
+    }
+    
+    private func selectText() {
+        textBoxState = .green
+        onTextSelectionChange(textObject.id, true)
     }
     
     private func startEditing() {
         textBoxState = .blue
         isFocused = true
         textEditorViewModel.startEditing()
+        onTextEditingChange(textObject.id, true)
     }
     
     private func stopEditing() {
         textBoxState = isSelected ? .green : .gray
         isFocused = false
         textEditorViewModel.stopEditing()
+        onTextEditingChange(textObject.id, false)
     }
     
     // MARK: - Sync between new system and VectorText
@@ -200,9 +250,8 @@ struct TextObjectView: View {
     }
     
     private func syncToVectorText() {
-        // Update VectorText through document - this should be handled by the parent canvas
-        // For now, just print what would be updated
-        print("📝 Would sync to VectorText: '\(textEditorViewModel.text)'")
+        // This will be handled by the document when the onChange callbacks are triggered
+        print("📝 Text sync: '\(textEditorViewModel.text)' size: \(textEditorViewModel.fontSize)")
     }
     
     // MARK: - Gesture Handlers
@@ -216,8 +265,12 @@ struct TextObjectView: View {
     
     private func handleDragEnded() {
         if isDragging {
-            // Update VectorText position
-            // This should be handled by the parent canvas
+            // Calculate new position and notify parent
+            let newPosition = CGPoint(
+                x: textObject.position.x + dragOffset.width,
+                y: textObject.position.y + dragOffset.height
+            )
+            onTextPositionChange(textObject.id, newPosition)
             dragOffset = .zero
             isDragging = false
         }
@@ -229,11 +282,19 @@ struct TextObjectView: View {
     }
     
     private func handleResizeEnded() {
-        // Update VectorText bounds
-        // This should be handled by the parent canvas
-        resizeOffset = .zero
+        if isResizing {
+            // Calculate new bounds and notify parent
+            let newBounds = CGRect(
+                x: textObject.bounds.minX,
+                y: textObject.bounds.minY,
+                width: max(textObject.bounds.width + resizeOffset.width, 50),
+                height: max(textObject.bounds.height + resizeOffset.height, 30)
+            )
+            onTextBoundsChange(textObject.id, newBounds)
+            resizeOffset = .zero
+            isResizing = false
+        }
         dragOffset = .zero
-        isResizing = false
         isDragging = false
     }
 }

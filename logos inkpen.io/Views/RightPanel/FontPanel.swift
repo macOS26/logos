@@ -326,6 +326,8 @@ struct FontPanel: View {
         document.textObjects[textIndex].typography.alignment = alignment
         document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
+        
+        print("🎯 FONT PANEL: Updated text alignment to \(alignment)")
     }
     
     // NEW: Update line spacing
@@ -334,9 +336,11 @@ struct FontPanel: View {
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
         document.saveToUndoStack()
-        document.textObjects[textIndex].typography.lineHeight = spacing
+        document.textObjects[textIndex].typography.lineHeight = Double(spacing)
         document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
+        
+        print("🎯 FONT PANEL: Updated line spacing to \(spacing)")
     }
     
     private func updateSelectedTextFont() {
