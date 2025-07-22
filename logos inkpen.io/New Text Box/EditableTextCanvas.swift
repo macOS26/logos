@@ -293,51 +293,13 @@ struct TextContentView: View {
     let textBoxState: EditableTextCanvas.TextBoxState
     
     var body: some View {
-        if textBoxState == .blue {
-            // BLUE STATE: Use NSTextView for editing
-            UniversalTextView(viewModel: viewModel)
-                .frame(width: viewModel.textBoxFrame.width, height: viewModel.textBoxFrame.height, alignment: .topLeading)
-        } else {
-            // GRAY/GREEN STATE: Use SwiftUI Text - allows gestures to pass through
-            SwiftUITextView(viewModel: viewModel)
-                .frame(width: viewModel.textBoxFrame.width, height: viewModel.textBoxFrame.height, alignment: .topLeading)
-        }
+        // ALWAYS use NSTextView - just control editability based on state
+        UniversalTextView(viewModel: viewModel)
+            .frame(width: viewModel.textBoxFrame.width, height: viewModel.textBoxFrame.height, alignment: .topLeading)
     }
 }
 
-struct SwiftUITextView: View {
-    @ObservedObject var viewModel: TextEditorViewModel
-    
-    private var swiftUIAlignment: HorizontalAlignment {
-        switch viewModel.textAlignment {
-        case .left:
-            return .leading
-        case .center:
-            return .center
-        case .right:
-            return .trailing
-        case .justified:
-            return .leading // For justified, we'll handle it differently
-        default:
-            return .leading
-        }
-    }
-    
-    var body: some View {
-        VStack(alignment: swiftUIAlignment, spacing: 0) {
-            Text(viewModel.text)
-                .font(Font.custom(viewModel.selectedFont.fontName, size: viewModel.fontSize))
-                .foregroundColor(viewModel.textColor)
-                .lineSpacing(viewModel.lineSpacing)
-                .multilineTextAlignment(viewModel.textAlignment == .justified ? .leading : 
-                    (viewModel.textAlignment == .left ? .leading :
-                     viewModel.textAlignment == .center ? .center : .trailing))
-                .frame(maxWidth: .infinity, alignment: Alignment(horizontal: swiftUIAlignment, vertical: .top))
-            Spacer()
-        }
-        .allowsHitTesting(false) // This is key - allows gestures to pass through!
-    }
-}
+
 
 // NSTextView wrapper for all text alignments on macOS
 struct UniversalTextView: NSViewRepresentable {

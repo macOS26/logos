@@ -21,7 +21,15 @@ struct TextObjectView: View {
             .onAppear {
                 // Basic sync from VectorText to TextEditorViewModel
                 textEditorViewModel.text = textObject.content
-                textEditorViewModel.textBoxFrame = textObject.bounds
+                
+                // Set the text box frame to include the VectorText position
+                textEditorViewModel.textBoxFrame = CGRect(
+                    x: textObject.position.x,
+                    y: textObject.position.y,
+                    width: max(textObject.bounds.width, 200),
+                    height: max(textObject.bounds.height, 50)
+                )
+                
                 textEditorViewModel.fontSize = textObject.typography.fontSize
                 textEditorViewModel.textColor = textObject.typography.fillColor.color
                 
@@ -29,7 +37,26 @@ struct TextObjectView: View {
                 if let font = NSFont(name: textObject.typography.fontFamily, size: textObject.typography.fontSize) {
                     textEditorViewModel.selectedFont = font
                 }
+                
+                // Set text alignment
+                textEditorViewModel.textAlignment = convertToNSTextAlignment(textObject.typography.alignment)
+                
+                // Set line spacing
+                textEditorViewModel.lineSpacing = textObject.typography.lineHeight - textObject.typography.fontSize
             }
+    }
+    
+    private func convertToNSTextAlignment(_ textAlignment: TextAlignment) -> NSTextAlignment {
+        switch textAlignment {
+        case .left:
+            return .left
+        case .center:
+            return .center
+        case .right:
+            return .right
+        case .justified:
+            return .justified
+        }
     }
 }
 
