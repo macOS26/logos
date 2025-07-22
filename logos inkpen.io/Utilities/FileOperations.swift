@@ -19,7 +19,7 @@ enum VectorFileFormat: String, CaseIterable {
     case pdf = "pdf"
     case adobeIllustrator = "ai"
     case eps = "eps"
-    case dxf = "dxf"          // AutoCAD exchange format (preparation for DWG)
+    case dxf = "dxf"          // AutoCAD exchange format (preparation for DWG)a
     case dwf = "dwf"          // Design Web Format (Autodesk published format)
     case dwg = "dwg"          // AutoCAD drawing (future commercial support)
     

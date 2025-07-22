@@ -10,7 +10,8 @@ import SwiftUI
 import CoreGraphics
 import CoreText
 
-struct TextObjectView: View {
+struct TextObjectView:
+    View {
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -28,6 +29,8 @@ struct TextObjectView: View {
             // Canvas draws text at textObject.position, just like Path draws path elements at their coordinates
             Canvas { context, size in
                 drawTextWithSwiftUI(context: context, typography: textObject.typography, text: textObject.content.isEmpty ? "Text" : textObject.content, position: textObject.position)
+                
+                
             }
             // EXACT SAME coordinate chain as shapes in ShapeView - NO .position() modifier!
             .scaleEffect(zoomLevel, anchor: .topLeading)
