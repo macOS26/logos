@@ -138,6 +138,59 @@ struct FontPanel: View {
                                 }
                             }
                             
+                            // NEW: Text Alignment Controls
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Text Alignment")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                                
+                                HStack(spacing: 8) {
+                                    ForEach([TextAlignment.left, .center, .right, .justified], id: \.self) { alignment in
+                                        Button {
+                                            updateTextAlignment(alignment)
+                                        } label: {
+                                            Image(systemName: alignment.iconName)
+                                                .font(.system(size: 16))
+                                                .foregroundColor(currentTextAlignment == alignment ? .white : .primary)
+                                                .frame(width: 32, height: 32)
+                                                .background(
+                                                    currentTextAlignment == alignment 
+                                                    ? Color.blue.opacity(0.8)
+                                                    : Color.clear
+                                                )
+                                                .cornerRadius(4)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .help(alignment.rawValue)
+                                    }
+                                    
+                                    Spacer()
+                                }
+                            }
+                            
+                            // NEW: Line Spacing Control
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text("Line Spacing")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(String(format: "%.1f", currentLineSpacing)) pt")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Slider(value: Binding(
+                                    get: { currentLineSpacing },
+                                    set: { newSpacing in
+                                        updateLineSpacing(newSpacing)
+                                    }
+                                ), in: -20...20)
+                                .controlSize(.small)
+                            }
+                            
                             // Fill and Stroke integration
                             if let selectedText = selectedText {
                                 Divider()
@@ -253,6 +306,18 @@ struct FontPanel: View {
         // REMOVED: Separate color picker sheets - use main color system instead
     }
     
+    // MARK: - Computed Properties for Current Text State
+    
+    private var currentTextAlignment: TextAlignment {
+        selectedText?.typography.alignment ?? .left
+    }
+    
+    private var currentLineSpacing: Double {
+        selectedText?.typography.lineHeight ?? 0.0
+    }
+    
+    // MARK: - Helper Methods
+    
     private func updateSelectedTextFont() {
         guard let textID = document.selectedTextIDs.first,
               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
@@ -271,6 +336,32 @@ struct FontPanel: View {
         
         // Notify UI update
         document.objectWillChange.send()
+    }
+    
+    // NEW: Text Alignment Update Method
+    private func updateTextAlignment(_ alignment: TextAlignment) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.alignment = alignment
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+        
+        print("🎯 FONT PANEL: Updated text alignment to \(alignment.rawValue)")
+    }
+    
+    // NEW: Line Spacing Update Method
+    private func updateLineSpacing(_ spacing: Double) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.lineHeight = spacing
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+        
+        print("🎯 FONT PANEL: Updated line spacing to \(spacing) pt")
     }
     
     // REMOVED: updateTextFillColor - now handled by main color system (StrokeFillPanel, ColorPanel, VerticalToolbar)
