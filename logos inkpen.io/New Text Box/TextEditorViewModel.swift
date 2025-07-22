@@ -149,14 +149,21 @@ class TextEditorViewModel: ObservableObject {
     }
     
     private func isColorWhiteOrPastel(_ color: Color) -> Bool {
-        // Convert SwiftUI Color to check if it's white or pastel
+        // Convert SwiftUI Color to NSColor and ensure it's in RGB color space
         let nsColor = NSColor(color)
+        
+        // Convert to device RGB color space to ensure getRed:green:blue:alpha: works
+        guard let rgbColor = nsColor.usingColorSpace(.deviceRGB) else {
+            // Fallback: assume it's not white or pastel if we can't convert
+            return false
+        }
+        
         var red: CGFloat = 0
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
         
-        nsColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        rgbColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
         
         // Consider it white if all RGB values are close to 1.0
         let isWhite = red > 0.9 && green > 0.9 && blue > 0.9
