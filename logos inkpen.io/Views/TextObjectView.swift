@@ -2,7 +2,7 @@
 //  TextObjectView.swift
 //  logos
 //
-//  Professional Core Graphics Text Editing - SAME AS SHAPES
+//  Professional Core Graphics Text Editing - INTEGRATED WITH NEW TEXTBOX SYSTEM
 //  COORDINATE SYSTEM: EXACTLY MATCHES SHAPES AND PEN TOOL
 //
 
@@ -10,8 +10,137 @@ import SwiftUI
 import CoreGraphics
 import CoreText
 
-struct TextObjectView:
-    View {
+struct TextObjectView: View {
+    let textObject: VectorText
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let isSelected: Bool
+    let isEditing: Bool
+    @ObservedObject var document: VectorDocument
+    
+    // NEW: TextBox integration state
+    @StateObject private var textEditorViewModel = TextEditorViewModel()
+    @State private var useNewTextBox = false
+    
+    var body: some View {
+        ZStack {
+            if useNewTextBox && document.currentTool == .font && isSelected {
+                // NEW: Use advanced TextBox system when font tool is active and text is selected
+                NewTextBoxView(
+                    textObject: textObject,
+                    viewModel: textEditorViewModel,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    document: document
+                )
+            } else {
+                // EXISTING: Use current text rendering for non-font tools or unselected text
+                LegacyTextObjectView(
+                    textObject: textObject,
+                    zoomLevel: zoomLevel,
+                    canvasOffset: canvasOffset,
+                    isSelected: isSelected,
+                    isEditing: isEditing
+                )
+            }
+        }
+        .onAppear {
+            syncTextEditorViewModel()
+        }
+        .onChange(of: textObject.content) { _, _ in
+            syncTextEditorViewModel()
+        }
+        .onChange(of: textObject.typography) { _, _ in
+            syncTextEditorViewModel()
+        }
+        .onChange(of: document.currentTool) { _, newTool in
+            useNewTextBox = (newTool == .font && isSelected)
+        }
+        .onChange(of: isSelected) { _, selected in
+            useNewTextBox = (document.currentTool == .font && selected)
+        }
+    }
+    
+    private func syncTextEditorViewModel() {
+        textEditorViewModel.text = textObject.content
+        textEditorViewModel.fontSize = CGFloat(textObject.typography.fontSize)
+        textEditorViewModel.selectedFont = textObject.typography.nsFont
+        textEditorViewModel.textColor = Color(textObject.typography.fillColor.color)
+        textEditorViewModel.textAlignment = textObject.typography.alignment.nsTextAlignment
+        textEditorViewModel.lineSpacing = CGFloat(textObject.typography.lineHeight)
+        
+        // Set text box frame based on text position and bounds
+        textEditorViewModel.textBoxFrame = CGRect(
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: max(textObject.bounds.width, 200), // Minimum width
+            height: max(textObject.bounds.height, 50)  // Minimum height
+        )
+    }
+}
+
+// NEW: Advanced TextBox view with Gray/Green/Blue states
+struct NewTextBoxView: View {
+    let textObject: VectorText
+    @ObservedObject var viewModel: TextEditorViewModel
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        EditableTextCanvas(viewModel: viewModel)
+            .scaleEffect(zoomLevel, anchor: .topLeading)
+            .offset(x: canvasOffset.x, y: canvasOffset.y)
+            .transformEffect(textObject.transform)
+            .onChange(of: viewModel.text) { _, newText in
+                updateDocumentText(newText)
+            }
+            .onChange(of: viewModel.textAlignment) { _, newAlignment in
+                updateDocumentAlignment(newAlignment)
+            }
+            .onChange(of: viewModel.lineSpacing) { _, newSpacing in
+                updateDocumentLineSpacing(newSpacing)
+            }
+            .onChange(of: viewModel.textBoxFrame) { _, newFrame in
+                updateDocumentPosition(newFrame)
+            }
+    }
+    
+    private func updateDocumentText(_ newText: String) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
+        document.saveToUndoStack()
+        document.textObjects[textIndex].content = newText
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+    }
+    
+    private func updateDocumentAlignment(_ newAlignment: NSTextAlignment) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.alignment = TextAlignment.fromNSTextAlignment(newAlignment)
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+    }
+    
+    private func updateDocumentLineSpacing(_ newSpacing: CGFloat) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.lineHeight = Double(newSpacing)
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+    }
+    
+    private func updateDocumentPosition(_ newFrame: CGRect) {
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
+        document.saveToUndoStack()
+        document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+    }
+}
+
+// EXISTING: Legacy text rendering (unchanged)
+struct LegacyTextObjectView: View {
     let textObject: VectorText
     let zoomLevel: Double
     let canvasOffset: CGPoint
@@ -193,7 +322,7 @@ struct TextObjectView:
         showCursor = false
     }
     
-    // MARK: - Core Graphics Text Rendering (Same approach as shapes!)
+    // MARK: - Text Rendering
     private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String, position: CGPoint) {
         // Determine fill and stroke requirements
         let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
@@ -239,43 +368,24 @@ struct TextObjectView:
                 let strokeText = baseText.foregroundColor(strokeColor)
                 context.draw(strokeText, at: CGPoint(x: position.x + offsetX, y: position.y + offsetY), anchor: .topLeading)
             }
-            
         } else if hasFill {
-            // Fill only - use fill color
+            // Fill only - standard text rendering
             let fillText = baseText.foregroundColor(Color(typography.fillColor.color))
             context.draw(fillText, at: position, anchor: .topLeading)
         }
     }
 }
 
-// MARK: - Text Editing Extensions
-extension TextObjectView {
-    
-    // NEW: Professional text editing methods
-    func insertText(at position: Int, text: String) -> VectorText {
-        var newContent = textObject.content
-        let insertIndex = newContent.index(newContent.startIndex, offsetBy: min(position, newContent.count))
-        newContent.insert(contentsOf: text, at: insertIndex)
-        
-        var updatedText = textObject
-        updatedText.content = newContent
-        updatedText.updateBounds()
-        return updatedText
-    }
-    
-    func deleteText(in range: NSRange) -> VectorText {
-        guard range.location >= 0 && range.location + range.length <= textObject.content.count else {
-            return textObject
+// MARK: - Helper Extensions
+
+extension TextAlignment {
+    static func fromNSTextAlignment(_ alignment: NSTextAlignment) -> TextAlignment {
+        switch alignment {
+        case .left: return .left
+        case .center: return .center
+        case .right: return .right
+        case .justified: return .justified
+        default: return .left
         }
-        
-        var newContent = textObject.content
-        let startIndex = newContent.index(newContent.startIndex, offsetBy: range.location)
-        let endIndex = newContent.index(startIndex, offsetBy: range.length)
-        newContent.removeSubrange(startIndex..<endIndex)
-        
-        var updatedText = textObject
-        updatedText.content = newContent
-        updatedText.updateBounds()
-        return updatedText
     }
 } 

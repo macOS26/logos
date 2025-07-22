@@ -94,7 +94,8 @@ extension DrawingCanvas {
                         zoomLevel: document.zoomLevel,
                         canvasOffset: document.canvasOffset,
                         isSelected: document.selectedTextIDs.contains(textObj.id),
-                        isEditing: isEditingText && editingTextID == textObj.id
+                        isEditing: isEditingText && editingTextID == textObj.id,
+                        document: document
                     )
                 }
             }

@@ -82,9 +82,10 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family
+                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family with preview
                                         ForEach(availableFontWeights, id: \.self) { weight in
                                             Text(weight.rawValue)
+                                                .font(previewFont(weight: weight, style: document.fontManager.selectedFontStyle))
                                                 .tag(weight)
                                         }
                                     }
@@ -105,9 +106,10 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        // DYNAMIC FONT STYLES: Only show styles available for this font family
+                                        // DYNAMIC FONT STYLES: Only show styles available for this font family with preview
                                         ForEach(availableFontStyles, id: \.self) { style in
                                             Text(style.rawValue)
+                                                .font(previewFont(weight: document.fontManager.selectedFontWeight, style: style))
                                                 .tag(style)
                                         }
                                     }
@@ -317,6 +319,20 @@ struct FontPanel: View {
     }
     
     // MARK: - Helper Methods
+    
+    private func previewFont(weight: FontWeight, style: FontStyle) -> Font {
+        let fontFamily = selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily
+        let fontSize = 12.0 // Standard preview size
+        
+        let baseFont = Font.custom(fontFamily, size: fontSize)
+            .weight(weight.systemWeight)
+        
+        if style == .italic {
+            return baseFont.italic()
+        } else {
+            return baseFont
+        }
+    }
     
     private func updateSelectedTextFont() {
         guard let textID = document.selectedTextIDs.first,
