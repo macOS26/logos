@@ -94,22 +94,7 @@ extension DrawingCanvas {
                         zoomLevel: document.zoomLevel,
                         canvasOffset: document.canvasOffset,
                         isSelected: document.selectedTextIDs.contains(textObj.id),
-                        isEditing: isEditingText && editingTextID == textObj.id,
-                        onTextSelectionChange: { textID, isSelected in
-                            handleTextSelectionChange(textID: textID, isSelected: isSelected)
-                        },
-                        onTextEditingChange: { textID, isEditing in
-                            handleTextEditingChange(textID: textID, isEditing: isEditing)
-                        },
-                        onTextContentChange: { textID, newContent in
-                            handleTextContentChange(textID: textID, newContent: newContent)
-                        },
-                        onTextPositionChange: { textID, newPosition in
-                            handleTextPositionChange(textID: textID, newPosition: newPosition)
-                        },
-                        onTextBoundsChange: { textID, newBounds in
-                            handleTextBoundsChange(textID: textID, newBounds: newBounds)
-                        }
+                        isEditing: isEditingText && editingTextID == textObj.id
                     )
                 }
             }

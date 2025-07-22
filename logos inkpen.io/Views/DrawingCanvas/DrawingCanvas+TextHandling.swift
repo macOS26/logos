@@ -106,6 +106,9 @@ extension DrawingCanvas {
         return max(0, min(textObj.content.count, index))
     }
     
+    // MARK: - Text Creation and Management
+    
+    // Create new text at canvas position
     func createNewTextAt(location: CGPoint) {
         print("✨ Creating new text at: \(location)")
         
@@ -134,7 +137,7 @@ extension DrawingCanvas {
         )
         
         // Add to document and associate with current layer
-        document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex)
+        document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
         
         // Select the text so toolbar colors apply immediately
         document.selectedTextIDs = [newText.id]
