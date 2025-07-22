@@ -64,6 +64,12 @@ struct FontPanel: View {
                                 }
                                 .pickerStyle(.menu)
                                 .frame(maxWidth: .infinity)
+                                .onChange(of: document.fontManager.selectedFontFamily) { _, _ in
+                                    // Force refresh of available weights and styles when font changes
+                                    DispatchQueue.main.async {
+                                        document.objectWillChange.send()
+                                    }
+                                }
                             }
                             
                             // Font Weight and Style Row
@@ -82,14 +88,15 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family with preview
+                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family
                                         ForEach(availableFontWeights, id: \.self) { weight in
                                             Text(weight.rawValue)
-                                                .font(previewFont(weight: weight, style: document.fontManager.selectedFontStyle))
+                                                .font(.custom(currentFontFamily, size: 12))
                                                 .tag(weight)
                                         }
                                     }
                                     .pickerStyle(.menu)
+                                    .id(currentFontFamily) // Force refresh when font changes
                                 }
                                 
                                 // Font Style
@@ -106,14 +113,15 @@ struct FontPanel: View {
                                             updateSelectedTextFont()
                                         }
                                     )) {
-                                        // DYNAMIC FONT STYLES: Only show styles available for this font family with preview
+                                        // DYNAMIC FONT STYLES: Only show styles available for this font family
                                         ForEach(availableFontStyles, id: \.self) { style in
                                             Text(style.rawValue)
-                                                .font(previewFont(weight: document.fontManager.selectedFontWeight, style: style))
+                                                .font(.custom(currentFontFamily, size: 12))
                                                 .tag(style)
                                         }
                                     }
                                     .pickerStyle(.menu)
+                                    .id(currentFontFamily) // Force refresh when font changes
                                 }
                             }
                             
@@ -140,38 +148,75 @@ struct FontPanel: View {
                                 }
                             }
                             
-                            // NEW: Text Alignment Controls
+                            // Text Alignment Controls (NEW)
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Text Alignment")
+                                Text("Alignment")
                                     .font(.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.secondary)
                                 
-                                HStack(spacing: 8) {
-                                    ForEach([TextAlignment.left, .center, .right, .justified], id: \.self) { alignment in
-                                        Button {
-                                            updateTextAlignment(alignment)
-                                        } label: {
-                                            Image(systemName: alignment.iconName)
-                                                .font(.system(size: 16))
-                                                .foregroundColor(currentTextAlignment == alignment ? .white : .primary)
-                                                .frame(width: 32, height: 32)
-                                                .background(
-                                                    currentTextAlignment == alignment 
-                                                    ? Color.blue.opacity(0.8)
-                                                    : Color.clear
-                                                )
-                                                .cornerRadius(4)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .help(alignment.rawValue)
+                                HStack(spacing: 4) {
+                                    // Left Align
+                                    Button {
+                                        updateTextAlignment(.left)
+                                    } label: {
+                                        Image(systemName: "text.alignleft")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(currentTextAlignment == .left ? .white : .primary)
+                                            .frame(width: 30, height: 24)
+                                            .background(currentTextAlignment == .left ? Color.blue : Color.clear)
+                                            .cornerRadius(4)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help("Align Left")
+                                    
+                                    // Center Align
+                                    Button {
+                                        updateTextAlignment(.center)
+                                    } label: {
+                                        Image(systemName: "text.aligncenter")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(currentTextAlignment == .center ? .white : .primary)
+                                            .frame(width: 30, height: 24)
+                                            .background(currentTextAlignment == .center ? Color.blue : Color.clear)
+                                            .cornerRadius(4)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help("Align Center")
+                                    
+                                    // Right Align
+                                    Button {
+                                        updateTextAlignment(.right)
+                                    } label: {
+                                        Image(systemName: "text.alignright")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(currentTextAlignment == .right ? .white : .primary)
+                                            .frame(width: 30, height: 24)
+                                            .background(currentTextAlignment == .right ? Color.blue : Color.clear)
+                                            .cornerRadius(4)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help("Align Right")
+                                    
+                                    // Justify
+                                    Button {
+                                        updateTextAlignment(.justified)
+                                    } label: {
+                                        Image(systemName: "text.justify")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(currentTextAlignment == .justified ? .white : .primary)
+                                            .frame(width: 30, height: 24)
+                                            .background(currentTextAlignment == .justified ? Color.blue : Color.clear)
+                                            .cornerRadius(4)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .help("Justify")
                                     
                                     Spacer()
                                 }
                             }
                             
-                            // NEW: Line Spacing Control
+                            // Line Spacing Control (NEW)
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Line Spacing")
@@ -193,14 +238,14 @@ struct FontPanel: View {
                                 .controlSize(.small)
                             }
                             
-                            // Fill and Stroke integration
+                            // REMOVE STROKE SUPPORT - Keep only fill colors
                             if let selectedText = selectedText {
                                 Divider()
                                 
                                 // SIMPLIFIED: Text Colors (shows current colors, use main color panels to change)
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("Colors")
+                                        Text("Fill Color")
                                             .font(.caption)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.secondary)
@@ -212,63 +257,12 @@ struct FontPanel: View {
                                     
                                     Spacer()
                                     
-                                    HStack(spacing: 4) {
-                                        // Current Fill Color (read-only indicator)
-                                        VStack(spacing: 2) {
-                                            renderColorSwatchRightPanel(selectedText.typography.fillColor, width: 20, height: 20, cornerRadius: 0, borderWidth: 1)
-                                            Text("Fill")
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        
-                                        // Current Stroke Color (if enabled)
-                                        if selectedText.typography.hasStroke {
-                                            VStack(spacing: 2) {
-                                                renderColorSwatchRightPanel(selectedText.typography.strokeColor, width: 20, height: 20, cornerRadius: 0, borderWidth: 1)
-                                                Text("Stroke")
-                                                    .font(.caption2)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                    }
-                                }
-                                
-                                // Text Stroke Toggle (simplified)
-                                HStack {
-                                    Toggle("Stroke", isOn: Binding(
-                                        get: { selectedText.typography.hasStroke },
-                                        set: { hasStroke in
-                                            updateTextStroke(hasStroke: hasStroke)
-                                        }
-                                    ))
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
-                                    
-                                    Spacer()
-                                }
-                                
-                                // Text Stroke Width (NEW)
-                                if selectedText.typography.hasStroke {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            Text("Stroke Width")
-                                                .font(.caption)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.secondary)
-                                            Spacer()
-                                            Text("\(String(format: "%.1f", selectedText.typography.strokeWidth)) pt")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        
-                                        Slider(value: Binding(
-                                            get: { selectedText.typography.strokeWidth },
-                                            set: { newWidth in
-                                                updateTextStrokeWidth(newWidth)
-                                            }
-                                        ), in: 0...10)
-                                        .controlSize(.small)
+                                    // Current Fill Color (read-only indicator)
+                                    VStack(spacing: 2) {
+                                        renderColorSwatchRightPanel(selectedText.typography.fillColor, width: 20, height: 20, cornerRadius: 0, borderWidth: 1)
+                                        Text("Fill")
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
                                     }
                                 }
                             }
@@ -306,32 +300,43 @@ struct FontPanel: View {
             }
         }
         // REMOVED: Separate color picker sheets - use main color system instead
+        .onAppear {
+            // Load available weights and styles for the initially selected font
+            DispatchQueue.main.async {
+                document.objectWillChange.send()
+            }
+        }
     }
     
-    // MARK: - Computed Properties for Current Text State
-    
-    private var currentTextAlignment: TextAlignment {
-        selectedText?.typography.alignment ?? .left
+    // NEW: Helper properties for text alignment and line spacing
+    private var currentTextAlignment: NSTextAlignment {
+        selectedText?.typography.alignment.nsTextAlignment ?? .left
     }
     
-    private var currentLineSpacing: Double {
+    private var currentLineSpacing: CGFloat {
         selectedText?.typography.lineHeight ?? 0.0
     }
     
-    // MARK: - Helper Methods
+    // NEW: Update text alignment
+    private func updateTextAlignment(_ alignment: TextAlignment) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.alignment = alignment
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
+    }
     
-    private func previewFont(weight: FontWeight, style: FontStyle) -> Font {
-        let fontFamily = selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily
-        let fontSize = 12.0 // Standard preview size
+    // NEW: Update line spacing
+    private func updateLineSpacing(_ spacing: CGFloat) {
+        guard let textID = document.selectedTextIDs.first,
+              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
         
-        let baseFont = Font.custom(fontFamily, size: fontSize)
-            .weight(weight.systemWeight)
-        
-        if style == .italic {
-            return baseFont.italic()
-        } else {
-            return baseFont
-        }
+        document.saveToUndoStack()
+        document.textObjects[textIndex].typography.lineHeight = spacing
+        document.textObjects[textIndex].updateBounds()
+        document.objectWillChange.send()
     }
     
     private func updateSelectedTextFont() {
@@ -354,61 +359,7 @@ struct FontPanel: View {
         document.objectWillChange.send()
     }
     
-    // NEW: Text Alignment Update Method
-    private func updateTextAlignment(_ alignment: TextAlignment) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.alignment = alignment
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-        
-        print("🎯 FONT PANEL: Updated text alignment to \(alignment.rawValue)")
-    }
-    
-    // NEW: Line Spacing Update Method
-    private func updateLineSpacing(_ spacing: Double) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.lineHeight = spacing
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-        
-        print("🎯 FONT PANEL: Updated line spacing to \(spacing) pt")
-    }
-    
-    // REMOVED: updateTextFillColor - now handled by main color system (StrokeFillPanel, ColorPanel, VerticalToolbar)
-    
-    private func updateTextStroke(hasStroke: Bool) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        document.saveToUndoStack()
-        
-        document.textObjects[textIndex].typography.hasStroke = hasStroke
-        if hasStroke {
-            document.textObjects[textIndex].typography.strokeColor = document.defaultStrokeColor
-        }
-        document.objectWillChange.send()
-    }
-    
-    // REMOVED: updateTextStrokeColor - now handled by main color system (StrokeFillPanel, ColorPanel, VerticalToolbar)
-    
-    private func updateTextStrokeWidth(_ width: Double) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
-        
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        document.saveToUndoStack()
-        
-        document.textObjects[textIndex].typography.strokeWidth = width
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
+    // REMOVED: stroke support functions - keeping only fill
     
     private func convertSelectedTextToOutlines() {
         guard let textID = document.selectedTextIDs.first else { return }

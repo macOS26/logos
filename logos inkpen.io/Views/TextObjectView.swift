@@ -2,8 +2,8 @@
 //  TextObjectView.swift
 //  logos
 //
-//  Professional Core Graphics Text Editing - INTEGRATED WITH NEW TEXTBOX SYSTEM
-//  COORDINATE SYSTEM: EXACTLY MATCHES SHAPES AND PEN TOOL
+//  Professional Text Editing with New Text Box System
+//  Uses Gray/Green/Blue text box states with VectorText integration
 //
 
 import SwiftUI
@@ -16,52 +16,173 @@ struct TextObjectView: View {
     let canvasOffset: CGPoint
     let isSelected: Bool
     let isEditing: Bool
-    @ObservedObject var document: VectorDocument
     
-    // NEW: TextBox integration state
+    // NEW: Bridge to new text box system
     @StateObject private var textEditorViewModel = TextEditorViewModel()
-    @State private var useNewTextBox = false
+    @State private var textBoxState: TextBoxState = .gray
+    @State private var isDragging = false
+    @State private var isResizing = false
+    @State private var dragOffset: CGSize = .zero
+    @State private var resizeOffset: CGSize = .zero
+    @FocusState private var isFocused: Bool
+    
+    enum TextBoxState {
+        case gray    // Initial state - no selection, no editing
+        case green   // Selected - can double-click or drag
+        case blue    // Editing mode
+    }
     
     var body: some View {
         ZStack {
-            if useNewTextBox && document.currentTool == .font && isSelected {
-                // NEW: Use advanced TextBox system when font tool is active and text is selected
-                NewTextBoxView(
-                    textObject: textObject,
-                    viewModel: textEditorViewModel,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    document: document
+            // Text Box Background with state-based border
+            Rectangle()
+                .fill(Color.white.opacity(0.01)) // Nearly transparent
+                .stroke(getBorderColor(), lineWidth: 2)
+                .frame(width: adjustedTextBoxFrame.width, height: adjustedTextBoxFrame.height)
+                .position(x: adjustedTextBoxFrame.midX, y: adjustedTextBoxFrame.midY)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .highPriorityGesture(
+                    TapGesture(count: 2)
+                        .onEnded {
+                            // Double-click starts editing
+                            if textBoxState == .green {
+                                startEditing()
+                            }
+                        }
                 )
+                .highPriorityGesture(
+                    DragGesture(minimumDistance: 5)
+                        .onChanged { value in
+                            if textBoxState == .green && !isResizing {
+                                handleDragChanged(value: value)
+                            }
+                        }
+                        .onEnded { _ in
+                            handleDragEnded()
+                        }
+                )
+                .onTapGesture(count: 1) {
+                    // Single click selects
+                    if textBoxState == .gray {
+                        textBoxState = .green
+                    }
+                }
+            
+            // Text Content - use new text system when editing, SwiftUI when not
+            if textBoxState == .blue {
+                // BLUE STATE: Use new text box system for editing
+                EditableTextCanvas(viewModel: textEditorViewModel)
+                    .frame(width: adjustedTextBoxFrame.width, height: adjustedTextBoxFrame.height)
+                    .position(x: adjustedTextBoxFrame.midX, y: adjustedTextBoxFrame.midY)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .focused($isFocused)
             } else {
-                // EXISTING: Use current text rendering for non-font tools or unselected text
-                LegacyTextObjectView(
-                    textObject: textObject,
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    isSelected: isSelected,
-                    isEditing: isEditing
-                )
+                // GRAY/GREEN STATE: Use SwiftUI Text for display
+                SwiftUITextDisplayView(textObject: textObject)
+                    .frame(width: adjustedTextBoxFrame.width, height: adjustedTextBoxFrame.height)
+                    .position(x: adjustedTextBoxFrame.midX, y: adjustedTextBoxFrame.midY)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .allowsHitTesting(false) // Allow gestures to pass through
+            }
+            
+            // Simple resize handle (only when selected)
+            if textBoxState == .green || textBoxState == .blue {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 10, height: 10)
+                    .position(x: adjustedTextBoxFrame.maxX + resizeOffset.width,
+                             y: adjustedTextBoxFrame.maxY + resizeOffset.height)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .gesture(
+                        DragGesture()
+                            .onChanged(handleResizeChanged)
+                            .onEnded { _ in handleResizeEnded() }
+                    )
             }
         }
         .onAppear {
-            syncTextEditorViewModel()
-        }
-        .onChange(of: textObject.content) { _, _ in
-            syncTextEditorViewModel()
-        }
-        .onChange(of: textObject.typography) { _, _ in
-            syncTextEditorViewModel()
-        }
-        .onChange(of: document.currentTool) { _, newTool in
-            useNewTextBox = (newTool == .font && isSelected)
+            syncFromVectorText()
+            updateTextBoxState()
         }
         .onChange(of: isSelected) { _, selected in
-            useNewTextBox = (document.currentTool == .font && selected)
+            updateTextBoxState()
+        }
+        .onChange(of: isEditing) { _, editing in
+            updateTextBoxState()
+        }
+        .onChange(of: textEditorViewModel.text) { _, newText in
+            // Sync back to VectorText when text changes
+            syncToVectorText()
+        }
+        .onChange(of: textEditorViewModel.fontSize) { _, _ in
+            syncToVectorText()
+        }
+        .onChange(of: textEditorViewModel.selectedFont) { _, _ in
+            syncToVectorText()
+        }
+        .onChange(of: textEditorViewModel.textColor) { _, _ in
+            syncToVectorText()
+        }
+        .onChange(of: textEditorViewModel.textAlignment) { _, _ in
+            syncToVectorText()
+        }
+        .onChange(of: textEditorViewModel.lineSpacing) { _, _ in
+            syncToVectorText()
         }
     }
     
-    private func syncTextEditorViewModel() {
+    // MARK: - Helper Methods
+    
+    private var adjustedTextBoxFrame: CGRect {
+        let frame = textObject.bounds
+        return CGRect(
+            x: textObject.position.x + frame.minX + dragOffset.width,
+            y: textObject.position.y + frame.minY + dragOffset.height,
+            width: max(frame.width + resizeOffset.width, 50),
+            height: max(frame.height + resizeOffset.height, 30)
+        )
+    }
+    
+    private func getBorderColor() -> Color {
+        switch textBoxState {
+        case .gray: return Color.gray.opacity(0.3)
+        case .green: return Color.green
+        case .blue: return Color.blue
+        }
+    }
+    
+    private func updateTextBoxState() {
+        if isEditing {
+            textBoxState = .blue
+            isFocused = true
+        } else if isSelected {
+            textBoxState = .green
+        } else {
+            textBoxState = .gray
+            isFocused = false
+        }
+    }
+    
+    private func startEditing() {
+        textBoxState = .blue
+        isFocused = true
+        textEditorViewModel.startEditing()
+    }
+    
+    private func stopEditing() {
+        textBoxState = isSelected ? .green : .gray
+        isFocused = false
+        textEditorViewModel.stopEditing()
+    }
+    
+    // MARK: - Sync between new system and VectorText
+    
+    private func syncFromVectorText() {
+        // Copy VectorText properties to TextEditorViewModel
         textEditorViewModel.text = textObject.content
         textEditorViewModel.fontSize = CGFloat(textObject.typography.fontSize)
         textEditorViewModel.selectedFont = textObject.typography.nsFont
@@ -69,323 +190,83 @@ struct TextObjectView: View {
         textEditorViewModel.textAlignment = textObject.typography.alignment.nsTextAlignment
         textEditorViewModel.lineSpacing = CGFloat(textObject.typography.lineHeight)
         
-        // Set text box frame based on text position and bounds
+        // Set text box frame
         textEditorViewModel.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: max(textObject.bounds.width, 200), // Minimum width
-            height: max(textObject.bounds.height, 50)  // Minimum height
+            width: max(textObject.bounds.width, 100),
+            height: max(textObject.bounds.height, 50)
         )
+    }
+    
+    private func syncToVectorText() {
+        // Update VectorText through document - this should be handled by the parent canvas
+        // For now, just print what would be updated
+        print("📝 Would sync to VectorText: '\(textEditorViewModel.text)'")
+    }
+    
+    // MARK: - Gesture Handlers
+    
+    private func handleDragChanged(value: DragGesture.Value) {
+        if !isResizing && textBoxState == .green {
+            isDragging = true
+            dragOffset = value.translation
+        }
+    }
+    
+    private func handleDragEnded() {
+        if isDragging {
+            // Update VectorText position
+            // This should be handled by the parent canvas
+            dragOffset = .zero
+            isDragging = false
+        }
+    }
+    
+    private func handleResizeChanged(value: DragGesture.Value) {
+        isResizing = true
+        resizeOffset = value.translation
+    }
+    
+    private func handleResizeEnded() {
+        // Update VectorText bounds
+        // This should be handled by the parent canvas
+        resizeOffset = .zero
+        dragOffset = .zero
+        isResizing = false
+        isDragging = false
     }
 }
 
-// NEW: Advanced TextBox view with Gray/Green/Blue states
-struct NewTextBoxView: View {
+// MARK: - SwiftUI Text Display for Gray/Green states
+
+struct SwiftUITextDisplayView: View {
     let textObject: VectorText
-    @ObservedObject var viewModel: TextEditorViewModel
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    @ObservedObject var document: VectorDocument
+    
+    private var swiftUIAlignment: HorizontalAlignment {
+        switch textObject.typography.alignment {
+        case .left:
+            return .leading
+        case .center:
+            return .center
+        case .right:
+            return .trailing
+        case .justified:
+            return .leading // For justified, we'll handle it differently
+        }
+    }
     
     var body: some View {
-        EditableTextCanvas(viewModel: viewModel)
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(textObject.transform)
-            .onChange(of: viewModel.text) { _, newText in
-                updateDocumentText(newText)
-            }
-            .onChange(of: viewModel.textAlignment) { _, newAlignment in
-                updateDocumentAlignment(newAlignment)
-            }
-            .onChange(of: viewModel.lineSpacing) { _, newSpacing in
-                updateDocumentLineSpacing(newSpacing)
-            }
-            .onChange(of: viewModel.textBoxFrame) { _, newFrame in
-                updateDocumentPosition(newFrame)
-            }
-    }
-    
-    private func updateDocumentText(_ newText: String) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
-        document.saveToUndoStack()
-        document.textObjects[textIndex].content = newText
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
-    
-    private func updateDocumentAlignment(_ newAlignment: NSTextAlignment) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.alignment = TextAlignment.fromNSTextAlignment(newAlignment)
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
-    
-    private func updateDocumentLineSpacing(_ newSpacing: CGFloat) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
-        document.saveToUndoStack()
-        document.textObjects[textIndex].typography.lineHeight = Double(newSpacing)
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
-    
-    private func updateDocumentPosition(_ newFrame: CGRect) {
-        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) else { return }
-        document.saveToUndoStack()
-        document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
-        document.textObjects[textIndex].updateBounds()
-        document.objectWillChange.send()
-    }
-}
-
-// EXISTING: Legacy text rendering (unchanged)
-struct LegacyTextObjectView: View {
-    let textObject: VectorText
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let isSelected: Bool
-    let isEditing: Bool
-    
-    // NEW: Enhanced editing state
-    @State private var cursorPosition: Int = 0
-    @State private var selectionRange: NSRange = NSRange(location: 0, length: 0)
-    @State private var showCursor: Bool = true
-    
-    var body: some View {
-        ZStack {
-            // PURE SWIFTUI TEXT RENDERING - EXACT SAME AS SHAPES!
-            // Canvas draws text at textObject.position, just like Path draws path elements at their coordinates
-            Canvas { context, size in
-                drawTextWithSwiftUI(context: context, typography: textObject.typography, text: textObject.content.isEmpty ? "Text" : textObject.content, position: textObject.position)
-                
-                
-            }
-            // EXACT SAME coordinate chain as shapes in ShapeView - NO .position() modifier!
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(textObject.transform)
-            
-            // ENHANCED: Professional selection outline using EXACT coordinate system as shapes
-            if isSelected && !isEditing {
-                let absoluteBounds = CGRect(
-                    x: textObject.position.x,
-                    y: textObject.position.y + textObject.bounds.minY,
-                    width: textObject.bounds.width,
-                    height: textObject.bounds.height
-                )
-                
-                Path { path in
-                    path.addRect(absoluteBounds)
-                }
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(textObject.transform)
-                .opacity(0.7)
-            }
-            
-            // ENHANCED: Professional text selection highlighting
-            if isEditing && selectionRange.length > 0 {
-                drawTextSelection()
-            }
-            
-            // ENHANCED: Professional I-beam cursor with precise positioning
-            if isEditing && selectionRange.length == 0 && showCursor {
-                drawTextCursor()
-            }
-        }
-        .onAppear {
-            if isEditing {
-                startCursorAnimation()
-            }
-        }
-        .onChange(of: isEditing) { oldValue, newValue in
-            if newValue {
-                startCursorAnimation()
-                cursorPosition = textObject.content.count
-            } else {
-                stopCursorAnimation()
-            }
-        }
-    }
-    
-    // MARK: - Enhanced Text Selection
-    @ViewBuilder
-    private func drawTextSelection() -> some View {
-        let selectionRects = getSelectionRects()
-        ForEach(selectionRects.indices, id: \.self) { index in
-            Path { path in
-                path.addRect(selectionRects[index])
-            }
-            .fill(Color.blue.opacity(0.3))
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(textObject.transform)
-        }
-    }
-    
-    // MARK: - Enhanced I-beam Cursor  
-    @ViewBuilder
-    private func drawTextCursor() -> some View {
-        let cursorRect = getCursorRect()
-        
-        Path { path in
-            path.addRect(cursorRect)
-        }
-        .fill(Color.blue)
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
-        .transformEffect(textObject.transform)
-    }
-    
-    // MARK: - Professional Text Metrics Calculations
-    
-    private func getCursorRect() -> CGRect {
-        let cursorX = textObject.position.x + getCursorXPosition(at: cursorPosition)
-        
-        return CGRect(
-            x: cursorX - 0.5, // Center the 1pt cursor line
-            y: textObject.position.y + textObject.bounds.minY,
-            width: 1.0,
-            height: textObject.bounds.height
-        )
-    }
-    
-    private func getCursorXPosition(at position: Int) -> CGFloat {
-        guard position > 0 && position <= textObject.content.count else { return 0 }
-        
-        let substring = String(textObject.content.prefix(position))
-        let nsString = NSString(string: substring)
-        let font = textObject.typography.nsFont
-        let textSize = nsString.size(withAttributes: [
-            .font: font,
-            .kern: textObject.typography.letterSpacing
-        ])
-        return textSize.width
-    }
-    
-    private func getSelectionRects() -> [CGRect] {
-        guard selectionRange.length > 0,
-              selectionRange.location >= 0,
-              selectionRange.location + selectionRange.length <= textObject.content.count else {
-            return []
-        }
-        
-        let startX = getCursorXPosition(at: selectionRange.location)
-        let endX = getCursorXPosition(at: selectionRange.location + selectionRange.length)
-        
-        let selectionRect = CGRect(
-            x: textObject.position.x + startX,
-            y: textObject.position.y + textObject.bounds.minY,
-            width: endX - startX,
-            height: textObject.bounds.height
-        )
-        
-        return [selectionRect]
-    }
-    
-    // MARK: - Text Position Calculations (Core Graphics Integration)
-    
-    func getCharacterIndex(at point: CGPoint) -> Int {
-        // Convert point from view coordinates to text-relative coordinates
-        let relativePoint = CGPoint(
-            x: point.x - textObject.position.x,
-            y: point.y - textObject.position.y
-        )
-        
-        // Use Core Text to find character index
-        let nsFont = textObject.typography.nsFont
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: nsFont,
-            .kern: textObject.typography.letterSpacing
-        ]
-        
-        let attributedString = NSAttributedString(string: textObject.content, attributes: attributes)
-        let line = CTLineCreateWithAttributedString(attributedString)
-        
-        // Get character index at the relative point
-        let index = CTLineGetStringIndexForPosition(line, relativePoint)
-        return max(0, min(textObject.content.count, index))
-    }
-    
-    // MARK: - Cursor Animation
-    
-    private func startCursorAnimation() {
-        showCursor = true
-        withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
-            showCursor.toggle()
-        }
-    }
-    
-    private func stopCursorAnimation() {
-        showCursor = false
-    }
-    
-    // MARK: - Text Rendering
-    private func drawTextWithSwiftUI(context: GraphicsContext, typography: TypographyProperties, text: String, position: CGPoint) {
-        // Determine fill and stroke requirements
-        let hasStroke = typography.hasStroke && typography.strokeColor != .clear && typography.strokeWidth > 0
-        let hasFill = typography.fillColor != .clear
-        
-        // Create the text to render
-        let nsFont = typography.nsFont
-        let attributedString = AttributedString(text)
-        
-        // Create base text
-        let baseText = Text(attributedString).font(Font(nsFont))
-        
-        // Apply colors based on stroke/fill requirements and draw
-        if hasStroke && hasFill {
-            // Both stroke and fill - use fill color (stroke approximation with shadows)
-            let fillText = baseText
-                .foregroundColor(Color(typography.fillColor.color))
-            context.draw(fillText, at: position, anchor: .topLeading)
-            
-            // Add stroke effect using multiple shadows
-            let strokeWidth = typography.strokeWidth
-            let strokeColor = Color(typography.strokeColor.color)
-            
-            for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
-                let radians = angle * .pi / 180.0
-                let offsetX = cos(radians) * strokeWidth * 0.5
-                let offsetY = sin(radians) * strokeWidth * 0.5
-                
-                let strokeText = baseText.foregroundColor(strokeColor)
-                context.draw(strokeText, at: CGPoint(x: position.x + offsetX, y: position.y + offsetY), anchor: .topLeading)
-            }
-            
-        } else if hasStroke {
-            // Stroke only - use stroke color with shadow effect
-            let strokeWidth = typography.strokeWidth
-            let strokeColor = Color(typography.strokeColor.color)
-            
-            for angle in stride(from: 0.0, to: 360.0, by: 45.0) {
-                let radians = angle * .pi / 180.0
-                let offsetX = cos(radians) * strokeWidth * 0.5
-                let offsetY = sin(radians) * strokeWidth * 0.5
-                
-                let strokeText = baseText.foregroundColor(strokeColor)
-                context.draw(strokeText, at: CGPoint(x: position.x + offsetX, y: position.y + offsetY), anchor: .topLeading)
-            }
-        } else if hasFill {
-            // Fill only - standard text rendering
-            let fillText = baseText.foregroundColor(Color(typography.fillColor.color))
-            context.draw(fillText, at: position, anchor: .topLeading)
-        }
-    }
-}
-
-// MARK: - Helper Extensions
-
-extension TextAlignment {
-    static func fromNSTextAlignment(_ alignment: NSTextAlignment) -> TextAlignment {
-        switch alignment {
-        case .left: return .left
-        case .center: return .center
-        case .right: return .right
-        case .justified: return .justified
-        default: return .left
+        VStack(alignment: swiftUIAlignment, spacing: 0) {
+            Text(textObject.content.isEmpty ? "Text" : textObject.content)
+                .font(textObject.typography.swiftUIFont)
+                .foregroundColor(Color(textObject.typography.fillColor.color))
+                .lineSpacing(CGFloat(textObject.typography.lineHeight))
+                .multilineTextAlignment(textObject.typography.alignment == .justified ? .leading : 
+                    (textObject.typography.alignment == .left ? .leading :
+                     textObject.typography.alignment == .center ? .center : .trailing))
+                .frame(maxWidth: .infinity, alignment: Alignment(horizontal: swiftUIAlignment, vertical: .top))
+            Spacer()
         }
     }
 } 
