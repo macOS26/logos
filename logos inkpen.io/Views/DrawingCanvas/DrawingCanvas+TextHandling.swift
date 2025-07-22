@@ -26,6 +26,34 @@ extension DrawingCanvas {
         }
     }
     
+    // MARK: - Professional Text Canvas Background Handler
+    func handleCanvasBackgroundTap(at location: CGPoint) {
+        // Check if tap is outside all text boxes
+        let tapHitsText = document.textObjects.contains { textObj in
+            let textBounds = CGRect(
+                x: textObj.position.x,
+                y: textObj.position.y,
+                width: max(textObj.bounds.width, 200),
+                height: max(textObj.bounds.height, 50)
+            )
+            return textBounds.contains(location)
+        }
+        
+        if !tapHitsText {
+            // Click outside all text boxes - deselect all text and stop editing
+            if document.selectedTextIDs.count > 0 || isEditingText {
+                document.selectedTextIDs.removeAll()
+                if let editingID = editingTextID {
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
+                        document.textObjects[textIndex].isEditing = false
+                    }
+                }
+                finishTextEditing()
+                print("🎯 BACKGROUND TAP: Deselected all text boxes")
+            }
+        }
+    }
+    
     func findTextAt(location: CGPoint) -> UUID? {
         let tolerance: Double = 10.0
         
@@ -108,49 +136,53 @@ extension DrawingCanvas {
     
     // MARK: - Text Creation and Management
     
-    // Create new text at canvas position
+
+    
+    // Create new text at canvas position using our new professional text system
     func createNewTextAt(location: CGPoint) {
-        print("✨ Creating new text at: \(location)")
+        print("✨ Creating new professional text at: \(location)")
         
         // Save state before creating new text
         document.saveToUndoStack()
         
-        // Use current toolbar colors (no defaults)
+        // Use current toolbar colors and font settings
         let typography = TypographyProperties(
             fontFamily: document.fontManager.selectedFontFamily,
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
-            hasStroke: false, // Professional default: text fill only (like Adobe Illustrator)
+            lineHeight: document.fontManager.selectedFontSize * 1.2, // Default 120% line height
+            letterSpacing: 0.0,
+            alignment: .left, // Default to left alignment
+            hasStroke: false, // NO STROKES - only fill colors
             strokeColor: document.defaultStrokeColor,
             strokeOpacity: document.defaultStrokeOpacity,
-            fillColor: document.defaultFillColor,
+            fillColor: document.defaultFillColor, // Use current fill color
             fillOpacity: document.defaultFillOpacity
         )
         
-        // Create new text object
-        let newText = VectorText(
-            content: "",
+        // Create new text object with proper bounds
+        var newText = VectorText(
+            content: "Text", // Start with placeholder text
             typography: typography,
             position: location,
             isEditing: true
         )
+        newText.updateBounds() // Calculate proper bounds
         
         // Add to document and associate with current layer
         document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
         
-        // Select the text so toolbar colors apply immediately
+        // Select the text for immediate editing
         document.selectedTextIDs = [newText.id]
         document.selectedShapeIDs.removeAll()
         
-        // Set editing state
+        // Set editing state for compatibility with existing system
         isEditingText = true
         editingTextID = newText.id
-        currentCursorPosition = 0
-        currentSelectionRange = NSRange(location: 0, length: 0)
         
-        print("✅ Created new editable text object with ID: \(newText.id)")
-        print("🎯 Text automatically selected for immediate color application")
+        print("✅ Created new professional text object with ID: \(newText.id)")
+        print("🎯 Text ready for editing with .gray/.green/.blue states")
     }
     
     // MARK: - Professional Text Input Handling

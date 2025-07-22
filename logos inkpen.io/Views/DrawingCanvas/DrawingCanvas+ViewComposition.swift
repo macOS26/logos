@@ -85,17 +85,15 @@ extension DrawingCanvas {
                 }
             }
             
-            // RENDER TEXT OBJECTS using Core Graphics (NO CORE TEXT)
+            // RENDER TEXT OBJECTS using the new ProfessionalTextCanvas with .gray/.green/.blue states
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObj = document.textObjects[textIndex]
                 if textObj.isVisible {
-                    TextObjectView(
-                        textObject: textObj,
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
-                        isSelected: document.selectedTextIDs.contains(textObj.id),
-                        isEditing: isEditingText && editingTextID == textObj.id
+                    ProfessionalTextCanvas(
+                        document: document,
+                        viewModel: ProfessionalTextViewModel(textObject: textObj, document: document)
                     )
+                    .id(textObj.id) // Important: Use the text object ID as the view ID
                 }
             }
             

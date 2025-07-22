@@ -31,9 +31,13 @@ extension DrawingCanvas {
         case .selection, .scale, .rotate, .shear, .envelope:
             // All transform tools use selection logic
             handleSelectionTap(at: canvasLocation)
+            // Also handle background taps to deselect text boxes
+            handleCanvasBackgroundTap(at: canvasLocation)
             
         case .directSelection:
             handleDirectSelectionTap(at: canvasLocation)
+            // Also handle background taps to deselect text boxes
+            handleCanvasBackgroundTap(at: canvasLocation)
             
         case .convertAnchorPoint:
             handleConvertAnchorPointTap(at: canvasLocation)
@@ -43,6 +47,8 @@ extension DrawingCanvas {
             
         case .font:
             handleFontToolTap(at: canvasLocation)
+            // Also handle background taps for font tool to deselect text boxes
+            handleCanvasBackgroundTap(at: canvasLocation)
             
         case .line, .rectangle, .circle, .star, .polygon:
             // Shape tools are drag-only - ignore taps

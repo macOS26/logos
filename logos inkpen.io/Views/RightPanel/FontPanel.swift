@@ -327,6 +327,9 @@ struct FontPanel: View {
         document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
         
+        // Notify text canvas to sync changes
+        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
+        
         print("🎯 FONT PANEL: Updated text alignment to \(alignment)")
     }
     
@@ -339,6 +342,9 @@ struct FontPanel: View {
         document.textObjects[textIndex].typography.lineHeight = Double(spacing)
         document.textObjects[textIndex].updateBounds()
         document.objectWillChange.send()
+        
+        // Notify text canvas to sync changes
+        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
         
         print("🎯 FONT PANEL: Updated line spacing to \(spacing)")
     }
@@ -361,6 +367,9 @@ struct FontPanel: View {
         
         // Notify UI update
         document.objectWillChange.send()
+        
+        // Notify text canvas to sync changes
+        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
     }
     
     // REMOVED: stroke support functions - keeping only fill
