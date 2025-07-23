@@ -539,18 +539,18 @@ class FontManager: ObservableObject {
     @Published var googleFonts: [String] = []
     
     // SELECTED FONT PROPERTIES for new text objects
-    @Published var selectedFontFamily: String = "Helvetica"
+    @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontWeight: FontWeight = .regular
     @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
     
     // Common professional fonts (Adobe/FreeHand standard)
-    static let professionalFonts = [
-        "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
-        "Futura", "Avenir", "Garamond", "Minion Pro", "Myriad Pro",
-        "Proxima Nova", "Gotham", "Interstate", "Franklin Gothic",
-        "Optima", "Gill Sans", "Frutiger", "Universe", "Trade Gothic"
-    ]
+    // static let professionalFonts = [
+    //     "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
+    //     "Futura", "Avenir", "Garamond", "Minion Pro", "Myriad Pro",
+    //     "Proxima Nova", "Gotham", "Interstate", "Franklin Gothic",
+    //     "Optima", "Gill Sans", "Frutiger", "Universe", "Trade Gothic"
+    // ]
     
     init() {
         loadAvailableFonts()
@@ -565,11 +565,11 @@ class FontManager: ObservableObject {
         var orderedFonts: [String] = []
         
         // Add professional fonts first if available
-        for professionalFont in FontManager.professionalFonts {
-            if systemFonts.contains(professionalFont) {
-                orderedFonts.append(professionalFont)
-            }
-        }
+        // for professionalFont in FontManager.professionalFonts {
+        //     if systemFonts.contains(professionalFont) {
+        //         orderedFonts.append(professionalFont)
+        //     }
+        // }
         
         // Add remaining system fonts
         for font in systemFonts {

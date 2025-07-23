@@ -99,9 +99,8 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,  // NEW: Pass resize handle state
                 onTextBoxSelect: handleTextBoxSelect,
-                onTextBoxTap: handleTextBoxTap,
-                onDragChanged: handleDragChanged,
-                onDragEnded: handleDragEnded
+                onTextBoxTap: handleTextBoxTap
+                // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
             )
             
             ProfessionalTextDisplayView(
@@ -110,15 +109,17 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState
             )
             
-            // RESIZE HANDLE ALWAYS VISIBLE
-            ProfessionalResizeHandleView(
-                viewModel: viewModel,
-                dragOffset: dragOffset,
-                resizeOffset: resizeOffset,
-                onResizeChanged: handleResizeChanged,
-                onResizeEnded: handleResizeEnded,
-                onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
-            )
+            // RESIZE HANDLE ONLY VISIBLE IN BLUE (EDITING) MODE - NOT IN GREEN (SELECTION) MODE
+            if textBoxState == .blue {
+                ProfessionalResizeHandleView(
+                    viewModel: viewModel,
+                    dragOffset: dragOffset,
+                    resizeOffset: resizeOffset,
+                    onResizeChanged: handleResizeChanged,
+                    onResizeEnded: handleResizeEnded,
+                    onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
+                )
+            }
         }
         // CRITICAL FIX: Apply the SAME coordinate system as all other objects
         .scaleEffect(document.zoomLevel, anchor: .topLeading)
@@ -257,35 +258,8 @@ struct ProfessionalTextCanvas: View {
         }
     }
     
-    private func handleDragChanged(value: DragGesture.Value) {
-        // IMPROVED: Only allow text box movement when NOT resizing AND resize handle is not active
-        if !isResizing && !isResizeHandleActive && textBoxState == .green {
-            isDragging = true
-            dragOffset = value.translation
-            print("📦 TEXT BOX MOVE: \(value.translation) (resize handle inactive)")
-        } else if isResizeHandleActive {
-            print("🚫 TEXT BOX MOVE BLOCKED: Resize handle is active")
-        }
-    }
-    
-    private func handleDragEnded() {
-        if isDragging {
-            let newFrame = CGRect(
-                x: viewModel.textBoxFrame.minX + dragOffset.width,
-                y: viewModel.textBoxFrame.minY + dragOffset.height,
-                width: viewModel.textBoxFrame.width,
-                height: viewModel.textBoxFrame.height
-            )
-            viewModel.updateTextBoxFrame(newFrame)
-            // Update document position
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
-            }
-            dragOffset = .zero
-            isDragging = false
-            print("✅ TEXT BOX MOVE COMPLETED")
-        }
-    }
+    // REMOVED: handleDragChanged and handleDragEnded functions
+    // Arrow tool now handles all text box dragging with its built-in system
     
     // NEW: Track when resize starts
     private func handleResizeStarted() {
@@ -345,8 +319,7 @@ struct ProfessionalTextBoxView: View {
     let isResizeHandleActive: Bool  // NEW: Track resize handle state
     let onTextBoxSelect: (CGPoint) -> Void
     let onTextBoxTap: (CGPoint) -> Void
-    let onDragChanged: (DragGesture.Value) -> Void
-    let onDragEnded: () -> Void
+    // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
     
     private func getBorderColor() -> Color {
         switch textBoxState {
@@ -357,47 +330,40 @@ struct ProfessionalTextBoxView: View {
     }
     
     var body: some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.01)) // Nearly transparent but allows hit testing
-            .stroke(getBorderColor(), lineWidth: 2)
-            .frame(
-                width: viewModel.textBoxFrame.width + resizeOffset.width,
-                height: viewModel.textBoxFrame.height + resizeOffset.height
-            )
-            .position(
-                x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
-                y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
-            )
-            .highPriorityGesture(
-                TapGesture(count: 2)
-                    .onEnded { 
-                        onTextBoxTap(CGPoint.zero)
-                    }
-            )
-            .highPriorityGesture(
-                DragGesture(minimumDistance: 5)
-                    .onChanged { value in
-                        // IMPROVED: Only trigger if resize handle is not active
-                        if !isResizeHandleActive {
-                            onDragChanged(value)
-                        } else {
-                            print("🚫 TEXT BOX DRAG BLOCKED: Resize handle is active")
+        ZStack {
+            // Main text box rectangle with clear background
+            Rectangle()
+                .fill(Color.clear) // Clear background - arrow tool handles hit detection
+                .stroke(getBorderColor(), lineWidth: 2) // Standard 2px border width
+                .frame(
+                    width: viewModel.textBoxFrame.width + resizeOffset.width,
+                    height: viewModel.textBoxFrame.height + resizeOffset.height
+                )
+                .position(
+                    x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
+                    y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
+                )
+                .highPriorityGesture(
+                    TapGesture(count: 2)
+                        .onEnded { 
+                            onTextBoxTap(CGPoint.zero)
                         }
-                    }
-                    .onEnded { _ in 
-                        // IMPROVED: Only trigger if resize handle is not active
-                        if !isResizeHandleActive {
-                            onDragEnded()
-                        }
-                    }
-            )
-            .onTapGesture(count: 1) { location in
-                onTextBoxSelect(location)
-            }
-            // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
-            .allowsHitTesting(textBoxState != .blue)
+                )
+                .onTapGesture(count: 1) { location in
+                    onTextBoxSelect(location)
+                }
+                // REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally
+                // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
+                .allowsHitTesting(textBoxState != .blue)
+            
+            // REMOVED: Red corner circles were jumping around and awful
+        }
     }
+    
+
 }
+
+
 
 // MARK: - Professional Text Display (Based on Working TextDisplayView)
 struct ProfessionalTextDisplayView: View {
@@ -427,6 +393,7 @@ struct ProfessionalTextContentView: View {
     var body: some View {
         // ALWAYS USE NSTextView for consistent rendering - just control editing state
         ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue)
+            .allowsHitTesting(textBoxState == .blue) // CRITICAL: Only allow NSTextView hits in BLUE mode, let drag gestures pass through in GREEN/GRAY
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
