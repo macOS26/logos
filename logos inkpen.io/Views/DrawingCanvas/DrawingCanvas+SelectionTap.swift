@@ -31,6 +31,20 @@ extension DrawingCanvas {
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                 let textObject = document.textObjects[textIndex]
                 
+                // PRINT TEXT BOX SETTINGS AS REQUESTED BY USER
+                print("🎯 ARROW TOOL SELECTED TEXT BOX UUID: \(textID.uuidString.prefix(8))")
+                print("📝 CONTENT: '\(textObject.content)'")
+                print("🎨 TYPOGRAPHY SETTINGS:")
+                print("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontWeight.rawValue) \(textObject.typography.fontStyle.rawValue)")
+                print("  - Size: \(textObject.typography.fontSize)pt")
+                print("  - Line Height: \(textObject.typography.lineHeight)pt")
+                print("  - Line Spacing: \(textObject.typography.lineSpacing)pt")
+                print("  - Alignment: \(textObject.typography.alignment.rawValue)")
+                print("  - Fill Color: \(textObject.typography.fillColor)")
+                print("📦 BOUNDS: \(textObject.bounds)")
+                print("📍 POSITION: \(textObject.position)")
+                print("🔄 STATES: isEditing=\(textObject.isEditing), isVisible=\(textObject.isVisible), isLocked=\(textObject.isLocked)")
+                
                 // Check if text is locked
                 if textObject.isLocked {
                     document.selectedShapeIDs.removeAll()

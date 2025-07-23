@@ -17,6 +17,13 @@ extension DrawingCanvas {
         print("🎯 FONT TOOL TAP at: \(location)")
         lastTapLocation = location
         
+        // CRITICAL: Prevent new text box creation when one is already in edit mode
+        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        if isAnyTextEditing {
+            print("🚫 NEW TEXT BLOCKED: Another text box is already in edit mode")
+            return
+        }
+        
         // Check if tapping on existing text to edit it
         if let existingTextID = findTextAt(location: location) {
             startEditingText(textID: existingTextID, at: location)
@@ -92,23 +99,64 @@ extension DrawingCanvas {
         // Save current state before editing
         document.saveToUndoStack()
         
+        // CRITICAL: Ensure only one text box can be in edit mode at a time
+        var editingCount = 0
+        for textIndex in document.textObjects.indices {
+            if document.textObjects[textIndex].isEditing {
+                editingCount += 1
+                print("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode")
+            }
+            document.textObjects[textIndex].isEditing = false
+        }
+        
+        if editingCount > 0 {
+            print("🚫 ENFORCED SINGLE EDIT MODE: Stopped editing \(editingCount) text box(es)")
+        }
+        
         isEditingText = true
         editingTextID = textID
         
         // Find the text object and calculate precise cursor position
         if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            // Set this text box to BLUE (edit mode)
             document.textObjects[textIndex].isEditing = true
             
-            // ENHANCED: Calculate cursor position based on click location
             let textObj = document.textObjects[textIndex]
+            
+            // VERIFY: Confirm only one text box is in edit mode
+            let finalEditingCount = document.textObjects.filter { $0.isEditing }.count
+            if finalEditingCount != 1 {
+                print("⚠️ ERROR: \(finalEditingCount) text boxes are in edit mode! Should be exactly 1.")
+            } else {
+                print("✅ VERIFIED: Exactly one text box is in edit mode")
+            }
+            
+            // PRINT TEXT BOX SETTINGS AS REQUESTED BY USER
+            print("🎯 FONT TOOL EDITING TEXT BOX UUID: \(textID.uuidString.prefix(8))")
+            print("📝 CONTENT: '\(textObj.content)'")
+            print("🎨 TYPOGRAPHY SETTINGS:")
+            print("  - Font: \(textObj.typography.fontFamily) \(textObj.typography.fontWeight.rawValue) \(textObj.typography.fontStyle.rawValue)")
+            print("  - Size: \(textObj.typography.fontSize)pt")
+            print("  - Line Height: \(textObj.typography.lineHeight)pt")
+            print("  - Line Spacing: \(textObj.typography.lineSpacing)pt")
+            print("  - Alignment: \(textObj.typography.alignment.rawValue)")
+            print("  - Fill Color: \(textObj.typography.fillColor)")
+            print("📦 BOUNDS: \(textObj.bounds)")
+            print("📍 POSITION: \(textObj.position)")
+            print("🔄 STATES: isEditing=\(textObj.isEditing), isVisible=\(textObj.isVisible), isLocked=\(textObj.isLocked)")
+            
+            // ENHANCED: Calculate cursor position based on click location
             currentCursorPosition = calculateCursorPosition(in: textObj, at: location)
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
             
             // Clear shape selection since we're editing text
             document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.insert(textID)
+            // Set text to GREEN (selected) state in addition to BLUE (editing)
+            document.selectedTextIDs = [textID] // Replace selection with just this text box
             
             print("📍 Cursor positioned at character \(currentCursorPosition)")
+            print("🎯 TEXT STATES: \(textID.uuidString.prefix(8)) → BLUE (Edit Mode)")
+            print("🎯 TEXT STATES: All other text boxes → GRAY (Unselected)")
         }
     }
     
@@ -142,12 +190,26 @@ extension DrawingCanvas {
     
     // Create new text at canvas position using our new professional text system
     func createNewTextAt(location: CGPoint) {
+        // CRITICAL: Double-check that no text box is in edit mode
+        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        if isAnyTextEditing {
+            print("🚫 NEW TEXT BLOCKED (createNewTextAt): Another text box is already in edit mode")
+            return
+        }
+        
         // Default size for click creation
         createNewTextWithSize(at: location, width: 300, height: 100)
     }
     
     // Create new text with user-defined size (like rectangle tool)
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
+        // CRITICAL: Double-check that no text box is in edit mode
+        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        if isAnyTextEditing {
+            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): Another text box is already in edit mode")
+            return
+        }
+        
         print("✨ Creating new text box at: \(location) with user size: \(width) × \(height)")
         
         // Save state before creating new text

@@ -16,9 +16,26 @@ extension DrawingCanvas {
             finishBezierPath()
         }
         
-        // SURGICAL FIX: Cancel text editing when switching away from font tool
-        if previousTool == .font && newTool != .font && isEditingText {
-            print("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool)")
+        // CRITICAL FIX: Preserve text box font settings when switching tools
+        // This prevents font settings from changing when switching between font tool and arrow tool
+        if previousTool == .font && newTool == .selection {
+            print("🔧 TOOL SWITCH: Font → Arrow: Preserving all text box font settings")
+            // Convert editing text to selected state (BLUE → GREEN)
+            if isEditingText, let editingTextID = editingTextID {
+                finishTextEditingButKeepSelected(editingTextID)
+            }
+            // Font settings remain unchanged per text box UUID
+        }
+        
+        if previousTool == .selection && newTool == .font {
+            print("🔧 TOOL SWITCH: Arrow → Font: Preserving all text box font settings")
+            // Keep selected text boxes selected (GREEN stays GREEN)
+            // Font settings remain unchanged per text box UUID
+        }
+        
+        // SURGICAL FIX: Cancel text editing when switching away from font tool to other tools (not arrow)
+        if previousTool == .font && newTool != .font && newTool != .selection && isEditingText {
+            print("🔧 USER SWITCHED TOOLS: Canceling text editing (switched away from font tool to non-arrow tool)")
             finishTextEditing()
         }
         
@@ -40,5 +57,25 @@ extension DrawingCanvas {
         }
         
         previousTool = newTool
+    }
+    
+    // NEW: Helper function to finish text editing but keep text selected
+    private func finishTextEditingButKeepSelected(_ textID: UUID) {
+        // Stop editing mode (BLUE → GREEN)
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            document.textObjects[textIndex].isEditing = false
+        }
+        
+        // Keep text selected (GREEN state)
+        document.selectedTextIDs = [textID]
+        
+        // Clear editing flags
+        isEditingText = false
+        editingTextID = nil
+        currentCursorPosition = 0
+        currentSelectionRange = NSRange(location: 0, length: 0)
+        
+        print("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)")
+        print("🔧 FONT SETTINGS: Preserved all typography properties for this text box")
     }
 } 

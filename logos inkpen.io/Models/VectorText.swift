@@ -1,14 +1,38 @@
 //
 //  VectorText.swift
-//  logos
+//  logos inkpen.io
 //
 //  Created by Todd Bruss on 7/5/25.
 //
 
-import Foundation
 import SwiftUI
+import Foundation
+import AppKit
 import CoreText
 import CoreGraphics
+
+// MARK: - Text Box State Tracking (Blue, Green, Gray)
+enum TextBoxState: String, CaseIterable {
+    case editing = "editing"      // BLUE - Currently being edited
+    case selected = "selected"    // GREEN - Selected and draggable
+    case unselected = "unselected" // GRAY - Not selected, not editing
+    
+    var color: Color {
+        switch self {
+        case .editing: return .blue
+        case .selected: return .green
+        case .unselected: return .gray
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .editing: return "BLUE - Edit Mode"
+        case .selected: return "GREEN - Selected & Draggable"
+        case .unselected: return "GRAY - Unselected"
+        }
+    }
+}
 
 // MARK: - Professional Text Alignment
 enum TextAlignment: String, CaseIterable, Codable {
@@ -190,6 +214,28 @@ struct VectorText: Identifiable, Codable, Hashable {
     var isPointText: Bool // Point text (expands as you type) vs Area text (fixed area)
     var cursorPosition: Int // Current cursor position for inline editing
     var areaSize: CGSize? // Area size for area text (nil for point text)
+    
+    // HELPER: Get current text box state based on selection and editing
+    func getState(in document: VectorDocument) -> TextBoxState {
+        if isEditing {
+            return .editing  // BLUE
+        } else if document.selectedTextIDs.contains(id) {
+            return .selected // GREEN
+        } else {
+            return .unselected // GRAY
+        }
+    }
+    
+    // HELPER: Check if this text box can be edited (not locked and visible)
+    var canBeEdited: Bool {
+        return isVisible && !isLocked
+    }
+    
+    // HELPER: Check if font settings should be shown in font panel
+    func shouldShowFontSettings(in document: VectorDocument) -> Bool {
+        let state = getState(in: document)
+        return state == .editing || state == .selected
+    }
     
     // Professional text metrics using Core Text
     var textBounds: CGRect {

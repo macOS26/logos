@@ -123,6 +123,16 @@ struct ProfessionalTextCanvas: View {
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
             updateTextBoxState(selectedIDs: selectedIDs)
         }
+        .onChange(of: viewModel.isEditing) { _, isEditing in
+            print("🔧 VIEW MODEL EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'")
+            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+        }
+        .onChange(of: viewModel.textObject.isEditing) { _, isEditing in
+            print("🔧 DOCUMENT TEXT EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'")
+            // Sync view model with document
+            viewModel.isEditing = isEditing
+            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+        }
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
             
@@ -164,14 +174,26 @@ struct ProfessionalTextCanvas: View {
         let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
         let isThisTextSelected = selectedIDs.contains(viewModel.textObject.id)
         
+        print("🔍 STATE CHECK: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
+        print("  - viewModel.isEditing: \(viewModel.isEditing)")
+        print("  - textObject.isEditing: \(viewModel.textObject.isEditing)")
+        print("  - hasTextViewFocus: \(hasTextViewFocus)")
+        print("  - isTextToolActive: \(isTextToolActive)")
+        print("  - isThisTextSelected: \(isThisTextSelected)")
+        print("  - currentTool: \(document.currentTool.rawValue)")
+        
         if (viewModel.isEditing || hasTextViewFocus) && isTextToolActive {
             textBoxState = .blue
+            print("  → BLUE (editing mode)")
         } else if isThisTextSelected && isTextToolActive {
             textBoxState = .green
+            print("  → GREEN (selected with font tool)")
         } else if isThisTextSelected {
             textBoxState = .green
+            print("  → GREEN (selected)")
         } else {
             textBoxState = .gray
+            print("  → GRAY (unselected)")
         }
         
         if oldState != textBoxState {
@@ -306,7 +328,7 @@ struct ProfessionalTextBoxView: View {
     
     var body: some View {
         Rectangle()
-            .fill(Color.white)
+            .fill(Color.white.opacity(0.01)) // Nearly transparent but allows hit testing
             .stroke(getBorderColor(), lineWidth: 2)
             .frame(
                 width: viewModel.textBoxFrame.width + resizeOffset.width,
@@ -330,6 +352,8 @@ struct ProfessionalTextBoxView: View {
             .onTapGesture(count: 1) { location in
                 onTextBoxSelect(location)
             }
+            // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
+            .allowsHitTesting(textBoxState != .blue)
     }
 }
 
@@ -359,57 +383,21 @@ struct ProfessionalTextContentView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     
     var body: some View {
-        if textBoxState == .blue {
-            // BLUE STATE: Use NSTextView for editing - LOCK WIDTH, ALLOW HEIGHT TO EXPAND
-            ProfessionalUniversalTextView(viewModel: viewModel)
-                .frame(
-                    width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-                    height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT (will auto-expand)
-                    alignment: .topLeading
-                )
-                .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
-        } else {
-            // GRAY/GREEN STATE: Use SwiftUI Text (allows gestures to pass through)
-            ProfessionalSwiftUITextView(viewModel: viewModel)
-                .frame(
-                    width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-                    height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
-                    alignment: .topLeading
-                )
-                .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
-        }
-    }
-}
-
-// MARK: - Professional SwiftUI Text View (Based on Working SwiftUITextView)
-struct ProfessionalSwiftUITextView: View {
-    @ObservedObject var viewModel: ProfessionalTextViewModel
-    
-    private var swiftUIAlignment: HorizontalAlignment {
-        switch viewModel.textAlignment {
-        case .left: return .leading
-        case .center: return .center
-        case .right: return .trailing
-        case .justified: return .leading
-        default: return .leading
-        }
-    }
-    
-    var body: some View {
-        VStack(alignment: swiftUIAlignment, spacing: 0) {
-            Text(viewModel.text)
-                .font(Font.custom(viewModel.selectedFont.fontName, size: viewModel.fontSize))
-                .foregroundColor(viewModel.textObject.typography.fillColor.color) // Use VectorColor
-                .lineSpacing(viewModel.textObject.typography.lineSpacing)
-                .multilineTextAlignment(
-                    viewModel.textAlignment == .justified ? .leading :
-                    (viewModel.textAlignment == .left ? .leading :
-                     viewModel.textAlignment == .center ? .center : .trailing)
-                )
-                .frame(maxWidth: .infinity, alignment: Alignment(horizontal: swiftUIAlignment, vertical: .top))
-            Spacer()
-        }
-        .allowsHitTesting(false) // CRITICAL: allows gestures to pass through!
+        // ALWAYS USE NSTextView for consistent rendering - just control editing state
+        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue)
+            .frame(
+                width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+                height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
+                alignment: .topLeading
+            )
+            .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
+            .onAppear {
+                print("🎯 NSTextView MODE (\(textBoxState == .blue ? "BLUE-EDITING" : "GREEN/GRAY-READONLY")):")
+                print("  Content: '\(viewModel.text)'")
+                print("  Font: \(viewModel.selectedFont.fontName) \(viewModel.selectedFont.pointSize)pt")
+                print("  Frame: \(viewModel.textBoxFrame)")
+                print("  Editing Allowed: \(textBoxState == .blue)")
+            }
     }
 }
 
@@ -417,13 +405,20 @@ struct ProfessionalSwiftUITextView: View {
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     @State var isUpdatingFromTyping: Bool = false  // Prevents NSTextView reset during typing
+    let isEditingAllowed: Bool // New parameter to control editing
+    
+    // Default initializer for backward compatibility
+    init(viewModel: ProfessionalTextViewModel, isEditingAllowed: Bool = true) {
+        self.viewModel = viewModel
+        self.isEditingAllowed = isEditingAllowed
+    }
     
     func makeNSView(context: Context) -> NSTextView {
         let textView = NSTextView()
         
         // CRITICAL: Configure NSTextView to NEVER grow horizontally, only wrap text
-        textView.isEditable = viewModel.isEditing
-        textView.isSelectable = true
+        textView.isEditable = viewModel.isEditing && isEditingAllowed
+        textView.isSelectable = isEditingAllowed // CRITICAL: Only allow selection in BLUE mode
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -455,10 +450,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
         textView.minSize = NSSize(width: fixedWidth, height: 50)
         
-        print("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt for text: '\(viewModel.text)'")
+        print("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isEditingAllowed) for text: '\(viewModel.text)'")
         
-        textView.allowsUndo = true
-        textView.usesFindPanel = true
+        textView.allowsUndo = isEditingAllowed
+        textView.usesFindPanel = isEditingAllowed
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -523,7 +518,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         // Cursor position restoration handled above - no duplicate restoration needed
         
         // Configure text view properties
-        nsView.isEditable = viewModel.isEditing
+        nsView.isEditable = viewModel.isEditing && isEditingAllowed
+        nsView.isSelectable = isEditingAllowed // CRITICAL: Only allow text selection in BLUE mode
+        
+        print("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)")
         
         // CRITICAL FIX: Always set solid insertion point color and ensure visibility
         let textColor = NSColor(viewModel.textObject.typography.fillColor.color)
@@ -550,14 +548,21 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             height: 30
         )
         
-        // AGGRESSIVE: Ensure NSTextView maintains first responder during editing
-        if viewModel.isEditing {
+        // CRITICAL: Only make first responder when editing is allowed AND requested
+        if viewModel.isEditing && isEditingAllowed {
             if nsView.window?.firstResponder != nsView {
+                print("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
                 nsView.window?.makeFirstResponder(nsView)
             }
             // Also ensure it can accept first responder
             if !nsView.acceptsFirstResponder {
                 print("⚠️ NSTextView refusing first responder!")
+            }
+        } else {
+            // CRITICAL: Release first responder when editing not allowed
+            if nsView.window?.firstResponder == nsView {
+                print("🔄 RELEASING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
+                nsView.window?.makeFirstResponder(nil)
             }
         }
         
@@ -581,6 +586,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             
+            // SIMPLIFIED: Trust NSTextView's isEditable property instead of double-checking
+            // The NSTextView isEditable is already set correctly based on editing mode
+            guard textView.isEditable else {
+                print("🚫 TEXT VIEW NOT EDITABLE: Change ignored")
+                return
+            }
+            
             // CRITICAL: Capture selection BEFORE updating parent
             self.selectedRanges = textView.selectedRanges
             
@@ -590,6 +602,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             guard newText != parent.viewModel.text else {
                 return
             }
+            
+            print("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')")
             
             // CRITICAL FIX: Update both view model and document, but prevent NSTextView reset
             parent.isUpdatingFromTyping = true
@@ -607,10 +621,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         func textDidBeginEditing(_ notification: Notification) {
-            // Text editing began - could add additional logic here if needed
+            print("✅ TEXT EDITING BEGAN")
         }
         
         func textDidEndEditing(_ notification: Notification) {
+            print("✅ TEXT EDITING ENDED")
             // Text editing ended - reset any flags
             parent.isUpdatingFromTyping = false
         }
