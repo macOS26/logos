@@ -631,7 +631,8 @@ extension DrawingCanvas {
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
         
         if isDraggingResizeHandle {
-            print("📝 TEXT TOOL: Blocked - drag started on resize handle, not creating new text box")
+            print("🚫 FONT TOOL: Blocked - drag started on resize handle, not creating new text box")
+            print("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation")
             return
         }
         
@@ -657,6 +658,7 @@ extension DrawingCanvas {
             drawingStartPoint = shapeStartPoint
             
             print("📝 TEXT BOX DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
+            print("🔵 BLUE OUTLINE: Now showing - creating NEW text box")
         }
         
         // Calculate text box dimensions based on drag
@@ -719,18 +721,23 @@ extension DrawingCanvas {
     
     /// Reset text box drawing state
     func resetTextBoxDrawingState() {
+        let wasDrawing = isDrawing
         isDrawing = false
         currentPath = nil
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
+        
+        if wasDrawing {
+            print("🔵 BLUE OUTLINE: Cleared - text box creation finished")
+        }
         print("📝 TEXT BOX DRAWING: State reset for next operation")
     }
     
     /// Check if location is on a text box resize handle
     private func isLocationOnTextResizeHandle(_ location: CGPoint) -> Bool {
-        let handleRadius: Double = 4.0  // Resize handle size
-        let tolerance: Double = 8.0     // Extra tolerance for easier detection
+        let handleRadius: Double = 6.0  // Resize handle size (blue circle)
+        let tolerance: Double = 10.0    // Extra tolerance for easier detection
         let totalTolerance = handleRadius + tolerance
         
         for textObj in document.textObjects {
@@ -744,9 +751,12 @@ extension DrawingCanvas {
                 height: textObj.bounds.height
             )
             
-            // Check if text is selected (only selected text boxes show resize handles)
-            if document.selectedTextIDs.contains(textObj.id) {
-                // Check resize handle position (bottom-right corner)
+            // CRITICAL FIX: Check ALL text boxes, not just selected ones
+            // Text boxes in BLUE (editing) mode or GREEN (selected) mode should have resize handles
+            let hasResizeHandle = textObj.isEditing || document.selectedTextIDs.contains(textObj.id)
+            
+            if hasResizeHandle {
+                // Check resize handle position (bottom-right corner where the blue circle is)
                 let resizeHandleCenter = CGPoint(
                     x: textBounds.maxX,
                     y: textBounds.maxY
@@ -754,13 +764,21 @@ extension DrawingCanvas {
                 
                 let distance = sqrt(pow(location.x - resizeHandleCenter.x, 2) + pow(location.y - resizeHandleCenter.y, 2))
                 
+                print("🔍 RESIZE HANDLE CHECK: TextBox \(textObj.id.uuidString.prefix(8))")
+                print("  - Text bounds: \(textBounds)")
+                print("  - Handle center: \(resizeHandleCenter)")
+                print("  - Click location: \(location)")
+                print("  - Distance: \(String(format: "%.1f", distance))px (tolerance: \(String(format: "%.1f", totalTolerance))px)")
+                print("  - Has resize handle: \(hasResizeHandle) (editing: \(textObj.isEditing), selected: \(document.selectedTextIDs.contains(textObj.id)))")
+                
                 if distance <= totalTolerance {
-                    print("🔍 RESIZE HANDLE DETECTED: Location \(location) is on resize handle for text \(textObj.id)")
+                    print("✅ RESIZE HANDLE DETECTED: Blocking text box creation - this is a resize operation!")
                     return true
                 }
             }
         }
         
+        print("❌ NO RESIZE HANDLE: This is text box creation, will show blue outline")
         return false
     }
 } 

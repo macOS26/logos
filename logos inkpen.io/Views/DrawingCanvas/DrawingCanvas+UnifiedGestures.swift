@@ -31,13 +31,11 @@ extension DrawingCanvas {
         case .selection, .scale, .rotate, .shear, .envelope:
             // All transform tools use selection logic
             handleSelectionTap(at: canvasLocation)
-            // Also handle background taps to deselect text boxes
-            handleAggressiveBackgroundTap(at: canvasLocation)
+            // REMOVED: handleAggressiveBackgroundTap - this was deselecting objects immediately after selection!
             
         case .directSelection:
             handleDirectSelectionTap(at: canvasLocation)
-            // Also handle background taps to deselect text boxes
-            handleAggressiveBackgroundTap(at: canvasLocation)
+            // REMOVED: handleAggressiveBackgroundTap - this was interfering with direct selection!
             
         case .convertAnchorPoint:
             handleConvertAnchorPointTap(at: canvasLocation)
@@ -52,7 +50,7 @@ extension DrawingCanvas {
             } else {
                 print("📝 FONT TOOL: Tap on empty area - drag to create new text box (like rectangle tool)")
             }
-            // Also handle background taps for font tool to deselect text boxes
+            // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
             
         case .line, .rectangle, .circle, .star, .polygon:

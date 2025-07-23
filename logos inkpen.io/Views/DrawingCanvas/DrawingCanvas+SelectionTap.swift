@@ -13,6 +13,9 @@ extension DrawingCanvas {
     internal func handleSelectionTap(at location: CGPoint) {
         // Clean up excessive logging per user request
         
+        print("🎯 SELECTION TAP: Starting selection at location \(location)")
+        print("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)")
+        
         // CRITICAL: Regular Selection tool must clear direct selection
         // Professional tools have mutually exclusive selection modes
         selectedPoints.removeAll()
@@ -24,7 +27,12 @@ extension DrawingCanvas {
               document.currentTool == .scale || 
               document.currentTool == .rotate || 
               document.currentTool == .shear || 
-              document.currentTool == .envelope else { return }
+              document.currentTool == .envelope else { 
+            print("🚫 SELECTION TAP: Wrong tool - early return")
+            return 
+        }
+        
+        print("🔍 SELECTION TAP: Tool check passed, looking for objects...")
         
         // CRITICAL FIX: Check for text objects FIRST (they should be selectable with selection tool!)
         if let textID = findTextAt(location: location) {
@@ -181,6 +189,17 @@ extension DrawingCanvas {
                     hitShape = shape
                     hitLayerIndex = layerIndex
                     print("🎯 SELECTION TAP: FOUND HIT - Shape '\(shape.name)' in layer \(layerIndex)")
+                    
+                    // Check if shape is locked BEFORE setting it as hit
+                    if layer.isLocked || shape.isLocked {
+                        let lockType = layer.isLocked ? "locked layer" : "locked object"
+                        print("🚫 Shape '\(shape.name)' is on \(lockType) - deselecting everything")
+                        document.selectedShapeIDs.removeAll()
+                        document.selectedTextIDs.removeAll()
+                        document.objectWillChange.send()
+                        return
+                    }
+                    
                     break
                 }
             }
@@ -192,48 +211,43 @@ extension DrawingCanvas {
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
-            // IMPROVED LOCKED BEHAVIOR: Instead of preventing interaction, deselect current selection
-            if document.layers[layerIndex].isLocked || shape.isLocked {
-                document.selectedShapeIDs.removeAll()
-                document.selectedTextIDs.removeAll()
-                document.objectWillChange.send()
-                return
-            }
+            print("✅ SELECTION SUCCESS: Selected shape '\(shape.name)' on layer \(layerIndex)")
             
-            // Hit a shape object
-            document.selectedLayerIndex = layerIndex
+            // CRITICAL FIX: Clear text selection when selecting shapes
+            document.selectedTextIDs.removeAll()
             
             if isShiftPressed {
-                // SHIFT+CLICK: Add to selection (extend selection)
+                // SHIFT+CLICK: Add to selection
                 document.selectedShapeIDs.insert(shape.id)
             } else if isCommandPressed {
-                // CMD+CLICK: Toggle selection (add if not selected, remove if selected)
+                // CMD+CLICK: Toggle selection
                 if document.selectedShapeIDs.contains(shape.id) {
                     document.selectedShapeIDs.remove(shape.id)
                 } else {
                     document.selectedShapeIDs.insert(shape.id)
                 }
             } else {
-                // REGULAR CLICK: Replace selection (clear existing, select new)
+                // REGULAR CLICK: Replace selection
                 document.selectedShapeIDs = [shape.id]
-                document.selectedTextIDs.removeAll() // Clear text selection
             }
+            
+            // Update selected layer
+            document.selectedLayerIndex = layerIndex
+            
+            // Force UI update
+            document.objectWillChange.send()
         } else {
-            // NO OBJECT HIT: Clicking on background or empty space
-            // FIXED: Always deselect when clicking empty areas, regardless of location
-            // This ensures Canvas AND Pasteboard areas both deselect properly
-            if !isShiftPressed && !isCommandPressed {
-                print("🎯 SELECTION TAP: DESELECTING - clicked on empty area at \(location)")
-                print("🎯 SELECTION TAP: Before deselect - selected shapes: \(document.selectedShapeIDs.count), selected text: \(document.selectedTextIDs.count)")
-                document.selectedShapeIDs.removeAll()
-                document.selectedTextIDs.removeAll()
-                print("🎯 SELECTION TAP: After deselect - selected shapes: \(document.selectedShapeIDs.count), selected text: \(document.selectedTextIDs.count)")
-            } else {
-                print("🎯 SELECTION TAP: MODIFIER HELD - keeping selection (shift/cmd)")
+            print("❌ NO HIT: No objects found at location \(location)")
+            
+            // DESELECT ALL: Tap on empty area with selection tool
+            let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+            
+            if wasSelected {
+                print("🎯 DESELECTED: Cleared selection due to empty area tap")
+                document.objectWillChange.send()
             }
         }
-        
-        // Force UI update
-        document.objectWillChange.send()
     }
 } 
