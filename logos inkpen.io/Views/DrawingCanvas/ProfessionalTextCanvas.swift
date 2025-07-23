@@ -865,13 +865,11 @@ class ProfessionalTextViewModel: ObservableObject {
                 if let layerIndex = document.selectedLayerIndex {
                     document.layers[layerIndex].addShape(outlineShape)
                     
-                    // CRITICAL FIX: Perform UNION operation to normalize path and make handles visible
-                    // This fixes the issue where text conversion creates complex paths without visible handles
-                    print("🔧 NORMALIZING PATH: Performing UNION operation to make bezier handles visible")
+                    // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
+                    print("✅ TEXT CONVERSION COMPLETE: Each character normalized individually for clean bezier curves")
                     
-                    // Select the shape and perform union with itself
+                    // Select the converted shape
                     document.selectedShapeIDs = [outlineShape.id]
-                    document.performUnion()
                     
                     // Remove the original text object
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
@@ -936,6 +934,8 @@ class ProfessionalTextViewModel: ObservableObject {
         var lineOrigins = Array<CGPoint>(repeating: .zero, count: lineCount)
         CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), &lineOrigins)
         
+        print("🔧 PROCESSING \(lineCount) LINES with character-by-character union normalization")
+        
         for lineIndex in 0..<lineCount {
             let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIndex), to: CTLine.self)
             let lineOrigin = lineOrigins[lineIndex]
@@ -963,7 +963,19 @@ class ProfessionalTextViewModel: ObservableObject {
                         var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
                         transform = transform.translatedBy(x: glyphX, y: -glyphY)
                         
-                        path.addPath(glyphPath, transform: transform)
+                        // Create a separate path for this character
+                        let characterPath = CGMutablePath()
+                        characterPath.addPath(glyphPath, transform: transform)
+                        
+                        // BRILLIANT: Union this character with itself to normalize bezier curves
+                        if let normalizedCharacterPath = CoreGraphicsPathOperations.union(characterPath, characterPath) {
+                            path.addPath(normalizedCharacterPath)
+                            print("✅ NORMALIZED CHARACTER: Glyph \(glyph) → clean bezier curves")
+                        } else {
+                            // Fallback: use original character path if union fails
+                            path.addPath(characterPath)
+                            print("⚠️ FALLBACK: Used original path for glyph \(glyph)")
+                        }
                     }
                 }
             }

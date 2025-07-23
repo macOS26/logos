@@ -1100,12 +1100,10 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // CRITICAL FIX: Perform UNION operation to normalize paths and make handles visible
-        // This fixes the issue where text conversion creates complex paths without visible handles
+                // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
         if !newShapeIDs.isEmpty {
             selectedShapeIDs = newShapeIDs
-            print("🔧 NORMALIZING \(newShapeIDs.count) CONVERTED TEXT PATH(S): Performing UNION operation to make bezier handles visible")
-            performUnion()
+            print("✅ TEXT TO OUTLINES: \(newShapeIDs.count) text object(s) converted with character-by-character normalization")
         }
         
         // Remove the original text objects
