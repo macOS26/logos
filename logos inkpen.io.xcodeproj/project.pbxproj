@@ -30,33 +30,9 @@
 		EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		EA92EDF62E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"TEXT BOX CODE THAT WORKS/Test/Xswift",
-			);
-			target = EAC969A92E2416EC0093AB2A /* logos inkpen.io */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		EA92EDF72E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "Compile Sources" phase from "logos inkpen.io" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = EAC969A62E2416EC0093AB2A /* Sources */;
-			membershipExceptions = (
-				"TEXT BOX CODE THAT WORKS/Test/Xswift",
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EAC969AC2E2416EC0093AB2A /* logos inkpen.io */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				EA92EDF62E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */,
-				EA92EDF72E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "Compile Sources" phase from "logos inkpen.io" target */,
-			);
 			path = "logos inkpen.io";
 			sourceTree = "<group>";
 		};

@@ -94,6 +94,7 @@ extension DrawingCanvas {
                         viewModel: ProfessionalTextViewModel(textObject: textObj, document: document)
                     )
                         .id(textObj.id) // Important: Use the text object ID as the view ID
+                        .allowsHitTesting(true) // CRITICAL: Ensure hit testing for resize handles
                 }
             }
             

@@ -375,11 +375,11 @@ struct FontPanel: View {
     // REMOVED: stroke support functions - keeping only fill
     
     private func convertSelectedTextToOutlines() {
-        guard let textID = document.selectedTextIDs.first else { return }
+        guard !document.selectedTextIDs.isEmpty else { return }
         
-        // Convert text to vector outlines using professional Core Graphics implementation
-        document.convertTextToOutlines(textID)
+        // Use the CORRECT method that calls YOUR multi-line Core Text implementation
+        document.convertSelectedTextToOutlines()
         
-        print("🎯 FONT TOOL: Converting text to vector outlines (Adobe Illustrator standard)")
+        print("🎯 FONT PANEL: Converting text to vector outlines using YOUR multi-line Core Text implementation")
     }
 } 

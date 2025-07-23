@@ -18,7 +18,7 @@ struct ProfessionalTextCanvas: View {
     @State private var dragOffset: CGSize = .zero
     @State private var resizeOffset: CGSize = .zero
     @State private var textBoxState: TextBoxState = .gray
-    @FocusState private var isFocused: Bool
+    // REMOVED: @FocusState - We use our own 3-state system
     
     enum TextBoxState {
         case gray    // Initial state - no selection, no editing
@@ -45,6 +45,7 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState
             )
             
+            // RESIZE HANDLE ALWAYS VISIBLE
             ProfessionalResizeHandleView(
                 viewModel: viewModel,
                 dragOffset: dragOffset,
@@ -53,16 +54,10 @@ struct ProfessionalTextCanvas: View {
                 onResizeEnded: handleResizeEnded
             )
         }
-        .focusable()
-        .focused($isFocused)
+        // CRITICAL FIX: Apply the SAME coordinate system as all other objects
+        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         .onKeyPress(action: handleKeyPress)
-        .onChange(of: viewModel.isEditing) { _, isEditing in
-            if isEditing {
-                DispatchQueue.main.async {
-                    isFocused = true
-                }
-            }
-        }
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
             updateTextBoxState(selectedIDs: selectedIDs)
         }
@@ -74,12 +69,17 @@ struct ProfessionalTextCanvas: View {
     // MARK: - State Management (From Working Code)
     
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
+        let oldState = textBoxState
         if viewModel.textObject.isEditing {
             textBoxState = .blue
         } else if selectedIDs.contains(viewModel.textObject.id) {
             textBoxState = .green
         } else {
             textBoxState = .gray
+        }
+        
+        if oldState != textBoxState {
+            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(viewModel.text)'")
         }
     }
     
@@ -99,7 +99,6 @@ struct ProfessionalTextCanvas: View {
         // DOUBLE CLICK: Only allowed when GREEN
         if textBoxState == .green {
             textBoxState = .blue
-            isFocused = true
             viewModel.startEditing()
             // Update document editing state
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
@@ -141,11 +140,14 @@ struct ProfessionalTextCanvas: View {
     
     private func handleResizeEnded() {
         let newFrame = CGRect(
-            x: viewModel.textBoxFrame.minX + dragOffset.width,
-            y: viewModel.textBoxFrame.minY + dragOffset.height,
+            x: viewModel.textBoxFrame.minX,  // DON'T move position when resizing
+            y: viewModel.textBoxFrame.minY,  // DON'T move position when resizing
             width: max(100, viewModel.textBoxFrame.width + resizeOffset.width),
             height: max(50, viewModel.textBoxFrame.height + resizeOffset.height)
         )
+        
+        print("🔄 RESIZE ENDED: Old frame: \(viewModel.textBoxFrame), New frame: \(newFrame)")
+        
         viewModel.updateTextBoxFrame(newFrame)
         resizeOffset = .zero
         dragOffset = .zero
@@ -313,36 +315,34 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
         
-        // CRITICAL: These settings prevent horizontal growth
-        textView.textContainer?.widthTracksTextView = false  // Width NEVER tracks view
-        textView.textContainer?.heightTracksTextView = false // Height NEVER tracks view
-        textView.isVerticallyResizable = false    // No vertical auto-resize by NSTextView
-        textView.isHorizontallyResizable = false  // No horizontal auto-resize by NSTextView
-        textView.autoresizingMask = []           // No auto-resizing masks
+                // CRITICAL: Configure for FIXED WIDTH, VERTICAL EXPANSION ONLY
+        let fixedWidth = viewModel.textBoxFrame.width
         
-        // FORCE text wrapping within container bounds
+        textView.textContainer?.widthTracksTextView = false  
+        textView.textContainer?.heightTracksTextView = false 
+        textView.isVerticallyResizable = false    
+        textView.isHorizontallyResizable = false  
+        textView.autoresizingMask = []           
+        
+        // CRITICAL: Fixed container width for text wrapping
         textView.textContainer?.containerSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // FIXED WIDTH
-            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for wrapping
+            width: fixedWidth,
+            height: CGFloat.greatestFiniteMagnitude
         )
         
-        // CRITICAL: Set the actual frame to prevent expansion
+        // CRITICAL: Fixed frame width
         textView.frame = CGRect(
             x: 0, y: 0,
-            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-            height: viewModel.textBoxFrame.height    // Current height
+            width: fixedWidth,
+            height: viewModel.textBoxFrame.height
         )
         
-        // CRITICAL: Disable all forms of automatic sizing
-        textView.textContainer?.lineBreakMode = .byWordWrapping  // Force word wrapping
-        textView.maxSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // MAX WIDTH = FIXED WIDTH
-            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT
-        )
-        textView.minSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // MIN WIDTH = FIXED WIDTH  
-            height: 50                              // MIN HEIGHT
-        )
+        // CRITICAL: Force word wrapping at fixed width
+        textView.textContainer?.lineBreakMode = .byWordWrapping
+        textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
+        textView.minSize = NSSize(width: fixedWidth, height: 50)
+        
+        print("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt for text: '\(viewModel.text)'")
         
         textView.allowsUndo = true
         textView.usesFindPanel = true
@@ -351,12 +351,17 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled = false
         
         context.coordinator.textView = textView
+        textView.delegate = context.coordinator  // CRITICAL: Set delegate to capture text changes
         textView.layoutManager?.ensureLayout(for: textView.textContainer!)
         
         return textView
     }
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
+        // CRITICAL: Don't interfere with cursor when user is actively editing
+        let isFirstResponder = nsView.window?.firstResponder == nsView
+        let userIsTyping = viewModel.isEditing && isFirstResponder
+        
         // Control text input and selection based on editing state
         nsView.isEditable = viewModel.isEditing
         nsView.isSelectable = viewModel.isEditing  // Only selectable when editing
@@ -380,9 +385,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             paragraphStyle.allowsDefaultTighteningForTruncation = true
         }
         
+        // CRITICAL: Convert VectorColor to NSColor for NSTextView
+        let textColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        print("🎨 FONT COLOR UPDATE: VectorColor -> NSColor: \(textColor)")
+        
         var attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont(name: viewModel.selectedFont.fontName, size: viewModel.fontSize) ?? NSFont.systemFont(ofSize: viewModel.fontSize),
-            .foregroundColor: NSColor(viewModel.textObject.typography.fillColor.color),
+            .foregroundColor: textColor,
             .paragraphStyle: paragraphStyle
         ]
         
@@ -392,14 +401,21 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             attributes[.expansion] = 0.0 // No character expansion
         }
         
-        // Only update text if it's different to avoid cursor jumping
-        if nsView.string != viewModel.text {
+        // CRITICAL: Always update text attributes to reflect color/font changes
+        let currentSelection = nsView.selectedRange()
+        
+        if nsView.string != viewModel.text && !userIsTyping {
             let attributedString = NSAttributedString(string: viewModel.text, attributes: attributes)
             nsView.textStorage?.setAttributedString(attributedString)
         } else {
-            // Just update the attributes if text is the same
+            // ALWAYS update attributes to reflect color/font changes
             let range = NSRange(location: 0, length: nsView.string.count)
-            nsView.textStorage?.addAttributes(attributes, range: range)
+            nsView.textStorage?.setAttributes(attributes, range: range)
+        }
+        
+        // RESTORE cursor position after attribute updates
+        if !userIsTyping && currentSelection.location <= nsView.string.count {
+            nsView.setSelectedRange(currentSelection)
         }
         
         // CRITICAL: Enforce fixed width, unlimited height for text flow
@@ -430,31 +446,42 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.layoutManager?.allowsNonContiguousLayout = false // Force sequential layout for better justification
         }
         
-        // DIRECT STATE MONITORING - NO NOTIFICATIONS
-        // Check if text changed and update viewModel directly
-        if nsView.string != viewModel.text {
-            // NSTextView text changed - update our state
-            print("🔄 TEXT CHANGED: '\(viewModel.text)' → '\(nsView.string)'")
-            viewModel.text = nsView.string
+        // DIRECT STATE MONITORING - ONLY when user is typing
+        // Check if text changed and update viewModel directly (but only if user is actively typing)
+        if nsView.string != viewModel.text && userIsTyping {
+            // NSTextView text changed by user typing - update our state
+            let newText = nsView.string
+            
+            print("📝 TEXT CHANGED in NSTextView: '\(newText)' (was: '\(viewModel.text)')")
+            
+            // Update viewModel.text FIRST to trigger auto-resize
+            viewModel.text = newText
+            
             // Update document
-            viewModel.document.updateTextContent(viewModel.textObject.id, content: nsView.string)
-            print("📏 AUTO-RESIZE: Triggered by text change")
+            viewModel.document.updateTextContent(viewModel.textObject.id, content: newText)
+            
+            // DON'T restore cursor - let NSTextView manage it naturally
         }
         
         // Force layout update
         nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
         
-        // Ensure the text view becomes first responder when editing starts
-        if viewModel.isEditing {
-            // Force first responder status immediately for I-beam cursor
-            if nsView.window?.firstResponder != nsView {
-                nsView.window?.makeFirstResponder(nsView)
-            }
+        // Ensure the text view becomes first responder when editing starts (but don't interfere if already active)
+        if viewModel.isEditing && !isFirstResponder {
+            // Only become first responder if we're not already
+            nsView.window?.makeFirstResponder(nsView)
         }
         
-        // Update cursor color if text color changed
-        if nsView.insertionPointColor != NSColor(viewModel.textObject.typography.fillColor.color) {
-            nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        // Update cursor color if text color changed (preserve cursor position)
+        let newCursorColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        if nsView.insertionPointColor != newCursorColor {
+            // PRESERVE cursor position when updating color
+            let currentSelection = nsView.selectedRange()
+            nsView.insertionPointColor = newCursorColor
+            // Restore cursor position after color change
+            if userIsTyping && currentSelection.location <= nsView.string.count {
+                nsView.setSelectedRange(currentSelection)
+            }
         }
     }
     
@@ -462,12 +489,73 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ProfessionalUniversalTextView
         weak var textView: NSTextView?
         
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
+        }
+        
+        // CRITICAL: Capture text changes immediately for auto-resize
+        func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { 
+                print("❌ textDidChange: Not an NSTextView")
+                return 
+            }
+            let newText = textView.string
+            
+            print("📝 TEXT DID CHANGE (Delegate): '\(newText)' (was: '\(parent.viewModel.text)')")
+            
+            // YOUR BRILLIANT IDEA: Monitor NSTextView height and make text box that height
+            textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+            let usedRect = textView.layoutManager?.usedRect(for: textView.textContainer!) ?? CGRect.zero
+            let requiredHeight = usedRect.height
+            let newHeight = max(50, requiredHeight + 20) // Add padding
+            
+            print("📏 NSTextView MEASUREMENTS:")
+            print("   - Used Rect: \(usedRect)")
+            print("   - Required Height: \(requiredHeight)pt")
+            print("   - New Height (with padding): \(newHeight)pt")
+            print("   - Current Frame: \(parent.viewModel.textBoxFrame)")
+            
+            // Update viewModel immediately
+            DispatchQueue.main.async {
+                // Prevent auto-resize conflicts during manual changes
+                self.parent.viewModel.isAutoResizing = true
+                
+                self.parent.viewModel.text = newText
+                
+                // Update text box height based on NSTextView's actual height
+                let currentFrame = self.parent.viewModel.textBoxFrame
+                let newFrame = CGRect(
+                    x: currentFrame.minX,
+                    y: currentFrame.minY,
+                    width: currentFrame.width,  // Keep width fixed
+                    height: newHeight          // Use NSTextView's required height
+                )
+                
+                print("📐 UPDATING FRAME: \(currentFrame) → \(newFrame)")
+                self.parent.viewModel.textBoxFrame = newFrame
+                
+                // Update document
+                self.parent.viewModel.document.updateTextContent(self.parent.viewModel.textObject.id, content: newText)
+                
+                // Update document bounds
+                if let textIndex = self.parent.viewModel.document.textObjects.firstIndex(where: { $0.id == self.parent.viewModel.textObject.id }) {
+                    self.parent.viewModel.document.textObjects[textIndex].bounds = CGRect(
+                        x: 0, y: 0, 
+                        width: currentFrame.width, 
+                        height: newHeight
+                    )
+                    print("📋 UPDATED DOCUMENT BOUNDS: \(self.parent.viewModel.document.textObjects[textIndex].bounds)")
+                }
+                
+                // Re-enable auto-resize after changes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.parent.viewModel.isAutoResizing = false
+                }
+            }
         }
     }
 }
@@ -483,16 +571,26 @@ struct ProfessionalResizeHandleView: View {
     var body: some View {
         Circle()
             .fill(Color.blue)
-            .frame(width: 10, height: 10)
+            .stroke(Color.white, lineWidth: 1)
+            .frame(width: 12, height: 12) // Made slightly bigger and more visible
             .position(
                 x: viewModel.textBoxFrame.maxX + dragOffset.width + resizeOffset.width,
                 y: viewModel.textBoxFrame.maxY + dragOffset.height + resizeOffset.height
             )
             .gesture(
                 DragGesture()
-                    .onChanged(onResizeChanged)
-                    .onEnded { _ in onResizeEnded() }
+                    .onChanged { value in
+                        print("🔵 RESIZE HANDLE DRAG: \(value.translation)")
+                        onResizeChanged(value)
+                    }
+                    .onEnded { _ in 
+                        print("🔵 RESIZE HANDLE ENDED")
+                        onResizeEnded() 
+                    }
             )
+            .onAppear {
+                print("🔵 RESIZE HANDLE VISIBLE at: \(viewModel.textBoxFrame.maxX), \(viewModel.textBoxFrame.maxY)")
+            }
     }
 }
 
@@ -500,8 +598,8 @@ struct ProfessionalResizeHandleView: View {
 class ProfessionalTextViewModel: ObservableObject {
     @Published var text: String = "Text" {
         didSet {
-            // CRITICAL: Only auto-resize if text actually changed and we're editing
-            if oldValue != text && isEditing {
+            // CRITICAL: Only auto-resize if text actually changed and auto-expand is enabled
+            if oldValue != text && autoExpandVertically && !isAutoResizing {
                 scheduleAutoResize()
             }
         }
@@ -558,6 +656,8 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textObject = textObject
         self.document = document
         
+        print("🔧 INIT ProfessionalTextViewModel for text: '\(textObject.content)' - autoExpandVertically: \(autoExpandVertically)")
+        
         // Sync from VectorText
         syncFromVectorText()
         
@@ -567,7 +667,10 @@ class ProfessionalTextViewModel: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            print("🔔 FONT PANEL UPDATE: Syncing text properties")
             self?.syncFromVectorText()
+            // Force SwiftUI update to refresh NSTextView
+            self?.objectWillChange.send()
         }
     }
     
@@ -578,22 +681,26 @@ class ProfessionalTextViewModel: ObservableObject {
     private func syncFromVectorText() {
         guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
         
+        // CRITICAL: Don't sync during auto-resize to prevent height conflicts
+        guard !isAutoResizing else { return }
+        
         self.text = currentTextObject.content
         self.fontSize = CGFloat(currentTextObject.typography.fontSize)
         self.selectedFont = currentTextObject.typography.nsFont
-        // CRITICAL: Text boxes have FIXED width, calculated height
-        // Don't use VectorText.bounds.width as it expands with text content
+        
+        // CRITICAL: Text boxes have FIXED width, and we manage height separately
         let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH FOR TEXT BOXES
-        let calculatedHeight = max(currentTextObject.bounds.height, 100)
+        
+        // ONLY sync height if we don't have a current height (initial setup)
+        let currentHeight = textBoxFrame.height > 0 ? textBoxFrame.height : max(currentTextObject.bounds.height, 100)
         
         self.textBoxFrame = CGRect(
             x: currentTextObject.position.x,
             y: currentTextObject.position.y,
             width: fixedWidth,    // ALWAYS FIXED WIDTH
-            height: calculatedHeight
+            height: currentHeight // PRESERVE CURRENT HEIGHT - don't sync from VectorText
         )
         
-        print("🔒 TEXT BOX WIDTH LOCKED: \(fixedWidth)pt (ignoring VectorText.bounds.width: \(currentTextObject.bounds.width)pt)")
         self.isEditing = currentTextObject.isEditing
         self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
         self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
@@ -601,12 +708,15 @@ class ProfessionalTextViewModel: ObservableObject {
     
     // MARK: - Working Auto-Resize Logic (Exact from Working Code)
     
-    private var isAutoResizing = false  // Prevent infinite loops
+    public var isAutoResizing = false  // Prevent infinite loops
     
     private func scheduleAutoResize() {
         guard autoExpandVertically && !isAutoResizing else { 
+            print("🚫 AUTO-RESIZE BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)")
             return 
         }
+        
+        print("⏰ SCHEDULING AUTO-RESIZE for text: '\(text)' (length: \(text.count))")
         
         // Debounce multiple resize requests
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -615,7 +725,10 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     
     private func autoResizeTextBoxHeight() {
-        guard autoExpandVertically && !isAutoResizing else { return }
+        guard autoExpandVertically && !isAutoResizing else { 
+            print("🚫 AUTO-RESIZE HEIGHT BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)")
+            return 
+        }
         
         isAutoResizing = true
         defer { isAutoResizing = false }
@@ -623,20 +736,20 @@ class ProfessionalTextViewModel: ObservableObject {
         let requiredHeight = calculateRequiredHeight()
         let newHeight = max(minTextBoxHeight, requiredHeight)
         
-        // Only update if height needs to change significantly
-        if abs(textBoxFrame.height - newHeight) > 5.0 {
+        print("📐 AUTO-RESIZE: Current height: \(textBoxFrame.height)pt, Required: \(requiredHeight)pt, New: \(newHeight)pt")
+        
+        // Only update if height needs to change (using original working threshold)
+        if abs(textBoxFrame.height - newHeight) > 0.1 {
+            let oldHeight = textBoxFrame.height
             let newFrame = CGRect(
                 x: textBoxFrame.minX,
                 y: textBoxFrame.minY,
                 width: textBoxFrame.width,  // FIXED WIDTH - NEVER CHANGES
                 height: newHeight          // ONLY HEIGHT CHANGES
             )
-            
-            // Update without triggering more auto-resizes
-            let oldAutoExpand = autoExpandVertically
-            autoExpandVertically = false
             textBoxFrame = newFrame
-            autoExpandVertically = oldAutoExpand
+            
+            print("✅ AUTO-RESIZE VERTICAL: Text box height adjusted from \(oldHeight)pt to \(newHeight)pt (WIDTH STAYS: \(textBoxFrame.width)pt)")
             
             // Update document bounds - use minimal width for VectorText, height for layout
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
@@ -646,8 +759,8 @@ class ProfessionalTextViewModel: ObservableObject {
                     height: newHeight         // ACTUAL HEIGHT for layout
                 )
             }
-            
-            print("✅ AUTO-RESIZE: Height \(textBoxFrame.height) → \(newHeight) (WIDTH LOCKED: \(textBoxFrame.width))")
+        } else {
+            print("⚡ AUTO-RESIZE: Height change too small (\(abs(textBoxFrame.height - newHeight))pt) - skipping")
         }
     }
     
@@ -695,7 +808,212 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     
     func updateTextBoxFrame(_ newFrame: CGRect) {
+        // CRITICAL: Disable auto-resize during manual resize to prevent conflicts
+        isAutoResizing = true
+        
         textBoxFrame = newFrame
-        scheduleAutoResize()
+        
+        // Update the document VectorText position and bounds
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
+            document.textObjects[textIndex].bounds = CGRect(
+                x: 0, y: 0, 
+                width: newFrame.width, 
+                height: newFrame.height
+            )
+        }
+        
+        print("🔄 MANUAL RESIZE: Updated text box frame to \(newFrame)")
+        
+        // Re-enable auto-resize after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.isAutoResizing = false
+        }
     }
+    
+        // MARK: - Convert to Outlines (YOUR EXACT MULTI-LINE CORE TEXT IMPLEMENTATION)
+    
+    func convertToPath() {
+        guard !text.isEmpty else { 
+            print("❌ CONVERT TO OUTLINES: Cannot convert empty text")
+            return 
+        }
+        
+        print("🎯 CONVERTING TO OUTLINES: Using YOUR multi-line Core Text implementation")
+        
+        // YOUR EXACT WORKING IMPLEMENTATION FROM TextEditorViewModel
+        let path = convertToCoreTextPath()
+        
+        if let cgPath = path {
+            document.saveToUndoStack()
+            
+            // Convert the CGPath to VectorShape using your exact logic
+            let vectorPath = convertCGPathToVectorPath(cgPath)
+            let outlineShape = VectorShape(
+                name: "Text Outline: \(text)",
+                path: vectorPath,
+                strokeStyle: nil,  // NO STROKES as requested
+                fillStyle: FillStyle(
+                    color: textObject.typography.fillColor,
+                    opacity: textObject.typography.fillOpacity
+                ),
+                transform: .identity,
+                isGroup: false
+            )
+            
+                            // Add to the current layer
+                if let layerIndex = document.selectedLayerIndex {
+                    document.layers[layerIndex].addShape(outlineShape)
+                    
+                    // CRITICAL FIX: Perform UNION operation to normalize path and make handles visible
+                    // This fixes the issue where text conversion creates complex paths without visible handles
+                    print("🔧 NORMALIZING PATH: Performing UNION operation to make bezier handles visible")
+                    
+                    // Select the shape and perform union with itself
+                    document.selectedShapeIDs = [outlineShape.id]
+                    document.performUnion()
+                    
+                    // Remove the original text object
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                        document.textObjects.remove(at: textIndex)
+                    }
+                    document.selectedTextIDs.removeAll()
+                    
+                    print("✅ CONVERTED TO OUTLINES: Created multi-line vector outlines with visible bezier handles")
+                    print("🎯 HANDLES NOW VISIBLE: Use Direct Selection Tool (A) to edit individual points and curves")
+                }
+        } else {
+            print("❌ CONVERT TO OUTLINES FAILED: Could not create Core Text path")
+        }
+    }
+    
+    // YOUR EXACT WORKING CORE TEXT IMPLEMENTATION FROM TextEditorViewModel
+    public func convertToCoreTextPath() -> CGPath? {
+        let fontName = selectedFont.fontName
+        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
+        
+        // Create paragraph style with alignment and line spacing
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = textAlignment
+        paragraphStyle.lineSpacing = lineSpacing
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
+        
+        // Calculate the actual required height to prevent truncation
+        let textWidth = textBoxFrame.width
+        
+        // First, get the suggested height for the text
+        let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter, 
+            CFRangeMake(0, 0), 
+            nil, 
+            CGSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude), 
+            nil
+        )
+        
+        // Use the larger of the text box height or the required height to prevent truncation
+        let frameHeight = max(textBoxFrame.height, suggestedSize.height + 20)
+        
+        let frameRect = CGRect(
+            x: 0, 
+            y: 0, 
+            width: textWidth, 
+            height: frameHeight
+        )
+        let framePath = CGPath(rect: frameRect, transform: nil)
+        let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), framePath, nil)
+        
+        let path = CGMutablePath()
+        let lines = CTFrameGetLines(frame)
+        let lineCount = CFArrayGetCount(lines)
+        
+        // Get line origins - CRITICAL for correct positioning
+        var lineOrigins = Array<CGPoint>(repeating: .zero, count: lineCount)
+        CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), &lineOrigins)
+        
+        for lineIndex in 0..<lineCount {
+            let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIndex), to: CTLine.self)
+            let lineOrigin = lineOrigins[lineIndex]
+            
+            let runs = CTLineGetGlyphRuns(line)
+            let runCount = CFArrayGetCount(runs)
+            
+            for runIndex in 0..<runCount {
+                let run = unsafeBitCast(CFArrayGetValueAtIndex(runs, runIndex), to: CTRun.self)
+                let glyphCount = CTRunGetGlyphCount(run)
+                
+                for glyphIndex in 0..<glyphCount {
+                    var glyph = CGGlyph()
+                    var position = CGPoint()
+                    
+                    CTRunGetGlyphs(run, CFRangeMake(glyphIndex, 1), &glyph)
+                    CTRunGetPositions(run, CFRangeMake(glyphIndex, 1), &position)
+                    
+                    if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
+                        // YOUR EXACT POSITIONING LOGIC
+                        let glyphX = position.x + lineOrigin.x + textBoxFrame.minX
+                        let glyphY = textBoxFrame.minY + (frameRect.height - lineOrigin.y)
+                        
+                        // Create transform that fixes the upside-down issue
+                        var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
+                        transform = transform.translatedBy(x: glyphX, y: -glyphY)
+                        
+                        path.addPath(glyphPath, transform: transform)
+                    }
+                }
+            }
+        }
+        
+        return path
+    }
+    
+    public func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {
+        var elements: [PathElement] = []
+        
+        cgPath.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
+            
+            switch element.type {
+            case .moveToPoint:
+                let point = element.points[0]
+                elements.append(.move(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addLineToPoint:
+                let point = element.points[0]
+                elements.append(.line(to: VectorPoint(Double(point.x), Double(point.y))))
+                
+            case .addQuadCurveToPoint:
+                let control = element.points[0]
+                let point = element.points[1]
+                elements.append(.quadCurve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control: VectorPoint(Double(control.x), Double(control.y))
+                ))
+                
+            case .addCurveToPoint:
+                let control1 = element.points[0]
+                let control2 = element.points[1]
+                let point = element.points[2]
+                elements.append(.curve(
+                    to: VectorPoint(Double(point.x), Double(point.y)),
+                    control1: VectorPoint(Double(control1.x), Double(control1.y)),
+                    control2: VectorPoint(Double(control2.x), Double(control2.y))
+                ))
+                
+            case .closeSubpath:
+                elements.append(.close)
+                
+            @unknown default:
+                break
+            }
+        }
+        
+        return VectorPath(elements: elements, isClosed: false)
+    }
+
 } 

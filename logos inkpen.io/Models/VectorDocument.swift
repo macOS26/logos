@@ -1065,7 +1065,7 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    // PROFESSIONAL TEXT TO OUTLINES CONVERSION
+    // PROFESSIONAL TEXT TO OUTLINES CONVERSION - USES WORKING PROFESSIONALTEXT IMPLEMENTATION
     func convertSelectedTextToOutlines() {
         guard !selectedTextIDs.isEmpty else { return }
         saveToUndoStack()
@@ -1074,26 +1074,45 @@ class VectorDocument: ObservableObject, Codable {
         var newShapeIDs: Set<UUID> = []
         
         for textObj in selectedTexts {
-            if let outlineShape = textObj.convertToOutlines() {
-                // Position the outline shape at the text position
-                var positionedShape = outlineShape
-                positionedShape.transform = positionedShape.transform.translatedBy(x: textObj.position.x, y: textObj.position.y)
-                positionedShape.updateBounds()
+            // CRITICAL: Use ProfessionalTextCanvas convertToPath logic instead of VectorText.convertToOutlines()
+            let viewModel = ProfessionalTextViewModel(textObject: textObj, document: self)
+            
+            // Call the working convertToPath method
+            if let cgPath = viewModel.convertToCoreTextPath() {
+                let vectorPath = viewModel.convertCGPathToVectorPath(cgPath)
+                let outlineShape = VectorShape(
+                    name: "Text Outline: \(textObj.content)",
+                    path: vectorPath,
+                    strokeStyle: nil,  // NO STROKES as requested
+                    fillStyle: FillStyle(
+                        color: textObj.typography.fillColor,
+                        opacity: textObj.typography.fillOpacity
+                    ),
+                    transform: .identity,
+                    isGroup: false
+                )
                 
                 // Add to the current layer
                 if let layerIndex = selectedLayerIndex {
-                    layers[layerIndex].addShape(positionedShape)
-                    newShapeIDs.insert(positionedShape.id)
+                    layers[layerIndex].addShape(outlineShape)
+                    newShapeIDs.insert(outlineShape.id)
                 }
             }
+        }
+        
+        // CRITICAL FIX: Perform UNION operation to normalize paths and make handles visible
+        // This fixes the issue where text conversion creates complex paths without visible handles
+        if !newShapeIDs.isEmpty {
+            selectedShapeIDs = newShapeIDs
+            print("🔧 NORMALIZING \(newShapeIDs.count) CONVERTED TEXT PATH(S): Performing UNION operation to make bezier handles visible")
+            performUnion()
         }
         
         // Remove the original text objects
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
         selectedTextIDs.removeAll()
         
-        // Select the new outline shapes
-        selectedShapeIDs = newShapeIDs
+        print("✅ TEXT TO OUTLINES COMPLETE: Bezier handles now visible with Direct Selection Tool (A)")
     }
     
     func selectTextAt(_ point: CGPoint) -> VectorText? {

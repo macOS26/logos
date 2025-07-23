@@ -27,30 +27,32 @@ extension DrawingCanvas {
     }
     
     // MARK: - Professional Text Canvas Background Handler
-    func handleCanvasBackgroundTapX(at location: CGPoint) {
-        // Check if tap is outside all text boxes
+    func handleAggressiveBackgroundTap(at location: CGPoint) {
+        // AGGRESSIVE background tap - deselects ALL text boxes immediately
         let tapHitsText = document.textObjects.contains { textObj in
             let textBounds = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
-                width: max(textObj.bounds.width, 200),
-                height: max(textObj.bounds.height, 50)
+                width: 300,  // FIXED WIDTH - always 300pt for text boxes
+                height: max(textObj.bounds.height, 100)
             )
             return textBounds.contains(location)
         }
         
         if !tapHitsText {
-            // Click outside all text boxes - deselect all text and stop editing
-            if document.selectedTextIDs.count > 0 || isEditingText {
-                document.selectedTextIDs.removeAll()
-                if let editingID = editingTextID {
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == editingID }) {
-                        document.textObjects[textIndex].isEditing = false
-                    }
+            // AGGRESSIVELY deselect everything
+            document.selectedTextIDs.removeAll()
+            document.selectedShapeIDs.removeAll()
+            
+            // Stop all editing
+            for textIndex in document.textObjects.indices {
+                if document.textObjects[textIndex].isEditing {
+                    document.textObjects[textIndex].isEditing = false
                 }
-                finishTextEditing()
-                print("🎯 BACKGROUND TAP: Deselected all text boxes")
             }
+            
+            finishTextEditing()
+            print("🎯 AGGRESSIVE X: All text boxes → GRAY mode")
         }
     }
     
@@ -516,22 +518,23 @@ extension DrawingCanvas {
     // MARK: - Canvas Background Tap Handler (From Working NewTextBoxFontTool)
     
     func handleCanvasBackgroundTap(at location: CGPoint) {
-        // Handle background taps to deselect text boxes and exit editing mode
+        // AGGRESSIVE background tap handler - deselects ALL text boxes
         
-        // Check if tapping outside all text boxes
+        // Check if tapping outside all text boxes (use fixed 300pt width)
         let hitAnyTextBox = document.textObjects.contains { textObj in
             let textFrame = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
-                width: max(textObj.bounds.width, 300),
+                width: 300,  // FIXED WIDTH - always 300pt for text boxes
                 height: max(textObj.bounds.height, 100)
             )
             return textFrame.contains(location)
         }
         
         if !hitAnyTextBox {
-            // Clicked outside all text boxes - deselect all and stop any editing
+            // AGGRESSIVELY deselect everything
             document.selectedTextIDs.removeAll()
+            document.selectedShapeIDs.removeAll()
             
             // Stop editing any text that might be in edit mode
             for textIndex in document.textObjects.indices {
@@ -540,7 +543,11 @@ extension DrawingCanvas {
                 }
             }
             
-            print("🎯 CANVAS BACKGROUND TAP: Deselected all text boxes (going to GRAY mode)")
+            // Clear all editing state
+            isEditingText = false
+            editingTextID = nil
+            
+            print("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode")
         }
     }
 } 
