@@ -1077,30 +1077,21 @@ class VectorDocument: ObservableObject, Codable {
             // CRITICAL: Use ProfessionalTextCanvas convertToPath logic instead of VectorText.convertToOutlines()
             let viewModel = ProfessionalTextViewModel(textObject: textObj, document: self)
             
-            // Call the working convertToPath method
-            if let cgPath = viewModel.convertToCoreTextPath() {
-                let vectorPath = viewModel.convertCGPathToVectorPath(cgPath)
-                let outlineShape = VectorShape(
-                    name: "Text Outline: \(textObj.content)",
-                    path: vectorPath,
-                    strokeStyle: nil,  // NO STROKES as requested
-                    fillStyle: FillStyle(
-                        color: textObj.typography.fillColor,
-                        opacity: textObj.typography.fillOpacity
-                    ),
-                    transform: .identity,
-                    isGroup: false
-                )
-                
-                // Add to the current layer
-                if let layerIndex = selectedLayerIndex {
-                    layers[layerIndex].addShape(outlineShape)
-                    newShapeIDs.insert(outlineShape.id)
-                }
+            // Store current shape count to track new shapes
+            let currentShapeCount = layers[selectedLayerIndex ?? 0].shapes.count
+            
+            // Call the new word-by-word convertToPath method
+            viewModel.convertToPath()
+            
+            // Track new shapes created by conversion
+            let newShapeCount = layers[selectedLayerIndex ?? 0].shapes.count
+            if newShapeCount > currentShapeCount {
+                let newShape = layers[selectedLayerIndex ?? 0].shapes[newShapeCount - 1]
+                newShapeIDs.insert(newShape.id)
             }
         }
         
-                // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
+        // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
         if !newShapeIDs.isEmpty {
             selectedShapeIDs = newShapeIDs
             print("✅ TEXT TO OUTLINES: \(newShapeIDs.count) text object(s) converted with character-by-character normalization")

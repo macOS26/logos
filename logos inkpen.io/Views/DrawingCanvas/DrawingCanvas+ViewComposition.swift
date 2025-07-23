@@ -85,13 +85,13 @@ extension DrawingCanvas {
                 }
             }
             
-            // RENDER TEXT OBJECTS using the working ProfessionalTextCanvas (based on proven NewTextBoxFontTool)
+            // RENDER TEXT OBJECTS using STABLE view model lifecycle
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObj = document.textObjects[textIndex]
                 if textObj.isVisible {
-                    ProfessionalTextCanvas(
+                    StableProfessionalTextCanvas(
                         document: document,
-                        viewModel: ProfessionalTextViewModel(textObject: textObj, document: document)
+                        textObjectID: textObj.id
                     )
                         .id(textObj.id) // Important: Use the text object ID as the view ID
                         .allowsHitTesting(true) // CRITICAL: Ensure hit testing for resize handles

@@ -9,6 +9,59 @@
 import SwiftUI
 import CoreText
 
+// MARK: - Stable Text Canvas Wrapper (Prevents ViewModel Recreation)
+struct StableProfessionalTextCanvas: View {
+    @ObservedObject var document: VectorDocument
+    let textObjectID: UUID
+    @StateObject private var viewModel: ProfessionalTextViewModel
+    
+    init(document: VectorDocument, textObjectID: UUID) {
+        self.document = document
+        self.textObjectID = textObjectID
+        
+        // Create view model ONCE and reuse it
+        if let textObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+            self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
+        } else {
+            // Fallback if text object not found
+            let fallbackText = VectorText(content: "Missing", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+            self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
+        }
+    }
+    
+    var body: some View {
+        // Update view model when text object changes (without recreating it)
+        ProfessionalTextCanvas(document: document, viewModel: viewModel)
+            .onAppear {
+                updateViewModelFromDocument()
+            }
+            .onChange(of: document.textObjects) { _, _ in
+                updateViewModelFromDocument()
+            }
+            // FIXED: Use getCurrentTextHash to detect any property changes including colors
+            .onChange(of: getCurrentTextHash()) { _, _ in
+                updateViewModelFromDocument()
+            }
+            // Additional fix: Use id to force view refresh when text content changes
+            .id("\(textObjectID)-\(getCurrentTextHash())")
+    }
+    
+    private func updateViewModelFromDocument() {
+        // Find current text object and sync view model (without recreation)
+        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+            viewModel.syncFromVectorText(currentTextObject)
+        }
+    }
+    
+    private func getCurrentTextHash() -> String {
+        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+            // Create hash from properties that should trigger refresh
+            return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.isEditing)"
+        }
+        return "missing"
+    }
+}
+
 // MARK: - Professional Text Canvas (Based on Working EditableTextCanvas)
 struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
@@ -505,6 +558,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             }
             let newText = textView.string
             
+            // CRITICAL FIX: Prevent cascade loops - only update if text actually changed
+            guard newText != parent.viewModel.text else { 
+                print("📝 TEXT UNCHANGED: Skipping update to prevent loops")
+                return 
+            }
+            
             print("📝 TEXT DID CHANGE (Delegate): '\(newText)' (was: '\(parent.viewModel.text)')")
             
             // YOUR BRILLIANT IDEA: Monitor NSTextView height and make text box that height
@@ -519,11 +578,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             print("   - New Height (with padding): \(newHeight)pt")
             print("   - Current Frame: \(parent.viewModel.textBoxFrame)")
             
-            // Update viewModel immediately
+            // CRITICAL FIX: Update only view model directly, avoid document cascade
             DispatchQueue.main.async {
                 // Prevent auto-resize conflicts during manual changes
                 self.parent.viewModel.isAutoResizing = true
                 
+                // Update view model text (this won't trigger auto-resize due to flag above)
                 self.parent.viewModel.text = newText
                 
                 // Update text box height based on NSTextView's actual height
@@ -538,21 +598,23 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 print("📐 UPDATING FRAME: \(currentFrame) → \(newFrame)")
                 self.parent.viewModel.textBoxFrame = newFrame
                 
-                // Update document
-                self.parent.viewModel.document.updateTextContent(self.parent.viewModel.textObject.id, content: newText)
-                
-                // Update document bounds
+                // SIMPLIFIED: Update document directly without triggering cascade
                 if let textIndex = self.parent.viewModel.document.textObjects.firstIndex(where: { $0.id == self.parent.viewModel.textObject.id }) {
-                    self.parent.viewModel.document.textObjects[textIndex].bounds = CGRect(
+                    // Direct update without triggering notifications
+                    var updatedText = self.parent.viewModel.document.textObjects[textIndex]
+                    updatedText.content = newText
+                    updatedText.bounds = CGRect(
                         x: 0, y: 0, 
                         width: currentFrame.width, 
                         height: newHeight
                     )
-                    print("📋 UPDATED DOCUMENT BOUNDS: \(self.parent.viewModel.document.textObjects[textIndex].bounds)")
+                    self.parent.viewModel.document.textObjects[textIndex] = updatedText
+                    
+                    print("📋 UPDATED DOCUMENT BOUNDS: \(updatedText.bounds)")
                 }
                 
                 // Re-enable auto-resize after changes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self.parent.viewModel.isAutoResizing = false
                 }
             }
@@ -645,7 +707,12 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     @Published var autoExpandVertically: Bool = true
     
-    let textObject: VectorText
+    var textObject: VectorText {
+        didSet {
+            // CRITICAL: Force SwiftUI update when textObject changes
+            objectWillChange.send()
+        }
+    }
     let document: VectorDocument
     
     // Flags and properties from working code
@@ -706,9 +773,63 @@ class ProfessionalTextViewModel: ObservableObject {
         self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
     }
     
-    // MARK: - Working Auto-Resize Logic (Exact from Working Code)
+    // MARK: - PUBLIC method for external syncing
+    public func syncFromVectorText(_ textObject: VectorText) {
+        // CRITICAL: Don't sync during auto-resize to prevent infinite loops
+        guard !isAutoResizing else { 
+            print("🚫 SYNC BLOCKED: Auto-resize in progress, preventing sync to avoid loops")
+            return 
+        }
+        
+        // CRITICAL: Don't sync if content hasn't actually changed (BUT always sync colors)
+        let contentChanged = self.text != textObject.content
+        let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
+        let editingChanged = self.isEditing != textObject.isEditing
+        let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
+        
+        if !contentChanged && !fontChanged && !editingChanged && !colorChanged {
+            return // No changes, skip sync
+        }
+        
+        print("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)")
+        
+        // Disable auto-resize during sync to prevent loops
+        let wasAutoResizing = isAutoResizing
+        isAutoResizing = true
+        defer { isAutoResizing = wasAutoResizing }
+        
+        // CRITICAL FIX: Update the textObject reference so SwiftUI Text gets new colors
+        self.textObject = textObject
+        
+        self.text = textObject.content
+        self.fontSize = CGFloat(textObject.typography.fontSize)
+        self.selectedFont = textObject.typography.nsFont
+        self.isEditing = textObject.isEditing
+        self.textAlignment = textObject.typography.alignment.nsTextAlignment
+        self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
+        
+        // CRITICAL FIX: Force SwiftUI update when colors change
+        if colorChanged {
+            print("🎨 COLOR CHANGED: Forcing view refresh for color update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        // Update position but preserve current width/height
+        let currentFrame = self.textBoxFrame
+        self.textBoxFrame = CGRect(
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: currentFrame.width,   // PRESERVE CURRENT WIDTH
+            height: currentFrame.height  // PRESERVE CURRENT HEIGHT
+        )
+    }
+    
+    // MARK: - Working Auto-Resize Logic (FIXED with debouncing)
     
     public var isAutoResizing = false  // Prevent infinite loops
+    private var autoResizeWorkItem: DispatchWorkItem?  // DEBOUNCING
     
     private func scheduleAutoResize() {
         guard autoExpandVertically && !isAutoResizing else { 
@@ -718,10 +839,17 @@ class ProfessionalTextViewModel: ObservableObject {
         
         print("⏰ SCHEDULING AUTO-RESIZE for text: '\(text)' (length: \(text.count))")
         
-        // Debounce multiple resize requests
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+        // CRITICAL FIX: Cancel previous work item to prevent queue buildup
+        autoResizeWorkItem?.cancel()
+        
+        // Create new work item with debouncing
+        let workItem = DispatchWorkItem { [weak self] in
             self?.autoResizeTextBoxHeight()
         }
+        autoResizeWorkItem = workItem
+        
+        // Schedule with debouncing delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: workItem)
     }
     
     private func autoResizeTextBoxHeight() {
@@ -831,7 +959,7 @@ class ProfessionalTextViewModel: ObservableObject {
         }
     }
     
-        // MARK: - Convert to Outlines (YOUR EXACT MULTI-LINE CORE TEXT IMPLEMENTATION)
+    // MARK: - Convert to Outlines (WORD-BY-WORD PROCESSING for Performance)
     
     func convertToPath() {
         guard !text.isEmpty else { 
@@ -839,58 +967,108 @@ class ProfessionalTextViewModel: ObservableObject {
             return 
         }
         
-        print("🎯 CONVERTING TO OUTLINES: Using YOUR multi-line Core Text implementation")
+        print("🎯 CONVERTING TO OUTLINES: Using WORD-BY-WORD processing for better performance")
         
-        // YOUR EXACT WORKING IMPLEMENTATION FROM TextEditorViewModel
-        let path = convertToCoreTextPath()
+        // WORD-BY-WORD PROCESSING: Split text into words and convert each separately
+        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         
-        if let cgPath = path {
-            document.saveToUndoStack()
+        guard !words.isEmpty else {
+            print("❌ CONVERT TO OUTLINES: No valid words found")
+            return
+        }
+        
+        document.saveToUndoStack()
+        
+        var allWordPaths: [CGPath] = []
+        var wordPositions: [CGPoint] = []
+        
+        // Calculate positions for each word
+        calculateWordPositions(words: words, wordPositions: &wordPositions)
+        
+        // Convert each word to path separately
+        for (index, word) in words.enumerated() {
+            if let wordPath = convertWordToCoreTextPath(word, at: wordPositions[index]) {
+                allWordPaths.append(wordPath)
+                print("✅ CONVERTED WORD: '\(word)' at position \(wordPositions[index])")
+            } else {
+                print("❌ FAILED TO CONVERT WORD: '\(word)'")
+            }
+        }
+        
+        // UNION WORDS: Combine all word paths for better performance
+        var finalPath: CGPath?
+        
+        if allWordPaths.count == 1 {
+            finalPath = allWordPaths[0]
+        } else if allWordPaths.count > 1 {
+            print("🔗 UNIONING \(allWordPaths.count) WORD PATHS...")
             
-            // Convert the CGPath to VectorShape using your exact logic
-            let vectorPath = convertCGPathToVectorPath(cgPath)
-            let outlineShape = VectorShape(
-                name: "Text Outline: \(text)",
-                path: vectorPath,
-                strokeStyle: nil,  // NO STROKES as requested
-                fillStyle: FillStyle(
-                    color: textObject.typography.fillColor,
-                    opacity: textObject.typography.fillOpacity
-                ),
-                transform: .identity,
-                isGroup: false
-            )
+            // Start with first word
+            finalPath = allWordPaths[0]
             
-                            // Add to the current layer
-                if let layerIndex = document.selectedLayerIndex {
-                    document.layers[layerIndex].addShape(outlineShape)
-                    
-                    // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
-                    print("✅ TEXT CONVERSION COMPLETE: Each character normalized individually for clean bezier curves")
-                    
-                    // Select the converted shape
-                    document.selectedShapeIDs = [outlineShape.id]
-                    
-                    // Remove the original text object
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                        document.textObjects.remove(at: textIndex)
+            // Union each subsequent word
+            for i in 1..<allWordPaths.count {
+                if let currentPath = finalPath,
+                   let unionedPath = CoreGraphicsPathOperations.union(currentPath, allWordPaths[i]) {
+                    finalPath = unionedPath
+                    print("✅ UNIONED WORD \(i+1) of \(allWordPaths.count)")
+                } else {
+                    print("❌ UNION FAILED for word \(i+1), adding separately")
+                    // Fallback: create compound path by adding paths
+                    let mutablePath = CGMutablePath()
+                    if let currentPath = finalPath {
+                        mutablePath.addPath(currentPath)
                     }
-                    document.selectedTextIDs.removeAll()
-                    
-                    print("✅ CONVERTED TO OUTLINES: Created multi-line vector outlines with visible bezier handles")
-                    print("🎯 HANDLES NOW VISIBLE: Use Direct Selection Tool (A) to edit individual points and curves")
+                    mutablePath.addPath(allWordPaths[i])
+                    finalPath = mutablePath
                 }
-        } else {
-            print("❌ CONVERT TO OUTLINES FAILED: Could not create Core Text path")
+            }
+        }
+        
+        guard let cgPath = finalPath else {
+            print("❌ CONVERT TO OUTLINES FAILED: No valid paths created")
+            return
+        }
+        
+        // Convert to VectorShape
+        let vectorPath = convertCGPathToVectorPath(cgPath)
+        let outlineShape = VectorShape(
+            name: "Text Outline: \(text)",
+            path: vectorPath,
+            strokeStyle: nil,  // NO STROKES as requested
+            fillStyle: FillStyle(
+                color: textObject.typography.fillColor,
+                opacity: textObject.typography.fillOpacity
+            ),
+            transform: .identity,
+            isGroup: false
+        )
+        
+        // Add to the current layer
+        if let layerIndex = document.selectedLayerIndex {
+            document.layers[layerIndex].addShape(outlineShape)
+            
+            print("✅ TEXT CONVERSION COMPLETE: \(words.count) words processed individually and unioned")
+            
+            // Select the converted shape
+            document.selectedShapeIDs = [outlineShape.id]
+            
+            // Remove the original text object
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                document.textObjects.remove(at: textIndex)
+            }
+            document.selectedTextIDs.removeAll()
+            
+            print("✅ CONVERTED TO OUTLINES: Created optimized vector outlines with visible bezier handles")
+            print("🎯 HANDLES NOW VISIBLE: Use Direct Selection Tool (A) to edit individual points and curves")
         }
     }
     
-    // YOUR EXACT WORKING CORE TEXT IMPLEMENTATION FROM TextEditorViewModel
-    public func convertToCoreTextPath() -> CGPath? {
+    // WORD-BY-WORD POSITION CALCULATION
+    private func calculateWordPositions(words: [String], wordPositions: inout [CGPoint]) {
         let fontName = selectedFont.fontName
         let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
         
-        // Create paragraph style with alignment and line spacing
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = textAlignment
         paragraphStyle.lineSpacing = lineSpacing
@@ -899,89 +1077,117 @@ class ProfessionalTextViewModel: ObservableObject {
             .font: font,
             .paragraphStyle: paragraphStyle
         ]
-        let attributedString = NSAttributedString(string: text, attributes: attributes)
-        let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
         
-        // Calculate the actual required height to prevent truncation
+        // Use original full text to calculate proper word spacing
+        let fullAttributedString = NSAttributedString(string: text, attributes: attributes)
+        let framesetter = CTFramesetterCreateWithAttributedString(fullAttributedString)
+        
         let textWidth = textBoxFrame.width
-        
-        // First, get the suggested height for the text
-        let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
-            framesetter, 
-            CFRangeMake(0, 0), 
-            nil, 
-            CGSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude), 
-            nil
-        )
-        
-        // Use the larger of the text box height or the required height to prevent truncation
-        let frameHeight = max(textBoxFrame.height, suggestedSize.height + 20)
-        
-        let frameRect = CGRect(
-            x: 0, 
-            y: 0, 
-            width: textWidth, 
-            height: frameHeight
-        )
+        let frameRect = CGRect(x: 0, y: 0, width: textWidth, height: textBoxFrame.height)
         let framePath = CGPath(rect: frameRect, transform: nil)
         let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), framePath, nil)
         
-        let path = CGMutablePath()
         let lines = CTFrameGetLines(frame)
         let lineCount = CFArrayGetCount(lines)
         
-        // Get line origins - CRITICAL for correct positioning
         var lineOrigins = Array<CGPoint>(repeating: .zero, count: lineCount)
         CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), &lineOrigins)
         
-        print("🔧 PROCESSING \(lineCount) LINES with character-by-character union normalization")
+        var wordIndex = 0
+        let textString = text as NSString
         
-        for lineIndex in 0..<lineCount {
-            let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIndex), to: CTLine.self)
-            let lineOrigin = lineOrigins[lineIndex]
+        for lineIdx in 0..<lineCount {
+            let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIdx), to: CTLine.self)
+            let lineRange = CTLineGetStringRange(line)
+            let lineOrigin = lineOrigins[lineIdx]
             
-            let runs = CTLineGetGlyphRuns(line)
-            let runCount = CFArrayGetCount(runs)
+            // Find words in this line
+            let lineText = textString.substring(with: NSRange(location: lineRange.location, length: lineRange.length))
+            let wordsInLine = lineText.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
             
-            for runIndex in 0..<runCount {
-                let run = unsafeBitCast(CFArrayGetValueAtIndex(runs, runIndex), to: CTRun.self)
-                let glyphCount = CTRunGetGlyphCount(run)
-                
-                for glyphIndex in 0..<glyphCount {
-                    var glyph = CGGlyph()
-                    var position = CGPoint()
+            var characterOffset = 0
+            for word in wordsInLine {
+                if wordIndex < words.count && word == words[wordIndex] {
+                    // Find character position of this word in the line
+                    let wordRange = (lineText as NSString).range(of: word, options: [], range: NSRange(location: characterOffset, length: lineText.count - characterOffset))
                     
-                    CTRunGetGlyphs(run, CFRangeMake(glyphIndex, 1), &glyph)
-                    CTRunGetPositions(run, CFRangeMake(glyphIndex, 1), &position)
-                    
-                    if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
-                        // YOUR EXACT POSITIONING LOGIC
-                        let glyphX = position.x + lineOrigin.x + textBoxFrame.minX
-                        let glyphY = textBoxFrame.minY + (frameRect.height - lineOrigin.y)
+                    if wordRange.location != NSNotFound {
+                        let wordPosition = CTLineGetOffsetForStringIndex(line, lineRange.location + wordRange.location, nil)
                         
-                        // Create transform that fixes the upside-down issue
-                        var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
-                        transform = transform.translatedBy(x: glyphX, y: -glyphY)
+                        let finalPosition = CGPoint(
+                            x: textBoxFrame.minX + wordPosition,
+                            y: textBoxFrame.minY + (frameRect.height - lineOrigin.y)
+                        )
                         
-                        // Create a separate path for this character
-                        let characterPath = CGMutablePath()
-                        characterPath.addPath(glyphPath, transform: transform)
-                        
-                        // BRILLIANT: Union this character with itself to normalize bezier curves
-                        if let normalizedCharacterPath = CoreGraphicsPathOperations.union(characterPath, characterPath) {
-                            path.addPath(normalizedCharacterPath)
-                            print("✅ NORMALIZED CHARACTER: Glyph \(glyph) → clean bezier curves")
-                        } else {
-                            // Fallback: use original character path if union fails
-                            path.addPath(characterPath)
-                            print("⚠️ FALLBACK: Used original path for glyph \(glyph)")
-                        }
+                        wordPositions.append(finalPosition)
+                        characterOffset = wordRange.location + wordRange.length
+                        wordIndex += 1
                     }
                 }
             }
         }
         
-        return path
+        // Fill any missing positions (fallback)
+        while wordPositions.count < words.count {
+            wordPositions.append(CGPoint(x: textBoxFrame.minX, y: textBoxFrame.minY))
+        }
+    }
+    
+    // SINGLE WORD CONVERSION
+    private func convertWordToCoreTextPath(_ word: String, at position: CGPoint) -> CGPath? {
+        let fontName = selectedFont.fontName
+        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .left // Always left for individual words
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        let attributedString = NSAttributedString(string: word, attributes: attributes)
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        let path = CGMutablePath()
+        let runs = CTLineGetGlyphRuns(line)
+        let runCount = CFArrayGetCount(runs)
+        
+        for runIndex in 0..<runCount {
+            let run = unsafeBitCast(CFArrayGetValueAtIndex(runs, runIndex), to: CTRun.self)
+            let glyphCount = CTRunGetGlyphCount(run)
+            
+            for glyphIndex in 0..<glyphCount {
+                var glyph = CGGlyph()
+                var glyphPosition = CGPoint()
+                
+                CTRunGetGlyphs(run, CFRangeMake(glyphIndex, 1), &glyph)
+                CTRunGetPositions(run, CFRangeMake(glyphIndex, 1), &glyphPosition)
+                
+                if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
+                    let glyphX = position.x + glyphPosition.x
+                    let glyphY = position.y
+                    
+                    // Create transform that fixes the upside-down issue
+                    var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
+                    transform = transform.translatedBy(x: glyphX, y: -glyphY)
+                    
+                    // Create a separate path for this character and normalize it
+                    let characterPath = CGMutablePath()
+                    characterPath.addPath(glyphPath, transform: transform)
+                    
+                    // NORMALIZE: Union character with itself for clean bezier curves
+                    if let normalizedCharacterPath = CoreGraphicsPathOperations.union(characterPath, characterPath) {
+                        path.addPath(normalizedCharacterPath)
+                    } else {
+                        // Fallback: use original character path
+                        path.addPath(characterPath)
+                    }
+                }
+            }
+        }
+        
+        return path.isEmpty ? nil : path
     }
     
     public func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {
