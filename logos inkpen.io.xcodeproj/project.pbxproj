@@ -24,14 +24,39 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		EA92EDBF2E3057AB0041D438 /* Test.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Test.xcodeproj; sourceTree = "<group>"; };
 		EAC969AA2E2416EC0093AB2A /* logos inkpen.io.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC969B82E2416ED0093AB2A /* logos inkpen.ioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		EA92EDF62E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"TEXT BOX CODE THAT WORKS/Test/Xswift",
+			);
+			target = EAC969A92E2416EC0093AB2A /* logos inkpen.io */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		EA92EDF72E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "Compile Sources" phase from "logos inkpen.io" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = EAC969A62E2416EC0093AB2A /* Sources */;
+			membershipExceptions = (
+				"TEXT BOX CODE THAT WORKS/Test/Xswift",
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		EAC969AC2E2416EC0093AB2A /* logos inkpen.io */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				EA92EDF62E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "logos inkpen.io" target */,
+				EA92EDF72E305AA60041D438 /* Exceptions for "logos inkpen.io" folder in "Compile Sources" phase from "logos inkpen.io" target */,
+			);
 			path = "logos inkpen.io";
 			sourceTree = "<group>";
 		};
@@ -72,6 +97,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		EA92EDC12E3057AB0041D438 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		EAC969A12E2416EC0093AB2A = {
 			isa = PBXGroup;
 			children = (
@@ -200,6 +232,12 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EAC969AB2E2416EC0093AB2A /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = EA92EDC12E3057AB0041D438 /* Products */;
+					ProjectRef = EA92EDBF2E3057AB0041D438 /* Test.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				EAC969A92E2416EC0093AB2A /* logos inkpen.io */,

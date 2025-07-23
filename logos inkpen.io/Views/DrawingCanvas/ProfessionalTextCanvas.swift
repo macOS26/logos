@@ -2,14 +2,14 @@
 //  ProfessionalTextCanvas.swift
 //  logos inkpen.io
 //
-//  Professional text editing component using the working NewTextBoxFontTool pattern
-//  Integrates with VectorText and VectorColor systems + existing FontPanel
+//  Professional text editing using the proven working NewTextBoxFontTool approach
+//  Adapted for VectorText and VectorColor systems with existing FontPanel integration
 //
 
 import SwiftUI
 import CoreText
 
-// MARK: - Professional Text Canvas (Adapted from working NewTextBoxFontTool)
+// MARK: - Professional Text Canvas (Based on Working EditableTextCanvas)
 struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     @ObservedObject var viewModel: ProfessionalTextViewModel
@@ -28,10 +28,8 @@ struct ProfessionalTextCanvas: View {
     
     var body: some View {
         ZStack {
-            // Text Box View (border and interaction)
             ProfessionalTextBoxView(
                 viewModel: viewModel,
-                document: document,
                 dragOffset: dragOffset,
                 resizeOffset: resizeOffset,
                 textBoxState: textBoxState,
@@ -41,36 +39,25 @@ struct ProfessionalTextCanvas: View {
                 onDragEnded: handleDragEnded
             )
             
-            // Text Display View
             ProfessionalTextDisplayView(
                 viewModel: viewModel,
-                document: document,
                 dragOffset: dragOffset,
                 textBoxState: textBoxState
             )
             
-            // Cursor View (when editing)
-            if textBoxState == .blue {
-                ProfessionalCursorView(viewModel: viewModel, dragOffset: dragOffset)
-            }
-            
-            // Resize Handle (when selected)
-            if textBoxState == .green {
-                ProfessionalResizeHandleView(
-                    viewModel: viewModel,
-                    dragOffset: dragOffset,
-                    resizeOffset: resizeOffset,
-                    onResizeChanged: handleResizeChanged,
-                    onResizeEnded: handleResizeEnded
-                )
-            }
+            ProfessionalResizeHandleView(
+                viewModel: viewModel,
+                dragOffset: dragOffset,
+                resizeOffset: resizeOffset,
+                onResizeChanged: handleResizeChanged,
+                onResizeEnded: handleResizeEnded
+            )
         }
         .focusable()
         .focused($isFocused)
         .onKeyPress(action: handleKeyPress)
         .onChange(of: viewModel.isEditing) { _, isEditing in
             if isEditing {
-                textBoxState = .blue
                 DispatchQueue.main.async {
                     isFocused = true
                 }
@@ -80,12 +67,11 @@ struct ProfessionalTextCanvas: View {
             updateTextBoxState(selectedIDs: selectedIDs)
         }
         .onAppear {
-            // Set initial state based on selection
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
     }
     
-    // MARK: - State Management
+    // MARK: - State Management (From Working Code)
     
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         if viewModel.textObject.isEditing {
@@ -97,7 +83,7 @@ struct ProfessionalTextCanvas: View {
         }
     }
     
-    // MARK: - Event Handlers (Following working NewTextBoxFontTool pattern)
+    // MARK: - Event Handlers (Exact from Working Code)
     
     private func handleTextBoxSelect(location: CGPoint) {
         // SINGLE CLICK: Only allowed when GRAY
@@ -132,13 +118,16 @@ struct ProfessionalTextCanvas: View {
     
     private func handleDragEnded() {
         if isDragging {
-            let newPosition = CGPoint(
+            let newFrame = CGRect(
                 x: viewModel.textBoxFrame.minX + dragOffset.width,
-                y: viewModel.textBoxFrame.minY + dragOffset.height
+                y: viewModel.textBoxFrame.minY + dragOffset.height,
+                width: viewModel.textBoxFrame.width,
+                height: viewModel.textBoxFrame.height
             )
+            viewModel.updateTextBoxFrame(newFrame)
             // Update document position
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].position = newPosition
+                document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
             }
             dragOffset = .zero
             isDragging = false
@@ -165,7 +154,7 @@ struct ProfessionalTextCanvas: View {
     }
     
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
-        guard textBoxState == .blue else { return .ignored }
+        guard viewModel.isEditing else { return .ignored }
         
         // ESC key exits editing mode
         if keyPress.key == .escape {
@@ -182,10 +171,9 @@ struct ProfessionalTextCanvas: View {
     }
 }
 
-// MARK: - Professional Text Box View
+// MARK: - Professional Text Box View (Based on Working TextBoxView)
 struct ProfessionalTextBoxView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    @ObservedObject var document: VectorDocument
     let dragOffset: CGSize
     let resizeOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
@@ -204,7 +192,7 @@ struct ProfessionalTextBoxView: View {
     
     var body: some View {
         Rectangle()
-            .fill(Color.white.opacity(0.01)) // Nearly transparent but can receive gestures
+            .fill(Color.white)
             .stroke(getBorderColor(), lineWidth: 2)
             .frame(
                 width: viewModel.textBoxFrame.width + resizeOffset.width,
@@ -231,38 +219,57 @@ struct ProfessionalTextBoxView: View {
     }
 }
 
-// MARK: - Professional Text Display View
+// MARK: - Professional Text Display (Based on Working TextDisplayView)
 struct ProfessionalTextDisplayView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    @ObservedObject var document: VectorDocument
     let dragOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     
     var body: some View {
         Group {
-            if textBoxState == .blue {
-                // Use NSTextView for editing with VectorColor
-                ProfessionalEditingTextView(viewModel: viewModel, document: document)
-            } else {
-                // Use SwiftUI Text for display
-                ProfessionalDisplayTextView(viewModel: viewModel, document: document)
-            }
+            ProfessionalTextContentView(
+                viewModel: viewModel,
+                textBoxState: textBoxState
+            )
+            .position(
+                x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
+                y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2
+            )
         }
-        .frame(
-            width: viewModel.textBoxFrame.width,
-            height: viewModel.textBoxFrame.height
-        )
-        .position(
-            x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
-            y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2
-        )
     }
 }
 
-// MARK: - Professional Display Text View (SwiftUI Text)
-struct ProfessionalDisplayTextView: View {
+// MARK: - Professional Text Content (Based on Working TextContentView)
+struct ProfessionalTextContentView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    @ObservedObject var document: VectorDocument
+    let textBoxState: ProfessionalTextCanvas.TextBoxState
+    
+    var body: some View {
+        if textBoxState == .blue {
+            // BLUE STATE: Use NSTextView for editing - LOCK WIDTH, ALLOW HEIGHT TO EXPAND
+            ProfessionalUniversalTextView(viewModel: viewModel)
+                .frame(
+                    width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+                    height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT (will auto-expand)
+                    alignment: .topLeading
+                )
+                .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
+        } else {
+            // GRAY/GREEN STATE: Use SwiftUI Text (allows gestures to pass through)
+            ProfessionalSwiftUITextView(viewModel: viewModel)
+                .frame(
+                    width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+                    height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
+                    alignment: .topLeading
+                )
+                .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
+        }
+    }
+}
+
+// MARK: - Professional SwiftUI Text View (Based on Working SwiftUITextView)
+struct ProfessionalSwiftUITextView: View {
+    @ObservedObject var viewModel: ProfessionalTextViewModel
     
     private var swiftUIAlignment: HorizontalAlignment {
         switch viewModel.textAlignment {
@@ -288,29 +295,54 @@ struct ProfessionalDisplayTextView: View {
                 .frame(maxWidth: .infinity, alignment: Alignment(horizontal: swiftUIAlignment, vertical: .top))
             Spacer()
         }
-        .allowsHitTesting(false) // Allow gestures to pass through
+        .allowsHitTesting(false) // CRITICAL: allows gestures to pass through!
     }
 }
 
-// MARK: - Professional Editing Text View (NSTextView)
-struct ProfessionalEditingTextView: NSViewRepresentable {
+// MARK: - Professional Universal Text View (Based on Working UniversalTextView)
+struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
-    @ObservedObject var document: VectorDocument
     
     func makeNSView(context: Context) -> NSTextView {
         let textView = NSTextView()
         
-        // Configure exactly like the working NewTextBoxFontTool
+        // CRITICAL: Configure NSTextView to NEVER grow horizontally, only wrap text
         textView.isEditable = viewModel.isEditing
         textView.isSelectable = true
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
-        textView.textContainer?.widthTracksTextView = false
-        textView.textContainer?.heightTracksTextView = false
-        textView.isVerticallyResizable = false
-        textView.isHorizontallyResizable = false
-        textView.autoresizingMask = []
+        
+        // CRITICAL: These settings prevent horizontal growth
+        textView.textContainer?.widthTracksTextView = false  // Width NEVER tracks view
+        textView.textContainer?.heightTracksTextView = false // Height NEVER tracks view
+        textView.isVerticallyResizable = false    // No vertical auto-resize by NSTextView
+        textView.isHorizontallyResizable = false  // No horizontal auto-resize by NSTextView
+        textView.autoresizingMask = []           // No auto-resizing masks
+        
+        // FORCE text wrapping within container bounds
+        textView.textContainer?.containerSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // FIXED WIDTH
+            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for wrapping
+        )
+        
+        // CRITICAL: Set the actual frame to prevent expansion
+        textView.frame = CGRect(
+            x: 0, y: 0,
+            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+            height: viewModel.textBoxFrame.height    // Current height
+        )
+        
+        // CRITICAL: Disable all forms of automatic sizing
+        textView.textContainer?.lineBreakMode = .byWordWrapping  // Force word wrapping
+        textView.maxSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // MAX WIDTH = FIXED WIDTH
+            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT
+        )
+        textView.minSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // MIN WIDTH = FIXED WIDTH  
+            height: 50                              // MIN HEIGHT
+        )
         
         textView.allowsUndo = true
         textView.usesFindPanel = true
@@ -319,58 +351,110 @@ struct ProfessionalEditingTextView: NSViewRepresentable {
         textView.isAutomaticTextReplacementEnabled = false
         
         context.coordinator.textView = textView
+        textView.layoutManager?.ensureLayout(for: textView.textContainer!)
         
         return textView
     }
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
-        // Update editability
+        // Control text input and selection based on editing state
         nsView.isEditable = viewModel.isEditing
-        nsView.isSelectable = viewModel.isEditing
+        nsView.isSelectable = viewModel.isEditing  // Only selectable when editing
         
-        // Create paragraph style
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = viewModel.textAlignment
         paragraphStyle.lineSpacing = viewModel.lineSpacing
         
-        // Use VectorColor for text
-        let attributes: [NSAttributedString.Key: Any] = [
+        // For justified text, control word spacing to prevent overly wide gaps
+        if viewModel.textAlignment == .justified {
+            // Set a maximum line height to prevent excessive stretching
+            let font = NSFont(name: viewModel.selectedFont.fontName, size: viewModel.fontSize) ?? NSFont.systemFont(ofSize: viewModel.fontSize)
+            let lineHeight = font.ascender - font.descender + font.leading
+            paragraphStyle.maximumLineHeight = lineHeight * 1.5
+            paragraphStyle.minimumLineHeight = lineHeight
+            
+            // Disable hyphenation for better control
+            paragraphStyle.hyphenationFactor = 0.0
+            
+            // Allow tightening to help with justification
+            paragraphStyle.allowsDefaultTighteningForTruncation = true
+        }
+        
+        var attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont(name: viewModel.selectedFont.fontName, size: viewModel.fontSize) ?? NSFont.systemFont(ofSize: viewModel.fontSize),
-            .foregroundColor: NSColor(viewModel.textObject.typography.fillColor.color), // Convert VectorColor to NSColor
+            .foregroundColor: NSColor(viewModel.textObject.typography.fillColor.color),
             .paragraphStyle: paragraphStyle
         ]
         
-        // Update text content if different
+        // For justified text, add word spacing control
+        if viewModel.textAlignment == .justified {
+            // Limit expansion to prevent excessive word spacing
+            attributes[.expansion] = 0.0 // No character expansion
+        }
+        
+        // Only update text if it's different to avoid cursor jumping
         if nsView.string != viewModel.text {
             let attributedString = NSAttributedString(string: viewModel.text, attributes: attributes)
             nsView.textStorage?.setAttributedString(attributedString)
         } else {
-            // Just update attributes
+            // Just update the attributes if text is the same
             let range = NSRange(location: 0, length: nsView.string.count)
             nsView.textStorage?.addAttributes(attributes, range: range)
         }
         
-        // Set cursor color to match text color
-        nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        
-        // Set container size
+        // CRITICAL: Enforce fixed width, unlimited height for text flow
         nsView.textContainer?.containerSize = NSSize(
-            width: viewModel.textBoxFrame.width,
-            height: viewModel.textBoxFrame.height
+            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for wrapping
         )
         
-        // Focus management
+        // CRITICAL: Enforce frame constraints to prevent horizontal expansion
+        nsView.frame = CGRect(
+            x: 0, y: 0,
+            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+            height: viewModel.textBoxFrame.height    // Current height
+        )
+        
+        // CRITICAL: Enforce size constraints
+        nsView.maxSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // MAX WIDTH = FIXED WIDTH
+            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT
+        )
+        nsView.minSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // MIN WIDTH = FIXED WIDTH
+            height: 50                              // MIN HEIGHT
+        )
+        
+        // For justified text, ensure proper layout manager settings
+        if viewModel.textAlignment == .justified {
+            nsView.layoutManager?.allowsNonContiguousLayout = false // Force sequential layout for better justification
+        }
+        
+        // DIRECT STATE MONITORING - NO NOTIFICATIONS
+        // Check if text changed and update viewModel directly
+        if nsView.string != viewModel.text {
+            // NSTextView text changed - update our state
+            print("🔄 TEXT CHANGED: '\(viewModel.text)' → '\(nsView.string)'")
+            viewModel.text = nsView.string
+            // Update document
+            viewModel.document.updateTextContent(viewModel.textObject.id, content: nsView.string)
+            print("📏 AUTO-RESIZE: Triggered by text change")
+        }
+        
+        // Force layout update
+        nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+        
+        // Ensure the text view becomes first responder when editing starts
         if viewModel.isEditing {
+            // Force first responder status immediately for I-beam cursor
             if nsView.window?.firstResponder != nsView {
                 nsView.window?.makeFirstResponder(nsView)
             }
         }
         
-        // Direct state monitoring - update viewModel when text changes
-        if nsView.string != viewModel.text {
-            viewModel.text = nsView.string
-            // Update document
-            document.updateTextContent(viewModel.textObject.id, content: nsView.string)
+        // Update cursor color if text color changed
+        if nsView.insertionPointColor != NSColor(viewModel.textObject.typography.fillColor.color) {
+            nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
         }
     }
     
@@ -379,27 +463,16 @@ struct ProfessionalEditingTextView: NSViewRepresentable {
     }
     
     class Coordinator: NSObject {
-        var parent: ProfessionalEditingTextView
+        var parent: ProfessionalUniversalTextView
         weak var textView: NSTextView?
         
-        init(_ parent: ProfessionalEditingTextView) {
+        init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
         }
     }
 }
 
-// MARK: - Professional Cursor View
-struct ProfessionalCursorView: View {
-    @ObservedObject var viewModel: ProfessionalTextViewModel
-    let dragOffset: CGSize
-    
-    var body: some View {
-        // NSTextView handles its own cursor, but we can add custom cursor logic here if needed
-        EmptyView()
-    }
-}
-
-// MARK: - Professional Resize Handle
+// MARK: - Professional Resize Handle (Based on Working ResizeHandleView)
 struct ProfessionalResizeHandleView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let dragOffset: CGSize
@@ -423,18 +496,63 @@ struct ProfessionalResizeHandleView: View {
     }
 }
 
-// MARK: - Professional Text View Model (Adapted from TextEditorViewModel)
+// MARK: - Professional Text View Model (Based on Working TextEditorViewModel)
 class ProfessionalTextViewModel: ObservableObject {
-    @Published var text: String = "Text"
-    @Published var fontSize: CGFloat = 24
-    @Published var selectedFont: NSFont = NSFont.systemFont(ofSize: 24)
-    @Published var textBoxFrame: CGRect = CGRect(x: 50, y: 50, width: 200, height: 50)
+    @Published var text: String = "Text" {
+        didSet {
+            // CRITICAL: Only auto-resize if text actually changed and we're editing
+            if oldValue != text && isEditing {
+                scheduleAutoResize()
+            }
+        }
+    }
+    @Published var fontSize: CGFloat = 24 {
+        didSet {
+            guard !isUpdatingProperties else { return }
+            isUpdatingProperties = true
+            
+            if selectedFont.pointSize != fontSize {
+                let fontName = selectedFont.fontName
+                selectedFont = NSFont(name: fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+            }
+            
+            isUpdatingProperties = false
+            scheduleAutoResize()
+        }
+    }
+    @Published var selectedFont: NSFont = NSFont.systemFont(ofSize: 24) {
+        didSet {
+            guard !isUpdatingProperties else { return }
+            isUpdatingProperties = true
+            
+            if fontSize != selectedFont.pointSize {
+                fontSize = selectedFont.pointSize
+            }
+            
+            isUpdatingProperties = false
+            scheduleAutoResize()
+        }
+    }
+    @Published var textBoxFrame: CGRect = CGRect(x: 50, y: 50, width: 300, height: 100)
     @Published var isEditing: Bool = false
-    @Published var textAlignment: NSTextAlignment = .left
-    @Published var lineSpacing: CGFloat = 0.0
+    @Published var textAlignment: NSTextAlignment = .left {
+        didSet {
+            scheduleAutoResize()
+        }
+    }
+    @Published var lineSpacing: CGFloat = 0.0 {
+        didSet {
+            scheduleAutoResize()
+        }
+    }
+    @Published var autoExpandVertically: Bool = true
     
     let textObject: VectorText
     let document: VectorDocument
+    
+    // Flags and properties from working code
+    private var isUpdatingProperties: Bool = false
+    private var minTextBoxHeight: CGFloat = 50
     
     init(textObject: VectorText, document: VectorDocument) {
         self.textObject = textObject
@@ -443,7 +561,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // Sync from VectorText
         syncFromVectorText()
         
-        // Listen for document changes to sync updates from FontPanel
+        // Listen for FontPanel updates
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("VectorTextUpdated"),
             object: nil,
@@ -458,23 +576,115 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     
     private func syncFromVectorText() {
-        // Find current text object in document (it may have been updated)
         guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
         
-        // Update all properties from current VectorText state
         self.text = currentTextObject.content
         self.fontSize = CGFloat(currentTextObject.typography.fontSize)
         self.selectedFont = currentTextObject.typography.nsFont
+        // CRITICAL: Text boxes have FIXED width, calculated height
+        // Don't use VectorText.bounds.width as it expands with text content
+        let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH FOR TEXT BOXES
+        let calculatedHeight = max(currentTextObject.bounds.height, 100)
+        
         self.textBoxFrame = CGRect(
             x: currentTextObject.position.x,
             y: currentTextObject.position.y,
-            width: max(currentTextObject.bounds.width, 200),
-            height: max(currentTextObject.bounds.height, 50)
+            width: fixedWidth,    // ALWAYS FIXED WIDTH
+            height: calculatedHeight
         )
+        
+        print("🔒 TEXT BOX WIDTH LOCKED: \(fixedWidth)pt (ignoring VectorText.bounds.width: \(currentTextObject.bounds.width)pt)")
         self.isEditing = currentTextObject.isEditing
         self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
         self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
     }
+    
+    // MARK: - Working Auto-Resize Logic (Exact from Working Code)
+    
+    private var isAutoResizing = false  // Prevent infinite loops
+    
+    private func scheduleAutoResize() {
+        guard autoExpandVertically && !isAutoResizing else { 
+            return 
+        }
+        
+        // Debounce multiple resize requests
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            self?.autoResizeTextBoxHeight()
+        }
+    }
+    
+    private func autoResizeTextBoxHeight() {
+        guard autoExpandVertically && !isAutoResizing else { return }
+        
+        isAutoResizing = true
+        defer { isAutoResizing = false }
+        
+        let requiredHeight = calculateRequiredHeight()
+        let newHeight = max(minTextBoxHeight, requiredHeight)
+        
+        // Only update if height needs to change significantly
+        if abs(textBoxFrame.height - newHeight) > 5.0 {
+            let newFrame = CGRect(
+                x: textBoxFrame.minX,
+                y: textBoxFrame.minY,
+                width: textBoxFrame.width,  // FIXED WIDTH - NEVER CHANGES
+                height: newHeight          // ONLY HEIGHT CHANGES
+            )
+            
+            // Update without triggering more auto-resizes
+            let oldAutoExpand = autoExpandVertically
+            autoExpandVertically = false
+            textBoxFrame = newFrame
+            autoExpandVertically = oldAutoExpand
+            
+            // Update document bounds - use minimal width for VectorText, height for layout
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                document.textObjects[textIndex].bounds = CGRect(
+                    x: 0, y: 0,
+                    width: 100,               // MINIMAL WIDTH for VectorText (text box manages actual width)
+                    height: newHeight         // ACTUAL HEIGHT for layout
+                )
+            }
+            
+            print("✅ AUTO-RESIZE: Height \(textBoxFrame.height) → \(newHeight) (WIDTH LOCKED: \(textBoxFrame.width))")
+        }
+    }
+    
+    private func calculateRequiredHeight() -> CGFloat {
+        guard !text.isEmpty else { return minTextBoxHeight }
+        
+        let fontName = selectedFont.fontName
+        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
+        
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = textAlignment
+        paragraphStyle.lineSpacing = lineSpacing
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
+        
+        let textWidth = textBoxFrame.width
+        
+        // Use Core Text to get the actual required size
+        let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter,
+            CFRangeMake(0, 0),
+            nil,
+            CGSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude),
+            nil
+        )
+        
+        // Add padding to ensure text fits properly
+        return suggestedSize.height + 20
+    }
+    
+    // MARK: - Working Methods from Original
     
     func startEditing() {
         isEditing = true
@@ -486,9 +696,6 @@ class ProfessionalTextViewModel: ObservableObject {
     
     func updateTextBoxFrame(_ newFrame: CGRect) {
         textBoxFrame = newFrame
-        // Update document
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
-        }
+        scheduleAutoResize()
     }
 } 

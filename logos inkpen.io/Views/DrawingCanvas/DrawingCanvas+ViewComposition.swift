@@ -85,7 +85,7 @@ extension DrawingCanvas {
                 }
             }
             
-            // RENDER TEXT OBJECTS using the new ProfessionalTextCanvas with .gray/.green/.blue states
+            // RENDER TEXT OBJECTS using the working ProfessionalTextCanvas (based on proven NewTextBoxFontTool)
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObj = document.textObjects[textIndex]
                 if textObj.isVisible {
@@ -93,7 +93,7 @@ extension DrawingCanvas {
                         document: document,
                         viewModel: ProfessionalTextViewModel(textObject: textObj, document: document)
                     )
-                    .id(textObj.id) // Important: Use the text object ID as the view ID
+                        .id(textObj.id) // Important: Use the text object ID as the view ID
                 }
             }
             
