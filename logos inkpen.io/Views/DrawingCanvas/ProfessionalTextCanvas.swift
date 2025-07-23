@@ -31,7 +31,7 @@ struct StableProfessionalTextCanvas: View {
     
     var body: some View {
         // Update view model when text object changes (without recreating it)
-        ProfessionalTextCanvas(document: document, viewModel: viewModel)
+        ProfessionalTextCanvas(document: document, viewModel: viewModel, textObjectID: textObjectID)
             .onAppear {
                 updateViewModelFromDocument()
             }
@@ -75,6 +75,7 @@ struct StableProfessionalTextCanvas: View {
 struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     @ObservedObject var viewModel: ProfessionalTextViewModel
+    let textObjectID: UUID // Store the text object ID for reliable state checking
     @State private var isDragging = false
     @State private var isResizing = false
     @State private var dragOffset: CGSize = .zero
@@ -121,6 +122,7 @@ struct ProfessionalTextCanvas: View {
         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
+            print("🔄 SELECTED TEXT IDs CHANGED: \(selectedIDs.map { $0.uuidString.prefix(8) }) for textID \(viewModel.textObject.id.uuidString.prefix(8))")
             updateTextBoxState(selectedIDs: selectedIDs)
         }
         .onChange(of: viewModel.isEditing) { _, isEditing in
@@ -169,20 +171,31 @@ struct ProfessionalTextCanvas: View {
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         let oldState = textBoxState
         
+        // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
+        guard let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) else {
+            textBoxState = .gray
+            print("  → GRAY (text object not found in document)")
+            return
+        }
+        
         // PROFESSIONAL UX: Keep editing active while font tool is selected
         let isTextToolActive = document.currentTool == .font
         let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
-        let isThisTextSelected = selectedIDs.contains(viewModel.textObject.id)
+        let isThisTextSelected = selectedIDs.contains(currentTextObject.id) // Use current document object
         
-        print("🔍 STATE CHECK: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
+        print("🔍 STATE CHECK: textID=\(currentTextObject.id.uuidString.prefix(8))")
         print("  - viewModel.isEditing: \(viewModel.isEditing)")
-        print("  - textObject.isEditing: \(viewModel.textObject.isEditing)")
+        print("  - currentTextObject.isEditing: \(currentTextObject.isEditing)")
         print("  - hasTextViewFocus: \(hasTextViewFocus)")
         print("  - isTextToolActive: \(isTextToolActive)")
         print("  - isThisTextSelected: \(isThisTextSelected)")
         print("  - currentTool: \(document.currentTool.rawValue)")
+        print("  - selectedIDs count: \(selectedIDs.count)")
+        print("  - selectedIDs: \(selectedIDs.map { $0.uuidString.prefix(8) })")
+        print("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))")
+        print("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })")
         
-        if (viewModel.isEditing || hasTextViewFocus) && isTextToolActive {
+        if (currentTextObject.isEditing || hasTextViewFocus) && isTextToolActive {
             textBoxState = .blue
             print("  → BLUE (editing mode)")
         } else if isThisTextSelected && isTextToolActive {
@@ -197,7 +210,7 @@ struct ProfessionalTextCanvas: View {
         }
         
         if oldState != textBoxState {
-            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(viewModel.text)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))")
+            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(currentTextObject.content)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))")
             
             // CRITICAL FIX: Update VectorText bounds when exiting editing mode
             // This ensures selection box matches text canvas when switching states

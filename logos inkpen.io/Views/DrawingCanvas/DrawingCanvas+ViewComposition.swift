@@ -182,6 +182,11 @@ extension DrawingCanvas {
             .onContinuousHover { phase in
                 handleHover(phase: phase, geometry: geometry)
             }
+            .onTapGesture { location in
+                // CRITICAL: Single-click selection (was missing!)
+                print("🎯 SINGLE CLICK DETECTED at: \(location)")
+                handleUnifiedTap(at: location, geometry: geometry)
+            }
             .simultaneousGesture(
                 // UNIFIED DRAG GESTURE - FIXED: Use reasonable minimum distance 
                 // This prevents tiny movements from interrupting real drags
@@ -203,10 +208,6 @@ extension DrawingCanvas {
                         handleZoomGestureEnded(value: value, geometry: geometry)
                     }
             )
-            .onTapGesture { location in
-                // SINGLE TAP: Selection/deselection - SEPARATED from drag gesture
-                handleUnifiedTap(at: location, geometry: geometry)
-            }
             .onChange(of: document.zoomRequest) {
                 if let request = document.zoomRequest {
                     handleZoomRequest(request, geometry: geometry)
