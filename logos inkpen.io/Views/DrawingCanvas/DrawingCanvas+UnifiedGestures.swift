@@ -46,7 +46,12 @@ extension DrawingCanvas {
             handleBezierPenTap(at: canvasLocation)
             
         case .font:
-            handleFontToolTap(at: canvasLocation)
+            // Font tool: Only handle editing existing text on tap, new text requires drag
+            if let existingTextID = findTextAt(location: canvasLocation) {
+                startEditingText(textID: existingTextID, at: canvasLocation)
+            } else {
+                print("📝 FONT TOOL: Tap on empty area - drag to create new text box (like rectangle tool)")
+            }
             // Also handle background taps for font tool to deselect text boxes
             handleAggressiveBackgroundTap(at: canvasLocation)
             
@@ -69,6 +74,9 @@ extension DrawingCanvas {
             
         case .line, .rectangle, .circle, .star, .polygon:
             handleShapeDrawing(value: value, geometry: geometry)
+            
+        case .font:
+            handleTextBoxDrawing(value: value, geometry: geometry)
             
         case .selection:
             handleUnifiedSelectionDrag(value: value, geometry: geometry)
@@ -104,6 +112,10 @@ extension DrawingCanvas {
         case .line, .rectangle, .circle, .star, .polygon:
             finishShapeDrawing(value: value, geometry: geometry)
             resetShapeDrawingState()
+            
+        case .font:
+            finishTextBoxDrawing(value: value, geometry: geometry)
+            resetTextBoxDrawingState()
             
         case .selection:
             finishSelectionDrag()

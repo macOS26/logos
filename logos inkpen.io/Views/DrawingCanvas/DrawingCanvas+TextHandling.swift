@@ -142,7 +142,13 @@ extension DrawingCanvas {
     
     // Create new text at canvas position using our new professional text system
     func createNewTextAt(location: CGPoint) {
-        print("✨ Creating new professional text at: \(location)")
+        // Default size for click creation
+        createNewTextWithSize(at: location, width: 300, height: 100)
+    }
+    
+    // Create new text with user-defined size (like rectangle tool)
+    func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
+        print("✨ Creating new text box at: \(location) with user size: \(width) × \(height)")
         
         // Save state before creating new text
         document.saveToUndoStack()
@@ -163,14 +169,16 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         
-        // Create new text object with proper bounds
+        // Create new text object with USER-DEFINED bounds
         var newText = VectorText(
             content: "Text", // Start with placeholder text
             typography: typography,
             position: location,
             isEditing: true
         )
-        newText.updateBounds() // Calculate proper bounds
+        
+        // CRITICAL: Set bounds to user-drawn size, NOT calculated size
+        newText.bounds = CGRect(x: 0, y: 0, width: width, height: height)
         
         // Add to document and associate with current layer
         document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
@@ -183,8 +191,8 @@ extension DrawingCanvas {
         isEditingText = true
         editingTextID = newText.id
         
-        print("✅ Created new professional text object with ID: \(newText.id)")
-        print("🎯 Text ready for editing with .gray/.green/.blue states")
+        print("✅ Created text box with USER-DEFINED size: \(width) × \(height)")
+        print("🎯 Text ready for editing - size will NOT change unless user manually resizes")
     }
     
     // MARK: - Professional Text Input Handling
@@ -549,5 +557,101 @@ extension DrawingCanvas {
             
             print("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode")
         }
+    }
+    
+    // MARK: - Text Box Drawing (Rectangle Tool Style)
+    
+    /// Handle text box drawing like rectangle tool - user drags to define size
+    func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // PROFESSIONAL TEXT BOX DRAWING: Same approach as shape drawing
+        // User drags to define the text box size, no auto-resize
+        
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        let minimumDragThreshold: Double = 12.0 // Must drag at least 12 pixels to start drawing
+        
+        // Only proceed with text box creation if user has dragged significantly
+        if dragDistance < minimumDragThreshold {
+            print("📝 TEXT TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK will create default size")
+            return
+        }
+        
+        if !isDrawing {
+            // Start drawing - initialize state once
+            isDrawing = true
+            
+            // Capture reference positions (like shape tool)
+            shapeDragStart = value.startLocation  // Reuse shape drawing state
+            shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
+            drawingStartPoint = shapeStartPoint
+            
+            print("📝 TEXT BOX DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
+        }
+        
+        // Calculate text box dimensions based on drag
+        let currentCanvasLocation = screenToCanvas(value.location, geometry: geometry)
+        
+        let minX = min(shapeStartPoint.x, currentCanvasLocation.x)
+        let minY = min(shapeStartPoint.y, currentCanvasLocation.y)
+        let maxX = max(shapeStartPoint.x, currentCanvasLocation.x)
+        let maxY = max(shapeStartPoint.y, currentCanvasLocation.y)
+        
+        let width = maxX - minX
+        let height = maxY - minY
+        
+        // Create preview rectangle path for visual feedback (like shapes)
+        let textBoxRect = CGRect(x: minX, y: minY, width: width, height: height)
+        let path = VectorPath(elements: [
+            .move(to: VectorPoint(minX, minY)),
+            .line(to: VectorPoint(maxX, minY)),
+            .line(to: VectorPoint(maxX, maxY)),
+            .line(to: VectorPoint(minX, maxY)),
+            .close
+        ])
+        
+        currentPath = path
+        
+        print("📝 TEXT BOX DRAWING: Size (\(String(format: "%.1f", width)) × \(String(format: "%.1f", height)))")
+    }
+    
+    /// Finish text box drawing and create text with user-defined size
+    func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+        let endLocation = screenToCanvas(value.location, geometry: geometry)
+        
+        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        
+        if dragDistance < 12.0 {
+            // Small drag or click - create text with default size at click location
+            createNewTextAt(location: startLocation)
+            return
+        }
+        
+        // Calculate text box dimensions
+        let minX = min(startLocation.x, endLocation.x)
+        let minY = min(startLocation.y, endLocation.y)
+        let maxX = max(startLocation.x, endLocation.x)
+        let maxY = max(startLocation.y, endLocation.y)
+        
+        let width = maxX - minX
+        let height = maxY - minY
+        
+        // Ensure minimum size
+        let finalWidth = max(width, 50.0)
+        let finalHeight = max(height, 30.0)
+        
+        print("📝 TEXT BOX CREATED: User-drawn size (\(String(format: "%.1f", finalWidth)) × \(String(format: "%.1f", finalHeight)))")
+        
+        // Create text with user-defined size
+        createNewTextWithSize(at: CGPoint(x: minX, y: minY), width: finalWidth, height: finalHeight)
+    }
+    
+    /// Reset text box drawing state
+    func resetTextBoxDrawingState() {
+        isDrawing = false
+        currentPath = nil
+        shapeDragStart = CGPoint.zero
+        shapeStartPoint = CGPoint.zero
+        drawingStartPoint = nil
+        print("📝 TEXT BOX DRAWING: State reset for next operation")
     }
 } 

@@ -515,8 +515,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // Update viewModel.text FIRST to trigger auto-resize
             viewModel.text = newText
             
-            // CRITICAL FIX: Trigger auto-resize when text changes
-            viewModel.scheduleAutoResize()
+            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool  
+            // Text content changes don't affect size - only user drag resizing
             
             // Update document
             viewModel.document.updateTextContent(viewModel.textObject.id, content: newText)
@@ -589,8 +589,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // CRITICAL: Update viewModel first to prevent loops
             parent.viewModel.text = newText
             
-            // CRITICAL FIX: Trigger auto-resize when text changes
-            parent.viewModel.scheduleAutoResize()
+            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool  
+            // Text content changes don't affect size - only user drag resizing
             
             // Update document
             parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: newText)
@@ -641,11 +641,9 @@ struct ProfessionalResizeHandleView: View {
 class ProfessionalTextViewModel: ObservableObject {
     @Published var text: String = "Text" {
         didSet {
-            // CRITICAL: Auto-resize when text content changes (if enabled)
-            if autoExpandVertically && text != oldValue {
-                print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - scheduling auto-resize")
-                scheduleAutoResize()
-            }
+            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
+            // Text content changes don't affect size - only user drag resizing
+            print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - no auto-resize")
         }
     }
     @Published var fontSize: CGFloat = 24 {
@@ -675,7 +673,7 @@ class ProfessionalTextViewModel: ObservableObject {
             scheduleAutoResize()
         }
     }
-    @Published var textBoxFrame: CGRect = CGRect(x: 50, y: 50, width: 300, height: 100)
+    @Published var textBoxFrame: CGRect = CGRect.zero  // FIXED: Start at zero so user-drawn size is used
     @Published var isEditing: Bool = false
     @Published var textAlignment: NSTextAlignment = .left {
         didSet {
@@ -687,7 +685,7 @@ class ProfessionalTextViewModel: ObservableObject {
             scheduleAutoResize()
         }
     }
-    @Published var autoExpandVertically: Bool = true
+    @Published var autoExpandVertically: Bool = false  // DISABLED: User controls size manually like rectangle tool
     
     var textObject: VectorText {
         didSet {
@@ -749,17 +747,14 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: NEVER sync size from VectorText - ONLY sync position and ONLY if not manually positioned
         // The text box frame is ENTIRELY managed by the view model after creation
         if textBoxFrame.width == 0 && textBoxFrame.height == 0 {
-            // INITIAL CREATION ONLY - set default size
-            let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH
-            let initialHeight: CGFloat = 100  // DEFAULT INITIAL HEIGHT
-            
+            // INITIAL CREATION ONLY - use VectorText bounds (user-defined size)
             self.textBoxFrame = CGRect(
                 x: currentTextObject.position.x,
                 y: currentTextObject.position.y,
-                width: fixedWidth,
-                height: initialHeight
+                width: max(currentTextObject.bounds.width, 50),   // User-defined width or minimum
+                height: max(currentTextObject.bounds.height, 30)  // User-defined height or minimum
             )
-            print("📦 TEXT BOX INITIAL CREATION: \(self.textBoxFrame)")
+            print("📦 TEXT BOX INITIAL CREATION: Using VectorText bounds \(self.textBoxFrame)")
         } else {
             // EXISTING TEXT BOX: ONLY sync position, NEVER size
             self.textBoxFrame = CGRect(
