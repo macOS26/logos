@@ -58,10 +58,10 @@ struct StableProfessionalTextCanvas: View {
             // PROFESSIONAL UX: Stable view while font tool is active
             if document.currentTool == .font {
                 // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)"
+                return "font-tool-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.typography.alignment)-\(currentTextObject.typography.fontFamily)-\(currentTextObject.typography.fontWeight)-\(currentTextObject.typography.fontStyle)-\(currentTextObject.typography.lineHeight)"
             } else {
                 // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.isEditing)"
+                return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.typography.alignment)-\(currentTextObject.typography.fontFamily)-\(currentTextObject.typography.fontWeight)-\(currentTextObject.typography.fontStyle)-\(currentTextObject.typography.lineHeight)-\(currentTextObject.isEditing)"
             }
         }
         return "missing"
@@ -480,21 +480,70 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         // CRITICAL: Preserve cursor position using coordinator pattern
         let coordinator = context.coordinator
         
+        // CRITICAL FIX: Save cursor position before making changes
+        let savedSelectedRanges = coordinator.selectedRanges.isEmpty ? nsView.selectedRanges : coordinator.selectedRanges
+        
         // CRITICAL FIX: Only update NSTextView text when NOT actively typing
         // This prevents cursor jumping and text resets during typing
         if !isUpdatingFromTyping && nsView.string != viewModel.text {
             nsView.string = viewModel.text
         }
         
-        // ALWAYS update font and color directly on NSTextView (this is visible immediately)
+        // ALWAYS update font, color, and alignment directly on NSTextView (this is visible immediately)
         nsView.font = viewModel.selectedFont
         nsView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
         nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
         
-        // CRITICAL: Restore selection ONLY if coordinator has stored ranges
-        if coordinator.selectedRanges.count > 0 {
-            nsView.selectedRanges = coordinator.selectedRanges
+        // COPY EXACT PATTERN: Apply alignment and line spacing to text storage (like some font properties)
+        if nsView.string.count > 0 {
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = viewModel.textAlignment
+            
+            // CRITICAL FIX: NSParagraphStyle.lineSpacing must be nonnegative
+            // For negative spacing, use lineHeightMultiple instead
+            if viewModel.lineSpacing >= 0 {
+                paragraphStyle.lineSpacing = viewModel.lineSpacing
+                paragraphStyle.lineHeightMultiple = 0  // Reset to default
+            } else {
+                paragraphStyle.lineSpacing = 0  // Reset to default
+                // Convert negative spacing to lineHeightMultiple
+                let fontSize = viewModel.fontSize
+                let targetLineHeight = fontSize + viewModel.lineSpacing
+                paragraphStyle.lineHeightMultiple = targetLineHeight / fontSize
+            }
+            
+            let range = NSRange(location: 0, length: nsView.string.count)
+            nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
         }
+        
+        // ALSO set default for new text
+        let defaultParagraphStyle = NSMutableParagraphStyle()
+        defaultParagraphStyle.alignment = viewModel.textAlignment
+        
+        // CRITICAL FIX: NSParagraphStyle.lineSpacing must be nonnegative
+        if viewModel.lineSpacing >= 0 {
+            defaultParagraphStyle.lineSpacing = viewModel.lineSpacing
+            defaultParagraphStyle.lineHeightMultiple = 0  // Reset to default
+        } else {
+            defaultParagraphStyle.lineSpacing = 0  // Reset to default
+            // Convert negative spacing to lineHeightMultiple
+            let fontSize = viewModel.fontSize
+            let targetLineHeight = fontSize + viewModel.lineSpacing
+            defaultParagraphStyle.lineHeightMultiple = targetLineHeight / fontSize
+        }
+        
+        nsView.defaultParagraphStyle = defaultParagraphStyle
+        
+        print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue) and LINE SPACING: \(viewModel.lineSpacing) to NSTextView")
+        
+        // CRITICAL FIX: Restore cursor position after font/color changes
+        // This prevents cursor jumping when using font panel controls
+        if !savedSelectedRanges.isEmpty && viewModel.isEditing {
+            nsView.selectedRanges = savedSelectedRanges
+            print("🎯 RESTORED CURSOR POSITION after font/color update")
+        }
+        
+        // Cursor position restoration handled above - no duplicate restoration needed
         
         // Configure text view properties
         nsView.isEditable = viewModel.isEditing
@@ -700,22 +749,10 @@ class ProfessionalTextViewModel: ObservableObject {
         // Sync from VectorText
         syncFromVectorText()
         
-        // Listen for FontPanel updates
-        NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("VectorTextUpdated"),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            print("🔔 FONT PANEL UPDATE: Syncing text properties")
-            self?.syncFromVectorText()
-            // Force SwiftUI update to refresh NSTextView
-            self?.objectWillChange.send()
-        }
+        // No longer using notifications - font panel updates via document.textObjects changes
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
+    // No longer using notifications - cleanup not needed
     
     private func syncFromVectorText() {
         guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
@@ -804,8 +841,13 @@ class ProfessionalTextViewModel: ObservableObject {
         let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
         let editingChanged = self.isEditing != textObject.isEditing
         let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
+        let alignmentChanged = self.textObject.typography.alignment != textObject.typography.alignment
+        let fontFamilyChanged = self.textObject.typography.fontFamily != textObject.typography.fontFamily
+        let fontWeightChanged = self.textObject.typography.fontWeight != textObject.typography.fontWeight
+        let fontStyleChanged = self.textObject.typography.fontStyle != textObject.typography.fontStyle
+        let lineSpacingChanged = self.textObject.typography.lineHeight != textObject.typography.lineHeight
         
-        if !contentChanged && !fontChanged && !editingChanged && !colorChanged {
+        if !contentChanged && !fontChanged && !editingChanged && !colorChanged && !alignmentChanged && !fontFamilyChanged && !fontWeightChanged && !fontStyleChanged && !lineSpacingChanged {
             return // No changes, skip sync
         }
         
@@ -832,9 +874,44 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
         
-        // CRITICAL FIX: Force SwiftUI update when colors change
+        // CRITICAL FIX: Force SwiftUI update when colors or alignment change
         if colorChanged {
             print("🎨 COLOR CHANGED: Forcing view refresh for color update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        if alignmentChanged {
+            print("🔄 ALIGNMENT CHANGED: Forcing view refresh for alignment update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        if fontFamilyChanged {
+            print("📝 FONT FAMILY CHANGED: Forcing view refresh for font family update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        if fontWeightChanged {
+            print("💪 FONT WEIGHT CHANGED: Forcing view refresh for font weight update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        if fontStyleChanged {
+            print("🔤 FONT STYLE CHANGED: Forcing view refresh for font style update")
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+        
+        if lineSpacingChanged {
+            print("📏 LINE SPACING CHANGED: Forcing view refresh for line spacing update")
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }

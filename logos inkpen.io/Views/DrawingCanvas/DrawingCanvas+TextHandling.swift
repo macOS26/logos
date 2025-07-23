@@ -159,7 +159,7 @@ extension DrawingCanvas {
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
-            lineHeight: document.fontManager.selectedFontSize * 1.2, // Default 120% line height
+            lineHeight: document.fontManager.selectedFontSize, // Default line height = font size (line spacing = 0)
             letterSpacing: 0.0,
             alignment: .left, // Default to left alignment
             hasStroke: false, // NO STROKES - only fill colors
@@ -563,6 +563,16 @@ extension DrawingCanvas {
     
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // CRITICAL FIX: Don't create new text boxes while existing ones are being resized
+        // Check if drag started on a text box resize handle
+        let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+        let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
+        
+        if isDraggingResizeHandle {
+            print("📝 TEXT TOOL: Blocked - drag started on resize handle, not creating new text box")
+            return
+        }
+        
         // PROFESSIONAL TEXT BOX DRAWING: Same approach as shape drawing
         // User drags to define the text box size, no auto-resize
         
@@ -653,5 +663,42 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
         print("📝 TEXT BOX DRAWING: State reset for next operation")
+    }
+    
+    /// Check if location is on a text box resize handle
+    private func isLocationOnTextResizeHandle(_ location: CGPoint) -> Bool {
+        let handleRadius: Double = 4.0  // Resize handle size
+        let tolerance: Double = 8.0     // Extra tolerance for easier detection
+        let totalTolerance = handleRadius + tolerance
+        
+        for textObj in document.textObjects {
+            if !textObj.isVisible || textObj.isLocked { continue }
+            
+            // Calculate text box bounds
+            let textBounds = CGRect(
+                x: textObj.position.x,
+                y: textObj.position.y,
+                width: textObj.bounds.width,
+                height: textObj.bounds.height
+            )
+            
+            // Check if text is selected (only selected text boxes show resize handles)
+            if document.selectedTextIDs.contains(textObj.id) {
+                // Check resize handle position (bottom-right corner)
+                let resizeHandleCenter = CGPoint(
+                    x: textBounds.maxX,
+                    y: textBounds.maxY
+                )
+                
+                let distance = sqrt(pow(location.x - resizeHandleCenter.x, 2) + pow(location.y - resizeHandleCenter.y, 2))
+                
+                if distance <= totalTolerance {
+                    print("🔍 RESIZE HANDLE DETECTED: Location \(location) is on resize handle for text \(textObj.id)")
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
 } 

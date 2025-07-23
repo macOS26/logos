@@ -125,27 +125,28 @@ struct FontPanel: View {
                                 }
                             }
                             
-                            // Font Size
+                            // Font Size - Slider from 1pt to 288pt
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Font Size")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
-                                
                                 HStack {
-                                    TextField("Size", value: Binding(
-                                        get: { selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize },
-                                        set: { newSize in
-                                            document.fontManager.selectedFontSize = newSize
-                                            updateSelectedTextFont()
-                                        }
-                                    ), format: .number)
-                                    .textFieldStyle(.roundedBorder)
-                                    
-                                    Text("pt")
+                                    Text("Font Size")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("\(Int(selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize)) pt")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
+                                
+                                Slider(value: Binding(
+                                    get: { selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize },
+                                    set: { newSize in
+                                        let intSize = Double(Int(newSize))  // Convert to integer
+                                        document.fontManager.selectedFontSize = intSize
+                                        updateSelectedTextFont()
+                                    }
+                                ), in: 1...288, step: 1)
+                                .controlSize(.small)
                             }
                             
                             // Text Alignment Controls (NEW)
@@ -314,64 +315,64 @@ struct FontPanel: View {
     }
     
     private var currentLineSpacing: CGFloat {
-        selectedText?.typography.lineHeight ?? 0.0
+        guard let selectedText = selectedText else { return 0.0 }
+        // CRITICAL FIX: Line spacing = lineHeight - fontSize (0 means normal spacing)
+        return selectedText.typography.lineHeight - selectedText.typography.fontSize
     }
     
-    // NEW: Update text alignment
+    // NEW: Update text alignment - same approach as fill color
     private func updateTextAlignment(_ alignment: TextAlignment) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        guard !document.selectedTextIDs.isEmpty else { return }
         
         document.saveToUndoStack()
-        document.textObjects[textIndex].typography.alignment = alignment
-        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-        // document.textObjects[textIndex].updateBounds() - REMOVED
-        document.objectWillChange.send()
         
-        // Notify text canvas to sync changes
-        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
+        // Update ALL selected text objects (same as fill color)
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                document.textObjects[textIndex].typography.alignment = alignment
+            }
+        }
         
+        // No notifications needed - onChange(of: document.textObjects) will sync automatically
         print("🎯 FONT PANEL: Updated text alignment to \(alignment)")
     }
     
-    // NEW: Update line spacing
+    // NEW: Update line spacing - same approach as fill color
     private func updateLineSpacing(_ spacing: CGFloat) {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        guard !document.selectedTextIDs.isEmpty else { return }
         
         document.saveToUndoStack()
-        document.textObjects[textIndex].typography.lineHeight = Double(spacing)
-        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-        // document.textObjects[textIndex].updateBounds() - REMOVED  
-        document.objectWillChange.send()
         
-        // Notify text canvas to sync changes
-        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
+        // Update ALL selected text objects (same as fill color)
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                let fontSize = document.textObjects[textIndex].typography.fontSize
+                // CRITICAL FIX: lineHeight = fontSize + spacing (so lineSpacing = spacing)
+                document.textObjects[textIndex].typography.lineHeight = fontSize + Double(spacing)
+            }
+        }
         
+        // No notifications needed - onChange(of: document.textObjects) will sync automatically
         print("🎯 FONT PANEL: Updated line spacing to \(spacing)")
     }
     
     private func updateSelectedTextFont() {
-        guard let textID = document.selectedTextIDs.first,
-              let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else { return }
+        guard !document.selectedTextIDs.isEmpty else { return }
         
         // CRITICAL FIX: Save to undo stack BEFORE making changes
         document.saveToUndoStack()
         
-        // Update the text object's typography
-        document.textObjects[textIndex].typography.fontFamily = document.fontManager.selectedFontFamily
-        document.textObjects[textIndex].typography.fontWeight = document.fontManager.selectedFontWeight
-        document.textObjects[textIndex].typography.fontStyle = document.fontManager.selectedFontStyle
-        document.textObjects[textIndex].typography.fontSize = document.fontManager.selectedFontSize
+        // Update ALL selected text objects (same as fill color)
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                document.textObjects[textIndex].typography.fontFamily = document.fontManager.selectedFontFamily
+                document.textObjects[textIndex].typography.fontWeight = document.fontManager.selectedFontWeight
+                document.textObjects[textIndex].typography.fontStyle = document.fontManager.selectedFontStyle
+                document.textObjects[textIndex].typography.fontSize = document.fontManager.selectedFontSize
+            }
+        }
         
-        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-        // document.textObjects[textIndex].updateBounds() - REMOVED
-        
-        // Notify UI update
-        document.objectWillChange.send()
-        
-        // Notify text canvas to sync changes
-        NotificationCenter.default.post(name: NSNotification.Name("VectorTextUpdated"), object: nil)
+        // No notifications needed - onChange(of: document.textObjects) will sync automatically
     }
     
     // REMOVED: stroke support functions - keeping only fill
