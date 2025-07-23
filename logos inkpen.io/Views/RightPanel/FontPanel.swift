@@ -217,7 +217,7 @@ struct FontPanel: View {
                                 }
                             }
                             
-                            // Line Spacing Control (NEW)
+                            // Line Spacing Control (0 to fontSize/2)
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Line Spacing")
@@ -225,7 +225,7 @@ struct FontPanel: View {
                                         .fontWeight(.semibold)
                                         .foregroundColor(.secondary)
                                     Spacer()
-                                    Text("\(String(format: "%.1f", currentLineSpacing)) pt")
+                                    Text(currentLineSpacing == 0 ? "0 pt" : "\(String(format: "%.0f", currentLineSpacing)) pt")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -235,7 +235,35 @@ struct FontPanel: View {
                                     set: { newSpacing in
                                         updateLineSpacing(newSpacing)
                                     }
-                                ), in: -20...20)
+                                ), in: {
+                                    let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
+                                    return 0...(fontSize / 2)
+                                }())
+                                .controlSize(.small)
+                            }
+                            
+                            // Line Height Control (-fontSize*1.5 to +fontSize*1.5)
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text("Line Height")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text(currentLineHeight == currentFontSize ? "Normal" : (currentLineHeight > currentFontSize ? "+\(String(format: "%.0f", currentLineHeight - currentFontSize)) pt" : "\(String(format: "%.0f", currentLineHeight - currentFontSize)) pt"))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Slider(value: Binding(
+                                    get: { currentLineHeight },
+                                    set: { newHeight in
+                                        updateLineHeight(newHeight)
+                                    }
+                                ), in: {
+                                    let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
+                                    return (fontSize - fontSize * 1.5)...(fontSize + fontSize * 1.5)
+                                }())
                                 .controlSize(.small)
                             }
                             
@@ -316,63 +344,68 @@ struct FontPanel: View {
     
     private var currentLineSpacing: CGFloat {
         guard let selectedText = selectedText else { return 0.0 }
-        // CRITICAL FIX: Line spacing = lineHeight - fontSize (0 means normal spacing)
-        return selectedText.typography.lineHeight - selectedText.typography.fontSize
+        // RAW LINE SPACING VALUE (0 to fontSize/2)
+        return selectedText.typography.lineSpacing
     }
     
-    // NEW: Update text alignment - same approach as fill color
+    private var currentLineHeight: CGFloat {
+        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
+        // RAW LINE HEIGHT VALUE (-fontSize*1.5 to +fontSize*1.5)
+        return selectedText.typography.lineHeight
+    }
+    
+    private var currentFontSize: CGFloat {
+        return selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
+    }
+    
+    // CONSOLIDATED: Generic text property updater
+    private func updateSelectedTextProperties(action: String, update: (inout VectorText) -> Void) {
+        guard !document.selectedTextIDs.isEmpty else { return }
+        
+        document.saveToUndoStack()
+        
+        // Update ALL selected text objects (same as fill color)
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                update(&document.textObjects[textIndex])
+            }
+        }
+        
+        // No notifications needed - onChange(of: document.textObjects) will sync automatically
+        print("🎯 FONT PANEL: \(action)")
+    }
+    
+    // SIMPLE WRAPPERS: Clean individual functions
     private func updateTextAlignment(_ alignment: TextAlignment) {
-        guard !document.selectedTextIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Update ALL selected text objects (same as fill color)
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].typography.alignment = alignment
-            }
+        updateSelectedTextProperties(action: "Updated text alignment to \(alignment)") { text in
+            text.typography.alignment = alignment
         }
-        
-        // No notifications needed - onChange(of: document.textObjects) will sync automatically
-        print("🎯 FONT PANEL: Updated text alignment to \(alignment)")
     }
     
-    // NEW: Update line spacing - same approach as fill color
     private func updateLineSpacing(_ spacing: CGFloat) {
-        guard !document.selectedTextIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Update ALL selected text objects (same as fill color)
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let fontSize = document.textObjects[textIndex].typography.fontSize
-                // CRITICAL FIX: lineHeight = fontSize + spacing (so lineSpacing = spacing)
-                document.textObjects[textIndex].typography.lineHeight = fontSize + Double(spacing)
-            }
+        updateSelectedTextProperties(action: "Updated line spacing to \(spacing)pt") { text in
+            // RAW LINE SPACING VALUE (0 to fontSize/2)
+            text.typography.lineSpacing = Double(spacing)
         }
-        
-        // No notifications needed - onChange(of: document.textObjects) will sync automatically
-        print("🎯 FONT PANEL: Updated line spacing to \(spacing)")
+    }
+    
+    private func updateLineHeight(_ height: CGFloat) {
+        updateSelectedTextProperties(action: "Updated line height to \(height)pt") { text in
+            // RAW LINE HEIGHT VALUE (fontSize*-0.5 to fontSize*2.5)
+            text.typography.lineHeight = Double(height)
+        }
     }
     
     private func updateSelectedTextFont() {
-        guard !document.selectedTextIDs.isEmpty else { return }
-        
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        document.saveToUndoStack()
-        
-        // Update ALL selected text objects (same as fill color)
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].typography.fontFamily = document.fontManager.selectedFontFamily
-                document.textObjects[textIndex].typography.fontWeight = document.fontManager.selectedFontWeight
-                document.textObjects[textIndex].typography.fontStyle = document.fontManager.selectedFontStyle
-                document.textObjects[textIndex].typography.fontSize = document.fontManager.selectedFontSize
-            }
+        updateSelectedTextProperties(action: "Updated font properties and reset line spacing/height") { text in
+            text.typography.fontFamily = document.fontManager.selectedFontFamily
+            text.typography.fontWeight = document.fontManager.selectedFontWeight
+            text.typography.fontStyle = document.fontManager.selectedFontStyle
+            text.typography.fontSize = document.fontManager.selectedFontSize
+            // Reset to defaults when changing fonts
+            text.typography.lineSpacing = 0.0  // Default line spacing = 0
+            text.typography.lineHeight = document.fontManager.selectedFontSize  // Default line height = fontSize
         }
-        
-        // No notifications needed - onChange(of: document.textObjects) will sync automatically
     }
     
     // REMOVED: stroke support functions - keeping only fill

@@ -99,6 +99,7 @@ struct TypographyProperties: Codable, Hashable {
     var fontStyle: FontStyle
     var fontSize: Double // In points (professional standard)
     var lineHeight: Double // Leading in typography
+    var lineSpacing: Double // Extra spacing between lines (0 to fontSize/2)
     var letterSpacing: Double // Tracking
     var alignment: TextAlignment
     
@@ -119,6 +120,7 @@ struct TypographyProperties: Codable, Hashable {
         fontStyle: FontStyle = .normal,
         fontSize: Double = 24.0,
         lineHeight: Double = 28.8,
+        lineSpacing: Double = 0.0,
         letterSpacing: Double = 0.0,
         alignment: TextAlignment = .left,
         hasStroke: Bool = false,
@@ -133,6 +135,7 @@ struct TypographyProperties: Codable, Hashable {
         self.fontStyle = fontStyle
         self.fontSize = fontSize
         self.lineHeight = lineHeight
+        self.lineSpacing = lineSpacing
         self.letterSpacing = letterSpacing
         self.alignment = alignment
         self.hasStroke = hasStroke

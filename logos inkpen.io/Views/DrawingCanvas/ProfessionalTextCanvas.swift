@@ -56,12 +56,15 @@ struct StableProfessionalTextCanvas: View {
     private func getCurrentTextHash() -> String {
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             // PROFESSIONAL UX: Stable view while font tool is active
+            // Create compact typography hash to avoid super long strings
+            let typographyHash = "\(currentTextObject.typography.hashValue)"
+            
             if document.currentTool == .font {
                 // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.typography.alignment)-\(currentTextObject.typography.fontFamily)-\(currentTextObject.typography.fontWeight)-\(currentTextObject.typography.fontStyle)-\(currentTextObject.typography.lineHeight)"
+                return "font-tool-\(typographyHash)"
             } else {
                 // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.typography.alignment)-\(currentTextObject.typography.fontFamily)-\(currentTextObject.typography.fontWeight)-\(currentTextObject.typography.fontStyle)-\(currentTextObject.typography.lineHeight)-\(currentTextObject.isEditing)"
+                return "\(currentTextObject.content)-\(typographyHash)-\(currentTextObject.isEditing)"
             }
         }
         return "missing"
@@ -494,22 +497,17 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         nsView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
         nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
         
-        // COPY EXACT PATTERN: Apply alignment and line spacing to text storage (like some font properties)
+        // COPY EXACT PATTERN: Apply alignment, line spacing, and line height to text storage
         if nsView.string.count > 0 {
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = viewModel.textAlignment
+            paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)  // Line spacing (0 to fontSize/2)
             
-            // CRITICAL FIX: NSParagraphStyle.lineSpacing must be nonnegative
-            // For negative spacing, use lineHeightMultiple instead
-            if viewModel.lineSpacing >= 0 {
-                paragraphStyle.lineSpacing = viewModel.lineSpacing
-                paragraphStyle.lineHeightMultiple = 0  // Reset to default
-            } else {
-                paragraphStyle.lineSpacing = 0  // Reset to default
-                // Convert negative spacing to lineHeightMultiple
-                let fontSize = viewModel.fontSize
-                let targetLineHeight = fontSize + viewModel.lineSpacing
-                paragraphStyle.lineHeightMultiple = targetLineHeight / fontSize
+            // Apply line height using lineHeightMultiple
+            let fontSize = viewModel.fontSize
+            let lineHeight = viewModel.textObject.typography.lineHeight
+            if lineHeight > 0 {
+                paragraphStyle.lineHeightMultiple = lineHeight / fontSize
             }
             
             let range = NSRange(location: 0, length: nsView.string.count)
@@ -519,22 +517,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         // ALSO set default for new text
         let defaultParagraphStyle = NSMutableParagraphStyle()
         defaultParagraphStyle.alignment = viewModel.textAlignment
+        defaultParagraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)  // Line spacing (0 to fontSize/2)
         
-        // CRITICAL FIX: NSParagraphStyle.lineSpacing must be nonnegative
-        if viewModel.lineSpacing >= 0 {
-            defaultParagraphStyle.lineSpacing = viewModel.lineSpacing
-            defaultParagraphStyle.lineHeightMultiple = 0  // Reset to default
-        } else {
-            defaultParagraphStyle.lineSpacing = 0  // Reset to default
-            // Convert negative spacing to lineHeightMultiple
-            let fontSize = viewModel.fontSize
-            let targetLineHeight = fontSize + viewModel.lineSpacing
-            defaultParagraphStyle.lineHeightMultiple = targetLineHeight / fontSize
+        // Apply line height using lineHeightMultiple
+        let fontSize = viewModel.fontSize
+        let lineHeight = viewModel.textObject.typography.lineHeight
+        if lineHeight > 0 {
+            defaultParagraphStyle.lineHeightMultiple = lineHeight / fontSize
         }
         
         nsView.defaultParagraphStyle = defaultParagraphStyle
         
-        print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue) and LINE SPACING: \(viewModel.lineSpacing) to NSTextView")
+        print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue), LINE SPACING: \(viewModel.textObject.typography.lineSpacing)pt, LINE HEIGHT: \(viewModel.textObject.typography.lineHeight)pt to NSTextView")
         
         // CRITICAL FIX: Restore cursor position after font/color changes
         // This prevents cursor jumping when using font panel controls
@@ -765,7 +759,7 @@ class ProfessionalTextViewModel: ObservableObject {
             self.selectedFont = currentTextObject.typography.nsFont
             self.isEditing = currentTextObject.isEditing
             self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
-            self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
+            // Line spacing is now handled separately in the typography properties
             return
         }
 
@@ -802,7 +796,7 @@ class ProfessionalTextViewModel: ObservableObject {
 
         self.isEditing = currentTextObject.isEditing
         self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
-        self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
+        // Line spacing is now handled separately in the typography properties
     }
     
     // MARK: - PUBLIC method for external syncing
@@ -824,7 +818,7 @@ class ProfessionalTextViewModel: ObservableObject {
             }
             
             self.textAlignment = textObject.typography.alignment.nsTextAlignment
-            self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
+            // Line spacing is now handled separately in the typography properties
             
             // Force SwiftUI update when colors change
             if colorChanged {
@@ -841,13 +835,17 @@ class ProfessionalTextViewModel: ObservableObject {
         let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
         let editingChanged = self.isEditing != textObject.isEditing
         let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
-        let alignmentChanged = self.textObject.typography.alignment != textObject.typography.alignment
-        let fontFamilyChanged = self.textObject.typography.fontFamily != textObject.typography.fontFamily
-        let fontWeightChanged = self.textObject.typography.fontWeight != textObject.typography.fontWeight
-        let fontStyleChanged = self.textObject.typography.fontStyle != textObject.typography.fontStyle
-        let lineSpacingChanged = self.textObject.typography.lineHeight != textObject.typography.lineHeight
+        // Group all typography changes for cleaner code
+        let typographyChanged = (
+            self.textObject.typography.alignment != textObject.typography.alignment ||
+            self.textObject.typography.fontFamily != textObject.typography.fontFamily ||
+            self.textObject.typography.fontWeight != textObject.typography.fontWeight ||
+            self.textObject.typography.fontStyle != textObject.typography.fontStyle ||
+            self.textObject.typography.lineHeight != textObject.typography.lineHeight ||
+            self.textObject.typography.lineSpacing != textObject.typography.lineSpacing
+        )
         
-        if !contentChanged && !fontChanged && !editingChanged && !colorChanged && !alignmentChanged && !fontFamilyChanged && !fontWeightChanged && !fontStyleChanged && !lineSpacingChanged {
+        if !contentChanged && !fontChanged && !editingChanged && !colorChanged && !typographyChanged {
             return // No changes, skip sync
         }
         
@@ -872,46 +870,16 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
-        self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
+        // Line spacing is now handled separately in the typography properties
         
-        // CRITICAL FIX: Force SwiftUI update when colors or alignment change
-        if colorChanged {
-            print("🎨 COLOR CHANGED: Forcing view refresh for color update")
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-        
-        if alignmentChanged {
-            print("🔄 ALIGNMENT CHANGED: Forcing view refresh for alignment update")
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-        
-        if fontFamilyChanged {
-            print("📝 FONT FAMILY CHANGED: Forcing view refresh for font family update")
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-        
-        if fontWeightChanged {
-            print("💪 FONT WEIGHT CHANGED: Forcing view refresh for font weight update")
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-        
-        if fontStyleChanged {
-            print("🔤 FONT STYLE CHANGED: Forcing view refresh for font style update")
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
-        
-        if lineSpacingChanged {
-            print("📏 LINE SPACING CHANGED: Forcing view refresh for line spacing update")
+        // CRITICAL FIX: Force SwiftUI update when any visual properties change
+        if colorChanged || typographyChanged {
+            let changes = [
+                colorChanged ? "color" : nil,
+                typographyChanged ? "typography" : nil
+            ].compactMap { $0 }.joined(separator: ", ")
+            
+            print("🎨 VISUAL PROPERTIES CHANGED: \(changes) - forcing view refresh")
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
