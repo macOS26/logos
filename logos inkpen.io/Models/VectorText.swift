@@ -500,6 +500,14 @@ class FontManager: ObservableObject {
             }
         }
         
+        // Fallback: if no weights found, provide common defaults
+        if weights.isEmpty {
+            weights = [.regular, .bold]
+        } else if !weights.contains(.regular) {
+            // Always include regular as an option
+            weights.insert(.regular)
+        }
+        
         return Array(weights).sorted { weight1, weight2 in
             FontWeight.allCases.firstIndex(of: weight1)! < FontWeight.allCases.firstIndex(of: weight2)!
         }
@@ -543,8 +551,11 @@ class FontManager: ObservableObject {
             }
         }
         
-        // Always include normal if we found any fonts
-        if !styles.isEmpty {
+        // Fallback: if no styles found, provide defaults
+        if styles.isEmpty {
+            styles = [.normal, .italic]
+        } else if !styles.contains(.normal) {
+            // Always include normal as an option
             styles.insert(.normal)
         }
         

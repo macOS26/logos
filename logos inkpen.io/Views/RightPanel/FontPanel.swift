@@ -53,6 +53,7 @@ struct FontPanel: View {
                                     get: { selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily },
                                     set: { newFamily in
                                         document.fontManager.selectedFontFamily = newFamily
+                                        validateAndUpdateWeightAndStyle()
                                         updateSelectedTextFont()
                                     }
                                 )) {
@@ -66,62 +67,68 @@ struct FontPanel: View {
                                 .frame(maxWidth: .infinity)
                                 .onChange(of: document.fontManager.selectedFontFamily) { _, _ in
                                     // Force refresh of available weights and styles when font changes
+                                    validateAndUpdateWeightAndStyle()
                                     DispatchQueue.main.async {
                                         document.objectWillChange.send()
                                     }
                                 }
                             }
                             
-                            // Font Weight and Style Row
-                            HStack(spacing: 12) {
-                                // Font Weight
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Weight")
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.secondary)
-                                    
-                                    Picker("Weight", selection: Binding(
-                                        get: { selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight },
-                                        set: { newWeight in
-                                            document.fontManager.selectedFontWeight = newWeight
-                                            updateSelectedTextFont()
-                                        }
-                                    )) {
-                                        // DYNAMIC FONT WEIGHTS: Only show weights available for this font family
-                                        ForEach(availableFontWeights, id: \.self) { weight in
-                                            Text(weight.rawValue)
-                                                .font(.custom(currentFontFamily, size: 12))
-                                                .tag(weight)
-                                        }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .id(currentFontFamily) // Force refresh when font changes
-                                }
+                            // Font Weight
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Weight")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
                                 
-                                // Font Style
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Style")
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.secondary)
-                                    
-                                    Picker("Style", selection: Binding(
-                                        get: { selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle },
-                                        set: { newStyle in
-                                            document.fontManager.selectedFontStyle = newStyle
-                                            updateSelectedTextFont()
-                                        }
-                                    )) {
-                                        // DYNAMIC FONT STYLES: Only show styles available for this font family
-                                        ForEach(availableFontStyles, id: \.self) { style in
-                                            Text(style.rawValue)
-                                                .font(.custom(currentFontFamily, size: 12))
-                                                .tag(style)
-                                        }
+                                Picker("Weight", selection: Binding(
+                                    get: { 
+                                        let currentWeight = selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight
+                                        return availableFontWeights.contains(currentWeight) ? currentWeight : availableFontWeights.first ?? .regular
+                                    },
+                                    set: { newWeight in
+                                        document.fontManager.selectedFontWeight = newWeight
+                                        updateSelectedTextFont()
                                     }
-                                    .pickerStyle(.menu)
-                                    .id(currentFontFamily) // Force refresh when font changes
+                                )) {
+                                    ForEach(availableFontWeights, id: \.self) { weight in
+                                        Text(weight.rawValue)
+                                            .font(createPreviewFont(weight: weight, style: document.fontManager.selectedFontStyle))
+                                            .tag(weight)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .onChange(of: currentFontFamily) { _ in
+                                    validateAndUpdateWeightAndStyle()
+                                }
+                            }
+                            
+                            // Font Style  
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Style")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.secondary)
+                                
+                                Picker("Style", selection: Binding(
+                                    get: { 
+                                        let currentStyle = selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle
+                                        return availableFontStyles.contains(currentStyle) ? currentStyle : availableFontStyles.first ?? .normal
+                                    },
+                                    set: { newStyle in
+                                        document.fontManager.selectedFontStyle = newStyle
+                                        updateSelectedTextFont()
+                                    }
+                                )) {
+                                    ForEach(availableFontStyles, id: \.self) { style in
+                                        Text(style.rawValue)
+                                            .font(createPreviewFont(weight: document.fontManager.selectedFontWeight, style: style))
+                                            .tag(style)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .onChange(of: currentFontFamily) { _ in
+                                    validateAndUpdateWeightAndStyle()
                                 }
                             }
                             
@@ -329,7 +336,8 @@ struct FontPanel: View {
         }
         // REMOVED: Separate color picker sheets - use main color system instead
         .onAppear {
-            // Load available weights and styles for the initially selected font
+            // Initialize and validate font weights/styles when panel loads
+            validateAndUpdateWeightAndStyle()
             DispatchQueue.main.async {
                 document.objectWillChange.send()
             }
@@ -404,6 +412,45 @@ struct FontPanel: View {
             // Reset to defaults when changing fonts
             text.typography.lineSpacing = 0.0  // Default line spacing = 0
             text.typography.lineHeight = text.typography.fontSize  // Default line height = fontSize
+        }
+    }
+    
+    // Create preview font for picker display
+    private func createPreviewFont(weight: FontWeight, style: FontStyle) -> Font {
+        let descriptor = NSFontDescriptor(name: currentFontFamily, size: 12)
+        let traits: NSFontDescriptor.SymbolicTraits = style == .italic ? .italic : []
+        let weightedDescriptor = descriptor.addingAttributes([
+            .traits: [
+                NSFontDescriptor.TraitKey.weight: weight.nsWeight.rawValue,
+                NSFontDescriptor.TraitKey.symbolic: traits.rawValue
+            ]
+        ])
+        
+        if let nsFont = NSFont(descriptor: weightedDescriptor, size: 12) {
+            return Font.custom(nsFont.fontName, size: 12)
+        } else {
+            return Font.custom(currentFontFamily, size: 12)
+        }
+    }
+    
+    // Validate and update weight/style when font changes
+    private func validateAndUpdateWeightAndStyle() {
+        let weights = availableFontWeights
+        let styles = availableFontStyles
+        
+        // Update weight if current one doesn't exist
+        if !weights.contains(document.fontManager.selectedFontWeight) {
+            document.fontManager.selectedFontWeight = weights.first ?? .regular
+        }
+        
+        // Update style if current one doesn't exist  
+        if !styles.contains(document.fontManager.selectedFontStyle) {
+            document.fontManager.selectedFontStyle = styles.first ?? .normal
+        }
+        
+        // Update any selected text
+        if !document.selectedTextIDs.isEmpty {
+            updateSelectedTextFont()
         }
     }
     
