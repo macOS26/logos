@@ -30,12 +30,20 @@ struct StableProfessionalTextCanvas: View {
     }
     
     var body: some View {
-        // FIXED: Simplified to prevent circular dependency - only update on appear
+        // Update view model when text object changes (without recreating it)
         ProfessionalTextCanvas(document: document, viewModel: viewModel, textObjectID: textObjectID)
             .onAppear {
                 updateViewModelFromDocument()
             }
-            // REMOVED: Multiple onChange modifiers that were causing circular dependencies
+            .onChange(of: document.textObjects) { _, _ in
+                updateViewModelFromDocument()
+            }
+            // FIXED: Use getCurrentTextHash to detect any property changes including colors
+            .onChange(of: getCurrentTextHash()) { _, _ in
+                updateViewModelFromDocument()
+            }
+            // Additional fix: Use id to force view refresh when text content changes
+            .id("\(textObjectID)-\(getCurrentTextHash())")
     }
     
     private func updateViewModelFromDocument() {
@@ -43,6 +51,23 @@ struct StableProfessionalTextCanvas: View {
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
         }
+    }
+    
+    private func getCurrentTextHash() -> String {
+        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
+            // PROFESSIONAL UX: Stable view while font tool is active
+            // Create compact typography hash to avoid super long strings
+            let typographyHash = "\(currentTextObject.typography.hashValue)"
+            
+            if document.currentTool == .font {
+                // While font tool is active, exclude content to prevent view recreation during typing
+                return "font-tool-\(typographyHash)"
+            } else {
+                // When other tools are active, include content for proper updates
+                return "\(currentTextObject.content)-\(typographyHash)-\(currentTextObject.isEditing)"
+            }
+        }
+        return "missing"
     }
 }
 

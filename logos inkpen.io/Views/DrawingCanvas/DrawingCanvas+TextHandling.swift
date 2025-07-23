@@ -748,6 +748,9 @@ extension DrawingCanvas {
         let finalWidth = max(width, 50.0)  // Minimum 50pt width
         let finalHeight = max(height, 30.0) // Minimum 30pt height
         
+        // Create the text box rectangle shape for visual feedback
+        let textBoxRect = CGRect(x: minX, y: minY, width: width, height: height)
+        
         // Update current path for visual feedback (blue outline rectangle)
         currentPath = VectorPath(elements: [
             .move(to: VectorPoint(minX, minY)),
