@@ -159,7 +159,7 @@ extension DrawingCanvas {
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
-            lineHeight: 0.0, // Default line height = 0
+            lineHeight: document.fontManager.selectedFontSize, // Default line height = fontSize
             letterSpacing: 0.0,
             alignment: .left, // Default to left alignment
             hasStroke: false, // NO STROKES - only fill colors

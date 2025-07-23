@@ -497,36 +497,19 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         nsView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
         nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
         
-        // COPY EXACT PATTERN: Apply alignment, line spacing, and line height to text storage
+        // Apply paragraph style to existing and new text
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = viewModel.textAlignment
+        paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
+        paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+        
         if nsView.string.count > 0 {
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = viewModel.textAlignment
-            paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)  // Line spacing (0 to fontSize/2)
-            
-            // Apply line height using raw value (with precision handling)
-            let lineHeight = viewModel.textObject.typography.lineHeight
-            if lineHeight > 0 {
-                paragraphStyle.minimumLineHeight = lineHeight
-                paragraphStyle.maximumLineHeight = lineHeight
-            }
-            
             let range = NSRange(location: 0, length: nsView.string.count)
             nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
         }
         
-        // ALSO set default for new text
-        let defaultParagraphStyle = NSMutableParagraphStyle()
-        defaultParagraphStyle.alignment = viewModel.textAlignment
-        defaultParagraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)  // Line spacing (0 to fontSize/2)
-        
-        // Apply line height using raw value (with precision handling)
-        let lineHeight = viewModel.textObject.typography.lineHeight
-        if lineHeight > 0 {
-            defaultParagraphStyle.minimumLineHeight = lineHeight
-            defaultParagraphStyle.maximumLineHeight = lineHeight
-        }
-        
-        nsView.defaultParagraphStyle = defaultParagraphStyle
+        nsView.defaultParagraphStyle = paragraphStyle
         
         print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue), LINE SPACING: \(viewModel.textObject.typography.lineSpacing)pt, LINE HEIGHT: \(viewModel.textObject.typography.lineHeight)pt to NSTextView")
         
@@ -988,6 +971,8 @@ class ProfessionalTextViewModel: ObservableObject {
         }
     }
     
+
+    
     private func calculateRequiredHeight() -> CGFloat {
         guard !text.isEmpty else { return minTextBoxHeight }
         
@@ -997,13 +982,8 @@ class ProfessionalTextViewModel: ObservableObject {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = textAlignment
         paragraphStyle.lineSpacing = max(0, textObject.typography.lineSpacing)
-        
-        // Apply line height using raw value (with precision handling)
-        let lineHeight = textObject.typography.lineHeight
-        if lineHeight > 0 {
-            paragraphStyle.minimumLineHeight = lineHeight
-            paragraphStyle.maximumLineHeight = lineHeight
-        }
+        paragraphStyle.minimumLineHeight = textObject.typography.lineHeight
+        paragraphStyle.maximumLineHeight = textObject.typography.lineHeight
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,
@@ -1080,17 +1060,11 @@ class ProfessionalTextViewModel: ObservableObject {
         let fontName = selectedFont.fontName
         let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
         
-        // Create paragraph style with alignment and line spacing
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.alignment = textAlignment
         paragraphStyle.lineSpacing = max(0, textObject.typography.lineSpacing)
-        
-        // Apply line height using raw value (with precision handling)
-        let lineHeight = textObject.typography.lineHeight
-        if lineHeight > 0 {
-            paragraphStyle.minimumLineHeight = lineHeight
-            paragraphStyle.maximumLineHeight = lineHeight
-        }
+        paragraphStyle.minimumLineHeight = textObject.typography.lineHeight
+        paragraphStyle.maximumLineHeight = textObject.typography.lineHeight
         
         let attributes: [NSAttributedString.Key: Any] = [
             .font: font,

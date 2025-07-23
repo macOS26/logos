@@ -133,7 +133,7 @@ struct FontPanel: View {
                                         .fontWeight(.semibold)
                                         .foregroundColor(.secondary)
                                     Spacer()
-                                    Text("\(Int(selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize)) pt")
+                                    Text("\(String(format: "%.1f", selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize)) pt")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -141,11 +141,10 @@ struct FontPanel: View {
                                 Slider(value: Binding(
                                     get: { selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize },
                                     set: { newSize in
-                                        let intSize = Double(Int(newSize))  // Convert to integer
-                                        document.fontManager.selectedFontSize = intSize
+                                        document.fontManager.selectedFontSize = newSize
                                         updateSelectedTextFont()
                                     }
-                                ), in: 1...288, step: 1)
+                                ), in: 1...288)
                                 .controlSize(.small)
                             }
                             
@@ -242,7 +241,7 @@ struct FontPanel: View {
                                 .controlSize(.small)
                             }
                             
-                            // Line Height Control (-24 to +24)
+                            // Line Height Control (fontSize/2 to fontSize*2)
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Line Height")
@@ -250,7 +249,7 @@ struct FontPanel: View {
                                         .fontWeight(.semibold)
                                         .foregroundColor(.secondary)
                                     Spacer()
-                                    Text(currentLineHeight == 0 ? "Normal" : (currentLineHeight > 0 ? "+\(String(format: "%.0f", currentLineHeight)) pt" : "\(String(format: "%.0f", currentLineHeight)) pt"))
+                                    Text("\(String(format: "%.0f", currentLineHeight)) pt")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -260,7 +259,10 @@ struct FontPanel: View {
                                     set: { newHeight in
                                         updateLineHeight(newHeight)
                                     }
-                                ), in: -24...24)
+                                ), in: {
+                                    let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
+                                    return (fontSize / 2)...(fontSize * 2)
+                                }())
                                 .controlSize(.small)
                             }
                             
@@ -346,8 +348,8 @@ struct FontPanel: View {
     }
     
     private var currentLineHeight: CGFloat {
-        guard let selectedText = selectedText else { return 0.0 }
-        // RAW LINE HEIGHT VALUE (-24 to +24)
+        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
+        // RAW LINE HEIGHT VALUE (fontSize/2 to fontSize*2)
         return selectedText.typography.lineHeight
     }
     
@@ -388,7 +390,7 @@ struct FontPanel: View {
     
     private func updateLineHeight(_ height: CGFloat) {
         updateSelectedTextProperties(action: "Updated line height to \(height)pt") { text in
-            // RAW LINE HEIGHT VALUE (-24 to +24)
+            // RAW LINE HEIGHT VALUE (fontSize/2 to fontSize*2)
             text.typography.lineHeight = Double(height)
         }
     }
@@ -401,7 +403,7 @@ struct FontPanel: View {
             text.typography.fontSize = document.fontManager.selectedFontSize
             // Reset to defaults when changing fonts
             text.typography.lineSpacing = 0.0  // Default line spacing = 0
-            text.typography.lineHeight = 0.0  // Default line height = 0
+            text.typography.lineHeight = text.typography.fontSize  // Default line height = fontSize
         }
     }
     
