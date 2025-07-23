@@ -164,53 +164,102 @@ extension DrawingCanvas {
         }
         
         if editingCount > 0 {
-            print("🚫 ENFORCED SINGLE EDIT MODE: Stopped editing \(editingCount) text box(es)")
+            print("🔄 STOPPED \(editingCount) text box(es) that were in edit mode")
         }
         
-        isEditingText = true
-        editingTextID = textID
-        
-        // Find the text object and calculate precise cursor position
+        // Find and start editing the target text
         if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-            // Set this text box to BLUE (edit mode)
+            let textObject = document.textObjects[textIndex]
+            
+            print("✏️ STARTING EDIT MODE:")
+            print("  - Text: '\(textObject.content)'")
+            print("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt")
+            print("  - State: GRAY/GREEN → BLUE (editing)")
+            
+            // CRITICAL: Set editing state BEFORE updating selection
             document.textObjects[textIndex].isEditing = true
             
-            let textObj = document.textObjects[textIndex]
-            
-            // VERIFY: Confirm only one text box is in edit mode
-            let finalEditingCount = document.textObjects.filter { $0.isEditing }.count
-            if finalEditingCount != 1 {
-                print("⚠️ ERROR: \(finalEditingCount) text boxes are in edit mode! Should be exactly 1.")
-            } else {
-                print("✅ VERIFIED: Exactly one text box is in edit mode")
-            }
-            
-            // PRINT TEXT BOX SETTINGS AS REQUESTED BY USER
-            print("🎯 FONT TOOL EDITING TEXT BOX UUID: \(textID.uuidString.prefix(8))")
-            print("📝 CONTENT: '\(textObj.content)'")
-            print("🎨 TYPOGRAPHY SETTINGS:")
-            print("  - Font: \(textObj.typography.fontFamily) \(textObj.typography.fontWeight.rawValue) \(textObj.typography.fontStyle.rawValue)")
-            print("  - Size: \(textObj.typography.fontSize)pt")
-            print("  - Line Height: \(textObj.typography.lineHeight)pt")
-            print("  - Line Spacing: \(textObj.typography.lineSpacing)pt")
-            print("  - Alignment: \(textObj.typography.alignment.rawValue)")
-            print("  - Fill Color: \(textObj.typography.fillColor)")
-            print("📦 BOUNDS: \(textObj.bounds)")
-            print("📍 POSITION: \(textObj.position)")
-            print("🔄 STATES: isEditing=\(textObj.isEditing), isVisible=\(textObj.isVisible), isLocked=\(textObj.isLocked)")
-            
-            // ENHANCED: Calculate cursor position based on click location
-            currentCursorPosition = calculateCursorPosition(in: textObj, at: location)
-            currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
-            
-            // Clear shape selection since we're editing text
+            // Clear other selections and select this text
             document.selectedShapeIDs.removeAll()
-            // Set text to GREEN (selected) state in addition to BLUE (editing)
-            document.selectedTextIDs = [textID] // Replace selection with just this text box
+            document.selectedTextIDs = [textID]
             
-            print("📍 Cursor positioned at character \(currentCursorPosition)")
-            print("🎯 TEXT STATES: \(textID.uuidString.prefix(8)) → BLUE (Edit Mode)")
-            print("🎯 TEXT STATES: All other text boxes → GRAY (Unselected)")
+            // Update editing state
+            isEditingText = true
+            editingTextID = textID
+            
+            print("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode")
+        } else {
+            print("❌ TEXT NOT FOUND: Could not find text with ID \(textID)")
+        }
+    }
+    
+    // ENHANCED: Better double-click detection and corner circle support
+    func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
+        print("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)")
+        
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else {
+            print("❌ TEXT NOT FOUND: ID \(textID)")
+            return
+        }
+        
+        let textObject = document.textObjects[textIndex]
+        let currentState = textObject.getState(in: document)
+        
+        print("📊 CURRENT STATE: \(currentState.description)")
+        print("📊 CURRENT TOOL: \(document.currentTool.rawValue)")
+        
+        // Check if text is locked
+        if textObject.isLocked {
+            print("🚫 TEXT LOCKED: Cannot interact with locked text")
+            return
+        }
+        
+        // Handle different interaction types
+        if isDoubleClick || isCornerClick {
+            // Double-click or corner click behavior
+            switch currentState {
+            case .unselected: // GRAY
+                // First select the text
+                document.selectedTextIDs = [textID]
+                document.selectedShapeIDs.removeAll()
+                print("🎯 SELECTED TEXT: GRAY → GREEN")
+                
+                // If font tool is active and this is a corner click, also start editing
+                if document.currentTool == .font && isCornerClick {
+                    startEditingText(textID: textID, at: .zero)
+                    print("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE")
+                }
+                
+            case .selected: // GREEN
+                // Start editing if font tool is active
+                if document.currentTool == .font {
+                    startEditingText(textID: textID, at: .zero)
+                    print("🎯 START EDITING: GREEN → BLUE")
+                } else {
+                    print("🎯 FONT TOOL NOT ACTIVE: Staying GREEN")
+                }
+                
+            case .editing: // BLUE
+                // Already editing - do nothing
+                print("🎯 ALREADY EDITING: Staying BLUE")
+            }
+        } else {
+            // Single click behavior
+            switch currentState {
+            case .unselected: // GRAY
+                // Select the text
+                document.selectedTextIDs = [textID]
+                document.selectedShapeIDs.removeAll()
+                print("🎯 SINGLE CLICK: GRAY → GREEN")
+                
+            case .selected: // GREEN
+                // Already selected - no change on single click
+                print("🎯 SINGLE CLICK: Staying GREEN")
+                
+            case .editing: // BLUE
+                // Let NSTextView handle clicks during editing
+                print("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)")
+            }
         }
     }
     
@@ -301,7 +350,7 @@ extension DrawingCanvas {
         
         // Create new text object with USER-DEFINED bounds
         var newText = VectorText(
-            content: "Text", // Start with placeholder text
+            content: "", // Start with placeholder text
             typography: typography,
             position: location,
             isEditing: true
@@ -747,9 +796,6 @@ extension DrawingCanvas {
         // Ensure minimum size for text boxes
         let finalWidth = max(width, 50.0)  // Minimum 50pt width
         let finalHeight = max(height, 30.0) // Minimum 30pt height
-        
-        // Create the text box rectangle shape for visual feedback
-        let textBoxRect = CGRect(x: minX, y: minY, width: width, height: height)
         
         // Update current path for visual feedback (blue outline rectangle)
         currentPath = VectorPath(elements: [

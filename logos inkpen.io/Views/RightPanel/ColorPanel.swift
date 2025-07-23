@@ -151,44 +151,14 @@ struct ColorPanel: View {
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
-            // FIXED: Always update the default color for new shapes based on active target
-//            if NSEvent.modifierFlags.contains(.option) {
-//                // Option+Click = stroke color
-//                document.defaultStrokeColor = color
-//                document.activeColorTarget = .stroke
-//                print("🎨 PRESET: Set default stroke color: \(color)")
-//            } else {
-//                // Regular click = fill color  
-//                document.defaultFillColor = color
-//                document.activeColorTarget = .fill
-//                print("🎨 PRESET: Set default fill color: \(color)")
-//            }
+            // REMOVED: Default color setting logic is disabled
             
             // Apply to selected objects based on modifier keys
             if !document.selectedShapeIDs.isEmpty {
-                // Apply to shapes
-                guard let layerIndex = document.selectedLayerIndex else { return }
+                // Apply to shapes - CODE REMOVED: All shape color application is disabled
+                // The entire shape color selection logic is commented out
                 document.saveToUndoStack()
-                
-//                for shapeID in document.selectedShapeIDs {
-//                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-//                        if NSEvent.modifierFlags.contains(.option) {
-//                            // Option+Click = stroke color
-//                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle != nil {
-//                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-//                            } else {
-//                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0)
-//                            }
-//                        } else {
-//                            // Regular click = fill color
-//                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle != nil {
-//                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-//                            } else {
-//                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-//                            }
-//                        }
-//                    }
-//                }
+
             }
             
             if !document.selectedTextIDs.isEmpty {

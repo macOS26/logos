@@ -102,7 +102,6 @@ struct DrawingCanvas: View {
     // ENHANCED TEXT EDITING STATE (Professional Core Graphics Text Editing)
     @State internal var isEditingText = false
     @State internal var editingTextID: UUID? = nil
-    @State internal var textCursorPosition: Int = 0 // Legacy - replaced by enhanced state
     @State internal var currentCursorPosition: Int = 0
     @State internal var currentSelectionRange: NSRange = NSRange(location: 0, length: 0)
     @State internal var lastTapLocation: CGPoint = .zero

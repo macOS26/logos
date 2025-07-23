@@ -369,7 +369,7 @@ extension DrawingCanvas {
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
-        let _ = activeBezierShape.id // Unused variable
+
         
         // Reset bezier state BUT KEEP pen tool active for continuous tracing
         cancelBezierDrawing()

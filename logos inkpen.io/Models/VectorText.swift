@@ -240,7 +240,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     // Professional text metrics using Core Text
     var textBounds: CGRect {
         let font = createCoreTextFont()
-        let displayText = content.isEmpty ? "Text" : content
+        let displayText = content.isEmpty ? "" : content
         
         // Create attributed string with proper font and kerning
         let attributes: [NSAttributedString.Key: Any] = [
@@ -260,7 +260,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     init(
-        content: String = "Text",
+        content: String = "",
         typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),  // Fallback for manual creation only
         position: CGPoint = .zero,
         transform: CGAffineTransform = .identity,
@@ -306,7 +306,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         
         // LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases
         let font = createCoreTextFont()
-        let displayText = content.isEmpty ? "Text" : content
+        let displayText = content.isEmpty ? "" : content
         
         if isSingleLineText {
             // Single line text: Use CTLine (original logic)
@@ -539,18 +539,18 @@ class FontManager: ObservableObject {
     @Published var googleFonts: [String] = []
     
     // SELECTED FONT PROPERTIES for new text objects
-    @Published var selectedFontFamily: String = "Helvetica"
+    @Published var selectedFontFamily: String = "Helvetica Neue"
     @Published var selectedFontWeight: FontWeight = .regular
     @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
     
     // Common professional fonts (Adobe/FreeHand standard)
-    static let professionalFonts = [
-        "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
-        "Futura", "Avenir", "Garamond", "Minion Pro", "Myriad Pro",
-        "Proxima Nova", "Gotham", "Interstate", "Franklin Gothic",
-        "Optima", "Gill Sans", "Frutiger", "Universe", "Trade Gothic"
-    ]
+    // static let professionalFonts = [
+    //     "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
+    //     "Futura", "Avenir", "Garamond", "Minion Pro", "Myriad Pro",
+    //     "Proxima Nova", "Gotham", "Interstate", "Franklin Gothic",
+    //     "Optima", "Gill Sans", "Frutiger", "Universe", "Trade Gothic"
+    // ]
     
     init() {
         loadAvailableFonts()
@@ -565,11 +565,11 @@ class FontManager: ObservableObject {
         var orderedFonts: [String] = []
         
         // Add professional fonts first if available
-        for professionalFont in FontManager.professionalFonts {
-            if systemFonts.contains(professionalFont) {
-                orderedFonts.append(professionalFont)
-            }
-        }
+        // for professionalFont in FontManager.professionalFonts {
+        //     if systemFonts.contains(professionalFont) {
+        //         orderedFonts.append(professionalFont)
+        //     }
+        // }
         
         // Add remaining system fonts
         for font in systemFonts {

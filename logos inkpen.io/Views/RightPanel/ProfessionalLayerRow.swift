@@ -216,7 +216,7 @@ struct ProfessionalLayerRow: View {
                         ObjectRow(
                             objectType: .text,
                             objectId: textObj.id,
-                            name: textObj.content.isEmpty ? "Text" : textObj.content,
+                            name: textObj.content.isEmpty ? "" : textObj.content,
                             isSelected: document.selectedTextIDs.contains(textObj.id),
                             isVisible: textObj.isVisible,
                             isLocked: textObj.isLocked,

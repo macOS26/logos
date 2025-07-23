@@ -383,15 +383,8 @@ struct SelectionHandlesView: View {
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObject = document.textObjects[textIndex]
                 if document.selectedTextIDs.contains(textObject.id) {
-                    if document.currentTool == .selection {
-                        // Arrow tool: Only text outline (no transform handles)
-                        TextSelectionOutline(
-                            document: document,
-                            textObject: textObject,
-                            zoomLevel: document.zoomLevel,
-                            canvasOffset: document.canvasOffset
-                        )
-                    } else if document.currentTool == .scale {
+                    // Only keep transform handles for scale/rotate/shear tools since those need to work with text
+                    if document.currentTool == .scale {
                         // Scale tool: Text scaling handles
                         TextScaleHandles(
                             document: document,
@@ -3388,12 +3381,13 @@ struct TextRotateHandles: View {
     let canvasOffset: CGPoint
     
     var body: some View {
-        // Simplified text rotation handles - just show outline for now
+        // SIMPLIFIED: Use text object position and bounds directly (no legacy calculation)
+        let bounds = textObject.bounds
         let absoluteBounds = CGRect(
-            x: textObject.position.x + textObject.bounds.minX,
-            y: textObject.position.y + textObject.bounds.minY,
-            width: textObject.bounds.width,
-            height: textObject.bounds.height
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: bounds.width,
+            height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         
@@ -3414,12 +3408,13 @@ struct TextShearHandles: View {
     let canvasOffset: CGPoint
     
     var body: some View {
-        // Simplified text shear handles - just show outline for now
+        // SIMPLIFIED: Use text object position and bounds directly (no legacy calculation)
+        let bounds = textObject.bounds
         let absoluteBounds = CGRect(
-            x: textObject.position.x + textObject.bounds.minX,
-            y: textObject.position.y + textObject.bounds.minY,
-            width: textObject.bounds.width,
-            height: textObject.bounds.height
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: bounds.width,
+            height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         
@@ -3435,32 +3430,9 @@ struct TextShearHandles: View {
 
 // MARK: - Text Selection Views
 
-// Simple text outline for Selection tool
-struct TextSelectionOutline: View {
-    @ObservedObject var document: VectorDocument
-    let textObject: VectorText
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    
-    var body: some View {
-        // SELECTION TOOL: Just show text bounding box outline (no transform handles)
-        let absoluteBounds = CGRect(
-            x: textObject.position.x + textObject.bounds.minX,
-            y: textObject.position.y + textObject.bounds.minY,
-            width: textObject.bounds.width,
-            height: textObject.bounds.height
-        )
-        let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
-        
-        Rectangle()
-            .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-            .frame(width: absoluteBounds.width, height: absoluteBounds.height)
-            .position(center)
-            .scaleEffect(zoomLevel, anchor: .topLeading)
-            .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(textObject.transform)
-    }
-}
+// REMOVED: Legacy TextSelectionOutline view that was causing wrong blue boxes
+// This view used old bounds calculations that didn't handle multi-line text properly
+// ProfessionalTextCanvas now handles all text selection visualization correctly
 
 // Scale handles for text objects with Scale tool
 struct TextScaleHandles: View {
@@ -3472,12 +3444,13 @@ struct TextScaleHandles: View {
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // SCALE TOOL: Show text bounding box outline with 4 corner scaling handles only
+        // SIMPLIFIED: Use text object position and bounds directly (no legacy calculation)
+        let bounds = textObject.bounds
         let absoluteBounds = CGRect(
-            x: textObject.position.x + textObject.bounds.minX,
-            y: textObject.position.y + textObject.bounds.minY,
-            width: textObject.bounds.width,
-            height: textObject.bounds.height
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: bounds.width,
+            height: bounds.height
         )
         let center = CGPoint(x: absoluteBounds.midX, y: absoluteBounds.midY)
         

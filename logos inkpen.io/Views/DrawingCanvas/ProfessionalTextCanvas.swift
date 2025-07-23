@@ -98,10 +98,8 @@ struct ProfessionalTextCanvas: View {
                 resizeOffset: resizeOffset,
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,  // NEW: Pass resize handle state
-                onTextBoxSelect: handleTextBoxSelect,
-                onTextBoxTap: handleTextBoxTap,
-                onDragChanged: handleDragChanged,
-                onDragEnded: handleDragEnded
+                onTextBoxSelect: handleTextBoxSelect
+                // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
             )
             
             ProfessionalTextDisplayView(
@@ -110,15 +108,17 @@ struct ProfessionalTextCanvas: View {
                 textBoxState: textBoxState
             )
             
-            // RESIZE HANDLE ALWAYS VISIBLE
-            ProfessionalResizeHandleView(
-                viewModel: viewModel,
-                dragOffset: dragOffset,
-                resizeOffset: resizeOffset,
-                onResizeChanged: handleResizeChanged,
-                onResizeEnded: handleResizeEnded,
-                onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
-            )
+            // RESIZE HANDLE ONLY VISIBLE IN BLUE (EDITING) MODE - NOT IN GREEN (SELECTION) MODE
+            if textBoxState == .blue {
+                ProfessionalResizeHandleView(
+                    viewModel: viewModel,
+                    dragOffset: dragOffset,
+                    resizeOffset: resizeOffset,
+                    onResizeChanged: handleResizeChanged,
+                    onResizeEnded: handleResizeEnded,
+                    onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
+                )
+            }
         }
         // CRITICAL FIX: Apply the SAME coordinate system as all other objects
         .scaleEffect(document.zoomLevel, anchor: .topLeading)
@@ -138,6 +138,11 @@ struct ProfessionalTextCanvas: View {
             viewModel.isEditing = isEditing
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
+        // CRITICAL FIX: Monitor document text objects for editing state changes
+        .onChange(of: document.textObjects.map { $0.isEditing }) { _, _ in
+            print("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state")
+            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+        }
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
             
@@ -147,6 +152,36 @@ struct ProfessionalTextCanvas: View {
             print("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas")
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
+            // NEW: When user selects type tool and this text box is GREEN (selected), change to BLUE (editing)
+            if oldTool != .font && newTool == .font && textBoxState == .green {
+                print("🔧 TOOL CHANGE: Type tool selected with GREEN text box - switching to BLUE (editing)")
+                
+                // CRITICAL: Ensure only one text box can be edited at a time
+                // Stop editing on all other text boxes first
+                for textIndex in document.textObjects.indices {
+                    if document.textObjects[textIndex].id != viewModel.textObject.id && document.textObjects[textIndex].isEditing {
+                        document.textObjects[textIndex].isEditing = false
+                        print("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode")
+                    }
+                }
+                
+                // Start editing this text box
+                viewModel.startEditing()
+                
+                // Update document editing state
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
+                    document.textObjects[textIndex].isEditing = true
+                }
+                
+                // CRITICAL FIX: Force immediate state update and sync
+                textBoxState = .blue
+                print("🔵 FORCED STATE CHANGE: GREEN → BLUE due to type tool selection")
+                
+                DispatchQueue.main.async {
+                    updateTextBoxState(selectedIDs: document.selectedTextIDs)
+                }
+            }
+            
             // PROFESSIONAL UX: Stop editing when user switches away from font tool
             if oldTool == .font && newTool != .font && viewModel.isEditing {
                 print("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))")
@@ -198,15 +233,19 @@ struct ProfessionalTextCanvas: View {
         print("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))")
         print("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })")
         
-        if (currentTextObject.isEditing || hasTextViewFocus) && isTextToolActive {
+        // FIXED: Prioritize editing state correctly
+        if currentTextObject.isEditing && isTextToolActive {
             textBoxState = .blue
-            print("  → BLUE (editing mode)")
+            print("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)")
+        } else if hasTextViewFocus && isTextToolActive {
+            textBoxState = .blue
+            print("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)")
         } else if isThisTextSelected && isTextToolActive {
             textBoxState = .green
-            print("  → GREEN (selected with font tool)")
+            print("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)")
         } else if isThisTextSelected {
             textBoxState = .green
-            print("  → GREEN (selected)")
+            print("  → GREEN (selected) - selected=\(isThisTextSelected)")
         } else {
             textBoxState = .gray
             print("  → GRAY (unselected)")
@@ -236,56 +275,10 @@ struct ProfessionalTextCanvas: View {
         }
     }
     
-    private func handleTextBoxTap(location: CGPoint) {
-        // DOUBLE CLICK: Start editing if font tool is active
-        if textBoxState == .green && document.currentTool == .font {
-            textBoxState = .blue
-            viewModel.startEditing()
-            // Update document editing state
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].isEditing = true
-            }
-        } else if document.currentTool == .font {
-            // If font tool is active but not selected, select first then start editing
-            document.selectedTextIDs = [viewModel.textObject.id]
-            document.selectedShapeIDs.removeAll()
-            textBoxState = .blue
-            viewModel.startEditing()
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].isEditing = true
-            }
-        }
-    }
+
     
-    private func handleDragChanged(value: DragGesture.Value) {
-        // IMPROVED: Only allow text box movement when NOT resizing AND resize handle is not active
-        if !isResizing && !isResizeHandleActive && textBoxState == .green {
-            isDragging = true
-            dragOffset = value.translation
-            print("📦 TEXT BOX MOVE: \(value.translation) (resize handle inactive)")
-        } else if isResizeHandleActive {
-            print("🚫 TEXT BOX MOVE BLOCKED: Resize handle is active")
-        }
-    }
-    
-    private func handleDragEnded() {
-        if isDragging {
-            let newFrame = CGRect(
-                x: viewModel.textBoxFrame.minX + dragOffset.width,
-                y: viewModel.textBoxFrame.minY + dragOffset.height,
-                width: viewModel.textBoxFrame.width,
-                height: viewModel.textBoxFrame.height
-            )
-            viewModel.updateTextBoxFrame(newFrame)
-            // Update document position
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
-            }
-            dragOffset = .zero
-            isDragging = false
-            print("✅ TEXT BOX MOVE COMPLETED")
-        }
-    }
+    // REMOVED: handleDragChanged and handleDragEnded functions
+    // Arrow tool now handles all text box dragging with its built-in system
     
     // NEW: Track when resize starts
     private func handleResizeStarted() {
@@ -344,9 +337,7 @@ struct ProfessionalTextBoxView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     let isResizeHandleActive: Bool  // NEW: Track resize handle state
     let onTextBoxSelect: (CGPoint) -> Void
-    let onTextBoxTap: (CGPoint) -> Void
-    let onDragChanged: (DragGesture.Value) -> Void
-    let onDragEnded: () -> Void
+    // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
     
     private func getBorderColor() -> Color {
         switch textBoxState {
@@ -357,47 +348,34 @@ struct ProfessionalTextBoxView: View {
     }
     
     var body: some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.01)) // Nearly transparent but allows hit testing
-            .stroke(getBorderColor(), lineWidth: 2)
-            .frame(
-                width: viewModel.textBoxFrame.width + resizeOffset.width,
-                height: viewModel.textBoxFrame.height + resizeOffset.height
-            )
-            .position(
-                x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
-                y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
-            )
-            .highPriorityGesture(
-                TapGesture(count: 2)
-                    .onEnded { 
-                        onTextBoxTap(CGPoint.zero)
-                    }
-            )
-            .highPriorityGesture(
-                DragGesture(minimumDistance: 5)
-                    .onChanged { value in
-                        // IMPROVED: Only trigger if resize handle is not active
-                        if !isResizeHandleActive {
-                            onDragChanged(value)
-                        } else {
-                            print("🚫 TEXT BOX DRAG BLOCKED: Resize handle is active")
-                        }
-                    }
-                    .onEnded { _ in 
-                        // IMPROVED: Only trigger if resize handle is not active
-                        if !isResizeHandleActive {
-                            onDragEnded()
-                        }
-                    }
-            )
-            .onTapGesture(count: 1) { location in
-                onTextBoxSelect(location)
-            }
-            // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
-            .allowsHitTesting(textBoxState != .blue)
+        ZStack {
+            // Main text box rectangle with clear background
+            Rectangle()
+                .fill(Color.clear) // Clear background - arrow tool handles hit detection
+                .stroke(getBorderColor(), lineWidth: 2) // Standard 2px border width
+                .frame(
+                    width: viewModel.textBoxFrame.width + resizeOffset.width,
+                    height: viewModel.textBoxFrame.height + resizeOffset.height
+                )
+                .position(
+                    x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
+                    y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
+                )
+                .onTapGesture(count: 1) { location in
+                    onTextBoxSelect(location)
+                }
+                // REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally
+                // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
+                .allowsHitTesting(textBoxState != .blue)
+            
+            // REMOVED: Red corner circles were jumping around and awful
+        }
     }
+    
+
 }
+
+
 
 // MARK: - Professional Text Display (Based on Working TextDisplayView)
 struct ProfessionalTextDisplayView: View {
@@ -427,6 +405,7 @@ struct ProfessionalTextContentView: View {
     var body: some View {
         // ALWAYS USE NSTextView for consistent rendering - just control editing state
         ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue)
+            .allowsHitTesting(textBoxState == .blue) // CRITICAL: Only allow NSTextView hits in BLUE mode, let drag gestures pass through in GREEN/GRAY
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
@@ -547,6 +526,36 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         nsView.defaultParagraphStyle = paragraphStyle
+        
+        // CRITICAL FIX: Update text container width when text box is resized
+        let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
+        let newWidth = viewModel.textBoxFrame.width
+        
+        if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
+            print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
+            
+            // Update text container size for proper text reflow
+            nsView.textContainer?.containerSize = NSSize(
+                width: newWidth,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+            
+            // Update frame to match new width
+            nsView.frame = CGRect(
+                x: 0, y: 0,
+                width: newWidth,
+                height: viewModel.textBoxFrame.height
+            )
+            
+            // Update max/min sizes
+            nsView.maxSize = NSSize(width: newWidth, height: CGFloat.greatestFiniteMagnitude)
+            nsView.minSize = NSSize(width: newWidth, height: 50)
+            
+            // Force layout refresh for immediate text reflow
+            nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+            
+            print("✅ TEXT REFLOW: Container updated, text should now wrap to new width")
+        }
         
         print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue), LINE SPACING: \(viewModel.textObject.typography.lineSpacing)pt, LINE HEIGHT: \(viewModel.textObject.typography.lineHeight)pt to NSTextView")
         
@@ -720,7 +729,7 @@ struct ProfessionalResizeHandleView: View {
 
 // MARK: - Professional Text View Model (Based on Working TextEditorViewModel)
 class ProfessionalTextViewModel: ObservableObject {
-    @Published var text: String = "Text" {
+    @Published var text: String = "" {
         didSet {
             // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
             // Text content changes don't affect size - only user drag resizing
