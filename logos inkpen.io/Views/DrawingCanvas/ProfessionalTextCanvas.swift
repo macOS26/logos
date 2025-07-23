@@ -551,6 +551,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             parent.viewModel.text = newText
             parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: newText)
             
+            // CRITICAL FIX: Update VectorText bounds to match current text box frame
+            // This ensures the main selection system stays in sync with the text canvas
+            parent.viewModel.updateDocumentTextBounds(parent.viewModel.textBoxFrame)
+            
             // Reset flag after a brief delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
                 parent.isUpdatingFromTyping = false
@@ -713,8 +717,7 @@ class ProfessionalTextViewModel: ObservableObject {
         self.fontSize = CGFloat(currentTextObject.typography.fontSize)
         self.selectedFont = currentTextObject.typography.nsFont
 
-        // CRITICAL FIX: NEVER sync size from VectorText - ONLY sync position and ONLY if not manually positioned
-        // The text box frame is ENTIRELY managed by the view model after creation
+        // CRITICAL FIX: Smart text box frame management
         if textBoxFrame.width == 0 && textBoxFrame.height == 0 {
             // INITIAL CREATION ONLY - use VectorText bounds (user-defined size)
             self.textBoxFrame = CGRect(
@@ -725,14 +728,20 @@ class ProfessionalTextViewModel: ObservableObject {
             )
             print("📦 TEXT BOX INITIAL CREATION: Using VectorText bounds \(self.textBoxFrame)")
         } else {
-            // EXISTING TEXT BOX: ONLY sync position, NEVER size
+            // EXISTING TEXT BOX: Sync position, preserve size, but update VectorText bounds to match
+            let oldFrame = self.textBoxFrame
             self.textBoxFrame = CGRect(
                 x: currentTextObject.position.x,
                 y: currentTextObject.position.y,
                 width: textBoxFrame.width,   // PRESERVE USER'S WIDTH
                 height: textBoxFrame.height  // PRESERVE USER'S HEIGHT
             )
-            print("📦 TEXT BOX SYNC: Preserved user size, only updated position")
+            
+            // CRITICAL FIX: If text box frame differs from VectorText bounds, update VectorText
+            if oldFrame.width != currentTextObject.bounds.width || oldFrame.height != currentTextObject.bounds.height {
+                updateDocumentTextBounds(self.textBoxFrame)
+                print("📦 TEXT BOX SYNC: Updated VectorText bounds to match text canvas")
+            }
         }
 
         self.isEditing = currentTextObject.isEditing
@@ -968,21 +977,28 @@ class ProfessionalTextViewModel: ObservableObject {
         
         textBoxFrame = newFrame
         
-        // Update the document VectorText position and bounds
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = CGPoint(x: newFrame.minX, y: newFrame.minY)
-            document.textObjects[textIndex].bounds = CGRect(
-                x: 0, y: 0, 
-                width: newFrame.width, 
-                height: newFrame.height
-            )
-        }
+        // CRITICAL FIX: Update VectorText bounds to match actual text box size
+        // This ensures the main selection system (blue/red rectangle) matches the text canvas
+        updateDocumentTextBounds(newFrame)
         
         print("🔄 MANUAL RESIZE: Updated text box frame to \(newFrame)")
         
         // Re-enable auto-resize after a delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             self.isAutoResizing = false
+        }
+    }
+    
+    public func updateDocumentTextBounds(_ frame: CGRect) {
+        // Update the document VectorText position and bounds to match actual text canvas
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            document.textObjects[textIndex].position = CGPoint(x: frame.minX, y: frame.minY)
+            document.textObjects[textIndex].bounds = CGRect(
+                x: 0, y: 0, 
+                width: frame.width, 
+                height: frame.height
+            )
+            print("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds)")
         }
     }
     
