@@ -242,7 +242,7 @@ struct FontPanel: View {
                                 .controlSize(.small)
                             }
                             
-                            // Line Height Control (-fontSize*1.5 to +fontSize*1.5)
+                            // Line Height Control (-24 to +24)
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Text("Line Height")
@@ -250,7 +250,7 @@ struct FontPanel: View {
                                         .fontWeight(.semibold)
                                         .foregroundColor(.secondary)
                                     Spacer()
-                                    Text(currentLineHeight == currentFontSize ? "Normal" : (currentLineHeight > currentFontSize ? "+\(String(format: "%.0f", currentLineHeight - currentFontSize)) pt" : "\(String(format: "%.0f", currentLineHeight - currentFontSize)) pt"))
+                                    Text(currentLineHeight == 0 ? "Normal" : (currentLineHeight > 0 ? "+\(String(format: "%.0f", currentLineHeight)) pt" : "\(String(format: "%.0f", currentLineHeight)) pt"))
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
@@ -260,10 +260,7 @@ struct FontPanel: View {
                                     set: { newHeight in
                                         updateLineHeight(newHeight)
                                     }
-                                ), in: {
-                                    let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
-                                    return (fontSize - fontSize * 1.5)...(fontSize + fontSize * 1.5)
-                                }())
+                                ), in: -24...24)
                                 .controlSize(.small)
                             }
                             
@@ -349,8 +346,8 @@ struct FontPanel: View {
     }
     
     private var currentLineHeight: CGFloat {
-        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
-        // RAW LINE HEIGHT VALUE (-fontSize*1.5 to +fontSize*1.5)
+        guard let selectedText = selectedText else { return 0.0 }
+        // RAW LINE HEIGHT VALUE (-24 to +24)
         return selectedText.typography.lineHeight
     }
     
@@ -391,7 +388,7 @@ struct FontPanel: View {
     
     private func updateLineHeight(_ height: CGFloat) {
         updateSelectedTextProperties(action: "Updated line height to \(height)pt") { text in
-            // RAW LINE HEIGHT VALUE (fontSize*-0.5 to fontSize*2.5)
+            // RAW LINE HEIGHT VALUE (-24 to +24)
             text.typography.lineHeight = Double(height)
         }
     }
@@ -404,7 +401,7 @@ struct FontPanel: View {
             text.typography.fontSize = document.fontManager.selectedFontSize
             // Reset to defaults when changing fonts
             text.typography.lineSpacing = 0.0  // Default line spacing = 0
-            text.typography.lineHeight = document.fontManager.selectedFontSize  // Default line height = fontSize
+            text.typography.lineHeight = 0.0  // Default line height = 0
         }
     }
     

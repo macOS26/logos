@@ -119,7 +119,7 @@ struct TypographyProperties: Codable, Hashable {
         fontWeight: FontWeight = .regular,
         fontStyle: FontStyle = .normal,
         fontSize: Double = 24.0,
-        lineHeight: Double = 28.8,
+        lineHeight: Double = 0.0,
         lineSpacing: Double = 0.0,
         letterSpacing: Double = 0.0,
         alignment: TextAlignment = .left,
