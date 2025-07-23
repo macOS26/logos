@@ -471,28 +471,33 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.setSelectedRange(currentSelection)
         }
         
-        // CRITICAL: Enforce fixed width, unlimited height for text flow
-        nsView.textContainer?.containerSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for wrapping
-        )
-        
-        // CRITICAL: Enforce frame constraints to prevent horizontal expansion
+        // CRITICAL: Enforce frame constraints to prevent horizontal expansion BUT allow proper text selection
         nsView.frame = CGRect(
             x: 0, y: 0,
             width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-            height: viewModel.textBoxFrame.height    // Current height
+            height: max(viewModel.textBoxFrame.height, 100)  // Ensure minimum height for selection
         )
         
-        // CRITICAL: Enforce size constraints
+        // CRITICAL: Enforce size constraints but allow text selection display
         nsView.maxSize = NSSize(
             width: viewModel.textBoxFrame.width,     // MAX WIDTH = FIXED WIDTH
             height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT
         )
         nsView.minSize = NSSize(
             width: viewModel.textBoxFrame.width,     // MIN WIDTH = FIXED WIDTH
-            height: 50                              // MIN HEIGHT
+            height: 50                              // MIN HEIGHT for proper selection display
         )
+        
+        // CRITICAL FIX: Ensure text container is properly sized for selection display
+        nsView.textContainer?.containerSize = NSSize(
+            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
+            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for text flow AND selection
+        )
+        
+        // CRITICAL FIX: Allow proper text selection by ensuring layout manager is configured correctly
+        nsView.textContainer?.lineFragmentPadding = 4.0  // Small padding for selection visibility
+        nsView.textContainer?.widthTracksTextView = false  // Don't auto-track width changes
+        nsView.textContainer?.heightTracksTextView = false // Don't auto-track height changes
         
         // For justified text, ensure proper layout manager settings
         if viewModel.textAlignment == .justified {
@@ -509,6 +514,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             
             // Update viewModel.text FIRST to trigger auto-resize
             viewModel.text = newText
+            
+            // CRITICAL FIX: Trigger auto-resize when text changes
+            viewModel.scheduleAutoResize()
             
             // Update document
             viewModel.document.updateTextContent(viewModel.textObject.id, content: newText)
@@ -748,26 +756,35 @@ class ProfessionalTextViewModel: ObservableObject {
     private func syncFromVectorText() {
         guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
         
-        // CRITICAL: Don't sync during auto-resize to prevent height conflicts
-        guard !isAutoResizing else { return }
-        
+        // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow other updates
+        if isAutoResizing && currentTextObject.content == self.text {
+            print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
+            // Still sync other properties like colors, fonts, etc.
+            self.fontSize = CGFloat(currentTextObject.typography.fontSize)
+            self.selectedFont = currentTextObject.typography.nsFont
+            self.isEditing = currentTextObject.isEditing
+            self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
+            self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
+            return
+        }
+
         self.text = currentTextObject.content
         self.fontSize = CGFloat(currentTextObject.typography.fontSize)
         self.selectedFont = currentTextObject.typography.nsFont
-        
+
         // CRITICAL: Text boxes have FIXED width, and we manage height separately
         let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH FOR TEXT BOXES
-        
+
         // ONLY sync height if we don't have a current height (initial setup)
         let currentHeight = textBoxFrame.height > 0 ? textBoxFrame.height : max(currentTextObject.bounds.height, 100)
-        
+
         self.textBoxFrame = CGRect(
             x: currentTextObject.position.x,
             y: currentTextObject.position.y,
             width: fixedWidth,    // ALWAYS FIXED WIDTH
             height: currentHeight // PRESERVE CURRENT HEIGHT - don't sync from VectorText
         )
-        
+
         self.isEditing = currentTextObject.isEditing
         self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
         self.lineSpacing = CGFloat(currentTextObject.typography.lineHeight - currentTextObject.typography.fontSize)
@@ -775,10 +792,28 @@ class ProfessionalTextViewModel: ObservableObject {
     
     // MARK: - PUBLIC method for external syncing
     public func syncFromVectorText(_ textObject: VectorText) {
-        // CRITICAL: Don't sync during auto-resize to prevent infinite loops
-        guard !isAutoResizing else { 
-            print("🚫 SYNC BLOCKED: Auto-resize in progress, preventing sync to avoid loops")
-            return 
+        // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow color/font updates
+        if isAutoResizing && textObject.content == self.text {
+            print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
+            
+            // Still sync colors, fonts, and other properties during auto-resize
+            let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
+            
+            self.textObject = textObject  // Update for color changes
+            self.fontSize = CGFloat(textObject.typography.fontSize)
+            self.selectedFont = textObject.typography.nsFont
+            self.isEditing = textObject.isEditing
+            self.textAlignment = textObject.typography.alignment.nsTextAlignment
+            self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
+            
+            // Force SwiftUI update when colors change
+            if colorChanged {
+                print("🎨 COLOR CHANGED during auto-resize: Forcing view refresh")
+                DispatchQueue.main.async {
+                    self.objectWillChange.send()
+                }
+            }
+            return
         }
         
         // CRITICAL: Don't sync if content hasn't actually changed (BUT always sync colors)
