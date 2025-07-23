@@ -16,7 +16,8 @@ struct FontPanel: View {
     }
     
     private var currentFontFamily: String {
-        selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily
+        guard let selectedText = selectedText else { return document.fontManager.selectedFontFamily }
+        return selectedText.typography.fontFamily
     }
     
     private var availableFontWeights: [FontWeight] {
@@ -50,11 +51,21 @@ struct FontPanel: View {
                                     .foregroundColor(.secondary)
                                 
                                 Picker("Font Family", selection: Binding(
-                                    get: { selectedText?.typography.fontFamily ?? document.fontManager.selectedFontFamily },
+                                    get: { 
+                                        guard let selectedText = selectedText else { return document.fontManager.selectedFontFamily }
+                                        return selectedText.typography.fontFamily
+                                    },
                                     set: { newFamily in
-                                        document.fontManager.selectedFontFamily = newFamily
-                                        validateAndUpdateWeightAndStyle()
-                                        updateSelectedTextFont()
+                                        if let _ = selectedText {
+                                            // Update selected text only - NO document.fontManager changes
+                                            updateSelectedTextProperties(action: "Changed font family") { text in
+                                                text.typography.fontFamily = newFamily
+                                                validateAndUpdateWeightAndStyle()
+                                            }
+                                        } else {
+                                            // Update document font manager for new text creation only
+                                            document.fontManager.selectedFontFamily = newFamily
+                                        }
                                     }
                                 )) {
                                     ForEach(document.fontManager.availableFonts, id: \.self) { fontFamily in
@@ -65,13 +76,7 @@ struct FontPanel: View {
                                 }
                                 .pickerStyle(.menu)
                                 .frame(maxWidth: .infinity)
-                                .onChange(of: document.fontManager.selectedFontFamily) { _, _ in
-                                    // Force refresh of available weights and styles when font changes
-                                    validateAndUpdateWeightAndStyle()
-                                    DispatchQueue.main.async {
-                                        document.objectWillChange.send()
-                                    }
-                                }
+                                // REMOVED: onChange handler that was causing property sync when switching tools
                             }
                             
                             // Font Weight
@@ -83,12 +88,21 @@ struct FontPanel: View {
                                 
                                 Picker("Weight", selection: Binding(
                                     get: { 
-                                        let currentWeight = selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight
-                                        return availableFontWeights.contains(currentWeight) ? currentWeight : availableFontWeights.first ?? .regular
+                                        guard let selectedText = selectedText else { 
+                                            return availableFontWeights.contains(document.fontManager.selectedFontWeight) ? document.fontManager.selectedFontWeight : availableFontWeights.first ?? .regular
+                                        }
+                                        return availableFontWeights.contains(selectedText.typography.fontWeight) ? selectedText.typography.fontWeight : availableFontWeights.first ?? .regular
                                     },
                                     set: { newWeight in
-                                        document.fontManager.selectedFontWeight = newWeight
-                                        updateSelectedTextFont()
+                                        if let _ = selectedText {
+                                            // Update selected text only - NO document.fontManager changes
+                                            updateSelectedTextProperties(action: "Changed font weight") { text in
+                                                text.typography.fontWeight = newWeight
+                                            }
+                                        } else {
+                                            // Update document font manager for new text creation only
+                                            document.fontManager.selectedFontWeight = newWeight
+                                        }
                                     }
                                 )) {
                                     ForEach(availableFontWeights, id: \.self) { weight in
@@ -98,9 +112,7 @@ struct FontPanel: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .onChange(of: currentFontFamily) { _ in
-                                    validateAndUpdateWeightAndStyle()
-                                }
+                                // REMOVED: onChange handler that was causing property sync when switching tools
                             }
                             
                             // Font Style  
@@ -112,12 +124,21 @@ struct FontPanel: View {
                                 
                                 Picker("Style", selection: Binding(
                                     get: { 
-                                        let currentStyle = selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle
-                                        return availableFontStyles.contains(currentStyle) ? currentStyle : availableFontStyles.first ?? .normal
+                                        guard let selectedText = selectedText else { 
+                                            return availableFontStyles.contains(document.fontManager.selectedFontStyle) ? document.fontManager.selectedFontStyle : availableFontStyles.first ?? .normal
+                                        }
+                                        return availableFontStyles.contains(selectedText.typography.fontStyle) ? selectedText.typography.fontStyle : availableFontStyles.first ?? .normal
                                     },
                                     set: { newStyle in
-                                        document.fontManager.selectedFontStyle = newStyle
-                                        updateSelectedTextFont()
+                                        if let _ = selectedText {
+                                            // Update selected text only - NO document.fontManager changes
+                                            updateSelectedTextProperties(action: "Changed font style") { text in
+                                                text.typography.fontStyle = newStyle
+                                            }
+                                        } else {
+                                            // Update document font manager for new text creation only
+                                            document.fontManager.selectedFontStyle = newStyle
+                                        }
                                     }
                                 )) {
                                     ForEach(availableFontStyles, id: \.self) { style in
@@ -127,9 +148,7 @@ struct FontPanel: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .onChange(of: currentFontFamily) { _ in
-                                    validateAndUpdateWeightAndStyle()
-                                }
+                                // REMOVED: onChange handler that was causing property sync when switching tools
                             }
                             
                             // Font Size - Slider from 1pt to 288pt
@@ -146,10 +165,24 @@ struct FontPanel: View {
                                 }
                                 
                                 Slider(value: Binding(
-                                    get: { selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize },
+                                    get: { 
+                                        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
+                                        return selectedText.typography.fontSize
+                                    },
                                     set: { newSize in
-                                        document.fontManager.selectedFontSize = newSize
-                                        updateSelectedTextFont()
+                                        if let _ = selectedText {
+                                            // Update selected text only - NO document.fontManager changes
+                                            updateSelectedTextProperties(action: "Changed font size") { text in
+                                                text.typography.fontSize = newSize
+                                                // Update line height to maintain proportion when font size changes
+                                                if text.typography.lineHeight > 0 {
+                                                    text.typography.lineHeight = newSize
+                                                }
+                                            }
+                                        } else {
+                                            // Update document font manager for new text creation only
+                                            document.fontManager.selectedFontSize = newSize
+                                        }
                                     }
                                 ), in: 1...288)
                                 .controlSize(.small)
@@ -336,8 +369,7 @@ struct FontPanel: View {
         }
         // REMOVED: Separate color picker sheets - use main color system instead
         .onAppear {
-            // Initialize and validate font weights/styles when panel loads
-            validateAndUpdateWeightAndStyle()
+            // REMOVED: validateAndUpdateWeightAndStyle() that was causing property changes when switching tools
             DispatchQueue.main.async {
                 document.objectWillChange.send()
             }
@@ -351,13 +383,13 @@ struct FontPanel: View {
     
     private var currentLineSpacing: CGFloat {
         guard let selectedText = selectedText else { return 0.0 }
-        // RAW LINE SPACING VALUE (0 to fontSize/2)
+        // RAW LINE SPACING VALUE (0 to fontSize/2) - SINGLE SOURCE OF TRUTH
         return selectedText.typography.lineSpacing
     }
     
     private var currentLineHeight: CGFloat {
         guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
-        // RAW LINE HEIGHT VALUE (fontSize/2 to fontSize*2)
+        // RAW LINE HEIGHT VALUE (fontSize/2 to fontSize*2) - SINGLE SOURCE OF TRUTH
         return selectedText.typography.lineHeight
     }
     
@@ -403,17 +435,7 @@ struct FontPanel: View {
         }
     }
     
-    private func updateSelectedTextFont() {
-        updateSelectedTextProperties(action: "Updated font properties and reset line spacing/height") { text in
-            text.typography.fontFamily = document.fontManager.selectedFontFamily
-            text.typography.fontWeight = document.fontManager.selectedFontWeight
-            text.typography.fontStyle = document.fontManager.selectedFontStyle
-            text.typography.fontSize = document.fontManager.selectedFontSize
-            // Reset to defaults when changing fonts
-            text.typography.lineSpacing = 0.0  // Default line spacing = 0
-            text.typography.lineHeight = text.typography.fontSize  // Default line height = fontSize
-        }
-    }
+    // REMOVED: updateSelectedTextFont() - now using targeted updates for single source of truth
     
     // Create preview font for picker display
     private func createPreviewFont(weight: FontWeight, style: FontStyle) -> Font {
@@ -438,19 +460,24 @@ struct FontPanel: View {
         let weights = availableFontWeights
         let styles = availableFontStyles
         
-        // Update weight if current one doesn't exist
-        if !weights.contains(document.fontManager.selectedFontWeight) {
-            document.fontManager.selectedFontWeight = weights.first ?? .regular
-        }
-        
-        // Update style if current one doesn't exist  
-        if !styles.contains(document.fontManager.selectedFontStyle) {
-            document.fontManager.selectedFontStyle = styles.first ?? .normal
-        }
-        
-        // Update any selected text
-        if !document.selectedTextIDs.isEmpty {
-            updateSelectedTextFont()
+        if let _ = selectedText {
+            // Update selected text's weight/style if invalid - NO document.fontManager changes
+            updateSelectedTextProperties(action: "Validated font weight/style") { text in
+                if !weights.contains(text.typography.fontWeight) {
+                    text.typography.fontWeight = weights.first ?? .regular
+                }
+                if !styles.contains(text.typography.fontStyle) {
+                    text.typography.fontStyle = styles.first ?? .normal
+                }
+            }
+        } else {
+            // Update document font manager for new text creation only
+            if !weights.contains(document.fontManager.selectedFontWeight) {
+                document.fontManager.selectedFontWeight = weights.first ?? .regular
+            }
+            if !styles.contains(document.fontManager.selectedFontStyle) {
+                document.fontManager.selectedFontStyle = styles.first ?? .normal
+            }
         }
     }
     
