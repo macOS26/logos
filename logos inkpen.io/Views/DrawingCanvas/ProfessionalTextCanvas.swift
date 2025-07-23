@@ -687,7 +687,7 @@ struct ProfessionalResizeHandleView: View {
 
 // MARK: - Professional Text View Model (Based on Working TextEditorViewModel)
 class ProfessionalTextViewModel: ObservableObject {
-    @Published var text: String = "Text" {
+    @Published var text: String = "" {
         didSet {
             // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
             // Text content changes don't affect size - only user drag resizing

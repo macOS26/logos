@@ -350,7 +350,7 @@ extension DrawingCanvas {
         
         // Create new text object with USER-DEFINED bounds
         var newText = VectorText(
-            content: "Text", // Start with placeholder text
+            content: "", // Start with placeholder text
             typography: typography,
             position: location,
             isEditing: true

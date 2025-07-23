@@ -240,7 +240,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     // Professional text metrics using Core Text
     var textBounds: CGRect {
         let font = createCoreTextFont()
-        let displayText = content.isEmpty ? "Text" : content
+        let displayText = content.isEmpty ? "" : content
         
         // Create attributed string with proper font and kerning
         let attributes: [NSAttributedString.Key: Any] = [
@@ -260,7 +260,7 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     init(
-        content: String = "Text",
+        content: String = "",
         typography: TypographyProperties = TypographyProperties(strokeColor: .black, fillColor: .black),  // Fallback for manual creation only
         position: CGPoint = .zero,
         transform: CGAffineTransform = .identity,
@@ -306,7 +306,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         
         // LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases
         let font = createCoreTextFont()
-        let displayText = content.isEmpty ? "Text" : content
+        let displayText = content.isEmpty ? "" : content
         
         if isSingleLineText {
             // Single line text: Use CTLine (original logic)
