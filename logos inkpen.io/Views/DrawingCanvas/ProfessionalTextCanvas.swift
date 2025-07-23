@@ -586,45 +586,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             print("   - New Height (with padding): \(newHeight)pt")
             print("   - Current Frame: \(parent.viewModel.textBoxFrame)")
             
-            // CRITICAL FIX: Update only view model directly, avoid document cascade
-            DispatchQueue.main.async {
-                // Prevent auto-resize conflicts during manual changes
-                self.parent.viewModel.isAutoResizing = true
-                
-                // Update view model text (this won't trigger auto-resize due to flag above)
-                self.parent.viewModel.text = newText
-                
-                // Update text box height based on NSTextView's actual height
-                let currentFrame = self.parent.viewModel.textBoxFrame
-                let newFrame = CGRect(
-                    x: currentFrame.minX,
-                    y: currentFrame.minY,
-                    width: currentFrame.width,  // Keep width fixed
-                    height: newHeight          // Use NSTextView's required height
-                )
-                
-                print("📐 UPDATING FRAME: \(currentFrame) → \(newFrame)")
-                self.parent.viewModel.textBoxFrame = newFrame
-                
-                // SIMPLIFIED: Update document directly without triggering cascade
-                if let textIndex = self.parent.viewModel.document.textObjects.firstIndex(where: { $0.id == self.parent.viewModel.textObject.id }) {
-                    // Direct update without triggering notifications
-                    var updatedText = self.parent.viewModel.document.textObjects[textIndex]
-                    updatedText.content = newText
-                    updatedText.bounds = CGRect(
-                        x: 0, y: 0, 
-                        width: currentFrame.width, 
-                        height: newHeight
-                    )
-                    self.parent.viewModel.document.textObjects[textIndex] = updatedText
-                    
-                    print("📋 UPDATED DOCUMENT BOUNDS: \(updatedText.bounds)")
-                }
-                
-                // Re-enable auto-resize after changes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    self.parent.viewModel.isAutoResizing = false
-                }
+            // CRITICAL: Update viewModel first to prevent loops
+            parent.viewModel.text = newText
+            
+            // CRITICAL FIX: Trigger auto-resize when text changes
+            parent.viewModel.scheduleAutoResize()
+            
+            // Update document
+            parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: newText)
+            
+            // Re-enable auto-resize after changes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.parent.viewModel.isAutoResizing = false
             }
         }
     }
@@ -668,8 +641,9 @@ struct ProfessionalResizeHandleView: View {
 class ProfessionalTextViewModel: ObservableObject {
     @Published var text: String = "Text" {
         didSet {
-            // CRITICAL: Only auto-resize if text actually changed and auto-expand is enabled
-            if oldValue != text && autoExpandVertically && !isAutoResizing {
+            // CRITICAL: Auto-resize when text content changes (if enabled)
+            if autoExpandVertically && text != oldValue {
+                print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - scheduling auto-resize")
                 scheduleAutoResize()
             }
         }
@@ -772,18 +746,30 @@ class ProfessionalTextViewModel: ObservableObject {
         self.fontSize = CGFloat(currentTextObject.typography.fontSize)
         self.selectedFont = currentTextObject.typography.nsFont
 
-        // CRITICAL: Text boxes have FIXED width, and we manage height separately
-        let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH FOR TEXT BOXES
-
-        // ONLY sync height if we don't have a current height (initial setup)
-        let currentHeight = textBoxFrame.height > 0 ? textBoxFrame.height : max(currentTextObject.bounds.height, 100)
-
-        self.textBoxFrame = CGRect(
-            x: currentTextObject.position.x,
-            y: currentTextObject.position.y,
-            width: fixedWidth,    // ALWAYS FIXED WIDTH
-            height: currentHeight // PRESERVE CURRENT HEIGHT - don't sync from VectorText
-        )
+        // CRITICAL FIX: NEVER sync size from VectorText - ONLY sync position and ONLY if not manually positioned
+        // The text box frame is ENTIRELY managed by the view model after creation
+        if textBoxFrame.width == 0 && textBoxFrame.height == 0 {
+            // INITIAL CREATION ONLY - set default size
+            let fixedWidth: CGFloat = 300  // DEFAULT FIXED WIDTH
+            let initialHeight: CGFloat = 100  // DEFAULT INITIAL HEIGHT
+            
+            self.textBoxFrame = CGRect(
+                x: currentTextObject.position.x,
+                y: currentTextObject.position.y,
+                width: fixedWidth,
+                height: initialHeight
+            )
+            print("📦 TEXT BOX INITIAL CREATION: \(self.textBoxFrame)")
+        } else {
+            // EXISTING TEXT BOX: ONLY sync position, NEVER size
+            self.textBoxFrame = CGRect(
+                x: currentTextObject.position.x,
+                y: currentTextObject.position.y,
+                width: textBoxFrame.width,   // PRESERVE USER'S WIDTH
+                height: textBoxFrame.height  // PRESERVE USER'S HEIGHT
+            )
+            print("📦 TEXT BOX SYNC: Preserved user size, only updated position")
+        }
 
         self.isEditing = currentTextObject.isEditing
         self.textAlignment = currentTextObject.typography.alignment.nsTextAlignment
@@ -851,14 +837,43 @@ class ProfessionalTextViewModel: ObservableObject {
             }
         }
         
-        // Update position but preserve current width/height
-        let currentFrame = self.textBoxFrame
+        // CRITICAL FIX: NEVER override user's manual resize - ONLY sync position
+        // Text box size is ENTIRELY controlled by user manual resize and auto-resize
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: currentFrame.width,   // PRESERVE CURRENT WIDTH
-            height: currentFrame.height  // PRESERVE CURRENT HEIGHT
+            width: self.textBoxFrame.width,   // PRESERVE USER'S WIDTH
+            height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
         )
+        
+        print("📦 EXTERNAL SYNC: Preserved user text box size, only updated position")
+    }
+    
+    // MARK: - USER MANUAL RESIZE SUPPORT
+    
+    public func updateTextBoxSize(to newFrame: CGRect) {
+        print("👤 USER MANUAL RESIZE: \(textBoxFrame) → \(newFrame)")
+        
+        // Update our text box frame
+        textBoxFrame = newFrame
+        
+        // CRITICAL: Update VectorText bounds to match user's manual resize
+        // This ensures operations like convert to paths use the actual size
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            document.textObjects[textIndex].bounds = CGRect(
+                x: 0, y: 0,
+                width: newFrame.width,
+                height: newFrame.height
+            )
+            
+            // Also update position if changed
+            document.textObjects[textIndex].position = CGPoint(x: newFrame.origin.x, y: newFrame.origin.y)
+            
+            print("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(document.textObjects[textIndex].bounds), position=\(document.textObjects[textIndex].position)")
+            
+            // Force document update
+            document.objectWillChange.send()
+        }
     }
     
     // MARK: - Working Auto-Resize Logic (FIXED with debouncing)
@@ -866,7 +881,7 @@ class ProfessionalTextViewModel: ObservableObject {
     public var isAutoResizing = false  // Prevent infinite loops
     private var autoResizeWorkItem: DispatchWorkItem?  // DEBOUNCING
     
-    private func scheduleAutoResize() {
+    public func scheduleAutoResize() {
         guard autoExpandVertically && !isAutoResizing else { 
             print("🚫 AUTO-RESIZE BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)")
             return 
@@ -907,20 +922,22 @@ class ProfessionalTextViewModel: ObservableObject {
             let newFrame = CGRect(
                 x: textBoxFrame.minX,
                 y: textBoxFrame.minY,
-                width: textBoxFrame.width,  // FIXED WIDTH - NEVER CHANGES
+                width: textBoxFrame.width,  // PRESERVE USER'S WIDTH - NEVER CHANGE
                 height: newHeight          // ONLY HEIGHT CHANGES
             )
             textBoxFrame = newFrame
             
-            print("✅ AUTO-RESIZE VERTICAL: Text box height adjusted from \(oldHeight)pt to \(newHeight)pt (WIDTH STAYS: \(textBoxFrame.width)pt)")
+            print("✅ AUTO-RESIZE VERTICAL: Text box height adjusted from \(oldHeight)pt to \(newHeight)pt (WIDTH PRESERVED: \(textBoxFrame.width)pt)")
             
-            // Update document bounds - use minimal width for VectorText, height for layout
+            // CRITICAL FIX: Update VectorText bounds to match the actual text box size
+            // This ensures the document knows the real size for operations like convert to paths
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
                 document.textObjects[textIndex].bounds = CGRect(
                     x: 0, y: 0,
-                    width: 100,               // MINIMAL WIDTH for VectorText (text box manages actual width)
-                    height: newHeight         // ACTUAL HEIGHT for layout
+                    width: textBoxFrame.width,  // ACTUAL WIDTH matches text box
+                    height: newHeight          // ACTUAL HEIGHT matches text box
                 )
+                print("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(document.textObjects[textIndex].bounds)")
             }
         } else {
             print("⚡ AUTO-RESIZE: Height change too small (\(abs(textBoxFrame.height - newHeight))pt) - skipping")
