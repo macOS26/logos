@@ -167,7 +167,7 @@ struct ColorPanel: View {
             // Apply to selected objects based on modifier keys
             if !document.selectedShapeIDs.isEmpty {
                 // Apply to shapes
-                guard let layerIndex = document.selectedLayerIndex else { return }
+                guard let _ = document.selectedLayerIndex else { return }
                 document.saveToUndoStack()
                 
 //                for shapeID in document.selectedShapeIDs {
