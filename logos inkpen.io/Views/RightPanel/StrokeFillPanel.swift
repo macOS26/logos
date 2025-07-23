@@ -259,7 +259,8 @@ struct StrokeFillPanel: View {
             for textID in document.selectedTextIDs {
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                     document.textObjects[textIndex].typography.fillColor = color
-                    document.textObjects[textIndex].updateBounds()
+                    // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+                    // document.textObjects[textIndex].updateBounds() - REMOVED
                 }
             }
         }
@@ -317,7 +318,8 @@ struct StrokeFillPanel: View {
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                     document.textObjects[textIndex].typography.hasStroke = true
                     document.textObjects[textIndex].typography.strokeColor = color
-                    document.textObjects[textIndex].updateBounds()
+                    // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+                    // document.textObjects[textIndex].updateBounds() - REMOVED
                 }
             }
         }

@@ -324,7 +324,8 @@ struct FontPanel: View {
         
         document.saveToUndoStack()
         document.textObjects[textIndex].typography.alignment = alignment
-        document.textObjects[textIndex].updateBounds()
+        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+        // document.textObjects[textIndex].updateBounds() - REMOVED
         document.objectWillChange.send()
         
         // Notify text canvas to sync changes
@@ -340,7 +341,8 @@ struct FontPanel: View {
         
         document.saveToUndoStack()
         document.textObjects[textIndex].typography.lineHeight = Double(spacing)
-        document.textObjects[textIndex].updateBounds()
+        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+        // document.textObjects[textIndex].updateBounds() - REMOVED  
         document.objectWillChange.send()
         
         // Notify text canvas to sync changes
@@ -362,8 +364,8 @@ struct FontPanel: View {
         document.textObjects[textIndex].typography.fontStyle = document.fontManager.selectedFontStyle
         document.textObjects[textIndex].typography.fontSize = document.fontManager.selectedFontSize
         
-        // Update bounds
-        document.textObjects[textIndex].updateBounds()
+        // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+        // document.textObjects[textIndex].updateBounds() - REMOVED
         
         // Notify UI update
         document.objectWillChange.send()

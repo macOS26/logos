@@ -122,6 +122,11 @@ struct ProfessionalTextCanvas: View {
         }
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
+            
+            // CRITICAL FIX: Ensure VectorText bounds match text canvas on initial appearance
+            // This fixes the selection box when text is first created
+            viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+            print("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas")
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             // PROFESSIONAL UX: Stop editing when user switches away from font tool
@@ -135,6 +140,13 @@ struct ProfessionalTextCanvas: View {
                 }
                 
                 textBoxState = .gray
+            }
+            
+            // CRITICAL FIX: Update bounds when switching away from font tool
+            // This ensures selection box is correct when using arrow tool
+            if oldTool == .font && newTool != .font {
+                viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+                print("🔧 TOOL CHANGE: Updated VectorText bounds for selection tool")
             }
         }
     }
@@ -161,6 +173,13 @@ struct ProfessionalTextCanvas: View {
         
         if oldState != textBoxState {
             print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(viewModel.text)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))")
+            
+            // CRITICAL FIX: Update VectorText bounds when exiting editing mode
+            // This ensures selection box matches text canvas when switching states
+            if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
+                viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+                print("🔄 STATE CHANGE: Updated VectorText bounds (exiting editing mode)")
+            }
         }
     }
     
@@ -969,6 +988,11 @@ class ProfessionalTextViewModel: ObservableObject {
     
     func stopEditing() {
         isEditing = false
+        
+        // CRITICAL FIX: Update VectorText bounds when editing finishes
+        // This ensures the selection box matches the text canvas when switching to arrow tool
+        updateDocumentTextBounds(textBoxFrame)
+        print("🔄 STOP EDITING: Updated VectorText bounds to match text canvas")
     }
     
     func updateTextBoxFrame(_ newFrame: CGRect) {

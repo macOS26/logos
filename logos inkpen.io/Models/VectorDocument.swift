@@ -1144,7 +1144,8 @@ class VectorDocument: ObservableObject, Codable {
         
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].content = content
-            textObjects[index].updateBounds()
+            // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+            // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
         }
     }
     
@@ -1163,7 +1164,8 @@ class VectorDocument: ObservableObject, Codable {
         
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             update(&textObjects[index].typography)
-            textObjects[index].updateBounds()
+            // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now  
+            // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
         }
     }
     
