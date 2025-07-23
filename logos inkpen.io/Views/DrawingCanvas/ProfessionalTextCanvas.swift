@@ -55,8 +55,14 @@ struct StableProfessionalTextCanvas: View {
     
     private func getCurrentTextHash() -> String {
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
-            // Create hash from properties that should trigger refresh
-            return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.isEditing)"
+            // PROFESSIONAL UX: Stable view while font tool is active
+            if document.currentTool == .font {
+                // While font tool is active, exclude content to prevent view recreation during typing
+                return "font-tool-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)"
+            } else {
+                // When other tools are active, include content for proper updates
+                return "\(currentTextObject.content)-\(currentTextObject.typography.fillColor)-\(currentTextObject.typography.fontSize)-\(currentTextObject.isEditing)"
+            }
         }
         return "missing"
     }
@@ -117,22 +123,44 @@ struct ProfessionalTextCanvas: View {
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
+        .onChange(of: document.currentTool) { oldTool, newTool in
+            // PROFESSIONAL UX: Stop editing when user switches away from font tool
+            if oldTool == .font && newTool != .font && viewModel.isEditing {
+                print("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))")
+                viewModel.stopEditing()
+                
+                // Update document editing state
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
+                    document.textObjects[textIndex].isEditing = false
+                }
+                
+                textBoxState = .gray
+            }
+        }
     }
     
     // MARK: - State Management (From Working Code)
     
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         let oldState = textBoxState
-        if viewModel.isEditing {
+        
+        // PROFESSIONAL UX: Keep editing active while font tool is selected
+        let isTextToolActive = document.currentTool == .font
+        let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
+        let isThisTextSelected = selectedIDs.contains(viewModel.textObject.id)
+        
+        if (viewModel.isEditing || hasTextViewFocus) && isTextToolActive {
             textBoxState = .blue
-        } else if selectedIDs.contains(viewModel.textObject.id) {
+        } else if isThisTextSelected && isTextToolActive {
+            textBoxState = .green
+        } else if isThisTextSelected {
             textBoxState = .green
         } else {
             textBoxState = .gray
         }
         
         if oldState != textBoxState {
-            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(viewModel.text)'")
+            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(viewModel.text)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))")
         }
     }
     
@@ -149,11 +177,20 @@ struct ProfessionalTextCanvas: View {
     }
     
     private func handleTextBoxTap(location: CGPoint) {
-        // DOUBLE CLICK: Only allowed when GREEN
-        if textBoxState == .green {
+        // DOUBLE CLICK: Start editing if font tool is active
+        if textBoxState == .green && document.currentTool == .font {
             textBoxState = .blue
             viewModel.startEditing()
             // Update document editing state
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
+                document.textObjects[textIndex].isEditing = true
+            }
+        } else if document.currentTool == .font {
+            // If font tool is active but not selected, select first then start editing
+            document.selectedTextIDs = [viewModel.textObject.id]
+            document.selectedShapeIDs.removeAll()
+            textBoxState = .blue
+            viewModel.startEditing()
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
                 document.textObjects[textIndex].isEditing = true
             }
@@ -357,6 +394,7 @@ struct ProfessionalSwiftUITextView: View {
 // MARK: - Professional Universal Text View (Based on Working UniversalTextView)
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
+    @State var isUpdatingFromTyping: Bool = false  // Prevents NSTextView reset during typing
     
     func makeNSView(context: Context) -> NSTextView {
         let textView = NSTextView()
@@ -403,147 +441,83 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         
-        context.coordinator.textView = textView
         textView.delegate = context.coordinator  // CRITICAL: Set delegate to capture text changes
         textView.layoutManager?.ensureLayout(for: textView.textContainer!)
+        
+        // CRITICAL FIX: Set initial text and appearance directly on NSTextView
+        textView.string = viewModel.text
+        textView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        textView.font = viewModel.selectedFont
+        textView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        
+        // First responder will be set in updateNSView when needed
         
         return textView
     }
     
+
+    
     func updateNSView(_ nsView: NSTextView, context: Context) {
-        // CRITICAL: Don't interfere with cursor when user is actively editing
-        let isFirstResponder = nsView.window?.firstResponder == nsView
-        let userIsTyping = viewModel.isEditing && isFirstResponder
+        // CRITICAL: Preserve cursor position using coordinator pattern
+        let coordinator = context.coordinator
         
-        // Control text input and selection based on editing state
+        // CRITICAL FIX: Only update NSTextView text when NOT actively typing
+        // This prevents cursor jumping and text resets during typing
+        if !isUpdatingFromTyping && nsView.string != viewModel.text {
+            nsView.string = viewModel.text
+        }
+        
+        // ALWAYS update font and color directly on NSTextView (this is visible immediately)
+        nsView.font = viewModel.selectedFont
+        nsView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        
+        // CRITICAL: Restore selection ONLY if coordinator has stored ranges
+        if coordinator.selectedRanges.count > 0 {
+            nsView.selectedRanges = coordinator.selectedRanges
+        }
+        
+        // Configure text view properties
         nsView.isEditable = viewModel.isEditing
-        nsView.isSelectable = viewModel.isEditing  // Only selectable when editing
         
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = viewModel.textAlignment
-        paragraphStyle.lineSpacing = viewModel.lineSpacing
-        
-        // For justified text, control word spacing to prevent overly wide gaps
-        if viewModel.textAlignment == .justified {
-            // Set a maximum line height to prevent excessive stretching
-            let font = NSFont(name: viewModel.selectedFont.fontName, size: viewModel.fontSize) ?? NSFont.systemFont(ofSize: viewModel.fontSize)
-            let lineHeight = font.ascender - font.descender + font.leading
-            paragraphStyle.maximumLineHeight = lineHeight * 1.5
-            paragraphStyle.minimumLineHeight = lineHeight
-            
-            // Disable hyphenation for better control
-            paragraphStyle.hyphenationFactor = 0.0
-            
-            // Allow tightening to help with justification
-            paragraphStyle.allowsDefaultTighteningForTruncation = true
-        }
-        
-        // CRITICAL: Convert VectorColor to NSColor for NSTextView
+        // CRITICAL FIX: Always set solid insertion point color and ensure visibility
         let textColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        print("🎨 FONT COLOR UPDATE: VectorColor -> NSColor: \(textColor)")
+        nsView.insertionPointColor = textColor
         
-        var attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont(name: viewModel.selectedFont.fontName, size: viewModel.fontSize) ?? NSFont.systemFont(ofSize: viewModel.fontSize),
-            .foregroundColor: textColor,
-            .paragraphStyle: paragraphStyle
-        ]
-        
-        // For justified text, add word spacing control
-        if viewModel.textAlignment == .justified {
-            // Limit expansion to prevent excessive word spacing
-            attributes[.expansion] = 0.0 // No character expansion
+        // Force cursor to be visible if text view is first responder
+        if nsView.window?.firstResponder == nsView {
+            nsView.setNeedsDisplay(nsView.visibleRect)
         }
         
-        // CRITICAL: Always update text attributes to reflect color/font changes
-        let currentSelection = nsView.selectedRange()
-        
-        if nsView.string != viewModel.text && !userIsTyping {
-            let attributedString = NSAttributedString(string: viewModel.text, attributes: attributes)
-            nsView.textStorage?.setAttributedString(attributedString)
-        } else {
-            // ALWAYS update attributes to reflect color/font changes
-            let range = NSRange(location: 0, length: nsView.string.count)
-            nsView.textStorage?.setAttributes(attributes, range: range)
-        }
-        
-        // RESTORE cursor position after attribute updates
-        if !userIsTyping && currentSelection.location <= nsView.string.count {
-            nsView.setSelectedRange(currentSelection)
-        }
-        
-        // CRITICAL: Enforce frame constraints to prevent horizontal expansion BUT allow proper text selection
+        // Set frame constraints
         nsView.frame = CGRect(
             x: 0, y: 0,
-            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-            height: max(viewModel.textBoxFrame.height, 100)  // Ensure minimum height for selection
+            width: viewModel.textBoxFrame.width,
+            height: max(viewModel.textBoxFrame.height, 100)
         )
         
-        // CRITICAL: Enforce size constraints but allow text selection display
         nsView.maxSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // MAX WIDTH = FIXED WIDTH
-            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT
+            width: viewModel.textBoxFrame.width,
+            height: CGFloat.greatestFiniteMagnitude
         )
         nsView.minSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // MIN WIDTH = FIXED WIDTH
-            height: 50                              // MIN HEIGHT for proper selection display
+            width: viewModel.textBoxFrame.width,
+            height: 30
         )
         
-        // CRITICAL FIX: Ensure text container is properly sized for selection display
-        nsView.textContainer?.containerSize = NSSize(
-            width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
-            height: CGFloat.greatestFiniteMagnitude  // UNLIMITED HEIGHT for text flow AND selection
-        )
-        
-        // CRITICAL FIX: Allow proper text selection by ensuring layout manager is configured correctly
-        nsView.textContainer?.lineFragmentPadding = 4.0  // Small padding for selection visibility
-        nsView.textContainer?.widthTracksTextView = false  // Don't auto-track width changes
-        nsView.textContainer?.heightTracksTextView = false // Don't auto-track height changes
-        
-        // For justified text, ensure proper layout manager settings
-        if viewModel.textAlignment == .justified {
-            nsView.layoutManager?.allowsNonContiguousLayout = false // Force sequential layout for better justification
-        }
-        
-        // DIRECT STATE MONITORING - ONLY when user is typing
-        // Check if text changed and update viewModel directly (but only if user is actively typing)
-        if nsView.string != viewModel.text && userIsTyping {
-            // NSTextView text changed by user typing - update our state
-            let newText = nsView.string
-            
-            print("📝 TEXT CHANGED in NSTextView: '\(newText)' (was: '\(viewModel.text)')")
-            
-            // Update viewModel.text FIRST to trigger auto-resize
-            viewModel.text = newText
-            
-            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool  
-            // Text content changes don't affect size - only user drag resizing
-            
-            // Update document
-            viewModel.document.updateTextContent(viewModel.textObject.id, content: newText)
-            
-            // DON'T restore cursor - let NSTextView manage it naturally
+        // AGGRESSIVE: Ensure NSTextView maintains first responder during editing
+        if viewModel.isEditing {
+            if nsView.window?.firstResponder != nsView {
+                nsView.window?.makeFirstResponder(nsView)
+            }
+            // Also ensure it can accept first responder
+            if !nsView.acceptsFirstResponder {
+                print("⚠️ NSTextView refusing first responder!")
+            }
         }
         
         // Force layout update
-        nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
-        
-        // Ensure the text view becomes first responder when editing starts (but don't interfere if already active)
-        if viewModel.isEditing && !isFirstResponder {
-            // Only become first responder if we're not already
-            nsView.window?.makeFirstResponder(nsView)
-        }
-        
-        // Update cursor color if text color changed (preserve cursor position)
-        let newCursorColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        if nsView.insertionPointColor != newCursorColor {
-            // PRESERVE cursor position when updating color
-            let currentSelection = nsView.selectedRange()
-            nsView.insertionPointColor = newCursorColor
-            // Restore cursor position after color change
-            if userIsTyping && currentSelection.location <= nsView.string.count {
-                nsView.setSelectedRange(currentSelection)
-            }
-        }
+        nsView.needsLayout = true
     }
     
     func makeCoordinator() -> Coordinator {
@@ -552,53 +526,44 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ProfessionalUniversalTextView
-        weak var textView: NSTextView?
+        var selectedRanges: [NSValue] = []
         
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
+            super.init()
         }
         
-        // CRITICAL: Capture text changes immediately for auto-resize
         func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { 
-                print("❌ textDidChange: Not an NSTextView")
-                return 
-            }
+            guard let textView = notification.object as? NSTextView else { return }
+            
+            // CRITICAL: Capture selection BEFORE updating parent
+            self.selectedRanges = textView.selectedRanges
+            
             let newText = textView.string
             
-            // CRITICAL FIX: Prevent cascade loops - only update if text actually changed
-            guard newText != parent.viewModel.text else { 
-                print("📝 TEXT UNCHANGED: Skipping update to prevent loops")
-                return 
+            // Only update if text actually changed to prevent loops
+            guard newText != parent.viewModel.text else {
+                return
             }
             
-            print("📝 TEXT DID CHANGE (Delegate): '\(newText)' (was: '\(parent.viewModel.text)')")
-            
-            // YOUR BRILLIANT IDEA: Monitor NSTextView height and make text box that height
-            textView.layoutManager?.ensureLayout(for: textView.textContainer!)
-            let usedRect = textView.layoutManager?.usedRect(for: textView.textContainer!) ?? CGRect.zero
-            let requiredHeight = usedRect.height
-            let newHeight = max(50, requiredHeight + 20) // Add padding
-            
-            print("📏 NSTextView MEASUREMENTS:")
-            print("   - Used Rect: \(usedRect)")
-            print("   - Required Height: \(requiredHeight)pt")
-            print("   - New Height (with padding): \(newHeight)pt")
-            print("   - Current Frame: \(parent.viewModel.textBoxFrame)")
-            
-            // CRITICAL: Update viewModel first to prevent loops
+            // CRITICAL FIX: Update both view model and document, but prevent NSTextView reset
+            parent.isUpdatingFromTyping = true
             parent.viewModel.text = newText
-            
-            // NO AUTO-RESIZE: User controls text box size manually like rectangle tool  
-            // Text content changes don't affect size - only user drag resizing
-            
-            // Update document
             parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: newText)
             
-            // Re-enable auto-resize after changes
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                self.parent.viewModel.isAutoResizing = false
+            // Reset flag after a brief delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
+                parent.isUpdatingFromTyping = false
             }
+        }
+        
+        func textDidBeginEditing(_ notification: Notification) {
+            // Text editing began - could add additional logic here if needed
+        }
+        
+        func textDidEndEditing(_ notification: Notification) {
+            // Text editing ended - reset any flags
+            parent.isUpdatingFromTyping = false
         }
     }
 }
@@ -787,7 +752,12 @@ class ProfessionalTextViewModel: ObservableObject {
             self.textObject = textObject  // Update for color changes
             self.fontSize = CGFloat(textObject.typography.fontSize)
             self.selectedFont = textObject.typography.nsFont
-            self.isEditing = textObject.isEditing
+            
+            // CRITICAL FIX: Don't reset editing state during active typing
+            if !self.isEditing {
+                self.isEditing = textObject.isEditing
+            }
+            
             self.textAlignment = textObject.typography.alignment.nsTextAlignment
             self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
             
@@ -824,7 +794,13 @@ class ProfessionalTextViewModel: ObservableObject {
         self.text = textObject.content
         self.fontSize = CGFloat(textObject.typography.fontSize)
         self.selectedFont = textObject.typography.nsFont
-        self.isEditing = textObject.isEditing
+        
+        // CRITICAL FIX: Don't reset editing state during active typing
+        // Only sync isEditing if we're not currently editing to prevent focus loss
+        if !self.isEditing {
+            self.isEditing = textObject.isEditing
+        }
+        
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         self.lineSpacing = CGFloat(textObject.typography.lineHeight - textObject.typography.fontSize)
         

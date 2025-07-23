@@ -1106,18 +1106,19 @@ struct ScaleHandles: View {
     @State private var scaleKeyEventMonitor: Any?
     
     private func setupScaleKeyEventMonitoring() {
-        scaleKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-                self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
-                
-                // Debug logging for caps-lock state
-                if self.isCapsLockPressed {
-                    print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
-                }
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // scaleKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //         self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
+        //         
+        //         // Debug logging for caps-lock state
+        //         if self.isCapsLockPressed {
+        //             print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
+        //         }
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownScaleKeyEventMonitoring() {
@@ -1345,12 +1346,13 @@ struct ScaleHandles: View {
     @State private var keyEventMonitor: Any?
     
     private func setupKeyEventMonitoring() {
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownKeyEventMonitoring() {
@@ -1759,12 +1761,13 @@ struct RotateHandles: View {
     @State private var rotationKeyEventMonitor: Any?
     
     private func setupRotationKeyEventMonitoring() {
-        rotationKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // rotationKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownRotationKeyEventMonitoring() {
@@ -1959,12 +1962,13 @@ struct RotateHandles: View {
     @State private var keyEventMonitor: Any?
     
     private func setupKeyEventMonitoring() {
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownKeyEventMonitoring() {
@@ -2466,18 +2470,19 @@ struct ShearHandles: View {
     @State private var shearKeyEventMonitor: Any?
     
     private func setupShearKeyEventMonitoring() {
-        shearKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-                self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
-                
-                // Debug logging for caps-lock state
-                if self.isCapsLockPressed {
-                    print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
-                }
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // shearKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //         self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
+        //         
+        //         // Debug logging for caps-lock state
+        //         if self.isCapsLockPressed {
+        //             print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
+        //         }
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownShearKeyEventMonitoring() {
@@ -2566,12 +2571,13 @@ struct ShearHandles: View {
     @State private var keyEventMonitor: Any?
     
     private func setupKeyEventMonitoring() {
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownKeyEventMonitoring() {
@@ -3175,12 +3181,13 @@ struct EnvelopeHandles: View {
     @State private var envelopeKeyEventMonitor: Any?
     
     private func setupEnvelopeKeyEventMonitoring() {
-        envelopeKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-            DispatchQueue.main.async {
-                self.isShiftPressed = event.modifierFlags.contains(.shift)
-            }
-            return event
-        }
+        // DISABLED: NSEvent monitoring to fix text input interference
+        // envelopeKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
+        //     DispatchQueue.main.async {
+        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
+        //     }
+        //     return event
+        // }
     }
     
     private func teardownEnvelopeKeyEventMonitoring() {

@@ -152,17 +152,17 @@ struct ColorPanel: View {
             onColorSelected(color)
         } else {
             // FIXED: Always update the default color for new shapes based on active target
-            if NSEvent.modifierFlags.contains(.option) {
-                // Option+Click = stroke color
-                document.defaultStrokeColor = color
-                document.activeColorTarget = .stroke
-                print("🎨 PRESET: Set default stroke color: \(color)")
-            } else {
-                // Regular click = fill color  
-                document.defaultFillColor = color
-                document.activeColorTarget = .fill
-                print("🎨 PRESET: Set default fill color: \(color)")
-            }
+//            if NSEvent.modifierFlags.contains(.option) {
+//                // Option+Click = stroke color
+//                document.defaultStrokeColor = color
+//                document.activeColorTarget = .stroke
+//                print("🎨 PRESET: Set default stroke color: \(color)")
+//            } else {
+//                // Regular click = fill color  
+//                document.defaultFillColor = color
+//                document.activeColorTarget = .fill
+//                print("🎨 PRESET: Set default fill color: \(color)")
+//            }
             
             // Apply to selected objects based on modifier keys
             if !document.selectedShapeIDs.isEmpty {
@@ -170,25 +170,25 @@ struct ColorPanel: View {
                 guard let layerIndex = document.selectedLayerIndex else { return }
                 document.saveToUndoStack()
                 
-                for shapeID in document.selectedShapeIDs {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        if NSEvent.modifierFlags.contains(.option) {
-                            // Option+Click = stroke color
-                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle != nil {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0)
-                            }
-                        } else {
-                            // Regular click = fill color
-                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle != nil {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                            }
-                        }
-                    }
-                }
+//                for shapeID in document.selectedShapeIDs {
+//                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+//                        if NSEvent.modifierFlags.contains(.option) {
+//                            // Option+Click = stroke color
+//                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle != nil {
+//                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+//                            } else {
+//                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0)
+//                            }
+//                        } else {
+//                            // Regular click = fill color
+//                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle != nil {
+//                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+//                            } else {
+//                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+//                            }
+//                        }
+//                    }
+//                }
             }
             
             if !document.selectedTextIDs.isEmpty {

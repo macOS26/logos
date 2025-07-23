@@ -1139,8 +1139,8 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func updateTextContent(_ textID: UUID, content: String) {
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        saveToUndoStack()
+        // PERFORMANCE FIX: Don't save to undo stack on every keystroke - only when editing ends
+        // saveToUndoStack() - REMOVED to prevent performance issues during typing
         
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].content = content
@@ -1149,8 +1149,8 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func setTextEditing(_ textID: UUID, isEditing: Bool) {
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        saveToUndoStack()
+        // PERFORMANCE FIX: No undo saving for text editing state changes
+        // User doesn't want text changes saved to undo stack
         
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             textObjects[index].isEditing = isEditing
@@ -1158,8 +1158,8 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func updateTextTypography(_ textID: UUID, update: (inout TypographyProperties) -> Void) {
-        // CRITICAL FIX: Save to undo stack BEFORE making changes
-        saveToUndoStack()
+        // PERFORMANCE FIX: No undo saving for typography changes - user doesn't want text changes saved
+        // saveToUndoStack() - REMOVED per user request
         
         if let index = textObjects.firstIndex(where: { $0.id == textID }) {
             update(&textObjects[index].typography)
