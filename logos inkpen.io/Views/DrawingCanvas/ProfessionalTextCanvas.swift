@@ -123,7 +123,7 @@ struct ProfessionalTextCanvas: View {
     
     private func updateTextBoxState(selectedIDs: Set<UUID>) {
         let oldState = textBoxState
-        if viewModel.textObject.isEditing {
+        if viewModel.isEditing {
             textBoxState = .blue
         } else if selectedIDs.contains(viewModel.textObject.id) {
             textBoxState = .green
@@ -687,6 +687,10 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     @Published var autoExpandVertically: Bool = false  // DISABLED: User controls size manually like rectangle tool
     
+    // ORIGINAL WORKING PROPERTIES FOR CORE TEXT PATH
+    @Published var textPath: CGPath?
+    @Published var showPath: Bool = false
+    
     var textObject: VectorText {
         didSet {
             // CRITICAL: Force SwiftUI update when textObject changes
@@ -1006,81 +1010,116 @@ class ProfessionalTextViewModel: ObservableObject {
         }
     }
     
-    // MARK: - Convert to Outlines (WORD-BY-WORD PROCESSING for Performance)
+    // MARK: - Convert to Core Text Path (ORIGINAL WORKING CODE)
     
+    private func convertToCoreTextPath() {
+        let fontName = selectedFont.fontName
+        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
+        
+        // Create paragraph style with alignment and line spacing
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = textAlignment
+        paragraphStyle.lineSpacing = lineSpacing
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .paragraphStyle: paragraphStyle
+        ]
+        let attributedString = NSAttributedString(string: text, attributes: attributes)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
+        
+        // Calculate the actual required height to prevent truncation
+        let textWidth = textBoxFrame.width
+        
+        // First, get the suggested height for the text
+        let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter, 
+            CFRangeMake(0, 0), 
+            nil, 
+            CGSize(width: textWidth, height: CGFloat.greatestFiniteMagnitude), 
+            nil
+        )
+        
+        // Use the larger of the text box height or the required height to prevent truncation
+        let frameHeight = max(textBoxFrame.height, suggestedSize.height + 20)
+        
+        let frameRect = CGRect(
+            x: 0, 
+            y: 0, 
+            width: textWidth, 
+            height: frameHeight
+        )
+        let framePath = CGPath(rect: frameRect, transform: nil)
+        let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), framePath, nil)
+        
+        let path = CGMutablePath()
+        let lines = CTFrameGetLines(frame)
+        let lineCount = CFArrayGetCount(lines)
+        
+        // Get line origins - CRITICAL for correct positioning
+        var lineOrigins = Array<CGPoint>(repeating: .zero, count: lineCount)
+        CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), &lineOrigins)
+        
+        for lineIndex in 0..<lineCount {
+            let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIndex), to: CTLine.self)
+            let lineOrigin = lineOrigins[lineIndex]
+            
+            let runs = CTLineGetGlyphRuns(line)
+            let runCount = CFArrayGetCount(runs)
+            
+            for runIndex in 0..<runCount {
+                let run = unsafeBitCast(CFArrayGetValueAtIndex(runs, runIndex), to: CTRun.self)
+                let glyphCount = CTRunGetGlyphCount(run)
+                
+                for glyphIndex in 0..<glyphCount {
+                    var glyph = CGGlyph()
+                    var position = CGPoint()
+                    
+                    CTRunGetGlyphs(run, CFRangeMake(glyphIndex, 1), &glyph)
+                    CTRunGetPositions(run, CFRangeMake(glyphIndex, 1), &position)
+                    
+                    if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
+                        // Use EXACT Core Text positioning - no manual line height calculation
+                        let glyphX = position.x + lineOrigin.x + textBoxFrame.minX
+                        let glyphY = textBoxFrame.minY + (frameRect.height - lineOrigin.y)
+                        
+                        // Create transform that fixes the upside-down issue
+                        var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
+                        transform = transform.translatedBy(x: glyphX, y: -glyphY)
+                        
+                        path.addPath(glyphPath, transform: transform)
+                    }
+                }
+            }
+        }
+        
+        textPath = path
+        showPath = true
+    }
+    
+    // PUBLIC method for document conversion - calls the working Core Text method
     func convertToPath() {
         guard !text.isEmpty else { 
             print("❌ CONVERT TO OUTLINES: Cannot convert empty text")
             return 
         }
         
-        print("🎯 CONVERTING TO OUTLINES: Using WORD-BY-WORD processing for better performance")
-        
-        // WORD-BY-WORD PROCESSING: Split text into words and convert each separately
-        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-        
-        guard !words.isEmpty else {
-            print("❌ CONVERT TO OUTLINES: No valid words found")
-            return
-        }
+        print("🎯 CONVERTING TO OUTLINES: Using ORIGINAL WORKING Core Text conversion")
         
         document.saveToUndoStack()
         
-        var allWordPaths: [CGPath] = []
-        var wordPositions: [CGPoint] = []
+        // Call the working Core Text conversion
+        convertToCoreTextPath()
         
-        // Calculate positions for each word
-        calculateWordPositions(words: words, wordPositions: &wordPositions)
-        
-        // Convert each word to path separately
-        for (index, word) in words.enumerated() {
-            if let wordPath = convertWordToCoreTextPath(word, at: wordPositions[index]) {
-                allWordPaths.append(wordPath)
-                print("✅ CONVERTED WORD: '\(word)' at position \(wordPositions[index])")
-            } else {
-                print("❌ FAILED TO CONVERT WORD: '\(word)'")
-            }
-        }
-        
-        // UNION WORDS: Combine all word paths for better performance
-        var finalPath: CGPath?
-        
-        if allWordPaths.count == 1 {
-            finalPath = allWordPaths[0]
-        } else if allWordPaths.count > 1 {
-            print("🔗 UNIONING \(allWordPaths.count) WORD PATHS...")
-            
-            // Start with first word
-            finalPath = allWordPaths[0]
-            
-            // Union each subsequent word
-            for i in 1..<allWordPaths.count {
-                if let currentPath = finalPath,
-                   let unionedPath = CoreGraphicsPathOperations.union(currentPath, allWordPaths[i]) {
-                    finalPath = unionedPath
-                    print("✅ UNIONED WORD \(i+1) of \(allWordPaths.count)")
-                } else {
-                    print("❌ UNION FAILED for word \(i+1), adding separately")
-                    // Fallback: create compound path by adding paths
-                    let mutablePath = CGMutablePath()
-                    if let currentPath = finalPath {
-                        mutablePath.addPath(currentPath)
-                    }
-                    mutablePath.addPath(allWordPaths[i])
-                    finalPath = mutablePath
-                }
-            }
-        }
-        
-        guard let cgPath = finalPath else {
-            print("❌ CONVERT TO OUTLINES FAILED: No valid paths created")
+        guard let cgPath = textPath else {
+            print("❌ CONVERT TO OUTLINES FAILED: No path created")
             return
         }
         
         // Convert to VectorShape
         let vectorPath = convertCGPathToVectorPath(cgPath)
         let outlineShape = VectorShape(
-            name: "Text Outline: \(text)",
+            name: "Text Outline: \(text.prefix(20))...",
             path: vectorPath,
             strokeStyle: nil,  // NO STROKES as requested
             fillStyle: FillStyle(
@@ -1095,148 +1134,21 @@ class ProfessionalTextViewModel: ObservableObject {
         if let layerIndex = document.selectedLayerIndex {
             document.layers[layerIndex].addShape(outlineShape)
             
-            print("✅ TEXT CONVERSION COMPLETE: \(words.count) words processed individually and unioned")
+            print("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method")
             
             // Select the converted shape
             document.selectedShapeIDs = [outlineShape.id]
-            
-            // Remove the original text object
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.textObjects.remove(at: textIndex)
-            }
             document.selectedTextIDs.removeAll()
             
-            print("✅ CONVERTED TO OUTLINES: Created optimized vector outlines with visible bezier handles")
-            print("🎯 HANDLES NOW VISIBLE: Use Direct Selection Tool (A) to edit individual points and curves")
-        }
-    }
-    
-    // WORD-BY-WORD POSITION CALCULATION
-    private func calculateWordPositions(words: [String], wordPositions: inout [CGPoint]) {
-        let fontName = selectedFont.fontName
-        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = textAlignment
-        paragraphStyle.lineSpacing = lineSpacing
-        
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .paragraphStyle: paragraphStyle
-        ]
-        
-        // Use original full text to calculate proper word spacing
-        let fullAttributedString = NSAttributedString(string: text, attributes: attributes)
-        let framesetter = CTFramesetterCreateWithAttributedString(fullAttributedString)
-        
-        let textWidth = textBoxFrame.width
-        let frameRect = CGRect(x: 0, y: 0, width: textWidth, height: textBoxFrame.height)
-        let framePath = CGPath(rect: frameRect, transform: nil)
-        let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), framePath, nil)
-        
-        let lines = CTFrameGetLines(frame)
-        let lineCount = CFArrayGetCount(lines)
-        
-        var lineOrigins = Array<CGPoint>(repeating: .zero, count: lineCount)
-        CTFrameGetLineOrigins(frame, CFRangeMake(0, lineCount), &lineOrigins)
-        
-        var wordIndex = 0
-        let textString = text as NSString
-        
-        for lineIdx in 0..<lineCount {
-            let line = unsafeBitCast(CFArrayGetValueAtIndex(lines, lineIdx), to: CTLine.self)
-            let lineRange = CTLineGetStringRange(line)
-            let lineOrigin = lineOrigins[lineIdx]
-            
-            // Find words in this line
-            let lineText = textString.substring(with: NSRange(location: lineRange.location, length: lineRange.length))
-            let wordsInLine = lineText.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
-            
-            var characterOffset = 0
-            for word in wordsInLine {
-                if wordIndex < words.count && word == words[wordIndex] {
-                    // Find character position of this word in the line
-                    let wordRange = (lineText as NSString).range(of: word, options: [], range: NSRange(location: characterOffset, length: lineText.count - characterOffset))
-                    
-                    if wordRange.location != NSNotFound {
-                        let wordPosition = CTLineGetOffsetForStringIndex(line, lineRange.location + wordRange.location, nil)
-                        
-                        let finalPosition = CGPoint(
-                            x: textBoxFrame.minX + wordPosition,
-                            y: textBoxFrame.minY + (frameRect.height - lineOrigin.y)
-                        )
-                        
-                        wordPositions.append(finalPosition)
-                        characterOffset = wordRange.location + wordRange.length
-                        wordIndex += 1
-                    }
-                }
+            // Remove original text object
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+                document.textObjects.remove(at: textIndex)
+                print("🗑️ REMOVED ORIGINAL TEXT OBJECT")
             }
         }
-        
-        // Fill any missing positions (fallback)
-        while wordPositions.count < words.count {
-            wordPositions.append(CGPoint(x: textBoxFrame.minX, y: textBoxFrame.minY))
-        }
     }
     
-    // SINGLE WORD CONVERSION
-    private func convertWordToCoreTextPath(_ word: String, at position: CGPoint) -> CGPath? {
-        let fontName = selectedFont.fontName
-        let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
-        
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = .left // Always left for individual words
-        
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .paragraphStyle: paragraphStyle
-        ]
-        
-        let attributedString = NSAttributedString(string: word, attributes: attributes)
-        let line = CTLineCreateWithAttributedString(attributedString)
-        
-        let path = CGMutablePath()
-        let runs = CTLineGetGlyphRuns(line)
-        let runCount = CFArrayGetCount(runs)
-        
-        for runIndex in 0..<runCount {
-            let run = unsafeBitCast(CFArrayGetValueAtIndex(runs, runIndex), to: CTRun.self)
-            let glyphCount = CTRunGetGlyphCount(run)
-            
-            for glyphIndex in 0..<glyphCount {
-                var glyph = CGGlyph()
-                var glyphPosition = CGPoint()
-                
-                CTRunGetGlyphs(run, CFRangeMake(glyphIndex, 1), &glyph)
-                CTRunGetPositions(run, CFRangeMake(glyphIndex, 1), &glyphPosition)
-                
-                if let glyphPath = CTFontCreatePathForGlyph(font, glyph, nil) {
-                    let glyphX = position.x + glyphPosition.x
-                    let glyphY = position.y
-                    
-                    // Create transform that fixes the upside-down issue
-                    var transform = CGAffineTransform(scaleX: 1.0, y: -1.0) // Flip Y axis
-                    transform = transform.translatedBy(x: glyphX, y: -glyphY)
-                    
-                    // Create a separate path for this character and normalize it
-                    let characterPath = CGMutablePath()
-                    characterPath.addPath(glyphPath, transform: transform)
-                    
-                    // NORMALIZE: Union character with itself for clean bezier curves
-                    if let normalizedCharacterPath = CoreGraphicsPathOperations.union(characterPath, characterPath) {
-                        path.addPath(normalizedCharacterPath)
-                    } else {
-                        // Fallback: use original character path
-                        path.addPath(characterPath)
-                    }
-                }
-            }
-        }
-        
-        return path.isEmpty ? nil : path
-    }
-    
+    // MARK: - Core Graphics Path Conversion Helper
     public func convertCGPathToVectorPath(_ cgPath: CGPath) -> VectorPath {
         var elements: [PathElement] = []
         
@@ -1280,5 +1192,4 @@ class ProfessionalTextViewModel: ObservableObject {
         
         return VectorPath(elements: elements, isClosed: false)
     }
-
 } 
