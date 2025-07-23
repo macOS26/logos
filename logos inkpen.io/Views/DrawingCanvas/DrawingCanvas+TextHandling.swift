@@ -17,10 +17,17 @@ extension DrawingCanvas {
         print("🎯 FONT TOOL TAP at: \(location)")
         lastTapLocation = location
         
-        // CRITICAL: Prevent new text box creation when one is already in edit mode
+        // CRITICAL: Prevent new text box creation when any text box is in active states
         let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
+        
         if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED: Another text box is already in edit mode")
+            print("🚫 NEW TEXT BLOCKED: A text box is in BLUE (edit) mode")
+            return
+        }
+        
+        if isAnyTextSelected {
+            print("🚫 NEW TEXT BLOCKED: Text boxes are in GREEN (selected) mode")
             return
         }
         
@@ -36,17 +43,44 @@ extension DrawingCanvas {
     // MARK: - Professional Text Canvas Background Handler
     func handleAggressiveBackgroundTap(at location: CGPoint) {
         // AGGRESSIVE background tap - deselects ALL text boxes immediately
+        // BUT: Use the same improved hit testing as findTextAt to be consistent
+        
+        print("🔍 BACKGROUND TAP: Checking if location \(location) hits any text")
+        
+        // Use the same generous hit testing logic as findTextAt
         let tapHitsText = document.textObjects.contains { textObj in
-            let textBounds = CGRect(
+            if !textObj.isVisible || textObj.isLocked { return false }
+            
+            // Use the same three hit testing methods as findTextAt
+            let textContentArea = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
-                width: 300,  // FIXED WIDTH - always 300pt for text boxes
-                height: max(textObj.bounds.height, 100)
+                width: max(textObj.bounds.width, 200.0),
+                height: max(textObj.bounds.height, 60.0)
             )
-            return textBounds.contains(location)
+            
+            let exactBounds = CGRect(
+                x: textObj.position.x + textObj.bounds.minX,
+                y: textObj.position.y + textObj.bounds.minY,
+                width: textObj.bounds.width,
+                height: textObj.bounds.height
+            )
+            
+            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+            
+            let hits = textContentArea.contains(location) || 
+                      exactBounds.contains(location) || 
+                      expandedBounds.contains(location)
+            
+            if hits {
+                print("🎯 BACKGROUND TAP: Hit text '\(textObj.content.prefix(20))'")
+            }
+            
+            return hits
         }
         
         if !tapHitsText {
+            print("🎯 BACKGROUND TAP: No text hit - deselecting all")
             // AGGRESSIVELY deselect everything
             document.selectedTextIDs.removeAll()
             document.selectedShapeIDs.removeAll()
@@ -59,37 +93,57 @@ extension DrawingCanvas {
             }
             
             finishTextEditing()
-            print("🎯 AGGRESSIVE X: All text boxes → GRAY mode")
+            print("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode")
+        } else {
+            print("🎯 BACKGROUND TAP: Text hit - no deselection")
         }
     }
     
     func findTextAt(location: CGPoint) -> UUID? {
-        let tolerance: Double = 10.0
+        print("🔍 FIND TEXT: Looking for text at location \(location)")
         
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
-            // Use actual text bounds (matches selection box exactly)
-            let absoluteBounds = CGRect(
+            // IMPROVED: Use a much more generous hit area that covers the entire text content
+            // This makes it easy to click anywhere inside the text to select it
+            
+            // Method 1: Use the actual text position and create a generous content area
+            let textContentArea = CGRect(
+                x: textObj.position.x,
+                y: textObj.position.y,
+                width: max(textObj.bounds.width, 200.0), // Minimum 200pt width for easy clicking
+                height: max(textObj.bounds.height, 60.0)  // Minimum 60pt height for easy clicking
+            )
+            
+            // Method 2: Also check the exact bounds area (for edge cases)
+            let exactBounds = CGRect(
                 x: textObj.position.x + textObj.bounds.minX,
                 y: textObj.position.y + textObj.bounds.minY,
                 width: textObj.bounds.width,
                 height: textObj.bounds.height
             )
             
-            // Expand bounds slightly for easier selection
-            let expandedBounds = CGRect(
-                x: absoluteBounds.minX - tolerance,
-                y: absoluteBounds.minY - tolerance,
-                width: absoluteBounds.width + (tolerance * 2),
-                height: absoluteBounds.height + (tolerance * 2)
-            )
+            // Method 3: Create an expanded bounds area with generous tolerance
+            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20) // Much larger tolerance
             
-            if expandedBounds.contains(location) {
+            print("🔍 TEXT CHECK: '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))")
+            print("  - Content area: \(textContentArea)")
+            print("  - Exact bounds: \(exactBounds)")
+            print("  - Expanded bounds: \(expandedBounds)")
+            
+            // Hit test using any of the three methods (most generous approach)
+            if textContentArea.contains(location) || 
+               exactBounds.contains(location) || 
+               expandedBounds.contains(location) {
+                print("✅ TEXT HIT: Found text '\(textObj.content.prefix(20))' at location")
                 return textObj.id
+            } else {
+                print("❌ TEXT MISS: Location not in any hit area")
             }
         }
         
+        print("❌ NO TEXT: No text found at location \(location)")
         return nil
     }
     
@@ -190,10 +244,17 @@ extension DrawingCanvas {
     
     // Create new text at canvas position using our new professional text system
     func createNewTextAt(location: CGPoint) {
-        // CRITICAL: Double-check that no text box is in edit mode
+        // CRITICAL: Comprehensive check - no text box creation in active states
         let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
+        
         if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED (createNewTextAt): Another text box is already in edit mode")
+            print("🚫 NEW TEXT BLOCKED (createNewTextAt): A text box is in BLUE (edit) mode")
+            return
+        }
+        
+        if isAnyTextSelected {
+            print("🚫 NEW TEXT BLOCKED (createNewTextAt): Text boxes are in GREEN (selected) mode")
             return
         }
         
@@ -203,10 +264,17 @@ extension DrawingCanvas {
     
     // Create new text with user-defined size (like rectangle tool)
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
-        // CRITICAL: Double-check that no text box is in edit mode
+        // CRITICAL: Comprehensive check - no text box creation in active states
         let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
+        
         if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): Another text box is already in edit mode")
+            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): A text box is in BLUE (edit) mode")
+            return
+        }
+        
+        if isAnyTextSelected {
+            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): Text boxes are in GREEN (selected) mode")
             return
         }
         
@@ -625,6 +693,20 @@ extension DrawingCanvas {
     
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // CRITICAL: Comprehensive protection - no text creation in active states
+        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
+        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
+        
+        if isAnyTextEditing {
+            print("🚫 TEXT BOX DRAWING BLOCKED: A text box is in BLUE (edit) mode")
+            return
+        }
+        
+        if isAnyTextSelected {
+            print("🚫 TEXT BOX DRAWING BLOCKED: Text boxes are in GREEN (selected) mode")
+            return
+        }
+        
         // CRITICAL FIX: Don't create new text boxes while existing ones are being resized
         // Check if drag started on a text box resize handle
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
@@ -636,55 +718,49 @@ extension DrawingCanvas {
             return
         }
         
-        // PROFESSIONAL TEXT BOX DRAWING: Same approach as shape drawing
-        // User drags to define the text box size, no auto-resize
-        
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let minimumDragThreshold: Double = 12.0 // Must drag at least 12 pixels to start drawing
-        
-        // Only proceed with text box creation if user has dragged significantly
-        if dragDistance < minimumDragThreshold {
-            print("📝 TEXT TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK will create default size")
+        // CRITICAL FIX: Also check if we're dragging ON TOP of an existing text box
+        // This prevents creating overlapping text boxes
+        if let existingTextID = findTextAt(location: startLocation) {
+            print("🚫 FONT TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))")
+            print("🚫 BLUE OUTLINE: Will NOT appear - would overlap existing text")
             return
         }
         
+        let currentLocation = screenToCanvas(value.location, geometry: geometry)
+        
         if !isDrawing {
-            // Start drawing - initialize state once
+            // START DRAWING: Initialize shape creation state
+            print("🎨 FONT TOOL: Starting text box creation (like rectangle tool)")
+            print("🔵 BLUE OUTLINE: Will appear - creating new text box")
             isDrawing = true
-            
-            // Capture reference positions (like shape tool)
-            shapeDragStart = value.startLocation  // Reuse shape drawing state
-            shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
-            drawingStartPoint = shapeStartPoint
-            
-            print("📝 TEXT BOX DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
-            print("🔵 BLUE OUTLINE: Now showing - creating NEW text box")
+            shapeDragStart = startLocation
+            shapeStartPoint = startLocation
+            drawingStartPoint = startLocation
         }
         
-        // Calculate text box dimensions based on drag
-        let currentCanvasLocation = screenToCanvas(value.location, geometry: geometry)
+        // CONTINUE DRAWING: Update the text box creation rectangle
+        let minX = min(shapeStartPoint.x, currentLocation.x)
+        let minY = min(shapeStartPoint.y, currentLocation.y)
+        let width = abs(currentLocation.x - shapeStartPoint.x)
+        let height = abs(currentLocation.y - shapeStartPoint.y)
         
-        let minX = min(shapeStartPoint.x, currentCanvasLocation.x)
-        let minY = min(shapeStartPoint.y, currentCanvasLocation.y)
-        let maxX = max(shapeStartPoint.x, currentCanvasLocation.x)
-        let maxY = max(shapeStartPoint.y, currentCanvasLocation.y)
+        // Ensure minimum size for text boxes
+        let finalWidth = max(width, 50.0)  // Minimum 50pt width
+        let finalHeight = max(height, 30.0) // Minimum 30pt height
         
-        let width = maxX - minX
-        let height = maxY - minY
-        
-        // Create preview rectangle path for visual feedback (like shapes)
+        // Create the text box rectangle shape for visual feedback
         let textBoxRect = CGRect(x: minX, y: minY, width: width, height: height)
-        let path = VectorPath(elements: [
+        
+        // Update current path for visual feedback (blue outline rectangle)
+        currentPath = VectorPath(elements: [
             .move(to: VectorPoint(minX, minY)),
-            .line(to: VectorPoint(maxX, minY)),
-            .line(to: VectorPoint(maxX, maxY)),
-            .line(to: VectorPoint(minX, maxY)),
+            .line(to: VectorPoint(minX + finalWidth, minY)),
+            .line(to: VectorPoint(minX + finalWidth, minY + finalHeight)),
+            .line(to: VectorPoint(minX, minY + finalHeight)),
             .close
         ])
         
-        currentPath = path
-        
-        print("📝 TEXT BOX DRAWING: Size (\(String(format: "%.1f", width)) × \(String(format: "%.1f", height)))")
+        document.objectWillChange.send()
     }
     
     /// Finish text box drawing and create text with user-defined size
@@ -737,48 +813,64 @@ extension DrawingCanvas {
     /// Check if location is on a text box resize handle
     private func isLocationOnTextResizeHandle(_ location: CGPoint) -> Bool {
         let handleRadius: Double = 6.0  // Resize handle size (blue circle)
-        let tolerance: Double = 10.0    // Extra tolerance for easier detection
+        let tolerance: Double = 15.0    // Extra generous tolerance for easier detection
         let totalTolerance = handleRadius + tolerance
+        
+        print("🔍 RESIZE HANDLE CHECK: Testing location \(location)")
         
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
-            // Calculate text box bounds
+            // Check ALL text boxes - editing, selected, and even unselected ones
+            // This prevents accidental creation when dragging near any text box edge
+            
+            print("  - Checking text '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))")
+            print("    Position: \(textObj.position), Bounds: \(textObj.bounds)")
+            
+            // Calculate text box bounds in canvas coordinates
             let textBounds = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
+                width: max(textObj.bounds.width, 200.0),  // Use generous minimum width
+                height: max(textObj.bounds.height, 60.0)   // Use generous minimum height
             )
             
-            // CRITICAL FIX: Check ALL text boxes, not just selected ones
-            // Text boxes in BLUE (editing) mode or GREEN (selected) mode should have resize handles
-            let hasResizeHandle = textObj.isEditing || document.selectedTextIDs.contains(textObj.id)
+            // Define all potential resize handle positions (8 handles around the text box)
+            let handles = [
+                // Corners
+                CGPoint(x: textBounds.minX, y: textBounds.minY),         // Top-left
+                CGPoint(x: textBounds.maxX, y: textBounds.minY),         // Top-right  
+                CGPoint(x: textBounds.minX, y: textBounds.maxY),         // Bottom-left
+                CGPoint(x: textBounds.maxX, y: textBounds.maxY),         // Bottom-right
+                
+                // Edges
+                CGPoint(x: textBounds.midX, y: textBounds.minY),         // Top-center
+                CGPoint(x: textBounds.midX, y: textBounds.maxY),         // Bottom-center
+                CGPoint(x: textBounds.minX, y: textBounds.midY),         // Left-center
+                CGPoint(x: textBounds.maxX, y: textBounds.midY),         // Right-center
+            ]
             
-            if hasResizeHandle {
-                // Check resize handle position (bottom-right corner where the blue circle is)
-                let resizeHandleCenter = CGPoint(
-                    x: textBounds.maxX,
-                    y: textBounds.maxY
-                )
-                
-                let distance = sqrt(pow(location.x - resizeHandleCenter.x, 2) + pow(location.y - resizeHandleCenter.y, 2))
-                
-                print("🔍 RESIZE HANDLE CHECK: TextBox \(textObj.id.uuidString.prefix(8))")
-                print("  - Text bounds: \(textBounds)")
-                print("  - Handle center: \(resizeHandleCenter)")
-                print("  - Click location: \(location)")
-                print("  - Distance: \(String(format: "%.1f", distance))px (tolerance: \(String(format: "%.1f", totalTolerance))px)")
-                print("  - Has resize handle: \(hasResizeHandle) (editing: \(textObj.isEditing), selected: \(document.selectedTextIDs.contains(textObj.id)))")
-                
+            // Check if location is near any resize handle
+            for (index, handle) in handles.enumerated() {
+                let distance = sqrt(pow(location.x - handle.x, 2) + pow(location.y - handle.y, 2))
                 if distance <= totalTolerance {
-                    print("✅ RESIZE HANDLE DETECTED: Blocking text box creation - this is a resize operation!")
+                    print("✅ RESIZE HANDLE HIT: Handle \(index) at \(handle), distance: \(String(format: "%.1f", distance))")
                     return true
                 }
             }
+            
+            // ADDITIONAL CHECK: Also consider clicks near the text box edges as potential resize operations
+            // This prevents accidental text creation when clicking near text boxes
+            let edgeTolerance: Double = 25.0
+            let expandedBounds = textBounds.insetBy(dx: -edgeTolerance, dy: -edgeTolerance)
+            
+            if expandedBounds.contains(location) && !textBounds.insetBy(dx: edgeTolerance, dy: edgeTolerance).contains(location) {
+                print("✅ EDGE AREA HIT: Near text box edge, treating as potential resize operation")
+                return true
+            }
         }
         
-        print("❌ NO RESIZE HANDLE: This is text box creation, will show blue outline")
+        print("❌ NO RESIZE HANDLE: Location not near any text box resize handles")
         return false
     }
 } 

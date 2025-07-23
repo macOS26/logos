@@ -289,40 +289,88 @@ struct VectorText: Identifiable, Codable, Hashable {
     }
     
     mutating func updateBounds() {
-        // NATIVE CORE GRAPHICS BOUNDS CALCULATION
-        // Uses Core Text for accurate text metrics at all zoom levels
+        // CRITICAL FIX: Don't override bounds that are managed by ProfessionalTextCanvas
+        // The ProfessionalTextCanvas handles proper multi-line text bounds calculation
+        // This old method was treating multi-line text as single line, causing the thin blue selection line
+        
+        // Only calculate bounds if we don't have proper bounds set (width and height both > 0)
+        // OR if this is clearly single-line text (no line breaks)
+        let hasProperBounds = bounds.width > 0 && bounds.height > 0
+        let isSingleLineText = !content.contains("\n") && !content.contains("\r")
+        
+        // If we already have proper bounds from ProfessionalTextCanvas, don't override them
+        if hasProperBounds && !isSingleLineText {
+            print("📦 BOUNDS PRESERVED: Multi-line text bounds managed by ProfessionalTextCanvas (\(bounds))")
+            return
+        }
+        
+        // LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases
         let font = createCoreTextFont()
         let displayText = content.isEmpty ? "Text" : content
         
-        // Create attributed string with proper font and kerning
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .kern: typography.letterSpacing
-        ]
-        
-        let attributedString = NSAttributedString(string: displayText, attributes: attributes)
-        
-        // PROFESSIONAL CORE TEXT MEASUREMENT
-        // Use CTLine for precise text layout metrics
-        let line = CTLineCreateWithAttributedString(attributedString)
-        
-        // Get accurate text bounds from Core Text
-        let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-        
-        // Get font metrics for proper baseline positioning
-        let ascent = CTFontGetAscent(font)
-        let descent = CTFontGetDescent(font)
-        let leading = CTFontGetLeading(font)
-        
-        // CORE GRAPHICS STANDARD: Position is baseline, bounds are relative to baseline
-        bounds = CGRect(
-            x: 0,  // Relative to position (Core Graphics standard)
-            y: -ascent,  // Above baseline (negative Y)
-            width: max(textBounds.width, content.isEmpty ? 20 : 1),  // Actual text width
-            height: ascent + descent + leading  // Total line height
-        )
-        
-        // Position is handled separately - bounds are relative to position (Core Graphics standard)
+        if isSingleLineText {
+            // Single line text: Use CTLine (original logic)
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .kern: typography.letterSpacing
+            ]
+            
+            let attributedString = NSAttributedString(string: displayText, attributes: attributes)
+            let line = CTLineCreateWithAttributedString(attributedString)
+            let textBounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+            
+            let ascent = CTFontGetAscent(font)
+            let descent = CTFontGetDescent(font)
+            let leading = CTFontGetLeading(font)
+            
+            bounds = CGRect(
+                x: 0,
+                y: -ascent,
+                width: max(textBounds.width, content.isEmpty ? 20 : 1),
+                height: ascent + descent + leading
+            )
+            
+            print("📦 SINGLE-LINE BOUNDS: \(bounds)")
+        } else {
+            // Multi-line text: Use CTFramesetter for proper wrapping calculation
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = typography.alignment.nsTextAlignment
+            paragraphStyle.lineSpacing = max(0, typography.lineSpacing)
+            paragraphStyle.minimumLineHeight = typography.lineHeight
+            paragraphStyle.maximumLineHeight = typography.lineHeight
+            
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: font,
+                .kern: typography.letterSpacing,
+                .paragraphStyle: paragraphStyle
+            ]
+            
+            let attributedString = NSAttributedString(string: displayText, attributes: attributes)
+            let framesetter = CTFramesetterCreateWithAttributedString(attributedString)
+            
+            // Use a reasonable default width for text wrapping if no bounds set
+            let defaultWidth: CGFloat = 300.0
+            let constraintSize = CGSize(width: defaultWidth, height: CGFloat.greatestFiniteMagnitude)
+            
+            let suggestedSize = CTFramesetterSuggestFrameSizeWithConstraints(
+                framesetter,
+                CFRangeMake(0, 0),
+                nil,
+                constraintSize,
+                nil
+            )
+            
+            let ascent = CTFontGetAscent(font)
+            
+            bounds = CGRect(
+                x: 0,
+                y: -ascent,
+                width: max(suggestedSize.width, content.isEmpty ? 20 : 1),
+                height: max(suggestedSize.height + 20, typography.lineHeight) // Add padding for proper rendering
+            )
+            
+            print("📦 MULTI-LINE BOUNDS (FALLBACK): \(bounds) for text: '\(content.prefix(30))...'")
+        }
     }
     
     private func createCoreTextFont() -> CTFont {

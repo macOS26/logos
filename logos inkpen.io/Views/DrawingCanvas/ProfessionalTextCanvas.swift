@@ -30,20 +30,12 @@ struct StableProfessionalTextCanvas: View {
     }
     
     var body: some View {
-        // Update view model when text object changes (without recreating it)
+        // FIXED: Simplified to prevent circular dependency - only update on appear
         ProfessionalTextCanvas(document: document, viewModel: viewModel, textObjectID: textObjectID)
             .onAppear {
                 updateViewModelFromDocument()
             }
-            .onChange(of: document.textObjects) { _, _ in
-                updateViewModelFromDocument()
-            }
-            // FIXED: Use getCurrentTextHash to detect any property changes including colors
-            .onChange(of: getCurrentTextHash()) { _, _ in
-                updateViewModelFromDocument()
-            }
-            // Additional fix: Use id to force view refresh when text content changes
-            .id("\(textObjectID)-\(getCurrentTextHash())")
+            // REMOVED: Multiple onChange modifiers that were causing circular dependencies
     }
     
     private func updateViewModelFromDocument() {
@@ -51,23 +43,6 @@ struct StableProfessionalTextCanvas: View {
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
         }
-    }
-    
-    private func getCurrentTextHash() -> String {
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
-            // PROFESSIONAL UX: Stable view while font tool is active
-            // Create compact typography hash to avoid super long strings
-            let typographyHash = "\(currentTextObject.typography.hashValue)"
-            
-            if document.currentTool == .font {
-                // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool-\(typographyHash)"
-            } else {
-                // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(typographyHash)-\(currentTextObject.isEditing)"
-            }
-        }
-        return "missing"
     }
 }
 
@@ -81,6 +56,7 @@ struct ProfessionalTextCanvas: View {
     @State private var dragOffset: CGSize = .zero
     @State private var resizeOffset: CGSize = .zero
     @State private var textBoxState: TextBoxState = .gray
+    @State private var isResizeHandleActive = false  // NEW: Track resize handle state
     // REMOVED: @FocusState - We use our own 3-state system
     
     enum TextBoxState {
@@ -96,6 +72,7 @@ struct ProfessionalTextCanvas: View {
                 dragOffset: dragOffset,
                 resizeOffset: resizeOffset,
                 textBoxState: textBoxState,
+                isResizeHandleActive: isResizeHandleActive,  // NEW: Pass resize handle state
                 onTextBoxSelect: handleTextBoxSelect,
                 onTextBoxTap: handleTextBoxTap,
                 onDragChanged: handleDragChanged,
@@ -114,7 +91,8 @@ struct ProfessionalTextCanvas: View {
                 dragOffset: dragOffset,
                 resizeOffset: resizeOffset,
                 onResizeChanged: handleResizeChanged,
-                onResizeEnded: handleResizeEnded
+                onResizeEnded: handleResizeEnded,
+                onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
             )
         }
         // CRITICAL FIX: Apply the SAME coordinate system as all other objects
@@ -255,10 +233,13 @@ struct ProfessionalTextCanvas: View {
     }
     
     private func handleDragChanged(value: DragGesture.Value) {
-        // DRAG: Only allowed when GREEN
-        if !isResizing && textBoxState == .green {
+        // IMPROVED: Only allow text box movement when NOT resizing AND resize handle is not active
+        if !isResizing && !isResizeHandleActive && textBoxState == .green {
             isDragging = true
             dragOffset = value.translation
+            print("📦 TEXT BOX MOVE: \(value.translation) (resize handle inactive)")
+        } else if isResizeHandleActive {
+            print("🚫 TEXT BOX MOVE BLOCKED: Resize handle is active")
         }
     }
     
@@ -277,12 +258,20 @@ struct ProfessionalTextCanvas: View {
             }
             dragOffset = .zero
             isDragging = false
+            print("✅ TEXT BOX MOVE COMPLETED")
         }
+    }
+    
+    // NEW: Track when resize starts
+    private func handleResizeStarted() {
+        isResizeHandleActive = true
+        print("🔵 RESIZE HANDLE ACTIVATED")
     }
     
     private func handleResizeChanged(value: DragGesture.Value) {
         isResizing = true
         resizeOffset = value.translation
+        print("🔵 TEXT BOX RESIZE: \(value.translation)")
     }
     
     private func handleResizeEnded() {
@@ -300,6 +289,8 @@ struct ProfessionalTextCanvas: View {
         dragOffset = .zero
         isResizing = false
         isDragging = false
+        isResizeHandleActive = false  // NEW: Reset resize handle state
+        print("✅ TEXT BOX RESIZE COMPLETED")
     }
     
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
@@ -326,6 +317,7 @@ struct ProfessionalTextBoxView: View {
     let dragOffset: CGSize
     let resizeOffset: CGSize
     let textBoxState: ProfessionalTextCanvas.TextBoxState
+    let isResizeHandleActive: Bool  // NEW: Track resize handle state
     let onTextBoxSelect: (CGPoint) -> Void
     let onTextBoxTap: (CGPoint) -> Void
     let onDragChanged: (DragGesture.Value) -> Void
@@ -359,8 +351,20 @@ struct ProfessionalTextBoxView: View {
             )
             .highPriorityGesture(
                 DragGesture(minimumDistance: 5)
-                    .onChanged(onDragChanged)
-                    .onEnded { _ in onDragEnded() }
+                    .onChanged { value in
+                        // IMPROVED: Only trigger if resize handle is not active
+                        if !isResizeHandleActive {
+                            onDragChanged(value)
+                        } else {
+                            print("🚫 TEXT BOX DRAG BLOCKED: Resize handle is active")
+                        }
+                    }
+                    .onEnded { _ in 
+                        // IMPROVED: Only trigger if resize handle is not active
+                        if !isResizeHandleActive {
+                            onDragEnded()
+                        }
+                    }
             )
             .onTapGesture(count: 1) { location in
                 onTextBoxSelect(location)
@@ -652,6 +656,9 @@ struct ProfessionalResizeHandleView: View {
     let resizeOffset: CGSize
     let onResizeChanged: (DragGesture.Value) -> Void
     let onResizeEnded: () -> Void
+    let onResizeStarted: () -> Void // NEW: Track when resize starts
+    
+    @State private var hasResizeStarted = false  // Track if resize has been initiated
     
     var body: some View {
         Circle()
@@ -663,13 +670,20 @@ struct ProfessionalResizeHandleView: View {
                 y: viewModel.textBoxFrame.maxY + dragOffset.height + resizeOffset.height
             )
             .gesture(
-                DragGesture()
+                DragGesture(minimumDistance: 1)  // IMPROVED: Lower threshold for immediate response
                     .onChanged { value in
+                        // IMPROVED: Call onResizeStarted only once when drag first begins
+                        if !hasResizeStarted {
+                            hasResizeStarted = true
+                            onResizeStarted()
+                            print("🔵 RESIZE HANDLE STARTED")
+                        }
                         print("🔵 RESIZE HANDLE DRAG: \(value.translation)")
                         onResizeChanged(value)
                     }
                     .onEnded { _ in 
                         print("🔵 RESIZE HANDLE ENDED")
+                        hasResizeStarted = false  // Reset for next resize operation
                         onResizeEnded() 
                     }
             )

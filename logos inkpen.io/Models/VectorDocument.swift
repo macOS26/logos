@@ -1041,7 +1041,8 @@ class VectorDocument: ObservableObject, Codable {
                     x: originalText.position.x + 10, // 10pt offset
                     y: originalText.position.y + 10
                 )
-                duplicateText.updateBounds()
+                // CRITICAL FIX: Don't call updateBounds() - preserve original bounds from ProfessionalTextCanvas
+                // duplicateText.updateBounds() - REMOVED because it uses old single-line algorithm
                 
                 textObjects.append(duplicateText)
                 newTextIDs.insert(duplicateText.id)
@@ -1060,7 +1061,8 @@ class VectorDocument: ObservableObject, Codable {
         for i in textObjects.indices {
             if selectedTextIDs.contains(textObjects[i].id) {
                 textObjects[i][keyPath: keyPath] = value
-                textObjects[i].updateBounds()
+                // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
+                // textObjects[i].updateBounds() - REMOVED because it uses old single-line algorithm
             }
         }
     }
