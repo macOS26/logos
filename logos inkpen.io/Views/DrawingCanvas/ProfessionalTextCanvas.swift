@@ -38,12 +38,8 @@ struct StableProfessionalTextCanvas: View {
             .onChange(of: document.textObjects) { _, _ in
                 updateViewModelFromDocument()
             }
-            // FIXED: Use getCurrentTextHash to detect any property changes including colors
-            .onChange(of: getCurrentTextHash()) { _, _ in
-                updateViewModelFromDocument()
-            }
-            // CRITICAL FIX: Stabilize the view's identity. Do NOT recreate on every color change.
-            // Recreating the view destroys the NSTextView and its state, including cursor position.
+            // The hash was causing the view to be recreated on font changes.
+            // The onChange(of: document.textObjects) is sufficient.
             .id(textObjectID)
     }
     
@@ -54,22 +50,6 @@ struct StableProfessionalTextCanvas: View {
         }
     }
     
-    private func getCurrentTextHash() -> String {
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
-            // PROFESSIONAL UX: Stable view while font tool is active
-            // Create compact typography hash to avoid super long strings
-            let typographyHash = "\(currentTextObject.typography.hashValue)"
-            
-            if document.currentTool == .font {
-                // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool-\(typographyHash)"
-            } else {
-                // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(typographyHash)-\(currentTextObject.isEditing)"
-            }
-        }
-        return "missing"
-    }
 }
 
 // MARK: - Professional Text Canvas (Based on Working EditableTextCanvas)
