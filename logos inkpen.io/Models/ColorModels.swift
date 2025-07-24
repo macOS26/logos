@@ -1027,127 +1027,29 @@ extension Color {
     }
 }
 
-// MARK: - Gradient System
+// MARK: - Enhanced Professional Gradient System
 
-/// Represents a color stop in a gradient with position and color
+/// Enhanced gradient stop with more professional features
 struct GradientStop: Codable, Hashable, Identifiable {
     var id = UUID()
-    var position: Double // 0.0 to 1.0 (0% to 100%)
+    var position: Double // 0.0 to 1.0 (normalized position along gradient)
     var color: VectorColor
-    var opacity: Double // 0.0 to 1.0
+    var opacity: Double // Individual stop opacity (0.0 to 1.0)
     
     init(position: Double, color: VectorColor, opacity: Double = 1.0) {
         self.position = max(0.0, min(1.0, position)) // Clamp to 0-1 range
         self.color = color
         self.opacity = max(0.0, min(1.0, opacity))   // Clamp to 0-1 range
     }
-    
-    // Convenience initializer for common cases
-    init(position: Double, color: VectorColor) {
-        self.init(position: position, color: color, opacity: 1.0)
-    }
 }
 
-/// Linear gradient from one point to another
-struct LinearGradient: Codable, Hashable, Identifiable {
-    var id = UUID()
-    var startPoint: CGPoint  // Start point (0,0 = top-left, 1,1 = bottom-right)
-    var endPoint: CGPoint    // End point
-    var stops: [GradientStop]
-    var spreadMethod: GradientSpreadMethod
+/// Gradient spread method (how gradient extends beyond defined area)
+enum GradientSpreadMethod: String, Codable, CaseIterable {
+    case pad = "pad"           // Extend with end colors (default)
+    case reflect = "reflect"   // Mirror the gradient 
+    case `repeat` = "repeat"   // Repeat the gradient pattern
     
-    init(startPoint: CGPoint = CGPoint(x: 0, y: 0), 
-         endPoint: CGPoint = CGPoint(x: 1, y: 0), 
-         stops: [GradientStop] = [], 
-         spreadMethod: GradientSpreadMethod = .pad) {
-        self.startPoint = startPoint
-        self.endPoint = endPoint
-        self.stops = stops.isEmpty ? Self.defaultStops() : stops.sorted { $0.position < $1.position }
-        self.spreadMethod = spreadMethod
-    }
-    
-    // Create default black to white gradient
-    static func defaultStops() -> [GradientStop] {
-        return [
-            GradientStop(position: 0.0, color: .black),
-            GradientStop(position: 1.0, color: .white)
-        ]
-    }
-    
-    // Create horizontal gradient (left to right)
-    static func horizontal(from startColor: VectorColor, to endColor: VectorColor) -> LinearGradient {
-        return LinearGradient(
-            startPoint: CGPoint(x: 0, y: 0.5),
-            endPoint: CGPoint(x: 1, y: 0.5),
-            stops: [
-                GradientStop(position: 0.0, color: startColor),
-                GradientStop(position: 1.0, color: endColor)
-            ]
-        )
-    }
-    
-    // Create vertical gradient (top to bottom)
-    static func vertical(from startColor: VectorColor, to endColor: VectorColor) -> LinearGradient {
-        return LinearGradient(
-            startPoint: CGPoint(x: 0.5, y: 0),
-            endPoint: CGPoint(x: 0.5, y: 1),
-            stops: [
-                GradientStop(position: 0.0, color: startColor),
-                GradientStop(position: 1.0, color: endColor)
-            ]
-        )
-    }
-}
-
-/// Radial gradient radiating from a center point
-struct RadialGradient: Codable, Hashable, Identifiable {
-    var id = UUID()
-    var centerPoint: CGPoint     // Center of the gradient (0,0 = top-left, 1,1 = bottom-right)
-    var focalPoint: CGPoint?     // Focal point (if different from center)
-    var radius: Double           // Radius as percentage of shape (0.0 to 1.0+)
-    var stops: [GradientStop]
-    var spreadMethod: GradientSpreadMethod
-    
-    init(centerPoint: CGPoint = CGPoint(x: 0.5, y: 0.5),
-         focalPoint: CGPoint? = nil,
-         radius: Double = 0.5,
-         stops: [GradientStop] = [],
-         spreadMethod: GradientSpreadMethod = .pad) {
-        self.centerPoint = centerPoint
-        self.focalPoint = focalPoint
-        self.radius = max(0.0, radius)
-        self.stops = stops.isEmpty ? Self.defaultStops() : stops.sorted { $0.position < $1.position }
-        self.spreadMethod = spreadMethod
-    }
-    
-    // Create default black to white radial gradient
-    static func defaultStops() -> [GradientStop] {
-        return [
-            GradientStop(position: 0.0, color: .black),
-            GradientStop(position: 1.0, color: .white)
-        ]
-    }
-    
-    // Create centered radial gradient
-    static func centered(from innerColor: VectorColor, to outerColor: VectorColor) -> RadialGradient {
-        return RadialGradient(
-            centerPoint: CGPoint(x: 0.5, y: 0.5),
-            radius: 0.5,
-            stops: [
-                GradientStop(position: 0.0, color: innerColor),
-                GradientStop(position: 1.0, color: outerColor)
-            ]
-        )
-    }
-}
-
-/// How gradient extends beyond its defined bounds
-enum GradientSpreadMethod: String, CaseIterable, Codable {
-    case pad = "pad"           // Extend with the edge colors
-    case reflect = "reflect"   // Reflect the gradient
-    case `repeat` = "repeat"     // Repeat the gradient
-    
-    var displayName: String {
+    var description: String {
         switch self {
         case .pad: return "Pad"
         case .reflect: return "Reflect"
@@ -1156,39 +1058,108 @@ enum GradientSpreadMethod: String, CaseIterable, Codable {
     }
 }
 
-/// Container for all gradient types
-enum VectorGradient: Codable, Hashable, Identifiable {
+/// Gradient coordinate units (SVG specification)
+enum GradientUnits: String, Codable {
+    case objectBoundingBox = "objectBoundingBox" // Default: 0-1 relative to object bounds
+    case userSpaceOnUse = "userSpaceOnUse"       // Absolute coordinates in user space
+}
+
+/// Enhanced linear gradient with professional features
+struct LinearGradient: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var startPoint: CGPoint     // Start point (in unit coordinates 0-1)
+    var endPoint: CGPoint       // End point (in unit coordinates 0-1)  
+    var stops: [GradientStop]   // Unlimited color stops (like Illustrator)
+    var spreadMethod: GradientSpreadMethod = .pad
+    var units: GradientUnits = .objectBoundingBox
+    
+    init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
+        self.startPoint = startPoint
+        self.endPoint = endPoint
+        self.stops = stops.sorted { $0.position < $1.position } // Always keep stops sorted
+        self.spreadMethod = spreadMethod
+        self.units = units
+    }
+    
+    /// Create a simple two-color linear gradient
+    static func simple(from startColor: VectorColor, to endColor: VectorColor, angle: Double = 0) -> LinearGradient {
+        let radians = angle * .pi / 180
+        let endX = cos(radians) * 0.5 + 0.5
+        let endY = sin(radians) * 0.5 + 0.5
+        
+        return LinearGradient(
+            startPoint: CGPoint(x: 0.5 - (endX - 0.5), y: 0.5 - (endY - 0.5)),
+            endPoint: CGPoint(x: endX, y: endY),
+            stops: [
+                GradientStop(position: 0.0, color: startColor),
+                GradientStop(position: 1.0, color: endColor)
+            ]
+        )
+    }
+}
+
+/// Enhanced radial gradient with professional features  
+struct RadialGradient: Codable, Hashable, Identifiable {
+    var id = UUID()
+    var centerPoint: CGPoint           // Center of gradient (in unit coordinates 0-1)
+    var focalPoint: CGPoint?           // Focal point for elliptical gradients (optional)
+    var radius: Double                 // Radius (in unit coordinates 0-1)
+    var stops: [GradientStop]          // Unlimited color stops
+    var spreadMethod: GradientSpreadMethod = .pad
+    var units: GradientUnits = .objectBoundingBox
+    
+    init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
+        self.centerPoint = centerPoint
+        self.radius = max(0.0, radius)
+        self.stops = stops.sorted { $0.position < $1.position }
+        self.focalPoint = focalPoint
+        self.spreadMethod = spreadMethod
+        self.units = units
+    }
+    
+    /// Create a simple two-color radial gradient
+    static func simple(from innerColor: VectorColor, to outerColor: VectorColor, center: CGPoint = CGPoint(x: 0.5, y: 0.5), radius: Double = 0.5) -> RadialGradient {
+        return RadialGradient(
+            centerPoint: center,
+            radius: radius,
+            stops: [
+                GradientStop(position: 0.0, color: innerColor),
+                GradientStop(position: 1.0, color: outerColor)
+            ]
+        )
+    }
+}
+
+/// Enhanced vector gradient enum supporting professional gradient types
+enum VectorGradient: Codable, Hashable {
     case linear(LinearGradient)
     case radial(RadialGradient)
     
-    var id: UUID {
-        switch self {
-        case .linear(let gradient): return gradient.id
-        case .radial(let gradient): return gradient.id
-        }
-    }
-    
+    /// Get all color stops regardless of gradient type
     var stops: [GradientStop] {
         switch self {
-        case .linear(let gradient): return gradient.stops
-        case .radial(let gradient): return gradient.stops
+        case .linear(let gradient):
+            return gradient.stops
+        case .radial(let gradient):
+            return gradient.stops
         }
     }
     
-    var spreadMethod: GradientSpreadMethod {
+    /// Get the primary color (first stop)
+    var primaryColor: VectorColor {
+        return stops.first?.color ?? .black
+    }
+    
+    /// Check if gradient has multiple color stops
+    var isMultiColor: Bool {
+        return stops.count > 2
+    }
+    
+    /// Get gradient type name
+    var typeName: String {
         switch self {
-        case .linear(let gradient): return gradient.spreadMethod
-        case .radial(let gradient): return gradient.spreadMethod
+        case .linear: return "Linear"
+        case .radial: return "Radial"
         }
-    }
-    
-    // Create a simple horizontal linear gradient
-    static func simpleLinear(from startColor: VectorColor, to endColor: VectorColor) -> VectorGradient {
-        return .linear(LinearGradient.horizontal(from: startColor, to: endColor))
-    }
-    
-    // Create a simple centered radial gradient
-    static func simpleRadial(from innerColor: VectorColor, to outerColor: VectorColor) -> VectorGradient {
-        return .radial(RadialGradient.centered(from: innerColor, to: outerColor))
     }
 }

@@ -166,13 +166,34 @@ struct FillStyle: Codable, Hashable {
     
     /// Create a horizontal linear gradient fill
     static func linearGradient(from startColor: VectorColor, to endColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
-        let gradient = VectorGradient.simpleLinear(from: startColor, to: endColor)
+        let stops = [
+            GradientStop(position: 0.0, color: startColor, opacity: 1.0),
+            GradientStop(position: 1.0, color: endColor, opacity: 1.0)
+        ]
+        let linear = LinearGradient(
+            startPoint: CGPoint(x: 0, y: 0), 
+            endPoint: CGPoint(x: 1, y: 0), 
+            stops: stops, 
+            spreadMethod: .pad
+        )
+        let gradient = VectorGradient.linear(linear)
         return FillStyle(gradient: gradient, opacity: opacity)
     }
     
     /// Create a radial gradient fill
     static func radialGradient(from innerColor: VectorColor, to outerColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
-        let gradient = VectorGradient.simpleRadial(from: innerColor, to: outerColor)
+        let stops = [
+            GradientStop(position: 0.0, color: innerColor, opacity: 1.0),
+            GradientStop(position: 1.0, color: outerColor, opacity: 1.0)
+        ]
+        let radial = RadialGradient(
+            centerPoint: CGPoint(x: 0.5, y: 0.5), 
+            radius: 0.5, 
+            stops: stops, 
+            focalPoint: nil, 
+            spreadMethod: .pad
+        )
+        let gradient = VectorGradient.radial(radial)
         return FillStyle(gradient: gradient, opacity: opacity)
     }
 }

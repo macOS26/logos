@@ -1444,44 +1444,75 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         let attributes = currentGradientAttributes
         
+        // Ensure we have at least one gradient stop
+        if currentGradientStops.isEmpty {
+            print("⚠️ Gradient \(gradientId) has no color stops - creating default black to white")
+            currentGradientStops = [
+                GradientStop(position: 0.0, color: .black),
+                GradientStop(position: 1.0, color: .white)
+            ]
+        }
+        
         // Determine gradient type from stored gradient type
         let vectorGradient: VectorGradient
         
         if gradientType == "linearGradient" {
-            // Parse linear gradient attributes
+            // Parse linear gradient attributes with proper coordinate handling
             let x1 = parseLength(attributes["x1"]) ?? 0.0
             let y1 = parseLength(attributes["y1"]) ?? 0.0
             let x2 = parseLength(attributes["x2"]) ?? 1.0
             let y2 = parseLength(attributes["y2"]) ?? 0.0
             
-            let startPoint = CGPoint(x: x1, y: y1)
-            let endPoint = CGPoint(x: x2, y: y2)
+            // Ensure coordinates are in 0-1 range for unit coordinates
+            let startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
+            let endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
+            
+            // Parse gradient units (SVG specification)
+            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            
+            // Parse spread method
+            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
             let linearGradient = LinearGradient(
                 startPoint: startPoint,
                 endPoint: endPoint,
-                stops: currentGradientStops
+                stops: currentGradientStops,
+                spreadMethod: spreadMethod,
+                units: gradientUnits
             )
             
             vectorGradient = .linear(linearGradient)
-            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops, coords: \(startPoint) → \(endPoint)")
             
         } else { // radialGradient
-            // Parse radial gradient attributes
+            // Parse radial gradient attributes with proper coordinate handling
             let cx = parseLength(attributes["cx"]) ?? 0.5
             let cy = parseLength(attributes["cy"]) ?? 0.5
             let r = parseLength(attributes["r"]) ?? 0.5
             
-            let centerPoint = CGPoint(x: cx, y: cy)
+            // Parse focal point if specified
+            let fx = parseLength(attributes["fx"]) ?? cx
+            let fy = parseLength(attributes["fy"]) ?? cy
+            
+            // Ensure coordinates are in 0-1 range
+            let centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
+            let focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
+            
+            // Parse gradient units and spread method
+            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
             let radialGradient = RadialGradient(
                 centerPoint: centerPoint,
-                radius: r,
-                stops: currentGradientStops
+                radius: max(0.0, min(1.0, r)), // Clamp radius
+                stops: currentGradientStops,
+                focalPoint: (fx != cx || fy != cy) ? focalPoint : nil,
+                spreadMethod: spreadMethod,
+                units: gradientUnits
             )
             
             vectorGradient = .radial(radialGradient)
-            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops, center: \(centerPoint), radius: \(r)")
         }
         
         // Store the gradient definition
@@ -1494,7 +1525,12 @@ class SVGParser: NSObject, XMLParserDelegate {
         currentGradientStops = []
         isParsingGradient = false
         
-        print("📚 Stored gradient definition: \(gradientId)")
+        print("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops")
+    }
+    
+    /// Clamp a value between min and max
+    private func clamp(_ value: Double, _ minValue: Double, _ maxValue: Double) -> Double {
+        return max(minValue, min(maxValue, value))
     }
     
     private func parseStyleAttribute(_ style: String) -> [String: String] {

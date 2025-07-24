@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import CoreGraphics
 
 struct LayerView: View {
     let layer: VectorLayer
@@ -323,61 +324,18 @@ extension ShapeView {
     /// Creates a SwiftUI gradient from a VectorGradient for fill rendering
     @ViewBuilder
     private func createGradientFill(from vectorGradient: VectorGradient, for path: Path) -> some View {
-        switch vectorGradient {
-        case .linear(let linearGradient):
-            path.fill(
-                SwiftUI.LinearGradient(
-                    stops: createGradientStops(from: linearGradient.stops),
-                    startPoint: UnitPoint(x: linearGradient.startPoint.x, y: linearGradient.startPoint.y),
-                    endPoint: UnitPoint(x: linearGradient.endPoint.x, y: linearGradient.endPoint.y)
-                )
-            )
-            
-        case .radial(let radialGradient):
-            path.fill(
-                SwiftUI.RadialGradient(
-                    stops: createGradientStops(from: radialGradient.stops),
-                    center: UnitPoint(x: radialGradient.centerPoint.x, y: radialGradient.centerPoint.y),
-                    startRadius: 0,
-                    endRadius: radialGradient.radius * 200 // Scale radius appropriately
-                )
-            )
-        }
+        // Use Core Graphics for professional gradient rendering
+        CoreGraphicsGradientView(gradient: vectorGradient, path: path, isStroke: false)
     }
     
     /// Creates a SwiftUI gradient stroke from a VectorGradient
     @ViewBuilder
     private func createGradientStroke(from vectorGradient: VectorGradient, for path: Path, style: SwiftUI.StrokeStyle) -> some View {
-        switch vectorGradient {
-        case .linear(let linearGradient):
-            path.stroke(
-                SwiftUI.LinearGradient(
-                    stops: createGradientStops(from: linearGradient.stops),
-                    startPoint: UnitPoint(x: linearGradient.startPoint.x, y: linearGradient.startPoint.y),
-                    endPoint: UnitPoint(x: linearGradient.endPoint.x, y: linearGradient.endPoint.y)
-                ),
-                style: style
-            )
-            
-        case .radial(let radialGradient):
-            path.stroke(
-                SwiftUI.RadialGradient(
-                    stops: createGradientStops(from: radialGradient.stops),
-                    center: UnitPoint(x: radialGradient.centerPoint.x, y: radialGradient.centerPoint.y),
-                    startRadius: 0,
-                    endRadius: radialGradient.radius * 200 // Scale radius appropriately
-                ),
-                style: style
-            )
-        }
+        // Use Core Graphics for professional gradient rendering
+        CoreGraphicsGradientView(gradient: vectorGradient, path: path, isStroke: true, strokeStyle: style)
     }
     
-    /// Convert gradient stops to SwiftUI gradient stops
-    private func createGradientStops(from stops: [GradientStop]) -> [SwiftUI.Gradient.Stop] {
-        return stops.map { stop in
-            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-        }
-    }
+    // Note: Removed createGradientStops function - now using Core Graphics rendering directly
     
     /// Creates appropriate fill rendering based on VectorColor type
     @ViewBuilder
@@ -3659,4 +3617,65 @@ extension CGLineJoin {
         }
     }
 }
+
+// MARK: - Professional Core Graphics Gradient Renderer
+
+/// Enhanced SwiftUI gradient renderer for professional multi-color gradients  
+struct CoreGraphicsGradientView: View {
+    let gradient: VectorGradient
+    let path: Path
+    let isStroke: Bool
+    let strokeStyle: SwiftUI.StrokeStyle?
+    
+    init(gradient: VectorGradient, path: Path, isStroke: Bool, strokeStyle: SwiftUI.StrokeStyle? = nil) {
+        self.gradient = gradient
+        self.path = path
+        self.isStroke = isStroke
+        self.strokeStyle = strokeStyle
+    }
+    
+    var body: some View {
+        // Create SwiftUI gradient with multiple color stops
+        let swiftUIGradient = createSwiftUIGradient(from: gradient)
+        
+        if isStroke {
+            // Gradient stroke
+            if let strokeStyle = strokeStyle {
+                path.stroke(swiftUIGradient, style: strokeStyle)
+            } else {
+                path.stroke(swiftUIGradient, lineWidth: 1.0)
+            }
+        } else {
+            // Gradient fill
+            switch gradient {
+            case .linear(let linear):
+                let unitStart = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
+                let unitEnd = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+                path.fill(SwiftUI.LinearGradient(gradient: swiftUIGradient, startPoint: unitStart, endPoint: unitEnd))
+                
+            case .radial(let radial):
+                let unitCenter = UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
+                // Use radius as a fraction of the shape size
+                let radiusFraction = min(1.0, radial.radius)
+                path.fill(SwiftUI.RadialGradient(gradient: swiftUIGradient, center: unitCenter, startRadius: 0, endRadius: radiusFraction * 100))
+            }
+        }
+    }
+    
+    /// Create SwiftUI gradient with unlimited color stops
+    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> SwiftUI.Gradient {
+        let stops = vectorGradient.stops
+        
+        let gradientStops = stops.map { stop in
+            let color = stop.color.color.opacity(stop.opacity)
+            return SwiftUI.Gradient.Stop(color: color, location: stop.position)
+        }
+        
+        return SwiftUI.Gradient(stops: gradientStops)
+    }
+}
+
+// MARK: - SwiftUI StrokeStyle Extensions
+
+// Note: CGLineCap and CGLineJoin extensions are defined earlier in the file
 
