@@ -47,10 +47,10 @@ struct RGBInputSection: View {
     }
     
     // Red slider gradient (morphs from current color with R=0 to current color with R=255)
-    private var redGradient: LinearGradient {
+    private var redGradient: SwiftUI.LinearGradient {
         let g = Double(greenValue) ?? 0
         let b = Double(blueValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColor(r: 0, g: g, b: b),
                 swiftUIColor(r: 255, g: g, b: b)
@@ -61,10 +61,10 @@ struct RGBInputSection: View {
     }
     
     // Green slider gradient (morphs from current color with G=0 to current color with G=255)
-    private var greenGradient: LinearGradient {
+    private var greenGradient: SwiftUI.LinearGradient {
         let r = Double(redValue) ?? 0
         let b = Double(blueValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColor(r: r, g: 0, b: b),
                 swiftUIColor(r: r, g: 255, b: b)
@@ -75,10 +75,10 @@ struct RGBInputSection: View {
     }
     
     // Blue slider gradient (morphs from current color with B=0 to current color with B=255)
-    private var blueGradient: LinearGradient {
+    private var blueGradient: SwiftUI.LinearGradient {
         let r = Double(redValue) ?? 0
         let g = Double(greenValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColor(r: r, g: g, b: 0),
                 swiftUIColor(r: r, g: g, b: 255)
@@ -381,6 +381,29 @@ struct RGBInputSection: View {
                 green: Int(rgb.green * 255),
                 blue: Int(rgb.blue * 255)
             )
+        case .gradient(let gradient):
+            // For gradients, use the first stop color as representative  
+            if let firstStop = gradient.stops.first {
+                switch firstStop.color {
+                case .rgb(let rgb):
+                    setRGBValues(
+                        red: Int(rgb.red * 255),
+                        green: Int(rgb.green * 255),
+                        blue: Int(rgb.blue * 255)
+                    )
+                default:
+                    // Convert any other color type to RGB for display
+                    let swiftUIColor = firstStop.color.color
+                    let components = swiftUIColor.components
+                    setRGBValues(
+                        red: Int(components.red * 255),
+                        green: Int(components.green * 255),
+                        blue: Int(components.blue * 255)
+                    )
+                }
+            } else {
+                setRGBValues(red: 0, green: 0, blue: 0)
+            }
         case .clear:
             setRGBValues(red: 0, green: 0, blue: 0)
         case .black:

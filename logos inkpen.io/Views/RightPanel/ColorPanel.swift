@@ -197,6 +197,11 @@ struct ColorPanel: View {
             return "SPOT \(spot.number) - \(spot.name)"
         case .appleSystem(let systemColor): 
             return "Apple \(systemColor.name.capitalized)"
+        case .gradient(let gradient): 
+            switch gradient {
+            case .linear(_): return "Linear Gradient"
+            case .radial(_): return "Radial Gradient"
+            }
         }
     }
     
@@ -241,6 +246,8 @@ struct ColorPanel: View {
             case .appleSystem(let system):
                 let cmykColor = ColorManagement.rgbToCMYK(system.rgbEquivalent)
                 return .cmyk(cmykColor)
+            case .gradient:
+                return color // Gradients cannot be converted to simple color modes
             case .clear:
                 return .clear
             case .black:
@@ -266,6 +273,8 @@ struct ColorPanel: View {
                 return .rgb(spot.rgbEquivalent)
             case .appleSystem:
                 return color // Already has RGB representation
+            case .gradient:
+                return color // Gradients cannot be converted to simple color modes
             case .clear:
                 return .clear
             case .black:
@@ -290,6 +299,8 @@ struct ColorPanel: View {
                 return .hsb(spot.hsbEquivalent)
             case .appleSystem(let system):
                 return .hsb(HSBColorModel.fromRGB(system.rgbEquivalent))
+            case .gradient:
+                return color // Gradients cannot be converted to simple color modes
             case .clear:
                 return .hsb(HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0))
             case .black:

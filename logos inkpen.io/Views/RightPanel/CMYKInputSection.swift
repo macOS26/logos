@@ -46,11 +46,11 @@ struct CMYKInputSection: View {
     }
     
     // Cyan slider gradient (morphs from current color with C=0 to current color with C=100)
-    private var cyanGradient: LinearGradient {
+    private var cyanGradient: SwiftUI.LinearGradient {
         let m = Double(magentaValue) ?? 0
         let y = Double(yellowValue) ?? 0
         let k = Double(blackValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColorFromCMYK(c: 0, m: m, y: y, k: k),
                 swiftUIColorFromCMYK(c: 100, m: m, y: y, k: k)
@@ -61,11 +61,11 @@ struct CMYKInputSection: View {
     }
     
     // Magenta slider gradient
-    private var magentaGradient: LinearGradient {
+    private var magentaGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let y = Double(yellowValue) ?? 0
         let k = Double(blackValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColorFromCMYK(c: c, m: 0, y: y, k: k),
                 swiftUIColorFromCMYK(c: c, m: 100, y: y, k: k)
@@ -76,11 +76,11 @@ struct CMYKInputSection: View {
     }
     
     // Yellow slider gradient
-    private var yellowGradient: LinearGradient {
+    private var yellowGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
         let k = Double(blackValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColorFromCMYK(c: c, m: m, y: 0, k: k),
                 swiftUIColorFromCMYK(c: c, m: m, y: 100, k: k)
@@ -91,11 +91,11 @@ struct CMYKInputSection: View {
     }
     
     // Black slider gradient
-    private var blackGradient: LinearGradient {
+    private var blackGradient: SwiftUI.LinearGradient {
         let c = Double(cyanValue) ?? 0
         let m = Double(magentaValue) ?? 0
         let y = Double(yellowValue) ?? 0
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColorFromCMYK(c: c, m: m, y: y, k: 0),
                 swiftUIColorFromCMYK(c: c, m: m, y: y, k: 100)
@@ -428,6 +428,33 @@ struct CMYKInputSection: View {
                 yellow: Int(cmyk.yellow * 100),
                 black: Int(cmyk.black * 100)
             )
+        case .gradient(let gradient):
+            // For gradients, use the first stop color as representative
+            if let firstStop = gradient.stops.first {
+                switch firstStop.color {
+                case .cmyk(let cmyk):
+                    setCMYKValues(
+                        cyan: Int(cmyk.cyan * 100),
+                        magenta: Int(cmyk.magenta * 100),
+                        yellow: Int(cmyk.yellow * 100),
+                        black: Int(cmyk.black * 100)
+                    )
+                default:
+                    // Convert any other color type to CMYK for display
+                    let swiftUIColor = firstStop.color.color
+                    let components = swiftUIColor.components
+                    let rgbColor = RGBColor(red: components.red, green: components.green, blue: components.blue, alpha: components.alpha)
+                    let cmyk = ColorManagement.rgbToCMYK(rgbColor)
+                    setCMYKValues(
+                        cyan: Int(cmyk.cyan * 100),
+                        magenta: Int(cmyk.magenta * 100),
+                        yellow: Int(cmyk.yellow * 100),
+                        black: Int(cmyk.black * 100)
+                    )
+                }
+            } else {
+                setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
+            }
         case .clear:
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
         case .black:

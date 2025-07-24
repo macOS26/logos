@@ -98,8 +98,8 @@ struct HSBInputSection: View {
     }
     
     // Hue slider gradient (full rainbow)
-    private var hueGradient: LinearGradient {
-        LinearGradient(
+    private var hueGradient: SwiftUI.LinearGradient {
+        SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 Color(hue: 0.0, saturation: 1.0, brightness: 1.0),    // Red
                 Color(hue: 0.167, saturation: 1.0, brightness: 1.0),  // Orange
@@ -115,10 +115,10 @@ struct HSBInputSection: View {
     }
     
     // Saturation slider gradient (from gray to current hue at full saturation)
-    private var saturationGradient: LinearGradient {
+    private var saturationGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let b = Double(brightnessValue) ?? 100
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColor(h: h, s: 0, b: b),
                 swiftUIColor(h: h, s: 100, b: b)
@@ -129,10 +129,10 @@ struct HSBInputSection: View {
     }
     
     // Brightness slider gradient (from black to current hue/saturation at full brightness)
-    private var brightnessGradient: LinearGradient {
+    private var brightnessGradient: SwiftUI.LinearGradient {
         let h = Double(hueValue) ?? 0
         let s = Double(saturationValue) ?? 100
-        return LinearGradient(
+        return SwiftUI.LinearGradient(
             gradient: Gradient(colors: [
                 swiftUIColor(h: h, s: s, b: 0),
                 swiftUIColor(h: h, s: s, b: 100)
@@ -574,6 +574,22 @@ struct HSBInputSection: View {
             hsbColor = spot.hsbEquivalent
         case .appleSystem(let system):
             hsbColor = HSBColorModel.fromRGB(system.rgbEquivalent)
+        case .gradient(let gradient):
+            // For gradients, use the first stop color as representative
+            if let firstStop = gradient.stops.first {
+                switch firstStop.color {
+                case .hsb(let hsb):
+                    hsbColor = hsb
+                default:
+                    // Convert any other color type to HSB for display
+                    let swiftUIColor = firstStop.color.color
+                    let components = swiftUIColor.components
+                    let rgbColor = RGBColor(red: components.red, green: components.green, blue: components.blue, alpha: components.alpha)
+                    hsbColor = HSBColorModel.fromRGB(rgbColor)
+                }
+            } else {
+                hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 0)
+            }
         case .clear:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
         case .black:

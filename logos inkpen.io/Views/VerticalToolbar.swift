@@ -466,6 +466,11 @@ struct ColorSwatchGrid: View {
         case .pantone(let pantone): return "Pantone \(pantone.pantone)"
         case .spot(let spot): return "SPOT \(spot.number)"
         case .appleSystem(let systemColor): return "Apple \(systemColor.name.capitalized)"
+        case .gradient(let gradient): 
+            switch gradient {
+            case .linear(_): return "Linear Gradient"
+            case .radial(_): return "Radial Gradient"
+            }
         }
     }
 }

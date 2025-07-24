@@ -87,6 +87,58 @@ struct FillStyle: Codable, Hashable {
         self.opacity = opacity
         self.blendMode = blendMode
     }
+    
+    // MARK: - Gradient Support
+    
+    /// Create a fill style with a gradient
+    init(gradient: VectorGradient, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+        self.color = .gradient(gradient)
+        self.opacity = opacity
+        self.blendMode = blendMode
+    }
+    
+    /// Check if this fill is a gradient
+    var isGradient: Bool {
+        if case .gradient = color {
+            return true
+        }
+        return false
+    }
+    
+    /// Get the gradient if this fill is a gradient
+    var gradient: VectorGradient? {
+        if case .gradient(let gradient) = color {
+            return gradient
+        }
+        return nil
+    }
+    
+    /// Check if this fill is a solid color
+    var isSolidColor: Bool {
+        return !isGradient
+    }
+    
+    /// Get the solid color if this fill is not a gradient
+    var solidColor: VectorColor? {
+        if isGradient {
+            return nil
+        }
+        return color
+    }
+    
+    // MARK: - Convenience Gradient Creators
+    
+    /// Create a horizontal linear gradient fill
+    static func linearGradient(from startColor: VectorColor, to endColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
+        let gradient = VectorGradient.simpleLinear(from: startColor, to: endColor)
+        return FillStyle(gradient: gradient, opacity: opacity)
+    }
+    
+    /// Create a radial gradient fill
+    static func radialGradient(from innerColor: VectorColor, to outerColor: VectorColor, opacity: Double = 1.0) -> FillStyle {
+        let gradient = VectorGradient.simpleRadial(from: innerColor, to: outerColor)
+        return FillStyle(gradient: gradient, opacity: opacity)
+    }
 }
 
 // MARK: - Geometric Shape Types
