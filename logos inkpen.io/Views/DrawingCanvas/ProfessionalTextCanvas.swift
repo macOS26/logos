@@ -38,9 +38,9 @@ struct StableProfessionalTextCanvas: View {
             .onChange(of: document.textObjects) { _, _ in
                 updateViewModelFromDocument()
             }
-            // Additional fix: Use id to force view refresh when text content changes
-            .id("\(textObjectID)-\(getDocumentMode())")
-
+            // The hash was causing the view to be recreated on font changes.
+            // The onChange(of: document.textObjects) is sufficient.
+            .id(textObjectID)
     }
     
     private func updateViewModelFromDocument() {
@@ -50,22 +50,6 @@ struct StableProfessionalTextCanvas: View {
         }
     }
     
-    private func getDocumentMode() -> String {
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
-            // PROFESSIONAL UX: Stable view while font tool is active
-            // Create compact typography hash to avoid super long strings
-            let typographyHash = "\(currentTextObject.typography.hashValue)"
-            
-            if document.currentTool == .font {
-                // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool"
-            } else {
-                // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(currentTextObject.isEditing)"
-            }
-        }
-        return "missing"
-    }
 }
 
 // MARK: - Professional Text Canvas (Based on Working EditableTextCanvas)
@@ -621,12 +605,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         // PERFORMANCE: Only update editing properties if they actually changed
         let newIsEditable = viewModel.isEditing && isEditingAllowed
         let newIsSelectable = isEditingAllowed
-        
-        nsView.isEditable = viewModel.isEditing && isEditingAllowed
-        nsView.isSelectable = isEditingAllowed // CRITICAL: Only allow text selection in BLUE mode
-        
-        print("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)")
-        
         
         if nsView.isEditable != newIsEditable {
             nsView.isEditable = newIsEditable
