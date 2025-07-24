@@ -3646,7 +3646,7 @@ struct CoreGraphicsGradientView: View {
                 path.stroke(swiftUIGradient, lineWidth: 1.0)
             }
         } else {
-            // GRADIENT FILL - NO MASKS, JUST FILL THE SHAPE WITH THE GRADIENT
+            // Gradient fill
             switch gradient {
             case .linear(let linear):
                 let unitStart = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
@@ -3655,8 +3655,8 @@ struct CoreGraphicsGradientView: View {
                 
             case .radial(let radial):
                 let unitCenter = UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
-                // Use radius that extends properly for full coverage
-                let radiusFraction = max(1.0, radial.radius)
+                // Use radius as a fraction of the shape size
+                let radiusFraction = min(1.0, radial.radius)
                 path.fill(SwiftUI.RadialGradient(gradient: swiftUIGradient, center: unitCenter, startRadius: 0, endRadius: radiusFraction * 100))
             }
         }
