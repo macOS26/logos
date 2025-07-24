@@ -1081,6 +1081,48 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         self.units = units
     }
     
+    /// Professional angle support (like Adobe Illustrator)
+    var angle: Double {
+        get {
+            let deltaX = endPoint.x - startPoint.x
+            let deltaY = endPoint.y - startPoint.y
+            let radians = atan2(deltaY, deltaX)
+            var degrees = radians * 180.0 / .pi
+            // Normalize to 0-360 degrees
+            if degrees < 0 {
+                degrees += 360
+            }
+            return degrees
+        }
+        set {
+            setAngle(newValue)
+        }
+    }
+    
+    /// Set gradient angle while preserving gradient center
+    mutating func setAngle(_ degrees: Double) {
+        let radians = degrees * .pi / 180.0
+        let centerX = (startPoint.x + endPoint.x) / 2.0
+        let centerY = (startPoint.y + endPoint.y) / 2.0
+        
+        // Calculate current gradient length
+        let currentLength = sqrt(pow(endPoint.x - startPoint.x, 2) + pow(endPoint.y - startPoint.y, 2))
+        let halfLength = currentLength / 2.0
+        
+        // Calculate new start and end points based on angle
+        let deltaX = cos(radians) * halfLength
+        let deltaY = sin(radians) * halfLength
+        
+        startPoint = CGPoint(x: centerX - deltaX, y: centerY - deltaY)
+        endPoint = CGPoint(x: centerX + deltaX, y: centerY + deltaY)
+        
+        // Clamp to valid coordinates (0-1 range)
+        startPoint.x = max(0, min(1, startPoint.x))
+        startPoint.y = max(0, min(1, startPoint.y))
+        endPoint.x = max(0, min(1, endPoint.x))
+        endPoint.y = max(0, min(1, endPoint.y))
+    }
+    
     /// Create a simple two-color linear gradient
     static func simple(from startColor: VectorColor, to endColor: VectorColor, angle: Double = 0) -> LinearGradient {
         let radians = angle * .pi / 180

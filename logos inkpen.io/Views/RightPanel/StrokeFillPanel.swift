@@ -992,6 +992,29 @@ struct GradientFillSection: View {
                 }
             }
             
+            // Gradient Angle (for Linear gradients only)
+            if gradientType == .linear, let gradient = currentGradient, case .linear(let linear) = gradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Angle")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(linear.angle))°")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { linear.angle },
+                        set: { newAngle in
+                            updateGradientAngle(newAngle)
+                        }
+                    ), in: 0...360)
+                    .controlSize(.small)
+                }
+            }
+            
             // Gradient Preview
             if let gradient = currentGradient {
                 VStack(alignment: .leading, spacing: 8) {
@@ -1088,6 +1111,44 @@ struct GradientFillSection: View {
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(12)
+        .onChange(of: document.selectedShapeIDs) { oldIDs, newIDs in
+            // Update gradient editor when selection changes
+            updateSelectedGradient()
+        }
+        .onChange(of: document.selectedLayerIndex) { oldIndex, newIndex in
+            // Update gradient editor when layer changes
+            updateSelectedGradient()
+        }
+    }
+    
+    // MARK: - Selection and Angle Management
+    
+    private func updateSelectedGradient() {
+        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+            currentGradient = selectedGradient
+            switch selectedGradient {
+            case .linear(_):
+                gradientType = .linear
+            case .radial(_):
+                gradientType = .radial
+            }
+            gradientId = UUID() // Generate new ID for loaded gradient
+            print("🎨 Loaded gradient from selected object: \(selectedGradient)")
+        }
+    }
+    
+    private func updateGradientAngle(_ newAngle: Double) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.angle = newAngle
+            currentGradient = .linear(linear)
+            print("🔄 Updated gradient angle to \(Int(newAngle))°")
+        case .radial(_):
+            // Radial gradients don't have angles
+            break
+        }
     }
     
     // MARK: - Helper Functions
