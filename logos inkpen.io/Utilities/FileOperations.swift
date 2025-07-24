@@ -1399,46 +1399,86 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func parseTransform(_ transformString: String) -> CGAffineTransform {
-        // Basic transform parsing - can be extended for complex transforms
+        // Enhanced transform parsing with proper handling of multiple transforms
         var transform = CGAffineTransform.identity
         
-        if transformString.contains("translate") {
-            // Parse translate(x, y)
-            if let range = transformString.range(of: "translate\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(10).dropLast()
-                let values = content.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+        print("🔧 Parsing transform: \(transformString)")
+        
+        // Parse transforms in order they appear
+        let transformFunctions = extractTransformFunctions(transformString)
+        
+        for transformFunc in transformFunctions {
+            let funcName = transformFunc.name.lowercased()
+            let values = transformFunc.values
+            
+            switch funcName {
+            case "translate":
                 if values.count >= 2 {
                     transform = transform.translatedBy(x: values[0], y: values[1])
+                    print("🔧   Applied translate(\(values[0]), \(values[1]))")
                 } else if values.count == 1 {
                     transform = transform.translatedBy(x: values[0], y: 0)
+                    print("🔧   Applied translate(\(values[0]), 0)")
                 }
-            }
-        }
-        
-        if transformString.contains("scale") {
-            // Parse scale(x, y)
-            if let range = transformString.range(of: "scale\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(6).dropLast()
-                let values = content.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+                
+            case "scale":
                 if values.count >= 2 {
                     transform = transform.scaledBy(x: values[0], y: values[1])
+                    print("🔧   Applied scale(\(values[0]), \(values[1]))")
                 } else if values.count == 1 {
                     transform = transform.scaledBy(x: values[0], y: values[0])
+                    print("🔧   Applied scale(\(values[0]), \(values[0]))")
                 }
+                
+            case "rotate":
+                if values.count >= 1 {
+                    let angleInRadians = values[0] * .pi / 180.0
+                    transform = transform.rotated(by: angleInRadians)
+                    print("🔧   Applied rotate(\(values[0])°)")
+                }
+                
+            case "matrix":
+                if values.count >= 6 {
+                    let matrixTransform = CGAffineTransform(
+                        a: values[0], b: values[1], c: values[2], 
+                        d: values[3], tx: values[4], ty: values[5]
+                    )
+                    transform = transform.concatenating(matrixTransform)
+                    print("🔧   Applied matrix(\(values[0]), \(values[1]), \(values[2]), \(values[3]), \(values[4]), \(values[5]))")
+                }
+                
+            default:
+                print("🔧   Unknown transform function: \(funcName)")
             }
         }
         
-        if transformString.contains("rotate") {
-            // Parse rotate(angle)
-            if let range = transformString.range(of: "rotate\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(7).dropLast()
-                if let angle = Double(content.trimmingCharacters(in: .whitespaces)) {
-                    transform = transform.rotated(by: angle * .pi / 180.0) // Convert degrees to radians
-                }
-            }
-        }
-        
+        print("🔧 Final transform: \(transform)")
         return transform
+    }
+    
+    private func extractTransformFunctions(_ transformString: String) -> [(name: String, values: [Double])] {
+        var functions: [(name: String, values: [Double])] = []
+        
+        // Match all transform functions using regex
+        let pattern = "(\\w+)\\s*\\(([^)]+)\\)"
+        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        let nsString = transformString as NSString
+        let matches = regex.matches(in: transformString, options: [], range: NSRange(location: 0, length: nsString.length))
+        
+        for match in matches {
+            if match.numberOfRanges >= 3 {
+                let functionName = nsString.substring(with: match.range(at: 1))
+                let parametersString = nsString.substring(with: match.range(at: 2))
+                
+                // Parse parameters - handle both comma and space separators
+                let cleanParams = parametersString.replacingOccurrences(of: ",", with: " ")
+                let values = cleanParams.split(separator: " ").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+                
+                functions.append((name: functionName, values: values))
+            }
+        }
+        
+        return functions
     }
     
     // MARK: - Gradient Parsing Methods
@@ -1547,34 +1587,40 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // CRITICAL FIX: Apply gradientTransform if specified
+            // CRITICAL FIX: Re-enable gradientTransform with proper coordinate system handling
             var transformedX1 = x1, transformedY1 = y1
             var transformedX2 = x2, transformedY2 = y2
             
             if let gradientTransform = attributes["gradientTransform"] {
-                print("🔧 Applying gradientTransform: \(gradientTransform)")
+                print("🔧 APPLYING gradientTransform: \(gradientTransform)")
+                
                 let transform = parseTransform(gradientTransform)
                 
                 // Apply transform to gradient coordinates
                 let point1 = CGPoint(x: x1, y: y1).applying(transform)
                 let point2 = CGPoint(x: x2, y: y2).applying(transform)
                 
-                // Normalize transformed coordinates back to our coordinate system
+                print("🔧 Original points: (\(x1), \(y1)) -> (\(x2), \(y2))")
+                print("🔧 Transformed points: (\(point1.x), \(point1.y)) -> (\(point2.x), \(point2.y))")
+                
+                // For userSpaceOnUse gradients, we need to normalize based on viewBox
                 if gradientUnits == .userSpaceOnUse {
-                    // For userSpaceOnUse, normalize relative to viewBox
+                    // Normalize relative to viewBox dimensions
                     transformedX1 = point1.x / viewBoxWidth
                     transformedY1 = point1.y / viewBoxHeight
                     transformedX2 = point2.x / viewBoxWidth
                     transformedY2 = point2.y / viewBoxHeight
+                    
+                    print("🔧 Normalized coordinates: x1=\(transformedX1), y1=\(transformedY1), x2=\(transformedX2), y2=\(transformedY2)")
                 } else {
-                    // For objectBoundingBox, coordinates are already 0-1
-                    transformedX1 = point1.x
-                    transformedY1 = point1.y
-                    transformedX2 = point2.x
-                    transformedY2 = point2.y
+                    // For objectBoundingBox, use transformed coordinates directly but clamp to reasonable range
+                    transformedX1 = max(-2.0, min(3.0, point1.x))
+                    transformedY1 = max(-2.0, min(3.0, point1.y))
+                    transformedX2 = max(-2.0, min(3.0, point2.x))
+                    transformedY2 = max(-2.0, min(3.0, point2.y))
+                    
+                    print("🔧 Clamped coordinates: x1=\(transformedX1), y1=\(transformedY1), x2=\(transformedX2), y2=\(transformedY2)")
                 }
-                
-                print("🔧 Transformed coordinates: x1=\(transformedX1), y1=\(transformedY1), x2=\(transformedX2), y2=\(transformedY2)")
             }
             
             // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse - let them extend beyond 0-1
