@@ -74,6 +74,42 @@ struct StrokeStyle: Codable, Hashable {
         self.opacity = opacity
         self.blendMode = blendMode
     }
+    
+    // MARK: - Gradient Support
+    
+    /// Create a stroke style with a gradient
+    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+        self.color = .gradient(gradient)
+        self.width = width
+        self.placement = placement
+        self.dashPattern = dashPattern
+        self.lineCap = lineCap
+        self.lineJoin = lineJoin
+        self.miterLimit = miterLimit
+        self.opacity = opacity
+        self.blendMode = blendMode
+    }
+    
+    /// Check if this stroke is a gradient
+    var isGradient: Bool {
+        if case .gradient = color {
+            return true
+        }
+        return false
+    }
+    
+    /// Get the gradient if this stroke is a gradient
+    var gradient: VectorGradient? {
+        if case .gradient(let gradient) = color {
+            return gradient
+        }
+        return nil
+    }
+    
+    /// Check if this stroke is a solid color
+    var isSolidColor: Bool {
+        return !isGradient
+    }
 }
 
 // MARK: - Fill Properties

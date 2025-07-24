@@ -679,6 +679,13 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentTextContent = ""
     private var currentTextAttributes: [String: String] = [:]
     
+    // MARK: - Gradient Support
+    private var gradientDefinitions: [String: VectorGradient] = [:]
+    private var currentGradientId: String?
+    private var currentGradientStops: [GradientStop] = []
+    private var currentGradientAttributes: [String: String] = [:]
+    private var isParsingGradient = false
+    
     struct ParseResult {
         let shapes: [VectorShape]
         let textObjects: [VectorText]
@@ -757,6 +764,15 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Text span within text element
             break
             
+        case "linearGradient":
+            parseLinearGradient(attributes: attributeDict)
+            
+        case "radialGradient":
+            parseRadialGradient(attributes: attributeDict)
+            
+        case "stop":
+            parseGradientStop(attributes: attributeDict)
+            
         default:
             break
         }
@@ -779,6 +795,10 @@ class SVGParser: NSObject, XMLParserDelegate {
         case "text":
             // Finish parsing text element
             finishTextElement()
+            
+        case "linearGradient", "radialGradient":
+            // Finish parsing gradient element
+            finishGradientElement()
             
         default:
             break
@@ -1170,6 +1190,21 @@ class SVGParser: NSObject, XMLParserDelegate {
         let stroke = attributes["stroke"] ?? "none"
         guard stroke != "none" else { return nil }
         
+        // Check for gradient reference: url(#gradientId)
+        if stroke.hasPrefix("url(#") && stroke.hasSuffix(")") {
+            let gradientId = String(stroke.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
+            if let gradient = gradientDefinitions[gradientId] {
+                let width = parseLength(attributes["stroke-width"]) ?? 1.0
+                let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
+                return StrokeStyle(gradient: gradient, width: width, opacity: opacity)
+            }
+            print("⚠️ Gradient reference not found for stroke: \(gradientId)")
+            // Fallback to black if gradient not found
+            let width = parseLength(attributes["stroke-width"]) ?? 1.0
+            let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
+            return StrokeStyle(color: .black, width: width, opacity: opacity)
+        }
+        
         let color = parseColor(stroke) ?? .black
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
         let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
@@ -1180,6 +1215,18 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parseFillStyle(_ attributes: [String: String]) -> FillStyle? {
         let fill = attributes["fill"] ?? "black"
         guard fill != "none" else { return nil }
+        
+        // Check for gradient reference: url(#gradientId)
+        if fill.hasPrefix("url(#") && fill.hasSuffix(")") {
+            let gradientId = String(fill.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
+            if let gradient = gradientDefinitions[gradientId] {
+                let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
+                return FillStyle(gradient: gradient, opacity: opacity)
+            }
+            print("⚠️ Gradient reference not found: \(gradientId)")
+            // Fallback to black if gradient not found
+            return FillStyle(color: .black, opacity: parseLength(attributes["fill-opacity"]) ?? 1.0)
+        }
         
         let color = parseColor(fill) ?? .black
         let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
@@ -1323,6 +1370,143 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         return transform
+    }
+    
+    // MARK: - Gradient Parsing Methods
+    
+    private func parseLinearGradient(attributes: [String: String]) {
+        guard let id = attributes["id"] else {
+            print("⚠️ Linear gradient missing id attribute")
+            return
+        }
+        
+        currentGradientId = id
+        currentGradientAttributes = attributes
+        currentGradientStops = []
+        isParsingGradient = true
+        
+        print("🎨 Parsing linear gradient: \(id)")
+    }
+    
+    private func parseRadialGradient(attributes: [String: String]) {
+        guard let id = attributes["id"] else {
+            print("⚠️ Radial gradient missing id attribute")
+            return
+        }
+        
+        currentGradientId = id
+        currentGradientAttributes = attributes
+        currentGradientStops = []
+        isParsingGradient = true
+        
+        print("🎨 Parsing radial gradient: \(id)")
+    }
+    
+    private func parseGradientStop(attributes: [String: String]) {
+        guard isParsingGradient else { return }
+        
+        let offset = parseLength(attributes["offset"]) ?? 0.0
+        var stopColor = VectorColor.black
+        var stopOpacity = 1.0
+        
+        // Parse stop-color
+        if let colorValue = attributes["stop-color"] {
+            stopColor = parseColor(colorValue) ?? .black
+        }
+        
+        // Parse stop-opacity
+        if let opacityValue = attributes["stop-opacity"] {
+            stopOpacity = parseLength(opacityValue) ?? 1.0
+        }
+        
+        // Handle style attribute which might contain stop-color and stop-opacity
+        if let style = attributes["style"] {
+            let styleDict = parseStyleAttribute(style)
+            if let stopColorValue = styleDict["stop-color"] {
+                stopColor = parseColor(stopColorValue) ?? stopColor
+            }
+            if let stopOpacityValue = styleDict["stop-opacity"] {
+                stopOpacity = parseLength(stopOpacityValue) ?? stopOpacity
+            }
+        }
+        
+        let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
+        currentGradientStops.append(gradientStop)
+        
+        print("🎨 Added gradient stop: offset=\(offset), color=\(stopColor)")
+    }
+    
+    private func finishGradientElement() {
+        guard let gradientId = currentGradientId, isParsingGradient else { return }
+        
+        let attributes = currentGradientAttributes
+        
+        // Determine gradient type from current element name
+        let vectorGradient: VectorGradient
+        
+        if currentElementName == "linearGradient" {
+            // Parse linear gradient attributes
+            let x1 = parseLength(attributes["x1"]) ?? 0.0
+            let y1 = parseLength(attributes["y1"]) ?? 0.0
+            let x2 = parseLength(attributes["x2"]) ?? 1.0
+            let y2 = parseLength(attributes["y2"]) ?? 0.0
+            
+            let startPoint = CGPoint(x: x1, y: y1)
+            let endPoint = CGPoint(x: x2, y: y2)
+            
+            let linearGradient = LinearGradient(
+                startPoint: startPoint,
+                endPoint: endPoint,
+                stops: currentGradientStops
+            )
+            
+            vectorGradient = .linear(linearGradient)
+            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            
+        } else { // radialGradient
+            // Parse radial gradient attributes
+            let cx = parseLength(attributes["cx"]) ?? 0.5
+            let cy = parseLength(attributes["cy"]) ?? 0.5
+            let r = parseLength(attributes["r"]) ?? 0.5
+            
+            let centerPoint = CGPoint(x: cx, y: cy)
+            
+            let radialGradient = RadialGradient(
+                centerPoint: centerPoint,
+                radius: r,
+                stops: currentGradientStops
+            )
+            
+            vectorGradient = .radial(radialGradient)
+            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops")
+        }
+        
+        // Store the gradient definition
+        gradientDefinitions[gradientId] = vectorGradient
+        
+        // Reset parsing state
+        currentGradientId = nil
+        currentGradientAttributes = [:]
+        currentGradientStops = []
+        isParsingGradient = false
+        
+        print("📚 Stored gradient definition: \(gradientId)")
+    }
+    
+    private func parseStyleAttribute(_ style: String) -> [String: String] {
+        var styleDict: [String: String] = [:]
+        
+        let declarations = style.components(separatedBy: ";")
+        for declaration in declarations {
+            let keyValue = declaration.components(separatedBy: ":")
+            if keyValue.count >= 2 {
+                let key = keyValue[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                let value = keyValue[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
+                styleDict[key] = value
+            }
+        }
+        
+        return styleDict
     }
     
     // MARK: - Professional SVG Path Tokenization

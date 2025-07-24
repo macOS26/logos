@@ -326,8 +326,8 @@ extension ShapeView {
         switch vectorGradient {
         case .linear(let linearGradient):
             path.fill(
-                LinearGradient(
-                    gradient: Gradient(stops: createGradientStops(from: linearGradient.stops)),
+                SwiftUI.LinearGradient(
+                    stops: createGradientStops(from: linearGradient.stops),
                     startPoint: UnitPoint(x: linearGradient.startPoint.x, y: linearGradient.startPoint.y),
                     endPoint: UnitPoint(x: linearGradient.endPoint.x, y: linearGradient.endPoint.y)
                 )
@@ -335,8 +335,8 @@ extension ShapeView {
             
         case .radial(let radialGradient):
             path.fill(
-                RadialGradient(
-                    gradient: Gradient(stops: createGradientStops(from: radialGradient.stops)),
+                SwiftUI.RadialGradient(
+                    stops: createGradientStops(from: radialGradient.stops),
                     center: UnitPoint(x: radialGradient.centerPoint.x, y: radialGradient.centerPoint.y),
                     startRadius: 0,
                     endRadius: radialGradient.radius * 200 // Scale radius appropriately
@@ -351,8 +351,8 @@ extension ShapeView {
         switch vectorGradient {
         case .linear(let linearGradient):
             path.stroke(
-                LinearGradient(
-                    gradient: Gradient(stops: createGradientStops(from: linearGradient.stops)),
+                SwiftUI.LinearGradient(
+                    stops: createGradientStops(from: linearGradient.stops),
                     startPoint: UnitPoint(x: linearGradient.startPoint.x, y: linearGradient.startPoint.y),
                     endPoint: UnitPoint(x: linearGradient.endPoint.x, y: linearGradient.endPoint.y)
                 ),
@@ -361,8 +361,8 @@ extension ShapeView {
             
         case .radial(let radialGradient):
             path.stroke(
-                RadialGradient(
-                    gradient: Gradient(stops: createGradientStops(from: radialGradient.stops)),
+                SwiftUI.RadialGradient(
+                    stops: createGradientStops(from: radialGradient.stops),
                     center: UnitPoint(x: radialGradient.centerPoint.x, y: radialGradient.centerPoint.y),
                     startRadius: 0,
                     endRadius: radialGradient.radius * 200 // Scale radius appropriately
@@ -373,9 +373,9 @@ extension ShapeView {
     }
     
     /// Convert gradient stops to SwiftUI gradient stops
-    private func createGradientStops(from stops: [GradientStop]) -> [Gradient.Stop] {
+    private func createGradientStops(from stops: [GradientStop]) -> [SwiftUI.Gradient.Stop] {
         return stops.map { stop in
-            Gradient.Stop(color: stop.color.color, location: stop.position)
+            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
         }
     }
     

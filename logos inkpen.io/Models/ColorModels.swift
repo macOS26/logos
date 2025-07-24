@@ -1031,7 +1031,7 @@ extension Color {
 
 /// Represents a color stop in a gradient with position and color
 struct GradientStop: Codable, Hashable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     var position: Double // 0.0 to 1.0 (0% to 100%)
     var color: VectorColor
     var opacity: Double // 0.0 to 1.0
@@ -1050,7 +1050,7 @@ struct GradientStop: Codable, Hashable, Identifiable {
 
 /// Linear gradient from one point to another
 struct LinearGradient: Codable, Hashable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     var startPoint: CGPoint  // Start point (0,0 = top-left, 1,1 = bottom-right)
     var endPoint: CGPoint    // End point
     var stops: [GradientStop]
@@ -1101,7 +1101,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
 
 /// Radial gradient radiating from a center point
 struct RadialGradient: Codable, Hashable, Identifiable {
-    let id = UUID()
+    var id = UUID()
     var centerPoint: CGPoint     // Center of the gradient (0,0 = top-left, 1,1 = bottom-right)
     var focalPoint: CGPoint?     // Focal point (if different from center)
     var radius: Double           // Radius as percentage of shape (0.0 to 1.0+)
