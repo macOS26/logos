@@ -38,12 +38,9 @@ struct StableProfessionalTextCanvas: View {
             .onChange(of: document.textObjects) { _, _ in
                 updateViewModelFromDocument()
             }
-            // FIXED: Use getCurrentTextHash to detect any property changes including colors
-            .onChange(of: getCurrentTextHash()) { _, _ in
-                updateViewModelFromDocument()
-            }
-            // Additional fix: Use id to force view refresh when text content changes
-            .id("\(textObjectID)-\(getCurrentTextHash())")
+            // The hash was causing the view to be recreated on font changes.
+            // The onChange(of: document.textObjects) is sufficient.
+            .id(textObjectID)
     }
     
     private func updateViewModelFromDocument() {
@@ -53,22 +50,6 @@ struct StableProfessionalTextCanvas: View {
         }
     }
     
-    private func getCurrentTextHash() -> String {
-        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
-            // PROFESSIONAL UX: Stable view while font tool is active
-            // Create compact typography hash to avoid super long strings
-            let typographyHash = "\(currentTextObject.typography.hashValue)"
-            
-            if document.currentTool == .font {
-                // While font tool is active, exclude content to prevent view recreation during typing
-                return "font-tool-\(typographyHash)"
-            } else {
-                // When other tools are active, include content for proper updates
-                return "\(currentTextObject.content)-\(typographyHash)-\(currentTextObject.isEditing)"
-            }
-        }
-        return "missing"
-    }
 }
 
 // MARK: - Professional Text Canvas (Based on Working EditableTextCanvas)
@@ -422,6 +403,8 @@ struct ProfessionalTextContentView: View {
     }
 }
 
+
+
 // MARK: - Professional Universal Text View (Based on Working UniversalTextView)
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
@@ -496,11 +479,26 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
-        // CRITICAL: Preserve cursor position using coordinator pattern
         let coordinator = context.coordinator
+
+        // CRITICAL: Lock the coordinator during non-typing updates to prevent saving programmatic selection changes.
+        if !isUpdatingFromTyping {
+            coordinator.isRestoringSelection = true
+            // Use async to release the lock after the current runloop cycle,
+            // ensuring all programmatic selection changes have settled.
+            DispatchQueue.main.async {
+                coordinator.isRestoringSelection = false
+            }
+        }
+
+        // PERFORMANCE OPTIMIZATION: Track what actually changed to avoid expensive updates during typing
         
-        // CRITICAL FIX: Save cursor position before making changes
-        let savedSelectedRanges = coordinator.selectedRanges.isEmpty ? nsView.selectedRanges : coordinator.selectedRanges
+        // PERFORMANCE OPTIMIZATION: Skip rapid updates during active typing (< 100ms apart)
+        let now = Date()
+        if isUpdatingFromTyping && now.timeIntervalSince(coordinator.lastUpdateTime) < 0.1 {
+            return // Skip this update - too frequent during typing
+        }
+        coordinator.lastUpdateTime = now
         
         // CRITICAL FIX: Only update NSTextView text when NOT actively typing
         // This prevents cursor jumping and text resets during typing
@@ -508,24 +506,52 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.string = viewModel.text
         }
         
-        // ALWAYS update font, color, and alignment directly on NSTextView (this is visible immediately)
-        nsView.font = viewModel.selectedFont
-        nsView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        nsView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        // PERFORMANCE: Only update font/color if they actually changed (avoid expensive operations during typing)
+        let newFont = viewModel.selectedFont
+        let newTextColor = NSColor(viewModel.textObject.typography.fillColor.color)
         
-        // Apply paragraph style to existing and new text
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.alignment = viewModel.textAlignment
-        paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
-        paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
-        paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+        var needsFormatUpdate = false
         
-        if nsView.string.count > 0 {
-            let range = NSRange(location: 0, length: nsView.string.count)
-            nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        if nsView.font != newFont {
+            nsView.font = newFont
+            needsFormatUpdate = true
+            print("🔤 FONT CHANGED: \(newFont.fontName) \(newFont.pointSize)pt")
         }
         
-        nsView.defaultParagraphStyle = paragraphStyle
+        // IMPROVED COLOR COMPARISON: Compare color components instead of object equality
+        let currentColor = nsView.textColor ?? NSColor.black
+        if !colorsAreEqual(currentColor, newTextColor) {
+            nsView.textColor = newTextColor
+            nsView.insertionPointColor = newTextColor
+            needsFormatUpdate = true
+            print("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor)")
+        }
+        
+        // PERFORMANCE: Only update paragraph style if alignment or spacing actually changed
+        let currentAlignment = nsView.defaultParagraphStyle?.alignment ?? .left
+        let newAlignment = viewModel.textAlignment
+        let newLineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
+        let newLineHeight = viewModel.textObject.typography.lineHeight
+        
+        if currentAlignment != newAlignment || 
+           abs((nsView.defaultParagraphStyle?.lineSpacing ?? 0) - newLineSpacing) > 0.1 ||
+           abs((nsView.defaultParagraphStyle?.minimumLineHeight ?? 0) - newLineHeight) > 0.1 {
+            
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.alignment = newAlignment
+            paragraphStyle.lineSpacing = newLineSpacing
+            paragraphStyle.minimumLineHeight = newLineHeight
+            paragraphStyle.maximumLineHeight = newLineHeight
+            
+            // Only apply to existing text if there is any and we're not actively typing
+            if nsView.string.count > 0 && !isUpdatingFromTyping {
+                let range = NSRange(location: 0, length: nsView.string.count)
+                nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+            }
+            
+            nsView.defaultParagraphStyle = paragraphStyle
+            needsFormatUpdate = true
+        }
         
         // CRITICAL FIX: Update text container width when text box is resized
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
@@ -554,71 +580,94 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // Force layout refresh for immediate text reflow
             nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
             
-            print("✅ TEXT REFLOW: Container updated, text should now wrap to new width")
+            print("📏 TEXT REFLOW: Container updated, text should now wrap to new width")
         }
         
-        print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue), LINE SPACING: \(viewModel.textObject.typography.lineSpacing)pt, LINE HEIGHT: \(viewModel.textObject.typography.lineHeight)pt to NSTextView")
-        
-        // CRITICAL FIX: Restore cursor position after font/color changes
-        // This prevents cursor jumping when using font panel controls
-        if !savedSelectedRanges.isEmpty && viewModel.isEditing {
-            nsView.selectedRanges = savedSelectedRanges
-            print("🎯 RESTORED CURSOR POSITION after font/color update")
+        // ONE-WAY CURSOR RESTORATION: Only after format changes, not during typing
+        if needsFormatUpdate && !isUpdatingFromTyping && viewModel.isEditing {
+            // Use the trusted source of truth from the view model
+            let savedCursorPosition = viewModel.userInitiatedCursorPosition
+            let savedSelectionLength = viewModel.userInitiatedSelectionLength
+
+            // Ensure cursor position is within text bounds
+            let textLength = nsView.string.count
+            let safePosition = min(savedCursorPosition, textLength)
+            let safeLength = min(savedSelectionLength, textLength - safePosition)
+            let newRange = NSRange(location: safePosition, length: safeLength)
+            
+            // The lock is already active, so we can safely restore the selection.
+            nsView.setSelectedRange(newRange)
+
+            print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength) (was \(savedCursorPosition), \(savedSelectionLength))")
+            nsView.scrollRangeToVisible(newRange)
         }
         
-        // Cursor position restoration handled above - no duplicate restoration needed
+        // PERFORMANCE: Only update editing properties if they actually changed
+        let newIsEditable = viewModel.isEditing && isEditingAllowed
+        let newIsSelectable = isEditingAllowed
         
-        // Configure text view properties
-        nsView.isEditable = viewModel.isEditing && isEditingAllowed
-        nsView.isSelectable = isEditingAllowed // CRITICAL: Only allow text selection in BLUE mode
+        if nsView.isEditable != newIsEditable {
+            nsView.isEditable = newIsEditable
+        }
         
-        print("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)")
+        if nsView.isSelectable != newIsSelectable {
+            nsView.isSelectable = newIsSelectable
+        }
         
-        // CRITICAL FIX: Always set solid insertion point color and ensure visibility
-        let textColor = NSColor(viewModel.textObject.typography.fillColor.color)
-        nsView.insertionPointColor = textColor
-        
-        // Force cursor to be visible if text view is first responder
-        if nsView.window?.firstResponder == nsView {
+        // PERFORMANCE: Only force display update if format changed and view is first responder
+        if needsFormatUpdate && nsView.window?.firstResponder == nsView {
             nsView.setNeedsDisplay(nsView.visibleRect)
         }
         
-        // Set frame constraints
-        nsView.frame = CGRect(
+        // PERFORMANCE: Only update frame constraints if size actually changed
+        let newFrame = CGRect(
             x: 0, y: 0,
             width: viewModel.textBoxFrame.width,
             height: max(viewModel.textBoxFrame.height, 100)
         )
+        let newMaxSize = NSSize(width: viewModel.textBoxFrame.width, height: CGFloat.greatestFiniteMagnitude)
+        let newMinSize = NSSize(width: viewModel.textBoxFrame.width, height: 30)
         
-        nsView.maxSize = NSSize(
-            width: viewModel.textBoxFrame.width,
-            height: CGFloat.greatestFiniteMagnitude
-        )
-        nsView.minSize = NSSize(
-            width: viewModel.textBoxFrame.width,
-            height: 30
-        )
-        
-        // CRITICAL: Only make first responder when editing is allowed AND requested
-        if viewModel.isEditing && isEditingAllowed {
-            if nsView.window?.firstResponder != nsView {
-                print("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
-                nsView.window?.makeFirstResponder(nsView)
-            }
-            // Also ensure it can accept first responder
-            if !nsView.acceptsFirstResponder {
-                print("⚠️ NSTextView refusing first responder!")
-            }
-        } else {
-            // CRITICAL: Release first responder when editing not allowed
-            if nsView.window?.firstResponder == nsView {
-                print("🔄 RELEASING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
-                nsView.window?.makeFirstResponder(nil)
-            }
+        if nsView.frame != newFrame {
+            nsView.frame = newFrame
         }
         
-        // Force layout update
-        nsView.needsLayout = true
+        if nsView.maxSize != newMaxSize {
+            nsView.maxSize = newMaxSize
+        }
+        
+        if nsView.minSize != newMinSize {
+            nsView.minSize = newMinSize
+        }
+        
+        // PERFORMANCE: Only manage first responder if editing state actually changed
+        let shouldBeFirstResponder = viewModel.isEditing && isEditingAllowed
+        let isCurrentlyFirstResponder = nsView.window?.firstResponder == nsView
+        
+        if shouldBeFirstResponder && !isCurrentlyFirstResponder {
+            nsView.window?.makeFirstResponder(nsView)
+        } else if !shouldBeFirstResponder && isCurrentlyFirstResponder {
+            nsView.window?.makeFirstResponder(nil)
+        }
+        
+        // PERFORMANCE: Only force layout update if formatting or size changed
+        if needsFormatUpdate || abs(currentContainerWidth - newWidth) > 1.0 {
+            nsView.needsLayout = true
+        }
+    }
+    
+    // HELPER: Reliable color comparison using color components
+    private func colorsAreEqual(_ color1: NSColor, _ color2: NSColor) -> Bool {
+        // Convert to RGB color space for reliable comparison
+        guard let rgb1 = color1.usingColorSpace(.sRGB),
+              let rgb2 = color2.usingColorSpace(.sRGB) else {
+            return false
+        }
+        
+        return abs(rgb1.redComponent - rgb2.redComponent) < 0.001 &&
+               abs(rgb1.greenComponent - rgb2.greenComponent) < 0.001 &&
+               abs(rgb1.blueComponent - rgb2.blueComponent) < 0.001 &&
+               abs(rgb1.alphaComponent - rgb2.alphaComponent) < 0.001
     }
     
     func makeCoordinator() -> Coordinator {
@@ -627,8 +676,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ProfessionalUniversalTextView
-        var selectedRanges: [NSValue] = []
-        
+        var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
+        var isRestoringSelection: Bool = false // Prevents saving programmatic selection changes
+
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
             super.init()
@@ -643,9 +693,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 print("🚫 TEXT VIEW NOT EDITABLE: Change ignored")
                 return
             }
-            
-            // CRITICAL: Capture selection BEFORE updating parent
-            self.selectedRanges = textView.selectedRanges
             
             let newText = textView.string
             
@@ -670,7 +717,22 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 parent.isUpdatingFromTyping = false
             }
         }
-        
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            // CRITICAL: Do not save selection changes that happen during programmatic updates
+            guard !isRestoringSelection else {
+                print("🚫 COORDINATOR BLOCKED SAVE: Programmatic restore in progress")
+                return
+            }
+            guard let textView = notification.object as? NSTextView else { return }
+            let selectedRange = textView.selectedRange()
+            
+            // Save to the new source of truth in the view model
+            parent.viewModel.userInitiatedCursorPosition = selectedRange.location
+            parent.viewModel.userInitiatedSelectionLength = selectedRange.length
+            print("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)")
+        }
+
         func textDidBeginEditing(_ notification: Notification) {
             print("✅ TEXT EDITING BEGAN")
         }
@@ -789,6 +851,10 @@ class ProfessionalTextViewModel: ObservableObject {
     private var isUpdatingProperties: Bool = false
     private var minTextBoxHeight: CGFloat = 50
     
+    // THE SOURCE OF TRUTH for cursor position, only updated by user input
+    var userInitiatedCursorPosition: Int = 0
+    var userInitiatedSelectionLength: Int = 0
+
     init(textObject: VectorText, document: VectorDocument) {
         self.textObject = textObject
         self.document = document
@@ -856,6 +922,8 @@ class ProfessionalTextViewModel: ObservableObject {
     
     // MARK: - PUBLIC method for external syncing
     public func syncFromVectorText(_ textObject: VectorText) {
+            // CURSOR PRESERVATION: Prevent text resets that move cursor to end
+        
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow color/font updates
         if isAutoResizing && textObject.content == self.text {
             print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
@@ -914,7 +982,14 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Update the textObject reference so SwiftUI Text gets new colors
         self.textObject = textObject
         
-        self.text = textObject.content
+        // CURSOR PRESERVATION: Only update text if content actually changed
+        if contentChanged {
+            self.text = textObject.content
+            print("📝 TEXT CONTENT UPDATED: Cursor may be affected")
+        } else {
+            print("📝 TEXT CONTENT UNCHANGED: Preserving cursor position")
+        }
+        
         self.fontSize = CGFloat(textObject.typography.fontSize)
         self.selectedFont = textObject.typography.nsFont
         
