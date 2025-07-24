@@ -1047,18 +1047,18 @@ struct GradientFillSection: View {
                         .help("Add Color Stop")
                     }
                     
-                    // Color stops list
-                    let stops = getGradientStops(gradient)
-                    ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
+                    // Color stops list - sorted by position for display but using stable IDs
+                    let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
+                    ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             // Color swatch
                             Button(action: {
                                 // Use AppState to start gradient editing and switch to color panel
                                 appState.startGradientStopEditing(
                                     gradientId: gradientId,
-                                    stopIndex: index
+                                    stopIndex: 0 // Not used anymore, but keeping for compatibility
                                 ) { selectedColor in
-                                    updateStopColor(index: index, color: selectedColor)
+                                    updateStopColor(stopId: stop.id, color: selectedColor)
                                     appState.finishGradientStopEditing()
                                 }
                             }) {
@@ -1066,7 +1066,7 @@ struct GradientFillSection: View {
                             }
                             .buttonStyle(PlainButtonStyle())
                             
-                            // Position slider
+                            // Position slider - moves independently
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Position: \(Int(stop.position * 100))%")
                                     .font(.caption2)
@@ -1075,7 +1075,7 @@ struct GradientFillSection: View {
                                 Slider(value: Binding(
                                     get: { stop.position },
                                     set: { newPosition in
-                                        updateStopPosition(index: index, position: newPosition)
+                                        updateStopPosition(stopId: stop.id, position: newPosition)
                                     }
                                 ), in: 0...1)
                                 .controlSize(.small)
@@ -1084,7 +1084,7 @@ struct GradientFillSection: View {
                             // Delete button (if more than 2 stops)
                             if stops.count > 2 {
                                 Button(action: {
-                                    removeColorStop(index: index)
+                                    removeColorStop(stopId: stop.id)
                                 }) {
                                     Image(systemName: "minus.circle.fill")
                                         .foregroundColor(.red)
@@ -1177,65 +1177,79 @@ struct GradientFillSection: View {
         }
     }
     
-    private func updateStopPosition(index: Int, position: Double) {
+    private func updateStopPosition(stopId: UUID, position: Double) {
         guard var gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
-            linear.stops[index].position = position
-            linear.stops.sort { $0.position < $1.position }
-            currentGradient = .linear(linear)
+            if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                linear.stops[index].position = position
+                // NO automatic sorting - let sliders move independently
+                currentGradient = .linear(linear)
+            }
         case .radial(var radial):
-            radial.stops[index].position = position
-            radial.stops.sort { $0.position < $1.position }
-            currentGradient = .radial(radial)
+            if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                radial.stops[index].position = position
+                // NO automatic sorting - let sliders move independently
+                currentGradient = .radial(radial)
+            }
         }
     }
     
-    private func updateStopColor(index: Int, color: VectorColor) {
+    private func updateStopColor(stopId: UUID, color: VectorColor) {
         guard var gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
-            linear.stops[index].color = color
-            currentGradient = .linear(linear)
+            if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                linear.stops[index].color = color
+                currentGradient = .linear(linear)
+            }
         case .radial(var radial):
-            radial.stops[index].color = color
-            currentGradient = .radial(radial)
+            if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                radial.stops[index].color = color
+                currentGradient = .radial(radial)
+            }
         }
     }
     
     private func addColorStop() {
         guard var gradient = currentGradient else { return }
         
-        let stops = getGradientStops(gradient)
+        let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
         let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
         let newStop = GradientStop(position: newPosition, color: .black, opacity: 1.0)
         
         switch gradient {
         case .linear(var linear):
             linear.stops.append(newStop)
+            // Only sort when adding new stops - this is when sorting makes sense
             linear.stops.sort { $0.position < $1.position }
             currentGradient = .linear(linear)
         case .radial(var radial):
             radial.stops.append(newStop)
+            // Only sort when adding new stops - this is when sorting makes sense
             radial.stops.sort { $0.position < $1.position }
             currentGradient = .radial(radial)
         }
     }
     
-    private func removeColorStop(index: Int) {
+    private func removeColorStop(stopId: UUID) {
         guard var gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
             guard linear.stops.count > 2 else { return }
-            linear.stops.remove(at: index)
-            currentGradient = .linear(linear)
+            if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                linear.stops.remove(at: index)
+                currentGradient = .linear(linear)
+            }
         case .radial(var radial):
             guard radial.stops.count > 2 else { return }
-            radial.stops.remove(at: index)
-            currentGradient = .radial(radial)
+            if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                radial.stops.remove(at: index)
+                currentGradient = .radial(radial)
+            }
         }
     }
     
