@@ -1194,12 +1194,16 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Check for gradient reference: url(#gradientId)
         if stroke.hasPrefix("url(#") && stroke.hasSuffix(")") {
             let gradientId = String(stroke.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
+            print("🔍 Looking for stroke gradient: \(gradientId)")
+            print("🔍 Available gradients: \(gradientDefinitions.keys.sorted())")
+            
             if let gradient = gradientDefinitions[gradientId] {
                 let width = parseLength(attributes["stroke-width"]) ?? 1.0
                 let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
+                print("✅ Applied gradient stroke: \(gradientId)")
                 return StrokeStyle(gradient: gradient, width: width, opacity: opacity)
             }
-            print("⚠️ Gradient reference not found for stroke: \(gradientId)")
+            print("❌ Gradient reference not found for stroke: \(gradientId)")
             // Fallback to black if gradient not found
             let width = parseLength(attributes["stroke-width"]) ?? 1.0
             let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
@@ -1220,11 +1224,15 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Check for gradient reference: url(#gradientId)
         if fill.hasPrefix("url(#") && fill.hasSuffix(")") {
             let gradientId = String(fill.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
+            print("🔍 Looking for fill gradient: \(gradientId)")
+            print("🔍 Available gradients: \(gradientDefinitions.keys.sorted())")
+            
             if let gradient = gradientDefinitions[gradientId] {
                 let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
+                print("✅ Applied gradient fill: \(gradientId)")
                 return FillStyle(gradient: gradient, opacity: opacity)
             }
-            print("⚠️ Gradient reference not found: \(gradientId)")
+            print("❌ Gradient reference not found for fill: \(gradientId)")
             // Fallback to black if gradient not found
             return FillStyle(color: .black, opacity: parseLength(attributes["fill-opacity"]) ?? 1.0)
         }
@@ -1330,6 +1338,32 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
     
+    /// Parse gradient coordinate with enhanced SVG compatibility
+    private func parseGradientCoordinate(_ value: String) -> Double {
+        let trimmed = value.trimmingCharacters(in: .whitespaces)
+        
+        // Handle percentage values (most common in SVG gradients)
+        if trimmed.hasSuffix("%") {
+            let percentValue = Double(String(trimmed.dropLast(1))) ?? 0.0
+            return percentValue / 100.0
+        }
+        
+        // Handle absolute values - need to normalize these based on viewbox/document size
+        // For now, treat them as already normalized (0-1 range)
+        if let absoluteValue = Double(trimmed) {
+            // If the value is greater than 1, assume it's in pixels and normalize to 0-1 range
+            if absoluteValue > 1.0 {
+                // For simplicity, clamp large values to 1.0
+                // In a more sophisticated implementation, we'd use the SVG viewBox to normalize
+                return min(absoluteValue / 100.0, 1.0)
+            }
+            return absoluteValue
+        }
+        
+        // Default fallback
+        return 0.0
+    }
+    
     private func parseTransform(_ transformString: String) -> CGAffineTransform {
         // Basic transform parsing - can be extended for complex transforms
         var transform = CGAffineTransform.identity
@@ -1388,6 +1422,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         isParsingGradient = true
         
         print("🎨 Parsing linear gradient: \(id)")
+        print("   - x1: \(attributes["x1"] ?? "0%"), y1: \(attributes["y1"] ?? "0%")")
+        print("   - x2: \(attributes["x2"] ?? "100%"), y2: \(attributes["y2"] ?? "0%")")
+        print("   - gradientUnits: \(attributes["gradientUnits"] ?? "objectBoundingBox")")
     }
     
     private func parseRadialGradient(attributes: [String: String]) {
@@ -1457,15 +1494,32 @@ class SVGParser: NSObject, XMLParserDelegate {
         let vectorGradient: VectorGradient
         
         if gradientType == "linearGradient" {
-            // Parse linear gradient attributes with proper coordinate handling
-            let x1 = parseLength(attributes["x1"]) ?? 0.0
-            let y1 = parseLength(attributes["y1"]) ?? 0.0
-            let x2 = parseLength(attributes["x2"]) ?? 1.0
-            let y2 = parseLength(attributes["y2"]) ?? 0.0
+            // Parse linear gradient attributes with enhanced coordinate handling
+            let x1Raw = attributes["x1"] ?? "0%"
+            let y1Raw = attributes["y1"] ?? "0%"
+            let x2Raw = attributes["x2"] ?? "100%"
+            let y2Raw = attributes["y2"] ?? "0%"
             
-            // Ensure coordinates are in 0-1 range for unit coordinates
+            print("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw)")
+            
+            // Parse coordinates with proper percentage handling
+            let x1 = parseGradientCoordinate(x1Raw)
+            let y1 = parseGradientCoordinate(y1Raw)
+            let x2 = parseGradientCoordinate(x2Raw)
+            let y2 = parseGradientCoordinate(y2Raw)
+            
+            print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
+            
+            // Create points ensuring valid coordinate range
             let startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
             let endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
+            
+            // Calculate gradient angle for debugging
+            let deltaX = endPoint.x - startPoint.x
+            let deltaY = endPoint.y - startPoint.y
+            let angle = atan2(deltaY, deltaX) * 180.0 / .pi
+            
+            print("🔧 Gradient angle: \(angle) degrees")
             
             // Parse gradient units (SVG specification)
             let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
@@ -1482,17 +1536,28 @@ class SVGParser: NSObject, XMLParserDelegate {
             )
             
             vectorGradient = .linear(linearGradient)
-            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops, coords: \(startPoint) → \(endPoint)")
+            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))°")
             
         } else { // radialGradient
-            // Parse radial gradient attributes with proper coordinate handling
-            let cx = parseLength(attributes["cx"]) ?? 0.5
-            let cy = parseLength(attributes["cy"]) ?? 0.5
-            let r = parseLength(attributes["r"]) ?? 0.5
+            // Parse radial gradient attributes with enhanced coordinate handling
+            let cxRaw = attributes["cx"] ?? "50%"
+            let cyRaw = attributes["cy"] ?? "50%"
+            let rRaw = attributes["r"] ?? "50%"
+            let fxRaw = attributes["fx"]
+            let fyRaw = attributes["fy"]
             
-            // Parse focal point if specified
-            let fx = parseLength(attributes["fx"]) ?? cx
-            let fy = parseLength(attributes["fy"]) ?? cy
+            print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw)")
+            
+            let cx = parseGradientCoordinate(cxRaw)
+            let cy = parseGradientCoordinate(cyRaw)
+            let r = parseGradientCoordinate(rRaw)
+            
+            // Parse focal point if specified, otherwise use center point
+            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!) : cx
+            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!) : cy
+            
+            print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
             // Ensure coordinates are in 0-1 range
             let centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
@@ -1512,7 +1577,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             )
             
             vectorGradient = .radial(radialGradient)
-            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops, center: \(centerPoint), radius: \(r)")
+            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", r))")
+            if fxRaw != nil || fyRaw != nil {
+                print("   - Focal point: \(focalPoint)")
+            }
         }
         
         // Store the gradient definition
