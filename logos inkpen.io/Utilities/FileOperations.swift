@@ -682,6 +682,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     // MARK: - Gradient Support
     private var gradientDefinitions: [String: VectorGradient] = [:]
     private var currentGradientId: String?
+    private var currentGradientType: String? // "linearGradient" or "radialGradient"
     private var currentGradientStops: [GradientStop] = []
     private var currentGradientAttributes: [String: String] = [:]
     private var isParsingGradient = false
@@ -1381,6 +1382,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         currentGradientId = id
+        currentGradientType = "linearGradient"
         currentGradientAttributes = attributes
         currentGradientStops = []
         isParsingGradient = true
@@ -1395,6 +1397,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         currentGradientId = id
+        currentGradientType = "radialGradient"
         currentGradientAttributes = attributes
         currentGradientStops = []
         isParsingGradient = true
@@ -1437,14 +1440,14 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func finishGradientElement() {
-        guard let gradientId = currentGradientId, isParsingGradient else { return }
+        guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
         
         let attributes = currentGradientAttributes
         
-        // Determine gradient type from current element name
+        // Determine gradient type from stored gradient type
         let vectorGradient: VectorGradient
         
-        if currentElementName == "linearGradient" {
+        if gradientType == "linearGradient" {
             // Parse linear gradient attributes
             let x1 = parseLength(attributes["x1"]) ?? 0.0
             let y1 = parseLength(attributes["y1"]) ?? 0.0
@@ -1486,6 +1489,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         // Reset parsing state
         currentGradientId = nil
+        currentGradientType = nil
         currentGradientAttributes = [:]
         currentGradientStops = []
         isParsingGradient = false
