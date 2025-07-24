@@ -211,8 +211,8 @@ struct StrokeFillPanel: View {
                         onApplyPreset: applyPresetStyle
                     )
                     
-                    // Gradient Fill (Future Enhancement)
-                    GradientFillSection()
+                    // Gradient Fill
+                    GradientFillSection(document: document)
                 
                 Spacer()
             }
@@ -937,41 +937,306 @@ struct PresetStyleButton: View {
 }
 
 struct GradientFillSection: View {
+    @ObservedObject var document: VectorDocument
+    @State private var gradientType: GradientType = .linear
+    @State private var currentGradient: VectorGradient? = nil
+    @State private var showingColorPicker = false
+    @State private var editingStopIndex: Int? = nil
+    
+    enum GradientType: String, CaseIterable {
+        case linear = "Linear"
+        case radial = "Radial"
+    }
+    
+    init(document: VectorDocument) {
+        self.document = document
+        
+        // Initialize with existing gradient if selected shape has one
+        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+            _currentGradient = State(initialValue: selectedGradient)
+            switch selectedGradient {
+            case .linear(_):
+                _gradientType = State(initialValue: .linear)
+            case .radial(_):
+                _gradientType = State(initialValue: .radial)
+            }
+        } else {
+            // Create default gradient
+            _currentGradient = State(initialValue: Self.createDefaultGradient(type: .linear))
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Gradient Fill")
                 .font(.headline)
                 .fontWeight(.medium)
             
-            Text("Coming Soon...")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .italic()
+            // Gradient Type Picker
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Type")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Picker("Gradient Type", selection: $gradientType) {
+                    ForEach(GradientType.allCases, id: \.self) { type in
+                        Text(type.rawValue).tag(type)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .onChange(of: gradientType) { oldValue, newValue in
+                    if oldValue != newValue {
+                        currentGradient = Self.createDefaultGradient(type: newValue)
+                    }
+                }
+            }
             
-            // Placeholder for gradient controls
+            // Gradient Preview
+            if let gradient = currentGradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Preview")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    // Gradient preview strip
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(createSwiftUIGradient(from: gradient))
+                        .frame(height: 40)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                
+                // Color Stops Editor
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Color Stops")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(action: addColorStop) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .help("Add Color Stop")
+                    }
+                    
+                    // Color stops list
+                    let stops = getGradientStops(gradient)
+                    ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
+                        HStack(spacing: 8) {
+                            // Color swatch
+                            Button(action: {
+                                editingStopIndex = index
+                                showingColorPicker = true
+                            }) {
+                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Position slider
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Position: \(Int(stop.position * 100))%")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                
+                                Slider(value: Binding(
+                                    get: { stop.position },
+                                    set: { newPosition in
+                                        updateStopPosition(index: index, position: newPosition)
+                                    }
+                                ), in: 0...1)
+                                .controlSize(.small)
+                            }
+                            
+                            // Delete button (if more than 2 stops)
+                            if stops.count > 2 {
+                                Button(action: {
+                                    removeColorStop(index: index)
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .help("Remove Color Stop")
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            
+            // Apply Gradient Button
             HStack {
-                Button("Linear") {
-                    // Future implementation
+                Spacer()
+                Button("Apply Gradient") {
+                    applyGradientToSelectedShapes()
                 }
-                .buttonStyle(.bordered)
-                .disabled(true)
-                
-                Button("Radial") {
-                    // Future implementation
-                }
-                .buttonStyle(.bordered)
-                .disabled(true)
-                
-                Button("Conical") {
-                    // Future implementation
-                }
-                .buttonStyle(.bordered)
-                .disabled(true)
+                .buttonStyle(.borderedProminent)
+                .disabled(currentGradient == nil)
             }
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(12)
+        .sheet(isPresented: $showingColorPicker) {
+            if let editingIndex = editingStopIndex {
+                ColorPickerModal(
+                    document: document,
+                    title: "Color Stop Color",
+                    onColorSelected: { color in
+                        updateStopColor(index: editingIndex, color: color)
+                        editingStopIndex = nil
+                    }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> AnyShapeStyle {
+        let stops = getGradientStops(vectorGradient)
+        let gradientStops = stops.map { stop in
+            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+        }
+        let gradient = SwiftUI.Gradient(stops: gradientStops)
+        
+        switch vectorGradient {
+        case .linear(_):
+            return AnyShapeStyle(SwiftUI.LinearGradient(gradient: gradient, startPoint: .leading, endPoint: .trailing))
+        case .radial(_):
+            return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: .center, startRadius: 0, endRadius: 50))
+        }
+    }
+    
+    private func getGradientStops(_ gradient: VectorGradient) -> [GradientStop] {
+        switch gradient {
+        case .linear(let linear):
+            return linear.stops
+        case .radial(let radial):
+            return radial.stops
+        }
+    }
+    
+    private func updateStopPosition(index: Int, position: Double) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.stops[index].position = position
+            linear.stops.sort { $0.position < $1.position }
+            currentGradient = .linear(linear)
+        case .radial(var radial):
+            radial.stops[index].position = position
+            radial.stops.sort { $0.position < $1.position }
+            currentGradient = .radial(radial)
+        }
+    }
+    
+    private func updateStopColor(index: Int, color: VectorColor) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.stops[index].color = color
+            currentGradient = .linear(linear)
+        case .radial(var radial):
+            radial.stops[index].color = color
+            currentGradient = .radial(radial)
+        }
+    }
+    
+    private func addColorStop() {
+        guard var gradient = currentGradient else { return }
+        
+        let stops = getGradientStops(gradient)
+        let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
+        let newStop = GradientStop(position: newPosition, color: .black, opacity: 1.0)
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.stops.append(newStop)
+            linear.stops.sort { $0.position < $1.position }
+            currentGradient = .linear(linear)
+        case .radial(var radial):
+            radial.stops.append(newStop)
+            radial.stops.sort { $0.position < $1.position }
+            currentGradient = .radial(radial)
+        }
+    }
+    
+    private func removeColorStop(index: Int) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            guard linear.stops.count > 2 else { return }
+            linear.stops.remove(at: index)
+            currentGradient = .linear(linear)
+        case .radial(var radial):
+            guard radial.stops.count > 2 else { return }
+            radial.stops.remove(at: index)
+            currentGradient = .radial(radial)
+        }
+    }
+    
+    private func applyGradientToSelectedShapes() {
+        guard let gradient = currentGradient,
+              let layerIndex = document.selectedLayerIndex,
+              !document.selectedShapeIDs.isEmpty else { return }
+        
+        document.saveToUndoStack()
+        
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+            }
+        }
+    }
+    
+    // MARK: - Static Helper Functions
+    
+    static func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstSelectedID = document.selectedShapeIDs.first,
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+              let fillStyle = shape.fillStyle,
+              case .gradient(let gradient) = fillStyle.color else {
+            return nil
+        }
+        return gradient
+    }
+    
+    static func createDefaultGradient(type: GradientType) -> VectorGradient {
+        let stops = [
+            GradientStop(position: 0.0, color: .black, opacity: 1.0),
+            GradientStop(position: 1.0, color: .white, opacity: 1.0)
+        ]
+        
+        switch type {
+        case .linear:
+            let linear = LinearGradient(
+                startPoint: CGPoint(x: 0, y: 0),
+                endPoint: CGPoint(x: 1, y: 0),
+                stops: stops,
+                spreadMethod: .pad,
+                units: .objectBoundingBox
+            )
+            return .linear(linear)
+        case .radial:
+            let radial = RadialGradient(
+                centerPoint: CGPoint(x: 0.5, y: 0.5),
+                radius: 0.5,
+                stops: stops,
+                focalPoint: nil,
+                spreadMethod: .pad,
+                units: .objectBoundingBox
+            )
+            return .radial(radial)
+        }
     }
 }
 
