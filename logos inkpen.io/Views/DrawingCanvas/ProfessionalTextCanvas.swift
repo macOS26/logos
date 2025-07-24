@@ -498,8 +498,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
-        // PERFORMANCE OPTIMIZATION: Track what actually changed to avoid expensive updates during typing
         let coordinator = context.coordinator
+        
+        // CRITICAL: Lock coordinator to prevent saving selection changes from our own updates
+        coordinator.isUpdatingProgrammatically = true
+        defer {
+            // CRITICAL: Unlock coordinator after a short delay
+            DispatchQueue.main.async {
+                coordinator.isUpdatingProgrammatically = false
+            }
+        }
+
+        // PERFORMANCE OPTIMIZATION: Track what actually changed to avoid expensive updates during typing
         
         // PERFORMANCE OPTIMIZATION: Skip rapid updates during active typing (< 100ms apart)
         let now = Date()
@@ -694,6 +704,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
         var lastKnownCursorPosition: Int = 0
         var lastKnownSelectionLength: Int = 0
+        var isUpdatingProgrammatically: Bool = false // Prevents saving programmatic selection changes
 
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
@@ -735,6 +746,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
+            // CRITICAL: Do not save selection changes that happen during programmatic updates
+            guard !isUpdatingProgrammatically else {
+                print("🚫 COORDINATOR BLOCKED SAVE: Programmatic update in progress")
+                return
+            }
             guard let textView = notification.object as? NSTextView else { return }
             let selectedRange = textView.selectedRange()
             lastKnownCursorPosition = selectedRange.location
