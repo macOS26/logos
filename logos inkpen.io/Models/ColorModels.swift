@@ -1073,6 +1073,10 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
     
+    // NEW: User control properties
+    var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)  // Origin point for gradient positioning
+    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0)
+    
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.startPoint = startPoint
         self.endPoint = endPoint
@@ -1081,14 +1085,14 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         self.units = units
     }
     
-    /// Professional angle support (like Adobe Illustrator) - Full -360° to 360° range
+    /// Professional angle support (like Adobe Illustrator) - -180° to +180° range
     var angle: Double {
         get {
             let deltaX = endPoint.x - startPoint.x
             let deltaY = endPoint.y - startPoint.y
             let radians = atan2(deltaY, deltaX)
             let degrees = radians * 180.0 / .pi
-            // FIXED: Return raw angle without normalization to support -360° to 360° range
+            // Return raw angle in -180° to +180° range (natural atan2 output)
             return degrees
         }
         set {
@@ -1153,6 +1157,10 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     var stops: [GradientStop]          // Unlimited color stops
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
+    
+    // NEW: User control properties
+    var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)  // Origin point for gradient positioning
+    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0)
     
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.centerPoint = centerPoint

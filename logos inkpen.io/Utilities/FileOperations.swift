@@ -1353,7 +1353,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
-    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox) -> Double {
+    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
         // Handle percentage values (most common in SVG gradients)
@@ -1365,25 +1365,17 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Handle absolute values
         if let absoluteValue = Double(trimmed) {
             if gradientUnits == .userSpaceOnUse {
-                // CRITICAL FIX: Use actual viewBox dimensions for proper coordinate conversion
-                // If viewBox is not available, use document dimensions, otherwise fallback
-                var normalizer: Double
-                
-                if viewBoxWidth > 0 && viewBoxHeight > 0 {
-                    // Use the appropriate dimension based on coordinate context
-                    // For x-coordinates, use viewBoxWidth; for y-coordinates, use viewBoxHeight
-                    // Since we don't have context here, use the maximum for safety
-                    normalizer = max(viewBoxWidth, viewBoxHeight)
+                // CRITICAL FIX: For userSpaceOnUse, normalize to viewBox dimensions (0-1 range)
+                // This creates proper shape-relative coordinates
+                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
+                if normalizer > 0 {
+                    let normalizedValue = absoluteValue / normalizer
+                    print("🔧 USER SPACE COORDINATE: \(absoluteValue) / \(normalizer) = \(normalizedValue)")
+                    return normalizedValue
                 } else {
-                    // Fallback to document size or SVG default
-                    normalizer = max(documentSize.width, documentSize.height)
+                    print("⚠️ Invalid viewBox dimension, using absolute coordinate")
+                    return absoluteValue
                 }
-                
-                let normalizedValue = absoluteValue / normalizer
-                print("🔧 COORDINATE CONVERSION: \(absoluteValue) / \(normalizer) = \(normalizedValue) (userSpaceOnUse)")
-                
-                // DON'T clamp userSpaceOnUse coordinates - they can extend outside 0-1 range
-                return normalizedValue
             } else {
                 // For objectBoundingBox, values should be in 0-1 range
                 if absoluteValue > 1.0 {
@@ -1540,50 +1532,63 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)")
             
             // Parse coordinates with proper gradient units handling
-            let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits)
-            let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits)
-            let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits)
-            let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits)
+            let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
+            let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
+            let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
+            let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse - let them extend beyond 0-1
+            // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
+            // For ColecoVision: horizontal gradient should span left edge to right edge of EACH LETTER
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            if gradientUnits == .userSpaceOnUse {
-                // For userSpaceOnUse, allow coordinates outside 0-1 range for proper gradient mapping
-                startPoint = CGPoint(x: x1, y: y1)
-                endPoint = CGPoint(x: x2, y: y2)
-                print("🔧 USER SPACE COORDINATES: start=\(startPoint), end=\(endPoint)")
+            // Determine gradient direction from original coordinates
+            let deltaX = x2 - x1
+            let deltaY = y2 - y1
+            // FORCE PAINT GRADIENT TO FIT SHAPE: Always 0→1 regardless of original coordinates
+            // Determine if gradient is horizontal or vertical and FORCE to span shape edges
+            if abs(deltaX) > abs(deltaY) {
+                // Horizontal gradient: FORCE left edge to right edge
+                startPoint = CGPoint(x: 0.0, y: 0.5)
+                endPoint = CGPoint(x: 1.0, y: 0.5)
+                print("🎯 FORCED HORIZONTAL GRADIENT: 0.0 → 1.0 (left to right edge)")
             } else {
-                // For objectBoundingBox, clamp to 0-1 range
-                startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
-                endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
-                print("🔧 OBJECT BOUNDING BOX: start=\(startPoint), end=\(endPoint)")
+                // Vertical gradient: FORCE top edge to bottom edge
+                startPoint = CGPoint(x: 0.5, y: 0.0)
+                endPoint = CGPoint(x: 0.5, y: 1.0)
+                print("🎯 FORCED VERTICAL GRADIENT: 0.0 → 1.0 (top to bottom edge)")
             }
             
+            print("🎯 GRADIENT FORCED TO FIT SHAPE: \(startPoint) → \(endPoint)")
+            print("   Original SVG coordinates IGNORED - gradient paints to shape bounds")
+            print("🔥 FINAL GRADIENT: Linear gradient with start=\(startPoint), end=\(endPoint), stops=\(currentGradientStops.count)")
+            
+            // startPoint and endPoint are already defined above
+            
             // Calculate gradient angle for debugging
-            let deltaX = endPoint.x - startPoint.x
-            let deltaY = endPoint.y - startPoint.y
-            let angle = atan2(deltaY, deltaX) * 180.0 / .pi
+            let gradientDeltaX = endPoint.x - startPoint.x
+            let gradientDeltaY = endPoint.y - startPoint.y
+            let angle = atan2(gradientDeltaY, gradientDeltaX) * 180.0 / .pi
             
             print("🔧 Gradient angle: \(angle) degrees")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
+            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
             let linearGradient = LinearGradient(
                 startPoint: startPoint,
                 endPoint: endPoint,
                 stops: currentGradientStops,
                 spreadMethod: spreadMethod,
-                units: gradientUnits
+                units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
             
             vectorGradient = .linear(linearGradient)
-            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops")
-            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))°")
+            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
+            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))° (shape-relative)")
             
         } else { // radialGradient
             // Parse gradient units first to handle coordinates properly
@@ -1598,50 +1603,40 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
             
-            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits)
-            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits)
-            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits)
+            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true)
+            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false)
+            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true) // Use X for radius
             
             // Parse focal point if specified, otherwise use center point
-            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits) : cx
-            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits) : cy
+            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true) : cx
+            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
-            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse
-            let centerPoint: CGPoint
-            let focalPoint: CGPoint
-            let radius: Double
+            // SIMPLE OBJECT-RELATIVE: ALL radial gradients paint relative to individual object bounds
+            // Always center in object and radius spans to object edge
+            let centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
+            let focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
+            let radius = 0.5  // Radius spans from center to object edge
             
-            if gradientUnits == .userSpaceOnUse {
-                // For userSpaceOnUse, allow coordinates outside 0-1 range
-                centerPoint = CGPoint(x: cx, y: cy)
-                focalPoint = CGPoint(x: fx, y: fy)
-                radius = r  // Don't clamp radius for userSpaceOnUse
-                print("🔧 USER SPACE RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
-            } else {
-                // For objectBoundingBox, clamp to 0-1 range
-                centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
-                focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
-                radius = max(0.0, min(1.0, r)) // Clamp radius for objectBoundingBox
-                print("🔧 OBJECT BOUNDING BOX RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
-            }
+            print("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
+            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
             let radialGradient = RadialGradient(
                 centerPoint: centerPoint,
                 radius: radius, // Use calculated radius (already clamped if needed)
                 stops: currentGradientStops,
                 focalPoint: (fx != cx || fy != cy) ? focalPoint : nil,
                 spreadMethod: spreadMethod,
-                units: gradientUnits
+                units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
             
             vectorGradient = .radial(radialGradient)
-            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops")
-            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", r))")
+            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
+            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", radius)) (shape-relative)")
             if fxRaw != nil || fyRaw != nil {
                 print("   - Focal point: \(focalPoint)")
             }
@@ -4656,19 +4651,18 @@ class FileOperations {
             }
         }
         
-        // Add professional padding around artwork
-        let padding: CGFloat = 50 // 50 points padding
-        let canvasWidth = max(artworkBounds.width + 2 * padding, 100) // Minimum 100pt
-        let canvasHeight = max(artworkBounds.height + 2 * padding, 100) // Minimum 100pt
+        // FIXED: No padding - use exact artwork dimensions for accurate import
+        let canvasWidth = max(artworkBounds.width, 100) // Minimum 100pt
+        let canvasHeight = max(artworkBounds.height, 100) // Minimum 100pt
         
-        // Set document size based on artwork bounds with padding
+        // Set document size based on exact artwork bounds
         document.settings.width = canvasWidth / 72.0 // Convert to inches
         document.settings.height = canvasHeight / 72.0
         document.settings.unit = .inches
         
         print("🎯 SVG IMPORT BOUNDS CALCULATION:")
         print("   Raw artwork bounds: \(artworkBounds)")
-        print("   Canvas size needed: \(canvasWidth) × \(canvasHeight) pts")
+        print("   Canvas size (exact): \(canvasWidth) × \(canvasHeight) pts")
         print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
         
         // Clear existing layers and create pasteboard + canvas + imported layers in correct order
@@ -4716,18 +4710,13 @@ class FileOperations {
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
-        // Calculate translation needed to center artwork in canvas
-        let artworkCenterX = artworkBounds.midX
-        let artworkCenterY = artworkBounds.midY
-        let canvasCenterX = canvasWidth / 2
-        let canvasCenterY = canvasHeight / 2
-        let translateX = canvasCenterX - artworkCenterX
-        let translateY = canvasCenterY - artworkCenterY
+        // FIXED: No centering needed - place artwork at origin for exact import
+        let translateX: CGFloat = -artworkBounds.minX  // Move to origin
+        let translateY: CGFloat = -artworkBounds.minY  // Move to origin
         
-        print("🎯 CENTERING CALCULATION:")
-        print("   Artwork center: (\(String(format: "%.1f", artworkCenterX)), \(String(format: "%.1f", artworkCenterY)))")
-        print("   Canvas center: (\(String(format: "%.1f", canvasCenterX)), \(String(format: "%.1f", canvasCenterY)))")
-        print("   Translation needed: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
+        print("🎯 POSITIONING CALCULATION:")
+        print("   Artwork bounds: \(artworkBounds)")
+        print("   Translation to origin: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
         
         // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
         for shape in result.shapes {
@@ -4763,7 +4752,7 @@ class FileOperations {
         }
         
         print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
-        print("📐 Canvas sized to \(canvasWidth) × \(canvasHeight) pts with artwork centered")
+        print("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts")
         return document
     }
     

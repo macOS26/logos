@@ -12,6 +12,11 @@ struct StrokeFillPanel: View {
     @State private var showingStrokeColorPicker = false
     @State private var showingFillColorPicker = false
     
+    // NEW: State for gradient color stop popup
+    @State private var showingGradientColorPicker = false
+    @State private var editingGradientStopId: UUID?
+    @State private var editingGradientStopColor: VectorColor = .black
+    
     // FIXED: Show current colors - from selected shapes or defaults for new shapes
     private var selectedStrokeColor: VectorColor {
         // FIXED: Support both text and shapes  
@@ -943,6 +948,11 @@ struct GradientFillSection: View {
     @State private var currentGradient: VectorGradient? = nil
     @State private var gradientId: UUID = UUID() // Unique ID for this gradient editing session
     
+    // NEW: State for gradient color stop popup
+    @State private var showingGradientColorPicker = false
+    @State private var editingGradientStopId: UUID?
+    @State private var editingGradientStopColor: VectorColor = .black
+    
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
         case radial = "Radial"
@@ -998,7 +1008,7 @@ struct GradientFillSection: View {
                 }
             }
             
-            // Gradient Angle (for Linear gradients only)
+            // Gradient Angle (for Linear gradients only) - 0-360° NO CONSTRAINTS
             if gradientType == .linear, let gradient = currentGradient, case .linear(let linear) = gradient {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -1016,27 +1026,114 @@ struct GradientFillSection: View {
                         set: { newAngle in
                             updateGradientAngle(newAngle)
                         }
-                    ), in: -360...360)
+                    ), in: -180...180)  // CHANGED: -180° to +180° range
                     .controlSize(.small)
-                    .disabled(false) // NEVER disable the angle slider
                 }
             }
             
-            // Gradient Preview
+            // NEW: Origin Point Control (for positioning gradient)
+            if let gradient = currentGradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Origin Point")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("X: \(Int(getGradientOriginX(gradient) * 100))%")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Slider(value: Binding(
+                                get: { getGradientOriginX(gradient) },
+                                set: { newX in
+                                    updateGradientOriginX(newX)
+                                }
+                            ), in: 0...1)
+                            .controlSize(.small)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Y: \(Int(getGradientOriginY(gradient) * 100))%")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Slider(value: Binding(
+                                get: { getGradientOriginY(gradient) },
+                                set: { newY in
+                                    updateGradientOriginY(newY)
+                                }
+                            ), in: 0...1)
+                            .controlSize(.small)
+                        }
+                    }
+                }
+            }
+            
+            // NEW: Scale Control (-200% to 200%)
+            if let gradient = currentGradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Scale")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(getGradientScale(gradient) * 100))%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { getGradientScale(gradient) },
+                        set: { newScale in
+                            updateGradientScale(newScale)
+                        }
+                    ), in: -2.0...2.0)  // -200% to 200%
+                    .controlSize(.small)
+                }
+            }
+            
+            // Gradient Preview with Interactive Origin Point
             if let gradient = currentGradient {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Preview")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    // Gradient preview strip
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(createSwiftUIGradient(from: gradient))
-                        .frame(height: 40)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
+                    // Enhanced gradient preview with origin point control
+                    GeometryReader { geometry in
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(createSwiftUIGradient(from: gradient))
+                            .frame(height: 60)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                            .overlay(
+                                // Origin point indicator (draggable)
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 8, height: 8)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                    .position(
+                                        x: getGradientOriginX(gradient) * geometry.size.width,
+                                        y: getGradientOriginY(gradient) * 60
+                                    )
+                                    .gesture(
+                                        DragGesture()
+                                            .onChanged { value in
+                                                let newX = max(0, min(1, value.location.x / geometry.size.width))
+                                                let newY = max(0, min(1, value.location.y / 60))
+                                                updateGradientOriginX(newX)
+                                                updateGradientOriginY(newY)
+                                            }
+                                    )
+                            )
+                    }
+                    .frame(height: 60)
                 }
                 
                 // Color Stops Editor
@@ -1058,20 +1155,17 @@ struct GradientFillSection: View {
                     let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
-                            // Color swatch
+                            // Color swatch - OPENS COLOR PANEL AS POPUP!
                             Button(action: {
-                                // Use AppState to start gradient editing and switch to color panel
-                                appState.startGradientStopEditing(
-                                    gradientId: gradientId,
-                                    stopIndex: 0 // Not used anymore, but keeping for compatibility
-                                ) { selectedColor in
-                                    updateStopColor(stopId: stop.id, color: selectedColor)
-                                    appState.finishGradientStopEditing()
-                                }
+                                // SET UP FOR POPUP COLOR PICKER
+                                editingGradientStopId = stop.id
+                                editingGradientStopColor = stop.color
+                                showingGradientColorPicker = true
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .help("Click to change color")
                             
                             // Position slider - moves independently
                             VStack(alignment: .leading, spacing: 2) {
@@ -1126,6 +1220,38 @@ struct GradientFillSection: View {
             // Update gradient editor when layer changes
             updateSelectedGradient()
         }
+        // GRADIENT COLOR POPUP - Uses ColorPanel as a SHEET!
+        .sheet(isPresented: $showingGradientColorPicker) {
+            VStack(spacing: 0) {
+                // Title bar
+                HStack {
+                    Text("Select Gradient Color")
+                        .font(.headline)
+                    Spacer()
+                    Button("Done") {
+                        showingGradientColorPicker = false
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                
+                // COLOR PANEL WITH RGB/CMYK/HSB TABS
+                ColorPanel(
+                    document: document,
+                    onColorSelected: { newColor in
+                        // Update the gradient stop color in real-time
+                        if let stopId = editingGradientStopId {
+                            updateStopColor(stopId: stopId, color: newColor)
+                        }
+                        editingGradientStopColor = newColor
+                    }
+                )
+                .frame(width: 300, height: 400)
+            }
+            .frame(width: 300, height: 450)
+            .background(Color(NSColor.windowBackgroundColor))
+        }
     }
     
     // MARK: - Selection and Angle Management
@@ -1155,6 +1281,80 @@ struct GradientFillSection: View {
         case .radial(_):
             // Radial gradients don't have angles
             break
+        }
+    }
+    
+    // NEW: Origin Point Controls
+    private func getGradientOriginX(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.originPoint.x
+        case .radial(let radial):
+            return radial.originPoint.x
+        }
+    }
+    
+    private func getGradientOriginY(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.originPoint.y
+        case .radial(let radial):
+            return radial.originPoint.y
+        }
+    }
+    
+    private func updateGradientOriginX(_ newX: Double) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.originPoint.x = newX
+            currentGradient = .linear(linear)
+            print("🔄 Updated gradient origin X to \(Int(newX * 100))%")
+        case .radial(var radial):
+            radial.originPoint.x = newX
+            currentGradient = .radial(radial)
+            print("🔄 Updated gradient origin X to \(Int(newX * 100))%")
+        }
+    }
+    
+    private func updateGradientOriginY(_ newY: Double) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.originPoint.y = newY
+            currentGradient = .linear(linear)
+            print("🔄 Updated gradient origin Y to \(Int(newY * 100))%")
+        case .radial(var radial):
+            radial.originPoint.y = newY
+            currentGradient = .radial(radial)
+            print("🔄 Updated gradient origin Y to \(Int(newY * 100))%")
+        }
+    }
+    
+    // NEW: Scale Control
+    private func getGradientScale(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.scale
+        case .radial(let radial):
+            return radial.scale
+        }
+    }
+    
+    private func updateGradientScale(_ newScale: Double) {
+        guard var gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.scale = newScale
+            currentGradient = .linear(linear)
+            print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
+        case .radial(var radial):
+            radial.scale = newScale
+            currentGradient = .radial(radial)
+            print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
         }
     }
     

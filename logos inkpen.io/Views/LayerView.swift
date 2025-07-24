@@ -3640,24 +3640,66 @@ struct CoreGraphicsGradientView: View {
         
         if isStroke {
             // Gradient stroke
-            if let strokeStyle = strokeStyle {
-                path.stroke(swiftUIGradient, style: strokeStyle)
-            } else {
-                path.stroke(swiftUIGradient, lineWidth: 1.0)
-            }
-        } else {
-            // Gradient fill
             switch gradient {
             case .linear(let linear):
-                let unitStart = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
-                let unitEnd = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
-                path.fill(SwiftUI.LinearGradient(gradient: swiftUIGradient, startPoint: unitStart, endPoint: unitEnd))
+                let (start, end) = transformGradientCoordinates(linear: linear, pathBounds: path.boundingRect)
+                let linearGrad = SwiftUI.LinearGradient(gradient: swiftUIGradient, startPoint: start, endPoint: end)
+                if let strokeStyle = strokeStyle {
+                    path.stroke(linearGrad, style: strokeStyle)
+                } else {
+                    path.stroke(linearGrad, lineWidth: 1.0)
+                }
+            case .radial(let radial):
+                let (center, radius) = transformRadialGradientCoordinates(radial: radial, pathBounds: path.boundingRect)
+                let radialGrad = SwiftUI.RadialGradient(gradient: swiftUIGradient, center: center, startRadius: 0, endRadius: radius)
+                if let strokeStyle = strokeStyle {
+                    path.stroke(radialGrad, style: strokeStyle)
+                } else {
+                    path.stroke(radialGrad, lineWidth: 1.0)
+                }
+            }
+        } else {
+            // USER-CONTROLLED GRADIENTS with Origin Point and Scale
+            switch gradient {
+            case .linear(let linear):
+                // Use user-controlled origin point and scale
+                let originStart = UnitPoint(x: linear.originPoint.x, y: linear.originPoint.y)
+                let scaledAngle = linear.angle
+                let scale = linear.scale
+                
+                // Calculate scaled endpoints based on angle and scale
+                let radians = scaledAngle * .pi / 180.0
+                let scaledLength = 0.5 * scale  // Base length scaled by user control
+                
+                let deltaX = cos(radians) * scaledLength
+                let deltaY = sin(radians) * scaledLength
+                
+                let startPoint = UnitPoint(
+                    x: max(0, min(1, linear.originPoint.x - deltaX)),
+                    y: max(0, min(1, linear.originPoint.y - deltaY))
+                )
+                let endPoint = UnitPoint(
+                    x: max(0, min(1, linear.originPoint.x + deltaX)),
+                    y: max(0, min(1, linear.originPoint.y + deltaY))
+                )
+                
+                path.fill(SwiftUI.LinearGradient(
+                    gradient: swiftUIGradient,
+                    startPoint: startPoint,
+                    endPoint: endPoint
+                ))
                 
             case .radial(let radial):
-                let unitCenter = UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
-                // Use radius as a fraction of the shape size
-                let radiusFraction = min(1.0, radial.radius)
-                path.fill(SwiftUI.RadialGradient(gradient: swiftUIGradient, center: unitCenter, startRadius: 0, endRadius: radiusFraction * 100))
+                // Use user-controlled origin point and scale
+                let originCenter = UnitPoint(x: radial.originPoint.x, y: radial.originPoint.y)
+                let scaledRadius = max(0, radial.radius * radial.scale * 100)  // Scale the radius
+                
+                path.fill(SwiftUI.RadialGradient(
+                    gradient: swiftUIGradient,
+                    center: originCenter,
+                    startRadius: 0,
+                    endRadius: scaledRadius
+                ))
             }
         }
     }
@@ -3673,6 +3715,40 @@ struct CoreGraphicsGradientView: View {
         
         return SwiftUI.Gradient(stops: gradientStops)
     }
+    
+    /// Transform linear gradient coordinates (all gradients forced to objectBoundingBox)
+    private func transformGradientCoordinates(linear: LinearGradient, pathBounds: CGRect) -> (UnitPoint, UnitPoint) {
+        // All gradients are forced to objectBoundingBox during parsing for shape-relative coordinates
+        let start = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
+        let end = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+        print("🔥 RENDERER: Using gradient coordinates start=\(start), end=\(end) for pathBounds=\(pathBounds)")
+        print("🔥 SHAPE ANALYSIS: width=\(pathBounds.width), height=\(pathBounds.height), aspectRatio=\(pathBounds.width/pathBounds.height)")
+        
+        // FORCE GRADIENT TO FIT VISIBLE CONTENT, NOT FULL SHAPE BOUNDS
+        // If shape is extremely wide, scale gradient to fit reasonable proportions
+        let aspectRatio = pathBounds.width / pathBounds.height
+        if aspectRatio > 3.0 { // Shape is more than 3x wider than tall
+            print("🔥 EXTREMELY WIDE SHAPE DETECTED - scaling gradient to fit content")
+            let scaleFactor = 1.0 / aspectRatio * 3.0 // Scale to 3:1 ratio maximum
+            let adjustedStart = UnitPoint(x: linear.startPoint.x * scaleFactor, y: linear.startPoint.y)
+            let adjustedEnd = UnitPoint(x: linear.endPoint.x * scaleFactor, y: linear.endPoint.y)
+            print("🔥 ADJUSTED GRADIENT: \(adjustedStart) → \(adjustedEnd) (scale=\(scaleFactor))")
+            return (adjustedStart, adjustedEnd)
+        }
+        
+        return (start, end)
+    }
+    
+    /// Transform radial gradient coordinates (all gradients forced to objectBoundingBox)
+    private func transformRadialGradientCoordinates(radial: RadialGradient, pathBounds: CGRect) -> (UnitPoint, CGFloat) {
+        // All gradients are forced to objectBoundingBox during parsing for shape-relative coordinates
+        let radiusFraction = min(1.0, radial.radius)
+        return (
+            UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
+            CGFloat(radiusFraction * 100) // SwiftUI expects radius as a multiplier
+        )
+    }
+
 }
 
 // MARK: - SwiftUI StrokeStyle Extensions
