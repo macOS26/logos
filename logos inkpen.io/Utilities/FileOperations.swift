@@ -1627,10 +1627,16 @@ class SVGParser: NSObject, XMLParserDelegate {
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // FUCK THE TRANSFORM BULLSHIT - JUST FILL THE SHAPE END TO END
-            // Calculate the original angle from the SVG coordinates (IGNORE TRANSFORMS)
-            // CRITICAL FIX: SVG Y-axis is flipped, so we need to invert the Y calculation
-            let originalAngle = atan2(-(y2 - y1), x2 - x1) * 180 / .pi
+            // PROPERLY HANDLE THE GRADIENT TRANSFORM TO GET THE CORRECT ANGLE
+            // The gradientTransform="translate(0 1021.89) scale(1 -1)" flips the Y-axis
+            // We need to apply this transform to get the actual gradient direction
+            let finalY1 = 1021.89 - y1  // Apply the transform: translate then scale(-1)
+            let finalY2 = 1021.89 - y2  // Apply the transform: translate then scale(-1)
+            let finalX1 = x1
+            let finalX2 = x2
+            
+            // Now calculate the angle using the properly transformed coordinates
+            let originalAngle = atan2(finalY2 - finalY1, finalX2 - finalX1) * 180 / .pi
             
             print("🎨 ORIGINAL SVG ANGLE: \(originalAngle)°")
             print("🚫 IGNORING TRANSFORM BULLSHIT - FILLING SHAPE END TO END")
