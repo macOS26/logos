@@ -1076,7 +1076,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.startPoint = startPoint
         self.endPoint = endPoint
-        self.stops = stops // NO automatic sorting - allow independent slider movement
+        self.stops = stops.sorted { $0.position < $1.position } // Auto-sort stops by position for proper gradient rendering
         self.spreadMethod = spreadMethod
         self.units = units
     }
@@ -1153,7 +1153,7 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.centerPoint = centerPoint
         self.radius = max(0.0, radius)
-        self.stops = stops // NO automatic sorting - allow independent slider movement
+        self.stops = stops.sorted { $0.position < $1.position } // Auto-sort stops by position for proper gradient rendering
         self.focalPoint = focalPoint
         self.spreadMethod = spreadMethod
         self.units = units

@@ -1047,8 +1047,8 @@ struct GradientFillSection: View {
                         .help("Add Color Stop")
                     }
                     
-                    // Color stops list - NO SORTING! Keep original visual order, let sliders move independently
-                    let stops = getGradientStops(gradient)
+                    // Color stops list - AUTO REORDER by position (0% to 100%)
+                    let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             // Color swatch
@@ -1184,13 +1184,15 @@ struct GradientFillSection: View {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].position = position
-                // NO automatic sorting - let sliders move independently
+                // AUTO SORT after position change to maintain visual order
+                linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].position = position
-                // NO automatic sorting - let sliders move independently
+                // AUTO SORT after position change to maintain visual order
+                radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
             }
         }
@@ -1224,11 +1226,13 @@ struct GradientFillSection: View {
         switch gradient {
         case .linear(var linear):
             linear.stops.append(newStop)
-            // NO SORTING! Just append to the end to maintain visual order
+            // AUTO SORT after adding new stop to maintain position order
+            linear.stops.sort { $0.position < $1.position }
             currentGradient = .linear(linear)
         case .radial(var radial):
             radial.stops.append(newStop)
-            // NO SORTING! Just append to the end to maintain visual order
+            // AUTO SORT after adding new stop to maintain position order
+            radial.stops.sort { $0.position < $1.position }
             currentGradient = .radial(radial)
         }
     }
