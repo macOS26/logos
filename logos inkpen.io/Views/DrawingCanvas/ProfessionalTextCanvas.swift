@@ -500,15 +500,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     func updateNSView(_ nsView: NSTextView, context: Context) {
         let coordinator = context.coordinator
         
-        // CRITICAL: Lock coordinator to prevent saving selection changes from our own updates
-        coordinator.isUpdatingProgrammatically = true
-        defer {
-            // CRITICAL: Unlock coordinator after a short delay
-            DispatchQueue.main.async {
-                coordinator.isUpdatingProgrammatically = false
-            }
-        }
-
         // PERFORMANCE OPTIMIZATION: Track what actually changed to avoid expensive updates during typing
         
         // PERFORMANCE OPTIMIZATION: Skip rapid updates during active typing (< 100ms apart)
@@ -581,6 +572,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             needsFormatUpdate = true
         }
         
+        // SURGICAL CURSOR RESTORATION: Only allow when not typing and format has changed
+        if needsFormatUpdate && !isUpdatingFromTyping {
+            coordinator.allowCursorRestoration = true
+            print("✅ RESTORATION ALLOWED: Format changed, not typing")
+        } else {
+            coordinator.allowCursorRestoration = false
+        }
+        
         // CRITICAL FIX: Update text container width when text box is resized
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
         let newWidth = viewModel.textBoxFrame.width
@@ -613,18 +612,26 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // ROBUST CURSOR RESTORATION: Always restore cursor for editing views after ALL formatting
         if shouldRestoreCursor {
-            // Ensure cursor position is within text bounds
-            let textLength = nsView.string.count
-            let safePosition = min(savedCursorPosition, textLength)
-            let safeLength = min(savedSelectionLength, textLength - safePosition)
-            
-            let newRange = NSRange(location: safePosition, length: safeLength)
-            nsView.setSelectedRange(newRange)
-            
-            print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength) (was \(savedCursorPosition), \(savedSelectionLength))")
-            
-            // Scroll to show cursor if needed
-            nsView.scrollRangeToVisible(newRange)
+            // CRITICAL: Only restore if allowed by our surgical flag
+            if coordinator.allowCursorRestoration {
+                // Ensure cursor position is within text bounds
+                let textLength = nsView.string.count
+                let safePosition = min(savedCursorPosition, textLength)
+                let safeLength = min(savedSelectionLength, textLength - safePosition)
+                
+                let newRange = NSRange(location: safePosition, length: safeLength)
+                nsView.setSelectedRange(newRange)
+                
+                print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength) (was \(savedCursorPosition), \(savedSelectionLength))")
+                
+                // Scroll to show cursor if needed
+                nsView.scrollRangeToVisible(newRange)
+
+                // CRITICAL: Reset the flag after use
+                coordinator.allowCursorRestoration = false
+            } else {
+                print("🚫 CURSOR RESTORE BLOCKED: Not a format change or currently typing")
+            }
         }
         
         // PERFORMANCE: Only update editing properties if they actually changed
@@ -704,7 +711,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
         var lastKnownCursorPosition: Int = 0
         var lastKnownSelectionLength: Int = 0
-        var isUpdatingProgrammatically: Bool = false // Prevents saving programmatic selection changes
+        var allowCursorRestoration: Bool = false // Targeted flag for format changes
 
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
@@ -747,7 +754,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
 
         func textViewDidChangeSelection(_ notification: Notification) {
             // CRITICAL: Do not save selection changes that happen during programmatic updates
-            guard !isUpdatingProgrammatically else {
+            guard !allowCursorRestoration else {
                 print("🚫 COORDINATOR BLOCKED SAVE: Programmatic update in progress")
                 return
             }
