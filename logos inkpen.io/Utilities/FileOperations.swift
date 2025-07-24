@@ -1578,13 +1578,20 @@ class SVGParser: NSObject, XMLParserDelegate {
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
-            let linearGradient = LinearGradient(
+            // Calculate origin point as the midpoint between start and end
+            let originX = (startPoint.x + endPoint.x) / 2.0
+            let originY = (startPoint.y + endPoint.y) / 2.0
+            
+            var linearGradient = LinearGradient(
                 startPoint: startPoint,
                 endPoint: endPoint,
                 stops: currentGradientStops,
                 spreadMethod: spreadMethod,
                 units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
+            
+            // Set the origin point to the center of the gradient
+            linearGradient.originPoint = CGPoint(x: originX, y: originY)
             
             vectorGradient = .linear(linearGradient)
             print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
@@ -1625,7 +1632,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
-            let radialGradient = RadialGradient(
+            var radialGradient = RadialGradient(
                 centerPoint: centerPoint,
                 radius: radius, // Use calculated radius (already clamped if needed)
                 stops: currentGradientStops,
@@ -1633,6 +1640,9 @@ class SVGParser: NSObject, XMLParserDelegate {
                 spreadMethod: spreadMethod,
                 units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
+            
+            // Set the origin point to the center point
+            radialGradient.originPoint = centerPoint
             
             vectorGradient = .radial(radialGradient)
             print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")

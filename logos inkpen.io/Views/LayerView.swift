@@ -3635,72 +3635,156 @@ struct CoreGraphicsGradientView: View {
     }
     
     var body: some View {
-        // Create SwiftUI gradient with multiple color stops
-        let swiftUIGradient = createSwiftUIGradient(from: gradient)
-        
-        if isStroke {
-            // Gradient stroke
+        // Use Canvas for proper Core Graphics gradient rendering
+        Canvas { context, size in
+            // Get the path bounds for shape-relative gradients
+            let pathBounds = path.boundingRect
+            
+            // Create Core Graphics path
+            let cgPath = path.cgPath
+            
+            // Add path to context
+            context.addFilter(.shadow(radius: 0)) // Ensures proper rendering
+            
             switch gradient {
             case .linear(let linear):
-                let (start, end) = transformGradientCoordinates(linear: linear, pathBounds: path.boundingRect)
-                let linearGrad = SwiftUI.LinearGradient(gradient: swiftUIGradient, startPoint: start, endPoint: end)
-                if let strokeStyle = strokeStyle {
-                    path.stroke(linearGrad, style: strokeStyle)
-                } else {
-                    path.stroke(linearGrad, lineWidth: 1.0)
-                }
+                renderLinearGradient(
+                    context: context,
+                    linear: linear,
+                    path: cgPath,
+                    pathBounds: pathBounds,
+                    isStroke: isStroke,
+                    strokeStyle: strokeStyle
+                )
+                
             case .radial(let radial):
-                let (center, radius) = transformRadialGradientCoordinates(radial: radial, pathBounds: path.boundingRect)
-                let radialGrad = SwiftUI.RadialGradient(gradient: swiftUIGradient, center: center, startRadius: 0, endRadius: radius)
-                if let strokeStyle = strokeStyle {
-                    path.stroke(radialGrad, style: strokeStyle)
-                } else {
-                    path.stroke(radialGrad, lineWidth: 1.0)
-                }
+                renderRadialGradient(
+                    context: context,
+                    radial: radial,
+                    path: cgPath,
+                    pathBounds: pathBounds,
+                    isStroke: isStroke,
+                    strokeStyle: strokeStyle
+                )
             }
+        }
+    }
+    
+    private func renderLinearGradient(
+        context: GraphicsContext,
+        linear: LinearGradient,
+        path: CGPath,
+        pathBounds: CGRect,
+        isStroke: Bool,
+        strokeStyle: SwiftUI.StrokeStyle?
+    ) {
+        var cgContext = context
+        
+        // Calculate gradient points in shape's coordinate space
+        let startX = pathBounds.minX + pathBounds.width * linear.startPoint.x
+        let startY = pathBounds.minY + pathBounds.height * linear.startPoint.y
+        let endX = pathBounds.minX + pathBounds.width * linear.endPoint.x
+        let endY = pathBounds.minY + pathBounds.height * linear.endPoint.y
+        
+        let startPoint = CGPoint(x: startX, y: startY)
+        let endPoint = CGPoint(x: endX, y: endY)
+        
+        // Apply user controls
+        let angle = linear.angle * .pi / 180.0
+        let scale = linear.scale
+        let originX = pathBounds.minX + pathBounds.width * linear.originPoint.x
+        let originY = pathBounds.minY + pathBounds.height * linear.originPoint.y
+        let origin = CGPoint(x: originX, y: originY)
+        
+        // Calculate scaled gradient points
+        let halfLength = scale * pathBounds.width * 0.5
+        let scaledStart = CGPoint(
+            x: origin.x - cos(angle) * halfLength,
+            y: origin.y - sin(angle) * halfLength
+        )
+        let scaledEnd = CGPoint(
+            x: origin.x + cos(angle) * halfLength,
+            y: origin.y + sin(angle) * halfLength
+        )
+        
+        // Create gradient stops
+        let stops: [Gradient.Stop] = linear.stops.map { stop in
+            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+        }
+        let gradient = Gradient(stops: stops)
+        
+        // Render the gradient
+        if isStroke {
+            let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
+            cgContext.stroke(
+                Path(path),
+                with: .linearGradient(
+                    gradient,
+                    startPoint: scaledStart,
+                    endPoint: scaledEnd
+                ),
+                style: style
+            )
         } else {
-            // USER-CONTROLLED GRADIENTS with Origin Point and Scale
-            switch gradient {
-            case .linear(let linear):
-                // Use user-controlled origin point and scale
-                let originStart = UnitPoint(x: linear.originPoint.x, y: linear.originPoint.y)
-                let scaledAngle = linear.angle
-                let scale = linear.scale
-                
-                // Calculate scaled endpoints based on angle and scale
-                let radians = scaledAngle * .pi / 180.0
-                let scaledLength = 0.5 * scale  // Base length scaled by user control
-                
-                let deltaX = cos(radians) * scaledLength
-                let deltaY = sin(radians) * scaledLength
-                
-                let startPoint = UnitPoint(
-                    x: max(0, min(1, linear.originPoint.x - deltaX)),
-                    y: max(0, min(1, linear.originPoint.y - deltaY))
+            cgContext.fill(
+                Path(path),
+                with: .linearGradient(
+                    gradient,
+                    startPoint: scaledStart,
+                    endPoint: scaledEnd
                 )
-                let endPoint = UnitPoint(
-                    x: max(0, min(1, linear.originPoint.x + deltaX)),
-                    y: max(0, min(1, linear.originPoint.y + deltaY))
-                )
-                
-                path.fill(SwiftUI.LinearGradient(
-                    gradient: swiftUIGradient,
-                    startPoint: startPoint,
-                    endPoint: endPoint
-                ))
-                
-            case .radial(let radial):
-                // Use user-controlled origin point and scale
-                let originCenter = UnitPoint(x: radial.originPoint.x, y: radial.originPoint.y)
-                let scaledRadius = max(0, radial.radius * radial.scale * 100)  // Scale the radius
-                
-                path.fill(SwiftUI.RadialGradient(
-                    gradient: swiftUIGradient,
-                    center: originCenter,
+            )
+        }
+    }
+    
+    private func renderRadialGradient(
+        context: GraphicsContext,
+        radial: RadialGradient,
+        path: CGPath,
+        pathBounds: CGRect,
+        isStroke: Bool,
+        strokeStyle: SwiftUI.StrokeStyle?
+    ) {
+        var cgContext = context
+        
+        // Calculate center in shape's coordinate space
+        let centerX = pathBounds.minX + pathBounds.width * radial.originPoint.x
+        let centerY = pathBounds.minY + pathBounds.height * radial.originPoint.y
+        let center = CGPoint(x: centerX, y: centerY)
+        
+        // Calculate radius based on shape dimensions
+        let baseRadius = min(pathBounds.width, pathBounds.height) * radial.radius
+        let scaledRadius = baseRadius * radial.scale
+        
+        // Create gradient stops
+        let stops: [Gradient.Stop] = radial.stops.map { stop in
+            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+        }
+        let gradient = Gradient(stops: stops)
+        
+        // Render the gradient
+        if isStroke {
+            let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
+            cgContext.stroke(
+                Path(path),
+                with: .radialGradient(
+                    gradient,
+                    center: center,
                     startRadius: 0,
                     endRadius: scaledRadius
-                ))
-            }
+                ),
+                style: style
+            )
+        } else {
+            cgContext.fill(
+                Path(path),
+                with: .radialGradient(
+                    gradient,
+                    center: center,
+                    startRadius: 0,
+                    endRadius: scaledRadius
+                )
+            )
         }
     }
     
