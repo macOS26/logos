@@ -1623,17 +1623,47 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
             }
             
-            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse - let them extend beyond 0-1
+                        // ENHANCED: Gradient approximation system for better visual results
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            if gradientUnits == .userSpaceOnUse {
+            // Check if coordinates are extremely small (likely from transform issues)
+            let coordinateRange = max(abs(transformedX2 - transformedX1), abs(transformedY2 - transformedY1))
+            let needsApproximation = coordinateRange < 0.01
+            
+            if needsApproximation {
+                print("⚠️ GRADIENT APPROXIMATION: Coordinates too small (\(coordinateRange)) - approximating gradient")
+                
+                // Calculate the original angle from the SVG coordinates before transform
+                let originalAngle = atan2(y2 - y1, x2 - x1) * 180 / .pi
+                let normalizedAngle = originalAngle < 0 ? originalAngle + 360 : originalAngle
+                
+                print("🔧 Original angle from SVG: \(normalizedAngle)°")
+                
+                // Create reasonable gradient coordinates based on angle
+                // Map to standard 0-1 coordinate system for good visual coverage
+                let angleInRadians = normalizedAngle * .pi / 180
+                let gradientLength = 0.8 // Use 80% of the shape for good coverage
+                
+                let centerX = 0.5
+                let centerY = 0.5
+                let halfLength = gradientLength / 2
+                
+                let deltaX = cos(angleInRadians) * halfLength
+                let deltaY = sin(angleInRadians) * halfLength
+                
+                startPoint = CGPoint(x: centerX - deltaX, y: centerY - deltaY)
+                endPoint = CGPoint(x: centerX + deltaX, y: centerY + deltaY)
+                
+                print("🎨 APPROXIMATED GRADIENT: start=\(startPoint), end=\(endPoint), angle=\(normalizedAngle)°")
+                
+            } else if gradientUnits == .userSpaceOnUse {
                 // For userSpaceOnUse, allow coordinates outside 0-1 range for proper gradient mapping
                 startPoint = CGPoint(x: transformedX1, y: transformedY1)
                 endPoint = CGPoint(x: transformedX2, y: transformedY2)
                 print("🔧 USER SPACE COORDINATES: start=\(startPoint), end=\(endPoint)")
             } else {
-                // For objectBoundingBox, clamp to 0-1 range  
+                // For objectBoundingBox, clamp to 0-1 range
                 startPoint = CGPoint(x: clamp(transformedX1, 0.0, 1.0), y: clamp(transformedY1, 0.0, 1.0))
                 endPoint = CGPoint(x: clamp(transformedX2, 0.0, 1.0), y: clamp(transformedY2, 0.0, 1.0))
                 print("🔧 OBJECT BOUNDING BOX: start=\(startPoint), end=\(endPoint)")
@@ -1722,12 +1752,27 @@ class SVGParser: NSObject, XMLParserDelegate {
                 print("🔧 Transformed radial coordinates: cx=\(transformedCx), cy=\(transformedCy), r=\(transformedR), fx=\(transformedFx), fy=\(transformedFy)")
             }
             
-            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse
+            // ENHANCED: Radial gradient approximation system
             let centerPoint: CGPoint
             let focalPoint: CGPoint
             let radius: Double
             
-            if gradientUnits == .userSpaceOnUse {
+            // Check if radial gradient needs approximation (radius too small or coordinates extreme)
+            let needsRadialApproximation = transformedR < 0.01 || 
+                                         abs(transformedCx) > 10 || abs(transformedCy) > 10 ||
+                                         abs(transformedFx) > 10 || abs(transformedFy) > 10
+            
+            if needsRadialApproximation {
+                print("⚠️ RADIAL GRADIENT APPROXIMATION: Creating centered radial gradient")
+                
+                // Create a reasonable centered radial gradient
+                centerPoint = CGPoint(x: 0.5, y: 0.5) // Center of shape
+                focalPoint = CGPoint(x: 0.5, y: 0.5)  // Same as center for simplicity
+                radius = 0.6 // Cover most of the shape
+                
+                print("🎨 APPROXIMATED RADIAL: center=\(centerPoint), radius=\(radius)")
+                
+            } else if gradientUnits == .userSpaceOnUse {
                 // For userSpaceOnUse, allow coordinates outside 0-1 range
                 centerPoint = CGPoint(x: transformedCx, y: transformedCy)
                 focalPoint = CGPoint(x: transformedFx, y: transformedFy)
