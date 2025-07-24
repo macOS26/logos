@@ -4678,9 +4678,69 @@ class FileOperations {
         print("   Content: \(contentBounds)")
         print("   Using pasteboard bounds for consistent export")
         
-        // Collect unique styles for CSS generation
+        // Collect unique gradients for gradient definitions FIRST
+        var uniqueGradients: [String: VectorGradient] = [:]
+        var gradientToIdMapping: [VectorGradient: String] = [:]
+        var gradientCounter = 1
+        
+        // Pre-analyze all shapes to find gradients
+        for layer in document.layers {
+            if !layer.isVisible { continue }
+            for shape in layer.shapes {
+                if !shape.isVisible { continue }
+                
+                // Check fill for gradients
+                if let fillStyle = shape.fillStyle,
+                   case .gradient(let gradient) = fillStyle.color {
+                    if gradientToIdMapping[gradient] == nil {
+                        let gradientId = "gradient\(gradientCounter)"
+                        uniqueGradients[gradientId] = gradient
+                        gradientToIdMapping[gradient] = gradientId
+                        gradientCounter += 1
+                    }
+                }
+                
+                // Check stroke for gradients
+                if let strokeStyle = shape.strokeStyle,
+                   case .gradient(let gradient) = strokeStyle.color {
+                    if gradientToIdMapping[gradient] == nil {
+                        let gradientId = "gradient\(gradientCounter)"
+                        uniqueGradients[gradientId] = gradient
+                        gradientToIdMapping[gradient] = gradientId
+                        gradientCounter += 1
+                    }
+                }
+            }
+        }
+        
+        // Pre-analyze text objects for gradients
+        for text in document.textObjects {
+            if !text.isVisible { continue }
+            
+            // Check text fill for gradients
+            if case .gradient(let gradient) = text.typography.fillColor {
+                if gradientToIdMapping[gradient] == nil {
+                    let gradientId = "gradient\(gradientCounter)"
+                    uniqueGradients[gradientId] = gradient
+                    gradientToIdMapping[gradient] = gradientId
+                    gradientCounter += 1
+                }
+            }
+            
+            // Check text stroke for gradients
+            if text.typography.hasStroke,
+               case .gradient(let gradient) = text.typography.strokeColor {
+                if gradientToIdMapping[gradient] == nil {
+                    let gradientId = "gradient\(gradientCounter)"
+                    uniqueGradients[gradientId] = gradient
+                    gradientToIdMapping[gradient] = gradientId
+                    gradientCounter += 1
+                }
+            }
+        }
+        
+        // Now collect unique styles for CSS generation (after gradients are processed)
         var uniqueStyles: [String: (fill: String, stroke: String)] = [:]
-        let _ = 1  // Style counter - using uniqueStyles.enumerated() instead
         
         // Pre-analyze all shapes to generate CSS classes
         for layer in document.layers {
@@ -4688,8 +4748,8 @@ class FileOperations {
             for shape in layer.shapes {
                 if !shape.isVisible { continue }
                 
-                let fillStyle = generateSVGFill(shape.fillStyle)
-                let strokeStyle = generateSVGStroke(shape.strokeStyle)
+                let fillStyle = generateSVGFill(shape.fillStyle, gradientMapping: gradientToIdMapping)
+                let strokeStyle = generateSVGStroke(shape.strokeStyle, gradientMapping: gradientToIdMapping)
                 let styleKey = "\(fillStyle)|\(strokeStyle)"
                 
                 if uniqueStyles[styleKey] == nil {
@@ -4702,6 +4762,14 @@ class FileOperations {
         <?xml version="1.0" encoding="UTF-8"?>
         <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 \(width) \(height)">
         <defs>
+        """
+        
+        // Generate gradient definitions
+        for (gradientId, gradient) in uniqueGradients {
+            svg += generateSVGGradientDefinition(gradient, id: gradientId)
+        }
+        
+        svg += """
         <style>
         """
         
@@ -4769,15 +4837,15 @@ class FileOperations {
                 if !shape.isVisible { continue }
                 
                 // Find matching CSS class
-                let fillStyle = generateSVGFill(shape.fillStyle)
-                let strokeStyle = generateSVGStroke(shape.strokeStyle)
+                let fillStyle = generateSVGFill(shape.fillStyle, gradientMapping: gradientToIdMapping)
+                let strokeStyle = generateSVGStroke(shape.strokeStyle, gradientMapping: gradientToIdMapping)
                 let styleKey = "\(fillStyle)|\(strokeStyle)"
                 
                 if let styleIndex = Array(uniqueStyles.keys).firstIndex(of: styleKey) {
                     let className = "cls-\(styleIndex + 1)"
                     svg += try generateSVGShapeWithClass(shape, className: className)
                 } else {
-                    svg += try generateSVGShape(shape)
+                    svg += try generateSVGShape(shape, gradientMapping: gradientToIdMapping)
                 }
             }
             
@@ -4786,14 +4854,14 @@ class FileOperations {
         
         // Export text objects
         for text in document.textObjects {
-            svg += try generateSVGText(text)
+            svg += try generateSVGText(text, gradientMapping: gradientToIdMapping)
         }
         
         svg += "</svg>"
         return svg
     }
     
-    private static func generateSVGShape(_ shape: VectorShape) throws -> String {
+    private static func generateSVGShape(_ shape: VectorShape, gradientMapping: [VectorGradient: String]) throws -> String {
         // CRITICAL FIX: Apply transform to coordinates for proper round-trip export/import
         var transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
         
@@ -4811,8 +4879,8 @@ class FileOperations {
         }
         
         let pathData = try generateSVGPath(transformedPath)
-        let fillStyle = generateSVGFill(shape.fillStyle)
-        let strokeStyle = generateSVGStroke(shape.strokeStyle)
+        let fillStyle = generateSVGFill(shape.fillStyle, gradientMapping: gradientMapping)
+        let strokeStyle = generateSVGStroke(shape.strokeStyle, gradientMapping: gradientMapping)
         
         // Don't include transform attribute since coordinates are already transformed
         return """
@@ -4847,13 +4915,30 @@ class FileOperations {
         return pathString.trimmingCharacters(in: .whitespaces)
     }
     
-    private static func generateSVGFill(_ fillStyle: FillStyle?) -> String {
+    private static func generateSVGFill(_ fillStyle: FillStyle?, gradientMapping: [VectorGradient: String] = [:]) -> String {
         guard let fillStyle = fillStyle else {
             return "fill=\"none\""
         }
         
         let color = fillStyle.color
         let opacity = fillStyle.opacity
+        
+        // Handle gradient fills
+        if case .gradient(let gradient) = color {
+            if let gradientId = gradientMapping[gradient] {
+                if opacity < 1.0 {
+                    return "fill=\"url(#\(gradientId))\" fill-opacity=\"\(opacity)\""
+                } else {
+                    return "fill=\"url(#\(gradientId))\""
+                }
+            } else {
+                // Fallback to solid color if gradient not found
+                print("⚠️ Gradient not found in mapping, using fallback color")
+                return "fill=\"rgb(128,128,128)\""
+            }
+        }
+        
+        // Handle solid color fills
         let rgbComponents = extractRGBComponents(from: color)
         
         if opacity < 1.0 {
@@ -4863,7 +4948,7 @@ class FileOperations {
         }
     }
     
-    private static func generateSVGStroke(_ strokeStyle: StrokeStyle?) -> String {
+    private static func generateSVGStroke(_ strokeStyle: StrokeStyle?, gradientMapping: [VectorGradient: String] = [:]) -> String {
         guard let strokeStyle = strokeStyle else {
             return "stroke=\"none\""
         }
@@ -4876,9 +4961,23 @@ class FileOperations {
         let color = strokeStyle.color
         let width = strokeStyle.width
         let opacity = strokeStyle.opacity
-        let rgbComponents = extractRGBComponents(from: color)
         
-        var strokeAttributes = "stroke=\"rgb(\(rgbComponents.red),\(rgbComponents.green),\(rgbComponents.blue))\" stroke-width=\"\(width)\""
+        var strokeAttributes: String
+        
+        // Handle gradient strokes
+        if case .gradient(let gradient) = color {
+            if let gradientId = gradientMapping[gradient] {
+                strokeAttributes = "stroke=\"url(#\(gradientId))\" stroke-width=\"\(width)\""
+            } else {
+                // Fallback to solid color if gradient not found
+                print("⚠️ Gradient not found in mapping, using fallback color")
+                strokeAttributes = "stroke=\"rgb(128,128,128)\" stroke-width=\"\(width)\""
+            }
+        } else {
+            // Handle solid color strokes
+            let rgbComponents = extractRGBComponents(from: color)
+            strokeAttributes = "stroke=\"rgb(\(rgbComponents.red),\(rgbComponents.green),\(rgbComponents.blue))\" stroke-width=\"\(width)\""
+        }
         
         if opacity < 1.0 {
             strokeAttributes += " stroke-opacity=\"\(opacity)\""
@@ -4909,6 +5008,73 @@ class FileOperations {
         }
         
         return strokeAttributes
+    }
+    
+    // MARK: - Gradient Export Support
+    
+    private static func generateSVGGradientDefinition(_ gradient: VectorGradient, id: String) -> String {
+        switch gradient {
+        case .linear(let linearGradient):
+            return generateLinearGradientDefinition(linearGradient, id: id)
+        case .radial(let radialGradient):
+            return generateRadialGradientDefinition(radialGradient, id: id)
+        }
+    }
+    
+    private static func generateLinearGradientDefinition(_ gradient: LinearGradient, id: String) -> String {
+        var svg = """
+        <linearGradient id="\(id)" x1="\(gradient.startPoint.x)" y1="\(gradient.startPoint.y)" x2="\(gradient.endPoint.x)" y2="\(gradient.endPoint.y)">
+        """
+        
+        for stop in gradient.stops {
+            let stopColor = extractRGBComponents(from: stop.color)
+            let offset = stop.position
+            let opacity = stop.opacity
+            
+            if opacity < 1.0 {
+                svg += """
+                <stop offset="\(offset)" stop-color="rgb(\(stopColor.red),\(stopColor.green),\(stopColor.blue))" stop-opacity="\(opacity)"/>
+                """
+            } else {
+                svg += """
+                <stop offset="\(offset)" stop-color="rgb(\(stopColor.red),\(stopColor.green),\(stopColor.blue))"/>
+                """
+            }
+        }
+        
+        svg += """
+        </linearGradient>
+        """
+        
+        return svg
+    }
+    
+    private static func generateRadialGradientDefinition(_ gradient: RadialGradient, id: String) -> String {
+        var svg = """
+        <radialGradient id="\(id)" cx="\(gradient.centerPoint.x)" cy="\(gradient.centerPoint.y)" r="\(gradient.radius)">
+        """
+        
+        for stop in gradient.stops {
+            let stopColor = extractRGBComponents(from: stop.color)
+            let offset = stop.position
+            let opacity = stop.opacity
+            
+            if opacity < 1.0 {
+                svg += """
+                <stop offset="\(offset)" stop-color="rgb(\(stopColor.red),\(stopColor.green),\(stopColor.blue))" stop-opacity="\(opacity)"/>
+                """
+            } else {
+                svg += """
+                <stop offset="\(offset)" stop-color="rgb(\(stopColor.red),\(stopColor.green),\(stopColor.blue))"/>
+                """
+            }
+        }
+        
+        svg += """
+        </radialGradient>
+        """
+        
+        return svg
     }
     
     private static func extractRGBComponents(from color: VectorColor) -> (red: Int, green: Int, blue: Int) {
@@ -5056,7 +5222,7 @@ class FileOperations {
         return nil
     }
     
-    private static func generateSVGText(_ text: VectorText) throws -> String {
+    private static func generateSVGText(_ text: VectorText, gradientMapping: [VectorGradient: String] = [:]) throws -> String {
         // Convert typography properties to SVG
         let fillColor = text.typography.fillColor
         let fillOpacity = text.typography.fillOpacity
@@ -5065,19 +5231,51 @@ class FileOperations {
         let strokeOpacity = text.typography.strokeOpacity
         let hasStroke = text.typography.hasStroke
         
-        let fillRgb = extractRGBComponents(from: fillColor)
-        let strokeRgb = extractRGBComponents(from: strokeColor)
-        
-        var fillStyle = "fill=\"rgb(\(fillRgb.red),\(fillRgb.green),\(fillRgb.blue))\""
-        if fillOpacity < 1.0 {
-            fillStyle += " fill-opacity=\"\(fillOpacity)\""
+        // Handle gradient fills for text
+        var fillStyle: String
+        if case .gradient(let gradient) = fillColor {
+            if let gradientId = gradientMapping[gradient] {
+                fillStyle = "fill=\"url(#\(gradientId))\""
+                if fillOpacity < 1.0 {
+                    fillStyle += " fill-opacity=\"\(fillOpacity)\""
+                }
+            } else {
+                // Fallback to gray if gradient not found
+                fillStyle = "fill=\"rgb(128,128,128)\""
+                if fillOpacity < 1.0 {
+                    fillStyle += " fill-opacity=\"\(fillOpacity)\""
+                }
+            }
+        } else {
+            let fillRgb = extractRGBComponents(from: fillColor)
+            fillStyle = "fill=\"rgb(\(fillRgb.red),\(fillRgb.green),\(fillRgb.blue))\""
+            if fillOpacity < 1.0 {
+                fillStyle += " fill-opacity=\"\(fillOpacity)\""
+            }
         }
         
+        // Handle gradient strokes for text
         var strokeStyle = "stroke=\"none\""
         if hasStroke {
-            strokeStyle = "stroke=\"rgb(\(strokeRgb.red),\(strokeRgb.green),\(strokeRgb.blue))\" stroke-width=\"\(strokeWidth)\""
-            if strokeOpacity < 1.0 {
-                strokeStyle += " stroke-opacity=\"\(strokeOpacity)\""
+            if case .gradient(let gradient) = strokeColor {
+                if let gradientId = gradientMapping[gradient] {
+                    strokeStyle = "stroke=\"url(#\(gradientId))\" stroke-width=\"\(strokeWidth)\""
+                    if strokeOpacity < 1.0 {
+                        strokeStyle += " stroke-opacity=\"\(strokeOpacity)\""
+                    }
+                } else {
+                    // Fallback to gray if gradient not found
+                    strokeStyle = "stroke=\"rgb(128,128,128)\" stroke-width=\"\(strokeWidth)\""
+                    if strokeOpacity < 1.0 {
+                        strokeStyle += " stroke-opacity=\"\(strokeOpacity)\""
+                    }
+                }
+            } else {
+                let strokeRgb = extractRGBComponents(from: strokeColor)
+                strokeStyle = "stroke=\"rgb(\(strokeRgb.red),\(strokeRgb.green),\(strokeRgb.blue))\" stroke-width=\"\(strokeWidth)\""
+                if strokeOpacity < 1.0 {
+                    strokeStyle += " stroke-opacity=\"\(strokeOpacity)\""
+                }
             }
         }
         
