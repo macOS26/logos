@@ -1,0 +1,1623 @@
+{
+  "unused_font_properties": [],
+  "redundant_color_code": [
+    {
+      "color_code": "NSColor(self)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: red, green: green, blue: blue, alpha: alpha)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: r, green: g, blue: b, alpha: alpha)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.sRGB, red: rgbEquivalent.red, green: rgbEquivalent.green, blue: rgbEquivalent.blue, opacity: alpha)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.14, blue: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.65, yellow: 0.0, black: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.9, green: 0.1, blue: 0.14)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.9, yellow: 0.86, black: 0.1)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.15, green: 0.2, blue: 0.51)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.85, magenta: 0.8, yellow: 0.0, black: 0.49)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.4, blue: 0.25)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.0, yellow: 0.75, black: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.93, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.07, yellow: 1.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.91, green: 0.0, blue: 0.55)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.09, magenta: 1.0, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.67, blue: 0.93)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.0, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.23, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.77, yellow: 1.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.47, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.53, yellow: 1.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.58, blue: 0.11)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.42, yellow: 0.89, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.8, green: 0.16, blue: 0.22)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.2, magenta: 0.84, yellow: 0.78, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.93, green: 0.09, blue: 0.38)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.07, magenta: 0.91, yellow: 0.62, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.77, green: 0.12, blue: 0.23)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.23, magenta: 0.88, yellow: 0.77, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.38, blue: 0.65)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.42, yellow: 0.0, black: 0.35)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.28, blue: 0.57)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.52, yellow: 0.0, black: 0.43)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.2, blue: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.5, yellow: 0.0, black: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.6, blue: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 1.0, magenta: 0.0, yellow: 0.6, black: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.31, green: 0.73, blue: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.69, magenta: 0.0, yellow: 0.6, black: 0.27)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.53, green: 0.75, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.47, magenta: 0.0, yellow: 1.0, black: 0.25)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.4, green: 0.2, blue: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.6, magenta: 0.8, yellow: 0.0, black: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.35, green: 0.15, blue: 0.55)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.65, magenta: 0.85, yellow: 0.0, black: 0.45)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.42, green: 0.26, blue: 0.65)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.58, magenta: 0.74, yellow: 0.0, black: 0.35)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.95, green: 0.4, blue: 0.76)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.05, magenta: 0.6, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.87, green: 0.62, blue: 0.87)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.13, magenta: 0.38, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.95, green: 0.75, blue: 0.9)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.05, magenta: 0.25, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.4, green: 0.27, blue: 0.13)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.6, magenta: 0.73, yellow: 0.87, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.55, green: 0.4, blue: 0.15)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.45, magenta: 0.6, yellow: 0.85, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.35, green: 0.22, blue: 0.1)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.65, magenta: 0.78, yellow: 0.9, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.68, green: 0.5, blue: 0.16)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.32, magenta: 0.5, yellow: 0.84, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.64, green: 0.64, blue: 0.65)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.36, magenta: 0.28, yellow: 0.27, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.55, green: 0.27, blue: 0.07)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.45, magenta: 0.73, yellow: 0.93, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.93, green: 0.93, blue: 0.93)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.05, magenta: 0.02, yellow: 0.02, black: 0.05)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.85, green: 0.85, blue: 0.85)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.1, magenta: 0.05, yellow: 0.05, black: 0.1)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.7, green: 0.7, blue: 0.7)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.2, magenta: 0.12, yellow: 0.12, black: 0.18)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.55, green: 0.55, blue: 0.55)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.3, magenta: 0.22, yellow: 0.22, black: 0.3)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.4, green: 0.4, blue: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.45, magenta: 0.35, yellow: 0.35, black: 0.45)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.25, green: 0.25, blue: 0.25)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.6, magenta: 0.5, yellow: 0.5, black: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.93, green: 0.92, blue: 0.9)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.04, magenta: 0.05, yellow: 0.08, black: 0.05)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.84, green: 0.82, blue: 0.78)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.1, magenta: 0.12, yellow: 0.18, black: 0.12)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.68, green: 0.65, blue: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.25, magenta: 0.28, yellow: 0.35, black: 0.25)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.52, green: 0.48, blue: 0.42)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.4, magenta: 0.45, yellow: 0.55, black: 0.4)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.36, green: 0.32, blue: 0.26)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.55, magenta: 0.6, yellow: 0.7, black: 0.55)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.22, green: 0.18, blue: 0.14)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.7, magenta: 0.75, yellow: 0.82, black: 0.7)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.0, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.0, yellow: 0.0, black: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.95, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.05, yellow: 1.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.4, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.6, yellow: 1.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.2, blue: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.0, magenta: 0.8, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.98, green: 0.95, blue: 0.85)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.02, magenta: 0.05, yellow: 0.15, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.95, green: 0.9, blue: 0.9)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.05, magenta: 0.1, yellow: 0.05, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.85, green: 0.9, blue: 0.95)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.15, magenta: 0.05, yellow: 0.0, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.85, green: 0.95, blue: 0.85)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0.15, magenta: 0.0, yellow: 0.15, black: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(number: pantone, name: name, rgbEquivalent: rgbEquivalent, cmykEquivalent: cmykEquivalent)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: red, green: green, blue: blue)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0, magenta: 0, yellow: 0, black: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(cyan: c, magenta: m, yellow: y, black: k)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: \"032 C\", hex: \"#ef3340\")",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: \"072 C\", hex: \"#10069f\")",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: \"355 C\", hex: \"#00b140\")",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: \"Yellow C\", hex: \"#fedd00\")",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: \"Process Black C\", hex: \"#2d2926\")",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(pantone: rawColor.pms, hex: rawColor.hex)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 0, blue: 0, alpha: 0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 0, blue: 0, alpha: 1)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1, green: 1, blue: 1, alpha: 1)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemBlue)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemRed)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemGreen)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemYellow)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemOrange)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemPurple)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemPink)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemTeal)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemIndigo)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemBrown)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.systemGray)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.labelColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.secondaryLabelColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.tertiaryLabelColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.quaternaryLabelColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.linkColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.placeholderTextColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.separatorColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.windowBackgroundColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(.controlBackgroundColor)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.478, blue: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.04, green: 0.518, blue: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.231, blue: 0.188)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.271, blue: 0.227)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.204, green: 0.780, blue: 0.349)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.188, green: 0.820, blue: 0.345)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.800, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.839, blue: 0.039)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.584, blue: 0.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.624, blue: 0.039)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.686, green: 0.322, blue: 0.871)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.749, green: 0.352, blue: 0.949)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.176, blue: 0.333)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.216, blue: 0.373)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.353, green: 0.784, blue: 0.980)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.251, green: 0.878, blue: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.345, green: 0.337, blue: 0.839)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.365, green: 0.365, blue: 0.949)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.635, green: 0.518, blue: 0.368)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.675, green: 0.557, blue: 0.407)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.557, green: 0.557, blue: 0.576)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.682, green: 0.682, blue: 0.698)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.388, green: 0.388, blue: 0.400)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.780, green: 0.780, blue: 0.800)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.282, green: 0.282, blue: 0.290)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.820, green: 0.820, blue: 0.839)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.227, green: 0.227, blue: 0.235)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.898, green: 0.898, blue: 0.918)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.173, green: 0.173, blue: 0.180)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.949, green: 0.949, blue: 0.969)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.110, green: 0.110, blue: 0.118)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 1.0, blue: 1.0)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.922, green: 0.922, blue: 0.961, alpha: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.3)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.922, green: 0.922, blue: 0.961, alpha: 0.3)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.18)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.922, green: 0.922, blue: 0.961, alpha: 0.16)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.235, green: 0.235, blue: 0.263, alpha: 0.29)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.329, green: 0.329, blue: 0.345, alpha: 0.6)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.776, green: 0.776, blue: 0.784)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.220, green: 0.220, blue: 0.227)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.2)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.36)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.16)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.471, green: 0.471, blue: 0.502, alpha: 0.32)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.463, green: 0.463, blue: 0.502, alpha: 0.12)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.463, green: 0.463, blue: 0.502, alpha: 0.24)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.455, green: 0.455, blue: 0.502, alpha: 0.08)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(red: 0.455, green: 0.455, blue: 0.502, alpha: 0.18)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "Color(self)",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "CGColor(",
+      "file": "Models/ColorModels.swift"
+    },
+    {
+      "color_code": "VectorColor.self",
+      "file": "Models/VectorDocument.swift"
+    },
+    {
+      "color_code": "Color(red: 0.5, green: 0, blue: 0.5)",
+      "file": "Models/VectorDocument.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 0.5, blue: 0)",
+      "file": "Models/VectorDocument.swift"
+    },
+    {
+      "color_code": "VectorColor.basicColors",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0, magenta: 0, yellow: 0, black: 1, alpha: rgb.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(cyan: c, magenta: m, yellow: y, black: k, alpha: rgb.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: r, green: g, blue: b, alpha: cmyk.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(hue: h / 360, saturation: s, brightness: brightness, alpha: rgb.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: r + m, green: g + m, blue: b + m, alpha: hsb.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(hue: baseHSB.hue, saturation: baseHSB.saturation, brightness: brightness, alpha: baseHSB.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(hue: newHue, saturation: baseHSB.saturation, brightness: baseHSB.brightness, alpha: baseHSB.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(hue: compHue, saturation: baseHSB.saturation, brightness: baseHSB.brightness, alpha: baseHSB.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: red, green: color.green, blue: blue, alpha: color.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.567 * r + 0.433 * g, green: 0.558 * r + 0.442 * g, blue: 0.242 * g + 0.758 * b, alpha: color.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.625 * r + 0.375 * g, green: 0.7 * r + 0.3 * g, blue: 0.3 * g + 0.7 * b, alpha: color.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.95 * r + 0.05 * g, green: 0.433 * g + 0.567 * b, blue: 0.475 * g + 0.525 * b, alpha: color.alpha)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: Double(r)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.96, green: 0.26, blue: 0.21)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.91, green: 0.12, blue: 0.39)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.61, green: 0.15, blue: 0.69)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.40, green: 0.23, blue: 0.72)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.25, green: 0.32, blue: 0.71)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.13, green: 0.59, blue: 0.95)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.01, green: 0.66, blue: 0.96)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.74, blue: 0.83)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.59, blue: 0.53)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.30, green: 0.69, blue: 0.31)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.55, green: 0.76, blue: 0.29)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 0.80, green: 0.86, blue: 0.22)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.92, blue: 0.23)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.76, blue: 0.03)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.60, blue: 0.0)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 0.34, blue: 0.13)",
+      "file": "Utilities/ColorManagement.swift"
+    },
+    {
+      "color_code": "NSColor(cgColor: strokeStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "NSColor(cgColor: fillStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "NSColor(cgColor: text.typography.fillColor.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(fill)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(stroke)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(_ colorString: String)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: r, green: g, blue: b)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: components[0]/255.0, green: components[1]/255.0, blue: components[2]/255.0)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0.5, green: 0, blue: 1)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 0.5, blue: 0.5)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0.75, green: 0.75, blue: 0.75)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0.5, green: 0, blue: 0)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0.8, green: 0.8, blue: 1.0)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0.7, green: 0.7, blue: 0.9)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(cgColor: strokeStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(cgColor: fillStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 1, green: 1, blue: 0, alpha: 1)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 1, blue: 0, alpha: 1)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(document.settings.backgroundColor.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(fillStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(strokeStyle.color.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(cgColor: text.typography.fillColor.cgColor)",
+      "file": "Utilities/FileOperations.swift"
+    },
+    {
+      "color_code": "Color(document.currentTool == tool ? .white : .primary)",
+      "file": "Views/VerticalToolbar.swift"
+    },
+    {
+      "color_code": "Color(isSelected ? .white : .blue)",
+      "file": "Views/TemplateSelectionView.swift"
+    },
+    {
+      "color_code": "Color(isSelected ? .white.opacity(0.8)",
+      "file": "Views/TemplateSelectionView.swift"
+    },
+    {
+      "color_code": "Color(.gray.opacity(0.5)",
+      "file": "Views/TemplateSelectionView.swift"
+    },
+    {
+      "color_code": "Color(document.viewMode == .keyline ? .orange : .primary)",
+      "file": "Views/MainView.swift"
+    },
+    {
+      "color_code": "Color(result.success ? .green : .red)",
+      "file": "Views/MainView.swift"
+    },
+    {
+      "color_code": "Color(.orange)",
+      "file": "Views/MainView.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 1.0, blue: 0.0)",
+      "file": "Views/DrawingCanvas/DrawingCanvas+CanvasDebugging.swift"
+    },
+    {
+      "color_code": "Color(red: 0.0, green: 0.0, blue: 1.0)",
+      "file": "Views/DrawingCanvas/DrawingCanvas+CanvasDebugging.swift"
+    },
+    {
+      "color_code": "Color(red: 1.0, green: 1.0, blue: 0.0)",
+      "file": "Views/DrawingCanvas/DrawingCanvas+CanvasDebugging.swift"
+    },
+    {
+      "color_code": "NSColor(viewModel.textObject.typography.fillColor.color)",
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift"
+    },
+    {
+      "color_code": "Color(), lineWidth: 2)",
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift"
+    },
+    {
+      "color_code": "Color(viewModel.textObject.typography.fillColor.color)",
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift"
+    },
+    {
+      "color_code": ".textColor =",
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift"
+    },
+    {
+      "color_code": "Color(cyan: 0, magenta: 0, yellow: 0, black: 1)",
+      "file": "Views/RightPanel/ColorPanel.swift"
+    },
+    {
+      "color_code": "Color(red: 0, green: 0, blue: 0)",
+      "file": "Views/RightPanel/ColorPanel.swift"
+    },
+    {
+      "color_code": "Color(red: 1, green: 1, blue: 1)",
+      "file": "Views/RightPanel/ColorPanel.swift"
+    },
+    {
+      "color_code": "VectorColor.hsb",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: (Double(hueValue)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: h/360.0, saturation: s, brightness: b/100.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: h/360.0, saturation: s/100.0, brightness: b)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(h: Double, s: Double, b: Double)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: h/360.0, saturation: s/100.0, brightness: b/100.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.0, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.167, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.333, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.5, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.667, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 0.833, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(hue: 1.0, saturation: 1.0, brightness: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(h: h, s: 0, b: b)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(h: h, s: 100, b: b)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(h: h, s: s, b: 0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(h: h, s: s, b: 100)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(.black)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(red: r, green: g, blue: b, alpha: 1.0)",
+      "file": "Views/RightPanel/HSBInputSection.swift"
+    },
+    {
+      "color_code": "Color(isEnabled ? .accentColor : .secondary)",
+      "file": "Views/RightPanel/PathfinderOperationButton.swift"
+    },
+    {
+      "color_code": "Color(objectIconColor)",
+      "file": "Views/RightPanel/ObjectRow.swift"
+    },
+    {
+      "color_code": "Color(isSelected ? .blue : .primary)",
+      "file": "Views/RightPanel/ObjectRow.swift"
+    },
+    {
+      "color_code": "Color(r: Double, g: Double, b: Double)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(.sRGB, red: r/255.0, green: g/255.0, blue: b/255.0)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: 0, g: g, b: b)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: 255, g: g, b: b)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: r, g: 0, b: b)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: r, g: 255, b: b)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: r, g: g, b: 0)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(r: r, g: g, b: 255)",
+      "file": "Views/RightPanel/RGBInputSection.swift"
+    },
+    {
+      "color_code": "Color(keepOriginalPath ? .blue : .secondary)",
+      "file": "Views/RightPanel/ProfessionalOffsetPathSection.swift"
+    },
+    {
+      "color_code": "Color(selectedJoinType == joinType ? .accentColor : .secondary)",
+      "file": "Views/RightPanel/ProfessionalOffsetPathSection.swift"
+    },
+    {
+      "color_code": "Color(layer.isVisible ? .blue : .secondary)",
+      "file": "Views/RightPanel/ProfessionalLayerRow.swift"
+    },
+    {
+      "color_code": "Color(layer.isLocked ? .orange : .secondary)",
+      "file": "Views/RightPanel/ProfessionalLayerRow.swift"
+    },
+    {
+      "color_code": "Color(for: layerIndex)",
+      "file": "Views/RightPanel/ProfessionalLayerRow.swift"
+    },
+    {
+      "color_code": "Color(isCanvasLayer ? .secondary : .primary)",
+      "file": "Views/RightPanel/ProfessionalLayerRow.swift"
+    },
+    {
+      "color_code": "Color(for index: Int)",
+      "file": "Views/RightPanel/ProfessionalLayerRow.swift"
+    },
+    {
+      "color_code": "Color(strokeLineJoin == joinType ? .accentColor : .secondary)",
+      "file": "Views/RightPanel/StrokeFillPanel.swift"
+    },
+    {
+      "color_code": "Color(strokeLineCap == capType ? .accentColor : .secondary)",
+      "file": "Views/RightPanel/StrokeFillPanel.swift"
+    },
+    {
+      "color_code": "Color(selectedTab == tab ? .blue : .secondary)",
+      "file": "Views/RightPanel/PanelTabBar.swift"
+    },
+    {
+      "color_code": "Color(cyan: c/100.0, magenta: m/100.0, yellow: y/100.0, black: k/100.0)",
+      "file": "Views/RightPanel/CMYKInputSection.swift"
+    },
+    {
+      "color_code": "Color(currentTextAlignment == .left ? .white : .primary)",
+      "file": "Views/RightPanel/FontPanel.swift"
+    },
+    {
+      "color_code": "Color(currentTextAlignment == .center ? .white : .primary)",
+      "file": "Views/RightPanel/FontPanel.swift"
+    },
+    {
+      "color_code": "Color(currentTextAlignment == .right ? .white : .primary)",
+      "file": "Views/RightPanel/FontPanel.swift"
+    },
+    {
+      "color_code": "Color(currentTextAlignment == .justified ? .white : .primary)",
+      "file": "Views/RightPanel/FontPanel.swift"
+    }
+  ],
+  "legacy_implementations": [
+    {
+      "file": "logos_inkpen_ioApp.swift",
+      "line": 118,
+      "content": "// Removed excessive logging per user request",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorText.swift",
+      "line": 307,
+      "content": "// LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorText.swift",
+      "line": 307,
+      "content": "// LEGACY SINGLE-LINE CALCULATION: Only for single-line text or fallback cases",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/ProfessionalVectorPath.swift",
+      "line": 353,
+      "content": "func toLegacyVectorPath() -> VectorPath {",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/ProfessionalVectorPath.swift",
+      "line": 407,
+      "content": "static func fromLegacyVectorPath(_ legacyPath: VectorPath) -> ProfessionalVectorPath {",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/ProfessionalVectorPath.swift",
+      "line": 411,
+      "content": "for element in legacyPath.elements {",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/ProfessionalVectorPath.swift",
+      "line": 477,
+      "content": "isClosed: legacyPath.isClosed",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorDocument.swift",
+      "line": 173,
+      "content": "// REMOVED: setupNotificationObservers() call - notification observers no longer needed",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorDocument.swift",
+      "line": 414,
+      "content": "// REMOVED: setupNotificationObservers() - unused dead code for scaling notifications that are never posted",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorDocument.swift",
+      "line": 416,
+      "content": "// REMOVED: handleScalingNotification & handleFinishScalingNotification - unused dead code",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Models/VectorDocument.swift",
+      "line": 550,
+      "content": "// REMOVED: setupNotificationObservers() call - notification observers no longer needed",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Utilities/PathOperations.swift",
+      "line": 516,
+      "content": "// Legacy validation functions",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Utilities/PathOperations.swift",
+      "line": 516,
+      "content": "// Legacy validation functions",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Utilities/FileOperations.swift",
+      "line": 4140,
+      "content": "/// Legacy export functions to maintain compatibility with existing code",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Utilities/FileOperations.swift",
+      "line": 4140,
+      "content": "/// Legacy export functions to maintain compatibility with existing code",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/LayerView.swift",
+      "line": 3433,
+      "content": "// REMOVED: Legacy TextSelectionOutline view that was causing wrong blue boxes",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+ViewComposition.swift",
+      "line": 219,
+      "content": "// REMOVED: FitCanvasToPage notification - unused dead code (never posted)",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+UnifiedGestures.swift",
+      "line": 74,
+      "content": "// REMOVED: handleAggressiveBackgroundTap - this was deselecting objects immediately after selection!",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+UnifiedGestures.swift",
+      "line": 78,
+      "content": "// REMOVED: handleAggressiveBackgroundTap - this was interfering with direct selection!",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+SelectionDrag.swift",
+      "line": 291,
+      "content": "// REMOVED: saveToUndoStack() - now called at START of drag operation, not end",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas.swift",
+      "line": 105,
+      "content": "@State internal var textCursorPosition: Int = 0 // Legacy - replaced by enhanced state",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas.swift",
+      "line": 105,
+      "content": "@State internal var textCursorPosition: Int = 0 // Legacy - replaced by enhanced state",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+BezierPreview.swift",
+      "line": 109,
+      "content": "// REMOVED: bezierPathPreview() - Now using real VectorShapes with actual document colors",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 85,
+      "content": "// REMOVED: @FocusState - We use our own 3-state system",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 102,
+      "content": "// REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 280,
+      "content": "// REMOVED: handleDragChanged and handleDragEnded functions",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 340,
+      "content": "// REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 367,
+      "content": "// REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+      "line": 371,
+      "content": "// REMOVED: Red corner circles were jumping around and awful",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+KeyEventHandling.swift",
+      "line": 95,
+      "content": "// REMOVED OLD TEXT EDITING CODE - ProfessionalTextCanvas handles text input now",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/DrawingCanvas/ProfessionalDirectSelectionView.swift",
+      "line": 213,
+      "content": "// REMOVED: Duplicate function - use the precision version above",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/PathOperationButton.swift",
+      "line": 10,
+      "content": "// Legacy PathOperationButton for backward compatibility",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/PathOperationButton.swift",
+      "line": 10,
+      "content": "// Legacy PathOperationButton for backward compatibility",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/RightPanel.swift",
+      "line": 62,
+      "content": "// Old property structures removed - using StrokeFillPanel instead",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/StrokeFillPanel.swift",
+      "line": 978,
+      "content": "// REMOVED: ColorPickerSheet - replaced with ColorPickerModal from RightPanel",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 12,
+      "content": "// REMOVED: Separate color pickers - use main color system instead",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 166,
+      "content": "// REMOVED: onChange handler that was causing property sync when switching tools",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 202,
+      "content": "// REMOVED: onChange handler that was causing property sync when switching tools",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 238,
+      "content": "// REMOVED: onChange handler that was causing property sync when switching tools",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 457,
+      "content": "// REMOVED: Separate color picker sheets - use main color system instead",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 459,
+      "content": "// REMOVED: validateAndUpdateWeightAndStyle() that was causing property changes when switching tools",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 575,
+      "content": "// REMOVED: updateSelectedTextFont() - now using targeted updates for single source of truth",
+      "type": "legacy_marker"
+    },
+    {
+      "file": "Views/RightPanel/FontPanel.swift",
+      "line": 621,
+      "content": "// REMOVED: stroke support functions - keeping only fill",
+      "type": "legacy_marker"
+    }
+  ],
+  "duplicate_font_handling": {
+    "heavy_font_usage": [
+      {
+        "file": "Models/VectorText.swift",
+        "font_references": 25
+      },
+      {
+        "file": "Views/DrawingCanvas/ProfessionalTextCanvas.swift",
+        "font_references": 29
+      },
+      {
+        "file": "Views/DrawingCanvas/Test/FontPickerView.swift",
+        "font_references": 53
+      },
+      {
+        "file": "Views/RightPanel/FontPanel.swift",
+        "font_references": 34
+      }
+    ]
+  },
+  "unused_imports": [
+    {
+      "file": "ContentView.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 19
+    },
+    {
+      "file": "Models/AppState.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 49
+    },
+    {
+      "file": "Utilities/NotificationExtensions.swift",
+      "imports": [
+        "import Foundation"
+      ],
+      "line_count": 32
+    },
+    {
+      "file": "Views/ImageImportView.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 45
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+Pan.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 48
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+CanvasUtilities.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 28
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+PathClosing.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 45
+    },
+    {
+      "file": "Views/RightPanel/PathOperationButton.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 37
+    },
+    {
+      "file": "Views/RightPanel/PathfinderOperationButton.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 44
+    },
+    {
+      "file": "Views/RightPanel/PanelTab.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 26
+    },
+    {
+      "file": "Views/RightPanel/ColorPickerModal.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 38
+    },
+    {
+      "file": "Views/RightPanel/PanelTabBar.swift",
+      "imports": [
+        "import SwiftUI"
+      ],
+      "line_count": 41
+    }
+  ],
+  "dead_code_blocks": [
+    {
+      "file": "Utilities/CoreGraphicsPathOperations.swift",
+      "start_line": 46,
+      "end_line": 49,
+      "lines": 4,
+      "preview": "///   - subtractPath: Path to subtract (will be removed)"
+    },
+    {
+      "file": "Views/DrawingCanvas/DrawingCanvas+KeyEventHandling.swift",
+      "start_line": 49,
+      "end_line": 83,
+      "lines": 35,
+      "preview": "//     // TEXT EDITING REMOVED - All shortcuts now active"
+    }
+  ]
+}
