@@ -54,7 +54,6 @@ struct StableProfessionalTextCanvas: View {
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             // PROFESSIONAL UX: Stable view while font tool is active
             // Create compact typography hash to avoid super long strings
-            let typographyHash = "\(currentTextObject.typography.hashValue)"
             
             if document.currentTool == .font {
                 // While font tool is active, exclude content to prevent view recreation during typing
