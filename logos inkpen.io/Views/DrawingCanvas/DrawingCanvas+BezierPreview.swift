@@ -67,8 +67,6 @@ extension DrawingCanvas {
             
             let canvasMouseLocation = screenToCanvas(mouseLocation, geometry: geometry)
             let lastPointIndex = bezierPoints.count - 1
-            let lastPoint = bezierPoints[lastPointIndex]
-            let _ = CGPoint(x: lastPoint.x, y: lastPoint.y) // Unused variable
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
             
