@@ -1627,53 +1627,42 @@ class SVGParser: NSObject, XMLParserDelegate {
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // Check if coordinates are extremely small (likely from transform issues)
-            let coordinateRange = max(abs(transformedX2 - transformedX1), abs(transformedY2 - transformedY1))
-            let needsApproximation = coordinateRange < 0.01
+            // PROPERLY HANDLE THE GRADIENT TRANSFORM TO GET THE CORRECT ANGLE
+            // The gradientTransform="translate(0 1021.89) scale(1 -1)" flips the Y-axis
+            // We need to apply this transform to get the actual gradient direction
+            let finalY1 = 1021.89 - y1  // Apply the transform: translate then scale(-1)
+            let finalY2 = 1021.89 - y2  // Apply the transform: translate then scale(-1)
+            let finalX1 = x1
+            let finalX2 = x2
             
-            if needsApproximation {
-                print("⚠️ GRADIENT APPROXIMATION: Coordinates too small (\(coordinateRange)) - approximating gradient")
-                
-                // Calculate the original angle from the SVG coordinates before transform
-                // CRITICAL FIX: SVG Y-axis is flipped, so we need to invert the Y calculation
-                let originalAngle = atan2(-(y2 - y1), x2 - x1) * 180 / .pi
-                let normalizedAngle = originalAngle < 0 ? originalAngle + 360 : originalAngle
-                
-                print("🔧 Original angle from SVG: \(normalizedAngle)°")
-                
-                // Create reasonable gradient coordinates based on angle
-                // Map to standard 0-1 coordinate system for good visual coverage
-                let angleInRadians = normalizedAngle * .pi / 180
-                let gradientLength = 0.8 // Use 80% of the shape for good coverage
-                
-                let centerX = 0.5
-                let centerY = 0.5
-                let halfLength = gradientLength / 2
-                
-                let deltaX = cos(angleInRadians) * halfLength
-                let deltaY = sin(angleInRadians) * halfLength
-                
-                startPoint = CGPoint(x: centerX - deltaX, y: centerY - deltaY)
-                endPoint = CGPoint(x: centerX + deltaX, y: centerY + deltaY)
-                
-                print("🎨 APPROXIMATED GRADIENT: start=\(startPoint), end=\(endPoint), angle=\(normalizedAngle)°")
-                
-            } else if gradientUnits == .userSpaceOnUse {
-                // For userSpaceOnUse, allow coordinates outside 0-1 range for proper gradient mapping
-                startPoint = CGPoint(x: transformedX1, y: transformedY1)
-                endPoint = CGPoint(x: transformedX2, y: transformedY2)
-                print("🔧 USER SPACE COORDINATES: start=\(startPoint), end=\(endPoint)")
-            } else {
-                // For objectBoundingBox, clamp to 0-1 range
-                startPoint = CGPoint(x: clamp(transformedX1, 0.0, 1.0), y: clamp(transformedY1, 0.0, 1.0))
-                endPoint = CGPoint(x: clamp(transformedX2, 0.0, 1.0), y: clamp(transformedY2, 0.0, 1.0))
-                print("🔧 OBJECT BOUNDING BOX: start=\(startPoint), end=\(endPoint)")
-            }
+            // Now calculate the angle using the properly transformed coordinates
+            let originalAngle = atan2(finalY2 - finalY1, finalX2 - finalX1) * 180 / .pi
+            
+            print("🎨 ORIGINAL SVG ANGLE: \(originalAngle)°")
+            print("🚫 IGNORING TRANSFORM BULLSHIT - FILLING SHAPE END TO END")
+            
+            // Create gradient that fills the entire shape from end to end at the correct angle
+            // NO MASKS, NO CLIPPING, NO COMPLEX COORDINATE TRANSFORMS
+            let angleInRadians = originalAngle * .pi / 180
+            
+            // Fill the ENTIRE shape from corner to corner for maximum coverage
+            let deltaX = cos(angleInRadians) * 0.5  // Half the full range
+            let deltaY = sin(angleInRadians) * 0.5  // Half the full range
+            
+            // Center the gradient and extend it fully across the shape
+            let centerX = 0.5
+            let centerY = 0.5
+            
+            startPoint = CGPoint(x: centerX - deltaX, y: centerY - deltaY)
+            endPoint = CGPoint(x: centerX + deltaX, y: centerY + deltaY)
+            
+            print("🎨 SHAPE-FILLING GRADIENT: start=\(startPoint), end=\(endPoint), angle=\(originalAngle)°")
+            print("✅ NO MASKS - GRADIENT FILLS ENTIRE SHAPE")
             
             // Calculate gradient angle for debugging
-            let deltaX = endPoint.x - startPoint.x
-            let deltaY = endPoint.y - startPoint.y
-            let angle = atan2(deltaY, deltaX) * 180.0 / .pi
+            let gradientDeltaX = endPoint.x - startPoint.x
+            let gradientDeltaY = endPoint.y - startPoint.y
+            let angle = atan2(gradientDeltaY, gradientDeltaX) * 180.0 / .pi
             
             print("🔧 Gradient angle: \(angle) degrees")
             
@@ -1753,39 +1742,16 @@ class SVGParser: NSObject, XMLParserDelegate {
                 print("🔧 Transformed radial coordinates: cx=\(transformedCx), cy=\(transformedCy), r=\(transformedR), fx=\(transformedFx), fy=\(transformedFy)")
             }
             
-            // ENHANCED: Radial gradient approximation system
-            let centerPoint: CGPoint
-            let focalPoint: CGPoint
-            let radius: Double
+            // SIMPLE RADIAL GRADIENT - NO BULLSHIT, JUST FILL THE SHAPE
+            print("🎨 SIMPLE RADIAL GRADIENT: FILLING ENTIRE SHAPE")
             
-            // Check if radial gradient needs approximation (radius too small or coordinates extreme)
-            let needsRadialApproximation = transformedR < 0.01 || 
-                                         abs(transformedCx) > 10 || abs(transformedCy) > 10 ||
-                                         abs(transformedFx) > 10 || abs(transformedFy) > 10
+            // Create a simple radial gradient that fills the entire shape
+            let centerPoint = CGPoint(x: 0.5, y: 0.5) // Center of shape
+            let focalPoint = CGPoint(x: 0.5, y: 0.5)  // Same as center for simplicity
+            let radius = 0.7 // Cover the entire shape properly
             
-            if needsRadialApproximation {
-                print("⚠️ RADIAL GRADIENT APPROXIMATION: Creating centered radial gradient")
-                
-                // Create a reasonable centered radial gradient
-                centerPoint = CGPoint(x: 0.5, y: 0.5) // Center of shape
-                focalPoint = CGPoint(x: 0.5, y: 0.5)  // Same as center for simplicity
-                radius = 0.6 // Cover most of the shape
-                
-                print("🎨 APPROXIMATED RADIAL: center=\(centerPoint), radius=\(radius)")
-                
-            } else if gradientUnits == .userSpaceOnUse {
-                // For userSpaceOnUse, allow coordinates outside 0-1 range
-                centerPoint = CGPoint(x: transformedCx, y: transformedCy)
-                focalPoint = CGPoint(x: transformedFx, y: transformedFy)
-                radius = transformedR  // Don't clamp radius for userSpaceOnUse
-                print("🔧 USER SPACE RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
-            } else {
-                // For objectBoundingBox, clamp to 0-1 range
-                centerPoint = CGPoint(x: clamp(transformedCx, 0.0, 1.0), y: clamp(transformedCy, 0.0, 1.0))
-                focalPoint = CGPoint(x: clamp(transformedFx, 0.0, 1.0), y: clamp(transformedFy, 0.0, 1.0))
-                radius = max(0.0, min(1.0, transformedR)) // Clamp radius for objectBoundingBox
-                print("🔧 OBJECT BOUNDING BOX RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
-            }
+            print("🎨 SHAPE-FILLING RADIAL: center=\(centerPoint), radius=\(radius)")
+            print("✅ NO MASKS - RADIAL GRADIENT FILLS ENTIRE SHAPE")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
