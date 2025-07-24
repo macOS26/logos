@@ -499,7 +499,17 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
         let coordinator = context.coordinator
-        
+
+        // CRITICAL: Lock the coordinator during non-typing updates to prevent saving programmatic selection changes.
+        if !isUpdatingFromTyping {
+            coordinator.isRestoringSelection = true
+            // Use async to release the lock after the current runloop cycle,
+            // ensuring all programmatic selection changes have settled.
+            DispatchQueue.main.async {
+                coordinator.isRestoringSelection = false
+            }
+        }
+
         // PERFORMANCE OPTIMIZATION: Track what actually changed to avoid expensive updates during typing
         
         // PERFORMANCE OPTIMIZATION: Skip rapid updates during active typing (< 100ms apart)
@@ -508,14 +518,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             return // Skip this update - too frequent during typing
         }
         coordinator.lastUpdateTime = now
-        
-        // ROBUST CURSOR PRESERVATION: Use Coordinator's last known position
-        let savedCursorPosition = coordinator.lastKnownCursorPosition
-        let savedSelectionLength = coordinator.lastKnownSelectionLength
-        
-        if viewModel.isEditing && isEditingAllowed {
-            print("💾 USING COORDINATOR CURSOR: position=\(savedCursorPosition) length=\(savedSelectionLength)")
-        }
         
         // CRITICAL FIX: Only update NSTextView text when NOT actively typing
         // This prevents cursor jumping and text resets during typing
@@ -612,10 +614,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             let safeLength = min(savedSelectionLength, textLength - safePosition)
             let newRange = NSRange(location: safePosition, length: safeLength)
             
-            // Set lock, restore, and unlock to prevent feedback loop
-            coordinator.isRestoringSelection = true
+            // The lock is already active, so we can safely restore the selection.
             nsView.setSelectedRange(newRange)
-            coordinator.isRestoringSelection = false
 
             print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength) (was \(savedCursorPosition), \(savedSelectionLength))")
             nsView.scrollRangeToVisible(newRange)
@@ -696,8 +696,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ProfessionalUniversalTextView
         var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
-        var lastKnownCursorPosition: Int = 0
-        var lastKnownSelectionLength: Int = 0
         var isRestoringSelection: Bool = false // Prevents saving programmatic selection changes
 
         init(_ parent: ProfessionalUniversalTextView) {
