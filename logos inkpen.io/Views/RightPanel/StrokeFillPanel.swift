@@ -1016,8 +1016,9 @@ struct GradientFillSection: View {
                         set: { newAngle in
                             updateGradientAngle(newAngle)
                         }
-                    ), in: 0...360)
+                    ), in: -360...360)
                     .controlSize(.small)
+                    .disabled(false) // NEVER disable the angle slider
                 }
             }
             

@@ -671,6 +671,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentTransform = CGAffineTransform.identity
     private var transformStack: [CGAffineTransform] = []
     private var documentSize = CGSize(width: 100, height: 100)
+    private var viewBoxWidth: Double = 100.0
+    private var viewBoxHeight: Double = 100.0
     private var creator: String?
     private var version: String?
     private var currentElementName = ""
@@ -893,10 +895,22 @@ class SVGParser: NSObject, XMLParserDelegate {
             let w = parseLength(width) ?? 100
             let h = parseLength(height) ?? 100
             documentSize = CGSize(width: w, height: h)
+            viewBoxWidth = w
+            viewBoxHeight = h
         } else if let viewBox = attributes["viewBox"] {
             let parts = viewBox.split(separator: " ").compactMap { Double($0) }
             if parts.count >= 4 {
-                documentSize = CGSize(width: parts[2], height: parts[3])
+                // viewBox format: "x y width height"
+                let x = parts[0]
+                let y = parts[1]
+                let width = parts[2] 
+                let height = parts[3]
+                
+                documentSize = CGSize(width: width, height: height)
+                viewBoxWidth = width
+                viewBoxHeight = height
+                
+                print("🔧 ViewBox parsed: x=\(x), y=\(y), width=\(width), height=\(height)")
             }
         }
         
@@ -1338,8 +1352,8 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
     
-    /// Parse gradient coordinate with enhanced SVG compatibility
-    private func parseGradientCoordinate(_ value: String) -> Double {
+    /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
+    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
         // Handle percentage values (most common in SVG gradients)
@@ -1348,16 +1362,36 @@ class SVGParser: NSObject, XMLParserDelegate {
             return percentValue / 100.0
         }
         
-        // Handle absolute values - need to normalize these based on viewbox/document size
-        // For now, treat them as already normalized (0-1 range)
+        // Handle absolute values
         if let absoluteValue = Double(trimmed) {
-            // If the value is greater than 1, assume it's in pixels and normalize to 0-1 range
-            if absoluteValue > 1.0 {
-                // For simplicity, clamp large values to 1.0
-                // In a more sophisticated implementation, we'd use the SVG viewBox to normalize
-                return min(absoluteValue / 100.0, 1.0)
+            if gradientUnits == .userSpaceOnUse {
+                // CRITICAL FIX: Use actual viewBox dimensions for proper coordinate conversion
+                // If viewBox is not available, use document dimensions, otherwise fallback
+                var normalizer: Double
+                
+                if viewBoxWidth > 0 && viewBoxHeight > 0 {
+                    // Use the appropriate dimension based on coordinate context
+                    // For x-coordinates, use viewBoxWidth; for y-coordinates, use viewBoxHeight
+                    // Since we don't have context here, use the maximum for safety
+                    normalizer = max(viewBoxWidth, viewBoxHeight)
+                } else {
+                    // Fallback to document size or SVG default
+                    normalizer = max(documentSize.width, documentSize.height)
+                }
+                
+                let normalizedValue = absoluteValue / normalizer
+                print("🔧 COORDINATE CONVERSION: \(absoluteValue) / \(normalizer) = \(normalizedValue) (userSpaceOnUse)")
+                
+                // DON'T clamp userSpaceOnUse coordinates - they can extend outside 0-1 range
+                return normalizedValue
+            } else {
+                // For objectBoundingBox, values should be in 0-1 range
+                if absoluteValue > 1.0 {
+                    // If value is > 1, assume it needs normalization
+                    return min(absoluteValue / 100.0, 1.0)
+                }
+                return absoluteValue
             }
-            return absoluteValue
         }
         
         // Default fallback
@@ -1494,25 +1528,40 @@ class SVGParser: NSObject, XMLParserDelegate {
         let vectorGradient: VectorGradient
         
         if gradientType == "linearGradient" {
+            // Parse gradient units first to handle coordinates properly
+            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            
             // Parse linear gradient attributes with enhanced coordinate handling
             let x1Raw = attributes["x1"] ?? "0%"
             let y1Raw = attributes["y1"] ?? "0%"
             let x2Raw = attributes["x2"] ?? "100%"
             let y2Raw = attributes["y2"] ?? "0%"
             
-            print("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw)")
+            print("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)")
             
-            // Parse coordinates with proper percentage handling
-            let x1 = parseGradientCoordinate(x1Raw)
-            let y1 = parseGradientCoordinate(y1Raw)
-            let x2 = parseGradientCoordinate(x2Raw)
-            let y2 = parseGradientCoordinate(y2Raw)
+            // Parse coordinates with proper gradient units handling
+            let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits)
+            let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits)
+            let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits)
+            let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits)
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // Create points ensuring valid coordinate range
-            let startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
-            let endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
+            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse - let them extend beyond 0-1
+            let startPoint: CGPoint
+            let endPoint: CGPoint
+            
+            if gradientUnits == .userSpaceOnUse {
+                // For userSpaceOnUse, allow coordinates outside 0-1 range for proper gradient mapping
+                startPoint = CGPoint(x: x1, y: y1)
+                endPoint = CGPoint(x: x2, y: y2)
+                print("🔧 USER SPACE COORDINATES: start=\(startPoint), end=\(endPoint)")
+            } else {
+                // For objectBoundingBox, clamp to 0-1 range
+                startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
+                endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
+                print("🔧 OBJECT BOUNDING BOX: start=\(startPoint), end=\(endPoint)")
+            }
             
             // Calculate gradient angle for debugging
             let deltaX = endPoint.x - startPoint.x
@@ -1520,9 +1569,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             let angle = atan2(deltaY, deltaX) * 180.0 / .pi
             
             print("🔧 Gradient angle: \(angle) degrees")
-            
-            // Parse gradient units (SVG specification)
-            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
@@ -1540,6 +1586,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))°")
             
         } else { // radialGradient
+            // Parse gradient units first to handle coordinates properly
+            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            
             // Parse radial gradient attributes with enhanced coordinate handling
             let cxRaw = attributes["cx"] ?? "50%"
             let cyRaw = attributes["cy"] ?? "50%"
@@ -1547,29 +1596,43 @@ class SVGParser: NSObject, XMLParserDelegate {
             let fxRaw = attributes["fx"]
             let fyRaw = attributes["fy"]
             
-            print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw)")
+            print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
             
-            let cx = parseGradientCoordinate(cxRaw)
-            let cy = parseGradientCoordinate(cyRaw)
-            let r = parseGradientCoordinate(rRaw)
+            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits)
+            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits)
+            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits)
             
             // Parse focal point if specified, otherwise use center point
-            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!) : cx
-            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!) : cy
+            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits) : cx
+            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits) : cy
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
-            // Ensure coordinates are in 0-1 range
-            let centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
-            let focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
+            // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse
+            let centerPoint: CGPoint
+            let focalPoint: CGPoint
+            let radius: Double
             
-            // Parse gradient units and spread method
-            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            if gradientUnits == .userSpaceOnUse {
+                // For userSpaceOnUse, allow coordinates outside 0-1 range
+                centerPoint = CGPoint(x: cx, y: cy)
+                focalPoint = CGPoint(x: fx, y: fy)
+                radius = r  // Don't clamp radius for userSpaceOnUse
+                print("🔧 USER SPACE RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
+            } else {
+                // For objectBoundingBox, clamp to 0-1 range
+                centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
+                focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
+                radius = max(0.0, min(1.0, r)) // Clamp radius for objectBoundingBox
+                print("🔧 OBJECT BOUNDING BOX RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
+            }
+            
+            // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
             let radialGradient = RadialGradient(
                 centerPoint: centerPoint,
-                radius: max(0.0, min(1.0, r)), // Clamp radius
+                radius: radius, // Use calculated radius (already clamped if needed)
                 stops: currentGradientStops,
                 focalPoint: (fx != cx || fy != cy) ? focalPoint : nil,
                 spreadMethod: spreadMethod,

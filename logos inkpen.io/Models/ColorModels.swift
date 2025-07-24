@@ -1081,17 +1081,14 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         self.units = units
     }
     
-    /// Professional angle support (like Adobe Illustrator)
+    /// Professional angle support (like Adobe Illustrator) - Full -360° to 360° range
     var angle: Double {
         get {
             let deltaX = endPoint.x - startPoint.x
             let deltaY = endPoint.y - startPoint.y
             let radians = atan2(deltaY, deltaX)
-            var degrees = radians * 180.0 / .pi
-            // Normalize to 0-360 degrees
-            if degrees < 0 {
-                degrees += 360
-            }
+            let degrees = radians * 180.0 / .pi
+            // FIXED: Return raw angle without normalization to support -360° to 360° range
             return degrees
         }
         set {
@@ -1105,9 +1102,9 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         let centerX = (startPoint.x + endPoint.x) / 2.0
         let centerY = (startPoint.y + endPoint.y) / 2.0
         
-        // Calculate current gradient length
+        // Calculate current gradient length (default to 0.5 if points are identical)
         let currentLength = sqrt(pow(endPoint.x - startPoint.x, 2) + pow(endPoint.y - startPoint.y, 2))
-        let halfLength = currentLength / 2.0
+        let halfLength = currentLength > 0 ? currentLength / 2.0 : 0.25
         
         // Calculate new start and end points based on angle
         let deltaX = cos(radians) * halfLength
@@ -1116,11 +1113,18 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         startPoint = CGPoint(x: centerX - deltaX, y: centerY - deltaY)
         endPoint = CGPoint(x: centerX + deltaX, y: centerY + deltaY)
         
-        // Clamp to valid coordinates (0-1 range)
-        startPoint.x = max(0, min(1, startPoint.x))
-        startPoint.y = max(0, min(1, startPoint.y))
-        endPoint.x = max(0, min(1, endPoint.x))
-        endPoint.y = max(0, min(1, endPoint.y))
+        // FIXED: Only clamp if using objectBoundingBox, allow userSpaceOnUse to extend beyond 0-1
+        if units == .objectBoundingBox {
+            startPoint.x = max(0, min(1, startPoint.x))
+            startPoint.y = max(0, min(1, startPoint.y))
+            endPoint.x = max(0, min(1, endPoint.x))
+            endPoint.y = max(0, min(1, endPoint.y))
+            print("🔧 ANGLE SET: Clamped to objectBoundingBox range (0-1)")
+        } else {
+            print("🔧 ANGLE SET: userSpaceOnUse - coordinates can extend beyond 0-1")
+        }
+        
+        print("🔧 ANGLE UPDATE: \(degrees)° → center=(\(centerX), \(centerY)), start=\(startPoint), end=\(endPoint)")
     }
     
     /// Create a simple two-color linear gradient
