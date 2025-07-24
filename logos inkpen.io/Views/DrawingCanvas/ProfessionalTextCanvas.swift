@@ -527,6 +527,36 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         nsView.defaultParagraphStyle = paragraphStyle
         
+        // CRITICAL FIX: Update text container width when text box is resized
+        let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
+        let newWidth = viewModel.textBoxFrame.width
+        
+        if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
+            print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
+            
+            // Update text container size for proper text reflow
+            nsView.textContainer?.containerSize = NSSize(
+                width: newWidth,
+                height: CGFloat.greatestFiniteMagnitude
+            )
+            
+            // Update frame to match new width
+            nsView.frame = CGRect(
+                x: 0, y: 0,
+                width: newWidth,
+                height: viewModel.textBoxFrame.height
+            )
+            
+            // Update max/min sizes
+            nsView.maxSize = NSSize(width: newWidth, height: CGFloat.greatestFiniteMagnitude)
+            nsView.minSize = NSSize(width: newWidth, height: 50)
+            
+            // Force layout refresh for immediate text reflow
+            nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
+            
+            print("✅ TEXT REFLOW: Container updated, text should now wrap to new width")
+        }
+        
         print("🎯 APPLIED ALIGNMENT: \(viewModel.textAlignment.rawValue), LINE SPACING: \(viewModel.textObject.typography.lineSpacing)pt, LINE HEIGHT: \(viewModel.textObject.typography.lineHeight)pt to NSTextView")
         
         // CRITICAL FIX: Restore cursor position after font/color changes
