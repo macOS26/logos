@@ -98,8 +98,7 @@ struct ProfessionalTextCanvas: View {
                 resizeOffset: resizeOffset,
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,  // NEW: Pass resize handle state
-                onTextBoxSelect: handleTextBoxSelect,
-                onTextBoxTap: handleTextBoxTap
+                onTextBoxSelect: handleTextBoxSelect
                 // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
             )
             
@@ -139,6 +138,11 @@ struct ProfessionalTextCanvas: View {
             viewModel.isEditing = isEditing
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
+        // CRITICAL FIX: Monitor document text objects for editing state changes
+        .onChange(of: document.textObjects.map { $0.isEditing }) { _, _ in
+            print("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state")
+            updateTextBoxState(selectedIDs: document.selectedTextIDs)
+        }
         .onAppear {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
             
@@ -148,6 +152,36 @@ struct ProfessionalTextCanvas: View {
             print("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas")
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
+            // NEW: When user selects type tool and this text box is GREEN (selected), change to BLUE (editing)
+            if oldTool != .font && newTool == .font && textBoxState == .green {
+                print("🔧 TOOL CHANGE: Type tool selected with GREEN text box - switching to BLUE (editing)")
+                
+                // CRITICAL: Ensure only one text box can be edited at a time
+                // Stop editing on all other text boxes first
+                for textIndex in document.textObjects.indices {
+                    if document.textObjects[textIndex].id != viewModel.textObject.id && document.textObjects[textIndex].isEditing {
+                        document.textObjects[textIndex].isEditing = false
+                        print("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode")
+                    }
+                }
+                
+                // Start editing this text box
+                viewModel.startEditing()
+                
+                // Update document editing state
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
+                    document.textObjects[textIndex].isEditing = true
+                }
+                
+                // CRITICAL FIX: Force immediate state update and sync
+                textBoxState = .blue
+                print("🔵 FORCED STATE CHANGE: GREEN → BLUE due to type tool selection")
+                
+                DispatchQueue.main.async {
+                    updateTextBoxState(selectedIDs: document.selectedTextIDs)
+                }
+            }
+            
             // PROFESSIONAL UX: Stop editing when user switches away from font tool
             if oldTool == .font && newTool != .font && viewModel.isEditing {
                 print("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))")
@@ -199,15 +233,19 @@ struct ProfessionalTextCanvas: View {
         print("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))")
         print("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })")
         
-        if (currentTextObject.isEditing || hasTextViewFocus) && isTextToolActive {
+        // FIXED: Prioritize editing state correctly
+        if currentTextObject.isEditing && isTextToolActive {
             textBoxState = .blue
-            print("  → BLUE (editing mode)")
+            print("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)")
+        } else if hasTextViewFocus && isTextToolActive {
+            textBoxState = .blue
+            print("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)")
         } else if isThisTextSelected && isTextToolActive {
             textBoxState = .green
-            print("  → GREEN (selected with font tool)")
+            print("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)")
         } else if isThisTextSelected {
             textBoxState = .green
-            print("  → GREEN (selected)")
+            print("  → GREEN (selected) - selected=\(isThisTextSelected)")
         } else {
             textBoxState = .gray
             print("  → GRAY (unselected)")
@@ -237,26 +275,7 @@ struct ProfessionalTextCanvas: View {
         }
     }
     
-    private func handleTextBoxTap(location: CGPoint) {
-        // DOUBLE CLICK: Start editing if font tool is active
-        if textBoxState == .green && document.currentTool == .font {
-            textBoxState = .blue
-            viewModel.startEditing()
-            // Update document editing state
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].isEditing = true
-            }
-        } else if document.currentTool == .font {
-            // If font tool is active but not selected, select first then start editing
-            document.selectedTextIDs = [viewModel.textObject.id]
-            document.selectedShapeIDs.removeAll()
-            textBoxState = .blue
-            viewModel.startEditing()
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
-                document.textObjects[textIndex].isEditing = true
-            }
-        }
-    }
+
     
     // REMOVED: handleDragChanged and handleDragEnded functions
     // Arrow tool now handles all text box dragging with its built-in system
@@ -318,7 +337,6 @@ struct ProfessionalTextBoxView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     let isResizeHandleActive: Bool  // NEW: Track resize handle state
     let onTextBoxSelect: (CGPoint) -> Void
-    let onTextBoxTap: (CGPoint) -> Void
     // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
     
     private func getBorderColor() -> Color {
@@ -342,12 +360,6 @@ struct ProfessionalTextBoxView: View {
                 .position(
                     x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
                     y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
-                )
-                .highPriorityGesture(
-                    TapGesture(count: 2)
-                        .onEnded { 
-                            onTextBoxTap(CGPoint.zero)
-                        }
                 )
                 .onTapGesture(count: 1) { location in
                     onTextBoxSelect(location)
