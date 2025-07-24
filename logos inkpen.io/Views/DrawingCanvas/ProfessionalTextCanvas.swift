@@ -42,8 +42,9 @@ struct StableProfessionalTextCanvas: View {
             .onChange(of: getCurrentTextHash()) { _, _ in
                 updateViewModelFromDocument()
             }
-            // Additional fix: Use id to force view refresh when text content changes
-            .id("\(textObjectID)-\(getCurrentTextHash())")
+            // CRITICAL FIX: Stabilize the view's identity. Do NOT recreate on every color change.
+            // Recreating the view destroys the NSTextView and its state, including cursor position.
+            .id(textObjectID)
     }
     
     private func updateViewModelFromDocument() {
