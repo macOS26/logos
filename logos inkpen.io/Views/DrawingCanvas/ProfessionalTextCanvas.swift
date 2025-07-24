@@ -422,6 +422,8 @@ struct ProfessionalTextContentView: View {
     }
 }
 
+
+
 // MARK: - Professional Universal Text View (Based on Working UniversalTextView)
 struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
@@ -506,17 +508,14 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         coordinator.lastUpdateTime = now
         
-        // ROBUST CURSOR PRESERVATION: Always save cursor for editing views
-        var savedCursorPosition: Int = 0
-        var savedSelectionLength: Int = 0
+        // ROBUST CURSOR PRESERVATION: Use Coordinator's last known position
+        let savedCursorPosition = coordinator.lastKnownCursorPosition
+        let savedSelectionLength = coordinator.lastKnownSelectionLength
         var shouldRestoreCursor = false
         
         if viewModel.isEditing && isEditingAllowed {
-            let selectedRange = nsView.selectedRange()
-            savedCursorPosition = selectedRange.location
-            savedSelectionLength = selectedRange.length
             shouldRestoreCursor = true
-            print("💾 SAVING CURSOR: position=\(savedCursorPosition) length=\(savedSelectionLength)")
+            print("💾 USING COORDINATOR CURSOR: position=\(savedCursorPosition) length=\(savedSelectionLength)")
         }
         
         // CRITICAL FIX: Only update NSTextView text when NOT actively typing
@@ -693,7 +692,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: ProfessionalUniversalTextView
         var lastUpdateTime: Date = Date() // Performance optimization: track update frequency
-        
+        var lastKnownCursorPosition: Int = 0
+        var lastKnownSelectionLength: Int = 0
+
         init(_ parent: ProfessionalUniversalTextView) {
             self.parent = parent
             super.init()
@@ -732,7 +733,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 parent.isUpdatingFromTyping = false
             }
         }
-        
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            let selectedRange = textView.selectedRange()
+            lastKnownCursorPosition = selectedRange.location
+            lastKnownSelectionLength = selectedRange.length
+            print("💾 COORDINATOR SAVED CURSOR: position=\(lastKnownCursorPosition) length=\(lastKnownSelectionLength)")
+        }
+
         func textDidBeginEditing(_ notification: Notification) {
             print("✅ TEXT EDITING BEGAN")
         }
@@ -918,6 +927,8 @@ class ProfessionalTextViewModel: ObservableObject {
     
     // MARK: - PUBLIC method for external syncing
     public func syncFromVectorText(_ textObject: VectorText) {
+            // CURSOR PRESERVATION: Prevent text resets that move cursor to end
+        
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow color/font updates
         if isAutoResizing && textObject.content == self.text {
             print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
@@ -976,7 +987,14 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Update the textObject reference so SwiftUI Text gets new colors
         self.textObject = textObject
         
-        self.text = textObject.content
+        // CURSOR PRESERVATION: Only update text if content actually changed
+        if contentChanged {
+            self.text = textObject.content
+            print("📝 TEXT CONTENT UPDATED: Cursor may be affected")
+        } else {
+            print("📝 TEXT CONTENT UNCHANGED: Preserving cursor position")
+        }
+        
         self.fontSize = CGFloat(textObject.typography.fontSize)
         self.selectedFont = textObject.typography.nsFont
         
