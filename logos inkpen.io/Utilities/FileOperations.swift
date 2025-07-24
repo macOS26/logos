@@ -1547,19 +1547,49 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
+            // CRITICAL FIX: Apply gradientTransform if specified
+            var transformedX1 = x1, transformedY1 = y1
+            var transformedX2 = x2, transformedY2 = y2
+            
+            if let gradientTransform = attributes["gradientTransform"] {
+                print("🔧 Applying gradientTransform: \(gradientTransform)")
+                let transform = parseTransform(gradientTransform)
+                
+                // Apply transform to gradient coordinates
+                let point1 = CGPoint(x: x1, y: y1).applying(transform)
+                let point2 = CGPoint(x: x2, y: y2).applying(transform)
+                
+                // Normalize transformed coordinates back to our coordinate system
+                if gradientUnits == .userSpaceOnUse {
+                    // For userSpaceOnUse, normalize relative to viewBox
+                    transformedX1 = point1.x / viewBoxWidth
+                    transformedY1 = point1.y / viewBoxHeight
+                    transformedX2 = point2.x / viewBoxWidth
+                    transformedY2 = point2.y / viewBoxHeight
+                } else {
+                    // For objectBoundingBox, coordinates are already 0-1
+                    transformedX1 = point1.x
+                    transformedY1 = point1.y
+                    transformedX2 = point2.x
+                    transformedY2 = point2.y
+                }
+                
+                print("🔧 Transformed coordinates: x1=\(transformedX1), y1=\(transformedY1), x2=\(transformedX2), y2=\(transformedY2)")
+            }
+            
             // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse - let them extend beyond 0-1
             let startPoint: CGPoint
             let endPoint: CGPoint
             
             if gradientUnits == .userSpaceOnUse {
                 // For userSpaceOnUse, allow coordinates outside 0-1 range for proper gradient mapping
-                startPoint = CGPoint(x: x1, y: y1)
-                endPoint = CGPoint(x: x2, y: y2)
+                startPoint = CGPoint(x: transformedX1, y: transformedY1)
+                endPoint = CGPoint(x: transformedX2, y: transformedY2)
                 print("🔧 USER SPACE COORDINATES: start=\(startPoint), end=\(endPoint)")
             } else {
-                // For objectBoundingBox, clamp to 0-1 range
-                startPoint = CGPoint(x: clamp(x1, 0.0, 1.0), y: clamp(y1, 0.0, 1.0))
-                endPoint = CGPoint(x: clamp(x2, 0.0, 1.0), y: clamp(y2, 0.0, 1.0))
+                // For objectBoundingBox, clamp to 0-1 range  
+                startPoint = CGPoint(x: clamp(transformedX1, 0.0, 1.0), y: clamp(transformedY1, 0.0, 1.0))
+                endPoint = CGPoint(x: clamp(transformedX2, 0.0, 1.0), y: clamp(transformedY2, 0.0, 1.0))
                 print("🔧 OBJECT BOUNDING BOX: start=\(startPoint), end=\(endPoint)")
             }
             
@@ -1608,6 +1638,44 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
+            // CRITICAL FIX: Apply gradientTransform if specified for radial gradients
+            var transformedCx = cx, transformedCy = cy, transformedR = r
+            var transformedFx = fx, transformedFy = fy
+            
+            if let gradientTransform = attributes["gradientTransform"] {
+                print("🔧 Applying radial gradientTransform: \(gradientTransform)")
+                let transform = parseTransform(gradientTransform)
+                
+                // Apply transform to center and focal points
+                let centerPoint = CGPoint(x: cx, y: cy).applying(transform)
+                let focalPoint = CGPoint(x: fx, y: fy).applying(transform)
+                
+                // For radius, we need to apply the transform's scale
+                // Take the maximum scale factor to maintain circle shape
+                let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
+                let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
+                let scale = max(scaleX, scaleY)
+                
+                // Normalize transformed coordinates back to our coordinate system
+                if gradientUnits == .userSpaceOnUse {
+                    // For userSpaceOnUse, normalize relative to viewBox
+                    transformedCx = centerPoint.x / viewBoxWidth
+                    transformedCy = centerPoint.y / viewBoxHeight
+                    transformedFx = focalPoint.x / viewBoxWidth
+                    transformedFy = focalPoint.y / viewBoxHeight
+                    transformedR = (r * scale) / max(viewBoxWidth, viewBoxHeight)
+                } else {
+                    // For objectBoundingBox, coordinates are already 0-1
+                    transformedCx = centerPoint.x
+                    transformedCy = centerPoint.y
+                    transformedFx = focalPoint.x
+                    transformedFy = focalPoint.y
+                    transformedR = r * scale
+                }
+                
+                print("🔧 Transformed radial coordinates: cx=\(transformedCx), cy=\(transformedCy), r=\(transformedR), fx=\(transformedFx), fy=\(transformedFy)")
+            }
+            
             // CRITICAL FIX: Don't clamp coordinates for userSpaceOnUse
             let centerPoint: CGPoint
             let focalPoint: CGPoint
@@ -1615,15 +1683,15 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             if gradientUnits == .userSpaceOnUse {
                 // For userSpaceOnUse, allow coordinates outside 0-1 range
-                centerPoint = CGPoint(x: cx, y: cy)
-                focalPoint = CGPoint(x: fx, y: fy)
-                radius = r  // Don't clamp radius for userSpaceOnUse
+                centerPoint = CGPoint(x: transformedCx, y: transformedCy)
+                focalPoint = CGPoint(x: transformedFx, y: transformedFy)
+                radius = transformedR  // Don't clamp radius for userSpaceOnUse
                 print("🔧 USER SPACE RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
             } else {
                 // For objectBoundingBox, clamp to 0-1 range
-                centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
-                focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
-                radius = max(0.0, min(1.0, r)) // Clamp radius for objectBoundingBox
+                centerPoint = CGPoint(x: clamp(transformedCx, 0.0, 1.0), y: clamp(transformedCy, 0.0, 1.0))
+                focalPoint = CGPoint(x: clamp(transformedFx, 0.0, 1.0), y: clamp(transformedFy, 0.0, 1.0))
+                radius = max(0.0, min(1.0, transformedR)) // Clamp radius for objectBoundingBox
                 print("🔧 OBJECT BOUNDING BOX RADIAL: center=\(centerPoint), focal=\(focalPoint), radius=\(radius)")
             }
             
