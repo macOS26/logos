@@ -553,9 +553,10 @@ struct HSBInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .hsb(currentColor)
-        // FIXED: Also update the document's default color when HSB values change
-        let vectorColor = VectorColor.hsb(currentColor)
-        document.setActiveColor(vectorColor)
+        // DISABLED: Auto-application of colors when adjusting sliders
+        // Only update preview, don't apply to objects automatically
+        // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
+        print("🎨 HSB color updated for preview only: \(currentColor)")
     }
     
     private func loadFromSharedColor() {

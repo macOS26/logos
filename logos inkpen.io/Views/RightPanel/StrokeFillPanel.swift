@@ -986,7 +986,13 @@ struct GradientFillSection: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .onChange(of: gradientType) { oldValue, newValue in
                     if oldValue != newValue {
-                        currentGradient = Self.createDefaultGradient(type: newValue)
+                        // Preserve existing color stops when switching gradient types
+                        if let existingGradient = currentGradient {
+                            let existingStops = getGradientStops(existingGradient)
+                            currentGradient = Self.createGradientWithStops(type: newValue, stops: existingStops)
+                        } else {
+                            currentGradient = Self.createDefaultGradient(type: newValue)
+                        }
                         gradientId = UUID() // Generate new ID for new gradient
                     }
                 }
@@ -1289,12 +1295,22 @@ struct GradientFillSection: View {
             GradientStop(position: 1.0, color: .white, opacity: 1.0)
         ]
         
+        return createGradientWithStops(type: type, stops: stops)
+    }
+    
+    static func createGradientWithStops(type: GradientType, stops: [GradientStop]) -> VectorGradient {
+        // Ensure we have at least 2 stops for a valid gradient
+        let validStops = stops.isEmpty ? [
+            GradientStop(position: 0.0, color: .black, opacity: 1.0),
+            GradientStop(position: 1.0, color: .white, opacity: 1.0)
+        ] : stops
+        
         switch type {
         case .linear:
             let linear = LinearGradient(
                 startPoint: CGPoint(x: 0, y: 0),
                 endPoint: CGPoint(x: 1, y: 0),
-                stops: stops,
+                stops: validStops,
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
@@ -1303,7 +1319,7 @@ struct GradientFillSection: View {
             let radial = RadialGradient(
                 centerPoint: CGPoint(x: 0.5, y: 0.5),
                 radius: 0.5,
-                stops: stops,
+                stops: validStops,
                 focalPoint: nil,
                 spreadMethod: .pad,
                 units: .objectBoundingBox

@@ -181,30 +181,11 @@ struct ColorPanel: View {
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
-            // REMOVED: Default color setting logic is disabled
-            
-            // Apply to selected objects based on modifier keys
-            if !document.selectedShapeIDs.isEmpty {
-                // Apply to shapes - CODE REMOVED: All shape color application is disabled
-                // The entire shape color selection logic is commented out
-                document.saveToUndoStack()
-
-            }
-            
-            if !document.selectedTextIDs.isEmpty {
-                // Apply to text
-                if !document.selectedShapeIDs.isEmpty {
-                    // Don't save to undo stack twice
-                } else {
-                    document.saveToUndoStack()
-                }
-                
-                for textID in document.selectedTextIDs {
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                        document.textObjects[textIndex].typography.fillColor = color
-                    }
-                }
-            }
+            // DISABLED: Auto-application of colors when browsing
+            // Just update the preview color but don't apply to objects
+            // Colors should only be applied through explicit actions (Apply buttons, etc.)
+            // No automatic application when just browsing colors in the Color tab
+            print("🎨 Color selected for preview only: \(color)")
         }
     }
     
