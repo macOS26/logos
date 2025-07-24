@@ -1047,8 +1047,8 @@ struct GradientFillSection: View {
                         .help("Add Color Stop")
                     }
                     
-                    // Color stops list - sorted by position for display but using stable IDs
-                    let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
+                    // Color stops list - NO SORTING! Keep original visual order, let sliders move independently
+                    let stops = getGradientStops(gradient)
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             // Color swatch
@@ -1216,20 +1216,19 @@ struct GradientFillSection: View {
     private func addColorStop() {
         guard var gradient = currentGradient else { return }
         
-        let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
+        // Find a good position for the new stop - between the last two stops
+        let stops = getGradientStops(gradient)
         let newPosition = stops.count > 1 ? (stops[stops.count-2].position + stops[stops.count-1].position) / 2 : 0.5
         let newStop = GradientStop(position: newPosition, color: .black, opacity: 1.0)
         
         switch gradient {
         case .linear(var linear):
             linear.stops.append(newStop)
-            // Only sort when adding new stops - this is when sorting makes sense
-            linear.stops.sort { $0.position < $1.position }
+            // NO SORTING! Just append to the end to maintain visual order
             currentGradient = .linear(linear)
         case .radial(var radial):
             radial.stops.append(newStop)
-            // Only sort when adding new stops - this is when sorting makes sense
-            radial.stops.sort { $0.position < $1.position }
+            // NO SORTING! Just append to the end to maintain visual order
             currentGradient = .radial(radial)
         }
     }
