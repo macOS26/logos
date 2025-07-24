@@ -1,8 +1,25 @@
 import SwiftUI
 
+// MARK: - Gradient Editing State
+
+struct GradientEditingState {
+    let gradientId: UUID // ID to track which gradient is being edited
+    let stopIndex: Int   // Which color stop is being edited
+    let onColorSelected: (VectorColor) -> Void // Callback when color is selected
+    
+    init(gradientId: UUID, stopIndex: Int, onColorSelected: @escaping (VectorColor) -> Void) {
+        self.gradientId = gradientId
+        self.stopIndex = stopIndex
+        self.onColorSelected = onColorSelected
+    }
+}
+
 @Observable
 class AppState {
     var selectedPanelTab: PanelTab = .layers
+    
+    // MARK: - Gradient Editing State
+    var gradientEditingState: GradientEditingState? = nil
     
     // MARK: - Panel Actions
     func showLayersPanel() {
@@ -28,6 +45,23 @@ class AppState {
     func showFontPanel() {
         selectedPanelTab = .font
         print("🎨 AppState: Switched to font panel")
+    }
+    
+    // MARK: - Gradient Editing Actions
+    
+    func startGradientStopEditing(gradientId: UUID, stopIndex: Int, onColorSelected: @escaping (VectorColor) -> Void) {
+        gradientEditingState = GradientEditingState(
+            gradientId: gradientId,
+            stopIndex: stopIndex,
+            onColorSelected: onColorSelected
+        )
+        selectedPanelTab = .color
+        print("🎨 AppState: Started gradient stop editing for stop \(stopIndex), switched to color panel")
+    }
+    
+    func finishGradientStopEditing() {
+        gradientEditingState = nil
+        print("🎨 AppState: Finished gradient stop editing")
     }
     
     // MARK: - Development Actions

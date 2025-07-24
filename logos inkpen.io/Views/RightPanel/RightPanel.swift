@@ -27,7 +27,7 @@ struct RightPanel: View {
                 case .properties:
                     StrokeFillPanel(document: document)
                 case .color:
-                    ColorPanel(document: document)
+                    ColorPanel(document: document, onColorSelected: appState.gradientEditingState?.onColorSelected)
                 case .pathOps:
                     PathOperationsPanel(document: document)
                 case .font:
@@ -44,45 +44,9 @@ struct RightPanel: View {
 
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 // PropertiesPanel removed - using StrokeFillPanel instead
 
 // Old property structures removed - using StrokeFillPanel instead
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Preview
 struct RightPanel_Previews: PreviewProvider {

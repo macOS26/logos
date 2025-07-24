@@ -938,10 +938,10 @@ struct PresetStyleButton: View {
 
 struct GradientFillSection: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
-    @State private var showingColorPicker = false
-    @State private var editingStopIndex: Int? = nil
+    @State private var gradientId: UUID = UUID() // Unique ID for this gradient editing session
     
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -987,6 +987,7 @@ struct GradientFillSection: View {
                 .onChange(of: gradientType) { oldValue, newValue in
                     if oldValue != newValue {
                         currentGradient = Self.createDefaultGradient(type: newValue)
+                        gradientId = UUID() // Generate new ID for new gradient
                     }
                 }
             }
@@ -1029,8 +1030,14 @@ struct GradientFillSection: View {
                         HStack(spacing: 8) {
                             // Color swatch
                             Button(action: {
-                                editingStopIndex = index
-                                showingColorPicker = true
+                                // Use AppState to start gradient editing and switch to color panel
+                                appState.startGradientStopEditing(
+                                    gradientId: gradientId,
+                                    stopIndex: index
+                                ) { selectedColor in
+                                    updateStopColor(index: index, color: selectedColor)
+                                    appState.finishGradientStopEditing()
+                                }
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
                             }
@@ -1081,18 +1088,6 @@ struct GradientFillSection: View {
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(12)
-        .sheet(isPresented: $showingColorPicker) {
-            if let editingIndex = editingStopIndex {
-                ColorPickerModal(
-                    document: document,
-                    title: "Color Stop Color",
-                    onColorSelected: { color in
-                        updateStopColor(index: editingIndex, color: color)
-                        editingStopIndex = nil
-                    }
-                )
-            }
-        }
     }
     
     // MARK: - Helper Functions

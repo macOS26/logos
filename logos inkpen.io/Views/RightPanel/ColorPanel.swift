@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ColorPanel: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
     @State private var searchText = ""
     @State private var showingPantoneSearch = false
     @State private var currentPreviewColor: VectorColor = .black // Shared color state
@@ -22,12 +23,35 @@ struct ColorPanel: View {
     
     var body: some View {
             VStack(alignment: .leading, spacing: 16) {
-                // Header
-                HStack {
-                Text("Color")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    Spacer()
+                // Header with gradient editing info
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Color")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    
+                    // Show gradient editing status if active
+                    if let gradientState = appState.gradientEditingState {
+                        HStack {
+                            Image(systemName: "slider.horizontal.3")
+                                .foregroundColor(.blue)
+                            Text("Editing Gradient Stop \(gradientState.stopIndex + 1)")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                            Spacer()
+                            Button("Done") {
+                                appState.finishGradientStopEditing()
+                            }
+                            .font(.caption)
+                            .buttonStyle(.borderless)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(6)
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 12)
@@ -147,7 +171,13 @@ struct ColorPanel: View {
     }
     
     private func selectColor(_ color: VectorColor) {
-        // If we have a callback, just use it (we're in a modal for specific purpose)
+        // Priority 1: If we're in gradient editing mode, use that callback
+        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            gradientCallback(color)
+            return
+        }
+        
+        // Priority 2: If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
             onColorSelected(color)
         } else {
