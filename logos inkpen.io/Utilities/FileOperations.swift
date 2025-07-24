@@ -1635,7 +1635,8 @@ class SVGParser: NSObject, XMLParserDelegate {
                 print("⚠️ GRADIENT APPROXIMATION: Coordinates too small (\(coordinateRange)) - approximating gradient")
                 
                 // Calculate the original angle from the SVG coordinates before transform
-                let originalAngle = atan2(y2 - y1, x2 - x1) * 180 / .pi
+                // CRITICAL FIX: SVG Y-axis is flipped, so we need to invert the Y calculation
+                let originalAngle = atan2(-(y2 - y1), x2 - x1) * 180 / .pi
                 let normalizedAngle = originalAngle < 0 ? originalAngle + 360 : originalAngle
                 
                 print("🔧 Original angle from SVG: \(normalizedAngle)°")
