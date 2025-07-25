@@ -185,7 +185,7 @@ struct ShapeView: View {
             let path = Path { path in
                 addPathElements(shape.path.elements, to: &path)
             }
-            renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: swiftUIStrokeStyle)
+            renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: swiftUIStrokeStyle, shape: shape)
             
         case .inside:
             // PROFESSIONAL INSIDE STROKE (Adobe Illustrator Standard)
@@ -200,7 +200,7 @@ struct ShapeView: View {
                 miterLimit: swiftUIStrokeStyle.miterLimit,
                 dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
             )
-            renderStrokeColor(strokeStyle: strokeStyle, path: strokePath, swiftUIStyle: doubleWidthStyle)
+            renderStrokeColor(strokeStyle: strokeStyle, path: strokePath, swiftUIStyle: doubleWidthStyle, shape: shape)
             .mask(
                 // Mask to shape interior only
                 Path { path in
@@ -245,12 +245,8 @@ struct ShapeView: View {
                     let fillPath = Path { path in
                         addPathElements(shape.path.elements, to: &path)
                     }
-                    switch fillStyle.color {
-                    case .gradient(let gradient):
-                        createGradientFill(from: gradient, for: fillPath).opacity(fillStyle.opacity)
-                    default:
-                        fillPath.fill(fillStyle.color.color.opacity(fillStyle.opacity))
-                    }
+                    // Corrected call to use the updated renderFill
+                    renderFill(fillStyle: fillStyle, path: fillPath, shape: shape)
                 }
             }
         }
@@ -321,11 +317,12 @@ struct GridView: View {
 /// Helper functions to convert VectorGradient to SwiftUI gradient objects
 extension ShapeView {
     
-    /// Creates a SwiftUI gradient from a VectorGradient for fill rendering
-    @ViewBuilder
-    private func createGradientFill(from vectorGradient: VectorGradient, for path: Path) -> some View {
-        // Use Core Graphics for professional gradient rendering
-        CoreGraphicsGradientView(gradient: vectorGradient, path: path, isStroke: false)
+    /// Creates a SwiftUI gradient from a VectorGradient
+    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> SwiftUI.Gradient {
+        let stops = vectorGradient.stops.map { stop in
+            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+        }
+        return SwiftUI.Gradient(stops: stops)
     }
     
     /// Creates a SwiftUI gradient stroke from a VectorGradient
@@ -341,10 +338,34 @@ extension ShapeView {
     @ViewBuilder
     private func renderFill(fillStyle: FillStyle, path: Path, shape: VectorShape) -> some View {
         switch fillStyle.color {
-        case .gradient(let gradient):
-            createGradientFill(from: gradient, for: path)
-                .opacity(fillStyle.opacity)
-                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+        case .gradient(let vectorGradient):
+            let swiftUIGradient = createSwiftUIGradient(from: vectorGradient)
+            
+            // Correctly switch on the VectorGradient enum
+            switch vectorGradient {
+            case .linear(let linear):
+                let linearGradient = SwiftUI.LinearGradient(
+                    gradient: swiftUIGradient,
+                    startPoint: UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y),
+                    endPoint: UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+                )
+                path.fill(linearGradient, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
+                    .opacity(fillStyle.opacity)
+                    .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+                
+            case .radial(let radial):
+                let radialGradient = SwiftUI.RadialGradient(
+                    gradient: swiftUIGradient,
+                    center: UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
+                    startRadius: 0,
+                    endRadius: max(shape.bounds.width, shape.bounds.height) * CGFloat(radial.radius)
+                )
+                path.fill(Color.clear)
+                    .overlay(radialGradient.mask(path))
+                    .opacity(fillStyle.opacity)
+                    .blendMode(fillStyle.blendMode.swiftUIBlendMode)
+            }
+            
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
                 .opacity(fillStyle.opacity)
@@ -353,11 +374,32 @@ extension ShapeView {
     }
     
     /// Creates appropriate stroke rendering based on VectorColor type
-    @ViewBuilder  
-    private func renderStrokeColor(strokeStyle: StrokeStyle, path: Path, swiftUIStyle: SwiftUI.StrokeStyle) -> some View {
+    @ViewBuilder
+    private func renderStrokeColor(strokeStyle: StrokeStyle, path: Path, swiftUIStyle: SwiftUI.StrokeStyle, shape: VectorShape) -> some View {
         switch strokeStyle.color {
-        case .gradient(let gradient):
-            createGradientStroke(from: gradient, for: path, style: swiftUIStyle)
+        case .gradient(let vectorGradient):
+            let swiftUIGradient = createSwiftUIGradient(from: vectorGradient)
+
+            // Correctly switch on the VectorGradient enum
+            switch vectorGradient {
+            case .linear(let linear):
+                let linearGradient = SwiftUI.LinearGradient(
+                    gradient: swiftUIGradient,
+                    startPoint: UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y),
+                    endPoint: UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+                )
+                path.stroke(linearGradient, style: swiftUIStyle)
+            case .radial(let radial):
+                let radialGradient = SwiftUI.RadialGradient(
+                    gradient: swiftUIGradient,
+                    center: UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
+                    startRadius: 0,
+                    endRadius: max(shape.bounds.width, shape.bounds.height) * CGFloat(radial.radius)
+                )
+                path.stroke(Color.clear, style: swiftUIStyle)
+                    .overlay(radialGradient.mask(path.stroke(Color.black, style: swiftUIStyle)))
+            }
+            
         default:
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
         }
