@@ -3642,6 +3642,8 @@ class GradientNSView: NSView {
         // Draw gradient
         switch gradient {
         case .linear(let linear):
+            // Since isFlipped = true, Y coordinates increase downward (SVG style)
+            // The gradient coordinates are already in the correct orientation from SVG import
             let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x,
                                      y: pathBounds.minY + pathBounds.height * linear.startPoint.y)
             let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x,

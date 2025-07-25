@@ -1663,13 +1663,15 @@ class SVGParser: NSObject, XMLParserDelegate {
             let maxDist = sqrt(0.5 * 0.5 + 0.5 * 0.5)
             
             // Calculate start and end points at the proper angle
+            // Note: Since our rendering view has isFlipped = true (Y-down like SVG),
+            // we need to negate the sin component to get the correct visual angle
             startPoint = CGPoint(
                 x: centerX - maxDist * cos(angle),
-                y: centerY - maxDist * sin(angle)
+                y: centerY + maxDist * sin(angle)  // Note: + instead of - for Y-down coordinate system
             )
             endPoint = CGPoint(
                 x: centerX + maxDist * cos(angle),
-                y: centerY + maxDist * sin(angle)
+                y: centerY - maxDist * sin(angle)  // Note: - instead of + for Y-down coordinate system
             )
             
             let angleDegrees = angle * 180.0 / .pi
