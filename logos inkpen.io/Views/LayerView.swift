@@ -78,13 +78,13 @@ struct ShapeView: View {
                             }
                             
                             // Stroke rendering - improved for keyline mode and placement  
+                            let path = Path { path in
+                                addPathElements(groupedShape.path.elements, to: &path)
+                            }
                             if effectiveViewMode == .keyline {
-                                Path { path in
-                                    addPathElements(groupedShape.path.elements, to: &path)
-                                }
-                                .stroke(Color.black, lineWidth: 1.0)
+                                path.stroke(Color.black, lineWidth: 1.0)
                             } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
-                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
+                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: path)
                                     .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
                                     .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
                             }
@@ -113,32 +113,28 @@ struct ShapeView: View {
                     }
                 }
             } else {
-                // REGULAR SHAPE RENDERING: Render individual shape path
-                
-                // Fill - only show in color view mode (or always for Canvas)
-                if effectiveViewMode == .color,
-                   let fillStyle = shape.fillStyle, 
-                   fillStyle.color != .clear {
-                    let path = Path { path in
-                        addPathElements(shape.path.elements, to: &path)
-                    }
-                    renderFill(fillStyle: fillStyle, path: path, shape: shape)
+                // REGULAR SHAPE RENDERING: Pre-transform the path
+                let originalPath = Path { path in
+                    addPathElements(shape.path.elements, to: &path)
                 }
                 
-                // Stroke rendering - improved for keyline mode and placement
+                // BAKE IN THE TRANSFORMATION for individual shapes
+                let finalPath = originalPath.applying(shape.transform)
+
+                // Fill - use the pre-transformed path
+                if effectiveViewMode == .color,
+                   let fillStyle = shape.fillStyle,
+                   fillStyle.color != .clear {
+                    renderFill(fillStyle: fillStyle, path: finalPath, shape: shape)
+                }
+                
+                // Stroke rendering - use the pre-transformed path
                 if effectiveViewMode == .keyline {
-                    // In keyline mode, always show a stroke regardless of original stroke style
-                    // (Canvas and Pasteboard objects will never reach this branch)
-                    Path { path in
-                        addPathElements(shape.path.elements, to: &path)
-                    }
-                    .stroke(Color.black, lineWidth: 1.0)
+                    finalPath.stroke(Color.black, lineWidth: 1.0)
                 } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
-                    // In color mode, show the actual stroke with proper placement and transparency
-                    renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode)
-                        // CRITICAL FIX: Don't apply opacity here for outside strokes - handled internally
+                    renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: finalPath)
                         .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
-                        .blendMode(strokeStyle.blendMode.swiftUIBlendMode) // PROFESSIONAL STROKE BLEND MODES
+                        .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
                 }
             }
             
@@ -153,24 +149,28 @@ struct ShapeView: View {
                         .position(x: groupBounds.midX, y: groupBounds.midY)
                         .opacity(0.7)
                 } else {
-                    // For individual shapes, show selection outline around shape path
+                    // For individual shapes, transform the outline separately
                     Path { path in
                         addPathElements(shape.path.elements, to: &path)
                     }
+                    .transform(shape.transform) // Apply transform to outline only
                     .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
                     .opacity(0.7)
                 }
             }
         }
-        // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first, then shape transform
+        // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
-        .transformEffect(shape.transform)
+        // Group transform is handled inside the group rendering block.
+        // Individual shape transform is now BAKED INTO the path.
+        // The transform modifier is only applied for groups.
+        .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
         .opacity(shape.opacity)
     }
     
     @ViewBuilder
-    private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode) -> some View {
+    private func renderStrokeWithPlacement(shape: VectorShape, strokeStyle: StrokeStyle, viewMode: ViewMode, path: Path) -> some View {
         let swiftUIStrokeStyle = SwiftUI.StrokeStyle(
             lineWidth: strokeStyle.width,
             lineCap: strokeStyle.lineCap.swiftUILineCap,
@@ -182,17 +182,11 @@ struct ShapeView: View {
         switch strokeStyle.placement {
         case .center:
             // Default behavior - stroke is centered on the path
-            let path = Path { path in
-                addPathElements(shape.path.elements, to: &path)
-            }
             renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: swiftUIStrokeStyle, shape: shape)
             
         case .inside:
             // PROFESSIONAL INSIDE STROKE (Adobe Illustrator Standard)
             // Draw a normal stroke but mask it to only show inside the shape
-            let strokePath = Path { path in
-                addPathElements(shape.path.elements, to: &path)
-            }
             let doubleWidthStyle = SwiftUI.StrokeStyle(
                 lineWidth: strokeStyle.width * 2, // Double width since we're masking to inside
                 lineCap: swiftUIStrokeStyle.lineCap,
@@ -200,22 +194,16 @@ struct ShapeView: View {
                 miterLimit: swiftUIStrokeStyle.miterLimit,
                 dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
             )
-            renderStrokeColor(strokeStyle: strokeStyle, path: strokePath, swiftUIStyle: doubleWidthStyle, shape: shape)
+            renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
             .mask(
                 // Mask to shape interior only
-                Path { path in
-                    addPathElements(shape.path.elements, to: &path)
-                }
-                .fill(Color.black) // Black reveals, transparent hides
+                path.fill(Color.black) // Black reveals, transparent hides
             )
             
         case .outside:
             // OUTSIDE STROKE - CRITICAL FIX: Handle opacity internally to prevent bleed-through
             ZStack {
                 // 1. Draw stroke at double width with correct opacity (extends both inside and outside)
-                let strokePath = Path { path in
-                    addPathElements(shape.path.elements, to: &path)
-                }
                 let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
                     lineWidth: strokeStyle.width * 2, // Double width
                     lineCap: swiftUIStrokeStyle.lineCap,
@@ -224,29 +212,17 @@ struct ShapeView: View {
                     dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
                 )
                 
-                // Handle gradient vs solid color stroke with opacity
-                switch strokeStyle.color {
-                case .gradient(let gradient):
-                    createGradientStroke(from: gradient, for: strokePath, style: doubleWidthStrokeStyle)
-                        .opacity(strokeStyle.opacity)
-                default:
-                    strokePath.stroke(strokeStyle.color.color.opacity(strokeStyle.opacity), style: doubleWidthStrokeStyle)
-                }
-                
+                renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                    .opacity(strokeStyle.opacity)
+
                 // 2. Cover the inside stroke completely with opaque background
                 // This ensures NO stroke color bleeds through, regardless of fill opacity
-                Path { path in
-                    addPathElements(shape.path.elements, to: &path)
-                }
-                .fill(Color.white.opacity(1.0)) // Ensure completely opaque white background
+                path.fill(Color.white.opacity(1.0)) // Ensure completely opaque white background
                 
                 // 3. Draw the actual fill at correct opacity on top
                 if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
-                    let fillPath = Path { path in
-                        addPathElements(shape.path.elements, to: &path)
-                    }
                     // Corrected call to use the updated renderFill
-                    renderFill(fillStyle: fillStyle, path: fillPath, shape: shape)
+                    renderFill(fillStyle: fillStyle, path: path, shape: shape)
                 }
             }
         }
@@ -317,54 +293,15 @@ struct GridView: View {
 /// Helper functions to convert VectorGradient to SwiftUI gradient objects
 extension ShapeView {
     
-    /// Creates a SwiftUI gradient from a VectorGradient
-    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> SwiftUI.Gradient {
-        let stops = vectorGradient.stops.map { stop in
-            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-        }
-        return SwiftUI.Gradient(stops: stops)
-    }
-    
-    /// Creates a SwiftUI gradient stroke from a VectorGradient
-    @ViewBuilder
-    private func createGradientStroke(from vectorGradient: VectorGradient, for path: Path, style: SwiftUI.StrokeStyle) -> some View {
-        // Use Core Graphics for professional gradient rendering
-        CoreGraphicsGradientView(gradient: vectorGradient, path: path, isStroke: true, strokeStyle: style)
-    }
-    
-    // Note: Removed createGradientStops function - now using Core Graphics rendering directly
-    
     /// Creates appropriate fill rendering based on VectorColor type
     @ViewBuilder
     private func renderFill(fillStyle: FillStyle, path: Path, shape: VectorShape) -> some View {
         switch fillStyle.color {
         case .gradient(let vectorGradient):
-            let swiftUIGradient = createSwiftUIGradient(from: vectorGradient)
-            
-            // Correctly switch on the VectorGradient enum
-            switch vectorGradient {
-            case .linear(let linear):
-                let linearGradient = SwiftUI.LinearGradient(
-                    gradient: swiftUIGradient,
-                    startPoint: UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y),
-                    endPoint: UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
-                )
-                path.fill(linearGradient, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
-                    .opacity(fillStyle.opacity)
-                    .blendMode(fillStyle.blendMode.swiftUIBlendMode)
-                
-            case .radial(let radial):
-                let radialGradient = SwiftUI.RadialGradient(
-                    gradient: swiftUIGradient,
-                    center: UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
-                    startRadius: 0,
-                    endRadius: max(shape.bounds.width, shape.bounds.height) * CGFloat(radial.radius)
-                )
-                path.fill(Color.clear)
-                    .overlay(radialGradient.mask(path))
-                    .opacity(fillStyle.opacity)
-                    .blendMode(fillStyle.blendMode.swiftUIBlendMode)
-            }
+            // Use the new NSViewRepresentable view for correct gradient rendering
+            GradientFillView(gradient: vectorGradient, path: path.cgPath)
+                .opacity(fillStyle.opacity)
+                .blendMode(fillStyle.blendMode.swiftUIBlendMode)
             
         default:
             path.fill(fillStyle.color.color, style: SwiftUI.FillStyle(eoFill: shape.path.fillRule == .evenOdd))
@@ -378,27 +315,11 @@ extension ShapeView {
     private func renderStrokeColor(strokeStyle: StrokeStyle, path: Path, swiftUIStyle: SwiftUI.StrokeStyle, shape: VectorShape) -> some View {
         switch strokeStyle.color {
         case .gradient(let vectorGradient):
-            let swiftUIGradient = createSwiftUIGradient(from: vectorGradient)
-
-            // Correctly switch on the VectorGradient enum
-            switch vectorGradient {
-            case .linear(let linear):
-                let linearGradient = SwiftUI.LinearGradient(
-                    gradient: swiftUIGradient,
-                    startPoint: UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y),
-                    endPoint: UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+            // Mask a black stroke with the gradient fill view
+            path.stroke(Color.black, style: swiftUIStyle)
+                .mask(
+                    GradientFillView(gradient: vectorGradient, path: path.cgPath)
                 )
-                path.stroke(linearGradient, style: swiftUIStyle)
-            case .radial(let radial):
-                let radialGradient = SwiftUI.RadialGradient(
-                    gradient: swiftUIGradient,
-                    center: UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
-                    startRadius: 0,
-                    endRadius: max(shape.bounds.width, shape.bounds.height) * CGFloat(radial.radius)
-                )
-                path.stroke(Color.clear, style: swiftUIStyle)
-                    .overlay(radialGradient.mask(path.stroke(Color.black, style: swiftUIStyle)))
-            }
             
         default:
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
@@ -3660,199 +3581,77 @@ extension CGLineJoin {
     }
 }
 
-// MARK: - Professional Core Graphics Gradient Renderer
+// MARK: - NSViewRepresentable Gradient Renderer
 
-/// Enhanced SwiftUI gradient renderer for professional multi-color gradients  
-struct CoreGraphicsGradientView: View {
+struct GradientFillView: NSViewRepresentable {
     let gradient: VectorGradient
-    let path: Path
-    let isStroke: Bool
-    let strokeStyle: SwiftUI.StrokeStyle?
-    
-    init(gradient: VectorGradient, path: Path, isStroke: Bool, strokeStyle: SwiftUI.StrokeStyle? = nil) {
-        self.gradient = gradient
-        self.path = path
-        self.isStroke = isStroke
-        self.strokeStyle = strokeStyle
-    }
-    
-    var body: some View {
-        // Use Canvas for proper Core Graphics gradient rendering
-        Canvas { context, size in
-            // Get the path bounds for shape-relative gradients
-            let pathBounds = path.boundingRect
-            
-            // Create Core Graphics path
-            let cgPath = path.cgPath
-            
-            // Add path to context
-            context.addFilter(.shadow(radius: 0)) // Ensures proper rendering
-            
-            switch gradient {
-            case .linear(let linear):
-                renderLinearGradient(
-                    context: context,
-                    linear: linear,
-                    path: cgPath,
-                    pathBounds: pathBounds,
-                    isStroke: isStroke,
-                    strokeStyle: strokeStyle
-                )
-                
-            case .radial(let radial):
-                renderRadialGradient(
-                    context: context,
-                    radial: radial,
-                    path: cgPath,
-                    pathBounds: pathBounds,
-                    isStroke: isStroke,
-                    strokeStyle: strokeStyle
-                )
-            }
-        }
-    }
-    
-    private func renderLinearGradient(
-        context: GraphicsContext,
-        linear: LinearGradient,
-        path: CGPath,
-        pathBounds: CGRect,
-        isStroke: Bool,
-        strokeStyle: SwiftUI.StrokeStyle?
-    ) {
-        let cgContext = context
+    let path: CGPath
 
-        // Create gradient stops
-        let stops: [Gradient.Stop] = linear.stops.map { stop in
-            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-        }
-        let gradient = Gradient(stops: stops)
-
-        // CORE FIX: Use the absolute start/end points from the data model.
-        // These points are in the user coordinate space, as parsed from the SVG.
-        // This renderer should not be doing its own angle/origin calculations.
-        let startPoint = linear.startPoint
-        let endPoint = linear.endPoint
-
-        // Render the gradient
-        if isStroke {
-            let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
-            cgContext.stroke(
-                Path(path),
-                with: .linearGradient(
-                    gradient,
-                    startPoint: startPoint,
-                    endPoint: endPoint
-                ),
-                style: style
-            )
-        } else {
-            cgContext.fill(
-                Path(path),
-                with: .linearGradient(
-                    gradient,
-                    startPoint: startPoint,
-                    endPoint: endPoint
-                )
-            )
-        }
-    }
-    
-    private func renderRadialGradient(
-        context: GraphicsContext,
-        radial: RadialGradient,
-        path: CGPath,
-        pathBounds: CGRect,
-        isStroke: Bool,
-        strokeStyle: SwiftUI.StrokeStyle?
-    ) {
-        let cgContext = context
-
-        // Create gradient stops
-        let stops: [Gradient.Stop] = radial.stops.map { stop in
-            Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-        }
-        let gradient = Gradient(stops: stops)
-
-        // CORE FIX: Use the absolute center/radius from the data model.
-        // These values are in the user coordinate space, as parsed from the SVG.
-        let center = radial.centerPoint
-        let radius = radial.radius
-
-        // Render the gradient
-        if isStroke {
-            let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
-            cgContext.stroke(
-                Path(path),
-                with: .radialGradient(
-                    gradient,
-                    center: center,
-                    startRadius: 0,
-                    endRadius: radius
-                ),
-                style: style
-            )
-        } else {
-            cgContext.fill(
-                Path(path),
-                with: .radialGradient(
-                    gradient,
-                    center: center,
-                    startRadius: 0,
-                    endRadius: radius
-                )
-            )
-        }
-    }
-    
-    /// Create SwiftUI gradient with unlimited color stops
-    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> SwiftUI.Gradient {
-        let stops = vectorGradient.stops
-        
-        let gradientStops = stops.map { stop in
-            let color = stop.color.color.opacity(stop.opacity)
-            return SwiftUI.Gradient.Stop(color: color, location: stop.position)
-        }
-        
-        return SwiftUI.Gradient(stops: gradientStops)
-    }
-    
-    /// Transform linear gradient coordinates (all gradients forced to objectBoundingBox)
-    private func transformGradientCoordinates(linear: LinearGradient, pathBounds: CGRect) -> (UnitPoint, UnitPoint) {
-        // All gradients are forced to objectBoundingBox during parsing for shape-relative coordinates
-        let start = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
-        let end = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
-        print("🔥 RENDERER: Using gradient coordinates start=\(start), end=\(end) for pathBounds=\(pathBounds)")
-        print("🔥 SHAPE ANALYSIS: width=\(pathBounds.width), height=\(pathBounds.height), aspectRatio=\(pathBounds.width/pathBounds.height)")
-        
-        // FORCE GRADIENT TO FIT VISIBLE CONTENT, NOT FULL SHAPE BOUNDS
-        // If shape is extremely wide, scale gradient to fit reasonable proportions
-        let aspectRatio = pathBounds.width / pathBounds.height
-        if aspectRatio > 3.0 { // Shape is more than 3x wider than tall
-            print("🔥 EXTREMELY WIDE SHAPE DETECTED - scaling gradient to fit content")
-            let scaleFactor = 1.0 / aspectRatio * 3.0 // Scale to 3:1 ratio maximum
-            let adjustedStart = UnitPoint(x: linear.startPoint.x * scaleFactor, y: linear.startPoint.y)
-            let adjustedEnd = UnitPoint(x: linear.endPoint.x * scaleFactor, y: linear.endPoint.y)
-            print("🔥 ADJUSTED GRADIENT: \(adjustedStart) → \(adjustedEnd) (scale=\(scaleFactor))")
-            return (adjustedStart, adjustedEnd)
-        }
-        
-        return (start, end)
-    }
-    
-    /// Transform radial gradient coordinates (all gradients forced to objectBoundingBox)
-    private func transformRadialGradientCoordinates(radial: RadialGradient, pathBounds: CGRect) -> (UnitPoint, CGFloat) {
-        // All gradients are forced to objectBoundingBox during parsing for shape-relative coordinates
-        let radiusFraction = min(1.0, radial.radius)
-        return (
-            UnitPoint(x: radial.centerPoint.x, y: radial.centerPoint.y),
-            CGFloat(radiusFraction * 100) // SwiftUI expects radius as a multiplier
-        )
+    func makeNSView(context: Context) -> GradientNSView {
+        return GradientNSView(gradient: gradient, path: path)
     }
 
+    func updateNSView(_ nsView: GradientNSView, context: Context) {
+        nsView.gradient = gradient
+        nsView.path = path
+        nsView.needsDisplay = true
+    }
 }
 
-// MARK: - SwiftUI StrokeStyle Extensions
+class GradientNSView: NSView {
+    var gradient: VectorGradient
+    var path: CGPath
 
-// Note: CGLineCap and CGLineJoin extensions are defined earlier in the file
+    init(gradient: VectorGradient, path: CGPath) {
+        self.gradient = gradient
+        self.path = path
+        super.init(frame: .zero)
+        self.wantsLayer = true
+        self.layer?.backgroundColor = NSColor.clear.cgColor
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+
+        context.saveGState()
+        
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the path as-is.
+        let pathBounds = path.boundingBoxOfPath
+
+        // Create CGGradient
+        let colors = gradient.stops.map { $0.color.color.opacity($0.opacity).cgColor }
+        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+            context.restoreGState()
+            return
+        }
+        
+        // Add path for clipping
+        context.addPath(path)
+        context.clip()
+
+        // Draw gradient
+        switch gradient {
+        case .linear(let linear):
+            let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x,
+                                     y: pathBounds.minY + pathBounds.height * linear.startPoint.y)
+            let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x,
+                                   y: pathBounds.minY + pathBounds.height * linear.endPoint.y)
+            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
+
+        case .radial(let radial):
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x,
+                                 y: pathBounds.minY + pathBounds.height * radial.centerPoint.y)
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [.drawsAfterEndLocation])
+        }
+        
+        context.restoreGState()
+    }
+}
 
