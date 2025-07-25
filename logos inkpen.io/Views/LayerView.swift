@@ -3720,41 +3720,20 @@ struct CoreGraphicsGradientView: View {
         isStroke: Bool,
         strokeStyle: SwiftUI.StrokeStyle?
     ) {
-        var cgContext = context
-        
-        // Calculate gradient points in shape's coordinate space
-        let startX = pathBounds.minX + pathBounds.width * linear.startPoint.x
-        let startY = pathBounds.minY + pathBounds.height * linear.startPoint.y
-        let endX = pathBounds.minX + pathBounds.width * linear.endPoint.x
-        let endY = pathBounds.minY + pathBounds.height * linear.endPoint.y
-        
-        let startPoint = CGPoint(x: startX, y: startY)
-        let endPoint = CGPoint(x: endX, y: endY)
-        
-        // Apply user controls
-        let angle = linear.angle * .pi / 180.0
-        let scale = linear.scale
-        let originX = pathBounds.minX + pathBounds.width * linear.originPoint.x
-        let originY = pathBounds.minY + pathBounds.height * linear.originPoint.y
-        let origin = CGPoint(x: originX, y: originY)
-        
-        // Calculate scaled gradient points
-        let halfLength = scale * pathBounds.width * 0.5
-        let scaledStart = CGPoint(
-            x: origin.x - cos(angle) * halfLength,
-            y: origin.y - sin(angle) * halfLength
-        )
-        let scaledEnd = CGPoint(
-            x: origin.x + cos(angle) * halfLength,
-            y: origin.y + sin(angle) * halfLength
-        )
-        
+        let cgContext = context
+
         // Create gradient stops
         let stops: [Gradient.Stop] = linear.stops.map { stop in
             Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
         }
         let gradient = Gradient(stops: stops)
-        
+
+        // CORE FIX: Use the absolute start/end points from the data model.
+        // These points are in the user coordinate space, as parsed from the SVG.
+        // This renderer should not be doing its own angle/origin calculations.
+        let startPoint = linear.startPoint
+        let endPoint = linear.endPoint
+
         // Render the gradient
         if isStroke {
             let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
@@ -3762,8 +3741,8 @@ struct CoreGraphicsGradientView: View {
                 Path(path),
                 with: .linearGradient(
                     gradient,
-                    startPoint: scaledStart,
-                    endPoint: scaledEnd
+                    startPoint: startPoint,
+                    endPoint: endPoint
                 ),
                 style: style
             )
@@ -3772,8 +3751,8 @@ struct CoreGraphicsGradientView: View {
                 Path(path),
                 with: .linearGradient(
                     gradient,
-                    startPoint: scaledStart,
-                    endPoint: scaledEnd
+                    startPoint: startPoint,
+                    endPoint: endPoint
                 )
             )
         }
@@ -3787,23 +3766,19 @@ struct CoreGraphicsGradientView: View {
         isStroke: Bool,
         strokeStyle: SwiftUI.StrokeStyle?
     ) {
-        var cgContext = context
-        
-        // Calculate center in shape's coordinate space
-        let centerX = pathBounds.minX + pathBounds.width * radial.originPoint.x
-        let centerY = pathBounds.minY + pathBounds.height * radial.originPoint.y
-        let center = CGPoint(x: centerX, y: centerY)
-        
-        // Calculate radius based on shape dimensions
-        let baseRadius = min(pathBounds.width, pathBounds.height) * radial.radius
-        let scaledRadius = baseRadius * radial.scale
-        
+        let cgContext = context
+
         // Create gradient stops
         let stops: [Gradient.Stop] = radial.stops.map { stop in
             Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
         }
         let gradient = Gradient(stops: stops)
-        
+
+        // CORE FIX: Use the absolute center/radius from the data model.
+        // These values are in the user coordinate space, as parsed from the SVG.
+        let center = radial.centerPoint
+        let radius = radial.radius
+
         // Render the gradient
         if isStroke {
             let style = strokeStyle ?? SwiftUI.StrokeStyle(lineWidth: 1)
@@ -3813,7 +3788,7 @@ struct CoreGraphicsGradientView: View {
                     gradient,
                     center: center,
                     startRadius: 0,
-                    endRadius: scaledRadius
+                    endRadius: radius
                 ),
                 style: style
             )
@@ -3824,7 +3799,7 @@ struct CoreGraphicsGradientView: View {
                     gradient,
                     center: center,
                     startRadius: 0,
-                    endRadius: scaledRadius
+                    endRadius: radius
                 )
             )
         }
