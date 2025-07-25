@@ -3614,6 +3614,10 @@ class GradientNSView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override var isFlipped: Bool {
+        return true
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
 
@@ -3639,14 +3643,14 @@ class GradientNSView: NSView {
         switch gradient {
         case .linear(let linear):
             let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x,
-                                     y: pathBounds.minY + pathBounds.height * (1.0 - linear.startPoint.y))
+                                     y: pathBounds.minY + pathBounds.height * linear.startPoint.y)
             let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x,
-                                   y: pathBounds.minY + pathBounds.height * (1.0 - linear.endPoint.y))
+                                   y: pathBounds.minY + pathBounds.height * linear.endPoint.y)
             context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
 
         case .radial(let radial):
             let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x,
-                                 y: pathBounds.minY + pathBounds.height * (1.0 - radial.centerPoint.y))
+                                 y: pathBounds.minY + pathBounds.height * radial.centerPoint.y)
             let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
             context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [.drawsAfterEndLocation])
         }
