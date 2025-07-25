@@ -983,457 +983,85 @@ struct GradientFillSection: View {
                 .font(.headline)
                 .fontWeight(.medium)
             
-            // Gradient Type Picker
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Type")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Picker("Gradient Type", selection: $gradientType) {
-                    ForEach(GradientType.allCases, id: \.self) { type in
-                        Text(type.rawValue).tag(type)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .onChange(of: gradientType) { oldValue, newValue in
-                    if oldValue != newValue {
-                        // Preserve existing gradient properties when switching gradient types
-                        if let existingGradient = currentGradient {
-                            let existingStops = getGradientStops(existingGradient)
-                            currentGradient = Self.createGradientPreservingProperties(type: newValue, stops: existingStops, from: existingGradient)
-                        } else {
-                            currentGradient = Self.createDefaultGradient(type: newValue)
-                        }
-                        gradientId = UUID() // Generate new ID for new gradient
-                        // Apply live to selected shapes
-                        applyGradientToSelectedShapes()
-                    }
-                }
-            }
+            GradientTypePickerView(
+                gradientType: $gradientType,
+                currentGradient: $currentGradient,
+                gradientId: $gradientId,
+                getGradientStops: getGradientStops,
+                createGradientPreservingProperties: Self.createGradientPreservingProperties,
+                createDefaultGradient: Self.createDefaultGradient,
+                onGradientChange: applyGradientToSelectedShapes
+            )
             
-            // Gradient Angle (for Linear gradients only) - 0-360° NO CONSTRAINTS
-            if gradientType == .linear, let gradient = currentGradient, case .linear(let linear) = gradient {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Angle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(Int(linear.angle))°")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { linear.angle },
-                        set: { newAngle in
-                            updateGradientAngle(newAngle)
-                        }
-                    ), in: -180...180, onEditingChanged: { editing in
-                        if !editing {
-                            // Save to undo stack when slider editing ends
-                            document.saveToUndoStack()
-                        }
-                    })
-                    .controlSize(.small)
-                }
-            }
+            GradientAngleControlView(
+                gradientType: gradientType,
+                currentGradient: currentGradient,
+                document: document,
+                onAngleChange: updateGradientAngle
+            )
             
-            // NEW: Origin Point Control (Cartesian coordinates: 0,0 = center)
-            if currentGradient != nil {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Origin Point (Cartesian: 0,0 = center, -100% to +100%)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("Clamped")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                            .padding(.horizontal, 4)
-                            .background(Color.orange.opacity(0.1))
-                            .cornerRadius(3)
-                    }
-                    
-                    HStack(spacing: 8) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("X: \(currentGradient != nil ? Int((getGradientOriginX(currentGradient!) - 0.5) * 200) : 0)%")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            
-                            Slider(value: Binding(
-                                get: { 
-                                    guard let current = currentGradient else { return 0.5 }
-                                    return getGradientOriginX(current) 
-                                },
-                                set: { newX in
-                                    updateGradientOriginX(newX)
-                                }
-                            ), in: 0.0...1.0, onEditingChanged: { editing in
-                                if !editing {
-                                    // Save to undo stack when slider editing ends
-                                    document.saveToUndoStack()
-                                }
-                            })
-                            .controlSize(.small)
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Y: \(currentGradient != nil ? Int((getGradientOriginY(currentGradient!) - 0.5) * 200) : 0)%")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            
-                            Slider(value: Binding(
-                                get: { 
-                                    guard let current = currentGradient else { return 0.5 }
-                                    return getGradientOriginY(current) 
-                                },
-                                set: { newY in
-                                    updateGradientOriginY(newY)
-                                }
-                            ), in: 0.0...1.0, onEditingChanged: { editing in
-                                if !editing {
-                                    // Save to undo stack when slider editing ends
-                                    document.saveToUndoStack()
-                                }
-                            })
-                            .controlSize(.small)
-                        }
-                    }
-                }
-            }
+            GradientOriginControlView(
+                currentGradient: currentGradient,
+                document: document,
+                getOriginX: getGradientOriginX,
+                getOriginY: getGradientOriginY,
+                updateOriginX: updateGradientOriginX,
+                updateOriginY: updateGradientOriginY
+            )
             
-            // NEW: Scale X & Y Control (1% to 800%)
-            if currentGradient != nil {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        // Scale X
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Scale X: \(currentGradient != nil ? Int(getGradientScaleX(currentGradient!) * 100) : 100)%")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Slider(value: Binding(
-                                get: { 
-                                    guard let current = currentGradient else { return 1.0 }
-                                    return getGradientScaleX(current) 
-                                },
-                                set: { newScaleX in
-                                    if isProportionalScale {
-                                        // Update both X and Y proportionally
-                                        updateGradientScaleX(newScaleX)
-                                        updateGradientScaleY(newScaleX)
-                                    } else {
-                                        // Update only X
-                                        updateGradientScaleX(newScaleX)
-                                    }
-                                }
-                            ), in: 0.01...8.0, onEditingChanged: { editing in
-                                if !editing {
-                                    document.saveToUndoStack()
-                                }
-                            })
-                            .controlSize(.small)
-                        }
-                        
-                        // Scale Y
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Scale Y: \(currentGradient != nil ? Int(getGradientScaleY(currentGradient!) * 100) : 100)%\(isProportionalScale ? " (Locked)" : "")")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            Slider(value: Binding(
-                                get: { 
-                                    guard let current = currentGradient else { return 1.0 }
-                                    return getGradientScaleY(current) 
-                                },
-                                set: { newScaleY in
-                                    if isProportionalScale {
-                                        // Update both X and Y proportionally
-                                        updateGradientScaleX(newScaleY)
-                                        updateGradientScaleY(newScaleY)
-                                    } else {
-                                        // Update only Y
-                                        updateGradientScaleY(newScaleY)
-                                    }
-                                }
-                            ), in: 0.01...8.0, onEditingChanged: { editing in
-                                if !editing {
-                                    document.saveToUndoStack()
-                                }
-                            })
-                            .controlSize(.small)
-                            .disabled(isProportionalScale) // Disable Y when proportional
-                            .opacity(isProportionalScale ? 0.5 : 1.0) // Visual feedback when disabled
-                        }
-                        
-                        // Proportional Toggle
-                        VStack(alignment: .center, spacing: 2) {
-                            Image(systemName: isProportionalScale ? "link" : "link.slash")
-                                .font(.system(size: 12))
-                                .foregroundColor(isProportionalScale ? .accentColor : .secondary)
-                            
-                            Text("Lock")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                            
-                            Toggle("", isOn: $isProportionalScale)
-                                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                                .scaleEffect(0.8)
-                                .frame(width: 40)
-                                .help(isProportionalScale ? "Scales are locked together" : "Scales are independent")
-                        }
-                    }
-                }
-            }
+            GradientScaleControlView(
+                currentGradient: currentGradient,
+                isProportionalScale: $isProportionalScale,
+                document: document,
+                getScaleX: getGradientScaleX,
+                getScaleY: getGradientScaleY,
+                updateScaleX: updateGradientScaleX,
+                updateScaleY: updateGradientScaleY
+            )
             
-            // NEW: Radial Gradient Angle Control (-180° to 180°)
-            if case .radial = currentGradient {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Angle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(currentGradient != nil ? String(format: "%.2f", getRadialGradientAngle(currentGradient!)) : "0.00")°")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { 
-                            guard let current = currentGradient else { return 0.0 }
-                            return getRadialGradientAngle(current) 
-                        },
-                        set: { newAngle in
-                            updateRadialGradientAngle(newAngle)
-                        }
-                    ), in: -180.0...180.0, onEditingChanged: { editing in
-                        if !editing {
-                            // Save to undo stack when slider editing ends
-                            document.saveToUndoStack()
-                        }
-                    })
-                    .controlSize(.small)
-                }
-            }
+            RadialGradientControlsView(
+                currentGradient: currentGradient,
+                document: document,
+                getRadialAngle: getRadialGradientAngle,
+                getRadialAspectRatio: getRadialGradientAspectRatio,
+                updateRadialAngle: updateRadialGradientAngle,
+                updateRadialAspectRatio: updateRadialGradientAspectRatio
+            )
             
-            // NEW: Radial Gradient Aspect Ratio Control (-200% to 200%)
-            if case .radial = currentGradient {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Aspect Ratio")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(currentGradient != nil ? String(format: "%.4f", getRadialGradientAspectRatio(currentGradient!) * 100) : "100.0000")%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { 
-                            guard let current = currentGradient else { return 1.0 }
-                            return getRadialGradientAspectRatio(current) 
-                        },
-                        set: { newRatio in
-                            updateRadialGradientAspectRatio(newRatio)
-                        }
-                    ), in: -2.0...2.0, onEditingChanged: { editing in
-                        if !editing {
-                            // Save to undo stack when slider editing ends
-                            document.saveToUndoStack()
-                        }
-                    })
-                    .controlSize(.small)
-                }
-            }
+            GradientPreviewAndStopsView(
+                currentGradient: currentGradient,
+                document: document,
+                editingGradientStopId: $editingGradientStopId,
+                editingGradientStopColor: $editingGradientStopColor,
+                showingGradientColorPicker: $showingGradientColorPicker,
+                createGradient: createSwiftUIGradient,
+                getGradientStops: getGradientStops,
+                getOriginX: getGradientOriginX,
+                getOriginY: getGradientOriginY,
+                updateOriginX: updateGradientOriginX,
+                updateOriginY: updateGradientOriginY,
+                addColorStop: addColorStop,
+                updateStopPosition: updateStopPosition,
+                removeColorStop: removeColorStop
+            )
             
-            // Gradient Preview with Interactive Origin Point
-            if currentGradient != nil {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Preview")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                                    // Enhanced gradient preview with origin point control
-                // CARTESIAN COORDINATES: Center (0.5, 0.5) = Origin (0,0)
-                // Display range: -100% to +100% (internal: 0.0 to 1.0)
-                GeometryReader { geometry in
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(createSwiftUIGradient(from: currentGradient!))
-                        .frame(height: 60)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        .overlay(
-                            // Cartesian grid with hash marks every 10%
-                            CartesianGrid(width: geometry.size.width, height: 60)
-                        )
-                        .overlay(
-                            // Center point indicator (0,0 in Cartesian coordinates)
-                            Circle()
-                                .fill(Color.gray.opacity(0.8))
-                                .frame(width: 3, height: 3)
-                                .position(x: geometry.size.width * 0.5, y: 30)
-                        )
-                                                    .onTapGesture { location in
-                            // Save to undo stack before making changes
-                            document.saveToUndoStack()
-                            // Convert click location to clamped coordinates
-                            let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))  // Clamp 0-1
-                            let normalizedY = max(0.0, min(1.0, location.y / 60))  // Clamp 0-1
-                            updateGradientOriginX(normalizedX)
-                            updateGradientOriginY(normalizedY)
-                        }
-                            .overlay(
-                                // Origin point indicator (draggable)
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 8, height: 8)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.black, lineWidth: 1)
-                                    )
-                                                                    .position(
-                                    x: currentGradient != nil ? max(0, min(geometry.size.width, getGradientOriginX(currentGradient!) * geometry.size.width)) : geometry.size.width * 0.5,
-                                    y: currentGradient != nil ? max(0, min(60, getGradientOriginY(currentGradient!) * 60)) : 30
-                                )
-                                                                    .gesture(
-                                    DragGesture()
-                                        .onChanged { value in
-                                            // Convert drag location and clamp to preview bounds
-                                            let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
-                                            let normalizedY = max(0.0, min(1.0, value.location.y / 60))
-                                            updateGradientOriginX(normalizedX)
-                                            updateGradientOriginY(normalizedY)
-                                        }
-                                        .onEnded { _ in
-                                            // Save to undo stack on mouse up
-                                            document.saveToUndoStack()
-                                        }
-                                )
-                            )
-                    }
-                    .frame(height: 60)
-                }
-                
-                // Color Stops Editor
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Color Stops")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Button(action: addColorStop) {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.blue)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Add Color Stop")
-                    }
-                    
-                    // Color stops list - AUTO REORDER by position (0% to 100%)
-                    let stops = currentGradient != nil ? getGradientStops(currentGradient!).sorted { $0.position < $1.position } : []
-                    ForEach(stops, id: \.id) { stop in
-                        HStack(spacing: 8) {
-                            // Color swatch - OPENS COLOR PANEL AS POPUP!
-                            Button(action: {
-                                // SET UP FOR POPUP COLOR PICKER
-                                editingGradientStopId = stop.id
-                                editingGradientStopColor = stop.color
-                                showingGradientColorPicker = true
-                            }) {
-                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .help("Click to change color")
-                            
-                            // Position slider - moves independently
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Position: \(Int(stop.position * 100))%")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                
-                                Slider(value: Binding(
-                                    get: { stop.position },
-                                    set: { newPosition in
-                                        updateStopPosition(stopId: stop.id, position: newPosition)
-                                    }
-                                ), in: 0...1)
-                                .controlSize(.small)
-                            }
-                            
-                            // Delete button (if more than 2 stops)
-                            if stops.count > 2 {
-                                Button(action: {
-                                    removeColorStop(stopId: stop.id)
-                                }) {
-                                    Image(systemName: "minus.circle.fill")
-                                        .foregroundColor(.red)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .help("Remove Color Stop")
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-            
-            // Apply Gradient Button
-            HStack {
-                Spacer()
-                Button("Apply Gradient") {
-                    applyGradientToSelectedShapes()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(currentGradient == nil)
-            }
+            GradientApplyButtonView(
+                currentGradient: currentGradient,
+                onApply: applyGradientToSelectedShapes
+            )
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         .cornerRadius(12)
-        .onChange(of: document.selectedShapeIDs) { oldIDs, newIDs in
-            // Update gradient editor when selection changes
-            updateSelectedGradient()
-        }
-        .onChange(of: document.selectedLayerIndex) { oldIndex, newIndex in
-            // Update gradient editor when layer changes
-            updateSelectedGradient()
-        }
-        // GRADIENT COLOR POPUP - Uses ColorPanel as a SHEET!
+        .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
+        .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .sheet(isPresented: $showingGradientColorPicker) {
-            VStack(spacing: 0) {
-                // Title bar
-                HStack {
-                    Text("Select Gradient Color")
-                        .font(.headline)
-                    Spacer()
-                    Button("Done") {
-                        showingGradientColorPicker = false
-                    }
-                    .buttonStyle(.bordered)
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                
-                // COLOR PANEL WITH RGB/CMYK/HSB TABS
-                ColorPanel(
-                    document: document,
-                    onColorSelected: { newColor in
-                        // Update the gradient stop color in real-time
-                        if let stopId = editingGradientStopId {
-                            updateStopColor(stopId: stopId, color: newColor)
-                        }
-                        editingGradientStopColor = newColor
-                    }
-                )
-                .frame(width: 300, height: 400)
-            }
-            .frame(width: 300, height: 450)
-            .background(Color(NSColor.windowBackgroundColor))
+            GradientColorPickerSheet(
+                document: document,
+                editingGradientStopId: editingGradientStopId,
+                showingColorPicker: $showingGradientColorPicker,
+                updateStopColor: updateStopColor
+            )
         }
     }
     
@@ -1629,7 +1257,7 @@ struct GradientFillSection: View {
     
     // MARK: - Helper Functions
     
-    private func createSwiftUIGradient(from vectorGradient: VectorGradient) -> AnyShapeStyle {
+    func createSwiftUIGradient(from vectorGradient: VectorGradient) -> AnyShapeStyle {
         let stops = getGradientStops(vectorGradient)
         let gradientStops = stops.map { stop in
             SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
@@ -1699,7 +1327,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func getGradientStops(_ gradient: VectorGradient) -> [GradientStop] {
+    func getGradientStops(_ gradient: VectorGradient) -> [GradientStop] {
         switch gradient {
         case .linear(let linear):
             return linear.stops
@@ -1708,7 +1336,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func updateStopPosition(stopId: UUID, position: Double) {
+    func updateStopPosition(stopId: UUID, position: Double) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
@@ -1733,7 +1361,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func updateStopColor(stopId: UUID, color: VectorColor) {
+    func updateStopColor(stopId: UUID, color: VectorColor) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
@@ -1754,7 +1382,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func addColorStop() {
+    func addColorStop() {
         guard let gradient = currentGradient else { return }
         
         // Find a good position for the new stop - between the last two stops
@@ -1780,7 +1408,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func removeColorStop(stopId: UUID) {
+    func removeColorStop(stopId: UUID) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
@@ -1803,7 +1431,7 @@ struct GradientFillSection: View {
         }
     }
     
-    private func applyGradientToSelectedShapes() {
+    func applyGradientToSelectedShapes() {
         guard let gradient = currentGradient,
               let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
@@ -2296,6 +1924,426 @@ extension CGLineCap {
 
 // MARK: - Color Rendering Helper
 // Note: Using renderColorSwatchRightPanel from RightPanel.swift for consistency
+
+// MARK: - Gradient Section Sub-Views
+
+struct GradientTypePickerView: View {
+    @Binding var gradientType: GradientFillSection.GradientType
+    @Binding var currentGradient: VectorGradient?
+    @Binding var gradientId: UUID
+    let getGradientStops: (VectorGradient) -> [GradientStop]
+    let createGradientPreservingProperties: (GradientFillSection.GradientType, [GradientStop], VectorGradient) -> VectorGradient
+    let createDefaultGradient: (GradientFillSection.GradientType) -> VectorGradient
+    let onGradientChange: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Type")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Picker("Gradient Type", selection: $gradientType) {
+                ForEach(GradientFillSection.GradientType.allCases, id: \.self) { type in
+                    Text(type.rawValue).tag(type)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: gradientType) { _, newValue in
+                if let existingGradient = currentGradient {
+                    let existingStops = getGradientStops(existingGradient)
+                    currentGradient = createGradientPreservingProperties(newValue, existingStops, existingGradient)
+                } else {
+                    currentGradient = createDefaultGradient(newValue)
+                }
+                gradientId = UUID()
+                onGradientChange()
+            }
+        }
+    }
+}
+
+struct GradientAngleControlView: View {
+    let gradientType: GradientFillSection.GradientType
+    let currentGradient: VectorGradient?
+    let document: VectorDocument
+    let onAngleChange: (Double) -> Void
+    
+    var body: some View {
+        if gradientType == .linear, let gradient = currentGradient, case .linear(let linear) = gradient {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Angle")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(linear.angle))°")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Slider(value: Binding(
+                    get: { linear.angle },
+                    set: onAngleChange
+                ), in: -180...180, onEditingChanged: { editing in
+                    if !editing { document.saveToUndoStack() }
+                })
+                .controlSize(.small)
+            }
+        }
+    }
+}
+
+struct GradientOriginControlView: View {
+    let currentGradient: VectorGradient?
+    let document: VectorDocument
+    let getOriginX: (VectorGradient) -> Double
+    let getOriginY: (VectorGradient) -> Double
+    let updateOriginX: (Double) -> Void
+    let updateOriginY: (Double) -> Void
+    
+    var body: some View {
+        if currentGradient != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Origin Point (Cartesian: 0,0 = center, -100% to +100%)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("Clamped")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                        .padding(.horizontal, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(3)
+                }
+                
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("X: \(currentGradient != nil ? Int((getOriginX(currentGradient!) - 0.5) * 200) : 0)%")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.5 },
+                            set: updateOriginX
+                        ), in: 0.0...1.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Y: \(currentGradient != nil ? Int((getOriginY(currentGradient!) - 0.5) * 200) : 0)%")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.5 },
+                            set: updateOriginY
+                        ), in: 0.0...1.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct GradientScaleControlView: View {
+    let currentGradient: VectorGradient?
+    @Binding var isProportionalScale: Bool
+    let document: VectorDocument
+    let getScaleX: (VectorGradient) -> Double
+    let getScaleY: (VectorGradient) -> Double
+    let updateScaleX: (Double) -> Void
+    let updateScaleY: (Double) -> Void
+    
+    var body: some View {
+        if currentGradient != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Scale X: \(currentGradient != nil ? Int(getScaleX(currentGradient!) * 100) : 100)%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getScaleX(currentGradient!) : 1.0 },
+                            set: { newScaleX in
+                                if isProportionalScale {
+                                    updateScaleX(newScaleX)
+                                    updateScaleY(newScaleX)
+                                } else {
+                                    updateScaleX(newScaleX)
+                                }
+                            }
+                        ), in: 0.01...8.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Scale Y: \(currentGradient != nil ? Int(getScaleY(currentGradient!) * 100) : 100)%\(isProportionalScale ? " (Locked)" : "")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getScaleY(currentGradient!) : 1.0 },
+                            set: { newScaleY in
+                                if isProportionalScale {
+                                    updateScaleX(newScaleY)
+                                    updateScaleY(newScaleY)
+                                } else {
+                                    updateScaleY(newScaleY)
+                                }
+                            }
+                        ), in: 0.01...8.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                        .disabled(isProportionalScale)
+                        .opacity(isProportionalScale ? 0.5 : 1.0)
+                    }
+                    
+                    VStack(alignment: .center, spacing: 2) {
+                        Image(systemName: isProportionalScale ? "link" : "link.slash")
+                            .font(.system(size: 12))
+                            .foregroundColor(isProportionalScale ? .accentColor : .secondary)
+                        
+                        Text("Lock")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        
+                        Toggle("", isOn: $isProportionalScale)
+                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                            .scaleEffect(0.8)
+                            .frame(width: 40)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct RadialGradientControlsView: View {
+    let currentGradient: VectorGradient?
+    let document: VectorDocument
+    let getRadialAngle: (VectorGradient) -> Double
+    let getRadialAspectRatio: (VectorGradient) -> Double
+    let updateRadialAngle: (Double) -> Void
+    let updateRadialAspectRatio: (Double) -> Void
+    
+    var body: some View {
+        if case .radial = currentGradient {
+            VStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Angle")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(currentGradient != nil ? String(format: "%.2f", getRadialAngle(currentGradient!)) : "0.00")°")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { currentGradient != nil ? getRadialAngle(currentGradient!) : 0.0 },
+                        set: updateRadialAngle
+                    ), in: -180.0...180.0, onEditingChanged: { editing in
+                        if !editing { document.saveToUndoStack() }
+                    })
+                    .controlSize(.small)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Aspect Ratio")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(currentGradient != nil ? String(format: "%.4f", getRadialAspectRatio(currentGradient!) * 100) : "100.0000")%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { currentGradient != nil ? getRadialAspectRatio(currentGradient!) : 1.0 },
+                        set: updateRadialAspectRatio
+                    ), in: -2.0...2.0, onEditingChanged: { editing in
+                        if !editing { document.saveToUndoStack() }
+                    })
+                    .controlSize(.small)
+                }
+            }
+        }
+    }
+}
+
+struct GradientPreviewAndStopsView: View {
+    let currentGradient: VectorGradient?
+    let document: VectorDocument
+    @Binding var editingGradientStopId: UUID?
+    @Binding var editingGradientStopColor: VectorColor
+    @Binding var showingGradientColorPicker: Bool
+    let createGradient: (VectorGradient) -> AnyShapeStyle
+    let getGradientStops: (VectorGradient) -> [GradientStop]
+    let getOriginX: (VectorGradient) -> Double
+    let getOriginY: (VectorGradient) -> Double
+    let updateOriginX: (Double) -> Void
+    let updateOriginY: (Double) -> Void
+    let addColorStop: () -> Void
+    let updateStopPosition: (UUID, Double) -> Void
+    let removeColorStop: (UUID) -> Void
+    
+    var body: some View {
+        if currentGradient != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Preview")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GeometryReader { geometry in
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(createGradient(currentGradient!))
+                        .frame(height: 60)
+                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                        .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                        .overlay(
+                            Circle()
+                                .fill(Color.gray.opacity(0.8))
+                                .frame(width: 3, height: 3)
+                                .position(x: geometry.size.width * 0.5, y: 30)
+                        )
+                        .onTapGesture { location in
+                            document.saveToUndoStack()
+                            let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))
+                            let normalizedY = max(0.0, min(1.0, location.y / 60))
+                            updateOriginX(normalizedX)
+                            updateOriginY(normalizedY)
+                        }
+                        .overlay(
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 8, height: 8)
+                                .overlay(Circle().stroke(Color.black, lineWidth: 1))
+                                .position(
+                                    x: max(0, min(geometry.size.width, getOriginX(currentGradient!) * geometry.size.width)),
+                                    y: max(0, min(60, getOriginY(currentGradient!) * 60))
+                                )
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
+                                            let normalizedY = max(0.0, min(1.0, value.location.y / 60))
+                                            updateOriginX(normalizedX)
+                                            updateOriginY(normalizedY)
+                                        }
+                                        .onEnded { _ in document.saveToUndoStack() }
+                                )
+                        )
+                }
+                .frame(height: 60)
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Color Stops")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Button(action: addColorStop) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    let stops = getGradientStops(currentGradient!).sorted { $0.position < $1.position }
+                    ForEach(stops, id: \.id) { stop in
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                editingGradientStopId = stop.id
+                                editingGradientStopColor = stop.color
+                                showingGradientColorPicker = true
+                            }) {
+                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Position: \(Int(stop.position * 100))%")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                
+                                Slider(value: Binding(
+                                    get: { stop.position },
+                                    set: { updateStopPosition(stop.id, $0) }
+                                ), in: 0...1)
+                                .controlSize(.small)
+                            }
+                            
+                            if stops.count > 2 {
+                                Button(action: { removeColorStop(stop.id) }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct GradientApplyButtonView: View {
+    let currentGradient: VectorGradient?
+    let onApply: () -> Void
+    
+    var body: some View {
+        HStack {
+            Spacer()
+            Button("Apply Gradient", action: onApply)
+                .buttonStyle(.borderedProminent)
+                .disabled(currentGradient == nil)
+        }
+    }
+}
+
+struct GradientColorPickerSheet: View {
+    let document: VectorDocument
+    let editingGradientStopId: UUID?
+    @Binding var showingColorPicker: Bool
+    let updateStopColor: (UUID, VectorColor) -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Select Gradient Color")
+                    .font(.headline)
+                Spacer()
+                Button("Done") { showingColorPicker = false }
+                    .buttonStyle(.bordered)
+            }
+            .padding()
+            .background(Color(NSColor.windowBackgroundColor))
+            
+            ColorPanel(document: document) { newColor in
+                if let stopId = editingGradientStopId {
+                    updateStopColor(stopId, newColor)
+                }
+            }
+            .frame(width: 300, height: 400)
+        }
+        .frame(width: 300, height: 450)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+}
 
 // MARK: - Cartesian Grid for Gradient Preview
 
