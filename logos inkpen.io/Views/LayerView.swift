@@ -3642,16 +3642,36 @@ class GradientNSView: NSView {
         // Draw gradient
         switch gradient {
         case .linear(let linear):
-            let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x,
-                                     y: pathBounds.minY + pathBounds.height * linear.startPoint.y)
-            let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x,
-                                   y: pathBounds.minY + pathBounds.height * linear.endPoint.y)
-            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
+            // Apply origin point offset
+            let originOffsetX = pathBounds.width * (linear.originPoint.x - 0.5)
+            let originOffsetY = pathBounds.height * (linear.originPoint.y - 0.5)
+            
+            let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x + originOffsetX,
+                                     y: pathBounds.minY + pathBounds.height * linear.startPoint.y + originOffsetY)
+            let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x + originOffsetX,
+                                   y: pathBounds.minY + pathBounds.height * linear.endPoint.y + originOffsetY)
+            
+            // Apply scale
+            let centerX = (startPoint.x + endPoint.x) / 2
+            let centerY = (startPoint.y + endPoint.y) / 2
+            let scaledStartX = centerX + (startPoint.x - centerX) * CGFloat(linear.scale)
+            let scaledStartY = centerY + (startPoint.y - centerY) * CGFloat(linear.scale)
+            let scaledEndX = centerX + (endPoint.x - centerX) * CGFloat(linear.scale)
+            let scaledEndY = centerY + (endPoint.y - centerY) * CGFloat(linear.scale)
+            
+            let scaledStart = CGPoint(x: scaledStartX, y: scaledStartY)
+            let scaledEnd = CGPoint(x: scaledEndX, y: scaledEndY)
+            
+            context.drawLinearGradient(cgGradient, start: scaledStart, end: scaledEnd, options: [])
 
         case .radial(let radial):
-            let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x,
-                                 y: pathBounds.minY + pathBounds.height * radial.centerPoint.y)
-            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+            // Apply origin point offset
+            let originOffsetX = pathBounds.width * (radial.originPoint.x - 0.5)
+            let originOffsetY = pathBounds.height * (radial.originPoint.y - 0.5)
+            
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x + originOffsetX,
+                                 y: pathBounds.minY + pathBounds.height * radial.centerPoint.y + originOffsetY)
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius) * CGFloat(abs(radial.scale))
             context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [.drawsAfterEndLocation])
         }
         

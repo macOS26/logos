@@ -5322,8 +5322,17 @@ class FileOperations {
     
     private static func generateLinearGradientDefinition(_ gradient: LinearGradient, id: String) -> String {
         var svg = """
-        <linearGradient id="\(id)" x1="\(gradient.startPoint.x)" y1="\(gradient.startPoint.y)" x2="\(gradient.endPoint.x)" y2="\(gradient.endPoint.y)">
+        <linearGradient id="\(id)" x1="\(gradient.startPoint.x)" y1="\(gradient.startPoint.y)" x2="\(gradient.endPoint.x)" y2="\(gradient.endPoint.y)"
         """
+        
+        // Add gradientTransform if origin point or scale differs from default
+        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) || gradient.scale != 1.0 {
+            let translateX = gradient.originPoint.x - 0.5
+            let translateY = gradient.originPoint.y - 0.5
+            svg += " gradientTransform=\"translate(\(translateX) \(translateY)) scale(\(gradient.scale))\""
+        }
+        
+        svg += ">"
         
         for stop in gradient.stops {
             let stopColor = extractRGBComponents(from: stop.color)
@@ -5350,8 +5359,22 @@ class FileOperations {
     
     private static func generateRadialGradientDefinition(_ gradient: RadialGradient, id: String) -> String {
         var svg = """
-        <radialGradient id="\(id)" cx="\(gradient.centerPoint.x)" cy="\(gradient.centerPoint.y)" r="\(gradient.radius)">
+        <radialGradient id="\(id)" cx="\(gradient.centerPoint.x)" cy="\(gradient.centerPoint.y)" r="\(gradient.radius)"
         """
+        
+        // Add focal point if specified
+        if let focalPoint = gradient.focalPoint {
+            svg += " fx=\"\(focalPoint.x)\" fy=\"\(focalPoint.y)\""
+        }
+        
+        // Add gradientTransform if origin point or scale differs from default
+        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) || gradient.scale != 1.0 {
+            let translateX = gradient.originPoint.x - 0.5
+            let translateY = gradient.originPoint.y - 0.5
+            svg += " gradientTransform=\"translate(\(translateX) \(translateY)) scale(\(gradient.scale))\""
+        }
+        
+        svg += ">"
         
         for stop in gradient.stops {
             let stopColor = extractRGBComponents(from: stop.color)

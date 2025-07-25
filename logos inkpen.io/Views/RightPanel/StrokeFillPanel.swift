@@ -1368,10 +1368,45 @@ struct GradientFillSection: View {
         let gradient = SwiftUI.Gradient(stops: gradientStops)
         
         switch vectorGradient {
-        case .linear(_):
-            return AnyShapeStyle(SwiftUI.LinearGradient(gradient: gradient, startPoint: .leading, endPoint: .trailing))
-        case .radial(_):
-            return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: .center, startRadius: 0, endRadius: 50))
+        case .linear(let linear):
+            // Apply origin point offset
+            let originOffsetX = linear.originPoint.x - 0.5
+            let originOffsetY = linear.originPoint.y - 0.5
+            
+            // Calculate adjusted start and end points
+            let adjustedStartX = linear.startPoint.x + originOffsetX
+            let adjustedStartY = linear.startPoint.y + originOffsetY
+            let adjustedEndX = linear.endPoint.x + originOffsetX
+            let adjustedEndY = linear.endPoint.y + originOffsetY
+            
+            // Apply scale
+            let centerX = (adjustedStartX + adjustedEndX) / 2
+            let centerY = (adjustedStartY + adjustedEndY) / 2
+            let scaledStartX = centerX + (adjustedStartX - centerX) * CGFloat(linear.scale)
+            let scaledStartY = centerY + (adjustedStartY - centerY) * CGFloat(linear.scale)
+            let scaledEndX = centerX + (adjustedEndX - centerX) * CGFloat(linear.scale)
+            let scaledEndY = centerY + (adjustedEndY - centerY) * CGFloat(linear.scale)
+            
+            // Convert to SwiftUI UnitPoint
+            let startPoint = UnitPoint(x: scaledStartX, y: scaledStartY)
+            let endPoint = UnitPoint(x: scaledEndX, y: scaledEndY)
+            
+            return AnyShapeStyle(SwiftUI.LinearGradient(gradient: gradient, startPoint: startPoint, endPoint: endPoint))
+            
+        case .radial(let radial):
+            // Apply origin point offset
+            let originOffsetX = radial.originPoint.x - 0.5
+            let originOffsetY = radial.originPoint.y - 0.5
+            
+            // Calculate adjusted center
+            let adjustedCenterX = radial.centerPoint.x + originOffsetX
+            let adjustedCenterY = radial.centerPoint.y + originOffsetY
+            let center = UnitPoint(x: adjustedCenterX, y: adjustedCenterY)
+            
+            // Scale affects the radius
+            let scaledRadius = 50 * CGFloat(abs(radial.scale))
+            
+            return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: scaledRadius))
         }
     }
     
