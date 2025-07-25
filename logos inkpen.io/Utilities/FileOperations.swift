@@ -691,7 +691,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentGradientStops: [GradientStop] = []
     private var currentGradientAttributes: [String: String] = [:]
     private var isParsingGradient = false
-    private var hasGradientTransform = false
     
     struct ParseResult {
         let shapes: [VectorShape]
@@ -1626,7 +1625,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // Apply gradientTransform if present (for angle calculation and origin point support)
+            // Apply gradientTransform if present (only for angle calculation)
             var transformedX1 = x1
             var transformedY1 = y1
             var transformedX2 = x2
@@ -1695,8 +1694,8 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
             // Calculate origin point as the midpoint between start and end
-            let originX = (startPoint.x + endPoint.x) / 2.0
-            let originY = (startPoint.y + endPoint.y) / 2.0
+            let originX = clamp((startPoint.x + endPoint.x) / 2.0, 0.0, 1.0)
+            let originY = clamp((startPoint.y + endPoint.y) / 2.0, 0.0, 1.0)
             
             var linearGradient = LinearGradient(
                 startPoint: startPoint,
@@ -1736,33 +1735,11 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
-            // Apply gradientTransform to parsed coordinates to get actual center
-            var transformedCx = cx
-            var transformedCy = cy
-            
-            if let gradientTransform = attributes["gradientTransform"] {
-                // Parse translate transform: translate(tx, ty)
-                let translatePattern = #"translate\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
-                if let regex = try? NSRegularExpression(pattern: translatePattern, options: []),
-                   let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
-                    
-                    if let txRange = Range(match.range(at: 1), in: gradientTransform),
-                       let tyRange = Range(match.range(at: 2), in: gradientTransform) {
-                        let txStr = String(gradientTransform[txRange])
-                        let tyStr = String(gradientTransform[tyRange])
-                        if let tx = Double(txStr), let ty = Double(tyStr) {
-                            transformedCx += tx
-                            transformedCy += ty
-                            print("🔄 Applied translate(\(tx), \(ty)) to radial gradient center")
-                        }
-                    }
-                }
-            }
-            
-            // Use transformed coordinates, clamped to valid 0-1 range for origin point
-            let centerPoint = CGPoint(x: clamp(transformedCx, 0.0, 1.0), y: clamp(transformedCy, 0.0, 1.0))
-            let focalPoint = CGPoint(x: clamp(fx, 0.0, 1.0), y: clamp(fy, 0.0, 1.0))
-            let radius = clamp(r, 0.0, 1.0)
+            // SIMPLE OBJECT-RELATIVE: ALL radial gradients paint relative to individual object bounds
+            // Always center in object and radius spans to object edge
+            let centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
+            let focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
+            let radius = 0.5  // Radius spans from center to object edge
             
             print("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5")
             
