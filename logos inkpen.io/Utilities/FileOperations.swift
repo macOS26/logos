@@ -1625,19 +1625,33 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
+            // Apply gradientTransform if present (only for angle calculation)
+            var transformedX1 = x1
+            var transformedY1 = y1
+            var transformedX2 = x2
+            var transformedY2 = y2
+            
+            if let gradientTransform = attributes["gradientTransform"] {
+                // Simple parsing for scale(1 -1) which flips Y axis
+                if gradientTransform.contains("scale(1 -1)") || gradientTransform.contains("scale(1,-1)") {
+                    // Flip Y coordinates for angle calculation
+                    transformedY1 = -y1
+                    transformedY2 = -y2
+                    print("🔄 Applied Y-flip from gradientTransform")
+                }
+            }
+            
             // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
             // For ColecoVision: horizontal gradient should span left edge to right edge of EACH LETTER
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // Determine gradient direction from original coordinates
-            let deltaX = x2 - x1
-            let deltaY = y2 - y1
+            // Determine gradient direction from transformed coordinates
+            let deltaX = transformedX2 - transformedX1
+            let deltaY = transformedY2 - transformedY1
             
             // Calculate the actual angle from the SVG coordinates
-            // IMPORTANT: SVG uses Y-down coordinate system, Core Graphics uses Y-up
-            // We need to negate deltaY to convert from SVG to Core Graphics coordinates
-            let angle = atan2(-deltaY, deltaX)
+            let angle = atan2(deltaY, deltaX)
             
             // Calculate normalized start and end points preserving the angle
             // Project gradient line through center of shape at the specified angle
