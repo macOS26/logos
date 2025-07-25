@@ -1004,6 +1004,8 @@ struct GradientFillSection: View {
                             currentGradient = Self.createDefaultGradient(type: newValue)
                         }
                         gradientId = UUID() // Generate new ID for new gradient
+                        // Apply live to selected shapes
+                        applyGradientToSelectedShapes()
                     }
                 }
             }
@@ -1109,6 +1111,13 @@ struct GradientFillSection: View {
                                 RoundedRectangle(cornerRadius: 4)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
+                            .onTapGesture { location in
+                                // Move origin point to clicked location
+                                let newX = max(0, min(1, location.x / geometry.size.width))
+                                let newY = max(0, min(1, location.y / 60))
+                                updateGradientOriginX(newX)
+                                updateGradientOriginY(newY)
+                            }
                             .overlay(
                                 // Origin point indicator (draggable)
                                 Circle()
@@ -1278,6 +1287,8 @@ struct GradientFillSection: View {
             linear.angle = newAngle
             currentGradient = .linear(linear)
             print("🔄 Updated gradient angle to \(Int(newAngle))°")
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
         case .radial(_):
             // Radial gradients don't have angles
             break
@@ -1316,6 +1327,8 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             print("🔄 Updated gradient origin X to \(Int(newX * 100))%")
         }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
     }
     
     private func updateGradientOriginY(_ newY: Double) {
@@ -1331,6 +1344,8 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             print("🔄 Updated gradient origin Y to \(Int(newY * 100))%")
         }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
     }
     
     // NEW: Scale Control
@@ -1356,6 +1371,8 @@ struct GradientFillSection: View {
             currentGradient = .radial(radial)
             print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
         }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
     }
     
     // MARK: - Helper Functions
@@ -1429,6 +1446,8 @@ struct GradientFillSection: View {
                 // AUTO SORT after position change to maintain visual order
                 linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
@@ -1436,6 +1455,8 @@ struct GradientFillSection: View {
                 // AUTO SORT after position change to maintain visual order
                 radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         }
     }
@@ -1448,11 +1469,15 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         }
     }
@@ -1471,11 +1496,15 @@ struct GradientFillSection: View {
             // AUTO SORT after adding new stop to maintain position order
             linear.stops.sort { $0.position < $1.position }
             currentGradient = .linear(linear)
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
         case .radial(var radial):
             radial.stops.append(newStop)
             // AUTO SORT after adding new stop to maintain position order
             radial.stops.sort { $0.position < $1.position }
             currentGradient = .radial(radial)
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
         }
     }
     
@@ -1488,12 +1517,16 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops.remove(at: index)
                 currentGradient = .linear(linear)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         case .radial(var radial):
             guard radial.stops.count > 2 else { return }
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops.remove(at: index)
                 currentGradient = .radial(radial)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
             }
         }
     }
