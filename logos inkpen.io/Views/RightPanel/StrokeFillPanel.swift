@@ -1039,7 +1039,7 @@ struct GradientFillSection: View {
             }
             
             // NEW: Origin Point Control (for positioning gradient)
-            if let gradient = currentGradient {
+            if currentGradient != nil {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Origin Point")
                         .font(.caption)
@@ -1047,16 +1047,19 @@ struct GradientFillSection: View {
                     
                     HStack(spacing: 8) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("X: \(Int(getGradientOriginX(gradient) * 100))%")
+                            Text("X: \(currentGradient != nil ? Int(getGradientOriginX(currentGradient!) * 100) : 0)%")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
                             Slider(value: Binding(
-                                get: { getGradientOriginX(gradient) },
+                                get: { 
+                                    guard let current = currentGradient else { return 0.0 }
+                                    return getGradientOriginX(current) 
+                                },
                                 set: { newX in
                                     updateGradientOriginX(newX)
                                 }
-                            ), in: 0...1, onEditingChanged: { editing in
+                            ), in: -2.0...2.0, onEditingChanged: { editing in
                                 if !editing {
                                     // Save to undo stack when slider editing ends
                                     document.saveToUndoStack()
@@ -1066,16 +1069,19 @@ struct GradientFillSection: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Y: \(Int(getGradientOriginY(gradient) * 100))%")
+                            Text("Y: \(currentGradient != nil ? Int(getGradientOriginY(currentGradient!) * 100) : 0)%")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
                             Slider(value: Binding(
-                                get: { getGradientOriginY(gradient) },
+                                get: { 
+                                    guard let current = currentGradient else { return 0.0 }
+                                    return getGradientOriginY(current) 
+                                },
                                 set: { newY in
                                     updateGradientOriginY(newY)
                                 }
-                            ), in: 0...1, onEditingChanged: { editing in
+                            ), in: -2.0...2.0, onEditingChanged: { editing in
                                 if !editing {
                                     // Save to undo stack when slider editing ends
                                     document.saveToUndoStack()
@@ -1088,20 +1094,23 @@ struct GradientFillSection: View {
             }
             
             // NEW: Scale Control (-200% to 200%)
-            if let gradient = currentGradient {
+            if currentGradient != nil {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Scale")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         Spacer()
-                        Text("\(Int(getGradientScale(gradient) * 100))%")
+                        Text("\(currentGradient != nil ? Int(getGradientScale(currentGradient!) * 100) : 0)%")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     
                     Slider(value: Binding(
-                        get: { getGradientScale(gradient) },
+                        get: { 
+                            guard let current = currentGradient else { return 1.0 }
+                            return getGradientScale(current) 
+                        },
                         set: { newScale in
                             updateGradientScale(newScale)
                         }
@@ -1115,8 +1124,70 @@ struct GradientFillSection: View {
                 }
             }
             
+            // NEW: Radial Gradient Angle Control (-180° to 180°)
+            if case .radial = currentGradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Angle")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(currentGradient != nil ? String(format: "%.2f", getRadialGradientAngle(currentGradient!)) : "0.00")°")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { 
+                            guard let current = currentGradient else { return 0.0 }
+                            return getRadialGradientAngle(current) 
+                        },
+                        set: { newAngle in
+                            updateRadialGradientAngle(newAngle)
+                        }
+                    ), in: -180.0...180.0, onEditingChanged: { editing in
+                        if !editing {
+                            // Save to undo stack when slider editing ends
+                            document.saveToUndoStack()
+                        }
+                    })
+                    .controlSize(.small)
+                }
+            }
+            
+            // NEW: Radial Gradient Aspect Ratio Control (-200% to 200%)
+            if case .radial = currentGradient {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Aspect Ratio")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(currentGradient != nil ? String(format: "%.4f", getRadialGradientAspectRatio(currentGradient!) * 100) : "100.0000")%")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Slider(value: Binding(
+                        get: { 
+                            guard let current = currentGradient else { return 1.0 }
+                            return getRadialGradientAspectRatio(current) 
+                        },
+                        set: { newRatio in
+                            updateRadialGradientAspectRatio(newRatio)
+                        }
+                    ), in: -2.0...2.0, onEditingChanged: { editing in
+                        if !editing {
+                            // Save to undo stack when slider editing ends
+                            document.saveToUndoStack()
+                        }
+                    })
+                    .controlSize(.small)
+                }
+            }
+            
             // Gradient Preview with Interactive Origin Point
-            if let gradient = currentGradient {
+            if currentGradient != nil {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Preview")
                         .font(.caption)
@@ -1125,7 +1196,7 @@ struct GradientFillSection: View {
                     // Enhanced gradient preview with origin point control
                     GeometryReader { geometry in
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(createSwiftUIGradient(from: gradient))
+                            .fill(createSwiftUIGradient(from: currentGradient!))
                             .frame(height: 60)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
@@ -1150,8 +1221,8 @@ struct GradientFillSection: View {
                                             .stroke(Color.black, lineWidth: 1)
                                     )
                                     .position(
-                                        x: getGradientOriginX(gradient) * geometry.size.width,
-                                        y: getGradientOriginY(gradient) * 60
+                                        x: currentGradient != nil ? getGradientOriginX(currentGradient!) * geometry.size.width : 0,
+                                        y: currentGradient != nil ? getGradientOriginY(currentGradient!) * 60 : 0
                                     )
                                     .gesture(
                                         DragGesture()
@@ -1187,7 +1258,7 @@ struct GradientFillSection: View {
                     }
                     
                     // Color stops list - AUTO REORDER by position (0% to 100%)
-                    let stops = getGradientStops(gradient).sorted { $0.position < $1.position }
+                    let stops = currentGradient != nil ? getGradientStops(currentGradient!).sorted { $0.position < $1.position } : []
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             // Color swatch - OPENS COLOR PANEL AS POPUP!
@@ -1396,6 +1467,58 @@ struct GradientFillSection: View {
             radial.scale = newScale
             currentGradient = .radial(radial)
             print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
+        }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
+    }
+    
+    // NEW: Radial Gradient Angle Control
+    private func getRadialGradientAngle(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(_):
+            return 0.0
+        case .radial(let radial):
+            return radial.angle
+        }
+    }
+    
+    private func updateRadialGradientAngle(_ newAngle: Double) {
+        guard let gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(_):
+            // Linear gradients use different angle logic
+            break
+        case .radial(var radial):
+            radial.angle = newAngle
+            currentGradient = .radial(radial)
+            print("🔄 Updated radial gradient angle to \(String(format: "%.2f", newAngle))°")
+        }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
+    }
+    
+    // NEW: Radial Gradient Aspect Ratio Control
+    private func getRadialGradientAspectRatio(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(_):
+            return 1.0
+        case .radial(let radial):
+            return radial.aspectRatio
+        }
+    }
+    
+    private func updateRadialGradientAspectRatio(_ newRatio: Double) {
+        guard let gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(_):
+            // Linear gradients don't have aspect ratios
+            break
+        case .radial(var radial):
+            radial.aspectRatio = newRatio
+            currentGradient = .radial(radial)
+            print("🔄 Updated radial gradient aspect ratio to \(String(format: "%.4f", newRatio * 100))%")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()

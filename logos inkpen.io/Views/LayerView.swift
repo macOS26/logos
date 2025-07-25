@@ -3671,8 +3671,29 @@ class GradientNSView: NSView {
             
             let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x + originOffsetX,
                                  y: pathBounds.minY + pathBounds.height * radial.centerPoint.y + originOffsetY)
+            
+            // NEW: Apply transforms for angle and aspect ratio support
+            context.saveGState()
+            
+            // Translate to gradient center for transformation
+            context.translateBy(x: center.x, y: center.y)
+            
+            // Apply rotation (convert degrees to radians)
+            let angleRadians = CGFloat(radial.angle * .pi / 180.0)
+            context.rotate(by: angleRadians)
+            
+            // Apply aspect ratio scaling (elliptical gradient)
+            let scaleX: CGFloat = 1.0
+            let scaleY = CGFloat(radial.aspectRatio)
+            context.scaleBy(x: scaleX, y: scaleY)
+            
+            // Calculate radius with scale applied
             let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius) * CGFloat(abs(radial.scale))
-            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [.drawsAfterEndLocation])
+            
+            // Draw gradient at origin (0,0) since we've translated to center
+            context.drawRadialGradient(cgGradient, startCenter: CGPoint.zero, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
+            
+            context.restoreGState()
         }
         
         context.restoreGState()

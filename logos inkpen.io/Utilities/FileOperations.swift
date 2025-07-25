@@ -1746,6 +1746,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
+            // NEW: Parse gradientTransform for angle and aspect ratio
+            var gradientAngle: Double = 0.0
+            var gradientAspectRatio: Double = 1.0
+            
+            if let gradientTransformRaw = attributes["gradientTransform"] {
+                print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
+                let transforms = parseGradientTransform(gradientTransformRaw)
+                gradientAngle = transforms.angle
+                gradientAspectRatio = transforms.aspectRatio
+                print("🔄 Extracted: angle=\(gradientAngle)°, aspectRatio=\(gradientAspectRatio)")
+            }
+            
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
             var radialGradient = RadialGradient(
                 centerPoint: centerPoint,
@@ -1758,6 +1770,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             // Set the origin point to the center point
             radialGradient.originPoint = centerPoint
+            
+            // NEW: Set the gradient transform properties
+            radialGradient.angle = gradientAngle
+            radialGradient.aspectRatio = gradientAspectRatio
             
             vectorGradient = .radial(radialGradient)
             print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
@@ -1778,6 +1794,63 @@ class SVGParser: NSObject, XMLParserDelegate {
         isParsingGradient = false
         
         print("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops")
+    }
+    
+    /// Parse SVG gradientTransform attribute to extract angle and aspect ratio
+    private func parseGradientTransform(_ transform: String) -> (angle: Double, aspectRatio: Double) {
+        var angle: Double = 0.0
+        var aspectRatio: Double = 1.0
+        
+        // Parse transform functions: translate(x,y) rotate(angle) scale(sx,sy)
+        // Example: "translate(771.04 670.64) rotate(83.98) scale(1 .65)"
+        
+        // Extract rotate value
+        if let rotateMatch = transform.range(of: #"rotate\(([^)]+)\)"#, options: .regularExpression) {
+            let rotateSubstring = String(transform[rotateMatch])
+            let numbers = extractNumbers(from: rotateSubstring)
+            if let rotateAngle = numbers.first {
+                // Illustrator shows negative angle, so negate the SVG rotation
+                angle = -rotateAngle
+                print("🔄 Extracted rotation: \(rotateAngle)° -> angle: \(angle)°")
+            }
+        }
+        
+        // Extract scale values for aspect ratio
+        if let scaleMatch = transform.range(of: #"scale\(([^)]+)\)"#, options: .regularExpression) {
+            let scaleSubstring = String(transform[scaleMatch])
+            let numbers = extractNumbers(from: scaleSubstring)
+            if numbers.count >= 2 {
+                let scaleX = numbers[0]
+                let scaleY = numbers[1]
+                // Aspect ratio is scaleY / scaleX (how much Y is scaled relative to X)
+                if scaleX != 0 {
+                    aspectRatio = scaleY / scaleX
+                    print("🔄 Extracted scale: x=\(scaleX), y=\(scaleY) -> aspectRatio: \(aspectRatio)")
+                }
+            } else if numbers.count == 1 {
+                // Uniform scale
+                aspectRatio = 1.0
+                print("🔄 Extracted uniform scale: \(numbers[0])")
+            }
+        }
+        
+        return (angle: angle, aspectRatio: aspectRatio)
+    }
+    
+    /// Extract numbers from a string (helper for parseGradientTransform)
+    private func extractNumbers(from string: String) -> [Double] {
+        // Regular expression to match numbers (including decimals and negative)
+        let pattern = #"-?\d*\.?\d+"#
+        let regex = try! NSRegularExpression(pattern: pattern)
+        let range = NSRange(string.startIndex..<string.endIndex, in: string)
+        let matches = regex.matches(in: string, range: range)
+        
+        return matches.compactMap { match in
+            if let range = Range(match.range, in: string) {
+                return Double(String(string[range]))
+            }
+            return nil
+        }
     }
     
     /// Clamp a value between min and max
