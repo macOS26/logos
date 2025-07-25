@@ -1633,32 +1633,38 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Determine gradient direction from original coordinates
             let deltaX = x2 - x1
             let deltaY = y2 - y1
-            // FORCE PAINT GRADIENT TO FIT SHAPE: Always 0→1 regardless of original coordinates
-            // Determine if gradient is horizontal or vertical and FORCE to span shape edges
-            if abs(deltaX) > abs(deltaY) {
-                // Horizontal gradient: FORCE left edge to right edge
-                startPoint = CGPoint(x: 0.0, y: 0.5)
-                endPoint = CGPoint(x: 1.0, y: 0.5)
-                print("🎯 FORCED HORIZONTAL GRADIENT: 0.0 → 1.0 (left to right edge)")
-            } else {
-                // Vertical gradient: FORCE top edge to bottom edge
-                startPoint = CGPoint(x: 0.5, y: 0.0)
-                endPoint = CGPoint(x: 0.5, y: 1.0)
-                print("🎯 FORCED VERTICAL GRADIENT: 0.0 → 1.0 (top to bottom edge)")
-            }
             
-            print("🎯 GRADIENT FORCED TO FIT SHAPE: \(startPoint) → \(endPoint)")
-            print("   Original SVG coordinates IGNORED - gradient paints to shape bounds")
-            print("🔥 FINAL GRADIENT: Linear gradient with start=\(startPoint), end=\(endPoint), stops=\(currentGradientStops.count)")
+            // Calculate the actual angle from the SVG coordinates
+            // IMPORTANT: SVG uses Y-down coordinate system, Core Graphics uses Y-up
+            // We need to negate deltaY to convert from SVG to Core Graphics coordinates
+            let angle = atan2(-deltaY, deltaX)
+            
+            // Calculate normalized start and end points preserving the angle
+            // Project gradient line through center of shape at the specified angle
+            let centerX = 0.5
+            let centerY = 0.5
+            
+            // Calculate the maximum distance from center to edge of unit square
+            // This ensures gradient fully covers the shape at any angle
+            let maxDist = sqrt(0.5 * 0.5 + 0.5 * 0.5)
+            
+            // Calculate start and end points at the proper angle
+            startPoint = CGPoint(
+                x: centerX - maxDist * cos(angle),
+                y: centerY - maxDist * sin(angle)
+            )
+            endPoint = CGPoint(
+                x: centerX + maxDist * cos(angle),
+                y: centerY + maxDist * sin(angle)
+            )
+            
+            let angleDegrees = angle * 180.0 / .pi
+            print("🎯 GRADIENT AT ANGLE: \(String(format: "%.2f", angleDegrees))° from SVG")
+            print("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))")
+            print("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))")
+            print("🔥 FINAL GRADIENT: Linear gradient with angle=\(String(format: "%.2f", angleDegrees))°, stops=\(currentGradientStops.count)")
             
             // startPoint and endPoint are already defined above
-            
-            // Calculate gradient angle for debugging
-            let gradientDeltaX = endPoint.x - startPoint.x
-            let gradientDeltaY = endPoint.y - startPoint.y
-            let angle = atan2(gradientDeltaY, gradientDeltaX) * 180.0 / .pi
-            
-            print("🔧 Gradient angle: \(angle) degrees")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
