@@ -3662,7 +3662,7 @@ class GradientNSView: NSView {
             let scaledStart = CGPoint(x: scaledStartX, y: scaledStartY)
             let scaledEnd = CGPoint(x: scaledEndX, y: scaledEndY)
             
-            context.drawLinearGradient(cgGradient, start: scaledStart, end: scaledEnd, options: [])
+            context.drawLinearGradient(cgGradient, start: scaledStart, end: scaledEnd, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 
         case .radial(let radial):
             // Apply origin point offset
