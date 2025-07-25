@@ -691,6 +691,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentGradientStops: [GradientStop] = []
     private var currentGradientAttributes: [String: String] = [:]
     private var isParsingGradient = false
+    private var hasGradientTransform = false
     
     struct ParseResult {
         let shapes: [VectorShape]
