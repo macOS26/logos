@@ -1271,7 +1271,7 @@ struct GradientFillSection: View {
     }
     
     private func updateGradientAngle(_ newAngle: Double) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1304,7 +1304,7 @@ struct GradientFillSection: View {
     }
     
     private func updateGradientOriginX(_ newX: Double) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1319,7 +1319,7 @@ struct GradientFillSection: View {
     }
     
     private func updateGradientOriginY(_ newY: Double) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1344,7 +1344,7 @@ struct GradientFillSection: View {
     }
     
     private func updateGradientScale(_ newScale: Double) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1385,7 +1385,7 @@ struct GradientFillSection: View {
     }
     
     private func updateStopPosition(stopId: UUID, position: Double) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1406,7 +1406,7 @@ struct GradientFillSection: View {
     }
     
     private func updateStopColor(stopId: UUID, color: VectorColor) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
@@ -1423,7 +1423,7 @@ struct GradientFillSection: View {
     }
     
     private func addColorStop() {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         // Find a good position for the new stop - between the last two stops
         let stops = getGradientStops(gradient)
@@ -1445,7 +1445,7 @@ struct GradientFillSection: View {
     }
     
     private func removeColorStop(stopId: UUID) {
-        guard var gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):

@@ -4737,7 +4737,7 @@ class FileOperations {
         
         // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
         // This ensures objects stay within their intended viewBox bounds
-        let svgDocumentSize = result.metadata.documentSize ?? CGSize(width: 100, height: 100)
+        let svgDocumentSize = result.metadata.documentSize
         let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
         let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
         
