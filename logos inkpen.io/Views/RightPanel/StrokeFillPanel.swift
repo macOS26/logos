@@ -996,10 +996,10 @@ struct GradientFillSection: View {
                 .pickerStyle(SegmentedPickerStyle())
                 .onChange(of: gradientType) { oldValue, newValue in
                     if oldValue != newValue {
-                        // Preserve existing color stops when switching gradient types
+                        // Preserve existing gradient properties when switching gradient types
                         if let existingGradient = currentGradient {
                             let existingStops = getGradientStops(existingGradient)
-                            currentGradient = Self.createGradientWithStops(type: newValue, stops: existingStops)
+                            currentGradient = Self.createGradientPreservingProperties(type: newValue, stops: existingStops, from: existingGradient)
                         } else {
                             currentGradient = Self.createDefaultGradient(type: newValue)
                         }
@@ -1725,16 +1725,17 @@ struct GradientFillSection: View {
         
         switch type {
         case .linear:
-            let linear = LinearGradient(
+            var linear = LinearGradient(
                 startPoint: CGPoint(x: 0, y: 0),
                 endPoint: CGPoint(x: 1, y: 0),
                 stops: validStops,
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
+            // Keep default originPoint for new gradients - will be preserved when switching types
             return .linear(linear)
         case .radial:
-            let radial = RadialGradient(
+            var radial = RadialGradient(
                 centerPoint: CGPoint(x: 0.5, y: 0.5),
                 radius: 0.5,
                 stops: validStops,
@@ -1742,6 +1743,86 @@ struct GradientFillSection: View {
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
+            // Keep default originPoint for new gradients - will be preserved when switching types
+            return .radial(radial)
+        }
+    }
+    
+    // NEW: Create gradient while preserving properties from existing gradient
+    static func createGradientPreservingProperties(type: GradientType, stops: [GradientStop], from existingGradient: VectorGradient) -> VectorGradient {
+        // Ensure we have at least 2 stops for a valid gradient
+        let validStops = stops.isEmpty ? [
+            GradientStop(position: 0.0, color: .black, opacity: 1.0),
+            GradientStop(position: 1.0, color: .white, opacity: 1.0)
+        ] : stops
+        
+        switch type {
+        case .linear:
+            var linear = LinearGradient(
+                startPoint: CGPoint(x: 0, y: 0),
+                endPoint: CGPoint(x: 1, y: 0),
+                stops: validStops,
+                spreadMethod: .pad,
+                units: .objectBoundingBox
+            )
+            
+            // Preserve properties from existing gradient
+            switch existingGradient {
+            case .linear(let existingLinear):
+                // Preserve all properties from existing linear gradient
+                linear.originPoint = existingLinear.originPoint
+                linear.scale = existingLinear.scale
+                linear.units = existingLinear.units
+                linear.spreadMethod = existingLinear.spreadMethod
+            case .radial(let existingRadial):
+                // Convert radial properties to linear where applicable
+                linear.originPoint = existingRadial.originPoint
+                linear.scale = existingRadial.scale
+                linear.units = existingRadial.units
+                linear.spreadMethod = existingRadial.spreadMethod
+            }
+            
+            return .linear(linear)
+            
+        case .radial:
+            // Start with smart defaults based on existing gradient
+            let (centerPoint, radius, focalPoint) = {
+                switch existingGradient {
+                case .radial(let existingRadial):
+                    return (existingRadial.centerPoint, existingRadial.radius, existingRadial.focalPoint)
+                case .linear(_):
+                    // Default values for conversion from linear
+                    return (CGPoint(x: 0.5, y: 0.5), 0.5, nil as CGPoint?)
+                }
+            }()
+            
+            var radial = RadialGradient(
+                centerPoint: centerPoint,
+                radius: radius,
+                stops: validStops,
+                focalPoint: focalPoint,
+                spreadMethod: .pad,
+                units: .objectBoundingBox
+            )
+            
+            // Preserve properties from existing gradient
+            switch existingGradient {
+            case .linear(let existingLinear):
+                // Convert linear properties to radial where applicable
+                radial.originPoint = existingLinear.originPoint
+                radial.scale = existingLinear.scale
+                radial.units = existingLinear.units
+                radial.spreadMethod = existingLinear.spreadMethod
+            case .radial(let existingRadial):
+                // Preserve all properties from existing radial gradient
+                radial.originPoint = existingRadial.originPoint
+                radial.scale = existingRadial.scale
+                radial.angle = existingRadial.angle
+                radial.aspectRatio = existingRadial.aspectRatio
+                radial.units = existingRadial.units
+                radial.spreadMethod = existingRadial.spreadMethod
+            }
+            
             return .radial(radial)
         }
     }
