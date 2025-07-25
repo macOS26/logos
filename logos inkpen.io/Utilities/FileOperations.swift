@@ -1632,12 +1632,21 @@ class SVGParser: NSObject, XMLParserDelegate {
             var transformedY2 = y2
             
             if let gradientTransform = attributes["gradientTransform"] {
-                // Simple parsing for scale(1 -1) which flips Y axis
-                if gradientTransform.contains("scale(1 -1)") || gradientTransform.contains("scale(1,-1)") {
-                    // Flip Y coordinates for angle calculation
-                    transformedY1 = -y1
-                    transformedY2 = -y2
-                    print("🔄 Applied Y-flip from gradientTransform")
+                // Parse scale transform to check for Y-flip
+                // Matches patterns like scale(1 -1), scale(.98 -.98), scale(1,-1), etc.
+                let scalePattern = #"scale\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
+                if let regex = try? NSRegularExpression(pattern: scalePattern, options: []),
+                   let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
+                    
+                    if let scaleYRange = Range(match.range(at: 2), in: gradientTransform) {
+                        let scaleYStr = String(gradientTransform[scaleYRange])
+                        if let scaleY = Double(scaleYStr), scaleY < 0 {
+                            // Negative Y scale means Y-flip
+                            transformedY1 = -y1
+                            transformedY2 = -y2
+                            print("🔄 Applied Y-flip from gradientTransform scale(x, \(scaleY))")
+                        }
+                    }
                 }
             }
             

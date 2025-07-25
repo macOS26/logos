@@ -3642,19 +3642,15 @@ class GradientNSView: NSView {
         // Draw gradient
         switch gradient {
         case .linear(let linear):
-            // CRITICAL FIX: Flip Y coordinates to match SVG coordinate system
-            // SVG uses Y-down, Core Graphics uses Y-up
-            // This ensures -134° in SVG looks like -134° (not +134°) when rendered
             let startPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.startPoint.x,
-                                     y: pathBounds.maxY - pathBounds.height * linear.startPoint.y)
+                                     y: pathBounds.minY + pathBounds.height * linear.startPoint.y)
             let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x,
-                                   y: pathBounds.maxY - pathBounds.height * linear.endPoint.y)
+                                   y: pathBounds.minY + pathBounds.height * linear.endPoint.y)
             context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
 
         case .radial(let radial):
-            // CRITICAL FIX: Flip Y coordinate for center point
             let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x,
-                                 y: pathBounds.maxY - pathBounds.height * radial.centerPoint.y)
+                                 y: pathBounds.minY + pathBounds.height * radial.centerPoint.y)
             let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
             context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [.drawsAfterEndLocation])
         }
