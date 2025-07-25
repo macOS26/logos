@@ -1028,7 +1028,12 @@ struct GradientFillSection: View {
                         set: { newAngle in
                             updateGradientAngle(newAngle)
                         }
-                    ), in: -180...180)  // CHANGED: -180° to +180° range
+                    ), in: -180...180, onEditingChanged: { editing in
+                        if !editing {
+                            // Save to undo stack when slider editing ends
+                            document.saveToUndoStack()
+                        }
+                    })
                     .controlSize(.small)
                 }
             }
@@ -1051,7 +1056,12 @@ struct GradientFillSection: View {
                                 set: { newX in
                                     updateGradientOriginX(newX)
                                 }
-                            ), in: 0...1)
+                            ), in: 0...1, onEditingChanged: { editing in
+                                if !editing {
+                                    // Save to undo stack when slider editing ends
+                                    document.saveToUndoStack()
+                                }
+                            })
                             .controlSize(.small)
                         }
                         
@@ -1065,7 +1075,12 @@ struct GradientFillSection: View {
                                 set: { newY in
                                     updateGradientOriginY(newY)
                                 }
-                            ), in: 0...1)
+                            ), in: 0...1, onEditingChanged: { editing in
+                                if !editing {
+                                    // Save to undo stack when slider editing ends
+                                    document.saveToUndoStack()
+                                }
+                            })
                             .controlSize(.small)
                         }
                     }
@@ -1090,7 +1105,12 @@ struct GradientFillSection: View {
                         set: { newScale in
                             updateGradientScale(newScale)
                         }
-                    ), in: -2.0...2.0)  // -200% to 200%
+                    ), in: -2.0...2.0, onEditingChanged: { editing in
+                        if !editing {
+                            // Save to undo stack when slider editing ends
+                            document.saveToUndoStack()
+                        }
+                    })
                     .controlSize(.small)
                 }
             }
@@ -1112,6 +1132,8 @@ struct GradientFillSection: View {
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
                             .onTapGesture { location in
+                                // Save to undo stack before making changes
+                                document.saveToUndoStack()
                                 // Move origin point to clicked location
                                 let newX = max(0, min(1, location.x / geometry.size.width))
                                 let newY = max(0, min(1, location.y / 60))
@@ -1138,6 +1160,10 @@ struct GradientFillSection: View {
                                                 let newY = max(0, min(1, value.location.y / 60))
                                                 updateGradientOriginX(newX)
                                                 updateGradientOriginY(newY)
+                                            }
+                                            .onEnded { _ in
+                                                // Save to undo stack on mouse up
+                                                document.saveToUndoStack()
                                             }
                                     )
                             )
@@ -1536,7 +1562,7 @@ struct GradientFillSection: View {
               let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
         
-        document.saveToUndoStack()
+        // Note: Undo stack saving is now handled by individual controls on mouse up/editing end
         
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {

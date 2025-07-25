@@ -11,7 +11,7 @@ import AppKit
 extension DrawingCanvas {
     // MARK: - BEEP PREVENTION - Local Monitor to Handle All Key Events
     internal func setupKeyEventMonitoring() {
-        // SIMPLE FIX: Local monitor that prevents beeping by handling all key events
+        // IMPROVED: Local monitor that prevents beeping but allows modifier key commands
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
             // PRECISE FIX: Only allow events for NSTextView that is actually first responder
             if let window = NSApp.keyWindow,
@@ -21,7 +21,15 @@ extension DrawingCanvas {
                 return event
             }
             
-            // FOR ALL OTHER CASES: Consume the event to prevent beeping
+            // ALLOW MODIFIER KEY COMBINATIONS (Cmd+Z, Cmd+C, etc.) to pass through
+            if event.modifierFlags.contains(.command) || 
+               event.modifierFlags.contains(.option) || 
+               event.modifierFlags.contains(.control) {
+                // Let modifier key combinations pass through to menu commands
+                return event
+            }
+            
+            // FOR SINGLE KEY PRESSES: Consume the event to prevent beeping
             // This tells macOS "we handled this event, don't make error sound"
             return nil
         }
