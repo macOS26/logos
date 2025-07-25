@@ -1642,24 +1642,40 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
             
             // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
+            // For ColecoVision: horizontal gradient should span left edge to right edge of EACH LETTER
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // Use the gradient coordinates directly from SVG
-            // These are already in objectBoundingBox coordinates (0-1)
-            startPoint = CGPoint(x: transformedX1, y: transformedY1)
-            endPoint = CGPoint(x: transformedX2, y: transformedY2)
-            
-            // Calculate angle for debugging purposes
+            // Determine gradient direction from transformed coordinates
             let deltaX = transformedX2 - transformedX1
             let deltaY = transformedY2 - transformedY1
-            let angle = atan2(deltaY, deltaX)
-            let angleDegrees = angle * 180.0 / .pi
             
-            print("🎯 GRADIENT COORDINATES from SVG:")
+            // Calculate the actual angle from the SVG coordinates
+            let angle = atan2(deltaY, deltaX)
+            
+            // Calculate normalized start and end points preserving the angle
+            // Project gradient line through center of shape at the specified angle
+            let centerX = 0.5
+            let centerY = 0.5
+            
+            // Calculate the maximum distance from center to edge of unit square
+            // This ensures gradient fully covers the shape at any angle
+            let maxDist = sqrt(0.5 * 0.5 + 0.5 * 0.5)
+            
+            // Calculate start and end points at the proper angle
+            startPoint = CGPoint(
+                x: centerX - maxDist * cos(angle),
+                y: centerY - maxDist * sin(angle)
+            )
+            endPoint = CGPoint(
+                x: centerX + maxDist * cos(angle),
+                y: centerY + maxDist * sin(angle)
+            )
+            
+            let angleDegrees = angle * 180.0 / .pi
+            print("🎯 GRADIENT AT ANGLE: \(String(format: "%.2f", angleDegrees))° from SVG")
             print("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))")
             print("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))")
-            print("   Angle: \(String(format: "%.2f", angleDegrees))°")
             print("🔥 FINAL GRADIENT: Linear gradient with angle=\(String(format: "%.2f", angleDegrees))°, stops=\(currentGradientStops.count)")
             
             // startPoint and endPoint are already defined above
