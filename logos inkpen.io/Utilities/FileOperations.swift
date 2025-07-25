@@ -673,6 +673,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var documentSize = CGSize(width: 100, height: 100)
     private var viewBoxWidth: Double = 100.0
     private var viewBoxHeight: Double = 100.0
+    private var viewBoxX: Double = 0.0
+    private var viewBoxY: Double = 0.0
+    private var hasViewBox: Bool = false
     private var creator: String?
     private var version: String?
     private var currentElementName = ""
@@ -783,11 +786,28 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         switch elementName {
+        case "svg":
+            // Reset transform when exiting SVG root
+            if hasViewBox {
+                // Keep viewBox transform as the base
+                let scaleX = documentSize.width / viewBoxWidth
+                let scaleY = documentSize.height / viewBoxHeight
+                currentTransform = CGAffineTransform.identity
+                    .translatedBy(x: -viewBoxX, y: -viewBoxY)
+                    .scaledBy(x: scaleX, y: scaleY)
+            } else {
+                currentTransform = .identity
+            }
+            
         case "g":
             // Pop transform stack
             if !transformStack.isEmpty {
                 transformStack.removeLast()
-                currentTransform = transformStack.last ?? .identity
+                currentTransform = transformStack.last ?? (hasViewBox ? 
+                    CGAffineTransform.identity
+                        .translatedBy(x: -viewBoxX, y: -viewBoxY)
+                        .scaledBy(x: documentSize.width / viewBoxWidth, y: documentSize.height / viewBoxHeight) : 
+                    .identity)
             }
             
         case "style":
@@ -891,27 +911,46 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func parseSVGRoot(attributes: [String: String]) {
+        // Parse width and height first
         if let width = attributes["width"], let height = attributes["height"] {
             let w = parseLength(width) ?? 100
             let h = parseLength(height) ?? 100
             documentSize = CGSize(width: w, height: h)
-            viewBoxWidth = w
-            viewBoxHeight = h
-        } else if let viewBox = attributes["viewBox"] {
+        }
+        
+        // Parse viewBox
+        if let viewBox = attributes["viewBox"] {
             let parts = viewBox.split(separator: " ").compactMap { Double($0) }
             if parts.count >= 4 {
                 // viewBox format: "x y width height"
-                let x = parts[0]
-                let y = parts[1]
-                let width = parts[2] 
-                let height = parts[3]
+                viewBoxX = parts[0]
+                viewBoxY = parts[1]
+                viewBoxWidth = parts[2] 
+                viewBoxHeight = parts[3]
+                hasViewBox = true
                 
-                documentSize = CGSize(width: width, height: height)
-                viewBoxWidth = width
-                viewBoxHeight = height
+                print("🔧 ViewBox parsed: x=\(viewBoxX), y=\(viewBoxY), width=\(viewBoxWidth), height=\(viewBoxHeight)")
                 
-                print("🔧 ViewBox parsed: x=\(x), y=\(y), width=\(width), height=\(height)")
+                // If no explicit width/height, use viewBox dimensions
+                if attributes["width"] == nil && attributes["height"] == nil {
+                    documentSize = CGSize(width: viewBoxWidth, height: viewBoxHeight)
+                }
+                
+                // Calculate the viewBox transform
+                let scaleX = documentSize.width / viewBoxWidth
+                let scaleY = documentSize.height / viewBoxHeight
+                
+                // Apply viewBox transform as the base transform
+                currentTransform = CGAffineTransform.identity
+                    .translatedBy(x: -viewBoxX, y: -viewBoxY)
+                    .scaledBy(x: scaleX, y: scaleY)
+                
+                print("🔄 ViewBox transform: scale=(\(scaleX), \(scaleY)), translate=(\(-viewBoxX), \(-viewBoxY))")
             }
+        } else {
+            // No viewBox, use document size
+            viewBoxWidth = documentSize.width
+            viewBoxHeight = documentSize.height
         }
         
         creator = attributes["data-name"] ?? attributes["generator"]
@@ -925,6 +964,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         if let transform = attributes["transform"] {
             let groupTransform = parseTransform(transform)
             currentTransform = currentTransform.concatenating(groupTransform)
+            print("🔄 Group transform applied: \(transform)")
         }
     }
     
@@ -1175,8 +1215,10 @@ class SVGParser: NSObject, XMLParserDelegate {
         let transform: CGAffineTransform
         if mergedAttributes["transform"] != nil {
             // External SVG with transform attribute - apply it
-            transform = parseTransform(mergedAttributes["transform"] ?? "").concatenating(currentTransform)
-            print("🔄 Applied external SVG transform")
+            // CRITICAL: Apply viewBox transform AFTER shape transform to ensure objects stay within bounds
+            let shapeTransform = parseTransform(mergedAttributes["transform"] ?? "")
+            transform = currentTransform.concatenating(shapeTransform)
+            print("🔄 Applied external SVG transform (viewBox → shape transform)")
         } else {
             // Our own exported SVG (no transform attribute) - coordinates are already correct
             transform = currentTransform.isIdentity ? .identity : currentTransform
@@ -1391,42 +1433,86 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func parseTransform(_ transformString: String) -> CGAffineTransform {
-        // Basic transform parsing - can be extended for complex transforms
+        // Professional SVG transform parsing that handles multiple transforms and proper order
         var transform = CGAffineTransform.identity
         
-        if transformString.contains("translate") {
-            // Parse translate(x, y)
-            if let range = transformString.range(of: "translate\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(10).dropLast()
-                let values = content.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
-                if values.count >= 2 {
-                    transform = transform.translatedBy(x: values[0], y: values[1])
-                } else if values.count == 1 {
-                    transform = transform.translatedBy(x: values[0], y: 0)
-                }
-            }
-        }
+        // Split the transform string into individual transform functions
+        let transformRegex = try! NSRegularExpression(pattern: "(\\w+)\\s*\\(([^)]*)\\)", options: [])
+        let matches = transformRegex.matches(in: transformString, options: [], range: NSRange(location: 0, length: transformString.count))
         
-        if transformString.contains("scale") {
-            // Parse scale(x, y)
-            if let range = transformString.range(of: "scale\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(6).dropLast()
-                let values = content.split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
-                if values.count >= 2 {
-                    transform = transform.scaledBy(x: values[0], y: values[1])
-                } else if values.count == 1 {
-                    transform = transform.scaledBy(x: values[0], y: values[0])
+        // Process transforms in order (they should be applied left to right)
+        for match in matches {
+            guard match.numberOfRanges >= 3 else { continue }
+            
+            let transformType = (transformString as NSString).substring(with: match.range(at: 1))
+            let paramsString = (transformString as NSString).substring(with: match.range(at: 2))
+            
+            // Parse parameters - handle both comma and space separated values
+            let params = paramsString
+                .replacingOccurrences(of: ",", with: " ")
+                .split(separator: " ")
+                .compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+            
+            switch transformType.lowercased() {
+            case "translate":
+                if params.count >= 2 {
+                    transform = transform.translatedBy(x: params[0], y: params[1])
+                } else if params.count == 1 {
+                    transform = transform.translatedBy(x: params[0], y: 0)
                 }
-            }
-        }
-        
-        if transformString.contains("rotate") {
-            // Parse rotate(angle)
-            if let range = transformString.range(of: "rotate\\([^)]+\\)", options: .regularExpression) {
-                let content = String(transformString[range]).dropFirst(7).dropLast()
-                if let angle = Double(content.trimmingCharacters(in: .whitespaces)) {
-                    transform = transform.rotated(by: angle * .pi / 180.0) // Convert degrees to radians
+                
+            case "scale":
+                if params.count >= 2 {
+                    transform = transform.scaledBy(x: params[0], y: params[1])
+                } else if params.count == 1 {
+                    transform = transform.scaledBy(x: params[0], y: params[0])
                 }
+                
+            case "rotate":
+                // Handle rotate(angle [cx cy])
+                if params.count >= 3 {
+                    // Rotation around a point: translate(-cx,-cy), rotate, translate(cx,cy)
+                    let angle = params[0] * .pi / 180.0
+                    let cx = params[1]
+                    let cy = params[2]
+                    transform = transform.translatedBy(x: cx, y: cy)
+                    transform = transform.rotated(by: angle)
+                    transform = transform.translatedBy(x: -cx, y: -cy)
+                } else if params.count >= 1 {
+                    // Simple rotation around origin
+                    let angle = params[0] * .pi / 180.0
+                    transform = transform.rotated(by: angle)
+                }
+                
+            case "skewx":
+                if params.count >= 1 {
+                    let angle = params[0] * .pi / 180.0
+                    transform = CGAffineTransform(a: transform.a, b: transform.b,
+                                                 c: transform.c + transform.a * tan(angle),
+                                                 d: transform.d + transform.b * tan(angle),
+                                                 tx: transform.tx, ty: transform.ty)
+                }
+                
+            case "skewy":
+                if params.count >= 1 {
+                    let angle = params[0] * .pi / 180.0
+                    transform = CGAffineTransform(a: transform.a + transform.c * tan(angle),
+                                                 b: transform.b + transform.d * tan(angle),
+                                                 c: transform.c, d: transform.d,
+                                                 tx: transform.tx, ty: transform.ty)
+                }
+                
+            case "matrix":
+                if params.count >= 6 {
+                    // matrix(a b c d e f) maps to CGAffineTransform(a, b, c, d, tx, ty)
+                    let newTransform = CGAffineTransform(a: params[0], b: params[1],
+                                                        c: params[2], d: params[3],
+                                                        tx: params[4], ty: params[5])
+                    transform = transform.concatenating(newTransform)
+                }
+                
+            default:
+                print("⚠️ Unknown transform type: \(transformType)")
             }
         }
         
@@ -4649,7 +4735,23 @@ class FileOperations {
         // Create a new VectorDocument from the imported shapes
         let document = VectorDocument()
         
-        // Calculate bounds of imported artwork to size canvas appropriately
+        // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
+        // This ensures objects stay within their intended viewBox bounds
+        let svgDocumentSize = result.metadata.documentSize ?? CGSize(width: 100, height: 100)
+        let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
+        let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
+        
+        // Set document size based on SVG viewBox/dimensions
+        document.settings.width = canvasWidth / 72.0 // Convert to inches
+        document.settings.height = canvasHeight / 72.0
+        document.settings.unit = .inches
+        
+        print("🎯 SVG IMPORT USING VIEWBOX DIMENSIONS:")
+        print("   SVG document size: \(svgDocumentSize)")
+        print("   Canvas size: \(canvasWidth) × \(canvasHeight) pts")
+        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+        
+        // Calculate actual artwork bounds for positioning
         var artworkBounds = CGRect.null
         for shape in result.shapes {
             // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
@@ -4661,19 +4763,9 @@ class FileOperations {
             }
         }
         
-        // FIXED: No padding - use exact artwork dimensions for accurate import
-        let canvasWidth = max(artworkBounds.width, 100) // Minimum 100pt
-        let canvasHeight = max(artworkBounds.height, 100) // Minimum 100pt
-        
-        // Set document size based on exact artwork bounds
-        document.settings.width = canvasWidth / 72.0 // Convert to inches
-        document.settings.height = canvasHeight / 72.0
-        document.settings.unit = .inches
-        
-        print("🎯 SVG IMPORT BOUNDS CALCULATION:")
-        print("   Raw artwork bounds: \(artworkBounds)")
-        print("   Canvas size (exact): \(canvasWidth) × \(canvasHeight) pts")
-        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+        if !artworkBounds.isNull {
+            print("   Actual artwork bounds: \(artworkBounds)")
+        }
         
         // Clear existing layers and create pasteboard + canvas + imported layers in correct order
         document.layers.removeAll()
@@ -4720,13 +4812,20 @@ class FileOperations {
         var importedLayer = VectorLayer(name: "Imported SVG")
         document.layers.append(importedLayer)
         
-        // FIXED: No centering needed - place artwork at origin for exact import
-        let translateX: CGFloat = -artworkBounds.minX  // Move to origin
-        let translateY: CGFloat = -artworkBounds.minY  // Move to origin
+        // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
+        // This preserves the intended positioning from the SVG file
+        let translateX: CGFloat = 0  // Keep at viewBox origin
+        let translateY: CGFloat = 0  // Keep at viewBox origin
         
         print("🎯 POSITIONING CALCULATION:")
-        print("   Artwork bounds: \(artworkBounds)")
-        print("   Translation to origin: (\(String(format: "%.1f", translateX)), \(String(format: "%.1f", translateY)))")
+        print("   Using viewBox origin (0,0) - preserving SVG positioning")
+        if !artworkBounds.isNull {
+            print("   Artwork bounds: \(artworkBounds)")
+            if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
+               artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
+                print("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!")
+            }
+        }
         
         // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
         for shape in result.shapes {
