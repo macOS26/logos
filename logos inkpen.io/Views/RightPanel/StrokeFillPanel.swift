@@ -952,6 +952,7 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
+    @State private var isProportionalScale = true
     
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -1038,28 +1039,37 @@ struct GradientFillSection: View {
                 }
             }
             
-            // NEW: Origin Point Control (for positioning gradient)
+            // NEW: Origin Point Control (Cartesian coordinates: 0,0 = center)
             if currentGradient != nil {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Origin Point")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack {
+                        Text("Origin Point (Cartesian: 0,0 = center, -100% to +100%)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("Clamped")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 4)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(3)
+                    }
                     
                     HStack(spacing: 8) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("X: \(currentGradient != nil ? Int(getGradientOriginX(currentGradient!) * 100) : 0)%")
+                            Text("X: \(currentGradient != nil ? Int((getGradientOriginX(currentGradient!) - 0.5) * 200) : 0)%")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
                             Slider(value: Binding(
                                 get: { 
-                                    guard let current = currentGradient else { return 0.0 }
+                                    guard let current = currentGradient else { return 0.5 }
                                     return getGradientOriginX(current) 
                                 },
                                 set: { newX in
                                     updateGradientOriginX(newX)
                                 }
-                            ), in: -2.0...2.0, onEditingChanged: { editing in
+                            ), in: 0.0...1.0, onEditingChanged: { editing in
                                 if !editing {
                                     // Save to undo stack when slider editing ends
                                     document.saveToUndoStack()
@@ -1069,19 +1079,19 @@ struct GradientFillSection: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Y: \(currentGradient != nil ? Int(getGradientOriginY(currentGradient!) * 100) : 0)%")
+                            Text("Y: \(currentGradient != nil ? Int((getGradientOriginY(currentGradient!) - 0.5) * 200) : 0)%")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                             
                             Slider(value: Binding(
                                 get: { 
-                                    guard let current = currentGradient else { return 0.0 }
+                                    guard let current = currentGradient else { return 0.5 }
                                     return getGradientOriginY(current) 
                                 },
                                 set: { newY in
                                     updateGradientOriginY(newY)
                                 }
-                            ), in: -2.0...2.0, onEditingChanged: { editing in
+                            ), in: 0.0...1.0, onEditingChanged: { editing in
                                 if !editing {
                                     // Save to undo stack when slider editing ends
                                     document.saveToUndoStack()
@@ -1093,34 +1103,87 @@ struct GradientFillSection: View {
                 }
             }
             
-            // NEW: Scale Control (-200% to 200%)
+            // NEW: Scale X & Y Control (1% to 800%)
             if currentGradient != nil {
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Scale")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(currentGradient != nil ? Int(getGradientScale(currentGradient!) * 100) : 0)%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        // Scale X
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Scale X: \(currentGradient != nil ? Int(getGradientScaleX(currentGradient!) * 100) : 100)%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Slider(value: Binding(
+                                get: { 
+                                    guard let current = currentGradient else { return 1.0 }
+                                    return getGradientScaleX(current) 
+                                },
+                                set: { newScaleX in
+                                    if isProportionalScale {
+                                        // Update both X and Y proportionally
+                                        updateGradientScaleX(newScaleX)
+                                        updateGradientScaleY(newScaleX)
+                                    } else {
+                                        // Update only X
+                                        updateGradientScaleX(newScaleX)
+                                    }
+                                }
+                            ), in: 0.01...8.0, onEditingChanged: { editing in
+                                if !editing {
+                                    document.saveToUndoStack()
+                                }
+                            })
+                            .controlSize(.small)
+                        }
+                        
+                        // Scale Y
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Scale Y: \(currentGradient != nil ? Int(getGradientScaleY(currentGradient!) * 100) : 100)%\(isProportionalScale ? " (Locked)" : "")")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Slider(value: Binding(
+                                get: { 
+                                    guard let current = currentGradient else { return 1.0 }
+                                    return getGradientScaleY(current) 
+                                },
+                                set: { newScaleY in
+                                    if isProportionalScale {
+                                        // Update both X and Y proportionally
+                                        updateGradientScaleX(newScaleY)
+                                        updateGradientScaleY(newScaleY)
+                                    } else {
+                                        // Update only Y
+                                        updateGradientScaleY(newScaleY)
+                                    }
+                                }
+                            ), in: 0.01...8.0, onEditingChanged: { editing in
+                                if !editing {
+                                    document.saveToUndoStack()
+                                }
+                            })
+                            .controlSize(.small)
+                            .disabled(isProportionalScale) // Disable Y when proportional
+                            .opacity(isProportionalScale ? 0.5 : 1.0) // Visual feedback when disabled
+                        }
+                        
+                        // Proportional Toggle
+                        VStack(alignment: .center, spacing: 2) {
+                            Image(systemName: isProportionalScale ? "link" : "link.slash")
+                                .font(.system(size: 12))
+                                .foregroundColor(isProportionalScale ? .accentColor : .secondary)
+                            
+                            Text("Lock")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            Toggle("", isOn: $isProportionalScale)
+                                .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                                .scaleEffect(0.8)
+                                .frame(width: 40)
+                                .help(isProportionalScale ? "Scales are locked together" : "Scales are independent")
+                        }
                     }
-                    
-                    Slider(value: Binding(
-                        get: { 
-                            guard let current = currentGradient else { return 1.0 }
-                            return getGradientScale(current) 
-                        },
-                        set: { newScale in
-                            updateGradientScale(newScale)
-                        }
-                    ), in: -2.0...2.0, onEditingChanged: { editing in
-                        if !editing {
-                            // Save to undo stack when slider editing ends
-                            document.saveToUndoStack()
-                        }
-                    })
-                    .controlSize(.small)
                 }
             }
             
@@ -1193,24 +1256,37 @@ struct GradientFillSection: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    // Enhanced gradient preview with origin point control
-                    GeometryReader { geometry in
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(createSwiftUIGradient(from: currentGradient!))
-                            .frame(height: 60)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .onTapGesture { location in
-                                // Save to undo stack before making changes
-                                document.saveToUndoStack()
-                                // Move origin point to clicked location
-                                let newX = max(0, min(1, location.x / geometry.size.width))
-                                let newY = max(0, min(1, location.y / 60))
-                                updateGradientOriginX(newX)
-                                updateGradientOriginY(newY)
-                            }
+                                    // Enhanced gradient preview with origin point control
+                // CARTESIAN COORDINATES: Center (0.5, 0.5) = Origin (0,0)
+                // Display range: -100% to +100% (internal: 0.0 to 1.0)
+                GeometryReader { geometry in
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(createSwiftUIGradient(from: currentGradient!))
+                        .frame(height: 60)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .overlay(
+                            // Cartesian grid with hash marks every 10%
+                            CartesianGrid(width: geometry.size.width, height: 60)
+                        )
+                        .overlay(
+                            // Center point indicator (0,0 in Cartesian coordinates)
+                            Circle()
+                                .fill(Color.gray.opacity(0.8))
+                                .frame(width: 3, height: 3)
+                                .position(x: geometry.size.width * 0.5, y: 30)
+                        )
+                                                    .onTapGesture { location in
+                            // Save to undo stack before making changes
+                            document.saveToUndoStack()
+                            // Convert click location to clamped coordinates
+                            let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))  // Clamp 0-1
+                            let normalizedY = max(0.0, min(1.0, location.y / 60))  // Clamp 0-1
+                            updateGradientOriginX(normalizedX)
+                            updateGradientOriginY(normalizedY)
+                        }
                             .overlay(
                                 // Origin point indicator (draggable)
                                 Circle()
@@ -1220,23 +1296,24 @@ struct GradientFillSection: View {
                                         Circle()
                                             .stroke(Color.black, lineWidth: 1)
                                     )
-                                    .position(
-                                        x: currentGradient != nil ? getGradientOriginX(currentGradient!) * geometry.size.width : 0,
-                                        y: currentGradient != nil ? getGradientOriginY(currentGradient!) * 60 : 0
-                                    )
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { value in
-                                                let newX = max(0, min(1, value.location.x / geometry.size.width))
-                                                let newY = max(0, min(1, value.location.y / 60))
-                                                updateGradientOriginX(newX)
-                                                updateGradientOriginY(newY)
-                                            }
-                                            .onEnded { _ in
-                                                // Save to undo stack on mouse up
-                                                document.saveToUndoStack()
-                                            }
-                                    )
+                                                                    .position(
+                                    x: currentGradient != nil ? max(0, min(geometry.size.width, getGradientOriginX(currentGradient!) * geometry.size.width)) : geometry.size.width * 0.5,
+                                    y: currentGradient != nil ? max(0, min(60, getGradientOriginY(currentGradient!) * 60)) : 30
+                                )
+                                                                    .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            // Convert drag location and clamp to preview bounds
+                                            let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
+                                            let normalizedY = max(0.0, min(1.0, value.location.y / 60))
+                                            updateGradientOriginX(normalizedX)
+                                            updateGradientOriginY(normalizedY)
+                                        }
+                                        .onEnded { _ in
+                                            // Save to undo stack on mouse up
+                                            document.saveToUndoStack()
+                                        }
+                                )
                             )
                     }
                     .frame(height: 60)
@@ -1445,28 +1522,54 @@ struct GradientFillSection: View {
         applyGradientToSelectedShapes()
     }
     
-    // NEW: Scale Control
-    private func getGradientScale(_ gradient: VectorGradient) -> Double {
+    // NEW: Scale X & Y Controls
+    private func getGradientScaleX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
-            return linear.scale
+            return linear.scaleX ?? linear.scale ?? 1.0
         case .radial(let radial):
-            return radial.scale
+            return radial.scaleX ?? radial.scale ?? 1.0
         }
     }
     
-    private func updateGradientScale(_ newScale: Double) {
+    private func getGradientScaleY(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(let linear):
+            return linear.scaleY ?? linear.scale ?? 1.0
+        case .radial(let radial):
+            return radial.scaleY ?? radial.scale ?? 1.0
+        }
+    }
+    
+    private func updateGradientScaleX(_ newScaleX: Double) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
-            linear.scale = newScale
+            linear.scaleX = newScaleX
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
+            print("🔄 Updated gradient scale X to \(Int(newScaleX * 100))%")
         case .radial(var radial):
-            radial.scale = newScale
+            radial.scaleX = newScaleX
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient scale to \(Int(newScale * 100))%")
+            print("🔄 Updated gradient scale X to \(Int(newScaleX * 100))%")
+        }
+        // Apply live to selected shapes
+        applyGradientToSelectedShapes()
+    }
+    
+    private func updateGradientScaleY(_ newScaleY: Double) {
+        guard let gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            linear.scaleY = newScaleY
+            currentGradient = .linear(linear)
+            print("🔄 Updated gradient scale Y to \(Int(newScaleY * 100))%")
+        case .radial(var radial):
+            radial.scaleY = newScaleY
+            currentGradient = .radial(radial)
+            print("🔄 Updated gradient scale Y to \(Int(newScaleY * 100))%")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -1545,13 +1648,27 @@ struct GradientFillSection: View {
             let adjustedEndX = linear.endPoint.x + originOffsetX
             let adjustedEndY = linear.endPoint.y + originOffsetY
             
-            // Apply scale
+            // Apply truly independent X and Y scale
+            let scaleX = linear.scaleX ?? linear.scale
+            let scaleY = linear.scaleY ?? linear.scale
+            
+            // Calculate gradient vector
+            let gradientVectorX = adjustedEndX - adjustedStartX
+            let gradientVectorY = adjustedEndY - adjustedStartY
+            
+            // Apply independent scaling to the gradient vector components
+            let scaledVectorX = gradientVectorX * CGFloat(scaleX)
+            let scaledVectorY = gradientVectorY * CGFloat(scaleY)
+            
+            // Calculate center point
             let centerX = (adjustedStartX + adjustedEndX) / 2
             let centerY = (adjustedStartY + adjustedEndY) / 2
-            let scaledStartX = centerX + (adjustedStartX - centerX) * CGFloat(linear.scale)
-            let scaledStartY = centerY + (adjustedStartY - centerY) * CGFloat(linear.scale)
-            let scaledEndX = centerX + (adjustedEndX - centerX) * CGFloat(linear.scale)
-            let scaledEndY = centerY + (adjustedEndY - centerY) * CGFloat(linear.scale)
+            
+            // Create new start and end points from scaled vector
+            let scaledStartX = centerX - scaledVectorX / 2
+            let scaledStartY = centerY - scaledVectorY / 2
+            let scaledEndX = centerX + scaledVectorX / 2
+            let scaledEndY = centerY + scaledVectorY / 2
             
             // Convert to SwiftUI UnitPoint
             let startPoint = UnitPoint(x: scaledStartX, y: scaledStartY)
@@ -1569,8 +1686,14 @@ struct GradientFillSection: View {
             let adjustedCenterY = radial.centerPoint.y + originOffsetY
             let center = UnitPoint(x: adjustedCenterX, y: adjustedCenterY)
             
-            // Scale affects the radius
-            let scaledRadius = 50 * CGFloat(abs(radial.scale))
+            // Apply independent X and Y scale to radius
+            let scaleX = radial.scaleX ?? radial.scale
+            let scaleY = radial.scaleY ?? radial.scale
+            
+            // For truly independent scaling, use the maximum scale for the base radius
+            // This ensures the gradient fills the space properly with independent X/Y scaling
+            let maxScale = max(abs(scaleX), abs(scaleY))
+            let scaledRadius = 50 * CGFloat(maxScale)
             
             return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: scaledRadius))
         }
@@ -1772,12 +1895,16 @@ struct GradientFillSection: View {
                 // Preserve all properties from existing linear gradient
                 linear.originPoint = existingLinear.originPoint
                 linear.scale = existingLinear.scale
+                linear.scaleX = existingLinear.scaleX
+                linear.scaleY = existingLinear.scaleY
                 linear.units = existingLinear.units
                 linear.spreadMethod = existingLinear.spreadMethod
             case .radial(let existingRadial):
                 // Convert radial properties to linear where applicable
                 linear.originPoint = existingRadial.originPoint
                 linear.scale = existingRadial.scale
+                linear.scaleX = existingRadial.scaleX
+                linear.scaleY = existingRadial.scaleY
                 linear.units = existingRadial.units
                 linear.spreadMethod = existingRadial.spreadMethod
             }
@@ -1811,12 +1938,16 @@ struct GradientFillSection: View {
                 // Convert linear properties to radial where applicable
                 radial.originPoint = existingLinear.originPoint
                 radial.scale = existingLinear.scale
+                radial.scaleX = existingLinear.scaleX
+                radial.scaleY = existingLinear.scaleY
                 radial.units = existingLinear.units
                 radial.spreadMethod = existingLinear.spreadMethod
             case .radial(let existingRadial):
                 // Preserve all properties from existing radial gradient
                 radial.originPoint = existingRadial.originPoint
                 radial.scale = existingRadial.scale
+                radial.scaleX = existingRadial.scaleX
+                radial.scaleY = existingRadial.scaleY
                 radial.angle = existingRadial.angle
                 radial.aspectRatio = existingRadial.aspectRatio
                 radial.units = existingRadial.units
@@ -2165,6 +2296,107 @@ extension CGLineCap {
 
 // MARK: - Color Rendering Helper
 // Note: Using renderColorSwatchRightPanel from RightPanel.swift for consistency
+
+// MARK: - Cartesian Grid for Gradient Preview
+
+struct CartesianGrid: View {
+    let width: CGFloat
+    let height: CGFloat
+    
+    var body: some View {
+        ZStack {
+            // Vertical grid lines (X-axis markers)
+            ForEach(0..<11) { index in
+                let position = CGFloat(index) / 10.0  // 0.0 to 1.0
+                let xPosition = position * width
+                let percentage = Int((position - 0.5) * 200)  // Convert to -100% to +100%
+                
+                VStack(spacing: 0) {
+                    // Top hash mark
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
+                    
+                    // Vertical line (lighter for non-center lines)
+                    Rectangle()
+                        .fill(Color.gray.opacity(position == 0.5 ? 0.6 : 0.2))
+                        .frame(width: position == 0.5 ? 1 : 0.5, height: height - 8)
+                    
+                    // Bottom hash mark
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
+                }
+                .position(x: xPosition, y: height / 2)
+            }
+            
+            // Horizontal grid lines (Y-axis markers)
+            ForEach(0..<6) { index in
+                let position = CGFloat(index) / 5.0  // 0.0 to 1.0 (every 20%)
+                let yPosition = position * height
+                let percentage = Int((position - 0.5) * 200)  // Convert to -100% to +100%
+                
+                HStack(spacing: 0) {
+                    // Left hash mark
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
+                    
+                    // Horizontal line (lighter for non-center lines)
+                    Rectangle()
+                        .fill(Color.gray.opacity(position == 0.5 ? 0.6 : 0.2))
+                        .frame(width: width - 8, height: position == 0.5 ? 1 : 0.5)
+                    
+                    // Right hash mark
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
+                }
+                .position(x: width / 2, y: yPosition)
+            }
+            
+            // Percentage labels at key positions
+            VStack {
+                HStack {
+                    Text("-100%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(x: 2, y: 2)
+                    Spacer()
+                    Text("0%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(y: 2)
+                    Spacer()
+                    Text("+100%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(x: -2, y: 2)
+                }
+                .padding(.horizontal, 4)
+                Spacer()
+                HStack {
+                    Text("-100%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(x: 2, y: -2)
+                    Spacer()
+                    Text("0%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(y: -2)
+                    Spacer()
+                    Text("+100%")
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .offset(x: -2, y: -2)
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .allowsHitTesting(false)  // Allow clicks to pass through to the gradient
+    }
+}
 
 // Preview
 struct StrokeFillPanel_Previews: PreviewProvider {

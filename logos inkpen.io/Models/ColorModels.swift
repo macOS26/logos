@@ -1075,7 +1075,9 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     
     // NEW: User control properties
     var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)  // Origin point for gradient positioning
-    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0)
+    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0) - DEPRECATED, use scaleX/scaleY
+    var scaleX: Double? = nil  // Scale X factor (1% to 800% = 0.01 to 8.0)
+    var scaleY: Double? = nil  // Scale Y factor (1% to 800% = 0.01 to 8.0)
     
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.startPoint = startPoint
@@ -1160,7 +1162,9 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     
     // NEW: User control properties
     var originPoint: CGPoint = CGPoint(x: 0.5, y: 0.5)  // Origin point for gradient positioning
-    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0)
+    var scale: Double = 1.0  // Scale factor (-200% to 200% = -2.0 to 2.0) - DEPRECATED, use scaleX/scaleY
+    var scaleX: Double? = nil  // Scale X factor (1% to 800% = 0.01 to 8.0)
+    var scaleY: Double? = nil  // Scale Y factor (1% to 800% = 0.01 to 8.0)
     
     // NEW: Transform properties to match Illustrator gradients
     var angle: Double = 0.0             // Rotation angle in degrees (-180 to 180)
