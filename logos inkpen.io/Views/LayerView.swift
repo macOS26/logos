@@ -66,26 +66,25 @@ struct ShapeView: View {
                 // CRITICAL FIX: Render grouped shapes WITHOUT zoom/offset (prevent double application)
                 ZStack {
                     ForEach(shape.groupedShapes, id: \.id) { groupedShape in
+                        // PERFORMANCE OPTIMIZATION: Create path only once per shape
+                        let cachedPath = Path { path in
+                            addPathElements(groupedShape.path.elements, to: &path)
+                        }
+                        
                         // Render shapes directly - NO coordinate system nesting
                         ZStack {
                             // Fill - only show in color view mode (or always for Canvas)
                             if effectiveViewMode == .color,
                                let fillStyle = groupedShape.fillStyle, 
                                fillStyle.color != .clear {
-                                let path = Path { path in
-                                    addPathElements(groupedShape.path.elements, to: &path)
-                                }
-                                renderFill(fillStyle: fillStyle, path: path, shape: groupedShape)
+                                renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
                             }
                             
-                            // Stroke rendering - improved for keyline mode and placement  
-                            let path = Path { path in
-                                addPathElements(groupedShape.path.elements, to: &path)
-                            }
+                            // Stroke rendering - reuse the same cached path
                             if effectiveViewMode == .keyline {
-                                path.stroke(Color.black, lineWidth: 1.0)
+                                cachedPath.stroke(Color.black, lineWidth: 1.0)
                             } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
-                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: path)
+                                renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
                                     .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
                                     .blendMode(strokeStyle.blendMode.swiftUIBlendMode)
                             }
@@ -114,22 +113,23 @@ struct ShapeView: View {
                     }
                 }
             } else {
-                // REGULAR SHAPE RENDERING: Pre-transform the path
+                // REGULAR SHAPE RENDERING: Pre-transform the path with caching
+                // PERFORMANCE OPTIMIZATION: Create path only once per shape
                 let originalPath = Path { path in
                     addPathElements(shape.path.elements, to: &path)
                 }
                 
-                // BAKE IN THE TRANSFORMATION for individual shapes
+                // BAKE IN THE TRANSFORMATION for individual shapes (cached)
                 let finalPath = originalPath.applying(shape.transform)
 
-                // Fill - use the pre-transformed path
+                // Fill - use the cached pre-transformed path
                 if effectiveViewMode == .color,
                    let fillStyle = shape.fillStyle,
                    fillStyle.color != .clear {
                     renderFill(fillStyle: fillStyle, path: finalPath, shape: shape)
                 }
                 
-                // Stroke rendering - use the pre-transformed path
+                // Stroke rendering - reuse the same cached pre-transformed path
                 if effectiveViewMode == .keyline {
                     finalPath.stroke(Color.black, lineWidth: 1.0)
                 } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
