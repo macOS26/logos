@@ -17,6 +17,8 @@ extension DrawingCanvas {
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
+        // PERFORMANCE OPTIMIZATION: Wrap extensive debug logging in conditional compilation
+        #if DEBUG_GESTURES
         print("🎯 UNIFIED TAP at screen: \(location) canvas: \(canvasLocation)")
         print("🎯 UNIFIED: This is a SINGLE CLICK, not a drag")
         print("🎯 UNIFIED: Current tool: \(document.currentTool.rawValue)")
@@ -59,6 +61,7 @@ extension DrawingCanvas {
                       expandedBounds.contains(canvasLocation)
             print("        SHOULD HIT: \(hits)")
         }
+        #endif
         
         // Cancel bezier drawing for all tools except bezier pen
         if document.currentTool != .bezierPen && isBezierDrawing {
