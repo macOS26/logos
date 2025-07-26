@@ -1168,7 +1168,6 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     
     // NEW: Transform properties to match Illustrator gradients
     var angle: Double = 0.0             // Rotation angle in degrees (-180 to 180)
-    var aspectRatio: Double = 1.0       // Aspect ratio for elliptical gradients (-200% to 200% = -2.0 to 2.0)
     
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.centerPoint = centerPoint

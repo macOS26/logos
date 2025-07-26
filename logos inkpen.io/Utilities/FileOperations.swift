@@ -1746,16 +1746,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
             
-            // NEW: Parse gradientTransform for angle and aspect ratio
+            // NEW: Parse gradientTransform for angle and independent scaling
             var gradientAngle: Double = 0.0
-            var gradientAspectRatio: Double = 1.0
+            var gradientScaleX: Double = 1.0
+            var gradientScaleY: Double = 1.0
             
             if let gradientTransformRaw = attributes["gradientTransform"] {
                 print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
                 let transforms = parseGradientTransform(gradientTransformRaw)
                 gradientAngle = transforms.angle
-                gradientAspectRatio = transforms.aspectRatio
-                print("🔄 Extracted: angle=\(gradientAngle)°, aspectRatio=\(gradientAspectRatio)")
+                gradientScaleX = transforms.scaleX
+                gradientScaleY = transforms.scaleY
+                print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
             }
             
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
@@ -1773,7 +1775,8 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             // NEW: Set the gradient transform properties
             radialGradient.angle = gradientAngle
-            radialGradient.aspectRatio = gradientAspectRatio
+            radialGradient.scaleX = gradientScaleX
+            radialGradient.scaleY = gradientScaleY
             
             vectorGradient = .radial(radialGradient)
             print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
@@ -1797,9 +1800,10 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     /// Parse SVG gradientTransform attribute to extract angle and aspect ratio
-    private func parseGradientTransform(_ transform: String) -> (angle: Double, aspectRatio: Double) {
+    private func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
         var angle: Double = 0.0
-        var aspectRatio: Double = 1.0
+        var scaleX: Double = 1.0
+        var scaleY: Double = 1.0
         
         // Parse transform functions: translate(x,y) rotate(angle) scale(sx,sy)
         // Example: "translate(771.04 670.64) rotate(83.98) scale(1 .65)"
@@ -1815,26 +1819,23 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
-        // Extract scale values for aspect ratio
+        // Extract scale values for independent X/Y scaling
         if let scaleMatch = transform.range(of: #"scale\(([^)]+)\)"#, options: .regularExpression) {
             let scaleSubstring = String(transform[scaleMatch])
             let numbers = extractNumbers(from: scaleSubstring)
             if numbers.count >= 2 {
-                let scaleX = numbers[0]
-                let scaleY = numbers[1]
-                // Aspect ratio is scaleY / scaleX (how much Y is scaled relative to X)
-                if scaleX != 0 {
-                    aspectRatio = scaleY / scaleX
-                    print("🔄 Extracted scale: x=\(scaleX), y=\(scaleY) -> aspectRatio: \(aspectRatio)")
-                }
+                scaleX = numbers[0]
+                scaleY = numbers[1]
+                print("🔄 Extracted scale: x=\(scaleX), y=\(scaleY)")
             } else if numbers.count == 1 {
                 // Uniform scale
-                aspectRatio = 1.0
+                scaleX = numbers[0]
+                scaleY = numbers[0]
                 print("🔄 Extracted uniform scale: \(numbers[0])")
             }
         }
         
-        return (angle: angle, aspectRatio: aspectRatio)
+        return (angle: angle, scaleX: scaleX, scaleY: scaleY)
     }
     
     /// Extract numbers from a string (helper for parseGradientTransform)

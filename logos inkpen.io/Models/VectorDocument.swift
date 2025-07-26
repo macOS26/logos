@@ -169,9 +169,7 @@ class VectorDocument: ObservableObject, Codable {
         self.backgroundColor = settings.backgroundColor
         self.undoStack = []
         self.redoStack = []
-        
-        // REMOVED: setupNotificationObservers() call - notification observers no longer needed
-        
+                
         // Create canvas layer + default working layer
         createCanvasAndWorkingLayers()
         
@@ -389,9 +387,7 @@ class VectorDocument: ObservableObject, Codable {
         return documentBounds
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
+    deinit {}
     
     /// Set up observation for settings changes to update pasteboard
     private func setupSettingsObservation() {
@@ -410,10 +406,7 @@ class VectorDocument: ObservableObject, Codable {
         
         print("🔄 Settings changed - updated pasteboard layer")
     }
-    
-    // REMOVED: setupNotificationObservers() - unused dead code for scaling notifications that are never posted
-    
-    // REMOVED: handleScalingNotification & handleFinishScalingNotification - unused dead code
+        
     
     private func applyScalingToShape(
         shapeId: UUID,
@@ -547,7 +540,6 @@ class VectorDocument: ObservableObject, Codable {
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
         
-        // REMOVED: setupNotificationObservers() call - notification observers no longer needed
     }
     
 

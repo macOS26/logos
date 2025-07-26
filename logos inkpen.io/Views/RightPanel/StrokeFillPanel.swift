@@ -994,7 +994,6 @@ struct GradientFillSection: View {
             )
             
             GradientAngleControlView(
-                gradientType: gradientType,
                 currentGradient: currentGradient,
                 document: document,
                 onAngleChange: updateGradientAngle
@@ -1017,15 +1016,6 @@ struct GradientFillSection: View {
                 getScaleY: getGradientScaleY,
                 updateScaleX: updateGradientScaleX,
                 updateScaleY: updateGradientScaleY
-            )
-            
-            RadialGradientControlsView(
-                currentGradient: currentGradient,
-                document: document,
-                getRadialAngle: getRadialGradientAngle,
-                getRadialAspectRatio: getRadialGradientAspectRatio,
-                updateRadialAngle: updateRadialGradientAngle,
-                updateRadialAspectRatio: updateRadialGradientAspectRatio
             )
             
             GradientPreviewAndStopsView(
@@ -1088,12 +1078,15 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.angle = newAngle
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient angle to \(Int(newAngle))°")
+            print("🔄 Updated linear gradient angle to \(String(format: "%.1f", newAngle))°")
             // Apply live to selected shapes
             applyGradientToSelectedShapes()
-        case .radial(_):
-            // Radial gradients don't have angles
-            break
+        case .radial(var radial):
+            radial.angle = newAngle
+            currentGradient = .radial(radial)
+            print("🔄 Updated radial gradient angle to \(String(format: "%.1f", newAngle))°")
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
         }
     }
     
@@ -1203,57 +1196,9 @@ struct GradientFillSection: View {
         applyGradientToSelectedShapes()
     }
     
-    // NEW: Radial Gradient Angle Control
-    private func getRadialGradientAngle(_ gradient: VectorGradient) -> Double {
-        switch gradient {
-        case .linear(_):
-            return 0.0
-        case .radial(let radial):
-            return radial.angle
-        }
-    }
+
     
-    private func updateRadialGradientAngle(_ newAngle: Double) {
-        guard let gradient = currentGradient else { return }
-        
-        switch gradient {
-        case .linear(_):
-            // Linear gradients use different angle logic
-            break
-        case .radial(var radial):
-            radial.angle = newAngle
-            currentGradient = .radial(radial)
-            print("🔄 Updated radial gradient angle to \(String(format: "%.2f", newAngle))°")
-        }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
-    }
-    
-    // NEW: Radial Gradient Aspect Ratio Control
-    private func getRadialGradientAspectRatio(_ gradient: VectorGradient) -> Double {
-        switch gradient {
-        case .linear(_):
-            return 1.0
-        case .radial(let radial):
-            return radial.aspectRatio
-        }
-    }
-    
-    private func updateRadialGradientAspectRatio(_ newRatio: Double) {
-        guard let gradient = currentGradient else { return }
-        
-        switch gradient {
-        case .linear(_):
-            // Linear gradients don't have aspect ratios
-            break
-        case .radial(var radial):
-            radial.aspectRatio = newRatio
-            currentGradient = .radial(radial)
-            print("🔄 Updated radial gradient aspect ratio to \(String(format: "%.4f", newRatio * 100))%")
-        }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
-    }
+
     
     // MARK: - Helper Functions
     
@@ -1314,14 +1259,18 @@ struct GradientFillSection: View {
             let adjustedCenterY = radial.centerPoint.y + originOffsetY
             let center = UnitPoint(x: adjustedCenterX, y: adjustedCenterY)
             
-            // Apply independent X and Y scale to radius
-            let scaleX = radial.scaleX ?? radial.scale
-            let scaleY = radial.scaleY ?? radial.scale
+            // Apply truly independent X and Y scale - EXACTLY like aspect ratio did
+            let scaleX = radial.scaleX ?? radial.scale ?? 1.0
+            let scaleY = radial.scaleY ?? radial.scale ?? 1.0
             
-            // For truly independent scaling, use the maximum scale for the base radius
-            // This ensures the gradient fills the space properly with independent X/Y scaling
-            let maxScale = max(abs(scaleX), abs(scaleY))
-            let scaledRadius = 50 * CGFloat(maxScale)
+            // For elliptical gradients, we need to use a custom approach
+            // SwiftUI RadialGradient doesn't support elliptical, so we create an elliptical effect
+            let baseRadius = 50.0
+            
+            // Use scaleX and scaleY independently like the CoreGraphics version does
+            // For elliptical gradients, fall back to standard radial with proper scaling hint
+            let avgScale = (abs(scaleX) + abs(scaleY)) / 2.0
+            let scaledRadius = baseRadius * CGFloat(avgScale)
             
             return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: scaledRadius))
         }
@@ -1577,7 +1526,7 @@ struct GradientFillSection: View {
                 radial.scaleX = existingRadial.scaleX
                 radial.scaleY = existingRadial.scaleY
                 radial.angle = existingRadial.angle
-                radial.aspectRatio = existingRadial.aspectRatio
+                // Note: aspectRatio removed - using independent scaleX/scaleY instead
                 radial.units = existingRadial.units
                 radial.spreadMethod = existingRadial.spreadMethod
             }
@@ -1963,26 +1912,34 @@ struct GradientTypePickerView: View {
 }
 
 struct GradientAngleControlView: View {
-    let gradientType: GradientFillSection.GradientType
     let currentGradient: VectorGradient?
     let document: VectorDocument
     let onAngleChange: (Double) -> Void
     
     var body: some View {
-        if gradientType == .linear, let gradient = currentGradient, case .linear(let linear) = gradient {
+        if let gradient = currentGradient {
+            let angle: Double = {
+                switch gradient {
+                case .linear(let linear):
+                    return linear.angle
+                case .radial(let radial):
+                    return radial.angle
+                }
+            }()
+            
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Angle")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(Int(linear.angle))°")
+                    Text("\(String(format: "%.1f", angle))°")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
                 Slider(value: Binding(
-                    get: { linear.angle },
+                    get: { angle },
                     set: onAngleChange
                 ), in: -180...180, onEditingChanged: { editing in
                     if !editing { document.saveToUndoStack() }
@@ -2128,60 +2085,7 @@ struct GradientScaleControlView: View {
     }
 }
 
-struct RadialGradientControlsView: View {
-    let currentGradient: VectorGradient?
-    let document: VectorDocument
-    let getRadialAngle: (VectorGradient) -> Double
-    let getRadialAspectRatio: (VectorGradient) -> Double
-    let updateRadialAngle: (Double) -> Void
-    let updateRadialAspectRatio: (Double) -> Void
-    
-    var body: some View {
-        if case .radial = currentGradient {
-            VStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Angle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(currentGradient != nil ? String(format: "%.2f", getRadialAngle(currentGradient!)) : "0.00")°")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { currentGradient != nil ? getRadialAngle(currentGradient!) : 0.0 },
-                        set: updateRadialAngle
-                    ), in: -180.0...180.0, onEditingChanged: { editing in
-                        if !editing { document.saveToUndoStack() }
-                    })
-                    .controlSize(.small)
-                }
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Aspect Ratio")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Spacer()
-                        Text("\(currentGradient != nil ? String(format: "%.4f", getRadialAspectRatio(currentGradient!) * 100) : "100.0000")%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Slider(value: Binding(
-                        get: { currentGradient != nil ? getRadialAspectRatio(currentGradient!) : 1.0 },
-                        set: updateRadialAspectRatio
-                    ), in: -2.0...2.0, onEditingChanged: { editing in
-                        if !editing { document.saveToUndoStack() }
-                    })
-                    .controlSize(.small)
-                }
-            }
-        }
-    }
-}
+
 
 struct GradientPreviewAndStopsView: View {
     let currentGradient: VectorGradient?
@@ -2345,6 +2249,25 @@ struct GradientColorPickerSheet: View {
     }
 }
 
+// MARK: - Elliptical Gradient for Preview (since SwiftUI doesn't support elliptical radial gradients)
+
+struct EllipticalGradient: View {
+    let gradient: SwiftUI.Gradient
+    let center: UnitPoint
+    let startRadiusX: CGFloat
+    let startRadiusY: CGFloat
+    let endRadiusX: CGFloat
+    let endRadiusY: CGFloat
+    
+    var body: some View {
+        // For now, use a simplified approach since we removed the complex elliptical preview
+        // The actual elliptical rendering happens in the CoreGraphics drawing code
+        let maxRadius = max(endRadiusX, endRadiusY)
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: maxRadius))
+    }
+}
+
 // MARK: - Cartesian Grid for Gradient Preview
 
 struct CartesianGrid: View {
@@ -2362,17 +2285,17 @@ struct CartesianGrid: View {
                 VStack(spacing: 0) {
                     // Top hash mark
                     Rectangle()
-                        .fill(Color.gray.opacity(0.4))
+                        .fill(Color.white.opacity(0.8))
                         .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
                     
                     // Vertical line (lighter for non-center lines)
                     Rectangle()
-                        .fill(Color.gray.opacity(position == 0.5 ? 0.6 : 0.2))
+                        .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.4))
                         .frame(width: position == 0.5 ? 1 : 0.5, height: height - 8)
                     
                     // Bottom hash mark
                     Rectangle()
-                        .fill(Color.gray.opacity(0.4))
+                        .fill(Color.white.opacity(0.8))
                         .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
                 }
                 .position(x: xPosition, y: height / 2)
@@ -2387,17 +2310,17 @@ struct CartesianGrid: View {
                 HStack(spacing: 0) {
                     // Left hash mark
                     Rectangle()
-                        .fill(Color.gray.opacity(0.4))
+                        .fill(Color.white.opacity(0.8))
                         .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
                     
                     // Horizontal line (lighter for non-center lines)
                     Rectangle()
-                        .fill(Color.gray.opacity(position == 0.5 ? 0.6 : 0.2))
+                        .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.4))
                         .frame(width: width - 8, height: position == 0.5 ? 1 : 0.5)
                     
                     // Right hash mark
                     Rectangle()
-                        .fill(Color.gray.opacity(0.4))
+                        .fill(Color.white.opacity(0.8))
                         .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
                 }
                 .position(x: width / 2, y: yPosition)
@@ -2408,17 +2331,17 @@ struct CartesianGrid: View {
                 HStack {
                     Text("-100%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(x: 2, y: 2)
                     Spacer()
                     Text("0%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(y: 2)
                     Spacer()
                     Text("+100%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(x: -2, y: 2)
                 }
                 .padding(.horizontal, 4)
@@ -2426,17 +2349,17 @@ struct CartesianGrid: View {
                 HStack {
                     Text("-100%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(x: 2, y: -2)
                     Spacer()
                     Text("0%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(y: -2)
                     Spacer()
                     Text("+100%")
                         .font(.caption2)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.white)
                         .offset(x: -2, y: -2)
                 }
                 .padding(.horizontal, 4)
