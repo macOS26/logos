@@ -79,197 +79,36 @@ extension DrawingCanvas {
             y: cursorDelta.y / preciseZoom
         )
         
-        // Move selected shapes by directly updating their path coordinates
-        // This ensures the object origin moves with the object (Adobe Illustrator behavior)
+        // PERFORMANCE FIX: Use transform-based movement during drag instead of expensive coordinate recalculation
+        // Only recalculate coordinates at the end when drag finishes
         for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
-               let initialPosition = initialObjectPositions[shapeID] {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                // Create translation transform from canvas delta
+                let translationTransform = CGAffineTransform.identity.translatedBy(x: canvasDelta.x, y: canvasDelta.y)
                 
-                // GROUP MOVEMENT FIX: Handle groups EXACTLY like individual shapes
-                if shape.isGroupContainer {
-                    // For groups, move each grouped shape's coordinates directly (same as individual shapes)
-                    let newPosition = CGPoint(
-                        x: initialPosition.x + canvasDelta.x,
-                        y: initialPosition.y + canvasDelta.y
-                    )
-                    
-                    // Calculate offset needed to move group to new position
-                    let currentCenter = CGPoint(
-                        x: shape.groupBounds.midX,
-                        y: shape.groupBounds.midY
-                    )
-                    
-                    let offset = CGPoint(
-                        x: newPosition.x - currentCenter.x,
-                        y: newPosition.y - currentCenter.y
-                    )
-                    
-                    // CRITICAL FIX: Move each grouped shape's path coordinates directly
-                    if abs(offset.x) > 0.01 || abs(offset.y) > 0.01 {
-                        var updatedGroupedShapes: [VectorShape] = []
-                        
-                        for var groupedShape in shape.groupedShapes {
-                            // Apply offset to all path elements in each grouped shape
-                            var transformedElements: [PathElement] = []
-                            
-                            for element in groupedShape.path.elements {
-                                switch element {
-                                case .move(let to):
-                                    transformedElements.append(.move(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-                                case .line(let to):
-                                    transformedElements.append(.line(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-                                case .curve(let to, let control1, let control2):
-                                    transformedElements.append(.curve(
-                                        to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                                        control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
-                                        control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
-                                    ))
-                                case .quadCurve(let to, let control):
-                                    transformedElements.append(.quadCurve(
-                                        to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                                        control: VectorPoint(control.x + offset.x, control.y + offset.y)
-                                    ))
-                                case .close:
-                                    transformedElements.append(.close)
-                                }
-                            }
-                            
-                            // Update the grouped shape's path with transformed coordinates
-                            groupedShape.path = VectorPath(
-                                elements: transformedElements,
-                                isClosed: groupedShape.path.isClosed
-                            )
-                            
-                            // Reset individual shape transform to identity (no double transformation)
-                            groupedShape.transform = .identity
-                            
-                            // Update bounds to match new coordinates
-                            groupedShape.updateBounds()
-                            
-                            updatedGroupedShapes.append(groupedShape)
-                        }
-                        
-                        // Update the group with the moved shapes
-                        document.layers[layerIndex].shapes[shapeIndex].groupedShapes = updatedGroupedShapes
-                        
-                        // Reset group transform to identity (no double transformation)
-                        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-                        
-                        // WARP OBJECT FIX: Update warp envelope coordinates when moving warp objects
-                        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-                            var updatedWarpEnvelope: [CGPoint] = []
-                            for envelopePoint in shape.warpEnvelope {
-                                updatedWarpEnvelope.append(CGPoint(
-                                    x: envelopePoint.x + offset.x,
-                                    y: envelopePoint.y + offset.y
-                                ))
-                            }
-                            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
-                            print("📐 WARP ENVELOPE MOVED: Updated envelope coordinates by offset (\(String(format: "%.1f", offset.x)), \(String(format: "%.1f", offset.y)))")
-                        }
-                        
-                        // Update group bounds
-                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                    }
-                    
-                    print("📦 GROUP COORDINATE DRAG: Moving group '\(shape.name)' by coordinate offset (\(String(format: "%.1f", offset.x)), \(String(format: "%.1f", offset.y)))")
-                    
-                } else {
-                    // For individual shapes, use path coordinate modification (existing logic)
-                    // Calculate new position based on initial position + cursor delta
-                    let newPosition = CGPoint(
-                        x: initialPosition.x + canvasDelta.x,
-                        y: initialPosition.y + canvasDelta.y
-                    )
-                    
-                    // Calculate offset needed to move shape to new position
-                    let currentCenter = CGPoint(
-                        x: shape.bounds.midX,
-                        y: shape.bounds.midY
-                    )
-                    
-                    let offset = CGPoint(
-                        x: newPosition.x - currentCenter.x,
-                        y: newPosition.y - currentCenter.y
-                    )
-                    
-                    // Apply offset to all path elements
-                    if abs(offset.x) > 0.01 || abs(offset.y) > 0.01 {
-                        var transformedElements: [PathElement] = []
-                        
-                        for element in shape.path.elements {
-                            switch element {
-                            case .move(let to):
-                                transformedElements.append(.move(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-                            case .line(let to):
-                                transformedElements.append(.line(to: VectorPoint(to.x + offset.x, to.y + offset.y)))
-                            case .curve(let to, let control1, let control2):
-                                transformedElements.append(.curve(
-                                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                                    control1: VectorPoint(control1.x + offset.x, control1.y + offset.y),
-                                    control2: VectorPoint(control2.x + offset.x, control2.y + offset.y)
-                                ))
-                            case .quadCurve(let to, let control):
-                                transformedElements.append(.quadCurve(
-                                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
-                                    control: VectorPoint(control.x + offset.x, control.y + offset.y)
-                                ))
-                            case .close:
-                                transformedElements.append(.close)
-                            }
-                        }
-                        
-                        // Update the path with transformed coordinates
-                        document.layers[layerIndex].shapes[shapeIndex].path = VectorPath(
-                            elements: transformedElements,
-                            isClosed: shape.path.isClosed
-                        )
-                        
-                        // Reset transform to identity (no double transformation)
-                        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-                        
-                        // WARP OBJECT FIX: Update warp envelope coordinates when moving warp objects
-                        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-                            var updatedWarpEnvelope: [CGPoint] = []
-                            for envelopePoint in shape.warpEnvelope {
-                                updatedWarpEnvelope.append(CGPoint(
-                                    x: envelopePoint.x + offset.x,
-                                    y: envelopePoint.y + offset.y
-                                ))
-                            }
-                            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
-                            print("📐 WARP ENVELOPE MOVED: Updated envelope coordinates by offset (\(String(format: "%.1f", offset.x)), \(String(format: "%.1f", offset.y)))")
-                        }
-                        
-                        // Update bounds to match new coordinates
-                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                    }
-                }
+                // Apply translation to shape's transform (much faster than coordinate recalculation)
+                document.layers[layerIndex].shapes[shapeIndex].transform = translationTransform
+                
+                print("🚀 FAST DRAG: Shape '\(document.layers[layerIndex].shapes[shapeIndex].name)' moved by transform (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
             }
         }
         
-        // Move selected text objects by directly updating their position
+        // Move selected text objects with same efficient approach
         for textID in document.selectedTextIDs {
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
                let initialPosition = initialObjectPositions[textID] {
                 
-                // Calculate new position based on initial position + cursor delta
+                // For text, we can directly update position (simpler than shapes)
                 let newPosition = CGPoint(
                     x: initialPosition.x + canvasDelta.x,
                     y: initialPosition.y + canvasDelta.y
                 )
-                
-                // Update text position directly
                 document.textObjects[textIndex].position = newPosition
-                
-                // Update text bounds if needed
-                document.textObjects[textIndex].updateBounds()
             }
         }
         
-        // Force UI update
+        // Only trigger one UI update per frame instead of multiple updates
         document.objectWillChange.send()
     }
     
@@ -284,11 +123,25 @@ extension DrawingCanvas {
         }
         
         if !initialObjectPositions.isEmpty {
+            // PERFORMANCE FIX: Apply transforms to actual coordinates at the end of drag
+            // This ensures smooth 60fps movement during drag, then commits changes once
+            guard let layerIndex = document.selectedLayerIndex else { return }
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    let shape = document.layers[layerIndex].shapes[shapeIndex]
+                    
+                    // Only apply if there's actually a transform to apply
+                    if !shape.transform.isIdentity {
+                        print("🎯 FINALIZING: Converting transform to coordinates for '\(shape.name)'")
+                        applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
+                    }
+                }
+            }
+            
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points
             let movedObjects = initialObjectPositions.count
-            
-            // REMOVED: saveToUndoStack() - now called at START of drag operation, not end
             
             // Reset state
             initialObjectPositions.removeAll()
@@ -297,5 +150,123 @@ extension DrawingCanvas {
             print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
             print("   State reset - ready for next drag operation")
         }
+    }
+    
+    /// PERFORMANCE OPTIMIZED: Apply transform to actual coordinates (only called at end of drag)
+    private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        let transform = shape.transform
+        
+        // Don't apply identity transforms
+        if transform.isIdentity {
+            return
+        }
+        
+        print("🔧 Applying transform to shape coordinates: \(shape.name)")
+        
+        // FLATTENED SHAPE FIX: Handle groups correctly
+        if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
+            // Transform each individual shape within the flattened group
+            var transformedGroupedShapes: [VectorShape] = []
+            
+            for var groupedShape in shape.groupedShapes {
+                // Transform all path elements of this grouped shape
+                var transformedElements: [PathElement] = []
+                
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                        transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                        
+                    case .line(let to):
+                        let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                        transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                        
+                    case .curve(let to, let control1, let control2):
+                        let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                        let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                        let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                        transformedElements.append(.curve(
+                            to: VectorPoint(transformedTo),
+                            control1: VectorPoint(transformedControl1),
+                            control2: VectorPoint(transformedControl2)
+                        ))
+                        
+                    case .quadCurve(let to, let control):
+                        let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                        let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                        transformedElements.append(.quadCurve(
+                            to: VectorPoint(transformedTo),
+                            control: VectorPoint(transformedControl)
+                        ))
+                        
+                    case .close:
+                        transformedElements.append(.close)
+                    }
+                }
+                
+                // Update this grouped shape with transformed coordinates
+                groupedShape.path = VectorPath(elements: transformedElements, isClosed: groupedShape.path.isClosed)
+                groupedShape.transform = .identity
+                groupedShape.updateBounds()
+                
+                transformedGroupedShapes.append(groupedShape)
+            }
+            
+            // Update the flattened group with the transformed individual shapes
+            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = transformedGroupedShapes
+            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            print("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes")
+            return
+        }
+        
+        // Transform regular shape path elements
+        var transformedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint)))
+                
+            case .line(let to):
+                let transformedPoint = CGPoint(x: to.x, y: to.y).applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl1 = CGPoint(x: control1.x, y: control1.y).applying(transform)
+                let transformedControl2 = CGPoint(x: control2.x, y: control2.y).applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo),
+                    control1: VectorPoint(transformedControl1),
+                    control2: VectorPoint(transformedControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let transformedTo = CGPoint(x: to.x, y: to.y).applying(transform)
+                let transformedControl = CGPoint(x: control.x, y: control.y).applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo),
+                    control: VectorPoint(transformedControl)
+                ))
+                
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        // Create new path with transformed coordinates
+        let transformedPath = VectorPath(elements: transformedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with transformed path and reset transform to identity
+        document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
+        document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated after movement - object origin stays with object")
     }
 } 
