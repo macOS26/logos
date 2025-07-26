@@ -70,7 +70,7 @@ extension DrawingCanvas {
         
         // Route to appropriate tool handler based on current tool
         switch document.currentTool {
-        case .selection, .scale, .rotate, .shear, .warp, .envelope:
+        case .selection, .scale, .rotate, .shear, .warp:
             // All transform tools use selection logic
             print("🎯 UNIFIED: Routing to handleSelectionTap...")
             handleSelectionTap(at: canvasLocation)
@@ -128,7 +128,7 @@ extension DrawingCanvas {
         case .bezierPen:
             handleBezierPenDrag(value: value, geometry: geometry)
             
-        case .scale, .rotate, .shear, .warp, .envelope:
+        case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
             

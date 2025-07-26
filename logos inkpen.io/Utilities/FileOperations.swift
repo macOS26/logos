@@ -913,8 +913,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     private func parseSVGRoot(attributes: [String: String]) {
         // Parse width and height first
         if let width = attributes["width"], let height = attributes["height"] {
-            let w = parseLength(width) ?? 100
-            let h = parseLength(height) ?? 100
+            let w = parseLength(width) ?? 1024
+            let h = parseLength(height) ?? 1024
             documentSize = CGSize(width: w, height: h)
         }
         
@@ -925,7 +925,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 // viewBox format: "x y width height"
                 viewBoxX = parts[0]
                 viewBoxY = parts[1]
-                viewBoxWidth = parts[2] 
+                viewBoxWidth = parts[2]
                 viewBoxHeight = parts[3]
                 hasViewBox = true
                 
@@ -1027,7 +1027,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 .line(to: VectorPoint(x + radiusX, y + height)),
                 .curve(to: VectorPoint(x, y + height - radiusY),
                        control1: VectorPoint(x, y + height),
-                       control2: VectorPoint(x, y + height - radiusY)),
+                       control2: VectorPoint(x + radiusX, y + height - radiusY)),
                 .line(to: VectorPoint(x, y + radiusY)),
                 .curve(to: VectorPoint(x + radiusX, y),
                        control1: VectorPoint(x, y),
@@ -1552,6 +1552,12 @@ class SVGParser: NSObject, XMLParserDelegate {
         isParsingGradient = true
         
         print("🎨 Parsing radial gradient: \(id)")
+        print("   - cx: \(attributes["cx"] ?? "50%"), cy: \(attributes["cy"] ?? "50%"), r: \(attributes["r"] ?? "50%")")
+        print("   - fx: \(attributes["fx"] ?? "cx"), fy: \(attributes["fy"] ?? "cy")")
+        print("   - gradientUnits: \(attributes["gradientUnits"] ?? "objectBoundingBox")")
+        if let transform = attributes["gradientTransform"] {
+            print("   - gradientTransform: \(transform)")
+        }
     }
     
     private func parseGradientStop(attributes: [String: String]) {
@@ -1713,43 +1719,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))° (shape-relative)")
             
         } else { // radialGradient
-            // Parse gradient units first to handle coordinates properly
             let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
             
-            // Parse radial gradient attributes with enhanced coordinate handling
             let cxRaw = attributes["cx"] ?? "50%"
             let cyRaw = attributes["cy"] ?? "50%"
             let rRaw = attributes["r"] ?? "50%"
             let fxRaw = attributes["fx"]
             let fyRaw = attributes["fy"]
             
-            print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
-            
-            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true)
-            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false)
-            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true) // Use X for radius
-            
-            // Parse focal point if specified, otherwise use center point
-            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true) : cx
-            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
-            
-            print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
-            
-            // SIMPLE OBJECT-RELATIVE: ALL radial gradients paint relative to individual object bounds
-            // Always center in object and radius spans to object edge
-            let centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
-            let focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
-            let radius = 0.5  // Radius spans from center to object edge
-            
-            print("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5")
-            
-            // Parse spread method
-            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
-            
-            // NEW: Parse gradientTransform for angle and independent scaling
             var gradientAngle: Double = 0.0
             var gradientScaleX: Double = 1.0
             var gradientScaleY: Double = 1.0
+            var gradientTranslation = CGPoint.zero
             
             if let gradientTransformRaw = attributes["gradientTransform"] {
                 print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
@@ -1757,31 +1738,96 @@ class SVGParser: NSObject, XMLParserDelegate {
                 gradientAngle = transforms.angle
                 gradientScaleX = transforms.scaleX
                 gradientScaleY = transforms.scaleY
-                print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
+                gradientTranslation = transforms.translation
+                print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY), translate=\(gradientTranslation)")
             }
             
-            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
+            let cx, cy, r, fx, fy: Double
+            
+            if gradientUnits == .userSpaceOnUse {
+                // For userSpaceOnUse, coordinates are absolute. We need to transform them.
+                // The transform is applied BEFORE other attributes.
+                // The order in SVG transforms is: translate, rotate, scale.
+                
+                let raw_cx = parseLength(cxRaw) ?? 0
+                let raw_cy = parseLength(cyRaw) ?? 0
+                
+                // Apply the transformation matrix from gradientTransform
+                // The SVG spec says the transform is applied to the gradient content.
+                // We can simulate this by transforming the coordinates.
+                
+                var point = CGPoint(x: raw_cx, y: raw_cy)
+                var transform = CGAffineTransform.identity
+                
+                // 1. Translate
+                transform = transform.translatedBy(x: gradientTranslation.x, y: gradientTranslation.y)
+                
+                // 2. Rotate
+                // The rotation in SVG's gradientTransform is around the origin (0,0) of the gradient's coordinate system.
+                transform = transform.rotated(by: gradientAngle * .pi / 180.0)
+                
+                // 3. Scale
+                transform = transform.scaledBy(x: gradientScaleX, y: gradientScaleY)
+                
+                // Apply the combined transform to the center point
+                let transformedPoint = point.applying(transform)
+                
+                // Now, normalize these user-space coordinates to the viewBox to get object-relative coordinates (0-1).
+                cx = (transformedPoint.x - viewBoxX) / viewBoxWidth
+                cy = (transformedPoint.y - viewBoxY) / viewBoxHeight
+                
+                // Radius is also affected by scaling. We take the average of scaleX and scaleY for simplicity.
+                let avgScale = (abs(gradientScaleX) + abs(gradientScaleY)) / 2.0
+                r = (parseLength(rRaw) ?? 0) * avgScale / viewBoxWidth
+                
+                // Focal point handling
+                let raw_fx = parseLength(fxRaw) ?? raw_cx
+                let raw_fy = parseLength(fyRaw) ?? raw_cy
+                var focal = CGPoint(x: raw_fx, y: raw_fy).applying(transform)
+                fx = (focal.x - viewBoxX) / viewBoxWidth
+                fy = (focal.y - viewBoxY) / viewBoxHeight
+                
+                print("--- SVG RADIAL GRADIENT CALCULATION ---")
+                print("ViewBox: [x: \(viewBoxX), y: \(viewBoxY), w: \(viewBoxWidth), h: \(viewBoxHeight)]")
+                print("Raw coords: cx=\(raw_cx), cy=\(raw_cy), r=\(parseLength(rRaw) ?? 0)")
+                print("Transformations: translate=\(gradientTranslation), rotate=\(gradientAngle), scale=(\(gradientScaleX), \(gradientScaleY))")
+                print("Transformed Point (userSpace): cx=\(transformedPoint.x), cy=\(transformedPoint.y)")
+                print("Normalized Coords (objectBoundingBox): cx=\(cx), cy=\(cy), r=\(r)")
+                print("--- END CALCULATION ---")
+                
+            } else {
+                // objectBoundingBox - coordinates are already relative (0-1 or %)
+                cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true)
+                cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false)
+                r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true)
+                fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true) : cx
+                fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
+            }
+            
+            let centerPoint = CGPoint(x: cx, y: cy)
+            let focalPoint = (fxRaw != nil || fyRaw != nil) ? CGPoint(x: fx, y: fy) : nil
+            let radius = r
+            
+            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
+            
             var radialGradient = RadialGradient(
                 centerPoint: centerPoint,
-                radius: radius, // Use calculated radius (already clamped if needed)
+                radius: radius,
                 stops: currentGradientStops,
-                focalPoint: (fx != cx || fy != cy) ? focalPoint : nil,
+                focalPoint: focalPoint,
                 spreadMethod: spreadMethod,
-                units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
+                units: .objectBoundingBox // We have converted everything to be object-relative
             )
             
-            // Set the origin point to the center point
             radialGradient.originPoint = centerPoint
-            
-            // NEW: Set the gradient transform properties
             radialGradient.angle = gradientAngle
             radialGradient.scaleX = gradientScaleX
             radialGradient.scaleY = gradientScaleY
             
             vectorGradient = .radial(radialGradient)
-            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
-            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", radius)) (shape-relative)")
-            if fxRaw != nil || fyRaw != nil {
+            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops")
+            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", radius))")
+            if let focalPoint = focalPoint {
                 print("   - Focal point: \(focalPoint)")
             }
         }
@@ -1800,13 +1846,24 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     /// Parse SVG gradientTransform attribute to extract angle and aspect ratio
-    private func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
+    private func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double, translation: CGPoint) {
         var angle: Double = 0.0
         var scaleX: Double = 1.0
         var scaleY: Double = 1.0
-        
+        var translation = CGPoint.zero
+
         // Parse transform functions: translate(x,y) rotate(angle) scale(sx,sy)
         // Example: "translate(771.04 670.64) rotate(83.98) scale(1 .65)"
+        
+        // Extract translate values
+        if let translateMatch = transform.range(of: #"translate\(([^)]+)\)"#, options: .regularExpression) {
+            let translateSubstring = String(transform[translateMatch])
+            let numbers = extractNumbers(from: translateSubstring)
+            if numbers.count >= 2 {
+                translation = CGPoint(x: numbers[0], y: numbers[1])
+                print("🔄 Extracted translation: x=\(translation.x), y=\(translation.y)")
+            }
+        }
         
         // Extract rotate value
         if let rotateMatch = transform.range(of: #"rotate\(([^)]+)\)"#, options: .regularExpression) {
@@ -1835,7 +1892,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
-        return (angle: angle, scaleX: scaleX, scaleY: scaleY)
+        return (angle: angle, scaleX: scaleX, scaleY: scaleY, translation: translation)
     }
     
     /// Extract numbers from a string (helper for parseGradientTransform)

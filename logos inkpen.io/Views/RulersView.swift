@@ -221,9 +221,12 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     let baseSpacing: Double
     
     switch unit {
-    case .pixels, .points:
+    case .pixels:
         // LESS NOISY: Use larger base spacing for pixels/points to reduce visual clutter
         baseSpacing = pointsPerUnit / 2 // 1/2 unit (instead of 1/8) - much less detailed
+    case .points:
+        // Use a base spacing of 72 points for the 'points' unit
+        baseSpacing = 72.0
     default:
         // Normal spacing for inches, cm, mm, picas
         baseSpacing = pointsPerUnit / 8 // 1/8 unit by default
@@ -234,11 +237,11 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     
     // Choose appropriate spacing to avoid overcrowding
     if scaledSpacing < 10 {
-        return baseSpacing * 4 // 1/2 unit (or 2 units for pixels/points)
+        return baseSpacing * 4
     } else if scaledSpacing < 20 {
-        return baseSpacing * 2 // 1/4 unit (or 1 unit for pixels/points)
+        return baseSpacing * 2
     } else {
-        return baseSpacing // 1/8 unit (or 1/2 unit for pixels/points)
+        return baseSpacing
     }
 }
 

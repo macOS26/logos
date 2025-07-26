@@ -78,8 +78,6 @@ struct VerticalToolbar: View {
             return "Rotate Tool (R) - Rotate objects around anchor points"
         case .shear:
             return "Shear Tool (X) - Shear/skew objects around anchor points"
-        case .warp:
-            return "Warp Tool (W) - Warp and distort objects"
         case .directSelection:
             return "Direct Selection Tool (A) - Edit individual points and handles"
         case .convertAnchorPoint:
@@ -104,8 +102,8 @@ struct VerticalToolbar: View {
             return "Hand Tool (H) - Pan the canvas"
         case .zoom:
             return "Zoom Tool (Z) - Zoom in and out"
-        case .envelope:
-            return "Envelope Tool"
+        case .warp:
+            return "Warp Tool"
 
         }
     }

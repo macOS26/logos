@@ -2775,7 +2775,6 @@ enum DrawingTool: String, CaseIterable, Codable {
     case rotate = "Rotate"
     case shear = "Shear"
     case warp = "Warp"
-    case envelope = "Envelope"
     case directSelection = "Direct Selection"
     case convertAnchorPoint = "Convert Anchor Point"
     case bezierPen = "Bezier Pen"
@@ -2794,9 +2793,8 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .selection: return "arrow.up.left"
         case .scale: return "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
         case .rotate: return "arrow.clockwise"
-        case .shear: return "parallelogram"
-        case .warp: return "network"
-        case .envelope: return "grid.circle"
+        case .shear: return "rectangle.slash"
+        case .warp: return "distort"
         case .directSelection: return "cursorarrow.and.square.on.square.dashed"
         case .convertAnchorPoint: return "arrow.triangle.turn.up.right.diamond"
         case .bezierPen: return "pencil.tip"
@@ -2831,8 +2829,6 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .eyedropper: return .crosshair
         case .hand: return .openHand
         case .zoom: return .crosshair
-        case .envelope:
-            return .crosshair
         }
     }
 }

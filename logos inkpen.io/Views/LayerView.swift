@@ -352,7 +352,7 @@ struct SelectionHandlesView: View {
                     let shape = layer.shapes[shapeIndex]
                     if document.selectedShapeIDs.contains(shape.id) {
                         // ENVELOPE TOOL: Always show active green envelope handles when using envelope tool
-                        if document.currentTool == .envelope {
+                        if document.currentTool == .warp {
                             EnvelopeHandles(
                                 document: document,
                                 shape: shape,
@@ -2615,7 +2615,7 @@ struct EnvelopeHandles: View {
             envelopeCornerHandles()
             
             // ENVELOPE GRID: Show the warp grid when envelope tool is active
-            if document.currentTool == .envelope && warpedCorners.count == 4 {
+            if document.currentTool == .warp && warpedCorners.count == 4 {
                 envelopeGridPreview()
             }
             
@@ -2643,7 +2643,7 @@ struct EnvelopeHandles: View {
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             // ENVELOPE COMMIT: When switching away from envelope tool, commit any pending warp
-            if oldTool == .envelope && newTool != .envelope {
+            if oldTool == .warp && newTool != .warp {
                 // First commit any pending warp transformation
                 if previewPath != nil {
                     commitEnvelopeWarp()
@@ -2655,7 +2655,7 @@ struct EnvelopeHandles: View {
             }
             
             // ENVELOPE REACTIVATION: When switching back to envelope tool, reinitialize for current shape
-            if oldTool != .envelope && newTool == .envelope {
+            if oldTool != .warp && newTool == .warp {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.initializeEnvelopeCorners()
                 }
@@ -2664,7 +2664,7 @@ struct EnvelopeHandles: View {
         }
         .onChange(of: document.selectedShapeIDs) { oldSelection, newSelection in
             // ENVELOPE COMMIT: When shape selection changes, commit current warp and reset for new shape
-            if document.currentTool == .envelope && oldSelection != newSelection {
+            if document.currentTool == .warp && oldSelection != newSelection {
                 // First commit any pending warp transformation on the old shape
                 if previewPath != nil {
                     commitEnvelopeWarp()
@@ -2832,31 +2832,25 @@ struct EnvelopeHandles: View {
             return
         }
         
-        // KEEP OBJECT ALIVE: Use TRUE AXIS DETECTION for fresh objects
-        let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
-        print("🎯 TRUE AXIS DETECTION: Calculated for \(shape.isGroup ? "GROUP" : (shape.geometricType?.rawValue ?? "unknown")) shape")
-        
-        // CRITICAL FIX: Only reset warped corners if this is the first initialization
-        // or if the original corners have changed significantly (different shape/bounds)
-        if originalCorners.isEmpty || 
-           warpedCorners.isEmpty ||
-           cornersHaveChangedSignificantly(from: originalCorners, to: newOriginalCorners) {
-            // First time or different shape - reset to bounding box
+        // Use axis plane dtection for four pounted shapes or four ointed gorups and flattened objects
+        // otherwise use the bounding box
+        if shape.path.elements.count <= 4 || shape.isGroup {
+            let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
-            let xCoords = newOriginalCorners.map(\.x)
-            let yCoords = newOriginalCorners.map(\.y)
-            let minX = xCoords.min() ?? 0
-            let maxX = xCoords.max() ?? 0
-            let minY = yCoords.min() ?? 0
-            let maxY = yCoords.max() ?? 0
-            let cornerBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-            print("🔧 ENVELOPE: RESET corners for bounds: (\(String(format: "%.1f", cornerBounds.minX)), \(String(format: "%.1f", cornerBounds.minY))) → (\(String(format: "%.1f", cornerBounds.maxX)), \(String(format: "%.1f", cornerBounds.maxY)))")
         } else {
-            // Same shape - preserve warped envelope, only update original reference
+            let bounds = shape.bounds
+            let newOriginalCorners = [
+                CGPoint(x: bounds.minX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.maxY),
+                CGPoint(x: bounds.minX, y: bounds.maxY)
+            ]
             originalCorners = newOriginalCorners
-            print("🔧 ENVELOPE: PRESERVED warped envelope, updated original bounds reference")
+            warpedCorners = newOriginalCorners
         }
+
+        print("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners")
     }
     
     private func cornersHaveChangedSignificantly(from oldCorners: [CGPoint], to newCorners: [CGPoint]) -> Bool {
