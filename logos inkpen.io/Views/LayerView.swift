@@ -2617,7 +2617,8 @@ struct EnvelopeHandles: View {
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
             // MOVEMENT FIX: When shape bounds change, refresh the envelope corners
-            if !isWarping && oldBounds != newBounds {
+            // CRITICAL FIX: Don't recalculate axis during active warping or when warp handles are already established
+            if !isWarping && !warpingStarted && warpedCorners.isEmpty && oldBounds != newBounds {
                 initializeEnvelopeCorners()
                 print("🔄 ENVELOPE TOOL: Shape bounds changed, refreshed corners")
             }
@@ -3090,6 +3091,17 @@ struct EnvelopeHandles: View {
         // REAL-TIME UPDATE: Apply the current warp to the shape immediately
         updateShapeWithCurrentWarp()
         
+        // BOUNDS UPDATE: Now that warping is finished, update bounds properly
+        if let layerIndex = document.selectedLayerIndex,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            if document.layers[layerIndex].shapes[shapeIndex].isGroup {
+                for i in 0..<document.layers[layerIndex].shapes[shapeIndex].groupedShapes.count {
+                    document.layers[layerIndex].shapes[shapeIndex].groupedShapes[i].updateBounds()
+                }
+            }
+        }
+        
         print("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
         
         // Keep preview for visual feedback but refresh it for next transformation
@@ -3116,7 +3128,10 @@ struct EnvelopeHandles: View {
                     
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
-                    warpedGrouped.updateBounds()
+                    // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
+                    if !isWarping {
+                        warpedGrouped.updateBounds()
+                    }
                     warpedGroupedShapes.append(warpedGrouped)
                 }
                 
@@ -3129,7 +3144,10 @@ struct EnvelopeHandles: View {
             }
             
             updatedWarpObject.warpEnvelope = warpedCorners
-            updatedWarpObject.updateBounds()
+            // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
+            if !isWarping {
+                updatedWarpObject.updateBounds()
+            }
             
             document.layers[layerIndex].shapes[shapeIndex] = updatedWarpObject
             print("   ✅ Updated existing warp object coordinates in real-time")
@@ -3155,7 +3173,10 @@ struct EnvelopeHandles: View {
                     
                     var warpedGrouped = groupedShape
                     warpedGrouped.path = warpedPath
-                    warpedGrouped.updateBounds()
+                    // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
+                    if !isWarping {
+                        warpedGrouped.updateBounds()
+                    }
                     warpedGroupedShapes.append(warpedGrouped)
                 }
                 
@@ -3168,7 +3189,10 @@ struct EnvelopeHandles: View {
                 print("   ✅ Created warp object from single shape")
             }
             
-            warpObject.updateBounds()
+            // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
+            if !isWarping {
+                warpObject.updateBounds()
+            }
             
             document.layers[layerIndex].shapes[shapeIndex] = warpObject
             document.selectedShapeIDs.remove(currentShape.id)
