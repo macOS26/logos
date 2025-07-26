@@ -82,42 +82,18 @@ extension DrawingCanvas {
             y: cursorDelta.y / preciseZoom
         )
         
-        // PERFORMANCE FIX: Use transform-based movement during drag instead of expensive coordinate recalculation
-        // Only recalculate coordinates at the end when drag finishes
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
-               let initialTransform = initialObjectTransforms[shapeID] {
-                
-                // Create translation transform from canvas delta
-                let translationTransform = CGAffineTransform.identity.translatedBy(x: canvasDelta.x, y: canvasDelta.y)
-                
-                // CRITICAL FIX: Combine with initial transform instead of replacing it
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform.concatenating(translationTransform)
-                
-                // Reduce logging frequency for better performance during drag
-                #if DEBUG
-                if abs(canvasDelta.x) > 5 || abs(canvasDelta.y) > 5 { // Only log every 5 points of movement
-                    print("🚀 FAST DRAG: Shape '\(document.layers[layerIndex].shapes[shapeIndex].name)' moved by transform (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
-                }
-                #endif
-            }
-        }
+        // BLAZING FAST 60FPS: Store drag delta for preview rendering - DON'T modify actual objects during drag
+        // This eliminates expensive document updates and bounds recalculation during drag
+        currentDragDelta = canvasDelta
         
-        // Move selected text objects with same efficient approach
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
-               let initialPosition = initialObjectPositions[textID] {
-                
-                // For text, we can directly update position (simpler than shapes)
-                let newPosition = CGPoint(
-                    x: initialPosition.x + canvasDelta.x,
-                    y: initialPosition.y + canvasDelta.y
-                )
-                document.textObjects[textIndex].position = newPosition
-            }
+        // Reduce logging frequency for better performance during drag  
+        #if DEBUG
+        if abs(canvasDelta.x) > 5 || abs(canvasDelta.y) > 5 { // Only log every 5 points of movement
+            print("🚀 BLAZING FAST DRAG: Preview delta (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y))) - NO document modification during drag")
         }
+        #endif
         
-        // Only trigger one UI update per frame instead of multiple updates
+        // Single UI update to trigger preview rendering - much faster than modifying every shape
         document.objectWillChange.send()
     }
     
@@ -128,24 +104,30 @@ extension DrawingCanvas {
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
+            currentDragDelta = .zero
             print("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied")
             return
         }
         
-        if !initialObjectPositions.isEmpty {
-            // PERFORMANCE FIX: Apply transforms to actual coordinates at the end of drag
-            // This ensures smooth 60fps movement during drag, then commits changes once
+        if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
+            // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
+            // This ensures smooth 60fps preview during drag, then commits changes once
             guard let layerIndex = document.selectedLayerIndex else { return }
             
+            // Apply drag delta to shapes
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    let shape = document.layers[layerIndex].shapes[shapeIndex]
-                    
-                    // Only apply if there's actually a transform to apply
-                    if !shape.transform.isIdentity {
-                        print("🎯 FINALIZING: Converting transform to coordinates for '\(shape.name)'")
-                        applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
-                    }
+                    print("🎯 FINALIZING: Applying drag delta to '\(document.layers[layerIndex].shapes[shapeIndex].name)'")
+                    applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
+                }
+            }
+            
+            // Apply drag delta to text objects
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].position.x += currentDragDelta.x
+                    document.textObjects[textIndex].position.y += currentDragDelta.y
+                    print("🎯 FINALIZING: Applied drag delta to text object")
                 }
             }
             
@@ -157,12 +139,122 @@ extension DrawingCanvas {
             initialObjectPositions.removeAll()
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
+            currentDragDelta = .zero
             
             print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
             print("   State reset - ready for next drag operation")
         }
     }
     
+    /// BLAZING FAST: Apply drag delta to actual coordinates (only called at end of drag)
+    private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
+        let shape = document.layers[layerIndex].shapes[shapeIndex]
+        
+        print("🔧 Applying drag delta (\(String(format: "%.1f", delta.x)), \(String(format: "%.1f", delta.y))) to shape coordinates: \(shape.name)")
+        
+        // FLATTENED SHAPE FIX: Handle groups correctly
+        if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
+            // Apply delta to each individual shape within the flattened group
+            var updatedGroupedShapes: [VectorShape] = []
+            
+            for var groupedShape in shape.groupedShapes {
+                // Apply delta to all path elements of this grouped shape
+                var updatedElements: [PathElement] = []
+                
+                for element in groupedShape.path.elements {
+                    switch element {
+                    case .move(let to):
+                        let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                        updatedElements.append(.move(to: VectorPoint(newPoint)))
+                        
+                    case .line(let to):
+                        let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                        updatedElements.append(.line(to: VectorPoint(newPoint)))
+                        
+                    case .curve(let to, let control1, let control2):
+                        let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                        let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
+                        let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
+                        updatedElements.append(.curve(
+                            to: VectorPoint(newTo),
+                            control1: VectorPoint(newControl1),
+                            control2: VectorPoint(newControl2)
+                        ))
+                        
+                    case .quadCurve(let to, let control):
+                        let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                        let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
+                        updatedElements.append(.quadCurve(
+                            to: VectorPoint(newTo),
+                            control: VectorPoint(newControl)
+                        ))
+                        
+                    case .close:
+                        updatedElements.append(.close)
+                    }
+                }
+                
+                // Update this grouped shape with moved coordinates
+                groupedShape.path = VectorPath(elements: updatedElements, isClosed: groupedShape.path.isClosed)
+                groupedShape.updateBounds()
+                
+                updatedGroupedShapes.append(groupedShape)
+            }
+            
+            // Update the flattened group with the moved individual shapes
+            document.layers[layerIndex].shapes[shapeIndex].groupedShapes = updatedGroupedShapes
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            print("✅ Flattened group coordinates updated - moved \(updatedGroupedShapes.count) individual shapes")
+            return
+        }
+        
+        // Apply delta to all path elements
+        var updatedElements: [PathElement] = []
+        
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                updatedElements.append(.move(to: VectorPoint(newPoint)))
+                
+            case .line(let to):
+                let newPoint = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                updatedElements.append(.line(to: VectorPoint(newPoint)))
+                
+            case .curve(let to, let control1, let control2):
+                let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                let newControl1 = CGPoint(x: control1.x + delta.x, y: control1.y + delta.y)
+                let newControl2 = CGPoint(x: control2.x + delta.x, y: control2.y + delta.y)
+                updatedElements.append(.curve(
+                    to: VectorPoint(newTo),
+                    control1: VectorPoint(newControl1),
+                    control2: VectorPoint(newControl2)
+                ))
+                
+            case .quadCurve(let to, let control):
+                let newTo = CGPoint(x: to.x + delta.x, y: to.y + delta.y)
+                let newControl = CGPoint(x: control.x + delta.x, y: control.y + delta.y)
+                updatedElements.append(.quadCurve(
+                    to: VectorPoint(newTo),
+                    control: VectorPoint(newControl)
+                ))
+                
+            case .close:
+                updatedElements.append(.close)
+            }
+        }
+        
+        // Create new path with moved coordinates
+        let updatedPath = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+        
+        // Update the shape with moved path
+        document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+        
+        print("✅ Shape coordinates updated after drag - object moved")
+    }
+
     /// PERFORMANCE OPTIMIZED: Apply transform to actual coordinates (only called at end of drag)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]

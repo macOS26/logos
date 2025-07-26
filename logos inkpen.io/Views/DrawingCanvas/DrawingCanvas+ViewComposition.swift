@@ -82,7 +82,8 @@ extension DrawingCanvas {
                         canvasOffset: document.canvasOffset,
                         selectedShapeIDs: document.selectedShapeIDs,
                         viewMode: document.viewMode,
-                        isShiftPressed: self.isShiftPressed
+                        isShiftPressed: self.isShiftPressed,
+                        dragPreviewDelta: currentDragDelta
                     )
                 }
             }
