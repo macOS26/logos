@@ -1992,7 +1992,8 @@ struct ShearHandles: View {
                 // GROUP/FLATTENED SHAPE: Show outline of each individual shape
                 ForEach(shape.groupedShapes.indices, id: \.self) { index in
                     let groupedShape = shape.groupedShapes[index]
-                    Path { path in
+                    // PERFORMANCE OPTIMIZATION: Use cached path creation
+                    let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
@@ -2008,14 +2009,16 @@ struct ShearHandles: View {
                             }
                         }
                     }
-                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(groupedShape.transform)
+                    cachedPath
+                        .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(groupedShape.transform)
                 }
             } else {
-                // REGULAR SHAPE: Show single path outline
-                Path { path in
+                // REGULAR SHAPE: Show single path outline with cached path
+                // PERFORMANCE OPTIMIZATION: Use cached path creation
+                let cachedPath = Path { path in
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
@@ -2031,10 +2034,11 @@ struct ShearHandles: View {
                         }
                     }
                 }
-                .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                cachedPath
+                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
             }
             
             // SHOW ALL PATH POINTS + CENTER POINT with correct colors
@@ -2552,7 +2556,8 @@ struct EnvelopeHandles: View {
                 // GROUP/FLATTENED SHAPE: Show outline of each individual shape
                 ForEach(shape.groupedShapes.indices, id: \.self) { index in
                     let groupedShape = shape.groupedShapes[index]
-                    Path { path in
+                    // PERFORMANCE OPTIMIZATION: Use cached path creation
+                    let cachedPath = Path { path in
                         for element in groupedShape.path.elements {
                             switch element {
                             case .move(let to):
@@ -2568,14 +2573,16 @@ struct EnvelopeHandles: View {
                             }
                         }
                     }
-                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(groupedShape.transform)
+                    cachedPath
+                        .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(groupedShape.transform)
                 }
             } else {
-                // REGULAR SHAPE: Show single path outline
-                Path { path in
+                // REGULAR SHAPE: Show single path outline with cached path
+                // PERFORMANCE OPTIMIZATION: Use cached path creation
+                let cachedPath = Path { path in
                     for element in shape.path.elements {
                         switch element {
                         case .move(let to):
@@ -2591,10 +2598,11 @@ struct EnvelopeHandles: View {
                         }
                     }
                 }
-                .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                cachedPath
+                    .stroke(Color.purple, lineWidth: 2.0 / zoomLevel)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
             }
             
             // ENVELOPE BOUNDING BOX: Show the 4 corner handles
