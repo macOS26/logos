@@ -2351,54 +2351,28 @@ struct CartesianGrid: View {
     
     var body: some View {
         ZStack {
-            // Vertical grid lines (X-axis markers)
+            // Vertical grid lines (X-axis markers) - edge to edge
             ForEach(0..<11) { index in
                 let position = CGFloat(index) / 10.0  // 0.0 to 1.0
                 let xPosition = position * width
-                let percentage = Int((position - 0.5) * 200)  // Convert to -100% to +100%
                 
-                VStack(spacing: 0) {
-                    // Top hash mark
-                    Rectangle()
-                        .fill(Color.white.opacity(0.8))
-                        .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
-                    
-                    // Vertical line (lighter for non-center lines)
-                    Rectangle()
-                        .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.4))
-                        .frame(width: position == 0.5 ? 1 : 0.5, height: height - 8)
-                    
-                    // Bottom hash mark
-                    Rectangle()
-                        .fill(Color.white.opacity(0.8))
-                        .frame(width: 0.5, height: index % 5 == 0 ? 4 : 2)
-                }
-                .position(x: xPosition, y: height / 2)
+                // Full-height vertical line (edge to edge)
+                Rectangle()
+                    .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.3))
+                    .frame(width: position == 0.5 ? 1 : 0.5, height: height)
+                    .position(x: xPosition, y: height / 2)
             }
             
-            // Horizontal grid lines (Y-axis markers)
-            ForEach(0..<6) { index in
-                let position = CGFloat(index) / 5.0  // 0.0 to 1.0 (every 20%)
+            // Horizontal grid lines (Y-axis markers) - edge to edge
+            ForEach(0..<11) { index in
+                let position = CGFloat(index) / 10.0  // 0.0 to 1.0
                 let yPosition = position * height
-                let percentage = Int((position - 0.5) * 200)  // Convert to -100% to +100%
                 
-                HStack(spacing: 0) {
-                    // Left hash mark
-                    Rectangle()
-                        .fill(Color.white.opacity(0.8))
-                        .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
-                    
-                    // Horizontal line (lighter for non-center lines)
-                    Rectangle()
-                        .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.4))
-                        .frame(width: width - 8, height: position == 0.5 ? 1 : 0.5)
-                    
-                    // Right hash mark
-                    Rectangle()
-                        .fill(Color.white.opacity(0.8))
-                        .frame(width: index % 2 == 0 ? 4 : 2, height: 0.5)
-                }
-                .position(x: width / 2, y: yPosition)
+                // Full-width horizontal line (edge to edge)
+                Rectangle()
+                    .fill(Color.white.opacity(position == 0.5 ? 0.9 : 0.3))
+                    .frame(width: width, height: position == 0.5 ? 1 : 0.5)
+                    .position(x: width / 2, y: yPosition)
             }
             
             // Percentage labels at key positions
