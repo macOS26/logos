@@ -46,6 +46,7 @@ struct DrawingCanvas: View {
     // PROFESSIONAL OBJECT DRAGGING STATE (Same precision as hand tool)
     @State internal var selectionDragStart = CGPoint.zero     // Reference cursor position when object drag started
     @State internal var initialObjectPositions: [UUID: CGPoint] = [:]  // Initial object positions when drag started
+    @State internal var initialObjectTransforms: [UUID: CGAffineTransform] = [:]  // Initial object transforms when drag started
     
     // PROFESSIONAL SHAPE DRAWING STATE (Same precision as hand tool)
     @State internal var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started

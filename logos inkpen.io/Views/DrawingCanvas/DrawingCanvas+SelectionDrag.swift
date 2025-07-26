@@ -21,11 +21,11 @@ extension DrawingCanvas {
         // CRITICAL FIX: Save to undo stack BEFORE making any changes
         document.saveToUndoStack()
         
-        // PROFESSIONAL OBJECT DRAGGING: Save initial positions (not transforms)
+        // PROFESSIONAL OBJECT DRAGGING: Save initial positions AND transforms
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
         
-        // Store initial positions for shapes
+        // Store initial positions AND transforms for shapes (CRITICAL FIX FOR JITTER)
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 let shape = document.layers[layerIndex].shapes[shapeIndex]
@@ -36,6 +36,9 @@ extension DrawingCanvas {
                 let centerX = bounds.midX
                 let centerY = bounds.midY
                 initialObjectPositions[shapeID] = CGPoint(x: centerX, y: centerY)
+                
+                // CRITICAL FIX: Store initial transform to prevent jitter
+                initialObjectTransforms[shapeID] = shape.transform
                 
                 print("🎯 DRAG INIT: Shape '\(shape.name)' (\(shape.isGroupContainer ? "GROUP" : "INDIVIDUAL")) center: (\(String(format: "%.1f", centerX)), \(String(format: "%.1f", centerY)))")
             }
@@ -82,13 +85,14 @@ extension DrawingCanvas {
         // PERFORMANCE FIX: Use transform-based movement during drag instead of expensive coordinate recalculation
         // Only recalculate coordinates at the end when drag finishes
         for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }),
+               let initialTransform = initialObjectTransforms[shapeID] {
                 
                 // Create translation transform from canvas delta
                 let translationTransform = CGAffineTransform.identity.translatedBy(x: canvasDelta.x, y: canvasDelta.y)
                 
-                // Apply translation to shape's transform (much faster than coordinate recalculation)
-                document.layers[layerIndex].shapes[shapeIndex].transform = translationTransform
+                // CRITICAL FIX: Combine with initial transform instead of replacing it
+                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform.concatenating(translationTransform)
                 
                 // Reduce logging frequency for better performance during drag
                 #if DEBUG
@@ -122,6 +126,7 @@ extension DrawingCanvas {
         if document.isHandleScalingActive {
             // Reset state without applying any transforms
             initialObjectPositions.removeAll()
+            initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             print("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied")
             return
@@ -150,6 +155,7 @@ extension DrawingCanvas {
             
             // Reset state
             initialObjectPositions.removeAll()
+            initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             
             print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
