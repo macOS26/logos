@@ -1626,9 +1626,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
             // Apply gradientTransform if present (only for angle calculation)
-            var transformedX1 = x1
+            let transformedX1 = x1
             var transformedY1 = y1
-            var transformedX2 = x2
+            let transformedX2 = x2
             var transformedY2 = y2
             
             if let gradientTransform = attributes["gradientTransform"] {

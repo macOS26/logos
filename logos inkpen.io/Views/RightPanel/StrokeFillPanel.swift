@@ -1427,7 +1427,7 @@ struct GradientFillSection: View {
         
         switch type {
         case .linear:
-            var linear = LinearGradient(
+            let linear = LinearGradient(
                 startPoint: CGPoint(x: 0, y: 0),
                 endPoint: CGPoint(x: 1, y: 0),
                 stops: validStops,
@@ -1437,7 +1437,7 @@ struct GradientFillSection: View {
             // Keep default originPoint for new gradients - will be preserved when switching types
             return .linear(linear)
         case .radial:
-            var radial = RadialGradient(
+            let radial = RadialGradient(
                 centerPoint: CGPoint(x: 0.5, y: 0.5),
                 radius: 0.5,
                 stops: validStops,

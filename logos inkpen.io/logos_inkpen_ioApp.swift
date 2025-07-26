@@ -9,12 +9,12 @@ import SwiftUI
 import AppKit
 import Combine
 
-// MARK: - AppDelegate to Remove Default Menus
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    func applicationWillUpdate(_ notification: Notification) {
-       
-    }
-}
+//// MARK: - AppDelegate to Remove Default Menus
+//final class AppDelegate: NSObject, NSApplicationDelegate {
+//    func applicationWillUpdate(_ notification: Notification) {
+//       
+//    }
+//}
 
 // MARK: - Document State Object (THE SOLUTION!)
 // This is the key to automatic menu state updates
@@ -372,7 +372,7 @@ class DocumentState: ObservableObject {
 
 @main
 struct logos_inken_ioApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    //@NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
     @State private var appState = AppState()
     

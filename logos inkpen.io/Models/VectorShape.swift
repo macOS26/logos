@@ -386,16 +386,31 @@ struct VectorShape: Codable, Hashable, Identifiable {
     
     /// Unwrap this warp object back to its original shape
     func unwrapWarpObject() -> VectorShape? {
-        guard isWarpObject, let originalPath = originalPath else { return nil }
+        guard isWarpObject else { return nil }
         
         var unwrappedShape = self
         unwrappedShape.id = UUID() // New ID for the unwrapped shape
         unwrappedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "")
         unwrappedShape.isWarpObject = false
-        unwrappedShape.originalPath = nil
-        unwrappedShape.path = originalPath   // Restore original path
         unwrappedShape.warpEnvelope = []     // Clear envelope
         unwrappedShape.transform = .identity
+        
+        if isGroup && !groupedShapes.isEmpty {
+            // GROUP/FLATTENED WARP OBJECT: Need to restore original grouped shapes
+            // For groups, we don't have a single originalPath, so we can't truly "unwrap"
+            // Instead, we just remove the warp object status and keep current shapes
+            unwrappedShape.originalPath = nil
+            // Keep the current grouped shapes (they are already warped permanently)
+            print("⚠️ GROUP UNWRAP: Cannot restore original - keeping warped shapes as permanent")
+        } else if let originalPath = originalPath {
+            // SINGLE SHAPE WARP OBJECT: Restore original path
+            unwrappedShape.originalPath = nil
+            unwrappedShape.path = originalPath   // Restore original path
+        } else {
+            // No original path available - keep current path
+            unwrappedShape.originalPath = nil
+        }
+        
         unwrappedShape.updateBounds()
         return unwrappedShape
     }
@@ -409,9 +424,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
         expandedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "Expanded ")
         expandedShape.isWarpObject = false
         expandedShape.originalPath = nil     // Remove reference to original
-        // Keep current warped path as the permanent path
         expandedShape.warpEnvelope = []      // Clear envelope
         expandedShape.transform = .identity
+        
+        // For both single shapes and groups, keep current warped state as permanent
+        // The current path and groupedShapes already contain the warped geometry
+        
         expandedShape.updateBounds()
         return expandedShape
     }

@@ -2683,7 +2683,8 @@ struct EnvelopeHandles: View {
                 .position(cornerPos)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                // ACTUAL PATH CORNERS FIX: Never apply transform since we use actual path points
+                // (Path points already contain the object's geometry and rotation)
                 .gesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
@@ -2726,7 +2727,7 @@ struct EnvelopeHandles: View {
             .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
+            // ACTUAL PATH CORNERS FIX: Never apply transform since we use actual path points
             .opacity(0.6)
         }
         
@@ -2754,7 +2755,7 @@ struct EnvelopeHandles: View {
             .stroke(Color.blue, style: SwiftUI.StrokeStyle(lineWidth: 1.0 / zoomLevel, dash: [2.0 / zoomLevel, 2.0 / zoomLevel]))
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
+            // ACTUAL PATH CORNERS FIX: Never apply transform since we use actual path points
             .opacity(0.6)
         }
     }
@@ -2788,52 +2789,27 @@ struct EnvelopeHandles: View {
     // MARK: - Envelope Warping Logic
     
     private func initializeEnvelopeCorners() {
-        // WARP OBJECT HANDLING: Use stored envelope for warp objects
+        // WARP OBJECT HANDLING: Let existing warp functions take over completely
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-            // Warp object: Use the stored envelope corners
+            // CRITICAL: Use existing envelope as BOTH original and warped corners
+            // This allows the regular warp functions to take over from this point
+            originalCorners = shape.warpEnvelope
             warpedCorners = shape.warpEnvelope
             
-            // Calculate original corners from the original path bounds if available
-            if let originalPath = shape.originalPath {
-                let originalBounds = originalPath.cgPath.boundingBoxOfPath
-                originalCorners = [
-                    CGPoint(x: originalBounds.minX, y: originalBounds.minY), // Top-left
-                    CGPoint(x: originalBounds.maxX, y: originalBounds.minY), // Top-right  
-                    CGPoint(x: originalBounds.maxX, y: originalBounds.maxY), // Bottom-right
-                    CGPoint(x: originalBounds.minX, y: originalBounds.maxY)  // Bottom-left
-                ]
-            } else {
-                // Fallback to current bounds for original corners
-                let bounds = shape.bounds
-                originalCorners = [
-                    CGPoint(x: bounds.minX, y: bounds.minY),
-                    CGPoint(x: bounds.maxX, y: bounds.minY),
-                    CGPoint(x: bounds.maxX, y: bounds.maxY),
-                    CGPoint(x: bounds.minX, y: bounds.maxY)
-                ]
-            }
-            
-            print("🔧 WARP OBJECT: Loaded stored envelope corners")
-            print("   Envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y)))")
+            print("🔧 EXISTING WARP FUNCTIONS TAKE OVER: Using stored envelope")
+            print("   Current Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            print("   🎯 Regular warp functions will handle all subsequent warps")
             
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
             print("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)")
-            print("   🎯 Preview will show blue dashed outline of current warp state")
             
             return
         }
         
-        // REGULAR SHAPE HANDLING: Calculate from bounding box
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        
-        // Initialize the 4 corners of the bounding box
-        let newOriginalCorners = [
-            CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
-            CGPoint(x: bounds.maxX, y: bounds.minY), // Top-right  
-            CGPoint(x: bounds.maxX, y: bounds.maxY), // Bottom-right
-            CGPoint(x: bounds.minX, y: bounds.maxY)  // Bottom-left
-        ]
+        // KEEP OBJECT ALIVE: Use TRUE AXIS DETECTION for fresh objects
+        let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
+        print("🎯 TRUE AXIS DETECTION: Calculated for \(shape.isGroup ? "GROUP" : (shape.geometricType?.rawValue ?? "unknown")) shape")
         
         // CRITICAL FIX: Only reset warped corners if this is the first initialization
         // or if the original corners have changed significantly (different shape/bounds)
@@ -2843,7 +2819,14 @@ struct EnvelopeHandles: View {
             // First time or different shape - reset to bounding box
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
-            print("🔧 ENVELOPE: RESET corners for bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
+            let xCoords = newOriginalCorners.map(\.x)
+            let yCoords = newOriginalCorners.map(\.y)
+            let minX = xCoords.min() ?? 0
+            let maxX = xCoords.max() ?? 0
+            let minY = yCoords.min() ?? 0
+            let maxY = yCoords.max() ?? 0
+            let cornerBounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            print("🔧 ENVELOPE: RESET corners for bounds: (\(String(format: "%.1f", cornerBounds.minX)), \(String(format: "%.1f", cornerBounds.minY))) → (\(String(format: "%.1f", cornerBounds.maxX)), \(String(format: "%.1f", cornerBounds.maxY)))")
         } else {
             // Same shape - preserve warped envelope, only update original reference
             originalCorners = newOriginalCorners
@@ -2926,24 +2909,34 @@ struct EnvelopeHandles: View {
         // Apply bilinear transformation to create warped shape
         guard originalCorners.count == 4 && warpedCorners.count == 4 else { return }
         
-        // CRITICAL FIX: For warp objects, use the original path to avoid accumulation errors
-        let sourcePathElements: [PathElement]
-        let sourceIsClosed: Bool
-        
+        // CRITICAL FIX: Handle different object types properly
         if shape.isWarpObject, let originalPath = shape.originalPath {
-            // Use the original unwrapped path for clean transformations
-            sourcePathElements = originalPath.elements
-            sourceIsClosed = originalPath.isClosed
+            // WARP OBJECT: Use the original unwrapped path for clean transformations
+            let warpedElements = warpPathElements(originalPath.elements)
+            previewPath = VectorPath(elements: warpedElements, isClosed: originalPath.isClosed)
             print("   🔧 Using original path for warp object transformation")
+        } else if shape.isGroup && !shape.groupedShapes.isEmpty {
+            // GROUP/FLATTENED OBJECT: Warp all individual shapes within the group
+            var allWarpedElements: [PathElement] = []
+            
+            for groupedShape in shape.groupedShapes {
+                let warpedElements = warpPathElements(groupedShape.path.elements)
+                allWarpedElements.append(contentsOf: warpedElements)
+                
+                // Add a move to separate shapes if needed
+                if !allWarpedElements.isEmpty && groupedShape != shape.groupedShapes.last {
+                    // Separation is handled naturally by individual shape paths
+                }
+            }
+            
+            previewPath = VectorPath(elements: allWarpedElements, isClosed: false)
+            print("   🔧 Warping \(shape.groupedShapes.count) grouped shapes (flattened/group object)")
         } else {
-            // Use current path for regular shapes
-            sourcePathElements = shape.path.elements
-            sourceIsClosed = shape.path.isClosed
+            // REGULAR SHAPE: Use current path
+            let warpedElements = warpPathElements(shape.path.elements)
+            previewPath = VectorPath(elements: warpedElements, isClosed: shape.path.isClosed)
             print("   🔧 Using current path for regular shape transformation")
         }
-        
-        let warpedElements = warpPathElements(sourcePathElements)
-        previewPath = VectorPath(elements: warpedElements, isClosed: sourceIsClosed)
         
         print("   📊 Envelope warp preview updated - showing warped shape")
     }
@@ -2988,10 +2981,31 @@ struct EnvelopeHandles: View {
     }
     
     private func warpPoint(_ point: CGPoint) -> CGPoint {
-        // Convert point from original bounding box to normalized coordinates (0-1)
-        let bounds = initialBounds
-        let u = (point.x - bounds.minX) / bounds.width
-        let v = (point.y - bounds.minY) / bounds.height
+        // ORIENTED BOUNDING BOX FIX: Use actual original corners for coordinate transformation
+        guard originalCorners.count == 4 else {
+            // Fallback to axis-aligned approach
+            let bounds = initialBounds
+            let u = (point.x - bounds.minX) / bounds.width
+            let v = (point.y - bounds.minY) / bounds.height
+            
+            return bilinearInterpolation(
+                topLeft: warpedCorners[0],
+                topRight: warpedCorners[1],
+                bottomLeft: warpedCorners[3],
+                bottomRight: warpedCorners[2],
+                u: u, v: v
+            )
+        }
+        
+        // Convert point from oriented bounding box to normalized coordinates (0-1)
+        // Use inverse bilinear interpolation to find (u,v) coordinates in the original oriented quad
+        let (u, v) = inverseBilinearInterpolation(
+            point: point,
+            topLeft: originalCorners[0],     // Top-left
+            topRight: originalCorners[1],    // Top-right
+            bottomLeft: originalCorners[3],  // Bottom-left
+            bottomRight: originalCorners[2]  // Bottom-right
+        )
         
         // Use bilinear interpolation to map to warped quadrilateral
         return bilinearInterpolation(
@@ -3022,6 +3036,48 @@ struct EnvelopeHandles: View {
         )
     }
     
+    private func inverseBilinearInterpolation(point: CGPoint, topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint, bottomRight: CGPoint) -> (u: CGFloat, v: CGFloat) {
+        // Find (u,v) coordinates where point lies within the quadrilateral
+        // This is more complex for arbitrary quadrilaterals, so we'll use an iterative approach
+        
+        // For simple axis-aligned rectangles, this would be:
+        // u = (point.x - topLeft.x) / (topRight.x - topLeft.x)
+        // v = (point.y - topLeft.y) / (bottomLeft.y - topLeft.y)
+        
+        // For oriented rectangles, we need to solve the bilinear system
+        // We'll use Newton's method or a simplified approach for rectangular shapes
+        
+        // Calculate vectors for the oriented rectangle
+        let rightVector = CGPoint(x: topRight.x - topLeft.x, y: topRight.y - topLeft.y)
+        let downVector = CGPoint(x: bottomLeft.x - topLeft.x, y: bottomLeft.y - topLeft.y)
+        let pointVector = CGPoint(x: point.x - topLeft.x, y: point.y - topLeft.y)
+        
+        // For rectangles, we can solve this as a 2x2 linear system
+        // pointVector = u * rightVector + v * downVector
+        
+        let det = rightVector.x * downVector.y - rightVector.y * downVector.x
+        
+        if abs(det) < 1e-10 {
+            // Degenerate case - fallback to simple projection
+            let rightLength = sqrt(rightVector.x * rightVector.x + rightVector.y * rightVector.y)
+            let downLength = sqrt(downVector.x * downVector.x + downVector.y * downVector.y)
+            
+            let u: CGFloat = rightLength > 0 ? 
+                (pointVector.x * rightVector.x + pointVector.y * rightVector.y) / (rightLength * rightLength) : 0
+            let v: CGFloat = downLength > 0 ? 
+                (pointVector.x * downVector.x + pointVector.y * downVector.y) / (downLength * downLength) : 0
+            
+            return (u: max(0, min(1, u)), v: max(0, min(1, v)))
+        }
+        
+        // Solve the 2x2 system using Cramer's rule
+        let u = (pointVector.x * downVector.y - pointVector.y * downVector.x) / det
+        let v = (rightVector.x * pointVector.y - rightVector.y * pointVector.x) / det
+        
+        // Clamp to [0,1] range
+        return (u: max(0, min(1, u)), v: max(0, min(1, v)))
+    }
+    
     private func finishEnvelopeWarp() {
         // CONTINUOUS EDITING: Update the shape coordinates but keep envelope active
         warpingStarted = false
@@ -3041,52 +3097,86 @@ struct EnvelopeHandles: View {
     }
     
     private func updateShapeWithCurrentWarp() {
-        guard let finalWarpedPath = previewPath,
-              let layerIndex = document.selectedLayerIndex,
+        guard let layerIndex = document.selectedLayerIndex,
               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { return }
         
         let currentShape = document.layers[layerIndex].shapes[shapeIndex]
         
         if currentShape.isWarpObject {
             // Update existing warp object with new warped coordinates
-            var updatedWarpObject = VectorShape(
-                name: currentShape.name,
-                path: finalWarpedPath,
-                geometricType: currentShape.geometricType,
-                strokeStyle: currentShape.strokeStyle,
-                fillStyle: currentShape.fillStyle,
-                transform: .identity,
-                isVisible: currentShape.isVisible,
-                isLocked: currentShape.isLocked,
-                opacity: currentShape.opacity,
-                blendMode: currentShape.blendMode,
-                isGroup: currentShape.isGroup,
-                groupedShapes: currentShape.groupedShapes,
-                groupTransform: currentShape.groupTransform,
-                isCompoundPath: currentShape.isCompoundPath,
-                isWarpObject: true,
-                originalPath: currentShape.originalPath, // Preserve original
-                warpEnvelope: warpedCorners
-            )
-            updatedWarpObject.id = currentShape.id // Keep same ID
+            var updatedWarpObject = currentShape
+            
+            if currentShape.isGroup && !currentShape.groupedShapes.isEmpty {
+                // WARP OBJECT + GROUP: Warp each individual shape in the group
+                var warpedGroupedShapes: [VectorShape] = []
+                
+                for groupedShape in currentShape.groupedShapes {
+                    let warpedElements = warpPathElements(groupedShape.path.elements)
+                    let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
+                    
+                    var warpedGrouped = groupedShape
+                    warpedGrouped.path = warpedPath
+                    warpedGrouped.updateBounds()
+                    warpedGroupedShapes.append(warpedGrouped)
+                }
+                
+                updatedWarpObject.groupedShapes = warpedGroupedShapes
+                print("   🔄 Updated warp object with \(warpedGroupedShapes.count) warped grouped shapes")
+            } else if let finalWarpedPath = previewPath {
+                // WARP OBJECT + SINGLE SHAPE: Update the main path
+                updatedWarpObject.path = finalWarpedPath
+                print("   🔄 Updated warp object with single warped path")
+            }
+            
+            updatedWarpObject.warpEnvelope = warpedCorners
+            updatedWarpObject.updateBounds()
             
             document.layers[layerIndex].shapes[shapeIndex] = updatedWarpObject
-            print("   🔄 Updated warp object coordinates in real-time")
+            print("   ✅ Updated existing warp object coordinates in real-time")
         } else {
             // First-time warp: create warp object
-            let warpObject = currentShape.createWarpObject(
-                warpedPath: finalWarpedPath,
-                warpEnvelope: warpedCorners
-            )
+            var warpObject = currentShape
+            warpObject.id = UUID() // New ID for the warp object
+            warpObject.name = "Warped " + currentShape.name
+            warpObject.isWarpObject = true
+            warpObject.warpEnvelope = warpedCorners
+            warpObject.transform = .identity
+            
+            if currentShape.isGroup && !currentShape.groupedShapes.isEmpty {
+                // GROUP/FLATTENED OBJECT: Store original grouped shapes and create warped versions
+                warpObject.originalPath = nil // Groups don't have a single original path
+                
+                // Warp each individual shape in the group
+                var warpedGroupedShapes: [VectorShape] = []
+                
+                for groupedShape in currentShape.groupedShapes {
+                    let warpedElements = warpPathElements(groupedShape.path.elements)
+                    let warpedPath = VectorPath(elements: warpedElements, isClosed: groupedShape.path.isClosed)
+                    
+                    var warpedGrouped = groupedShape
+                    warpedGrouped.path = warpedPath
+                    warpedGrouped.updateBounds()
+                    warpedGroupedShapes.append(warpedGrouped)
+                }
+                
+                warpObject.groupedShapes = warpedGroupedShapes
+                print("   ✅ Created warp object from group with \(warpedGroupedShapes.count) warped shapes")
+            } else if let finalWarpedPath = previewPath {
+                // SINGLE SHAPE: Store original path and use warped path
+                warpObject.originalPath = currentShape.path
+                warpObject.path = finalWarpedPath
+                print("   ✅ Created warp object from single shape")
+            }
+            
+            warpObject.updateBounds()
             
             document.layers[layerIndex].shapes[shapeIndex] = warpObject
             document.selectedShapeIDs.remove(currentShape.id)
             document.selectedShapeIDs.insert(warpObject.id)
             
-            print("   ✅ Created new warp object with current coordinates")
+            print("   🎯 First-time warp completed - created new warp object")
         }
         
-        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         document.objectWillChange.send()
     }
     
@@ -3616,4 +3706,103 @@ class GradientNSView: NSView {
         context.restoreGState()
     }
 }
+
+    // MARK: - Oriented Bounding Box Calculation
+    
+    /// Calculate TRUE AXIS DETECTION for ANY shape on ANY axis/plane
+    private func calculateOrientedBoundingBox(for shape: VectorShape) -> [CGPoint] {
+        print("📐 TRUE AXIS DETECTION for \(shape.geometricType?.rawValue ?? "unknown")")
+        
+        // NOTE: Warp objects are handled in initializeEnvelopeCorners() 
+        // This function only handles fresh objects for TRUE AXIS DETECTION
+        
+        // Special handling for groups and compound shapes
+        if shape.isGroup || shape.isGroupContainer {
+            print("   👥 GROUP/COMPOUND SHAPE: Using composite bounds")
+            let bounds = shape.isGroup ? shape.bounds : shape.groupBounds
+            
+            // For groups, use the overall bounds (already computed across all grouped shapes)
+            let objectSpaceCorners = [
+                CGPoint(x: bounds.minX, y: bounds.minY), // Top-left
+                CGPoint(x: bounds.maxX, y: bounds.minY), // Top-right
+                CGPoint(x: bounds.maxX, y: bounds.maxY), // Bottom-right
+                CGPoint(x: bounds.minX, y: bounds.maxY)  // Bottom-left
+            ]
+            
+            // Apply group transform
+            let worldSpaceCorners = objectSpaceCorners.map { corner in
+                corner.applying(shape.transform)
+            }
+            
+            print("   📍 Group Bounds: (\(String(format: "%.1f", bounds.origin.x)), \(String(format: "%.1f", bounds.origin.y))) size (\(String(format: "%.1f", bounds.width)) × \(String(format: "%.1f", bounds.height)))")
+            print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            
+            return worldSpaceCorners
+        }
+        
+        // TRUE AXIS DETECTION: Extract actual path corners for rotated objects
+        let pathElements = shape.path.elements
+        var actualCorners: [CGPoint] = []
+        
+        print("   🔍 EXTRACTING ACTUAL PATH CORNERS from \(pathElements.count) elements")
+        
+        // Try to extract the actual corner points from the path
+        for element in pathElements {
+            switch element {
+            case .move(let to):
+                actualCorners.append(to.cgPoint)
+                print("     ➤ Move to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+            case .line(let to):
+                actualCorners.append(to.cgPoint)
+                print("     ➤ Line to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+            case .curve(let to, _, _):
+                actualCorners.append(to.cgPoint)
+                print("     ➤ Curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+            case .quadCurve(let to, _):
+                actualCorners.append(to.cgPoint)
+                print("     ➤ Quad curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
+            case .close:
+                print("     ➤ Close path")
+                break
+            }
+            
+            // For rectangles and simple shapes, we expect 4 corners
+            if actualCorners.count >= 4 && (shape.geometricType == .rectangle || pathElements.count <= 6) {
+                break
+            }
+        }
+        
+        // TRUE AXIS DETECTION: Use actual path corners if we found them
+        if actualCorners.count >= 4 && (shape.geometricType == .rectangle || shape.geometricType == .star || pathElements.count <= 8) {
+            let detectedCorners = Array(actualCorners.prefix(4))
+            print("   ✅ TRUE AXIS DETECTION: Using ACTUAL PATH CORNERS")
+            print("   📐 Detected Corners: [\(detectedCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            return detectedCorners
+        }
+        
+        // FALLBACK: Use transformed bounds for complex shapes
+        print("   ⚠️ FALLBACK: Using transformed bounds for complex shape")
+        let objectSpaceBounds = shape.path.cgPath.boundingBoxOfPath
+        
+        // Create the 4 corners of the bounding box in object space
+        let objectSpaceCorners = [
+            CGPoint(x: objectSpaceBounds.minX, y: objectSpaceBounds.minY), // Top-left
+            CGPoint(x: objectSpaceBounds.maxX, y: objectSpaceBounds.minY), // Top-right
+            CGPoint(x: objectSpaceBounds.maxX, y: objectSpaceBounds.maxY), // Bottom-right
+            CGPoint(x: objectSpaceBounds.minX, y: objectSpaceBounds.maxY)  // Bottom-left
+        ]
+        
+        // Apply the shape's transform to get world space coordinates
+        let worldSpaceCorners = objectSpaceCorners.map { corner in
+            corner.applying(shape.transform)
+        }
+        
+        print("   📍 Object Bounds: (\(String(format: "%.1f", objectSpaceBounds.origin.x)), \(String(format: "%.1f", objectSpaceBounds.origin.y))) size (\(String(format: "%.1f", objectSpaceBounds.width)) × \(String(format: "%.1f", objectSpaceBounds.height)))")
+        print("   🔄 Transform: [\(String(format: "%.3f", shape.transform.a)), \(String(format: "%.3f", shape.transform.b)), \(String(format: "%.3f", shape.transform.c)), \(String(format: "%.3f", shape.transform.d)), \(String(format: "%.1f", shape.transform.tx)), \(String(format: "%.1f", shape.transform.ty))]")
+        print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+        
+        return worldSpaceCorners
+    }
+
+// MARK: - View Extensions
 
