@@ -48,6 +48,7 @@ struct DrawingCanvas: View {
     @State internal var initialObjectPositions: [UUID: CGPoint] = [:]  // Initial object positions when drag started
     @State internal var initialObjectTransforms: [UUID: CGAffineTransform] = [:]  // Initial object transforms when drag started
     @State internal var currentDragDelta: CGPoint = .zero  // Current drag offset for 60fps preview rendering
+    @State internal var dragPreviewUpdateTrigger: Bool = false  // Trigger for preview rendering only
     
     // PROFESSIONAL SHAPE DRAWING STATE (Same precision as hand tool)
     @State internal var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started

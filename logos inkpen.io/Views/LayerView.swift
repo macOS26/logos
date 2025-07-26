@@ -17,6 +17,7 @@ struct LayerView: View {
     let viewMode: ViewMode
     let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     let dragPreviewDelta: CGPoint  // Passed for 60fps drag preview
+    let dragPreviewTrigger: Bool  // Trigger for efficient preview updates
     
     // CANVAS LAYER PROTECTION: Check if this is the Canvas layer
     private var isCanvasLayer: Bool {
@@ -39,7 +40,8 @@ struct LayerView: View {
                     viewMode: viewMode,
                     isCanvasLayer: isCanvasLayer,  // Pass Canvas layer info
                     isPasteboardLayer: isPasteboardLayer,  // Pass Pasteboard layer info
-                    dragPreviewDelta: dragPreviewDelta
+                    dragPreviewDelta: dragPreviewDelta,
+                    dragPreviewTrigger: dragPreviewTrigger
                 )
             }
         }
@@ -56,6 +58,7 @@ struct ShapeView: View {
     let isCanvasLayer: Bool  // NEW: Canvas layer protection
     let isPasteboardLayer: Bool  // NEW: Pasteboard layer recognition
     let dragPreviewDelta: CGPoint  // NEW: 60fps drag preview offset
+    let dragPreviewTrigger: Bool  // NEW: Trigger for efficient preview updates
     
     // CANVAS AND PASTEBOARD LAYER PROTECTION: Canvas and Pasteboard objects never go to keyline view
     private var effectiveViewMode: ViewMode {
@@ -170,9 +173,10 @@ struct ShapeView: View {
         // Individual shape transform is now BAKED INTO the path.
         // The transform modifier is only applied for groups.
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
-        // BLAZING FAST 60FPS: Apply drag preview offset if this shape is selected during drag
+        // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
         .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0, 
                 y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
+        .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .opacity(shape.opacity)
     }
     

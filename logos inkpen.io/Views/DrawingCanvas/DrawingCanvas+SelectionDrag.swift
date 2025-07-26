@@ -84,8 +84,9 @@ extension DrawingCanvas {
         // This eliminates expensive document updates and bounds recalculation during drag
         currentDragDelta = canvasDelta
         
-        // Single UI update to trigger preview rendering - much faster than modifying every shape
-        document.objectWillChange.send()
+        // ULTRA FAST PREVIEW: Use targeted state update instead of document update
+        // This triggers only the preview rendering without expensive document operations
+        dragPreviewUpdateTrigger.toggle()
     }
     
     internal func finishSelectionDrag() {
