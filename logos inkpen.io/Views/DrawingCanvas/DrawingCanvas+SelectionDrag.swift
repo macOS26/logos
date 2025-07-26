@@ -90,7 +90,12 @@ extension DrawingCanvas {
                 // Apply translation to shape's transform (much faster than coordinate recalculation)
                 document.layers[layerIndex].shapes[shapeIndex].transform = translationTransform
                 
-                print("🚀 FAST DRAG: Shape '\(document.layers[layerIndex].shapes[shapeIndex].name)' moved by transform (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+                // Reduce logging frequency for better performance during drag
+                #if DEBUG
+                if abs(canvasDelta.x) > 5 || abs(canvasDelta.y) > 5 { // Only log every 5 points of movement
+                    print("🚀 FAST DRAG: Shape '\(document.layers[layerIndex].shapes[shapeIndex].name)' moved by transform (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+                }
+                #endif
             }
         }
         
