@@ -1028,6 +1028,8 @@ struct GradientFillSection: View {
                 getGradientStops: getGradientStops,
                 getOriginX: getGradientOriginX,
                 getOriginY: getGradientOriginY,
+                getScaleX: getGradientScaleX,
+                getScaleY: getGradientScaleY,
                 updateOriginX: updateGradientOriginX,
                 updateOriginY: updateGradientOriginY,
                 addColorStop: addColorStop,
@@ -1147,18 +1149,18 @@ struct GradientFillSection: View {
     private func getGradientScaleX(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
-            return linear.scaleX ?? linear.scale ?? 1.0
+            return linear.scaleX
         case .radial(let radial):
-            return radial.scaleX ?? radial.scale ?? 1.0
+            return radial.scaleX
         }
     }
     
     private func getGradientScaleY(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
-            return linear.scaleY ?? linear.scale ?? 1.0
+            return linear.scaleY
         case .radial(let radial):
-            return radial.scaleY ?? radial.scale ?? 1.0
+            return radial.scaleY
         }
     }
     
@@ -1222,8 +1224,8 @@ struct GradientFillSection: View {
             let adjustedEndY = linear.endPoint.y + originOffsetY
             
             // Apply truly independent X and Y scale
-            let scaleX = linear.scaleX ?? linear.scale
-            let scaleY = linear.scaleY ?? linear.scale
+            let scaleX = linear.scaleX
+            let scaleY = linear.scaleY
             
             // Calculate gradient vector
             let gradientVectorX = adjustedEndX - adjustedStartX
@@ -1260,17 +1262,17 @@ struct GradientFillSection: View {
             let center = UnitPoint(x: adjustedCenterX, y: adjustedCenterY)
             
             // Apply truly independent X and Y scale - EXACTLY like aspect ratio did
-            let scaleX = radial.scaleX ?? radial.scale ?? 1.0
-            let scaleY = radial.scaleY ?? radial.scale ?? 1.0
+            let scaleX = radial.scaleX
+            let scaleY = radial.scaleY
             
             // For elliptical gradients, we need to use a custom approach
             // SwiftUI RadialGradient doesn't support elliptical, so we create an elliptical effect
             let baseRadius = 50.0
             
-            // Use scaleX and scaleY independently like the CoreGraphics version does
-            // For elliptical gradients, fall back to standard radial with proper scaling hint
-            let avgScale = (abs(scaleX) + abs(scaleY)) / 2.0
-            let scaledRadius = baseRadius * CGFloat(avgScale)
+            // For elliptical gradients, use a scaled radial as approximation for ShapeStyle
+            // The actual elliptical rendering happens in the custom preview view
+            let maxScale = max(abs(scaleX), abs(scaleY))
+            let scaledRadius = baseRadius * CGFloat(maxScale)
             
             return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: scaledRadius))
         }
@@ -2097,6 +2099,8 @@ struct GradientPreviewAndStopsView: View {
     let getGradientStops: (VectorGradient) -> [GradientStop]
     let getOriginX: (VectorGradient) -> Double
     let getOriginY: (VectorGradient) -> Double
+    let getScaleX: (VectorGradient) -> Double
+    let getScaleY: (VectorGradient) -> Double
     let updateOriginX: (Double) -> Void
     let updateOriginY: (Double) -> Void
     let addColorStop: () -> Void
@@ -2111,11 +2115,42 @@ struct GradientPreviewAndStopsView: View {
                     .foregroundColor(.secondary)
                 
                 GeometryReader { geometry in
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(createGradient(currentGradient!))
-                        .frame(height: 60)
-                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                        .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                    Group {
+                        // Use custom elliptical gradient for radial gradients with independent scaling
+                        if case .radial(let radial) = currentGradient {
+                            let scaleX = getScaleX(currentGradient!)
+                            let scaleY = getScaleY(currentGradient!)
+                            let originX = getOriginX(currentGradient!)
+                            let originY = getOriginY(currentGradient!)
+                            let angle = radial.angle // Get the angle from the radial gradient
+                            
+                            EllipticalGradient(
+                                gradient: {
+                                    let stops = getGradientStops(currentGradient!)
+                                    let gradientStops = stops.map { stop in
+                                        SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                                    }
+                                    return SwiftUI.Gradient(stops: gradientStops)
+                                }(),
+                                center: UnitPoint(x: originX, y: originY),
+                                startRadiusX: 0,
+                                startRadiusY: 0,
+                                endRadiusX: 50.0 * CGFloat(abs(scaleX)),
+                                endRadiusY: 50.0 * CGFloat(abs(scaleY)),
+                                angle: angle
+                            )
+                            .frame(height: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                            .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                        } else {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(createGradient(currentGradient!))
+                                .frame(height: 60)
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                        }
+                    }
                         .overlay(
                             Circle()
                                 .fill(Color.gray.opacity(0.8))
@@ -2258,13 +2293,53 @@ struct EllipticalGradient: View {
     let startRadiusY: CGFloat
     let endRadiusX: CGFloat
     let endRadiusY: CGFloat
+    let angle: Double // Rotation angle in degrees
     
     var body: some View {
-        // For now, use a simplified approach since we removed the complex elliptical preview
-        // The actual elliptical rendering happens in the CoreGraphics drawing code
-        let maxRadius = max(endRadiusX, endRadiusY)
-        return RoundedRectangle(cornerRadius: 4)
-            .fill(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: maxRadius))
+        GeometryReader { geometry in
+            Canvas { context, size in
+                // Create CoreGraphics gradient from SwiftUI gradient
+                let cgColors = gradient.stops.map { stop in
+                    stop.color.cgColor ?? CGColor(gray: 0, alpha: 1)
+                }
+                let locations = gradient.stops.map { CGFloat($0.location) }
+                
+                guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                                  colors: cgColors as CFArray,
+                                                  locations: locations) else { return }
+                
+                // Calculate center point
+                let centerPoint = CGPoint(x: size.width * center.x, y: size.height * center.y)
+                
+                // Save context for transform
+                context.withCGContext { cgContext in
+                    cgContext.saveGState()
+                    
+                    // Translate to center for rotation and scaling
+                    cgContext.translateBy(x: centerPoint.x, y: centerPoint.y)
+                    
+                    // Apply rotation BEFORE scaling - EXACTLY like the real gradient rendering
+                    let angleInRadians = angle * .pi / 180.0
+                    cgContext.rotate(by: CGFloat(angleInRadians))
+                    
+                    // Apply independent X/Y scaling - EXACTLY like the real gradient rendering
+                    let scaleX = endRadiusX / max(endRadiusX, endRadiusY, 1.0)
+                    let scaleY = endRadiusY / max(endRadiusX, endRadiusY, 1.0)
+                    cgContext.scaleBy(x: scaleX, y: scaleY)
+                    
+                    // Draw circular gradient at origin (will be elliptical due to scaling)
+                    let maxRadius = max(endRadiusX, endRadiusY, 1.0)
+                    cgContext.drawRadialGradient(cgGradient, 
+                                               startCenter: CGPoint.zero, 
+                                               startRadius: 0, 
+                                               endCenter: CGPoint.zero, 
+                                               endRadius: maxRadius, 
+                                               options: [.drawsAfterEndLocation])
+                    
+                    cgContext.restoreGState()
+                }
+            }
+        }
     }
 }
 

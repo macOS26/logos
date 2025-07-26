@@ -3683,8 +3683,8 @@ class GradientNSView: NSView {
             context.rotate(by: angleRadians)
             
             // Apply independent X/Y scaling (elliptical gradient) - EXACTLY like aspect ratio but independent
-            let scaleX = CGFloat(radial.scaleX ?? radial.scale ?? 1.0)
-            let scaleY = CGFloat(radial.scaleY ?? radial.scale ?? 1.0)
+            let scaleX = CGFloat(radial.scaleX)
+            let scaleY = CGFloat(radial.scaleY)
             context.scaleBy(x: scaleX, y: scaleY)
             
             // Calculate radius with scale applied
