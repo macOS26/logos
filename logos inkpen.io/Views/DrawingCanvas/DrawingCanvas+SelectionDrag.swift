@@ -191,6 +191,18 @@ extension DrawingCanvas {
             
             // Update the flattened group with the moved individual shapes
             document.layers[layerIndex].shapes[shapeIndex].groupedShapes = updatedGroupedShapes
+            
+            // CRITICAL FIX: Update warp envelope coordinates for warp objects in groups
+            if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+                var updatedWarpEnvelope: [CGPoint] = []
+                for corner in shape.warpEnvelope {
+                    let movedCorner = CGPoint(x: corner.x + delta.x, y: corner.y + delta.y)
+                    updatedWarpEnvelope.append(movedCorner)
+                }
+                document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+                print("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) corner coordinates")
+            }
+            
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             return
         }
@@ -236,6 +248,18 @@ extension DrawingCanvas {
         
         // Update the shape with moved path
         document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
+        
+        // CRITICAL FIX: Update warp envelope coordinates for warp objects
+        if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
+            var updatedWarpEnvelope: [CGPoint] = []
+            for corner in shape.warpEnvelope {
+                let movedCorner = CGPoint(x: corner.x + delta.x, y: corner.y + delta.y)
+                updatedWarpEnvelope.append(movedCorner)
+            }
+            document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
+            print("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) corner coordinates")
+        }
+        
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
     }
 
