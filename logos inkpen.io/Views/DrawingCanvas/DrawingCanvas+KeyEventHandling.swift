@@ -12,7 +12,20 @@ extension DrawingCanvas {
     // MARK: - BEEP PREVENTION - Local Monitor to Handle All Key Events
     internal func setupKeyEventMonitoring() {
         // IMPROVED: Local monitor that prevents beeping but allows modifier key commands
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown]) { event in
+        // ENHANCED: Now also tracks flagsChanged for shift key constraints in transform tools
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+            // Handle modifier key changes for transform tools
+            if event.type == .flagsChanged {
+                DispatchQueue.main.async {
+                    self.isShiftPressed = event.modifierFlags.contains(.shift)
+                    // Debug logging for shift state changes
+                    if self.isShiftPressed {
+                        print("⬆️ SHIFT KEY PRESSED: Transform constraints enabled")
+                    }
+                }
+                return event // Let flagsChanged pass through normally
+            }
+            
             // PRECISE FIX: Only allow events for NSTextView that is actually first responder
             if let window = NSApp.keyWindow,
                let firstResponder = window.firstResponder,

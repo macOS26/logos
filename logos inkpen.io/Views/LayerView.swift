@@ -15,6 +15,7 @@ struct LayerView: View {
     let canvasOffset: CGPoint
     let selectedShapeIDs: Set<UUID>
     let viewMode: ViewMode
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     
     // CANVAS LAYER PROTECTION: Check if this is the Canvas layer
     private var isCanvasLayer: Bool {
@@ -372,7 +373,8 @@ struct SelectionHandlesView: View {
                                     document: document,
                                     shape: shape,
                                     zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset
+                                    canvasOffset: document.canvasOffset,
+                                    isShiftPressed: isShiftPressed
                                 )
                             } else if document.currentTool == .rotate {
                                 // Rotate tool: Rotation handles with anchor point
@@ -380,7 +382,8 @@ struct SelectionHandlesView: View {
                                     document: document,
                                     shape: shape,
                                     zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset
+                                    canvasOffset: document.canvasOffset,
+                                    isShiftPressed: isShiftPressed
                                 )
                             } else if document.currentTool == .shear {
                                 // Shear tool: Shear handles with anchor point
@@ -388,7 +391,8 @@ struct SelectionHandlesView: View {
                                     document: document,
                                     shape: shape,
                                     zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset
+                                    canvasOffset: document.canvasOffset,
+                                    isShiftPressed: isShiftPressed
                                 )
                             }
                         }
@@ -501,6 +505,7 @@ struct ScaleHandles: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for shift constraints
     
     // Professional scaling state management - FIXED IMPLEMENTATION
     @State private var isScaling = false
@@ -511,7 +516,6 @@ struct ScaleHandles: View {
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var scalingAnchorPoint: CGPoint = .zero  // This is the LOCKED/PIN point (RED)
     @State private var finalMarqueeBounds: CGRect = .zero
-    @State private var isShiftPressed = false
     @State private var isCapsLockPressed = false  // NEW: Track caps-lock for locking pin point
     
     // CORRECTED POINT SYSTEM: Lock point vs scale points
@@ -741,7 +745,6 @@ struct ScaleHandles: View {
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
-            setupScaleKeyEventMonitoring()
             extractPathPoints()
             
             // Set default locked pin point to center if none is set
@@ -749,9 +752,6 @@ struct ScaleHandles: View {
                 setLockedPinPoint(nil) // nil = center point
                 print("🔴 SCALE TOOL: Default locked pin set to center")
             }
-        }
-        .onDisappear {
-            teardownScaleKeyEventMonitoring()
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
             // MOVEMENT FIX: When shape bounds change (e.g., after moving), refresh the scale points
@@ -1111,32 +1111,9 @@ struct ScaleHandles: View {
         print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
     }
     
-    // MARK: - Key Event Monitoring (same as rotate/shear tools)
-    
-    @State private var scaleKeyEventMonitor: Any?
-    
-    private func setupScaleKeyEventMonitoring() {
-        // DISABLED: NSEvent monitoring to fix text input interference
-        // scaleKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-        //     DispatchQueue.main.async {
-        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
-        //         self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
-        //         
-        //         // Debug logging for caps-lock state
-        //         if self.isCapsLockPressed {
-        //             print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
-        //         }
-        //     }
-        //     return event
-        // }
-    }
-    
-    private func teardownScaleKeyEventMonitoring() {
-        if let monitor = scaleKeyEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            scaleKeyEventMonitor = nil
-        }
-    }
+    // MARK: - Key Event Monitoring
+    // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
+    // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
     
     // MARK: - Scaling Anchor Point Calculation
     
@@ -1379,6 +1356,7 @@ struct RotateHandles: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for 15-degree increment snapping
     
     // Professional rotation state management
     @State private var isRotating = false
@@ -1389,7 +1367,6 @@ struct RotateHandles: View {
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var rotationAnchorPoint: CGPoint = .zero
     @State private var startAngle: CGFloat = 0.0
-    @State private var isShiftPressed = false  // For 15-degree increment snapping
     @State private var finalMarqueeBounds: CGRect = .zero  // MARQUEE FIX: Track final destination bounds like scale tool
     
     // POINT-BASED SELECTION SYSTEM: Select actual path points + center for rotation anchor
@@ -1968,25 +1945,9 @@ struct RotateHandles: View {
         print("✅ Shape coordinates updated after rotation - object origin stays with object")
     }
     
-    // Shift Key Monitoring
-    @State private var keyEventMonitor: Any?
-    
-    private func setupKeyEventMonitoring() {
-        // DISABLED: NSEvent monitoring to fix text input interference
-        // keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-        //     DispatchQueue.main.async {
-        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
-        //     }
-        //     return event
-        // }
-    }
-    
-    private func teardownKeyEventMonitoring() {
-        if let monitor = keyEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyEventMonitor = nil
-        }
-    }
+    // MARK: - Key Event Monitoring
+    // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
+    // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
 }
 
 // MARK: - Shear Tool Handles
@@ -1995,6 +1956,7 @@ struct ShearHandles: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for constrained shearing
     
     // Professional shear state management - FIXED IMPLEMENTATION (same as scale tool)
     @State private var isShearing = false
@@ -2004,7 +1966,6 @@ struct ShearHandles: View {
     @State private var startLocation: CGPoint = .zero
     @State private var previewTransform: CGAffineTransform = .identity
     @State private var shearAnchorPoint: CGPoint = .zero  // This is the LOCKED/PIN point (RED)
-    @State private var isShiftPressed = false  // For constrained shearing
     @State private var isCapsLockPressed = false  // NEW: Track caps-lock for locking pin point
     
     // CORRECTED POINT SYSTEM: Lock point vs shear points (same as scale tool)
@@ -2150,7 +2111,6 @@ struct ShearHandles: View {
         .onAppear {
             initialBounds = shape.bounds
             initialTransform = shape.transform
-            setupShearKeyEventMonitoring()
             extractPathPoints()
             
             // Set default locked pin point to center if none is set
@@ -2158,9 +2118,6 @@ struct ShearHandles: View {
                 setLockedPinPoint(nil) // nil = center point
                 print("🔴 SHEAR TOOL: Default locked pin set to center")
             }
-        }
-        .onDisappear {
-            teardownShearKeyEventMonitoring()
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
             // MOVEMENT FIX: When shape bounds change (e.g., after moving), refresh the shear points
@@ -2475,32 +2432,9 @@ struct ShearHandles: View {
         print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
     }
     
-    // MARK: - Key Event Monitoring (same as scale tool)
-    
-    @State private var shearKeyEventMonitor: Any?
-    
-    private func setupShearKeyEventMonitoring() {
-        // DISABLED: NSEvent monitoring to fix text input interference
-        // shearKeyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-        //     DispatchQueue.main.async {
-        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
-        //         self.isCapsLockPressed = event.modifierFlags.contains(.capsLock)
-        //         
-        //         // Debug logging for caps-lock state
-        //         if self.isCapsLockPressed {
-        //             print("🔒 CAPS-LOCK ACTIVE: Pin point locking enabled")
-        //         }
-        //     }
-        //     return event
-        // }
-    }
-    
-    private func teardownShearKeyEventMonitoring() {
-        if let monitor = shearKeyEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            shearKeyEventMonitor = nil
-        }
-    }
+    // MARK: - Key Event Monitoring
+    // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
+    // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
     
     // Helper functions (similar to RotateHandles)
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
@@ -2577,25 +2511,7 @@ struct ShearHandles: View {
         print("✅ Shape coordinates updated after shear - object origin stays with object")
     }
     
-    // Shift Key Monitoring
-    @State private var keyEventMonitor: Any?
-    
-    private func setupKeyEventMonitoring() {
-        // DISABLED: NSEvent monitoring to fix text input interference
-        // keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { event in
-        //     DispatchQueue.main.async {
-        //         self.isShiftPressed = event.modifierFlags.contains(.shift)
-        //     }
-        //     return event
-        // }
-    }
-    
-    private func teardownKeyEventMonitoring() {
-        if let monitor = keyEventMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyEventMonitor = nil
-        }
-    }
+
 }
 
 // MARK: - Envelope Warping Tool Handles

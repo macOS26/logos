@@ -80,7 +80,8 @@ extension DrawingCanvas {
                         zoomLevel: document.zoomLevel,
                         canvasOffset: document.canvasOffset,
                         selectedShapeIDs: document.selectedShapeIDs,
-                        viewMode: document.viewMode
+                        viewMode: document.viewMode,
+                        isShiftPressed: self.isShiftPressed
                     )
                 }
             }
