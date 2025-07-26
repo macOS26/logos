@@ -2649,10 +2649,9 @@ struct EnvelopeHandles: View {
                     commitEnvelopeWarp()
                 }
                 
-                // Then reset the envelope state for next time
-                originalCorners.removeAll()
-                warpedCorners.removeAll()
-                print("🔄 ENVELOPE TOOL: Switched away - committed warp and reset state")
+                // CRITICAL FIX: DON'T clear envelope state - preserve warp memory
+                // This allows continuous editing when switching back to envelope tool
+                print("🔄 ENVELOPE TOOL: Switched away - committed warp and PRESERVED state")
             }
             
             // ENVELOPE REACTIVATION: When switching back to envelope tool, reinitialize for current shape
@@ -2808,16 +2807,23 @@ struct EnvelopeHandles: View {
     // MARK: - Envelope Warping Logic
     
     private func initializeEnvelopeCorners() {
-        // WARP OBJECT HANDLING: Let existing warp functions take over completely
+        // WARP OBJECT HANDLING: Use stored original envelope for continuous warping
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
-            // CRITICAL: Use existing envelope as BOTH original and warped corners
-            // This allows the regular warp functions to take over from this point
-            originalCorners = shape.warpEnvelope
-            warpedCorners = shape.warpEnvelope
+            // CRITICAL FIX: Use stored original envelope as reference, current envelope as starting point
+            if !shape.originalEnvelope.isEmpty {
+                originalCorners = shape.originalEnvelope  // TRUE original envelope (never changes)
+                warpedCorners = shape.warpEnvelope        // Current envelope (can be warped further)
+                print("🔧 WARP MEMORY PRESERVED: Using stored original envelope for reference")
+                print("   Original Envelope: [\(shape.originalEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+                print("   Current Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
+            } else {
+                // Fallback for older warp objects without originalEnvelope
+                originalCorners = shape.warpEnvelope
+                warpedCorners = shape.warpEnvelope
+                print("🔧 LEGACY WARP OBJECT: Missing original envelope, using current as reference")
+            }
             
-            print("🔧 EXISTING WARP FUNCTIONS TAKE OVER: Using stored envelope")
-            print("   Current Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
-            print("   🎯 Regular warp functions will handle all subsequent warps")
+            print("   🎯 Continuous warping enabled - can warp from current state")
             
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
@@ -2885,8 +2891,6 @@ struct EnvelopeHandles: View {
         // Update the warped corner position
         warpedCorners[cornerIndex] = canvasLocation
         
-        print("🔄 ENVELOPE WARP: Corner \(cornerIndex) moved to (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))")
-        
         // Calculate the warped shape preview
         calculateEnvelopeWarpPreview()
     }
@@ -2920,8 +2924,7 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = cornerIndex
         document.saveToUndoStack()
         
-        // ENVELOPE WARP START: Minimal logging for performance
-        print("   📐 Reference bounds: (\(String(format: "%.1f", initialBounds.minX)), \(String(format: "%.1f", initialBounds.minY))) → (\(String(format: "%.1f", initialBounds.maxX)), \(String(format: "%.1f", initialBounds.maxY)))")
+        print("🔧 ENVELOPE WARP STARTED: Corner \(cornerIndex)")
     }
     
     private func calculateEnvelopeWarpPreview() {
@@ -2933,7 +2936,7 @@ struct EnvelopeHandles: View {
             // WARP OBJECT: Use the original unwrapped path for clean transformations
             let warpedElements = warpPathElements(originalPath.elements)
             previewPath = VectorPath(elements: warpedElements, isClosed: originalPath.isClosed)
-            print("   🔧 Using original path for warp object transformation")
+            // Using original path for warp object transformation
         } else if shape.isGroup && !shape.groupedShapes.isEmpty {
             // GROUP/FLATTENED OBJECT: Warp all individual shapes within the group
             var allWarpedElements: [PathElement] = []
@@ -2954,10 +2957,10 @@ struct EnvelopeHandles: View {
             // REGULAR SHAPE: Use current path
             let warpedElements = warpPathElements(shape.path.elements)
             previewPath = VectorPath(elements: warpedElements, isClosed: shape.path.isClosed)
-            print("   🔧 Using current path for regular shape transformation")
+            // Using current path for regular shape transformation
         }
         
-        print("   📊 Envelope warp preview updated - showing warped shape")
+        // Envelope warp preview updated
     }
     
     private func warpPathElements(_ elements: [PathElement]) -> [PathElement] {
@@ -3176,6 +3179,7 @@ struct EnvelopeHandles: View {
             warpObject.name = "Warped " + currentShape.name
             warpObject.isWarpObject = true
             warpObject.warpEnvelope = warpedCorners
+            warpObject.originalEnvelope = originalCorners // CRITICAL: Store original envelope for continuous warping
             warpObject.transform = .identity
             
             if currentShape.isGroup && !currentShape.groupedShapes.isEmpty {
@@ -3218,6 +3222,9 @@ struct EnvelopeHandles: View {
             
             print("   🎯 First-time warp completed - created new warp object")
         }
+        
+        // Log final warp state
+        print("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
         
         document.objectWillChange.send()
     }

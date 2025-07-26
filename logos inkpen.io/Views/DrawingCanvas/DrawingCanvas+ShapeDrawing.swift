@@ -60,7 +60,7 @@ extension DrawingCanvas {
         
         // Professional verification logging (only for significant movements)
         if abs(canvasDelta.x) > 2 || abs(canvasDelta.y) > 2 {
-            print("🎨 SHAPE DRAWING: Perfect sync maintained - canvas delta: (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y)))")
+            // Perfect sync maintained - canvas delta tracking
         }
         
         guard let startPoint = drawingStartPoint else { return }

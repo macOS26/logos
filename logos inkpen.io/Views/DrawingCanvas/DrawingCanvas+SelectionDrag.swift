@@ -200,7 +200,9 @@ extension DrawingCanvas {
                     updatedWarpEnvelope.append(movedCorner)
                 }
                 document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
-                print("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) corner coordinates")
+                
+                // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
+                print("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)")
             }
             
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -257,7 +259,10 @@ extension DrawingCanvas {
                 updatedWarpEnvelope.append(movedCorner)
             }
             document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
-            print("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) corner coordinates")
+            
+            // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
+            // The originalEnvelope represents the coordinate system before ANY transformations
+            print("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)")
         }
         
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()

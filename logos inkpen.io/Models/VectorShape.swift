@@ -261,9 +261,10 @@ struct VectorShape: Codable, Hashable, Identifiable {
     // MARK: - Warp Object Properties (Professional Envelope Warping)
     var isWarpObject: Bool
     var originalPath: VectorPath?  // Original unwrapped path
-    var warpEnvelope: [CGPoint]    // 4 corner points defining the warp envelope
+    var warpEnvelope: [CGPoint]    // 4 corner points defining the current warp envelope
+    var originalEnvelope: [CGPoint] // 4 corner points defining the original envelope (for continuous warping)
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = []) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = []) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -283,6 +284,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.isWarpObject = isWarpObject
         self.originalPath = originalPath
         self.warpEnvelope = warpEnvelope
+        self.originalEnvelope = originalEnvelope
     }
     
     var transformedPath: CGPath {
@@ -371,14 +373,15 @@ struct VectorShape: Codable, Hashable, Identifiable {
     // MARK: - Warp Object Methods
     
     /// Create a warp object from this shape with the given warped path and envelope
-    func createWarpObject(warpedPath: VectorPath, warpEnvelope: [CGPoint]) -> VectorShape {
+    func createWarpObject(warpedPath: VectorPath, warpEnvelope: [CGPoint], originalEnvelope: [CGPoint]) -> VectorShape {
         var warpObject = self
         warpObject.id = UUID() // New ID for the warp object
         warpObject.name = "Warped " + self.name
         warpObject.isWarpObject = true
         warpObject.originalPath = self.path  // Store original path
         warpObject.path = warpedPath         // Use warped path as current path
-        warpObject.warpEnvelope = warpEnvelope // Store envelope corners
+        warpObject.warpEnvelope = warpEnvelope // Store current envelope corners
+        warpObject.originalEnvelope = originalEnvelope // Store original envelope corners for continuous warping
         warpObject.transform = .identity     // Reset transform since coordinates are already warped
         warpObject.updateBounds()
         return warpObject
@@ -392,7 +395,8 @@ struct VectorShape: Codable, Hashable, Identifiable {
         unwrappedShape.id = UUID() // New ID for the unwrapped shape
         unwrappedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "")
         unwrappedShape.isWarpObject = false
-        unwrappedShape.warpEnvelope = []     // Clear envelope
+        unwrappedShape.warpEnvelope = []     // Clear current envelope
+        unwrappedShape.originalEnvelope = [] // Clear original envelope
         unwrappedShape.transform = .identity
         
         if isGroup && !groupedShapes.isEmpty {
@@ -424,7 +428,8 @@ struct VectorShape: Codable, Hashable, Identifiable {
         expandedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "Expanded ")
         expandedShape.isWarpObject = false
         expandedShape.originalPath = nil     // Remove reference to original
-        expandedShape.warpEnvelope = []      // Clear envelope
+        expandedShape.warpEnvelope = []      // Clear current envelope
+        expandedShape.originalEnvelope = [] // Clear original envelope
         expandedShape.transform = .identity
         
         // For both single shapes and groups, keep current warped state as permanent
