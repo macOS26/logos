@@ -37,6 +37,7 @@ class DocumentState: ObservableObject {
     @Published var canMakeLoopingPath = false
     @Published var canReleaseLoopingPath = false
     @Published var canUnwrapWarpObject = false
+    @Published var canExpandWarpObject = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -85,6 +86,7 @@ class DocumentState: ObservableObject {
             canMakeLoopingPath = false
             canReleaseLoopingPath = false
             canUnwrapWarpObject = false
+            canExpandWarpObject = false
             return
         }
         
@@ -112,6 +114,9 @@ class DocumentState: ObservableObject {
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
         }
         canUnwrapWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
+            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
+        }
+        canExpandWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
         }
         
@@ -251,6 +256,11 @@ class DocumentState: ObservableObject {
     
     func unwrapWarpObject() {
         document?.unwrapWarpObject()
+        updateAllStates()
+    }
+    
+    func expandWarpObject() {
+        document?.expandWarpObject()
         updateAllStates()
     }
     
@@ -593,6 +603,13 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("w", modifiers: [.command, .option, .shift])
                 .disabled(documentState?.canUnwrapWarpObject != true)
                 .help("Unwrap the selected warp object back to its original shape")
+                
+                Button("Expand Warp Object") {
+                    documentState?.expandWarpObject()
+                }
+                .keyboardShortcut("e", modifiers: [.command, .option, .shift])
+                .disabled(documentState?.canExpandWarpObject != true)
+                .help("Permanently apply the warp transformation to create a regular shape")
                 
                 Divider()
                 

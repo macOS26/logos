@@ -39,7 +39,8 @@ extension DrawingCanvas {
            !(document.currentTool == .selection && isDrawing) {
             SelectionHandlesView(
                 document: document,
-                geometry: geometry
+                geometry: geometry,
+                isShiftPressed: self.isShiftPressed
             )
         }
         

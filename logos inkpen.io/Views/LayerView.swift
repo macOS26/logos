@@ -331,6 +331,7 @@ extension ShapeView {
 struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     
     var body: some View {
         ZStack {

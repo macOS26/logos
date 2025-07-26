@@ -2623,6 +2623,34 @@ class VectorDocument: ObservableObject, Codable {
         objectWillChange.send()
     }
     
+    /// Expand selected warp object to permanently apply the warp transformation
+    func expandWarpObject() {
+        guard !selectedShapeIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        for layerIndex in layers.indices {
+            for shapeIndex in layers[layerIndex].shapes.indices {
+                let shape = layers[layerIndex].shapes[shapeIndex]
+                
+                if selectedShapeIDs.contains(shape.id) && shape.isWarpObject {
+                    if let expandedShape = shape.expandWarpObject() {
+                        // Replace warp object with expanded shape
+                        layers[layerIndex].shapes[shapeIndex] = expandedShape
+                        
+                        // Update selection to the expanded shape
+                        selectedShapeIDs.remove(shape.id)
+                        selectedShapeIDs.insert(expandedShape.id)
+                        
+                        print("✅ EXPANDED WARP OBJECT: \(shape.name) → \(expandedShape.name)")
+                    }
+                }
+            }
+        }
+        
+        objectWillChange.send()
+    }
+    
     // MARK: - Lock/Unlock Methods
     
     /// Lock selected objects

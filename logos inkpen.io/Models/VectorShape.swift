@@ -400,6 +400,22 @@ struct VectorShape: Codable, Hashable, Identifiable {
         return unwrappedShape
     }
     
+    /// Expand this warp object to permanently apply the warp transformation
+    func expandWarpObject() -> VectorShape? {
+        guard isWarpObject else { return nil }
+        
+        var expandedShape = self
+        expandedShape.id = UUID() // New ID for the expanded shape
+        expandedShape.name = self.name.replacingOccurrences(of: "Warped ", with: "Expanded ")
+        expandedShape.isWarpObject = false
+        expandedShape.originalPath = nil     // Remove reference to original
+        // Keep current warped path as the permanent path
+        expandedShape.warpEnvelope = []      // Clear envelope
+        expandedShape.transform = .identity
+        expandedShape.updateBounds()
+        return expandedShape
+    }
+    
     // Factory methods for common shapes
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)
