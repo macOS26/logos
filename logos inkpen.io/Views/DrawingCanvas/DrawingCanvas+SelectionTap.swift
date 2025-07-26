@@ -27,6 +27,7 @@ extension DrawingCanvas {
               document.currentTool == .scale || 
               document.currentTool == .rotate || 
               document.currentTool == .shear || 
+              document.currentTool == .warp || 
               document.currentTool == .envelope else { 
             print("🚫 SELECTION TAP: Wrong tool - early return")
             return 

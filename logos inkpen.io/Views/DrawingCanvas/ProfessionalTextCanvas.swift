@@ -15,9 +15,15 @@ struct StableProfessionalTextCanvas: View {
     let textObjectID: UUID
     @StateObject private var viewModel: ProfessionalTextViewModel
     
-    init(document: VectorDocument, textObjectID: UUID) {
+    // NEW: Drag preview parameters for live preview during dragging
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+    
+    init(document: VectorDocument, textObjectID: UUID, dragPreviewDelta: CGPoint = .zero, dragPreviewTrigger: Bool = false) {
         self.document = document
         self.textObjectID = textObjectID
+        self.dragPreviewDelta = dragPreviewDelta
+        self.dragPreviewTrigger = dragPreviewTrigger
         
         // Create view model ONCE and reuse it
         if let textObject = document.textObjects.first(where: { $0.id == textObjectID }) {
@@ -31,7 +37,13 @@ struct StableProfessionalTextCanvas: View {
     
     var body: some View {
         // Update view model when text object changes (without recreating it)
-        ProfessionalTextCanvas(document: document, viewModel: viewModel, textObjectID: textObjectID)
+        ProfessionalTextCanvas(
+            document: document, 
+            viewModel: viewModel, 
+            textObjectID: textObjectID,
+            dragPreviewDelta: dragPreviewDelta,
+            dragPreviewTrigger: dragPreviewTrigger
+        )
             .onAppear {
                 updateViewModelFromDocument()
             }
@@ -72,6 +84,11 @@ struct ProfessionalTextCanvas: View {
     @ObservedObject var document: VectorDocument
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let textObjectID: UUID // Store the text object ID for reliable state checking
+    
+    // NEW: Drag preview parameters for live preview during dragging
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+    
     @State private var isDragging = false
     @State private var isResizing = false
     @State private var dragOffset: CGSize = .zero
@@ -119,6 +136,10 @@ struct ProfessionalTextCanvas: View {
         // CRITICAL FIX: Apply the SAME coordinate system as all other objects
         .scaleEffect(document.zoomLevel, anchor: .topLeading)
         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        // ULTRA FAST 60FPS: Apply drag preview offset for selected text objects
+        .offset(x: document.selectedTextIDs.contains(textObjectID) ? dragPreviewDelta.x * document.zoomLevel : 0, 
+                y: document.selectedTextIDs.contains(textObjectID) ? dragPreviewDelta.y * document.zoomLevel : 0)
+        .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
             print("🔄 SELECTED TEXT IDs CHANGED: \(selectedIDs.map { $0.uuidString.prefix(8) }) for textID \(viewModel.textObject.id.uuidString.prefix(8))")

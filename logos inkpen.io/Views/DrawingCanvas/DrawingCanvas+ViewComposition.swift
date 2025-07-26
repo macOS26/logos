@@ -95,7 +95,9 @@ extension DrawingCanvas {
                 if textObj.isVisible {
                     StableProfessionalTextCanvas(
                         document: document,
-                        textObjectID: textObj.id
+                        textObjectID: textObj.id,
+                        dragPreviewDelta: currentDragDelta,
+                        dragPreviewTrigger: dragPreviewUpdateTrigger
                     )
                         .id(textObj.id) // Important: Use the text object ID as the view ID
                         .allowsHitTesting(true) // CRITICAL: Ensure hit testing for resize handles

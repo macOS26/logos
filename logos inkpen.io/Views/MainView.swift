@@ -200,13 +200,7 @@ struct MainView: View {
         }
     }
     
-    // MARK: - Professional Menu Command System (Adobe Illustrator Standards)
     
-    private func teardownMenuCommandObservers() {
-        NotificationCenter.default.removeObserver(self)
-    }
-    
-    // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
     
     private func fitToPage() {
         // Fit the entire page to the view (Adobe Illustrator standard)
@@ -1154,6 +1148,10 @@ struct StatusBar: View {
                         .foregroundColor(.blue)
                 } else if document.currentTool == .directSelection {
                     Text("Select anchor points and handles • ⌘⇧J to close open paths")
+                        .font(.caption2)
+                        .foregroundColor(.blue)
+                } else if document.currentTool == .warp {
+                    Text("Select objects to warp • Drag handles to distort • Use envelope tool for advanced warping")
                         .font(.caption2)
                         .foregroundColor(.blue)
                 }

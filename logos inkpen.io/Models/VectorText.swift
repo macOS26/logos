@@ -544,6 +544,11 @@ class FontManager: ObservableObject {
     @Published var selectedFontStyle: FontStyle = .normal
     @Published var selectedFontSize: Double = 24.0
     
+    // NEW: Line spacing and line height properties for new text creation
+    @Published var selectedLineSpacing: Double = 0.0
+    @Published var selectedLineHeight: Double = 24.0 // Default to font size
+    @Published var selectedTextAlignment: TextAlignment = .left
+    
     // Common professional fonts (Adobe/FreeHand standard)
     // static let professionalFonts = [
     //     "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
