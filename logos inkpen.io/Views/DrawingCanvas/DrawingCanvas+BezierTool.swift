@@ -250,12 +250,12 @@ extension DrawingCanvas {
                     bezierPath?.addElement(.line(to: newPoint))
                     
                     print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
-                    print("📏 Now creating smooth curve handles as user drags...")
+                    // Creating smooth curve handles as user drags...
                 } else {
                     // Point already exists nearby (probably from tap handler)
                     activeBezierPointIndex = bezierPoints.count - 1
                     print("🎯 EXISTING POINT: Using last point at (\(String(format: "%.1f", lastPoint?.x ?? 0)), \(String(format: "%.1f", lastPoint?.y ?? 0))) - no duplicate created")
-                    print("📏 Creating smooth curve handles as user drags...")
+                    // Creating smooth curve handles as user drags...
                 }
             }
             

@@ -1069,9 +1069,7 @@ struct ScaleHandles: View {
             print("🔄 SCALING START: No pin point set, defaulting to center")
         }
         
-        print("🔄 SCALING START: Dragging from point \(draggedPointIndex?.description ?? "center"), scaling away from LOCKED PIN at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
-        print("   🔴 Locked pin point index: \(lockedPinPointIndex?.description ?? "center")")
-        print("   🟢 Dragging from point index: \(draggedPointIndex?.description ?? "center")")
+        // SCALING START: Minimal logging for performance
         
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
@@ -2395,9 +2393,7 @@ struct ShearHandles: View {
             print("🔄 SHEAR START: No pin point set, defaulting to center")
         }
         
-        print("🔄 SHEAR START: Dragging from point \(draggedPointIndex?.description ?? "center"), shearing away from LOCKED PIN at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
-        print("   🔴 Locked pin point index: \(lockedPinPointIndex?.description ?? "center")")
-        print("   🟢 Dragging from point index: \(draggedPointIndex?.description ?? "center")")
+        // SHEAR START: Minimal logging for performance
         
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
@@ -2920,7 +2916,7 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = cornerIndex
         document.saveToUndoStack()
         
-        print("🔄 ENVELOPE WARP START: Dragging corner \(cornerIndex)")
+        // ENVELOPE WARP START: Minimal logging for performance
         print("   📐 Reference bounds: (\(String(format: "%.1f", initialBounds.minX)), \(String(format: "%.1f", initialBounds.minY))) → (\(String(format: "%.1f", initialBounds.maxX)), \(String(format: "%.1f", initialBounds.maxY)))")
     }
     
@@ -3104,7 +3100,7 @@ struct EnvelopeHandles: View {
         document.isHandleScalingActive = false
         draggingCornerIndex = nil
         
-        print("🔄 ENVELOPE DRAG FINISHED: Updating shape and staying active for continuous editing")
+        // ENVELOPE DRAG FINISHED: Minimal logging for performance
         
         // REAL-TIME UPDATE: Apply the current warp to the shape immediately
         updateShapeWithCurrentWarp()

@@ -39,8 +39,6 @@ extension DrawingCanvas {
                 
                 // CRITICAL FIX: Store initial transform to prevent jitter
                 initialObjectTransforms[shapeID] = shape.transform
-                
-                print("🎯 DRAG INIT: Shape '\(shape.name)' (\(shape.isGroupContainer ? "GROUP" : "INDIVIDUAL")) center: (\(String(format: "%.1f", centerX)), \(String(format: "%.1f", centerY)))")
             }
         }
         
@@ -86,13 +84,6 @@ extension DrawingCanvas {
         // This eliminates expensive document updates and bounds recalculation during drag
         currentDragDelta = canvasDelta
         
-        // Reduce logging frequency for better performance during drag  
-        #if DEBUG
-        if abs(canvasDelta.x) > 5 || abs(canvasDelta.y) > 5 { // Only log every 5 points of movement
-            print("🚀 BLAZING FAST DRAG: Preview delta (\(String(format: "%.1f", canvasDelta.x)), \(String(format: "%.1f", canvasDelta.y))) - NO document modification during drag")
-        }
-        #endif
-        
         // Single UI update to trigger preview rendering - much faster than modifying every shape
         document.objectWillChange.send()
     }
@@ -117,7 +108,6 @@ extension DrawingCanvas {
             // Apply drag delta to shapes
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    print("🎯 FINALIZING: Applying drag delta to '\(document.layers[layerIndex].shapes[shapeIndex].name)'")
                     applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                 }
             }
@@ -127,7 +117,6 @@ extension DrawingCanvas {
                 if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                     document.textObjects[textIndex].position.x += currentDragDelta.x
                     document.textObjects[textIndex].position.y += currentDragDelta.y
-                    print("🎯 FINALIZING: Applied drag delta to text object")
                 }
             }
             
@@ -149,8 +138,6 @@ extension DrawingCanvas {
     /// BLAZING FAST: Apply drag delta to actual coordinates (only called at end of drag)
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
-        
-        print("🔧 Applying drag delta (\(String(format: "%.1f", delta.x)), \(String(format: "%.1f", delta.y))) to shape coordinates: \(shape.name)")
         
         // FLATTENED SHAPE FIX: Handle groups correctly
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
@@ -204,8 +191,6 @@ extension DrawingCanvas {
             // Update the flattened group with the moved individual shapes
             document.layers[layerIndex].shapes[shapeIndex].groupedShapes = updatedGroupedShapes
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            
-            print("✅ Flattened group coordinates updated - moved \(updatedGroupedShapes.count) individual shapes")
             return
         }
         
@@ -251,8 +236,6 @@ extension DrawingCanvas {
         // Update the shape with moved path
         document.layers[layerIndex].shapes[shapeIndex].path = updatedPath
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        
-        print("✅ Shape coordinates updated after drag - object moved")
     }
 
     /// PERFORMANCE OPTIMIZED: Apply transform to actual coordinates (only called at end of drag)

@@ -795,7 +795,7 @@ struct ProfessionalResizeHandleView: View {
                             onResizeStarted()
                             print("🔵 RESIZE HANDLE STARTED")
                         }
-                        print("🔵 RESIZE HANDLE DRAG: \(value.translation)")
+                        // RESIZE HANDLE DRAG: \(value.translation)
                         onResizeChanged(value)
                     }
                     .onEnded { _ in 
