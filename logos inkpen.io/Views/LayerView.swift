@@ -3713,13 +3713,16 @@ class GradientNSView: NSView {
             let endPoint = CGPoint(x: pathBounds.minX + pathBounds.width * linear.endPoint.x + originOffsetX,
                                    y: pathBounds.minY + pathBounds.height * linear.endPoint.y + originOffsetY)
             
-            // Apply scale
+            // FIXED: Apply scale (single value) and aspect ratio (X=100%, Y=variable)
             let centerX = (startPoint.x + endPoint.x) / 2
             let centerY = (startPoint.y + endPoint.y) / 2
-            let scaledStartX = centerX + (startPoint.x - centerX) * CGFloat(linear.scale)
-            let scaledStartY = centerY + (startPoint.y - centerY) * CGFloat(linear.scale)
-            let scaledEndX = centerX + (endPoint.x - centerX) * CGFloat(linear.scale)
-            let scaledEndY = centerY + (endPoint.y - centerY) * CGFloat(linear.scale)
+            
+            // Apply scale to both X and Y equally
+            let scale = CGFloat(linear.scaleX) // Use scaleX as the single scale value
+            let scaledStartX = centerX + (startPoint.x - centerX) * scale
+            let scaledStartY = centerY + (startPoint.y - centerY) * scale
+            let scaledEndX = centerX + (endPoint.x - centerX) * scale
+            let scaledEndY = centerY + (endPoint.y - centerY) * scale
             
             let scaledStart = CGPoint(x: scaledStartX, y: scaledStartY)
             let scaledEnd = CGPoint(x: scaledEndX, y: scaledEndY)
@@ -3727,10 +3730,12 @@ class GradientNSView: NSView {
             context.drawLinearGradient(cgGradient, start: scaledStart, end: scaledEnd, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 
         case .radial(let radial):
+            // FIXED: Radial gradient coordinate system - centerPoint is already in 0-1 range
             // Apply origin point offset
             let originOffsetX = pathBounds.width * (radial.originPoint.x - 0.5)
             let originOffsetY = pathBounds.height * (radial.originPoint.y - 0.5)
             
+            // FIXED: centerPoint is already normalized to 0-1, so just apply to path bounds
             let center = CGPoint(x: pathBounds.minX + pathBounds.width * radial.centerPoint.x + originOffsetX,
                                  y: pathBounds.minY + pathBounds.height * radial.centerPoint.y + originOffsetY)
             
@@ -3749,8 +3754,8 @@ class GradientNSView: NSView {
             let scaleY = CGFloat(radial.scaleY)
             context.scaleBy(x: scaleX, y: scaleY)
             
-            // Calculate radius with scale applied
-            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius) * CGFloat(abs(radial.scale))
+            // Calculate radius - scale is already applied to context, so don't multiply again
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
             
             // Draw gradient at origin (0,0) since we've translated to center
             context.drawRadialGradient(cgGradient, startCenter: CGPoint.zero, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])

@@ -1394,7 +1394,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
     
-    /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
+    /// Parse gradient coordinate with proper Core Graphics coordinate system conversion
+    /// Converts from userSpaceOnUse (absolute coordinates) to objectBoundingBox (0-1 relative)
+    /// Formula: objectBoundingBox = (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
     private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
@@ -1407,16 +1409,55 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Handle absolute values
         if let absoluteValue = Double(trimmed) {
             if gradientUnits == .userSpaceOnUse {
-                // CRITICAL FIX: For userSpaceOnUse, normalize to viewBox dimensions (0-1 range)
-                // This creates proper shape-relative coordinates
-                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
-                if normalizer > 0 {
-                    let normalizedValue = absoluteValue / normalizer
-                    print("🔧 USER SPACE COORDINATE: \(absoluteValue) / \(normalizer) = \(normalizedValue)")
-                    return normalizedValue
+                // CORRECT FORMULA: objectBoundingBox = (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
+                // For coordinates (cx, cy, fx, fy): subtract bounding box origin, then divide by dimension
+                if !isXCoordinate || (isXCoordinate && !value.contains("r")) { // Not radius
+                    // For coordinates that are way outside viewBox bounds, use a more flexible approach
+                    // Map the coordinate to a reasonable range within the viewBox
+                    let boundingBoxOrigin = 0.0 // viewBox origin
+                    let boundingBoxDimension = isXCoordinate ? viewBoxWidth : viewBoxHeight
+                    
+                    // Apply the correct formula: (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
+                    let normalizedValue = (absoluteValue - boundingBoxOrigin) / boundingBoxDimension
+                    
+                    // For coordinates way outside the viewBox, use a more intelligent mapping
+                    // Most professional SVGs with large coordinate systems expect gradients to be centered
+                    let finalValue: Double
+                    if normalizedValue < -1.0 || normalizedValue > 2.0 {
+                        // Coordinates way outside reasonable range: default to center (0.5)
+                        finalValue = 0.5
+                    } else if normalizedValue < 0.0 {
+                        // Negative coordinates: map to 0.0-0.5 range proportionally
+                        finalValue = 0.5 + (normalizedValue * 0.5)
+                    } else if normalizedValue > 1.0 {
+                        // Coordinates beyond viewBox: map to 0.5-1.0 range proportionally
+                        finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
+                    } else {
+                        // Coordinates within viewBox: use as-is
+                        finalValue = normalizedValue
+                    }
+                    
+                    // Ensure final value is within 0-1 range
+                    let clampedValue = max(0.0, min(1.0, finalValue))
+                    
+                    print("🔧 INTELLIGENT CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)")
+                    print("   Formula: (\(absoluteValue) - \(boundingBoxOrigin)) / \(boundingBoxDimension)")
+                    print("   Using viewBox: \(viewBoxWidth) × \(viewBoxHeight)")
+                    print("   Mapping: \(normalizedValue < -1.0 || normalizedValue > 2.0 ? "far outside→0.5" : normalizedValue < 0.0 ? "negative→proportional" : normalizedValue > 1.0 ? "large→proportional" : "within range")")
+                    return clampedValue
                 } else {
-                    print("⚠️ Invalid viewBox dimension, using absolute coordinate")
-                    return absoluteValue
+                    // For radius (r): divide by bounding box dimension (no origin subtraction needed)
+                    let boundingBoxDimension = max(viewBoxWidth, viewBoxHeight)
+                    let normalizedValue = absoluteValue / boundingBoxDimension
+                    
+                    // Clamp radius to reasonable range (0.001 to 2.0)
+                    let clampedValue = max(0.001, min(2.0, normalizedValue))
+                    
+                    print("🔧 RADIUS CONVERSION: \(absoluteValue) → \(normalizedValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)")
+                    print("   Formula: \(absoluteValue) / \(boundingBoxDimension)")
+                    print("   Using viewBox max dimension: \(boundingBoxDimension)")
+                    print("   Clamped: \(normalizedValue < 0.001 || normalizedValue > 2.0 ? "YES" : "NO")")
+                    return clampedValue
                 }
             } else {
                 // For objectBoundingBox, values should be in 0-1 range
@@ -1734,14 +1775,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
+            print("🔧 Raw values: cxRaw=\(cxRaw), cyRaw=\(cyRaw), rRaw=\(rRaw), fxRaw=\(fxRaw ?? "nil"), fyRaw=\(fyRaw ?? "nil")")
             
-            // USE ACTUAL PARSED COORDINATES: Convert from user space to object bounding box coordinates
-            // The parseGradientCoordinate function already normalizes these to 0-1 range
-            let centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
-            let focalPoint = CGPoint(x: 0.5, y: 0.5)
-            let radius = clamp(r, 0.0, 1.0)  // Use parsed radius, clamped to valid range
+            // CORE GRAPHICS COORDINATE CONVERSION: Proper coordinate system mapping
+            // parseGradientCoordinate already handles the conversion from userSpaceOnUse to objectBoundingBox
+            // So cx, cy, fx, fy are already in the correct 0-1 range
+            let centerPoint = CGPoint(x: cx, y: cy)
+            let focalPoint = CGPoint(x: fx, y: fy)
             
-            print("🎯 USING ACTUAL COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(radius)")
+            print("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(r)")
+            print("   Original: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), fx=\(fxRaw ?? "nil"), fy=\(fyRaw ?? "nil")")
+            print("   Converted: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
+            print("   Units: \(gradientUnits) - parseGradientCoordinate handled conversion")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
@@ -1760,12 +1805,12 @@ class SVGParser: NSObject, XMLParserDelegate {
                 print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
             }
             
-            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
+            // CORE GRAPHICS RADIAL GRADIENT: Use proper coordinate system conversion
             var radialGradient = RadialGradient(
                 centerPoint: centerPoint,
-                radius: radius, // Use calculated radius (already clamped if needed)
+                radius: max(0.001, r), // Use the converted radius directly
                 stops: currentGradientStops,
-                focalPoint: (fx != cx || fy != cy) ? focalPoint : nil,
+                focalPoint: focalPoint, // Use the properly converted focal point
                 spreadMethod: spreadMethod,
                 units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
@@ -1773,14 +1818,16 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Set the origin point to the center point
             radialGradient.originPoint = centerPoint
             
-            // NEW: Set the gradient transform properties
+            // Apply gradient transform for angle and scaling
             radialGradient.angle = gradientAngle
-            radialGradient.scaleX = gradientScaleX
-            radialGradient.scaleY = gradientScaleY
+            radialGradient.scaleX = abs(gradientScaleX) // Apply transform scale
+            radialGradient.scaleY = abs(gradientScaleY) // Apply transform scale
             
             vectorGradient = .radial(radialGradient)
             print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
-            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", radius)) (shape-relative)")
+            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", r)) (shape-relative)")
+            print("   - Origin Point: \(radialGradient.originPoint)")
+            print("   - Scale: X=\(gradientScaleX), Y=\(gradientScaleY)")
             if fxRaw != nil || fyRaw != nil {
                 print("   - Focal point: \(focalPoint)")
             }

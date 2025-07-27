@@ -873,7 +873,9 @@ struct GradientFillSection: View {
         case .linear(let linear):
             return linear.originPoint.x
         case .radial(let radial):
-            return radial.originPoint.x
+            let originX = radial.originPoint.x
+            print("🔍 getGradientOriginX: \(originX) (radial.originPoint.x)")
+            return originX
         }
     }
     
@@ -882,7 +884,9 @@ struct GradientFillSection: View {
         case .linear(let linear):
             return linear.originPoint.y
         case .radial(let radial):
-            return radial.originPoint.y
+            let originY = radial.originPoint.y
+            print("🔍 getGradientOriginY: \(originY) (radial.originPoint.y)")
+            return originY
         }
     }
     
@@ -967,18 +971,18 @@ struct GradientFillSection: View {
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
         guard let gradient = currentGradient else { return }
         
+        // Aspect ratio only works for radial gradients
         switch gradient {
-        case .linear(var linear):
-            // Keep scaleX constant, adjust scaleY based on aspect ratio
-            linear.scaleY = linear.scaleX * newAspectRatio
-            currentGradient = .linear(linear)
+        case .linear(_):
+            // Aspect ratio is disabled for linear gradients
+            return
         case .radial(var radial):
             // Keep scaleX constant, adjust scaleY based on aspect ratio
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
         }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
     }
     
 
@@ -996,7 +1000,7 @@ struct GradientFillSection: View {
         
         switch vectorGradient {
         case .linear(let linear):
-            // Apply origin point offset
+            // FIXED: Simplified linear gradient scaling - scale affects gradient length
             let originOffsetX = linear.originPoint.x - 0.5
             let originOffsetY = linear.originPoint.y - 0.5
             
@@ -1006,48 +1010,22 @@ struct GradientFillSection: View {
             let adjustedEndX = linear.endPoint.x + originOffsetX
             let adjustedEndY = linear.endPoint.y + originOffsetY
             
-            // Apply truly independent X and Y scale
-            let scaleX = linear.scaleX
-            let scaleY = linear.scaleY
-            
-            // Calculate gradient vector
+            // FIXED: Apply scale (single value) to gradient length
+            let scale = linear.scaleX // Use scaleX as the single scale value
             let gradientVectorX = adjustedEndX - adjustedStartX
             let gradientVectorY = adjustedEndY - adjustedStartY
-            
-            // Calculate the gradient length and angle
             let gradientLength = sqrt(gradientVectorX * gradientVectorX + gradientVectorY * gradientVectorY)
             let gradientAngle = atan2(gradientVectorY, gradientVectorX)
             
-            // Apply scaling - scale affects the gradient spread
-            let scaledLength = gradientLength * CGFloat(scaleX)
-            
-            // For aspect ratio, we modify the perpendicular direction
-            // Create a coordinate system where X is along the gradient, Y is perpendicular
-            let cosAngle = cos(gradientAngle)
-            let sinAngle = sin(gradientAngle)
-            
-            // Calculate center point
+            let scaledLength = gradientLength * CGFloat(scale)
             let centerX = (adjustedStartX + adjustedEndX) / 2
             let centerY = (adjustedStartY + adjustedEndY) / 2
             
-            // Create the scaled gradient vector
-            let scaledVectorX = cosAngle * scaledLength
-            let scaledVectorY = sinAngle * scaledLength
+            let scaledStartX = centerX - cos(gradientAngle) * scaledLength / 2
+            let scaledStartY = centerY - sin(gradientAngle) * scaledLength / 2
+            let scaledEndX = centerX + cos(gradientAngle) * scaledLength / 2
+            let scaledEndY = centerY + sin(gradientAngle) * scaledLength / 2
             
-            // Apply aspect ratio by adjusting the perpendicular component
-            // For linear gradients, aspect ratio affects how "compressed" the gradient appears
-            // We achieve this by adjusting the gradient spread relative to the perpendicular direction
-            let aspectFactor = CGFloat(scaleY / scaleX)
-            let adjustedVectorX = scaledVectorX * aspectFactor
-            let adjustedVectorY = scaledVectorY * aspectFactor
-            
-            // Create new start and end points from scaled vector
-            let scaledStartX = centerX - adjustedVectorX / 2
-            let scaledStartY = centerY - adjustedVectorY / 2
-            let scaledEndX = centerX + adjustedVectorX / 2
-            let scaledEndY = centerY + adjustedVectorY / 2
-            
-            // Convert to SwiftUI UnitPoint
             let startPoint = UnitPoint(x: scaledStartX, y: scaledStartY)
             let endPoint = UnitPoint(x: scaledEndX, y: scaledEndY)
             
@@ -1771,21 +1749,23 @@ struct GradientScaleControlView: View {
                     .controlSize(.small)
                 }
                 
-                // Aspect Ratio Control (X=1, Y=0 to 1)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Aspect Ratio: \(currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00")")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Slider(value: Binding(
-                        get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
-                        set: { newAspectRatio in
-                            updateAspectRatio(newAspectRatio)
-                        }
-                    ), in: 0.01...2.0, onEditingChanged: { editing in
-                        if !editing { document.saveToUndoStack() }
-                    })
-                    .controlSize(.small)
+                // Aspect Ratio Control (X=1, Y=0 to 1) - ONLY for Radial Gradients
+                if case .radial = currentGradient {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Aspect Ratio: \(currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                            set: { newAspectRatio in
+                                updateAspectRatio(newAspectRatio)
+                            }
+                        ), in: 0.01...2.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                    }
                 }
             }
         }
@@ -1837,9 +1817,13 @@ struct GradientPreviewAndStopsView: View {
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
+                // FIXED: Radial gradient coordinate system - ensure coordinates are properly mapped to the preview area
+                let centerX = originX
+                let centerY = originY
+                
                 EllipticalGradient(
                     gradient: gradient,
-                    center: UnitPoint(x: originX, y: originY),
+                    center: UnitPoint(x: centerX, y: centerY),
                     startRadiusX: 0,
                     startRadiusY: 0,
                     endRadiusX: 50.0 * CGFloat(abs(scale)),
@@ -1853,6 +1837,50 @@ struct GradientPreviewAndStopsView: View {
                     updateOriginY(y, true)
                     document.saveToUndoStack()
                 })
+            } else if case .linear(let linear) = currentGradient {
+                // FIXED: Create linear gradient with proper scale support
+                let scale = getScale(currentGradient!)
+                let originX = getOriginX(currentGradient!)
+                let originY = getOriginY(currentGradient!)
+                
+                let gradientStops = getGradientStops(currentGradient!).map { stop in
+                    SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                }
+                let gradient = SwiftUI.Gradient(stops: gradientStops)
+                
+                // FIXED: Apply scale (single value) to gradient length
+                let startPoint = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
+                let endPoint = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+                
+                // Apply origin offset
+                let adjustedStart = UnitPoint(x: startPoint.x + (originX - 0.5), y: startPoint.y + (originY - 0.5))
+                let adjustedEnd = UnitPoint(x: endPoint.x + (originX - 0.5), y: endPoint.y + (originY - 0.5))
+                
+                // Apply scale to gradient length
+                let gradientVector = CGPoint(x: adjustedEnd.x - adjustedStart.x, y: adjustedEnd.y - adjustedStart.y)
+                let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
+                let gradientAngle = atan2(gradientVector.y, gradientVector.x)
+                
+                let scaledLength = gradientLength * CGFloat(scale)
+                let centerX = (adjustedStart.x + adjustedEnd.x) / 2
+                let centerY = (adjustedStart.y + adjustedEnd.y) / 2
+                
+                let scaledStartX = centerX - cos(gradientAngle) * scaledLength / 2
+                let scaledStartY = centerY - sin(gradientAngle) * scaledLength / 2
+                let scaledEndX = centerX + cos(gradientAngle) * scaledLength / 2
+                let scaledEndY = centerY + sin(gradientAngle) * scaledLength / 2
+                
+                let finalStart = UnitPoint(x: scaledStartX, y: scaledStartY)
+                let finalEnd = UnitPoint(x: scaledEndX, y: scaledEndY)
+                
+                SwiftUI.LinearGradient(gradient: gradient, startPoint: finalStart, endPoint: finalEnd)
+                    .frame(width: squareSize, height: squareSize)
+                    .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                    .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
+                        updateOriginX(x, true)
+                        updateOriginY(y, true)
+                        document.saveToUndoStack()
+                    })
             } else {
                 let gradient = createGradient(currentGradient!)
                 Rectangle()
