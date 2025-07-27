@@ -11,6 +11,7 @@ import SwiftUI
 
 struct GradientStopItem: Identifiable {
     let id: UUID
+    let color: VectorColor
 }
 
 // MARK: - Main Stroke and Fill Panel
@@ -831,7 +832,9 @@ struct GradientFillSection: View {
         .sheet(item: Binding<GradientStopItem?>(
             get: { 
                 if let stopId = editingGradientStopId {
-                    return GradientStopItem(id: stopId)
+                    // Find the actual color of this gradient stop from the selected shape
+                    let actualColor = findGradientStopColor(stopId: stopId)
+                    return GradientStopItem(id: stopId, color: actualColor)
                 }
                 return nil
             },
@@ -843,6 +846,7 @@ struct GradientFillSection: View {
             GradientColorPickerSheet(
                 document: document,
                 editingGradientStopId: stopItem.id,
+                editingGradientStopColor: stopItem.color,
                 showingColorPicker: .constant(true),
                 updateStopColor: updateStopColor
             )
@@ -1332,6 +1336,30 @@ struct GradientFillSection: View {
             }
             
             return .radial(radial)
+        }
+    }
+    
+    private func findGradientStopColor(stopId: UUID) -> VectorColor {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstSelectedID = document.selectedShapeIDs.first,
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+              let fillStyle = shape.fillStyle else {
+            print("🎨 GRADIENT STOP COLOR: No selected shape found, returning black")
+            return .black
+        }
+        
+        switch fillStyle.color {
+        case .gradient(let gradient):
+            if let stop = gradient.stops.first(where: { $0.id == stopId }) {
+                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId): \(stop.color)")
+                return stop.color
+            } else {
+                print("🎨 GRADIENT STOP COLOR: Stop \(stopId) not found in gradient, returning black")
+                return .black
+            }
+        default:
+            print("🎨 GRADIENT STOP COLOR: Selected shape doesn't have gradient fill, returning black")
+            return .black
         }
     }
 }
@@ -2029,11 +2057,39 @@ struct GradientApplyButtonView: View {
 struct GradientColorPickerSheet: View {
     let document: VectorDocument
     let editingGradientStopId: UUID?
+    let editingGradientStopColor: VectorColor
     @Binding var showingColorPicker: Bool
     let updateStopColor: (UUID, VectorColor) -> Void
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
-    @State private var initialColor: VectorColor = .black
+    
+    // Create a local document wrapper with the correct initial color
+    @State private var localDocument: VectorDocument
+    
+    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, showingColorPicker: Binding<Bool>, updateStopColor: @escaping (UUID, VectorColor) -> Void) {
+        self.document = document
+        self.editingGradientStopId = editingGradientStopId
+        self.editingGradientStopColor = editingGradientStopColor
+        self._showingColorPicker = showingColorPicker
+        self.updateStopColor = updateStopColor
+        
+        // Create a copy of the document with the correct initial color but preserve important properties
+        let localDoc = VectorDocument()
+        localDoc.defaultFillColor = editingGradientStopColor
+        
+        // Copy essential properties from the original document
+        localDoc.settings = document.settings  // Includes colorMode, etc.
+        
+        // Copy color swatches based on current mode
+        localDoc.rgbSwatches = document.rgbSwatches
+        localDoc.cmykSwatches = document.cmykSwatches
+        localDoc.hsbSwatches = document.hsbSwatches
+        
+        self._localDocument = State(initialValue: localDoc)
+        
+        print("🎨 GRADIENT SHEET INIT: Created local document with color \(editingGradientStopColor)")
+        print("🎨 GRADIENT SHEET INIT: Copied \(localDoc.currentSwatches.count) swatches for \(localDoc.settings.colorMode) mode")
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -2044,94 +2100,39 @@ struct GradientColorPickerSheet: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(.bordered)
             }
-            .padding()
-            .background(Color(NSColor.windowBackgroundColor))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.controlBackgroundColor))
             
-            ColorPanel(document: document) { newColor in
+            ColorPanel(document: localDocument) { newColor in
                 if let stopId = editingGradientStopId {
                     updateStopColor(stopId, newColor)
                 }
             }
-            .frame(width: 300, height: 400)
+            .frame(width: 300, height: 500)
         }
-        .frame(width: 300, height: 450)
+        .frame(width: 300, height: 550, alignment: .top)
+        .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))
-        .onAppear {
-            // Set up gradient editing state immediately when sheet appears
+        .task {
+            // Set up gradient editing state
             if let stopId = editingGradientStopId {
-                print("🎨 GRADIENT SHEET: Setting up gradient editing state immediately")
-                let currentColor = findCurrentGradientStopColor()
-                
-                // Use DispatchQueue.main.async to avoid publishing during view updates
-                DispatchQueue.main.async {
-                    appState.gradientEditingState = GradientEditingState(
-                        gradientId: stopId,
-                        stopIndex: 0,
-                        onColorSelected: { color in
-                            print("🎨 GRADIENT SHEET: Color selected via callback: \(color)")
-                            updateStopColor(stopId, color)
-                        }
-                    )
-                    
-                    // Update the document's default color to show the current stop color
-                    document.defaultFillColor = currentColor
-                    print("🎨 GRADIENT SHEET: Set document default fill color to: \(currentColor)")
-                }
+                print("🎨 GRADIENT SHEET: Setting up gradient state")
+                appState.gradientEditingState = GradientEditingState(
+                    gradientId: stopId,
+                    stopIndex: 0,
+                    onColorSelected: { color in
+                        print("🎨 GRADIENT CALLBACK: \(color)")
+                        updateStopColor(stopId, color)
+                    }
+                )
+                print("🎨 GRADIENT SHEET: Setup complete")
             }
         }
         .onDisappear {
             // Clean up gradient editing state
             appState.finishGradientStopEditing()
         }
-        .task {
-            // CRITICAL FIX: Set gradient editing state immediately when view is created
-            // This ensures it's available before ColorPanel's onAppear runs
-            print("🎨 GRADIENT SHEET: TASK STARTED - View creation")
-            if let stopId = editingGradientStopId {
-                print("🎨 GRADIENT SHEET: Setting up gradient editing state in task")
-                let currentColor = findCurrentGradientStopColor()
-                
-                // Use DispatchQueue.main.async to avoid publishing during view updates
-                DispatchQueue.main.async {
-                    appState.gradientEditingState = GradientEditingState(
-                        gradientId: stopId,
-                        stopIndex: 0,
-                        onColorSelected: { color in
-                            print("🎨 GRADIENT SHEET: Color selected via callback: \(color)")
-                            updateStopColor(stopId, color)
-                        }
-                    )
-                    
-                    // Update the document's default color to show the current stop color
-                    document.defaultFillColor = currentColor
-                    print("🎨 GRADIENT SHEET: Set document default fill color to: \(currentColor)")
-                    print("🎨 GRADIENT SHEET: TASK COMPLETED - gradientEditingState set")
-                }
-            } else {
-                print("🎨 GRADIENT SHEET: TASK - No editingGradientStopId found!")
-            }
-        }
-    }
-    
-    private func findCurrentGradientStopColor() -> VectorColor {
-        guard let stopId = editingGradientStopId,
-              let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-              let fillStyle = shape.fillStyle else {
-            return .black
-        }
-        
-        switch fillStyle.color {
-        case .gradient(let gradient):
-            if let stop = gradient.stops.first(where: { $0.id == stopId }) {
-                return stop.color
-            }
-        default:
-            break
-        }
-        
-        return .black
     }
 }
 

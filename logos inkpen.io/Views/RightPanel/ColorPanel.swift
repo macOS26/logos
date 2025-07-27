@@ -24,40 +24,7 @@ struct ColorPanel: View {
     }
     
     var body: some View {
-            VStack(alignment: .leading, spacing: 16) {
-                // Header with gradient editing info
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Color")
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                        Spacer()
-                    }
-                    
-                    // Show gradient editing status if active
-                    if let gradientState = appState.gradientEditingState {
-                        HStack {
-                            Image(systemName: "slider.horizontal.3")
-                                .foregroundColor(.blue)
-                            Text("Editing Gradient Stop \(gradientState.stopIndex + 1)")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                            Spacer()
-                            Button("Done") {
-                                appState.finishGradientStopEditing()
-                            }
-                            .font(.caption)
-                            .buttonStyle(.borderless)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(6)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
-                
+        VStack(alignment: .leading, spacing: 16) {
             // Color Mode Picker
             VStack(alignment: .leading, spacing: 4) {
                 Text("Color Mode")

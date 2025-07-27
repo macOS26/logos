@@ -389,8 +389,16 @@ struct CMYKInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .cmyk(currentColor)
-        // DISABLED: Auto-application of colors when adjusting sliders
-        // Only update preview, don't apply to objects automatically
+        
+        // Check if we're in gradient editing mode - if so, apply live updates
+        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            let vectorColor = VectorColor.cmyk(currentColor)
+            gradientCallback(vectorColor)
+            print("🎨 CMYK INPUT: Live gradient update: \(vectorColor)")
+        }
+        
+        // DISABLED for normal editing: Auto-application of colors when adjusting sliders
+        // Only update preview, don't apply to objects automatically for non-gradient editing
         // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
         print("🎨 CMYK color updated for preview only: \(currentColor)")
     }
