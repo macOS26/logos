@@ -126,7 +126,7 @@ class SVGImportDebugTest: ObservableObject {
         }
         
         // Test function loading
-        let functions: [(String, UnsafeRawPointer)] = [
+        let _: [(String, UnsafeRawPointer)] = [
             ("CGSVGDocumentCreateFromData", unsafeBitCast(Self.CGSVGDocumentCreateFromData, to: UnsafeRawPointer.self)),
             ("CGContextDrawSVGDocument", unsafeBitCast(Self.CGContextDrawSVGDocument, to: UnsafeRawPointer.self)),
             ("CGSVGDocumentGetCanvasSize", unsafeBitCast(Self.CGSVGDocumentGetCanvasSize, to: UnsafeRawPointer.self))

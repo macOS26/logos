@@ -1004,8 +1004,8 @@ struct GradientFillSection: View {
                 document: document,
                 getOriginX: getGradientOriginX,
                 getOriginY: getGradientOriginY,
-                updateOriginX: updateGradientOriginX,
-                updateOriginY: updateGradientOriginY
+                updateOriginX: { updateGradientOriginX($0, applyToShapes: true) },
+                updateOriginY: { updateGradientOriginY($0, applyToShapes: true) }
             )
             
             GradientScaleControlView(
@@ -1030,11 +1030,12 @@ struct GradientFillSection: View {
                 getOriginY: getGradientOriginY,
                 getScaleX: getGradientScaleX,
                 getScaleY: getGradientScaleY,
-                updateOriginX: updateGradientOriginX,
-                updateOriginY: updateGradientOriginY,
+                updateOriginX: { updateGradientOriginX($0, applyToShapes: $1) },
+                updateOriginY: { updateGradientOriginY($0, applyToShapes: $1) },
                 addColorStop: addColorStop,
                 updateStopPosition: updateStopPosition,
-                removeColorStop: removeColorStop
+                removeColorStop: removeColorStop,
+                applyGradientToSelectedShapes: applyGradientToSelectedShapes
             )
             
             GradientApplyButtonView(
@@ -1069,7 +1070,6 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             gradientId = UUID() // Generate new ID for loaded gradient
-            print("🎨 Loaded gradient from selected object: \(selectedGradient)")
         }
     }
     
@@ -1080,13 +1080,11 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.angle = newAngle
             currentGradient = .linear(linear)
-            print("🔄 Updated linear gradient angle to \(String(format: "%.1f", newAngle))°")
             // Apply live to selected shapes
             applyGradientToSelectedShapes()
         case .radial(var radial):
             radial.angle = newAngle
             currentGradient = .radial(radial)
-            print("🔄 Updated radial gradient angle to \(String(format: "%.1f", newAngle))°")
             // Apply live to selected shapes
             applyGradientToSelectedShapes()
         }
@@ -1111,38 +1109,38 @@ struct GradientFillSection: View {
         }
     }
     
-    private func updateGradientOriginX(_ newX: Double) {
+    private func updateGradientOriginX(_ newX: Double, applyToShapes: Bool = true) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
             linear.originPoint.x = newX
             currentGradient = .linear(linear)
-            // Reduced logging for performance - only log significant changes
         case .radial(var radial):
             radial.originPoint.x = newX
             currentGradient = .radial(radial)
-            // Reduced logging for performance - only log significant changes
         }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
+        // Only apply to shapes if requested (for performance during drag)
+        if applyToShapes {
+            applyGradientToSelectedShapes()
+        }
     }
     
-    private func updateGradientOriginY(_ newY: Double) {
+    private func updateGradientOriginY(_ newY: Double, applyToShapes: Bool = true) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
             linear.originPoint.y = newY
             currentGradient = .linear(linear)
-            // Reduced logging for performance - only log significant changes
         case .radial(var radial):
             radial.originPoint.y = newY
             currentGradient = .radial(radial)
-            // Reduced logging for performance - only log significant changes
         }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
+        // Only apply to shapes if requested (for performance during drag)
+        if applyToShapes {
+            applyGradientToSelectedShapes()
+        }
     }
     
     // NEW: Scale X & Y Controls
@@ -1171,11 +1169,9 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.scaleX = newScaleX
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient scale X to \(Int(newScaleX * 100))%")
         case .radial(var radial):
             radial.scaleX = newScaleX
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient scale X to \(Int(newScaleX * 100))%")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -1188,11 +1184,9 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.scaleY = newScaleY
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient scale Y to \(Int(newScaleY * 100))%")
         case .radial(var radial):
             radial.scaleY = newScaleY
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient scale Y to \(Int(newScaleY * 100))%")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -2101,17 +2095,81 @@ struct GradientPreviewAndStopsView: View {
     let getOriginY: (VectorGradient) -> Double
     let getScaleX: (VectorGradient) -> Double
     let getScaleY: (VectorGradient) -> Double
-    let updateOriginX: (Double) -> Void
-    let updateOriginY: (Double) -> Void
+    let updateOriginX: (Double, Bool) -> Void
+    let updateOriginY: (Double, Bool) -> Void
     let addColorStop: () -> Void
     let updateStopPosition: (UUID, Double) -> Void
     let removeColorStop: (UUID) -> Void
+    let applyGradientToSelectedShapes: () -> Void
     
-    // FAST PREVIEW STATE for responsive gradient updates
-    @State private var previewOriginX: Double = 0.5
-    @State private var previewOriginY: Double = 0.5
-    @State private var isDraggingGradientDot: Bool = false
-    @State private var useFastPreview: Bool = false // Enable low-res preview during interactions
+    private func calculateDotPosition(geometry: GeometryProxy) -> CGPoint {
+        guard let gradient = currentGradient else { return CGPoint(x: geometry.size.width * 0.5, y: 30) }
+        let originX = getOriginX(gradient)
+        let originY = getOriginY(gradient)
+        return CGPoint(
+            x: max(0, min(geometry.size.width, originX * geometry.size.width)),
+            y: max(0, min(60, originY * 60))
+        )
+    }
+    
+    private func createGradientPreview(geometry: GeometryProxy) -> some View {
+        Group {
+            if case .radial(let radial) = currentGradient {
+                let scaleX = getScaleX(currentGradient!)
+                let scaleY = getScaleY(currentGradient!)
+                let originX = getOriginX(currentGradient!)
+                let originY = getOriginY(currentGradient!)
+                let angle = radial.angle
+                
+                let gradientStops = getGradientStops(currentGradient!).map { stop in
+                    SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                }
+                let gradient = SwiftUI.Gradient(stops: gradientStops)
+                
+                EllipticalGradient(
+                    gradient: gradient,
+                    center: UnitPoint(x: originX, y: originY),
+                    startRadiusX: 0,
+                    startRadiusY: 0,
+                    endRadiusX: 50.0 * CGFloat(abs(scaleX)),
+                    endRadiusY: 50.0 * CGFloat(abs(scaleY)),
+                    angle: angle
+                )
+                .frame(height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+            } else {
+                let gradient = createGradient(currentGradient!)
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(gradient)
+                    .frame(height: 60)
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                    .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+            }
+        }
+    }
+    
+    private func createDraggableDot(geometry: GeometryProxy) -> some View {
+        Circle()
+            .fill(Color.white)
+            .frame(width: 8, height: 8)
+            .overlay(Circle().stroke(Color.black, lineWidth: 1))
+            .position(calculateDotPosition(geometry: geometry))
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
+                        let normalizedY = max(0.0, min(1.0, value.location.y / 60))
+                        updateOriginX(normalizedX, false)
+                        updateOriginY(normalizedY, false)
+                    }
+                    .onEnded { _ in 
+                        applyGradientToSelectedShapes()
+                        document.saveToUndoStack() 
+                    }
+            )
+    }
     
     var body: some View {
         if currentGradient != nil {
@@ -2121,66 +2179,7 @@ struct GradientPreviewAndStopsView: View {
                     .foregroundColor(.secondary)
                 
                 GeometryReader { geometry in
-                    Group {
-                        // Use custom elliptical gradient for radial gradients with independent scaling
-                        if case .radial(let radial) = currentGradient {
-                            let scaleX = getScaleX(currentGradient!)
-                            let scaleY = getScaleY(currentGradient!)
-                            // FAST PREVIEW: Use preview state during drag, actual state otherwise
-                            let originX = isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)
-                            let originY = isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)
-                            let angle = radial.angle // Get the angle from the radial gradient
-                            
-                            // FAST PREVIEW OPTION: Use simplified rendering during interactions
-                            if useFastPreview && isDraggingGradientDot {
-                                // Low-resolution preview for better performance
-                                FastGradientPreview(
-                                    gradient: {
-                                        let stops = getGradientStops(currentGradient!)
-                                        let gradientStops = stops.map { stop in
-                                            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-                                        }
-                                        return SwiftUI.Gradient(stops: gradientStops)
-                                    }(),
-                                    center: UnitPoint(x: originX, y: originY),
-                                    scaleX: scaleX,
-                                    scaleY: scaleY,
-                                    angle: angle
-                                )
-                                .frame(height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
-                            } else {
-                            
-                            EllipticalGradient(
-                                gradient: {
-                                    let stops = getGradientStops(currentGradient!)
-                                    let gradientStops = stops.map { stop in
-                                        SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
-                                    }
-                                    return SwiftUI.Gradient(stops: gradientStops)
-                                }(),
-                                center: UnitPoint(x: originX, y: originY),
-                                startRadiusX: 0,
-                                startRadiusY: 0,
-                                endRadiusX: 50.0 * CGFloat(abs(scaleX)),
-                                endRadiusY: 50.0 * CGFloat(abs(scaleY)),
-                                angle: angle
-                            )
-                            .frame(height: 60)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                            .overlay(CartesianGrid(width: geometry.size.width, height: 60))
-                            }
-                        } else {
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(createGradient(currentGradient!))
-                                .frame(height: 60)
-                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
-                        }
-                    }
+                    createGradientPreview(geometry: geometry)
                         .overlay(
                             Circle()
                                 .fill(Color.gray.opacity(0.8))
@@ -2188,67 +2187,15 @@ struct GradientPreviewAndStopsView: View {
                                 .position(x: geometry.size.width * 0.5, y: 30)
                         )
                         .onTapGesture { location in
-                            document.saveToUndoStack()
                             let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))
-                            let normalizedY = max(0.0, min(1.0, location.y / geometry.size.height))
-                            updateOriginX(normalizedX)
-                            updateOriginY(normalizedY)
+                            let normalizedY = max(0.0, min(1.0, location.y / 60))
+                            updateOriginX(normalizedX, true)
+                            updateOriginY(normalizedY, true)
+                            document.saveToUndoStack()
                         }
-                        .overlay(
-                            // IMPROVED GRADIENT CONTROL DOT with better visual feedback
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 10, height: 10)
-                                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
-                                .position(
-                                    x: max(5, min(geometry.size.width - 5, (isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)) * geometry.size.width)),
-                                    y: max(5, min(geometry.size.height - 5, (isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)) * geometry.size.height))
-                                )
-                                .onTapGesture {
-                                    // Log mouse down interaction
-                                    print("🎨 GRADIENT PREVIEW: Mouse down on gradient dot at (\(String(format: "%.2f", getOriginX(currentGradient!))), \(String(format: "%.2f", getOriginY(currentGradient!))))")
-                                }
-                                .gesture(
-                                    // OPTIMIZED DRAG GESTURE with minimal logging (only on mouse down/up)
-                                    DragGesture(minimumDistance: 1)
-                                        .onChanged { value in
-                                            // FAST PREVIEW: Update preview state immediately for responsive feedback
-                                            let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
-                                            let normalizedY = max(0.0, min(1.0, value.location.y / geometry.size.height))
-                                            
-                                            // Update preview state for instant visual feedback
-                                            previewOriginX = normalizedX
-                                            previewOriginY = normalizedY
-                                            isDraggingGradientDot = true
-                                            useFastPreview = true // Enable fast preview during drag
-                                            
-                                            // FAST REAL-TIME UPDATE: Update actual gradient immediately for responsive feedback
-                                            updateOriginX(normalizedX)
-                                            updateOriginY(normalizedY)
-                                            
-                                            // NO LOGGING DURING DRAG - only visual feedback for performance
-                                        }
-                                        .onEnded { _ in 
-                                            // Gradient already updated in real-time during drag
-                                            isDraggingGradientDot = false
-                                            useFastPreview = false // Disable fast preview after drag
-                                            
-                                            // Only save to undo stack when drag ends (not during drag)
-                                            document.saveToUndoStack()
-                                            print("🎨 GRADIENT PREVIEW: Drag ended at (\(String(format: "%.2f", previewOriginX)), \(String(format: "%.2f", previewOriginY)))")
-                                        }
-                                )
-                        )
+                        .overlay(createDraggableDot(geometry: geometry))
                 }
                 .frame(height: 60)
-                .onAppear {
-                    // Initialize preview state with current gradient position
-                    if let gradient = currentGradient {
-                        previewOriginX = getOriginX(gradient)
-                        previewOriginY = getOriginY(gradient)
-                    }
-                }
                 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -2263,6 +2210,7 @@ struct GradientPreviewAndStopsView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                     
+                    // Memoize gradient stops calculation for performance
                     let stops = getGradientStops(currentGradient!).sorted { $0.position < $1.position }
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
@@ -2406,28 +2354,6 @@ struct EllipticalGradient: View {
     }
 }
 
-// MARK: - Fast Gradient Preview for Performance
-
-struct FastGradientPreview: View {
-    let gradient: SwiftUI.Gradient
-    let center: UnitPoint
-    let scaleX: Double
-    let scaleY: Double
-    let angle: Double
-    
-    var body: some View {
-        // Simple fast preview using SwiftUI's built-in radial gradient
-        SwiftUI.RadialGradient(
-            gradient: gradient,
-            center: center,
-            startRadius: 0,
-            endRadius: 50
-        )
-        .scaleEffect(x: CGFloat(scaleX), y: CGFloat(scaleY))
-        .rotationEffect(.degrees(angle))
-    }
-}
-
 // MARK: - Cartesian Grid for Gradient Preview
 
 struct CartesianGrid: View {
@@ -2436,9 +2362,9 @@ struct CartesianGrid: View {
     
     var body: some View {
         ZStack {
-            // Vertical grid lines (X-axis markers) - edge to edge
-            ForEach(0..<11) { index in
-                let position = CGFloat(index) / 10.0  // 0.0 to 1.0
+            // Vertical grid lines (X-axis markers) - edge to edge (reduced from 11 to 6 for performance)
+            ForEach(0..<6) { index in
+                let position = CGFloat(index) / 5.0  // 0.0 to 1.0
                 let xPosition = position * width
                 
                 // Full-height vertical line (edge to edge)
@@ -2448,9 +2374,9 @@ struct CartesianGrid: View {
                     .position(x: xPosition, y: height / 2)
             }
             
-            // Horizontal grid lines (Y-axis markers) - edge to edge
-            ForEach(0..<11) { index in
-                let position = CGFloat(index) / 10.0  // 0.0 to 1.0
+            // Horizontal grid lines (Y-axis markers) - edge to edge (reduced from 11 to 6 for performance)
+            ForEach(0..<6) { index in
+                let position = CGFloat(index) / 5.0  // 0.0 to 1.0
                 let yPosition = position * height
                 
                 // Full-width horizontal line (edge to edge)

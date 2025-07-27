@@ -56,12 +56,10 @@ class AppState {
             onColorSelected: onColorSelected
         )
         selectedPanelTab = .color
-        print("🎨 AppState: Started gradient stop editing for stop \(stopIndex), switched to color panel")
     }
     
     func finishGradientStopEditing() {
         gradientEditingState = nil
-        print("🎨 AppState: Finished gradient stop editing")
     }
     
     // MARK: - Development Actions
