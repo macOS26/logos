@@ -2415,14 +2415,14 @@ struct FastGradientPreview: View {
     
     var body: some View {
         // Simple fast preview using SwiftUI's built-in radial gradient
-        RadialGradient(
+        SwiftUI.RadialGradient(
             gradient: gradient,
             center: center,
             startRadius: 0,
             endRadius: 50
         )
         .scaleEffect(x: CGFloat(scaleX), y: CGFloat(scaleY))
-        .rotationEffect(Angle(degrees: angle))
+        .rotationEffect(.degrees(angle))
     }
 }
 
