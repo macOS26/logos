@@ -1118,11 +1118,11 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.originPoint.x = newX
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient origin X to \(String(format: "%.3f", newX))")
+            // Reduced logging for performance - only log significant changes
         case .radial(var radial):
             radial.originPoint.x = newX
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient origin X to \(String(format: "%.3f", newX))")
+            // Reduced logging for performance - only log significant changes
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -1135,11 +1135,11 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.originPoint.y = newY
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient origin Y to \(String(format: "%.3f", newY))")
+            // Reduced logging for performance - only log significant changes
         case .radial(var radial):
             radial.originPoint.y = newY
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient origin Y to \(String(format: "%.3f", newY))")
+            // Reduced logging for performance - only log significant changes
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -2181,8 +2181,12 @@ struct GradientPreviewAndStopsView: View {
                                     x: max(5, min(geometry.size.width - 5, (isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)) * geometry.size.width)),
                                     y: max(5, min(55, (isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)) * 60))
                                 )
+                                .onTapGesture {
+                                    // Log mouse down interaction
+                                    print("🎨 GRADIENT PREVIEW: Mouse down on gradient dot at (\(String(format: "%.2f", getOriginX(currentGradient!))), \(String(format: "%.2f", getOriginY(currentGradient!))))")
+                                }
                                 .gesture(
-                                    // IMPROVED DRAG GESTURE with better performance and logging
+                                    // OPTIMIZED DRAG GESTURE with minimal logging (only on mouse down/up)
                                     DragGesture(minimumDistance: 1)
                                         .onChanged { value in
                                             // FAST PREVIEW: Update preview state immediately for responsive feedback
@@ -2194,15 +2198,7 @@ struct GradientPreviewAndStopsView: View {
                                             previewOriginY = normalizedY
                                             isDraggingGradientDot = true
                                             
-                                            // Only log on significant movements to reduce spam
-                                            let currentX = getOriginX(currentGradient!)
-                                            let currentY = getOriginY(currentGradient!)
-                                            let deltaX = abs(normalizedX - currentX)
-                                            let deltaY = abs(normalizedY - currentY)
-                                            
-                                            if deltaX > 0.05 || deltaY > 0.05 {
-                                                print("🎨 GRADIENT PREVIEW: Moving dot to (\(String(format: "%.2f", normalizedX)), \(String(format: "%.2f", normalizedY)))")
-                                            }
+                                            // NO LOGGING DURING DRAG - only visual feedback for performance
                                         }
                                         .onEnded { _ in 
                                             // Apply final position to actual gradient
@@ -2212,7 +2208,7 @@ struct GradientPreviewAndStopsView: View {
                                             
                                             // Only save to undo stack when drag ends (not during drag)
                                             document.saveToUndoStack()
-                                            print("🎨 GRADIENT PREVIEW: Drag ended, saved to undo stack")
+                                            print("🎨 GRADIENT PREVIEW: Drag ended at (\(String(format: "%.2f", previewOriginX)), \(String(format: "%.2f", previewOriginY)))")
                                         }
                                 )
                         )
