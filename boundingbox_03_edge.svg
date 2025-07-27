@@ -1,0 +1,11 @@
+<svg viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="grad3" gradientUnits="objectBoundingBox" cx="0.8333333333333334" cy="0.3333333333333333" r="0.26666666666666666" fx="0.6666666666666666" fy="0.26666666666666666">
+      <stop offset="0%" stop-color="cyan"/>
+      <stop offset="40%" stop-color="magenta"/>
+      <stop offset="100%" stop-color="black"/>
+    </radialGradient>
+  </defs>
+  <rect x="50" y="50" width="200" height="200" fill="url(#grad3)"/>
+  <text x="150" y="280" text-anchor="middle" font-size="12">userSpaceOnUse - Edge</text>
+</svg>

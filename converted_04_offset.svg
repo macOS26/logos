@@ -1,0 +1,11 @@
+<svg viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="grad4" gradientUnits="objectBoundingBox" cx="0.4" cy="0.6" r="0.26666666666666666" fx="0.26666666666666666" fy="0.4666666666666667">
+      <stop offset="0%" stop-color="lime"/>
+      <stop offset="60%" stop-color="pink"/>
+      <stop offset="100%" stop-color="brown"/>
+    </radialGradient>
+  </defs>
+  <rect x="50" y="50" width="200" height="200" fill="url(#grad4)"/>
+  <text x="150" y="280" text-anchor="middle" font-size="12">userSpaceOnUse - Offset with Focal Point</text>
+</svg>

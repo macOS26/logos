@@ -1,0 +1,12 @@
+<svg viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="grad1" gradientUnits="objectBoundingBox" cx="0.2" cy="0.2" r="0.3" fx="0.1" fy="0.1">
+      <stop offset="0%" stop-color="green"/>
+      <stop offset="50%" stop-color="orange"/>
+      <stop offset="100%" stop-color="purple"/>
+    </radialGradient>
+  </defs>
+  <rect x="50" y="50" width="200" height="200" fill="url(#grad1)"/>
+  <text x="150" y="280" text-anchor="middle" font-size="14" font-weight="bold">objectBoundingBox - CORNER</text>
+  <text x="150" y="295" text-anchor="middle" font-size="10">cx=0.2, cy=0.2, r=0.3, fx=0.1, fy=0.1</text>
+</svg>

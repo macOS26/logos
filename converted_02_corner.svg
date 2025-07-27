@@ -1,0 +1,11 @@
+<svg viewBox="0 0 300 300">
+  <defs>
+    <radialGradient id="grad2" gradientUnits="userSpaceOnUse" cx="60.0" cy="60.0" r="90.0" fx="30.0" fy="30.0">
+      <stop offset="0%" stop-color="green"/>
+      <stop offset="70%" stop-color="orange"/>
+      <stop offset="100%" stop-color="purple"/>
+    </radialGradient>
+  </defs>
+  <rect x="50" y="50" width="200" height="200" fill="url(#grad2)"/>
+  <text x="150" y="280" text-anchor="middle" font-size="12">objectBoundingBox - Corner with Focal Point</text>
+</svg>

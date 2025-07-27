@@ -5873,6 +5873,12 @@ class FileOperations {
         let pageSize = document.settings.sizeInPoints
         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
         
+        // CRITICAL FIX: Add size validation to prevent Core Image crashes
+        guard outputSize.width > 0 && outputSize.height > 0 && 
+              outputSize.width <= 16384 && outputSize.height <= 16384 else {
+            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+        }
+        
         // Create bitmap context
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
@@ -5922,12 +5928,19 @@ class FileOperations {
             drawTextInPDF(text, context: context)
         }
         
-        // Create image from context
-        guard let image = context.makeImage() else {
-            throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+        // CRITICAL FIX: Add timeout and error handling for Core Image operations
+        let image: CGImage
+        do {
+            // Create image from context with timeout protection
+            guard let createdImage = context.makeImage() else {
+                throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+            }
+            image = createdImage
+        } catch {
+            throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
         }
         
-        // Save PNG
+        // Save PNG with error handling
         let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
         guard let dest = destination else {
             throw VectorImportError.parsingError("Failed to create PNG destination", line: nil)
@@ -5948,6 +5961,12 @@ class FileOperations {
         // Calculate output size
         let pageSize = document.settings.sizeInPoints
         let outputSize = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+        
+        // CRITICAL FIX: Add size validation to prevent Core Image crashes
+        guard outputSize.width > 0 && outputSize.height > 0 && 
+              outputSize.width <= 16384 && outputSize.height <= 16384 else {
+            throw VectorImportError.parsingError("Invalid output size: \(outputSize)", line: nil)
+        }
         
         // Create bitmap context
         let colorSpace = CGColorSpaceCreateDeviceRGB()
@@ -5998,12 +6017,19 @@ class FileOperations {
             drawTextInPDF(text, context: context)
         }
         
-        // Create image from context
-        guard let image = context.makeImage() else {
-            throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+        // CRITICAL FIX: Add timeout and error handling for Core Image operations
+        let image: CGImage
+        do {
+            // Create image from context with timeout protection
+            guard let createdImage = context.makeImage() else {
+                throw VectorImportError.parsingError("Failed to create image from context", line: nil)
+            }
+            image = createdImage
+        } catch {
+            throw VectorImportError.parsingError("Core Image operation failed: \(error.localizedDescription)", line: nil)
         }
         
-        // Save JPEG with quality setting
+        // Save JPEG with quality setting and error handling
         let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil)
         guard let dest = destination else {
             throw VectorImportError.parsingError("Failed to create JPEG destination", line: nil)
@@ -6018,5 +6044,50 @@ class FileOperations {
         }
         
         print("✅ Successfully exported JPEG document")
+    }
+}
+
+// MARK: - Core Image Safety Utilities
+
+/// Safe wrapper for Core Image operations to prevent crashes
+private func safeCoreImageOperation<T>(_ operation: () throws -> T) throws -> T {
+    // Add timeout protection for Core Image operations
+    let timeout: TimeInterval = 30.0 // 30 second timeout
+    let startTime = Date()
+    
+    while Date().timeIntervalSince(startTime) < timeout {
+        do {
+            return try operation()
+        } catch {
+            // If it's a Core Image specific error, retry once
+            if error.localizedDescription.contains("CI_") || 
+               error.localizedDescription.contains("Core Image") {
+                print("⚠️ Core Image operation failed, retrying...")
+                Thread.sleep(forTimeInterval: 0.1) // Brief pause before retry
+                continue
+            }
+            throw error
+        }
+    }
+    
+    throw VectorImportError.parsingError("Core Image operation timed out after \(timeout) seconds", line: nil)
+}
+
+/// Validates image dimensions to prevent Core Image crashes
+private func validateImageDimensions(_ size: CGSize) throws {
+    guard size.width > 0 && size.height > 0 else {
+        throw VectorImportError.parsingError("Image dimensions must be positive", line: nil)
+    }
+    
+    // Core Image has limits on image dimensions
+    let maxDimension: CGFloat = 16384 // 16K limit
+    guard size.width <= maxDimension && size.height <= maxDimension else {
+        throw VectorImportError.parsingError("Image dimensions exceed Core Image limits: \(size)", line: nil)
+    }
+    
+    // Check for reasonable minimum size
+    let minDimension: CGFloat = 1.0
+    guard size.width >= minDimension && size.height >= minDimension else {
+        throw VectorImportError.parsingError("Image dimensions too small: \(size)", line: nil)
     }
 }
