@@ -730,7 +730,7 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
-    @State private var isProportionalScale = true
+
     
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -788,12 +788,11 @@ struct GradientFillSection: View {
             
             GradientScaleControlView(
                 currentGradient: currentGradient,
-                isProportionalScale: $isProportionalScale,
                 document: document,
-                getScaleX: getGradientScaleX,
-                getScaleY: getGradientScaleY,
-                updateScaleX: updateGradientScaleX,
-                updateScaleY: updateGradientScaleY
+                getScale: getGradientScale,
+                updateScale: updateGradientScale,
+                getAspectRatio: getGradientAspectRatio,
+                updateAspectRatio: updateGradientAspectRatio
             )
             
             GradientPreviewAndStopsView(
@@ -806,8 +805,8 @@ struct GradientFillSection: View {
                 getGradientStops: getGradientStops,
                 getOriginX: getGradientOriginX,
                 getOriginY: getGradientOriginY,
-                getScaleX: getGradientScaleX,
-                getScaleY: getGradientScaleY,
+                getScale: getGradientScale,
+                getAspectRatio: getGradientAspectRatio,
                 updateOriginX: { updateGradientOriginX($0, applyToShapes: $1) },
                 updateOriginY: { updateGradientOriginY($0, applyToShapes: $1) },
                 addColorStop: addColorStop,
@@ -921,49 +920,61 @@ struct GradientFillSection: View {
         }
     }
     
-    // NEW: Scale X & Y Controls
-    private func getGradientScaleX(_ gradient: VectorGradient) -> Double {
+    // NEW: Unified Scale Controls
+    private func getGradientScale(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
-            return linear.scaleX
+            return linear.scaleX // Use scaleX as the primary scale
         case .radial(let radial):
-            return radial.scaleX
+            return radial.scaleX // Use scaleX as the primary scale
         }
     }
     
-    private func getGradientScaleY(_ gradient: VectorGradient) -> Double {
+    private func getGradientAspectRatio(_ gradient: VectorGradient) -> Double {
         switch gradient {
         case .linear(let linear):
-            return linear.scaleY
+            // Avoid division by zero, return 1.0 if scaleX is 0
+            return linear.scaleX != 0 ? linear.scaleY / linear.scaleX : 1.0
         case .radial(let radial):
-            return radial.scaleY
+            // Avoid division by zero, return 1.0 if scaleX is 0
+            return radial.scaleX != 0 ? radial.scaleY / radial.scaleX : 1.0
         }
     }
     
-    private func updateGradientScaleX(_ newScaleX: Double) {
+    private func updateGradientScale(_ newScale: Double) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
-            linear.scaleX = newScaleX
+            // Store current aspect ratio before changing scaleX
+            let currentAspectRatio = linear.scaleX != 0 ? linear.scaleY / linear.scaleX : 1.0
+            linear.scaleX = newScale
+            // Apply the same aspect ratio to the new scale
+            linear.scaleY = newScale * currentAspectRatio
             currentGradient = .linear(linear)
         case .radial(var radial):
-            radial.scaleX = newScaleX
+            // Store current aspect ratio before changing scaleX
+            let currentAspectRatio = radial.scaleX != 0 ? radial.scaleY / radial.scaleX : 1.0
+            radial.scaleX = newScale
+            // Apply the same aspect ratio to the new scale
+            radial.scaleY = newScale * currentAspectRatio
             currentGradient = .radial(radial)
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
     }
     
-    private func updateGradientScaleY(_ newScaleY: Double) {
+    private func updateGradientAspectRatio(_ newAspectRatio: Double) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
-            linear.scaleY = newScaleY
+            // Keep scaleX constant, adjust scaleY based on aspect ratio
+            linear.scaleY = linear.scaleX * newAspectRatio
             currentGradient = .linear(linear)
         case .radial(var radial):
-            radial.scaleY = newScaleY
+            // Keep scaleX constant, adjust scaleY based on aspect ratio
+            radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
         }
         // Apply live to selected shapes
@@ -1003,19 +1014,38 @@ struct GradientFillSection: View {
             let gradientVectorX = adjustedEndX - adjustedStartX
             let gradientVectorY = adjustedEndY - adjustedStartY
             
-            // Apply independent scaling to the gradient vector components
-            let scaledVectorX = gradientVectorX * CGFloat(scaleX)
-            let scaledVectorY = gradientVectorY * CGFloat(scaleY)
+            // Calculate the gradient length and angle
+            let gradientLength = sqrt(gradientVectorX * gradientVectorX + gradientVectorY * gradientVectorY)
+            let gradientAngle = atan2(gradientVectorY, gradientVectorX)
+            
+            // Apply scaling - scale affects the gradient spread
+            let scaledLength = gradientLength * CGFloat(scaleX)
+            
+            // For aspect ratio, we modify the perpendicular direction
+            // Create a coordinate system where X is along the gradient, Y is perpendicular
+            let cosAngle = cos(gradientAngle)
+            let sinAngle = sin(gradientAngle)
             
             // Calculate center point
             let centerX = (adjustedStartX + adjustedEndX) / 2
             let centerY = (adjustedStartY + adjustedEndY) / 2
             
+            // Create the scaled gradient vector
+            let scaledVectorX = cosAngle * scaledLength
+            let scaledVectorY = sinAngle * scaledLength
+            
+            // Apply aspect ratio by adjusting the perpendicular component
+            // For linear gradients, aspect ratio affects how "compressed" the gradient appears
+            // We achieve this by adjusting the gradient spread relative to the perpendicular direction
+            let aspectFactor = CGFloat(scaleY / scaleX)
+            let adjustedVectorX = scaledVectorX * aspectFactor
+            let adjustedVectorY = scaledVectorY * aspectFactor
+            
             // Create new start and end points from scaled vector
-            let scaledStartX = centerX - scaledVectorX / 2
-            let scaledStartY = centerY - scaledVectorY / 2
-            let scaledEndX = centerX + scaledVectorX / 2
-            let scaledEndY = centerY + scaledVectorY / 2
+            let scaledStartX = centerX - adjustedVectorX / 2
+            let scaledStartY = centerY - adjustedVectorY / 2
+            let scaledEndX = centerX + adjustedVectorX / 2
+            let scaledEndY = centerY + adjustedVectorY / 2
             
             // Convert to SwiftUI UnitPoint
             let startPoint = UnitPoint(x: scaledStartX, y: scaledStartY)
@@ -1199,17 +1229,19 @@ struct GradientFillSection: View {
         
         switch type {
         case .linear:
-            let linear = LinearGradient(
+            var linear = LinearGradient(
                 startPoint: CGPoint(x: 0, y: 0),
                 endPoint: CGPoint(x: 1, y: 0),
                 stops: validStops,
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            // Keep default originPoint for new gradients - will be preserved when switching types
+            // Set default scale values for new gradients
+            linear.scaleX = 1.0
+            linear.scaleY = 1.0
             return .linear(linear)
         case .radial:
-            let radial = RadialGradient(
+            var radial = RadialGradient(
                 centerPoint: CGPoint(x: 0.5, y: 0.5),
                 radius: 0.5,
                 stops: validStops,
@@ -1217,7 +1249,9 @@ struct GradientFillSection: View {
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            // Keep default originPoint for new gradients - will be preserved when switching types
+            // Set default scale values for new gradients
+            radial.scaleX = 1.0
+            radial.scaleY = 1.0
             return .radial(radial)
         }
     }
@@ -1711,75 +1745,47 @@ struct GradientOriginControlView: View {
 
 struct GradientScaleControlView: View {
     let currentGradient: VectorGradient?
-    @Binding var isProportionalScale: Bool
     let document: VectorDocument
-    let getScaleX: (VectorGradient) -> Double
-    let getScaleY: (VectorGradient) -> Double
-    let updateScaleX: (Double) -> Void
-    let updateScaleY: (Double) -> Void
+    let getScale: (VectorGradient) -> Double
+    let updateScale: (Double) -> Void
+    let getAspectRatio: (VectorGradient) -> Double
+    let updateAspectRatio: (Double) -> Void
     
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Scale X: \(currentGradient != nil ? Int(getScaleX(currentGradient!) * 100) : 100)%")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Slider(value: Binding(
-                            get: { currentGradient != nil ? getScaleX(currentGradient!) : 1.0 },
-                            set: { newScaleX in
-                                if isProportionalScale {
-                                    updateScaleX(newScaleX)
-                                    updateScaleY(newScaleX)
-                                } else {
-                                    updateScaleX(newScaleX)
-                                }
-                            }
-                        ), in: 0.01...8.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
-                        })
-                        .controlSize(.small)
-                    }
+                // Uniform Scale Control
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Scale: \(currentGradient != nil ? Int(getScale(currentGradient!) * 100) : 100)%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Scale Y: \(currentGradient != nil ? Int(getScaleY(currentGradient!) * 100) : 100)%\(isProportionalScale ? " (Locked)" : "")")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Slider(value: Binding(
-                            get: { currentGradient != nil ? getScaleY(currentGradient!) : 1.0 },
-                            set: { newScaleY in
-                                if isProportionalScale {
-                                    updateScaleX(newScaleY)
-                                    updateScaleY(newScaleY)
-                                } else {
-                                    updateScaleY(newScaleY)
-                                }
-                            }
-                        ), in: 0.01...8.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
-                        })
-                        .controlSize(.small)
-                        .disabled(isProportionalScale)
-                        .opacity(isProportionalScale ? 0.5 : 1.0)
-                    }
+                    Slider(value: Binding(
+                        get: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
+                        set: { newScale in
+                            updateScale(newScale)
+                        }
+                    ), in: 0.01...8.0, onEditingChanged: { editing in
+                        if !editing { document.saveToUndoStack() }
+                    })
+                    .controlSize(.small)
+                }
+                
+                // Aspect Ratio Control (X=1, Y=0 to 1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Aspect Ratio: \(currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00")")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
-                    VStack(alignment: .center, spacing: 2) {
-                        Image(systemName: isProportionalScale ? "link" : "link.slash")
-                            .font(.system(size: 12))
-                            .foregroundColor(isProportionalScale ? .accentColor : .secondary)
-                        
-                        Text("Lock")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        
-                        Toggle("", isOn: $isProportionalScale)
-                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                            .scaleEffect(0.8)
-                            .frame(width: 40)
-                    }
+                    Slider(value: Binding(
+                        get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                        set: { newAspectRatio in
+                            updateAspectRatio(newAspectRatio)
+                        }
+                    ), in: 0.01...2.0, onEditingChanged: { editing in
+                        if !editing { document.saveToUndoStack() }
+                    })
+                    .controlSize(.small)
                 }
             }
         }
@@ -1798,8 +1804,8 @@ struct GradientPreviewAndStopsView: View {
     let getGradientStops: (VectorGradient) -> [GradientStop]
     let getOriginX: (VectorGradient) -> Double
     let getOriginY: (VectorGradient) -> Double
-    let getScaleX: (VectorGradient) -> Double
-    let getScaleY: (VectorGradient) -> Double
+    let getScale: (VectorGradient) -> Double
+    let getAspectRatio: (VectorGradient) -> Double
     let updateOriginX: (Double, Bool) -> Void
     let updateOriginY: (Double, Bool) -> Void
     let addColorStop: () -> Void
@@ -1820,8 +1826,8 @@ struct GradientPreviewAndStopsView: View {
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
         return Group {
             if case .radial(let radial) = currentGradient {
-                let scaleX = getScaleX(currentGradient!)
-                let scaleY = getScaleY(currentGradient!)
+                let scale = getScale(currentGradient!)
+                let aspectRatio = getAspectRatio(currentGradient!)
                 let originX = getOriginX(currentGradient!)
                 let originY = getOriginY(currentGradient!)
                 let angle = radial.angle
@@ -1836,8 +1842,8 @@ struct GradientPreviewAndStopsView: View {
                     center: UnitPoint(x: originX, y: originY),
                     startRadiusX: 0,
                     startRadiusY: 0,
-                    endRadiusX: 50.0 * CGFloat(abs(scaleX)),
-                    endRadiusY: 50.0 * CGFloat(abs(scaleY)),
+                    endRadiusX: 50.0 * CGFloat(abs(scale)),
+                    endRadiusY: 50.0 * CGFloat(abs(scale * aspectRatio)),
                     angle: angle
                 )
                 .frame(width: squareSize, height: squareSize)
