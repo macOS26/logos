@@ -95,15 +95,7 @@ struct StrokeFillPanel: View {
         return document.defaultStrokeOpacity  // Show default opacity for new shapes
     }
     
-    // PROFESSIONAL DASH PATTERN SUPPORT (Adobe Illustrator Standard)
-    private var strokeDashPattern: [Double] {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return []
-        }
-        return shape.strokeStyle?.dashPattern ?? []
-    }
+
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
     private var strokeLineJoin: CGLineJoin {
@@ -163,58 +155,29 @@ struct StrokeFillPanel: View {
                         strokeWidth: strokeWidth,
                         strokePlacement: strokePlacement,
                         strokeOpacity: strokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
-                        strokeDashPattern: strokeDashPattern, // PROFESSIONAL DASH PATTERNS
                         strokeLineJoin: strokeLineJoin, // PROFESSIONAL JOIN TYPES
                         strokeLineCap: strokeLineCap, // PROFESSIONAL ENDCAPS
                         strokeMiterLimit: strokeMiterLimit, // PROFESSIONAL MITER LIMIT
-                        onApplyStroke: applyStrokeToSelectedShapes,
                         onUpdateStrokeColor: updateStrokeColor,
                         onUpdateStrokeWidth: updateStrokeWidth,
                         onUpdateStrokePlacement: updateStrokePlacement,
                         onUpdateStrokeOpacity: updateStrokeOpacity, // PROFESSIONAL STROKE TRANSPARENCY
-                        onUpdateDashPattern: updateStrokeDashPattern, // PROFESSIONAL DASH PATTERNS
                         onUpdateLineJoin: updateStrokeLineJoin, // PROFESSIONAL JOIN TYPES
                         onUpdateLineCap: updateStrokeLineCap, // PROFESSIONAL ENDCAPS
                         onUpdateMiterLimit: updateStrokeMiterLimit // PROFESSIONAL MITER LIMIT
                     )
                     
-                    // PROFESSIONAL STROKE OUTLINING (Adobe Illustrator Standard) - Only show when shapes selected
+                    // Expand Stroke Button - Only show when shapes selected
                     if !document.selectedShapeIDs.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Stroke Operations")
-                                .font(.headline)
-                                .fontWeight(.medium)
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                Button("Outline Stroke") {
-                                    document.outlineSelectedStrokes()
-                                }
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.regular)
-                                .disabled(!document.canOutlineStrokes)
-                                .help("Convert stroke to filled path (Cmd+Shift+O)")
-                                .keyboardShortcut("o", modifiers: [.command, .shift])
-                                
-                                if document.outlineableStrokesCount > 0 {
-                                    Text("\(document.outlineableStrokesCount) stroke\(document.outlineableStrokesCount == 1 ? "" : "s") can be outlined")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                } else if !document.selectedShapeIDs.isEmpty {
-                                    Text("No strokes available to outline")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
+                        Button("Expand Stroke") {
+                            document.outlineSelectedStrokes()
                         }
-                        .padding()
-                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                        .cornerRadius(12)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.regular)
+                        .disabled(!document.canOutlineStrokes)
+                        .help("Convert stroke to filled path (Cmd+Shift+O)")
+                        .keyboardShortcut("o", modifiers: [.command, .shift])
                     }
-                    
-                    // Preset Styles
-                    PresetStylesSection(
-                        onApplyPreset: applyPresetStyle
-                    )
                     
                     // Gradient Fill
                     GradientFillSection(document: document)
@@ -400,21 +363,7 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // PROFESSIONAL DASH PATTERN SUPPORT (Adobe Illustrator Standard)
-    private func updateStrokeDashPattern(_ dashPattern: [Double]) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
-        
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: .black, width: 1.0, dashPattern: dashPattern)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.dashPattern = dashPattern
-                }
-            }
-        }
-    }
+
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
@@ -488,24 +437,13 @@ struct StrokeFillPanel: View {
                     color: selectedStrokeColor,
                     width: strokeWidth,
                     placement: strokePlacement,
-                    dashPattern: strokeDashPattern, // PROFESSIONAL DASH PATTERNS
                     opacity: strokeOpacity // PROFESSIONAL STROKE TRANSPARENCY
                 )
             }
         }
     }
     
-    private func applyPresetStyle(_ preset: StylePreset) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
-        
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = preset.strokeStyle
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = preset.fillStyle
-            }
-        }
-    }
+
 }
 
 struct CurrentColorsView: View {
@@ -599,16 +537,13 @@ struct StrokePropertiesSection: View {
     let strokeWidth: Double
     let strokePlacement: StrokePlacement
     let strokeOpacity: Double // PROFESSIONAL STROKE TRANSPARENCY
-    let strokeDashPattern: [Double] // PROFESSIONAL DASH PATTERNS
     let strokeLineJoin: CGLineJoin // PROFESSIONAL JOIN TYPES
     let strokeLineCap: CGLineCap // PROFESSIONAL ENDCAPS
     let strokeMiterLimit: Double // PROFESSIONAL MITER LIMIT
-    let onApplyStroke: () -> Void
     let onUpdateStrokeColor: (VectorColor) -> Void
     let onUpdateStrokeWidth: (Double) -> Void
     let onUpdateStrokePlacement: (StrokePlacement) -> Void
     let onUpdateStrokeOpacity: (Double) -> Void // PROFESSIONAL STROKE TRANSPARENCY
-    let onUpdateDashPattern: ([Double]) -> Void // PROFESSIONAL DASH PATTERNS
     let onUpdateLineJoin: (CGLineJoin) -> Void // PROFESSIONAL JOIN TYPES
     let onUpdateLineCap: (CGLineCap) -> Void // PROFESSIONAL ENDCAPS
     let onUpdateMiterLimit: (Double) -> Void // PROFESSIONAL MITER LIMIT
@@ -775,109 +710,6 @@ struct StrokePropertiesSection: View {
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            
-            // PROFESSIONAL DASH PATTERN CONTROL (Adobe Illustrator Standard)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Dash Pattern")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                VStack(spacing: 4) {
-                    HStack(spacing: 4) {
-                        // SOLID STROKE
-                        Button("Solid") {
-                            onUpdateDashPattern([]) // Empty array = solid
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .background(strokeDashPattern.isEmpty ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(4)
-                        
-                        // DASHED STROKE (Adobe Illustrator style: 5pt dash, 5pt gap)
-                        Button("Dash") {
-                            onUpdateDashPattern([5, 5]) // Classic dash pattern
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .background(strokeDashPattern == [5, 5] ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(4)
-                        
-                        // DOTTED STROKE (Adobe Illustrator style: 1pt dot, 3pt gap)
-                        Button("Dot") {
-                            onUpdateDashPattern([1, 3]) // Classic dot pattern
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .background(strokeDashPattern == [1, 3] ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(4)
-                    }
-                }
-                
-                // PROFESSIONAL PATTERN DISPLAY & CUSTOM EDITOR
-                if !strokeDashPattern.isEmpty {
-                    HStack {
-                        Text("Pattern:")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                        Text("\(strokeDashPattern.map { String(format: "%.0f", $0) }.joined(separator: ", "))")
-                            .font(.caption2)
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 4)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(2)
-                        Spacer()
-                    }
-                    .padding(.top, 2)
-                }
-                
-                // ADVANCED CUSTOM PATTERNS (Adobe Illustrator Style)
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Button("Chain") {
-                            onUpdateDashPattern([8, 3, 2, 3]) // Chain pattern
-                        }
-                        .buttonStyle(.borderless)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(strokeDashPattern == [8, 3, 2, 3] ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(3)
-                        
-                        Button("Double") {
-                            onUpdateDashPattern([6, 2, 6, 8]) // Double dash
-                        }
-                        .buttonStyle(.borderless)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(strokeDashPattern == [6, 2, 6, 8] ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(3)
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Button("Morse") {
-                            onUpdateDashPattern([10, 3, 3, 3, 3, 3]) // Morse code style
-                        }
-                        .buttonStyle(.borderless)
-                        .font(.caption2)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(strokeDashPattern == [10, 3, 3, 3, 3, 3] ? Color.blue.opacity(0.2) : Color.clear)
-                        .cornerRadius(3)
-                        
-                        Spacer()
-                    }
-                }
-            }
-            
-            HStack {
-                Spacer()
-                
-                Button("Apply Stroke") {
-                    onApplyStroke()
-                }
-                .buttonStyle(.borderedProminent)
-            }
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
@@ -885,61 +717,7 @@ struct StrokePropertiesSection: View {
     }
 }
 
-struct PresetStylesSection: View {
-    let onApplyPreset: (StylePreset) -> Void
-    
-    private let presets = StylePreset.defaults
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Preset Styles")
-                .font(.headline)
-                .fontWeight(.medium)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
-                ForEach(presets.indices, id: \.self) { index in
-                    PresetStyleButton(
-                        preset: presets[index],
-                        onApply: { onApplyPreset(presets[index]) }
-                    )
-                }
-            }
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-        .cornerRadius(12)
-    }
-}
 
-struct PresetStyleButton: View {
-    let preset: StylePreset
-    let onApply: () -> Void
-    
-    var body: some View {
-        Button(action: onApply) {
-            VStack(spacing: 4) {
-                // Preview
-                Circle()
-                    .fill(preset.fillStyle?.color.color ?? Color.clear)
-                    .stroke(
-                        preset.strokeStyle?.color.color ?? Color.clear,
-                        lineWidth: (preset.strokeStyle?.width ?? 0) / 2
-                    )
-                    .frame(width: 30, height: 30)
-                
-                Text(preset.name)
-                    .font(.caption2)
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 struct GradientFillSection: View {
     @ObservedObject var document: VectorDocument
@@ -1725,80 +1503,7 @@ struct ColorPickerSheet: View {
 }
 */
 
-// Style Presets
-struct StylePreset {
-    let name: String
-    let strokeStyle: StrokeStyle?
-    let fillStyle: FillStyle?
-    
-    static let defaults: [StylePreset] = [
-        StylePreset(
-            name: "None",
-            strokeStyle: nil,
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Black Fill",
-            strokeStyle: nil,
-            fillStyle: FillStyle(color: .black)
-        ),
-        StylePreset(
-            name: "White Fill",
-            strokeStyle: nil,
-            fillStyle: FillStyle(color: .white)
-        ),
-        StylePreset(
-            name: "Black Stroke",
-            strokeStyle: StrokeStyle(color: .black, width: 1, opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Thick Stroke",
-            strokeStyle: StrokeStyle(color: .black, width: 3, opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Dashed",
-            strokeStyle: StrokeStyle(color: .black, width: 1, dashPattern: [5, 5], opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Dotted",
-            strokeStyle: StrokeStyle(color: .black, width: 1, dashPattern: [1, 3], opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Long Dash",
-            strokeStyle: StrokeStyle(color: .black, width: 1, dashPattern: [10, 5], opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Chain",
-            strokeStyle: StrokeStyle(color: .black, width: 1, dashPattern: [8, 3, 2, 3], opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Double Dash",
-            strokeStyle: StrokeStyle(color: .black, width: 1, dashPattern: [6, 2, 6, 8], opacity: 1.0),
-            fillStyle: nil
-        ),
-        StylePreset(
-            name: "Red Fill",
-            strokeStyle: nil,
-            fillStyle: FillStyle(color: .rgb(RGBColor(red: 1, green: 0, blue: 0)))
-        ),
-        StylePreset(
-            name: "Blue Fill",
-            strokeStyle: nil,
-            fillStyle: FillStyle(color: .rgb(RGBColor(red: 0, green: 0, blue: 1)))
-        ),
-        StylePreset(
-            name: "Green Fill",
-            strokeStyle: nil,
-            fillStyle: FillStyle(color: .rgb(RGBColor(red: 0, green: 1, blue: 0)))
-        )
-    ]
-}
+
 
 
 
@@ -2102,18 +1807,18 @@ struct GradientPreviewAndStopsView: View {
     let removeColorStop: (UUID) -> Void
     let applyGradientToSelectedShapes: () -> Void
     
-    private func calculateDotPosition(geometry: GeometryProxy) -> CGPoint {
-        guard let gradient = currentGradient else { return CGPoint(x: geometry.size.width * 0.5, y: 30) }
+    private func calculateDotPosition(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> CGPoint {
+        guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
         let originX = getOriginX(gradient)
         let originY = getOriginY(gradient)
         return CGPoint(
-            x: max(0, min(geometry.size.width, originX * geometry.size.width)),
-            y: max(0, min(60, originY * 60))
+            x: originX * squareSize,
+            y: originY * squareSize
         )
     }
     
-    private func createGradientPreview(geometry: GeometryProxy) -> some View {
-        Group {
+    private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
+        return Group {
             if case .radial(let radial) = currentGradient {
                 let scaleX = getScaleX(currentGradient!)
                 let scaleY = getScaleY(currentGradient!)
@@ -2135,40 +1840,63 @@ struct GradientPreviewAndStopsView: View {
                     endRadiusY: 50.0 * CGFloat(abs(scaleY)),
                     angle: angle
                 )
-                .frame(height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                .frame(width: squareSize, height: squareSize)
+                .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
+                    updateOriginX(x, true)
+                    updateOriginY(y, true)
+                    document.saveToUndoStack()
+                })
             } else {
                 let gradient = createGradient(currentGradient!)
-                RoundedRectangle(cornerRadius: 4)
+                Rectangle()
                     .fill(gradient)
-                    .frame(height: 60)
-                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                    .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                    .frame(width: squareSize, height: squareSize)
+                    .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                    .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
+                        updateOriginX(x, true)
+                        updateOriginY(y, true)
+                        document.saveToUndoStack()
+                    })
             }
         }
     }
     
-    private func createDraggableDot(geometry: GeometryProxy) -> some View {
+    private func createDraggableDot(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> some View {
         Circle()
             .fill(Color.white)
             .frame(width: 8, height: 8)
             .overlay(Circle().stroke(Color.black, lineWidth: 1))
-            .position(calculateDotPosition(geometry: geometry))
+            .position(calculateDotPosition(geometry: geometry, squareSize: squareSize, centerX: centerX, centerY: centerY))
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
-                        let normalizedY = max(0.0, min(1.0, value.location.y / 60))
-                        updateOriginX(normalizedX, false)
-                        updateOriginY(normalizedY, false)
+                        let normalizedX = max(0.0, min(1.0, value.location.x / squareSize))
+                        let normalizedY = max(0.0, min(1.0, value.location.y / squareSize))
+                        updateOriginX(normalizedX, true) // Enable live preview on shapes
+                        updateOriginY(normalizedY, true) // Enable live preview on shapes
                     }
                     .onEnded { _ in 
-                        applyGradientToSelectedShapes()
                         document.saveToUndoStack() 
                     }
             )
+    }
+    
+    private func createPreviewContent(geometry: GeometryProxy) -> some View {
+        let fullWidth = geometry.size.width
+        let squareSize = fullWidth // Use full width
+        let centerX: CGFloat = fullWidth / 2
+        let centerY: CGFloat = fullWidth / 2 // Center vertically too for perfect square
+        
+        return createGradientPreview(geometry: geometry, squareSize: squareSize)
+            .onTapGesture { location in
+                let normalizedX = max(0.0, min(1.0, location.x / fullWidth))
+                let normalizedY = max(0.0, min(1.0, location.y / fullWidth))
+                updateOriginX(normalizedX, true)
+                updateOriginY(normalizedY, true)
+                document.saveToUndoStack()
+            }
+            .overlay(createDraggableDot(geometry: geometry, squareSize: squareSize, centerX: centerX, centerY: centerY))
     }
     
     var body: some View {
@@ -2179,23 +1907,9 @@ struct GradientPreviewAndStopsView: View {
                     .foregroundColor(.secondary)
                 
                 GeometryReader { geometry in
-                    createGradientPreview(geometry: geometry)
-                        .overlay(
-                            Circle()
-                                .fill(Color.gray.opacity(0.8))
-                                .frame(width: 3, height: 3)
-                                .position(x: geometry.size.width * 0.5, y: 30)
-                        )
-                        .onTapGesture { location in
-                            let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))
-                            let normalizedY = max(0.0, min(1.0, location.y / 60))
-                            updateOriginX(normalizedX, true)
-                            updateOriginY(normalizedY, true)
-                            document.saveToUndoStack()
-                        }
-                        .overlay(createDraggableDot(geometry: geometry))
+                    createPreviewContent(geometry: geometry)
                 }
-                .frame(height: 60)
+                .aspectRatio(1, contentMode: .fit) // Perfect square
                 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
@@ -2359,10 +2073,17 @@ struct EllipticalGradient: View {
 struct CartesianGrid: View {
     let width: CGFloat
     let height: CGFloat
+    let onCoordinateClick: ((Double, Double) -> Void)?
+    
+    init(width: CGFloat, height: CGFloat, onCoordinateClick: ((Double, Double) -> Void)? = nil) {
+        self.width = width
+        self.height = height
+        self.onCoordinateClick = onCoordinateClick
+    }
     
     var body: some View {
         ZStack {
-            // Vertical grid lines (X-axis markers) - edge to edge (reduced from 11 to 6 for performance)
+            // Vertical grid lines (X-axis markers) - edge to edge
             ForEach(0..<6) { index in
                 let position = CGFloat(index) / 5.0  // 0.0 to 1.0
                 let xPosition = position * width
@@ -2374,7 +2095,7 @@ struct CartesianGrid: View {
                     .position(x: xPosition, y: height / 2)
             }
             
-            // Horizontal grid lines (Y-axis markers) - edge to edge (reduced from 11 to 6 for performance)
+            // Horizontal grid lines (Y-axis markers) - edge to edge
             ForEach(0..<6) { index in
                 let position = CGFloat(index) / 5.0  // 0.0 to 1.0
                 let yPosition = position * height
@@ -2386,20 +2107,20 @@ struct CartesianGrid: View {
                     .position(x: width / 2, y: yPosition)
             }
             
-            // Percentage labels at key positions
+            // Coordinate labels at key positions
             VStack {
                 HStack {
-                    Text("-100%")
+                    Text("(0,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: 2)
                     Spacer()
-                    Text("0%")
+                    Text("(0.5,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: 2)
                     Spacer()
-                    Text("+100%")
+                    Text("(1,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: 2)
@@ -2407,25 +2128,72 @@ struct CartesianGrid: View {
                 .padding(.horizontal, 4)
                 Spacer()
                 HStack {
-                    Text("-100%")
+                    Text("(0,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: -2)
                     Spacer()
-                    Text("0%")
+                    Text("(0.5,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: -2)
                     Spacer()
-                    Text("+100%")
+                    Text("(1,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: -2)
                 }
                 .padding(.horizontal, 4)
             }
+            
+            // Clickable coordinate points
+            if let onCoordinateClick = onCoordinateClick {
+                // Top-left (0,0)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: 0, y: 0)
+                    .onTapGesture {
+                        onCoordinateClick(0.0, 0.0)
+                    }
+                
+                // Top-right (1,0)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width, y: 0)
+                    .onTapGesture {
+                        onCoordinateClick(1.0, 0.0)
+                    }
+                
+                // Bottom-left (0,1)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: 0, y: height)
+                    .onTapGesture {
+                        onCoordinateClick(0.0, 1.0)
+                    }
+                
+                // Bottom-right (1,1)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width, y: height)
+                    .onTapGesture {
+                        onCoordinateClick(1.0, 1.0)
+                    }
+                
+                // Center (0.5,0.5)
+                Circle()
+                    .fill(Color.green.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width/2, y: height/2)
+                    .onTapGesture {
+                        onCoordinateClick(0.5, 0.5)
+                    }
+            }
         }
-        .allowsHitTesting(false)  // Allow clicks to pass through to the gradient
     }
 }
 
