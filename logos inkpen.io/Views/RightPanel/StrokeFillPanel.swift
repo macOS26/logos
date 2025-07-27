@@ -2190,7 +2190,7 @@ struct GradientPreviewAndStopsView: View {
                         .onTapGesture { location in
                             document.saveToUndoStack()
                             let normalizedX = max(0.0, min(1.0, location.x / geometry.size.width))
-                            let normalizedY = max(0.0, min(1.0, location.y / 60))
+                            let normalizedY = max(0.0, min(1.0, location.y / geometry.size.height))
                             updateOriginX(normalizedX)
                             updateOriginY(normalizedY)
                         }
@@ -2203,7 +2203,7 @@ struct GradientPreviewAndStopsView: View {
                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                                 .position(
                                     x: max(5, min(geometry.size.width - 5, (isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)) * geometry.size.width)),
-                                    y: max(5, min(55, (isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)) * 60))
+                                    y: max(5, min(geometry.size.height - 5, (isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)) * geometry.size.height))
                                 )
                                 .onTapGesture {
                                     // Log mouse down interaction
@@ -2215,7 +2215,7 @@ struct GradientPreviewAndStopsView: View {
                                         .onChanged { value in
                                             // FAST PREVIEW: Update preview state immediately for responsive feedback
                                             let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
-                                            let normalizedY = max(0.0, min(1.0, value.location.y / 60))
+                                            let normalizedY = max(0.0, min(1.0, value.location.y / geometry.size.height))
                                             
                                             // Update preview state for instant visual feedback
                                             previewOriginX = normalizedX
@@ -2223,12 +2223,14 @@ struct GradientPreviewAndStopsView: View {
                                             isDraggingGradientDot = true
                                             useFastPreview = true // Enable fast preview during drag
                                             
+                                            // FAST REAL-TIME UPDATE: Update actual gradient immediately for responsive feedback
+                                            updateOriginX(normalizedX)
+                                            updateOriginY(normalizedY)
+                                            
                                             // NO LOGGING DURING DRAG - only visual feedback for performance
                                         }
                                         .onEnded { _ in 
-                                            // Apply final position to actual gradient
-                                            updateOriginX(previewOriginX)
-                                            updateOriginY(previewOriginY)
+                                            // Gradient already updated in real-time during drag
                                             isDraggingGradientDot = false
                                             useFastPreview = false // Disable fast preview after drag
                                             
