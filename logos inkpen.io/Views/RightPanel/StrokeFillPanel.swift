@@ -2107,6 +2107,11 @@ struct GradientPreviewAndStopsView: View {
     let updateStopPosition: (UUID, Double) -> Void
     let removeColorStop: (UUID) -> Void
     
+    // FAST PREVIEW STATE for responsive gradient updates
+    @State private var previewOriginX: Double = 0.5
+    @State private var previewOriginY: Double = 0.5
+    @State private var isDraggingGradientDot: Bool = false
+    
     var body: some View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
@@ -2120,8 +2125,9 @@ struct GradientPreviewAndStopsView: View {
                         if case .radial(let radial) = currentGradient {
                             let scaleX = getScaleX(currentGradient!)
                             let scaleY = getScaleY(currentGradient!)
-                            let originX = getOriginX(currentGradient!)
-                            let originY = getOriginY(currentGradient!)
+                            // FAST PREVIEW: Use preview state during drag, actual state otherwise
+                            let originX = isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)
+                            let originY = isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)
                             let angle = radial.angle // Get the angle from the radial gradient
                             
                             EllipticalGradient(
@@ -2165,27 +2171,60 @@ struct GradientPreviewAndStopsView: View {
                             updateOriginY(normalizedY)
                         }
                         .overlay(
+                            // IMPROVED GRADIENT CONTROL DOT with better visual feedback
                             Circle()
                                 .fill(Color.white)
-                                .frame(width: 8, height: 8)
-                                .overlay(Circle().stroke(Color.black, lineWidth: 1))
+                                .frame(width: 10, height: 10)
+                                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                                 .position(
-                                    x: max(0, min(geometry.size.width, getOriginX(currentGradient!) * geometry.size.width)),
-                                    y: max(0, min(60, getOriginY(currentGradient!) * 60))
+                                    x: max(5, min(geometry.size.width - 5, (isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)) * geometry.size.width)),
+                                    y: max(5, min(55, (isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)) * 60))
                                 )
                                 .gesture(
-                                    DragGesture()
+                                    // IMPROVED DRAG GESTURE with better performance and logging
+                                    DragGesture(minimumDistance: 1)
                                         .onChanged { value in
+                                            // FAST PREVIEW: Update preview state immediately for responsive feedback
                                             let normalizedX = max(0.0, min(1.0, value.location.x / geometry.size.width))
                                             let normalizedY = max(0.0, min(1.0, value.location.y / 60))
-                                            updateOriginX(normalizedX)
-                                            updateOriginY(normalizedY)
+                                            
+                                            // Update preview state for instant visual feedback
+                                            previewOriginX = normalizedX
+                                            previewOriginY = normalizedY
+                                            isDraggingGradientDot = true
+                                            
+                                            // Only log on significant movements to reduce spam
+                                            let currentX = getOriginX(currentGradient!)
+                                            let currentY = getOriginY(currentGradient!)
+                                            let deltaX = abs(normalizedX - currentX)
+                                            let deltaY = abs(normalizedY - currentY)
+                                            
+                                            if deltaX > 0.05 || deltaY > 0.05 {
+                                                print("🎨 GRADIENT PREVIEW: Moving dot to (\(String(format: "%.2f", normalizedX)), \(String(format: "%.2f", normalizedY)))")
+                                            }
                                         }
-                                        .onEnded { _ in document.saveToUndoStack() }
+                                        .onEnded { _ in 
+                                            // Apply final position to actual gradient
+                                            updateOriginX(previewOriginX)
+                                            updateOriginY(previewOriginY)
+                                            isDraggingGradientDot = false
+                                            
+                                            // Only save to undo stack when drag ends (not during drag)
+                                            document.saveToUndoStack()
+                                            print("🎨 GRADIENT PREVIEW: Drag ended, saved to undo stack")
+                                        }
                                 )
                         )
                 }
                 .frame(height: 60)
+                .onAppear {
+                    // Initialize preview state with current gradient position
+                    if let gradient = currentGradient {
+                        previewOriginX = getOriginX(gradient)
+                        previewOriginY = getOriginY(gradient)
+                    }
+                }
                 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
