@@ -1118,11 +1118,11 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.originPoint.x = newX
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient origin X to \(Int(newX * 100))%")
+            print("🔄 Updated gradient origin X to \(String(format: "%.3f", newX))")
         case .radial(var radial):
             radial.originPoint.x = newX
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient origin X to \(Int(newX * 100))%")
+            print("🔄 Updated gradient origin X to \(String(format: "%.3f", newX))")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -1135,11 +1135,11 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.originPoint.y = newY
             currentGradient = .linear(linear)
-            print("🔄 Updated gradient origin Y to \(Int(newY * 100))%")
+            print("🔄 Updated gradient origin Y to \(String(format: "%.3f", newY))")
         case .radial(var radial):
             radial.originPoint.y = newY
             currentGradient = .radial(radial)
-            print("🔄 Updated gradient origin Y to \(Int(newY * 100))%")
+            print("🔄 Updated gradient origin Y to \(String(format: "%.3f", newY))")
         }
         // Apply live to selected shapes
         applyGradientToSelectedShapes()
@@ -1964,21 +1964,21 @@ struct GradientOriginControlView: View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Origin Point (Cartesian: 0,0 = center, -100% to +100%)")
+                    Text("Origin Point (SVG: 0,0 = upper left, 1,1 = lower right)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("Clamped")
+                    Text("0 to 1")
                         .font(.caption2)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.blue)
                         .padding(.horizontal, 4)
-                        .background(Color.orange.opacity(0.1))
+                        .background(Color.blue.opacity(0.1))
                         .cornerRadius(3)
                 }
                 
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("X: \(currentGradient != nil ? Int((getOriginX(currentGradient!) - 0.5) * 200) : 0)%")
+                        Text("X: \(currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.50")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
@@ -1992,7 +1992,7 @@ struct GradientOriginControlView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Y: \(currentGradient != nil ? Int((getOriginY(currentGradient!) - 0.5) * 200) : 0)%")
+                        Text("Y: \(currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.50")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         

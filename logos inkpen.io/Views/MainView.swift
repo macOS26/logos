@@ -25,6 +25,7 @@ struct MainView: View {
     @State private var dwfExportOptions = DWFExportOptions()
     @State private var showingDWGExportDialog = false
     @State private var dwgExportOptions = DWGExportOptions()
+    @State private var showingSVGTestHarness = false // Add SVG test access
     
     // MARK: - Development Views State (moved to AppState)
     
@@ -100,6 +101,7 @@ struct MainView: View {
             showingImportProgress: $showingImportProgress,
             showingDWFExportDialog: $showingDWFExportDialog,
             showingDWGExportDialog: $showingDWGExportDialog,
+            showingSVGTestHarness: $showingSVGTestHarness,
             onRunDiagnostics: runPasteboardDiagnostics
         )
         }
@@ -175,6 +177,13 @@ struct MainView: View {
         )) {
             CoreGraphicsPathTestView()
                 .frame(width: 1000, height: 700)
+        }
+        .sheet(isPresented: $showingSVGTestHarness) {
+            SVGTestHarness { importedDoc in
+                // Load the imported document into the main app
+                loadImportedDocument(importedDoc)
+            }
+            .frame(width: 1000, height: 800)
         }
         .frame(minWidth: 1200, minHeight: 800)
         // Note: No longer using focusedValue - using focusedSceneObject instead
@@ -308,6 +317,35 @@ struct MainView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
             print("🔍 AUTO-FIT TO PAGE: Applied for new document creation")
+        }
+    }
+    
+    private func loadImportedDocument(_ importedDoc: VectorDocument) {
+        // Load the imported SVG document into the main Ink Pen interface
+        document.settings = importedDoc.settings
+        document.layers = importedDoc.layers
+        document.rgbSwatches = importedDoc.rgbSwatches
+        document.cmykSwatches = importedDoc.cmykSwatches
+        document.hsbSwatches = importedDoc.hsbSwatches
+        
+        document.selectedLayerIndex = importedDoc.selectedLayerIndex
+        document.selectedShapeIDs = importedDoc.selectedShapeIDs
+        document.selectedTextIDs = importedDoc.selectedTextIDs
+        document.textObjects = importedDoc.textObjects
+        
+        // Reset tool and view states for the new document
+        document.currentTool = .selection
+        document.viewMode = .color
+        
+        // Clear the current document URL (imported document needs to be saved)
+        currentDocumentURL = nil
+        
+        print("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes")
+        
+        // Auto-fit to show the imported content
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            document.requestZoom(to: 0.0, mode: .fitToPage)
+            print("🔍 AUTO-FIT TO PAGE: Applied for imported SVG document")
         }
     }
     
@@ -642,6 +680,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingImportProgress: Bool
     @Binding var showingDWFExportDialog: Bool
     @Binding var showingDWGExportDialog: Bool
+    @Binding var showingSVGTestHarness: Bool
     let onRunDiagnostics: () -> Void
     
     // MARK: - Path Closing Support Functions
@@ -820,6 +859,20 @@ struct MainToolbarContent: ToolbarContent {
                     Button("Export to Other Formats...") {
                         showingExportDialog = true
                     }
+                }
+                
+                Divider()
+                
+                Menu("Development") {
+                    Button("SVG Test Harness") {
+                        showingSVGTestHarness = true
+                    }
+                    .help("Test SVG import and Core Graphics conversion")
+                    
+                    Button("Run Diagnostics") {
+                        onRunDiagnostics()
+                    }
+                    .help("Run pasteboard diagnostics")
                 }
                 
             } label: {

@@ -1735,13 +1735,13 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             
-            // SIMPLE OBJECT-RELATIVE: ALL radial gradients paint relative to individual object bounds
-            // Always center in object and radius spans to object edge
-            let centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
-            let focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
-            let radius = 0.5  // Radius spans from center to object edge
+            // USE ACTUAL PARSED COORDINATES: Convert from user space to object bounding box coordinates
+            // The parseGradientCoordinate function already normalizes these to 0-1 range
+            let centerPoint = CGPoint(x: clamp(cx, 0.0, 1.0), y: clamp(cy, 0.0, 1.0))
+            let focalPoint = CGPoint(x: 0.5, y: 0.5)
+            let radius = clamp(r, 0.0, 1.0)  // Use parsed radius, clamped to valid range
             
-            print("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5")
+            print("🎯 USING ACTUAL COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(radius)")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
