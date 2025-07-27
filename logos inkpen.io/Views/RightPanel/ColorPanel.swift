@@ -16,9 +16,11 @@ struct ColorPanel: View {
     let onColorSelected: ((VectorColor) -> Void)?
     
     init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil) {
+        print("🎨 COLOR PANEL: INIT called")
         self.document = document
         self.onColorSelected = onColorSelected
         self._currentPreviewColor = State(initialValue: document.defaultFillColor)
+        print("🎨 COLOR PANEL: INIT completed")
     }
     
     var body: some View {
@@ -145,6 +147,15 @@ struct ColorPanel: View {
         .sheet(isPresented: $showingPantoneSearch) {
             PantoneColorPickerSheet(document: document)
         }
+        .onAppear {
+            print("🎨 COLOR PANEL: onAppear called")
+            print("🎨 COLOR PANEL: gradientEditingState is: \(appState.gradientEditingState != nil)")
+            // If we're in gradient editing mode, update the preview color to match the current gradient stop
+            if appState.gradientEditingState != nil {
+                currentPreviewColor = document.defaultFillColor
+                print("🎨 COLOR PANEL: Updated preview color to: \(document.defaultFillColor)")
+            }
+        }
     }
     
     // MARK: - Helper Properties and Methods
@@ -171,21 +182,26 @@ struct ColorPanel: View {
     }
     
     private func selectColor(_ color: VectorColor) {
+        print("🎨 COLOR PANEL: selectColor called with: \(color)")
+        print("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)")
+        
         // Priority 1: If we're in gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            print("🎨 COLOR PANEL: Using gradient callback")
             gradientCallback(color)
             return
         }
         
         // Priority 2: If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
+            print("🎨 COLOR PANEL: Using onColorSelected callback")
             onColorSelected(color)
         } else {
             // DISABLED: Auto-application of colors when browsing
             // Just update the preview color but don't apply to objects
             // Colors should only be applied through explicit actions (Apply buttons, etc.)
             // No automatic application when just browsing colors in the Color tab
-            print("🎨 Color selected for preview only: \(color)")
+            print("🎨 COLOR PANEL: Color selected for preview only: \(color)")
         }
     }
     

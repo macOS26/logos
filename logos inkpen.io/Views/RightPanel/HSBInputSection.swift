@@ -12,6 +12,7 @@ import SwiftUI
 struct HSBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor // Shared color state
+    @Environment(AppState.self) private var appState
     
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
@@ -618,6 +619,14 @@ struct HSBInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
+        
+        // Priority 1: If we're in gradient editing mode, use that callback
+        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            gradientCallback(vectorColor)
+            return
+        }
+        
+        // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
     }
     
@@ -704,7 +713,9 @@ struct HSBInputSection: View {
             updateHexFromHSB()
             
             // Update shared color to sync with other color modes (only when manually typing PMS)
-            updateSharedColor()
+            DispatchQueue.main.async {
+                updateSharedColor()
+            }
         } else {
             // Clear live preview if no match found
             livePMSPreview = nil

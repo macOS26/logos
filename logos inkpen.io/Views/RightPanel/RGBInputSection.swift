@@ -16,6 +16,7 @@ struct RGBColorData: Hashable {
 struct RGBInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor // Shared color state
+    @Environment(AppState.self) private var appState
     
     @State private var redValue: String = "133"
     @State private var greenValue: String = "78" 
@@ -119,7 +120,9 @@ struct RGBInputSection: View {
                             .onChange(of: redSlider) {
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -137,7 +140,9 @@ struct RGBInputSection: View {
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -171,7 +176,9 @@ struct RGBInputSection: View {
                             .onChange(of: greenSlider) {
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -189,7 +196,9 @@ struct RGBInputSection: View {
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -221,7 +230,9 @@ struct RGBInputSection: View {
                             .onChange(of: blueSlider) {
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -239,7 +250,9 @@ struct RGBInputSection: View {
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -289,7 +302,9 @@ struct RGBInputSection: View {
                     .frame(width: 70)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
-                        updateSharedColor()
+                        DispatchQueue.main.async {
+                            updateSharedColor()
+                        }
                     }
                 
             }
@@ -336,7 +351,7 @@ struct RGBInputSection: View {
         // DISABLED: Auto-application of colors when adjusting sliders
         // Only update preview, don't apply to objects automatically
         // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
-        print("🎨 RGB color updated for preview only: \(currentColor)")
+        // print("🎨 RGB color updated for preview only: \(currentColor)")
     }
     
     private func loadFromSharedColor() {
@@ -426,6 +441,20 @@ struct RGBInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
+        
+        print("🎨 RGB INPUT: applyColorToActiveSelection called")
+        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        print("🎨 RGB INPUT: appState.gradientEditingState details: \(String(describing: appState.gradientEditingState))")
+        
+        // Priority 1: If we're in gradient editing mode, use that callback
+        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            print("🎨 RGB INPUT: Using gradient callback")
+            gradientCallback(vectorColor)
+            return
+        }
+        
+        // Priority 2: Otherwise, apply to document's active selection
+        print("🎨 RGB INPUT: Using document setActiveColor")
         document.setActiveColor(vectorColor)
     }
     

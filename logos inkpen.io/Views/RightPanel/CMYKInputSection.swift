@@ -12,6 +12,7 @@ import SwiftUI
 struct CMYKInputSection: View {
     @ObservedObject var document: VectorDocument
     @Binding var sharedColor: VectorColor // Shared color state
+    @Environment(AppState.self) private var appState
     
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
@@ -144,7 +145,9 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: cyanSlider) {
                                 cyanValue = String(Int(cyanSlider))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -161,7 +164,9 @@ struct CMYKInputSection: View {
                         .onChange(of: cyanValue) {
                             if let intValue = Double(cyanValue) {
                                 cyanSlider = min(100, max(0, intValue))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -192,9 +197,11 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: magentaSlider) {
                                 magentaValue = String(Int(magentaSlider))
-                                updateSharedColor()
-                }
-                
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
+                            }
+                        
                         // Gradient overlay
                         Capsule()
                             .fill(magentaGradient)
@@ -209,7 +216,9 @@ struct CMYKInputSection: View {
                         .onChange(of: magentaValue) {
                             if let intValue = Double(magentaValue) {
                                 magentaSlider = min(100, max(0, intValue))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -240,7 +249,9 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: yellowSlider) {
                                 yellowValue = String(Int(yellowSlider))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -257,7 +268,9 @@ struct CMYKInputSection: View {
                         .onChange(of: yellowValue) {
                             if let intValue = Double(yellowValue) {
                                 yellowSlider = min(100, max(0, intValue))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -288,7 +301,9 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: blackSlider) {
                                 blackValue = String(Int(blackSlider))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         
                         // Gradient overlay
@@ -305,7 +320,9 @@ struct CMYKInputSection: View {
                         .onChange(of: blackValue) {
                             if let intValue = Double(blackValue) {
                                 blackSlider = min(100, max(0, intValue))
-                                updateSharedColor()
+                                DispatchQueue.main.async {
+                                    updateSharedColor()
+                                }
                             }
                         }
                 }
@@ -478,6 +495,14 @@ struct CMYKInputSection: View {
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
+        
+        // Priority 1: If we're in gradient editing mode, use that callback
+        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            gradientCallback(vectorColor)
+            return
+        }
+        
+        // Priority 2: Otherwise, apply to document's active selection
         document.setActiveColor(vectorColor)
     }
     
@@ -495,7 +520,9 @@ struct CMYKInputSection: View {
         magentaSlider = Double(cmyk.1)
         yellowSlider = Double(cmyk.2)
         blackSlider = Double(cmyk.3)
-        updateSharedColor()
+        DispatchQueue.main.async {
+            updateSharedColor()
+        }
     }
 }
 
