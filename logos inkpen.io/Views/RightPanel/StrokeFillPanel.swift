@@ -2111,6 +2111,7 @@ struct GradientPreviewAndStopsView: View {
     @State private var previewOriginX: Double = 0.5
     @State private var previewOriginY: Double = 0.5
     @State private var isDraggingGradientDot: Bool = false
+    @State private var useFastPreview: Bool = false // Enable low-res preview during interactions
     
     var body: some View {
         if currentGradient != nil {
@@ -2129,6 +2130,28 @@ struct GradientPreviewAndStopsView: View {
                             let originX = isDraggingGradientDot ? previewOriginX : getOriginX(currentGradient!)
                             let originY = isDraggingGradientDot ? previewOriginY : getOriginY(currentGradient!)
                             let angle = radial.angle // Get the angle from the radial gradient
+                            
+                            // FAST PREVIEW OPTION: Use simplified rendering during interactions
+                            if useFastPreview && isDraggingGradientDot {
+                                // Low-resolution preview for better performance
+                                FastGradientPreview(
+                                    gradient: {
+                                        let stops = getGradientStops(currentGradient!)
+                                        let gradientStops = stops.map { stop in
+                                            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                                        }
+                                        return SwiftUI.Gradient(stops: gradientStops)
+                                    }(),
+                                    center: UnitPoint(x: originX, y: originY),
+                                    scaleX: scaleX,
+                                    scaleY: scaleY,
+                                    angle: angle
+                                )
+                                .frame(height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 4))
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                                .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                            } else {
                             
                             EllipticalGradient(
                                 gradient: {
@@ -2149,6 +2172,7 @@ struct GradientPreviewAndStopsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                             .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.gray.opacity(0.3), lineWidth: 1))
                             .overlay(CartesianGrid(width: geometry.size.width, height: 60))
+                            }
                         } else {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(createGradient(currentGradient!))
@@ -2197,6 +2221,7 @@ struct GradientPreviewAndStopsView: View {
                                             previewOriginX = normalizedX
                                             previewOriginY = normalizedY
                                             isDraggingGradientDot = true
+                                            useFastPreview = true // Enable fast preview during drag
                                             
                                             // NO LOGGING DURING DRAG - only visual feedback for performance
                                         }
@@ -2205,6 +2230,7 @@ struct GradientPreviewAndStopsView: View {
                                             updateOriginX(previewOriginX)
                                             updateOriginY(previewOriginY)
                                             isDraggingGradientDot = false
+                                            useFastPreview = false // Disable fast preview after drag
                                             
                                             // Only save to undo stack when drag ends (not during drag)
                                             document.saveToUndoStack()
@@ -2375,6 +2401,28 @@ struct EllipticalGradient: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Fast Gradient Preview for Performance
+
+struct FastGradientPreview: View {
+    let gradient: SwiftUI.Gradient
+    let center: UnitPoint
+    let scaleX: Double
+    let scaleY: Double
+    let angle: Double
+    
+    var body: some View {
+        // Simple fast preview using SwiftUI's built-in radial gradient
+        RadialGradient(
+            gradient: gradient,
+            center: center,
+            startRadius: 0,
+            endRadius: 50
+        )
+        .scaleEffect(x: CGFloat(scaleX), y: CGFloat(scaleY))
+        .rotationEffect(Angle(degrees: angle))
     }
 }
 
