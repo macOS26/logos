@@ -199,6 +199,58 @@ class VectorImportManager {
         }
     }
     
+    /// Import SVG with extreme value handling for radial gradients that cannot be reproduced
+    /// Use this for SVGs with extreme coordinate values that cause rendering issues
+    func importSVGWithExtremeValueHandling(from url: URL) async -> VectorImportResult {
+        print("🔄 Importing SVG with extreme value handling: \(url.lastPathComponent)")
+        
+        // Detect file format
+        guard let format = detectFormat(from: url) else {
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.unsupportedFormat(.svg)],
+                warnings: ["Could not detect file format"]
+            )
+        }
+        
+        print("📋 Detected format: \(format.displayName)")
+        
+        // Check if format is currently supported
+        guard format.isCurrentlySupported else {
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.commercialLicenseRequired(format)],
+                warnings: ["Professional CAD formats require commercial licensing"]
+            )
+        }
+        
+        // Import based on format
+        switch format {
+        case .svg:
+            return await importSVG(from: url, useExtremeValueHandling: true)
+        case .pdf:
+            return await importPDF(from: url)
+        case .adobeIllustrator:
+            return await importAdobeIllustrator(from: url)
+        case .eps:
+            return await importEPS(from: url)
+        case .dwf:
+            return await importDWF(from: url)
+        case .dxf, .dwg:
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.commercialLicenseRequired(format)],
+                warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
+            )
+        }
+    }
+    
     // MARK: - Format Detection
     
     private func detectFormat(from url: URL) -> VectorFileFormat? {
@@ -253,12 +305,15 @@ class VectorImportManager {
     
     // MARK: - SVG Import (Professional Standard)
     
-    private func importSVG(from url: URL) async -> VectorImportResult {
+    private func importSVG(from url: URL, useExtremeValueHandling: Bool = false) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
         
         print("📊 Importing SVG using professional SVG parser...")
+        if useExtremeValueHandling {
+            print("🔧 Using extreme value handling for radial gradients")
+        }
         
         do {
             guard let data = try? Data(contentsOf: url) else {
@@ -266,7 +321,7 @@ class VectorImportManager {
             }
             
             // Parse SVG using professional XML parser
-            let svgContent = try parseSVGContent(data)
+            let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
             
             if !svgContent.missingFonts.isEmpty {
@@ -637,7 +692,7 @@ private struct DWFContent {
 
 // MARK: - Parser Functions (Implementation Required)
 
-private func parseSVGContent(_ data: Data) throws -> SVGContent {
+private func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
     // PROFESSIONAL SVG PARSER IMPLEMENTATION
     print("🔧 Implementing professional SVG parser...")
     
@@ -646,6 +701,12 @@ private func parseSVGContent(_ data: Data) throws -> SVGContent {
     }
     
     let parser = SVGParser()
+    
+    // Enable extreme value handling if requested
+    if useExtremeValueHandling {
+        parser.enableExtremeValueHandling()
+    }
+    
     let result = try parser.parse(xmlString)
     
     return SVGContent(
@@ -692,6 +753,10 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentGradientAttributes: [String: String] = [:]
     private var isParsingGradient = false
     
+    // MARK: - Extreme Value Handling for Radial Gradients
+    private var useExtremeValueHandling = false
+    private var detectedExtremeValues = false
+    
     struct ParseResult {
         let shapes: [VectorShape]
         let textObjects: [VectorText]
@@ -723,6 +788,20 @@ class SVGParser: NSObject, XMLParserDelegate {
             creator: creator,
             version: version
         )
+    }
+    
+    /// Enable extreme value handling for radial gradients that cannot be reproduced
+    /// Use this for SVGs with extreme coordinate values that cause rendering issues
+    func enableExtremeValueHandling() {
+        useExtremeValueHandling = true
+        print("🔧 Enabled extreme value handling for radial gradients")
+    }
+    
+    /// Disable extreme value handling (default behavior)
+    func disableExtremeValueHandling() {
+        useExtremeValueHandling = false
+        detectedExtremeValues = false
+        print("🔧 Disabled extreme value handling for radial gradients")
     }
     
     // MARK: - XMLParserDelegate
@@ -1394,10 +1473,9 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
     }
     
-    /// Parse gradient coordinate with proper Core Graphics coordinate system conversion
-    /// Converts from userSpaceOnUse (absolute coordinates) to objectBoundingBox (0-1 relative)
-    /// Formula: objectBoundingBox = (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
-    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
+    /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
+    /// This version includes extreme value handling for radial gradients that cannot be reproduced
+    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
         // Handle percentage values (most common in SVG gradients)
@@ -1409,55 +1487,57 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Handle absolute values
         if let absoluteValue = Double(trimmed) {
             if gradientUnits == .userSpaceOnUse {
-                // CORRECT FORMULA: objectBoundingBox = (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
-                // For coordinates (cx, cy, fx, fy): subtract bounding box origin, then divide by dimension
-                if !isXCoordinate || (isXCoordinate && !value.contains("r")) { // Not radius
-                    // For coordinates that are way outside viewBox bounds, use a more flexible approach
-                    // Map the coordinate to a reasonable range within the viewBox
-                    let boundingBoxOrigin = 0.0 // viewBox origin
-                    let boundingBoxDimension = isXCoordinate ? viewBoxWidth : viewBoxHeight
+                // CRITICAL FIX: For userSpaceOnUse, normalize to viewBox dimensions (0-1 range)
+                // This creates proper shape-relative coordinates
+                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
+                if normalizer > 0 {
+                    let normalizedValue = absoluteValue / normalizer
                     
-                    // Apply the correct formula: (userSpaceOnUse - boundingBoxOrigin) / boundingBoxDimension
-                    let normalizedValue = (absoluteValue - boundingBoxOrigin) / boundingBoxDimension
-                    
-                    // For coordinates way outside the viewBox, use a more intelligent mapping
-                    // Most professional SVGs with large coordinate systems expect gradients to be centered
+                    // ENHANCED EXTREME VALUE HANDLING: For coordinates way outside the viewBox
                     let finalValue: Double
-                    if normalizedValue < -1.0 || normalizedValue > 2.0 {
-                        // Coordinates way outside reasonable range: default to center (0.5)
-                        finalValue = 0.5
-                    } else if normalizedValue < 0.0 {
-                        // Negative coordinates: map to 0.0-0.5 range proportionally
-                        finalValue = 0.5 + (normalizedValue * 0.5)
-                    } else if normalizedValue > 1.0 {
-                        // Coordinates beyond viewBox: map to 0.5-1.0 range proportionally
-                        finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
+                    if useExtremeValueHandling {
+                        // EXTREME VALUE MODE: Use your radial gradient code for values outside 0-1
+                        if normalizedValue < 0.0 || normalizedValue > 1.0 {
+                            // Use your specialized radial gradient handling for out-of-bounds values
+                            // Map extreme values to reasonable 0-1 range
+                            if normalizedValue < 0.0 {
+                                // Negative coordinates: map to 0.0-0.5 range
+                                finalValue = 0.5 + (normalizedValue * 0.5)
+                                print("🚨 EXTREME NEGATIVE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)")
+                            } else {
+                                // Values > 1.0: map to 0.5-1.0 range
+                                finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
+                                print("🚨 EXTREME LARGE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)")
+                            }
+                        } else {
+                            // Coordinates within 0-1 range: use as-is
+                            finalValue = normalizedValue
+                            print("✅ NORMAL COORDINATE: \(absoluteValue) → \(normalizedValue)")
+                        }
                     } else {
-                        // Coordinates within viewBox: use as-is
-                        finalValue = normalizedValue
+                        // STANDARD MODE: Normal handling for most SVGs
+                        if normalizedValue < 0.0 || normalizedValue > 1.0 {
+                            // Coordinates outside 0-1 range: default to center (0.5)
+                            finalValue = 0.5
+                            print("⚠️ OUT OF RANGE COORDINATE (standard mode): \(absoluteValue) → \(normalizedValue) → 0.5")
+                        } else {
+                            // Coordinates within 0-1 range: use as-is
+                            finalValue = normalizedValue
+                        }
                     }
                     
                     // Ensure final value is within 0-1 range
                     let clampedValue = max(0.0, min(1.0, finalValue))
                     
-                    print("🔧 INTELLIGENT CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)")
-                    print("   Formula: (\(absoluteValue) - \(boundingBoxOrigin)) / \(boundingBoxDimension)")
+                    let modeLabel = useExtremeValueHandling ? "EXTREME VALUE" : "STANDARD"
+                    print("🔧 \(modeLabel) CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)")
+                    print("   Formula: \(absoluteValue) / \(normalizer)")
                     print("   Using viewBox: \(viewBoxWidth) × \(viewBoxHeight)")
-                    print("   Mapping: \(normalizedValue < -1.0 || normalizedValue > 2.0 ? "far outside→0.5" : normalizedValue < 0.0 ? "negative→proportional" : normalizedValue > 1.0 ? "large→proportional" : "within range")")
+                    print("   Mapping: \(normalizedValue < 0.0 || normalizedValue > 1.0 ? (useExtremeValueHandling ? "outside 0-1→proportional mapping" : "outside 0-1→0.5") : "within 0-1 range")")
                     return clampedValue
                 } else {
-                    // For radius (r): divide by bounding box dimension (no origin subtraction needed)
-                    let boundingBoxDimension = max(viewBoxWidth, viewBoxHeight)
-                    let normalizedValue = absoluteValue / boundingBoxDimension
-                    
-                    // Clamp radius to reasonable range (0.001 to 2.0)
-                    let clampedValue = max(0.001, min(2.0, normalizedValue))
-                    
-                    print("🔧 RADIUS CONVERSION: \(absoluteValue) → \(normalizedValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)")
-                    print("   Formula: \(absoluteValue) / \(boundingBoxDimension)")
-                    print("   Using viewBox max dimension: \(boundingBoxDimension)")
-                    print("   Clamped: \(normalizedValue < 0.001 || normalizedValue > 2.0 ? "YES" : "NO")")
-                    return clampedValue
+                    print("⚠️ Invalid viewBox dimension, using absolute coordinate")
+                    return absoluteValue
                 }
             } else {
                 // For objectBoundingBox, values should be in 0-1 range
@@ -1471,6 +1551,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         // Default fallback
         return 0.0
+    }
+    
+    /// ENHANCED RADIAL GRADIENT COORDINATE PARSING FOR EXTREME VALUES
+    /// This specialized version handles radial gradients with extreme values that cannot be reproduced
+    /// Use this option for radial files that have coordinates way outside normal bounds
+    private func parseRadialGradientCoordinateExtreme(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
+        return parseGradientCoordinate(value, gradientUnits: gradientUnits, isXCoordinate: isXCoordinate, useExtremeValueHandling: true)
     }
     
     private func parseTransform(_ transformString: String) -> CGAffineTransform {
@@ -1592,7 +1679,60 @@ class SVGParser: NSObject, XMLParserDelegate {
         currentGradientStops = []
         isParsingGradient = true
         
-        print("🎨 Parsing radial gradient: \(id)")
+        // DETECT EXTREME VALUES: Check if this radial gradient has extreme coordinates
+        let cxRaw = attributes["cx"] ?? "50%"
+        let cyRaw = attributes["cy"] ?? "50%"
+        let rRaw = attributes["r"] ?? "50%"
+        let fxRaw = attributes["fx"]
+        let fyRaw = attributes["fy"]
+        
+        // Check for extreme values in coordinates
+        let hasExtremeValues = detectExtremeValuesInRadialGradient(
+            cx: cxRaw, cy: cyRaw, r: rRaw, fx: fxRaw, fy: fyRaw
+        )
+        
+        if hasExtremeValues {
+            detectedExtremeValues = true
+            useExtremeValueHandling = true
+            print("🚨 EXTREME VALUES DETECTED in radial gradient: \(id)")
+            print("   Enabling extreme value handling for this gradient")
+        }
+        
+        print("🎨 Parsing radial gradient: \(id) (extreme handling: \(useExtremeValueHandling))")
+    }
+    
+    /// Detect extreme values in radial gradient coordinates that require special handling
+    /// Trigger extreme value handling if normalized coordinates are not between 0-1
+    private func detectExtremeValuesInRadialGradient(cx: String, cy: String, r: String, fx: String?, fy: String?) -> Bool {
+        let coordinates = [cx, cy, r, fx, fy].compactMap { $0 }
+        
+        for coord in coordinates {
+            // Skip percentage values
+            if coord.hasSuffix("%") { continue }
+            
+            // Check for absolute values that are extremely large or small
+            if let value = Double(coord) {
+                // Check for values that are way outside normal SVG coordinate ranges
+                if value < -10000 || value > 10000 {
+                    print("🚨 EXTREME VALUE DETECTED: \(coord) = \(value)")
+                    return true
+                }
+                
+                // CRITICAL: Check if normalized value (after division) is outside 0-1 range
+                if viewBoxWidth > 0 && viewBoxHeight > 0 {
+                    let normalizer = coord == cx || coord == fx ? viewBoxWidth : viewBoxHeight
+                    let normalizedValue = value / normalizer
+                    
+                    // If normalized value is not between 0-1, use extreme value handling
+                    if normalizedValue < 0.0 || normalizedValue > 1.0 {
+                        print("🚨 NORMALIZED VALUE OUT OF RANGE: \(coord) = \(value) → \(normalizedValue) (not 0-1)")
+                        return true
+                    }
+                }
+            }
+        }
+        
+        return false
     }
     
     private func parseGradientStop(attributes: [String: String]) {
@@ -1766,13 +1906,16 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
             
-            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true)
-            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false)
-            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true) // Use X for radius
+            // Use extreme value handling if detected for this gradient
+            let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
+            
+            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
+            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling)
+            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) // Use X for radius
             
             // Parse focal point if specified, otherwise use center point
-            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true) : cx
-            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
+            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
+            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
             
             print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
             print("🔧 Raw values: cxRaw=\(cxRaw), cyRaw=\(cyRaw), rRaw=\(rRaw), fxRaw=\(fxRaw ?? "nil"), fyRaw=\(fyRaw ?? "nil")")
@@ -1780,12 +1923,38 @@ class SVGParser: NSObject, XMLParserDelegate {
             // CORE GRAPHICS COORDINATE CONVERSION: Proper coordinate system mapping
             // parseGradientCoordinate already handles the conversion from userSpaceOnUse to objectBoundingBox
             // So cx, cy, fx, fy are already in the correct 0-1 range
-            let centerPoint = CGPoint(x: cx, y: cy)
-            let focalPoint = CGPoint(x: fx, y: fy)
             
-            print("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(r)")
+            let centerPoint: CGPoint
+            let focalPoint: CGPoint
+            
+            if useExtremeHandling {
+                // AUTO-CENTER MODE: Use your radial gradient code that auto-centers fills
+                centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
+                focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
+                print("🎯 AUTO-CENTERED RADIAL: center=(0.5,0.5), focal=(0.5,0.5) (extreme value mode)")
+            } else {
+                // STANDARD MODE: Use parsed coordinates
+                centerPoint = CGPoint(x: cx, y: cy)
+                focalPoint = CGPoint(x: fx, y: fy)
+                print("🎯 STANDARD RADIAL: center=(\(cx),\(cy)), focal=(\(fx),\(fy))")
+            }
+            
+            // Handle radius for extreme value mode
+            let finalRadius: Double
+            if useExtremeHandling {
+                // AUTO-CENTER MODE: Use fixed radius that spans from center to object edge
+                finalRadius = 0.5
+                print("🎯 AUTO-CENTERED RADIAL: radius=0.5 (spans center to object edge)")
+            } else {
+                // STANDARD MODE: Use parsed radius
+                finalRadius = r
+                print("🎯 STANDARD RADIAL: radius=\(r)")
+            }
+            
+            print("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(finalRadius)")
             print("   Original: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), fx=\(fxRaw ?? "nil"), fy=\(fyRaw ?? "nil")")
             print("   Converted: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
+            print("   Final: center=(\(centerPoint.x),\(centerPoint.y)), radius=\(finalRadius)")
             print("   Units: \(gradientUnits) - parseGradientCoordinate handled conversion")
             
             // Parse spread method
@@ -1808,7 +1977,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             // CORE GRAPHICS RADIAL GRADIENT: Use proper coordinate system conversion
             var radialGradient = RadialGradient(
                 centerPoint: centerPoint,
-                radius: max(0.001, r), // Use the converted radius directly
+                radius: max(0.001, finalRadius), // Use final radius (auto-centered or parsed)
                 stops: currentGradientStops,
                 focalPoint: focalPoint, // Use the properly converted focal point
                 spreadMethod: spreadMethod,
@@ -1825,9 +1994,14 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             vectorGradient = .radial(radialGradient)
             print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
-            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", r)) (shape-relative)")
+            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", finalRadius)) (shape-relative)")
             print("   - Origin Point: \(radialGradient.originPoint)")
             print("   - Scale: X=\(gradientScaleX), Y=\(gradientScaleY)")
+            if useExtremeHandling {
+                print("   - Mode: AUTO-CENTERED (extreme value handling)")
+            } else {
+                print("   - Mode: STANDARD (parsed coordinates)")
+            }
             if fxRaw != nil || fyRaw != nil {
                 print("   - Focal point: \(focalPoint)")
             }
@@ -1842,6 +2016,13 @@ class SVGParser: NSObject, XMLParserDelegate {
         currentGradientAttributes = [:]
         currentGradientStops = []
         isParsingGradient = false
+        
+        // Reset extreme value handling for next gradient
+        if detectedExtremeValues {
+            print("🔄 Resetting extreme value handling for next gradient")
+            detectedExtremeValues = false
+            useExtremeValueHandling = false
+        }
         
         print("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops")
     }
@@ -5011,6 +5192,151 @@ class FileOperations {
         }
         
         print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
+        print("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts")
+        return document
+    }
+    
+    /// Import SVG with extreme value handling for radial gradients that cannot be reproduced
+    /// Use this for SVGs with extreme coordinate values that cause rendering issues
+    static func importFromSVGWithExtremeValueHandling(url: URL) async throws -> VectorDocument {
+        print("🎨 Importing document from SVG with extreme value handling: \(url.path)")
+        
+        let result = await VectorImportManager.shared.importSVGWithExtremeValueHandling(from: url)
+        
+        if !result.success {
+            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown SVG import error"
+            throw VectorImportError.parsingError("Failed to import SVG: \(errorMessage)", line: nil)
+        }
+        
+        // Create a new VectorDocument from the imported shapes
+        let document = VectorDocument()
+        
+        // FIXED: Use viewBox/document dimensions from SVG file, not calculated bounds
+        // This ensures objects stay within their intended viewBox bounds
+        let svgDocumentSize = result.metadata.documentSize
+        let canvasWidth = max(svgDocumentSize.width, 100) // Minimum 100pt
+        let canvasHeight = max(svgDocumentSize.height, 100) // Minimum 100pt
+        
+        // Set document size based on SVG viewBox/dimensions
+        document.settings.width = canvasWidth / 72.0 // Convert to inches
+        document.settings.height = canvasHeight / 72.0
+        document.settings.unit = .inches
+        
+        print("🎯 SVG IMPORT WITH EXTREME VALUE HANDLING:")
+        print("   SVG document size: \(svgDocumentSize)")
+        print("   Canvas size: \(canvasWidth) × \(canvasHeight) pts")
+        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
+        
+        // Calculate actual artwork bounds for positioning
+        var artworkBounds = CGRect.null
+        for shape in result.shapes {
+            // CRITICAL FIX: Use transformed bounds to get actual positioned bounds
+            let shapeBounds = shape.bounds.applying(shape.transform)
+            if artworkBounds.isNull {
+                artworkBounds = shapeBounds
+            } else {
+                artworkBounds = artworkBounds.union(shapeBounds)
+            }
+        }
+        
+        if !artworkBounds.isNull {
+            print("   Actual artwork bounds: \(artworkBounds)")
+        }
+        
+        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
+        document.layers.removeAll()
+        
+        // Create pasteboard layer FIRST (index 0) - working area behind everything
+        var pasteboardLayer = VectorLayer(name: "Pasteboard")
+        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
+        
+        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
+        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
+        
+        // Calculate pasteboard position (centered on canvas)
+        let pasteboardOrigin = CGPoint(
+            x: (canvasWidth - pasteboardSize.width) / 2,
+            y: (canvasHeight - pasteboardSize.height) / 2
+        )
+        
+        let pasteboardRect = VectorShape.rectangle(
+            at: pasteboardOrigin,
+            size: pasteboardSize
+        )
+        var pasteboardShape = pasteboardRect
+        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+        pasteboardShape.strokeStyle = nil
+        pasteboardShape.name = "Pasteboard Background"
+        pasteboardLayer.addShape(pasteboardShape)
+        document.layers.append(pasteboardLayer)
+        
+        // Create canvas layer SECOND (index 1) so it's above pasteboard
+        var canvasLayer = VectorLayer(name: "Canvas")
+        canvasLayer.isLocked = true
+        let canvasRect = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 0),
+            size: CGSize(width: canvasWidth, height: canvasHeight)
+        )
+        var backgroundShape = canvasRect
+        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
+        backgroundShape.strokeStyle = nil
+        backgroundShape.name = "Canvas Background"
+        canvasLayer.addShape(backgroundShape)
+        document.layers.append(canvasLayer)
+        
+        // Create imported layer THIRD (index 2) so it's on top
+        var importedLayer = VectorLayer(name: "Imported SVG (Extreme Value Handling)")
+        document.layers.append(importedLayer)
+        
+        // FIXED: Position objects at viewBox origin (0,0), not artwork bounds origin
+        // This preserves the intended positioning from the SVG file
+        let translateX: CGFloat = 0  // Keep at viewBox origin
+        let translateY: CGFloat = 0  // Keep at viewBox origin
+        
+        print("🎯 POSITIONING CALCULATION:")
+        print("   Using viewBox origin (0,0) - preserving SVG positioning")
+        if !artworkBounds.isNull {
+            print("   Artwork bounds: \(artworkBounds)")
+            if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
+               artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
+                print("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!")
+            }
+        }
+        
+        // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
+        for shape in result.shapes {
+            var centeredShape = shape
+            
+            // CRITICAL FIX: Apply centering to actual coordinates, not transforms
+            // This prevents coordinate drift during zoom operations
+            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+            let finalTransform = shape.transform.concatenating(centeringTransform)
+            
+            // Apply the complete transform to coordinates and reset transform to identity
+            centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+            centeredShape.transform = .identity
+            
+            // Ensure the shape is editable
+            centeredShape.isLocked = false
+            centeredShape.isVisible = true
+            
+            importedLayer.addShape(centeredShape)
+        }
+        
+        // Update the layer in the document
+        if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG (Extreme Value Handling)" }) {
+            document.layers[importedIndex] = importedLayer
+        }
+        
+        // Select the imported layer (not canvas)
+        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
+        
+        // Log warnings if any
+        for warning in result.warnings {
+            print("⚠️ SVG Import Warning: \(warning)")
+        }
+        
+        print("✅ Successfully imported SVG document with extreme value handling: \(result.shapes.count) shapes")
         print("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts")
         return document
     }
