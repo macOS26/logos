@@ -7,6 +7,18 @@
 
 import SwiftUI
 
+// MARK: - Custom Skewed Rectangle Icon
+struct SkewedRectangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Image(systemName: "rectangle")
+            .font(.system(size: 16))
+            .foregroundColor(isSelected ? .white : .primary)
+            .transformEffect(CGAffineTransform(a: 1.0, b: 0.0, c: -0.3, d: 1.0, tx: 2, ty: 0))
+    }
+}
+
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     
@@ -33,17 +45,25 @@ struct VerticalToolbar: View {
                         
                         print("🛠️ Switched to tool: \(tool.rawValue)")
                     } label: {
-                        Image(systemName: tool.iconName)
-                            .font(.system(size: 16))
-                            .foregroundColor(document.currentTool == tool ? .white : .primary)
-                            .frame(width: 32, height: 32)
-                            .background(
-                                document.currentTool == tool 
-                                ? Color.blue.opacity(0.8)
-                                : Color.clear
-                            )
-                            .cornerRadius(4)
-                            .contentShape(Rectangle()) // Extend hit area to match entire button area
+                        Group {
+                            if tool == .shear {
+                                // Use custom skewed rectangle icon for shear tool
+                                SkewedRectangleIcon(isSelected: document.currentTool == tool)
+                            } else {
+                                // Use SF Symbols for all other tools
+                                Image(systemName: tool.iconName)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(document.currentTool == tool ? .white : .primary)
+                            }
+                        }
+                        .frame(width: 32, height: 32)
+                        .background(
+                            document.currentTool == tool 
+                            ? Color.blue.opacity(0.8)
+                            : Color.clear
+                        )
+                        .cornerRadius(4)
+                        .contentShape(Rectangle()) // Extend hit area to match entire button area
                     }
                     .buttonStyle(PlainButtonStyle())
                     .help(toolTooltip(for: tool))
@@ -132,12 +152,20 @@ struct ToolButton: View {
     
     var body: some View {
         Button(action: action) {
-            Image(systemName: tool.iconName)
-                .font(.system(size: 18))
-                .foregroundColor(isSelected ? .white : .primary)
-                .frame(width: 32, height: 32)
-                .background(isSelected ? Color.blue : Color.clear)
-                .cornerRadius(6)
+            Group {
+                if tool == .shear {
+                    // Use custom skewed rectangle icon for shear tool
+                    SkewedRectangleIcon(isSelected: isSelected)
+                } else {
+                    // Use SF Symbols for all other tools
+                    Image(systemName: tool.iconName)
+                        .font(.system(size: 18))
+                        .foregroundColor(isSelected ? .white : .primary)
+                }
+            }
+            .frame(width: 32, height: 32)
+            .background(isSelected ? Color.blue : Color.clear)
+            .cornerRadius(6)
         }
         .buttonStyle(PlainButtonStyle())
         .help(tool.rawValue)

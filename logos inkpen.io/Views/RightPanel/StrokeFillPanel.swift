@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 // MARK: - Helper Structs
 
@@ -734,7 +735,7 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
-
+    @State private var gradientColorWindow: NSWindow?
     
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -829,28 +830,64 @@ struct GradientFillSection: View {
         .cornerRadius(12)
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
-        .sheet(item: Binding<GradientStopItem?>(
-            get: { 
-                if let stopId = editingGradientStopId {
-                    // Find the actual color of this gradient stop from the selected shape
-                    let actualColor = findGradientStopColor(stopId: stopId)
-                    return GradientStopItem(id: stopId, color: actualColor)
-                }
-                return nil
-            },
-            set: { _ in 
-                editingGradientStopId = nil
-                showingGradientColorPicker = false
+        .onChange(of: editingGradientStopId) { _, newStopId in
+            if let stopId = newStopId {
+                showGradientColorWindow(stopId: stopId)
+            } else {
+                closeGradientColorWindow()
             }
-        )) { stopItem in
-            GradientColorPickerSheet(
-                document: document,
-                editingGradientStopId: stopItem.id,
-                editingGradientStopColor: stopItem.color,
-                showingColorPicker: .constant(true),
-                updateStopColor: updateStopColor
-            )
         }
+    }
+    
+    private func showGradientColorWindow(stopId: UUID) {
+        // Close existing window if any
+        closeGradientColorWindow()
+        
+        // Find the actual color of this gradient stop
+        let actualColor = findGradientStopColor(stopId: stopId)
+        
+        // Create the content view with AppState environment
+        let contentView = GradientColorPickerSheet(
+            document: document,
+            editingGradientStopId: stopId,
+            editingGradientStopColor: actualColor,
+            showingColorPicker: .constant(true),
+            updateStopColor: updateStopColor
+        )
+        .environment(appState) // Pass the AppState environment object
+        
+        // Create window
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 300, height: 550),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        
+        window.title = "Select Gradient Color"
+        window.contentView = NSHostingView(rootView: contentView)
+        window.center()
+        window.level = .floating
+        window.makeKeyAndOrderFront(nil)
+        
+        // Store reference and set up close handler
+        gradientColorWindow = window
+        
+        // Handle window closing
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { _ in
+            self.editingGradientStopId = nil
+            // Don't set gradientColorWindow = nil here to avoid crash
+            // The window will be deallocated automatically when closed
+        }
+    }
+    
+    private func closeGradientColorWindow() {
+        gradientColorWindow?.close()
+        gradientColorWindow = nil
     }
     
     // MARK: - Selection and Angle Management
@@ -1192,6 +1229,8 @@ struct GradientFillSection: View {
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
             }
         }
+        
+        print("✅ Applied gradient to \(document.selectedShapeIDs.count) selected shapes")
     }
     
     // MARK: - Static Helper Functions
@@ -1653,10 +1692,11 @@ struct GradientTypePickerView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .onChange(of: gradientType) { _, newValue in
-                if let existingGradient = currentGradient {
-                    let existingStops = getGradientStops(existingGradient)
-                    currentGradient = createGradientPreservingProperties(newValue, existingStops, existingGradient)
+                if let currentGradient = currentGradient {
+                    let preservedStops = getGradientStops(currentGradient)
+                    self.currentGradient = createGradientPreservingProperties(newValue, preservedStops, currentGradient)
                 } else {
+                    // Create default gradient if none exists
                     currentGradient = createDefaultGradient(newValue)
                 }
                 gradientId = UUID()
@@ -2092,27 +2132,12 @@ struct GradientColorPickerSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Select Gradient Color")
-                    .font(.headline)
-                Spacer()
-                Button("Done") { dismiss() }
-                    .buttonStyle(.bordered)
+        ColorPanel(document: localDocument) { newColor in
+            if let stopId = editingGradientStopId {
+                updateStopColor(stopId, newColor)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            ColorPanel(document: localDocument) { newColor in
-                if let stopId = editingGradientStopId {
-                    updateStopColor(stopId, newColor)
-                }
-            }
-            .frame(width: 300, height: 500)
         }
-        .frame(width: 300, height: 550, alignment: .top)
-        .fixedSize()
+        .frame(width: 300, height: 550)
         .background(Color(NSColor.windowBackgroundColor))
         .task {
             // Set up gradient editing state
