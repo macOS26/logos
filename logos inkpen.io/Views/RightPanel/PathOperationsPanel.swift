@@ -14,7 +14,7 @@ struct PathOperationsPanel: View {
         VStack(alignment: .leading, spacing: 16) {
             // Header
             HStack {
-                Text("Pathfinder")
+                Text("Path Operations")
                     .font(.headline)
                     .foregroundColor(.primary)
                 Spacer()
@@ -28,7 +28,7 @@ struct PathOperationsPanel: View {
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Adobe Illustrator Pathfinder Operations")
+                .help("Adobe Illustrator Path Operations")
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
@@ -54,15 +54,15 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
             }
             
-            // Pathfinder Effects Section (Adobe Illustrator standard)
+            // Path Operations Effects Section (Adobe Illustrator standard)
             VStack(alignment: .leading, spacing: 8) {
-                Text("Pathfinder Effects")
+                Text("Path Operations Effects")
                         .font(.caption)
                     .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
                 
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3), spacing: 6) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
                                             ForEach([PathfinderOperation.mosaic, .cut, .merge, .separate, .crop, .dieline, .kick], id: \.self) { operation in
                         PathfinderOperationButton(
                             operation: operation,
@@ -86,7 +86,7 @@ struct PathOperationsPanel: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
                 
-                VStack(spacing: 6) {
+                HStack(spacing: 6) {
                     Button("Clean Duplicate Points") {
                         if !document.selectedShapeIDs.isEmpty {
                             ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)

@@ -47,7 +47,7 @@ enum JoinType: CaseIterable {
 
 struct ProfessionalOffsetPathSection: View {
     @ObservedObject var document: VectorDocument
-    @State private var offsetDistance: Double = 10.0
+    @State private var offsetDistance: Int = 10
     @State private var selectedJoinType: JoinType = .round
     @State private var miterLimit: Double = 4.0
     @State private var showAdvanced: Bool = true
@@ -97,13 +97,16 @@ struct ProfessionalOffsetPathSection: View {
                             
                             Spacer()
                             
-                            Text("\(offsetDistance, specifier: "%.1f") pt")
+                            Text("\(offsetDistance)pt")
                                 .font(.caption2)
                                 .foregroundColor(.primary)
                                 .monospacedDigit()
                         }
                         
-                        Slider(value: $offsetDistance, in: -50...50, step: 0.5) {
+                        Slider(value: Binding(
+                            get: { Double(offsetDistance) },
+                            set: { offsetDistance = Int($0) }
+                        ), in: 1...72, step: 1) {
                             Text("Offset Distance")
                         }
                         .controlSize(.small)
@@ -209,31 +212,6 @@ struct ProfessionalOffsetPathSection: View {
                             .disabled(!canPerformOffset())
                             
                             Spacer()
-                        }
-                        
-                        HStack(spacing: 6) {
-                            // Quick presets
-                            Button("−10pt") {
-                                offsetDistance = -10.0
-                                performOffsetPath()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.mini)
-                            .disabled(!canPerformOffset())
-                            
-                            Button("+10pt") {
-                                offsetDistance = 10.0
-                                performOffsetPath()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.mini)
-                            .disabled(!canPerformOffset())
-                            
-                            Button("Reset") {
-                                resetToDefaults()
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.mini)
                         }
                     }
                 }
@@ -362,7 +340,7 @@ struct ProfessionalOffsetPathSection: View {
     
     private func resetToDefaults() {
         withAnimation(.easeInOut(duration: 0.2)) {
-            offsetDistance = 10.0
+            offsetDistance = 10
             selectedJoinType = .miter
             miterLimit = 4.0
             keepOriginalPath = true
