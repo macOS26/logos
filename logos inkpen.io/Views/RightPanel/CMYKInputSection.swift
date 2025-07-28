@@ -145,9 +145,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: cyanSlider) {
                                 cyanValue = String(Int(cyanSlider))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -164,9 +162,7 @@ struct CMYKInputSection: View {
                         .onChange(of: cyanValue) {
                             if let intValue = Double(cyanValue) {
                                 cyanSlider = min(100, max(0, intValue))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -197,9 +193,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: magentaSlider) {
                                 magentaValue = String(Int(magentaSlider))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -216,9 +210,7 @@ struct CMYKInputSection: View {
                         .onChange(of: magentaValue) {
                             if let intValue = Double(magentaValue) {
                                 magentaSlider = min(100, max(0, intValue))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -249,9 +241,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: yellowSlider) {
                                 yellowValue = String(Int(yellowSlider))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -268,9 +258,7 @@ struct CMYKInputSection: View {
                         .onChange(of: yellowValue) {
                             if let intValue = Double(yellowValue) {
                                 yellowSlider = min(100, max(0, intValue))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -301,9 +289,7 @@ struct CMYKInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: blackSlider) {
                                 blackValue = String(Int(blackSlider))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -320,9 +306,7 @@ struct CMYKInputSection: View {
                         .onChange(of: blackValue) {
                             if let intValue = Double(blackValue) {
                                 blackSlider = min(100, max(0, intValue))
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -359,24 +343,6 @@ struct CMYKInputSection: View {
                 
                 Spacer()
             }
-            
-            // Quick CMYK Presets
-        VStack(alignment: .leading, spacing: 4) {
-                Text("Common Process Colors")
-                    .font(.caption2)
-                .foregroundColor(.secondary)
-            
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 4), spacing: 4) {
-                    CMYKPresetButton(name: "Cyan", cmyk: (100, 0, 0, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Magenta", cmyk: (0, 100, 0, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Yellow", cmyk: (0, 0, 100, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Black", cmyk: (0, 0, 0, 100), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Red", cmyk: (0, 100, 100, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Green", cmyk: (100, 0, 100, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Blue", cmyk: (100, 100, 0, 0), action: applyCMYKPreset)
-                    CMYKPresetButton(name: "Rich Black", cmyk: (30, 30, 30, 100), action: applyCMYKPreset)
-                }
-            }
         }
         .padding(.vertical, 8)
         .onAppear {
@@ -389,18 +355,100 @@ struct CMYKInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .cmyk(currentColor)
+        let vectorColor = VectorColor.cmyk(currentColor)
         
-        // Check if we're in gradient editing mode - if so, apply live updates
+        // Priority 1: If we're in gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            let vectorColor = VectorColor.cmyk(currentColor)
             gradientCallback(vectorColor)
             print("🎨 CMYK INPUT: Live gradient update: \(vectorColor)")
+            return
         }
         
-        // DISABLED for normal editing: Auto-application of colors when adjusting sliders
-        // Only update preview, don't apply to objects automatically for non-gradient editing
-        // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
-        print("🎨 CMYK color updated for preview only: \(currentColor)")
+        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
+           let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
+           case .gradient(let gradient) = fillStyle.color {
+            
+            // Update the first stop color of the gradient
+            if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
+                var updatedStops = gradient.stops
+                updatedStops[firstStopIndex].color = vectorColor
+                
+                // Create new gradient with updated stops
+                let updatedGradient: VectorGradient
+                switch gradient {
+                case .linear(var linear):
+                    linear.stops = updatedStops
+                    updatedGradient = .linear(linear)
+                case .radial(var radial):
+                    radial.stops = updatedStops
+                    updatedGradient = .radial(radial)
+                }
+                
+                // Apply the updated gradient to the shape
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
+                print("🎨 CMYK INPUT: Updated gradient first stop color: \(vectorColor)")
+            }
+            return
+        }
+        
+        // Priority 3: Apply color to selected objects and update document defaults
+        // Update document defaults based on active color target
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
+        }
+        
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+                        }
+                    case .stroke:
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            if document.selectedShapeIDs.isEmpty {
+                // Only save to undo stack if we didn't already save for shapes
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        document.textObjects[textIndex].typography.fillColor = vectorColor
+                    case .stroke:
+                        document.textObjects[textIndex].typography.hasStroke = true
+                        document.textObjects[textIndex].typography.strokeColor = vectorColor
+                    }
+                }
+            }
+            document.objectWillChange.send()
+        }
+        
+        print("🎨 CMYK INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
     }
     
     private func loadFromSharedColor() {
@@ -482,7 +530,9 @@ struct CMYKInputSection: View {
                 setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
             }
         case .clear:
-            setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 0)
+            // For clear colors, we don't update CMYK values since they're not applicable
+            // The clear color should be handled separately
+            return
         case .black:
             setCMYKValues(cyan: 0, magenta: 0, yellow: 0, black: 100)
         case .white:
@@ -517,55 +567,5 @@ struct CMYKInputSection: View {
     private func addCMYKColorToSwatches() {
         let vectorColor = VectorColor.cmyk(currentColor)
         document.addColorSwatch(vectorColor)
-    }
-    
-    private func applyCMYKPreset(_ cmyk: (Int, Int, Int, Int)) {
-        cyanValue = String(cmyk.0)
-        magentaValue = String(cmyk.1)
-        yellowValue = String(cmyk.2)
-        blackValue = String(cmyk.3)
-        cyanSlider = Double(cmyk.0)
-        magentaSlider = Double(cmyk.1)
-        yellowSlider = Double(cmyk.2)
-        blackSlider = Double(cmyk.3)
-        DispatchQueue.main.async {
-            updateSharedColor()
-        }
-    }
-}
-
-struct CMYKPresetButton: View {
-    let name: String
-    let cmyk: (Int, Int, Int, Int)
-    let action: ((Int, Int, Int, Int)) -> Void
-    
-    var body: some View {
-        Button {
-            action(cmyk)
-        } label: {
-            VStack(spacing: 2) {
-                let cmykColor = CMYKColor(
-                    cyan: Double(cmyk.0) / 100.0,
-                    magenta: Double(cmyk.1) / 100.0,
-                    yellow: Double(cmyk.2) / 100.0,
-                    black: Double(cmyk.3) / 100.0
-                )
-                
-                        Rectangle()
-                    .fill(cmykColor.color)
-                    .frame(width: 30, height: 30)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.gray, lineWidth: 0.5)
-                    )
-                
-                Text(name)
-                    .font(.system(size: 8))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .help("CMYK(\(cmyk.0), \(cmyk.1), \(cmyk.2), \(cmyk.3))")
     }
 } 

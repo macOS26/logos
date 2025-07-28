@@ -14,23 +14,41 @@ struct ColorPanel: View {
     @State private var showingPantoneSearch = false
     @State private var currentPreviewColor: VectorColor = .black // Shared color state
     let onColorSelected: ((VectorColor) -> Void)?
+    let showGradientEditing: Bool // New parameter to control gradient editing display
     
-    init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil) {
-        print("🎨 COLOR PANEL: INIT called")
+    init(document: VectorDocument, onColorSelected: ((VectorColor) -> Void)? = nil, showGradientEditing: Bool = false) {
         self.document = document
         self.onColorSelected = onColorSelected
+        self.showGradientEditing = showGradientEditing
         self._currentPreviewColor = State(initialValue: document.defaultFillColor)
-        print("🎨 COLOR PANEL: INIT completed")
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // GRADIENT EDITING INDICATOR - Only show when explicitly enabled
+            if showGradientEditing, let gradientState = appState.gradientEditingState {
+                HStack {
+                    Image(systemName: "circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Editing Gradient Stop \(gradientState.stopIndex + 1)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.blue)
+                    Spacer()
+                    Text("ID: \(gradientState.gradientId.uuidString.prefix(8))")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .fontDesign(.monospaced)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal, 12)
+            }
+            
             // Color Mode Picker
             VStack(alignment: .leading, spacing: 4) {
-                Text("Color Mode")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                
                 Picker("Color Mode", selection: Binding(
                     get: { document.settings.colorMode },
                     set: { newMode in
@@ -115,12 +133,9 @@ struct ColorPanel: View {
             PantoneColorPickerSheet(document: document)
         }
         .onAppear {
-            print("🎨 COLOR PANEL: onAppear called")
-            print("🎨 COLOR PANEL: gradientEditingState is: \(appState.gradientEditingState != nil)")
             // If we're in gradient editing mode, update the preview color to match the current gradient stop
             if appState.gradientEditingState != nil {
                 currentPreviewColor = document.defaultFillColor
-                print("🎨 COLOR PANEL: Updated preview color to: \(document.defaultFillColor)")
             }
         }
     }

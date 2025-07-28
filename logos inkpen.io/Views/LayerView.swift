@@ -3689,8 +3689,16 @@ class GradientNSView: NSView {
         // SwiftUI will handle scaling/offsetting this NSView. We just draw the path as-is.
         let pathBounds = path.boundingBoxOfPath
 
-        // Create CGGradient
-        let colors = gradient.stops.map { $0.color.color.opacity($0.opacity).cgColor }
+        // Create CGGradient with proper clear color handling
+        let colors = gradient.stops.map { stop -> CGColor in
+            if case .clear = stop.color {
+                // For clear colors, use the clear color's cgColor directly (don't apply opacity)
+                return stop.color.cgColor
+            } else {
+                // For non-clear colors, apply the stop opacity
+                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+            }
+        }
         let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
         guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
             context.restoreGState()

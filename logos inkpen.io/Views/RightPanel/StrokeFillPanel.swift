@@ -837,34 +837,54 @@ struct GradientFillSection: View {
                 closeGradientColorWindow()
             }
         }
+        .onDisappear {
+            // DON'T clean up gradient editing state to prevent SwiftUI crashes
+            print("🎨 GRADIENT SHEET: View disappearing, keeping state intact")
+        }
     }
     
     private func showGradientColorWindow(stopId: UUID) {
+        print("🎨 SHOW GRADIENT WINDOW: Opening color picker for stop \(stopId)")
+        
+        // CRITICAL: Clear any existing gradient editing state first
+        appState.finishGradientStopEditing()
+        print("🎨 SHOW GRADIENT WINDOW: Cleared existing gradient editing state")
+        
         // Close existing window if any
         closeGradientColorWindow()
         
         // Find the actual color of this gradient stop
         let actualColor = findGradientStopColor(stopId: stopId)
+        print("🎨 SHOW GRADIENT WINDOW: Stop color is \(actualColor)")
         
         // Create the content view with AppState environment
         let contentView = GradientColorPickerSheet(
             document: document,
             editingGradientStopId: stopId,
             editingGradientStopColor: actualColor,
+            currentGradient: currentGradient,
             showingColorPicker: .constant(true),
-            updateStopColor: updateStopColor
+            updateStopColor: { [self] targetStopId, color in
+                print("🎨 DIRECT CALLBACK: Updating stop \(targetStopId) with color \(color)")
+                self.updateStopColor(stopId: targetStopId, color: color)
+            },
+            onClose: {
+                print("🎨 GRADIENT SHEET: Close requested - closing window without releasing state")
+                self.closeGradientColorWindowWithoutStateCleanup()
+            }
         )
         .environment(appState) // Pass the AppState environment object
         
-        // Create window
+        // Create window with minimal style (no toolbar)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 550),
-            styleMask: [.titled, .closable, .resizable],
+            styleMask: [.titled, .closable],  // Removed .resizable and no toolbar
             backing: .buffered,
             defer: false
         )
         
-        window.title = "Select Gradient Color"
+        window.title = "Select Gradient Color"  // Simplified title without stop ID
+        window.toolbar = nil  // Explicitly remove any toolbar
         window.contentView = NSHostingView(rootView: contentView)
         window.center()
         window.level = .floating
@@ -873,21 +893,31 @@ struct GradientFillSection: View {
         // Store reference and set up close handler
         gradientColorWindow = window
         
-        // Handle window closing
+        print("🎨 SHOW GRADIENT WINDOW: Window created and shown for stop \(stopId)")
+        
+        // Handle window closing - DON'T release state to avoid crashes
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
         ) { _ in
-            self.editingGradientStopId = nil
-            // Don't set gradientColorWindow = nil here to avoid crash
-            // The window will be deallocated automatically when closed
+            print("🎨 GRADIENT WINDOW: Window closing, keeping gradient editing state intact")
+            // DON'T clear editingGradientStopId or call finishGradientStopEditing()
+            // Keep the state alive to prevent SwiftUI crashes
         }
+    }
+    
+    // Function to close window while keeping state intact
+    private func closeGradientColorWindowWithoutStateCleanup() {
+        print("🎨 CLOSE GRADIENT WINDOW: Manual close requested, keeping state intact")
+        gradientColorWindow?.close()
+        // Keep ALL state intact - don't clear editingGradientStopId or call finishGradientStopEditing()
     }
     
     private func closeGradientColorWindow() {
         gradientColorWindow?.close()
-        gradientColorWindow = nil
+        // Don't set gradientColorWindow = nil here to avoid crash
+        // The window will be deallocated automatically when closed
     }
     
     // MARK: - Selection and Angle Management
@@ -1049,7 +1079,16 @@ struct GradientFillSection: View {
     func createSwiftUIGradient(from vectorGradient: VectorGradient) -> AnyShapeStyle {
         let stops = getGradientStops(vectorGradient)
         let gradientStops = stops.map { stop in
-            SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+            // Handle clear colors properly for SwiftUI gradients
+            let swiftUIColor: Color
+            if case .clear = stop.color {
+                // For clear colors, don't apply opacity (it's already transparent)
+                swiftUIColor = Color.clear
+            } else {
+                // For non-clear colors, apply the stop opacity
+                swiftUIColor = stop.color.color.opacity(stop.opacity)
+            }
+            return SwiftUI.Gradient.Stop(color: swiftUIColor, location: stop.position)
         }
         let gradient = SwiftUI.Gradient(stops: gradientStops)
         
@@ -1148,22 +1187,46 @@ struct GradientFillSection: View {
     }
     
     func updateStopColor(stopId: UUID, color: VectorColor) {
-        guard let gradient = currentGradient else { return }
+        guard let gradient = currentGradient else { 
+            print("🎨 UPDATE STOP COLOR: No current gradient available")
+            return 
+        }
+        
+        print("🎨 UPDATE STOP COLOR: Updating stop \(stopId) to color \(color)")
+        print("🎨 UPDATE STOP COLOR: Current editingGradientStopId: \(editingGradientStopId?.uuidString ?? "nil")")
+        print("🎨 UPDATE STOP COLOR: AppState gradientId: \(appState.gradientEditingState?.gradientId.uuidString ?? "nil")")
+        
+        // Validate that we're updating the correct stop
+        if let editingId = editingGradientStopId, editingId != stopId {
+            print("🎨 UPDATE STOP COLOR: WARNING - Attempting to update stop \(stopId) but editingGradientStopId is \(editingId)")
+        }
         
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                print("🎨 UPDATE STOP COLOR: Found linear stop at index \(index), position: \(linear.stops[index].position)")
+                print("🎨 UPDATE STOP COLOR: Old color: \(linear.stops[index].color)")
                 linear.stops[index].color = color
+                print("🎨 UPDATE STOP COLOR: New color: \(color)")
                 currentGradient = .linear(linear)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
+            } else {
+                print("🎨 UPDATE STOP COLOR: ERROR - Stop \(stopId) not found in linear gradient")
+                print("🎨 UPDATE STOP COLOR: Available stops: \(linear.stops.map { "\($0.id): \($0.color)" })")
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                print("🎨 UPDATE STOP COLOR: Found radial stop at index \(index), position: \(radial.stops[index].position)")
+                print("🎨 UPDATE STOP COLOR: Old color: \(radial.stops[index].color)")
                 radial.stops[index].color = color
+                print("🎨 UPDATE STOP COLOR: New color: \(color)")
                 currentGradient = .radial(radial)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
+            } else {
+                print("🎨 UPDATE STOP COLOR: ERROR - Stop \(stopId) not found in radial gradient")
+                print("🎨 UPDATE STOP COLOR: Available stops: \(radial.stops.map { "\($0.id): \($0.color)" })")
             }
         }
     }
@@ -1221,6 +1284,11 @@ struct GradientFillSection: View {
         guard let gradient = currentGradient,
               let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
+        
+        print("🎨 APPLY GRADIENT: Applying gradient with \(gradient.stops.count) stops")
+        for (index, stop) in gradient.stops.enumerated() {
+            print("🎨 APPLY GRADIENT: Stop \(index): ID=\(stop.id), position=\(stop.position), color=\(stop.color)")
+        }
         
         // Note: Undo stack saving is now handled by individual controls on mouse up/editing end
         
@@ -1379,6 +1447,23 @@ struct GradientFillSection: View {
     }
     
     private func findGradientStopColor(stopId: UUID) -> VectorColor {
+        // First try to find color in current gradient state
+        if let gradient = currentGradient {
+            let stops: [GradientStop]
+            switch gradient {
+            case .linear(let linear):
+                stops = linear.stops
+            case .radial(let radial):
+                stops = radial.stops
+            }
+            
+            if let stop = stops.first(where: { $0.id == stopId }) {
+                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId) in currentGradient: \(stop.color)")
+                return stop.color
+            }
+        }
+        
+        // Fallback: try to find in selected shape's gradient
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
@@ -1390,7 +1475,7 @@ struct GradientFillSection: View {
         switch fillStyle.color {
         case .gradient(let gradient):
             if let stop = gradient.stops.first(where: { $0.id == stopId }) {
-                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId): \(stop.color)")
+                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId) in shape: \(stop.color)")
                 return stop.color
             } else {
                 print("🎨 GRADIENT STOP COLOR: Stop \(stopId) not found in gradient, returning black")
@@ -1473,11 +1558,32 @@ struct ColorPickerSheet: View {
                     }
                     .frame(height: 200)
                 } else {
-                    // RGB Color Picker
-                    ColorPicker("Color", selection: $rgbColor)
-                        .labelsHidden()
-                        .scaleEffect(2.0)
-                        .frame(height: 200)
+                    // RGB Color Picker with Clear Option
+                    VStack(spacing: 16) {
+                        // Clear Color Button
+                        Button {
+                            onColorChanged(.clear)
+                            presentationMode.wrappedValue.dismiss()
+                        } label: {
+                            HStack {
+                                renderColorSwatchRightPanel(.clear, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
+                                Text("Clear Color")
+                                    .foregroundColor(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Standard Color Picker
+                        ColorPicker("Color", selection: $rgbColor)
+                            .labelsHidden()
+                            .scaleEffect(2.0)
+                    }
+                    .frame(height: 200)
                 }
                 
                 // Color Mode
@@ -1895,7 +2001,14 @@ struct GradientPreviewAndStopsView: View {
                 let angle = radial.angle
                 
                 let gradientStops = getGradientStops(currentGradient!).map { stop in
-                    SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                    // Handle clear colors properly for SwiftUI gradients
+                    let swiftUIColor: Color
+                    if case .clear = stop.color {
+                        swiftUIColor = Color.clear
+                    } else {
+                        swiftUIColor = stop.color.color.opacity(stop.opacity)
+                    }
+                    return SwiftUI.Gradient.Stop(color: swiftUIColor, location: stop.position)
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
@@ -1926,7 +2039,14 @@ struct GradientPreviewAndStopsView: View {
                 let originY = getOriginY(currentGradient!)
                 
                 let gradientStops = getGradientStops(currentGradient!).map { stop in
-                    SwiftUI.Gradient.Stop(color: stop.color.color.opacity(stop.opacity), location: stop.position)
+                    // Handle clear colors properly for SwiftUI gradients
+                    let swiftUIColor: Color
+                    if case .clear = stop.color {
+                        swiftUIColor = Color.clear
+                    } else {
+                        swiftUIColor = stop.color.color.opacity(stop.opacity)
+                    }
+                    return SwiftUI.Gradient.Stop(color: swiftUIColor, location: stop.position)
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
@@ -2045,17 +2165,33 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
+                                print("🎨 STOP BUTTON: Clicked stop with ID \(stop.id), position \(stop.position), color \(stop.color)")
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
                             }) {
-                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 4, borderWidth: 1, opacity: stop.opacity)
+                                renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
                             .buttonStyle(PlainButtonStyle())
+                            .overlay(
+                                // Visual indicator for currently editing stop
+                                RoundedRectangle(cornerRadius: 2)
+                                    .stroke(Color.blue, lineWidth: editingGradientStopId == stop.id ? 3 : 0)
+                            )
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Position: \(Int(stop.position * 100))%")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
+                                HStack {
+                                    Text("Position: \(Int(stop.position * 100))%")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                    
+                                    // Show "EDITING" indicator for the selected stop
+                                    if editingGradientStopId == stop.id {
+                                        Text("EDITING")
+                                            .font(.caption2)
+                                            .foregroundColor(.blue)
+                                            .fontWeight(.bold)
+                                    }
+                                }
                                 
                                 Slider(value: Binding(
                                     get: { stop.position },
@@ -2073,6 +2209,11 @@ struct GradientPreviewAndStopsView: View {
                             }
                         }
                         .padding(.vertical, 4)
+                        .background(
+                            // Background highlight for currently editing stop
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(editingGradientStopId == stop.id ? Color.blue.opacity(0.1) : Color.clear)
+                        )
                     }
                 }
             }
@@ -2098,6 +2239,7 @@ struct GradientColorPickerSheet: View {
     let document: VectorDocument
     let editingGradientStopId: UUID?
     let editingGradientStopColor: VectorColor
+    let currentGradient: VectorGradient? // Add current gradient reference
     @Binding var showingColorPicker: Bool
     let updateStopColor: (UUID, VectorColor) -> Void
     @Environment(AppState.self) private var appState
@@ -2106,12 +2248,17 @@ struct GradientColorPickerSheet: View {
     // Create a local document wrapper with the correct initial color
     @State private var localDocument: VectorDocument
     
-    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, showingColorPicker: Binding<Bool>, updateStopColor: @escaping (UUID, VectorColor) -> Void) {
+    // Add close callback for the window
+    var onClose: (() -> Void)?
+    
+    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, currentGradient: VectorGradient?, showingColorPicker: Binding<Bool>, updateStopColor: @escaping (UUID, VectorColor) -> Void, onClose: (() -> Void)? = nil) {
         self.document = document
         self.editingGradientStopId = editingGradientStopId
         self.editingGradientStopColor = editingGradientStopColor
+        self.currentGradient = currentGradient
         self._showingColorPicker = showingColorPicker
         self.updateStopColor = updateStopColor
+        self.onClose = onClose
         
         // Create a copy of the document with the correct initial color but preserve important properties
         let localDoc = VectorDocument()
@@ -2132,31 +2279,69 @@ struct GradientColorPickerSheet: View {
     }
     
     var body: some View {
-        ColorPanel(document: localDocument) { newColor in
-            if let stopId = editingGradientStopId {
-                updateStopColor(stopId, newColor)
+        VStack(spacing: 0) {
+            ColorPanel(document: localDocument, onColorSelected: { newColor in
+                // When a color is selected, update the stop but DON'T close the window
+                print("🎨 COLOR PICKER: Color selected, updating stop")
+                if let stopId = editingGradientStopId {
+                    updateStopColor(stopId, newColor)
+                }
+                // Window stays open - user controls when to close
+            }, showGradientEditing: true)
+            .frame(width: 300, height: 500)  // Reduced height to make room for close button
+            
+            // Close button in lower right corner
+            HStack {
+                Spacer()
+                Button("Close") {
+                    print("🎨 GRADIENT SHEET: Close button clicked")
+                    onClose?()
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
             }
+            .frame(height: 50)
         }
-        .frame(width: 300, height: 550)
         .background(Color(NSColor.windowBackgroundColor))
         .task {
             // Set up gradient editing state
-            if let stopId = editingGradientStopId {
-                print("🎨 GRADIENT SHEET: Setting up gradient state")
+            if let stopId = editingGradientStopId, let gradient = currentGradient {
+                print("🎨 GRADIENT SHEET: Setting up gradient state for stop \(stopId)")
+                
+                // Find the correct stop and its current color
+                let stops: [GradientStop]
+                switch gradient {
+                case .linear(let linear):
+                    stops = linear.stops
+                case .radial(let radial):
+                    stops = radial.stops
+                }
+                
+                let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
+                let stopColor = stops.first(where: { $0.id == stopId })?.color ?? .black
+                
+                print("🎨 GRADIENT SHEET: Stop \(stopId) found at index \(stopIndex) with color \(stopColor)")
+                
+                // CRITICAL: Use the captured stopId to avoid closure issues
+                let capturedStopId = stopId
                 appState.gradientEditingState = GradientEditingState(
-                    gradientId: stopId,
-                    stopIndex: 0,
+                    gradientId: capturedStopId,
+                    stopIndex: stopIndex,
                     onColorSelected: { color in
-                        print("🎨 GRADIENT CALLBACK: \(color)")
-                        updateStopColor(stopId, color)
+                        print("🎨 GRADIENT CALLBACK: Updating stop \(capturedStopId) with color \(color)")
+                        updateStopColor(capturedStopId, color)
+                        // Window stays open - user controls when to close
                     }
                 )
-                print("🎨 GRADIENT SHEET: Setup complete")
+                print("🎨 GRADIENT SHEET: Setup complete for stop index \(stopIndex)")
+            } else {
+                print("🎨 GRADIENT SHEET: No stop ID or gradient available")
             }
         }
         .onDisappear {
-            // Clean up gradient editing state
-            appState.finishGradientStopEditing()
+            // DON'T clean up gradient editing state to prevent SwiftUI crashes
+            print("🎨 GRADIENT SHEET: View disappearing, keeping state intact")
         }
     }
 }
@@ -2177,7 +2362,7 @@ struct EllipticalGradient: View {
             Canvas { context, size in
                 // Create CoreGraphics gradient from SwiftUI gradient
                 let cgColors = gradient.stops.map { stop in
-                    stop.color.cgColor ?? CGColor(gray: 0, alpha: 1)
+                    stop.color.cgColor ?? CGColor(red: 0, green: 0, blue: 0, alpha: 0)
                 }
                 let locations = gradient.stops.map { CGFloat($0.location) }
                 

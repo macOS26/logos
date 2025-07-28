@@ -422,71 +422,6 @@ struct HSBInputSection: View {
                         }
                 }
             }
-            
-            // Bottom color swatches with PMS names
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(32)), count: 4), spacing: 4) {
-                ForEach(Array(defaultHSBColors.enumerated()), id: \.offset) { index, hsbColor in
-                    Button(action: {
-                        applySpecificHSBColorToActiveSelection(hsbColor)
-                    }) {
-                        ZStack {
-                            Rectangle()
-                                .fill(hsbColor.color)
-                                .frame(width: 32, height: 32)
-                                .overlay(
-                                    Rectangle()
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
-                            
-                            // Show PMS color names on swatches - proper multi-line formatting
-                            if hsbColor.saturation == 0 && hsbColor.brightness == 0 {
-                                Text("black")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                    .lineLimit(3)
-                                    .minimumScaleFactor(0.5)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 30, height: 30)
-                                    .allowsTightening(true)
-                            } else if hsbColor.saturation == 0 && hsbColor.brightness == 1 && hsbColor.alpha == 1 {
-                                Text("white")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .shadow(color: .white, radius: 1, x: 0, y: 0)
-                                    .lineLimit(3)
-                                    .minimumScaleFactor(0.5)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 30, height: 30)
-                                    .allowsTightening(true)
-                            } else if hsbColor.alpha < 1.0 {
-                                Text("clear")
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .shadow(color: .white, radius: 1, x: 0, y: 0)
-                                    .lineLimit(3)
-                                    .minimumScaleFactor(0.5)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 30, height: 30)
-                                    .allowsTightening(true)
-                            } else if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
-                                Text(pantoneMatch.pantone.replacingOccurrences(of: "-c", with: "").replacingOccurrences(of: " C", with: ""))
-                                    .font(.system(size: 7, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black, radius: 1, x: 0, y: 0)
-                                    .lineLimit(3)
-                                    .minimumScaleFactor(0.5)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 30, height: 30)
-                                    .allowsTightening(true)
-                            }
-                        }
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help("Click to add PMS/Pantone color to swatches (converts to closest Pantone match)")
-                }
-            }
-            .padding(.top, 8)
 
         }
         .padding(.vertical, 6)
@@ -498,18 +433,6 @@ struct HSBInputSection: View {
             // Always load from shared color when it changes (like CMYKInputSection does)
             loadFromSharedColor()
         }
-    }
-    
-    // MARK: - Default HSB Colors
-    
-    private var defaultHSBColors: [HSBColorModel] {
-        [
-            // Essential colors only
-            HSBColorModel(hue: 0, saturation: 0, brightness: 0),      // Black
-            HSBColorModel(hue: 0, saturation: 0, brightness: 1),      // White
-            HSBColorModel(hue: 0, saturation: 0, brightness: 1, alpha: 0),  // Clear
-            HSBColorModel(hue: 0, saturation: 1, brightness: 1)       // Red
-        ]
     }
     
     // MARK: - Helper Methods
@@ -562,18 +485,100 @@ struct HSBInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .hsb(currentColor)
+        let vectorColor = VectorColor.hsb(currentColor)
         
-        // Check if we're in gradient editing mode - if so, apply live HSB updates
+        // Priority 1: If we're in gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            let vectorColor = VectorColor.hsb(currentColor)
             gradientCallback(vectorColor)
             print("🎨 HSB INPUT: Live gradient update: \(vectorColor)")
+            return
         }
         
-        // DISABLED for normal editing: Auto-application of colors when adjusting sliders
-        // Only update preview, don't apply to objects automatically for non-gradient editing
-        // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
-        print("🎨 HSB color updated for preview")
+        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
+           let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
+           case .gradient(let gradient) = fillStyle.color {
+            
+            // Update the first stop color of the gradient
+            if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
+                var updatedStops = gradient.stops
+                updatedStops[firstStopIndex].color = vectorColor
+                
+                // Create new gradient with updated stops
+                let updatedGradient: VectorGradient
+                switch gradient {
+                case .linear(var linear):
+                    linear.stops = updatedStops
+                    updatedGradient = .linear(linear)
+                case .radial(var radial):
+                    radial.stops = updatedStops
+                    updatedGradient = .radial(radial)
+                }
+                
+                // Apply the updated gradient to the shape
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
+                print("🎨 HSB INPUT: Updated gradient first stop color: \(vectorColor)")
+            }
+            return
+        }
+        
+        // Priority 3: Apply color to selected objects and update document defaults
+        // Update document defaults based on active color target
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
+        }
+        
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+                        }
+                    case .stroke:
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            if document.selectedShapeIDs.isEmpty {
+                // Only save to undo stack if we didn't already save for shapes
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        document.textObjects[textIndex].typography.fillColor = vectorColor
+                    case .stroke:
+                        document.textObjects[textIndex].typography.hasStroke = true
+                        document.textObjects[textIndex].typography.strokeColor = vectorColor
+                    }
+                }
+            }
+            document.objectWillChange.send()
+        }
+        
+        print("🎨 HSB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
     }
     
     private func loadFromSharedColor() {
@@ -609,13 +614,16 @@ struct HSBInputSection: View {
                 hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 0)
             }
         case .clear:
-            hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
+            // For clear colors, we don't update HSB values since they're not applicable
+            // The clear color should be handled separately
+            return
         case .black:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 0)
         case .white:
             hsbColor = HSBColorModel(hue: 0, saturation: 0, brightness: 1)
         }
         
+        // Only set HSB values if we didn't return early for clear color
         setHSBValues(
             hue: hsbColor.hue,
             saturation: hsbColor.saturation * 100,
@@ -679,23 +687,6 @@ struct HSBInputSection: View {
         }
     }
     
-    private func addSpecificHSBColorToSwatches(_ hsbColor: HSBColorModel) {
-        let vectorColor = VectorColor.hsb(hsbColor)
-        document.addColorToSwatches(vectorColor)
-    }
-    
-    private func addSpecificPMSColorToSwatches(_ hsbColor: HSBColorModel) {
-        // Find closest PMS match for this specific HSB color
-        if let pantoneMatch = pantoneLibrary.findClosestMatch(to: hsbColor) {
-            let pmsColor = VectorColor.pantone(pantoneMatch)
-            document.addColorSwatch(pmsColor)
-        } else {
-            // Fallback to HSB if no PMS match
-            let vectorColor = VectorColor.hsb(hsbColor)
-            document.addColorSwatch(vectorColor)
-        }
-    }
-    
     // MARK: - Live PMS Search
     
     private func performLivePMSSearch(_ query: String) {
@@ -729,9 +720,7 @@ struct HSBInputSection: View {
             updateHexFromHSB()
             
             // Update shared color to sync with other color modes (only when manually typing PMS)
-            DispatchQueue.main.async {
-                updateSharedColor()
-            }
+            updateSharedColor()
         } else {
             // Clear live preview if no match found
             livePMSPreview = nil
@@ -796,28 +785,5 @@ struct HSBInputSection: View {
         }
         // Then add to swatches
         addPMSColorToSwatches()
-    }
-    
-    private func applySpecificHSBColorToActiveSelection(_ hsbColor: HSBColorModel) {
-        // First apply the color to active selection (including gradient editing)
-        if hsbColor.alpha == 0 {
-            // Handle clear color (alpha = 0)
-            let clearColor = VectorColor.clear
-            if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-                gradientCallback(clearColor)
-            } else {
-                document.setActiveColor(clearColor)
-            }
-        } else {
-            // Apply HSB color to gradient or active selection
-            let hsbVectorColor = VectorColor.hsb(hsbColor)
-            if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-                gradientCallback(hsbVectorColor)
-            } else {
-                document.setActiveColor(hsbVectorColor)
-            }
-        }
-        // Then add to swatches
-        addSpecificPMSColorToSwatches(hsbColor)
     }
 } 

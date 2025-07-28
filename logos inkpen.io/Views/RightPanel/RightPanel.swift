@@ -27,7 +27,7 @@ struct RightPanel: View {
                 case .properties:
                     StrokeFillPanel(document: document)
                 case .color:
-                    ColorPanel(document: document, onColorSelected: appState.gradientEditingState?.onColorSelected)
+                    ColorPanel(document: document)
                 case .pathOps:
                     PathOperationsPanel(document: document)
                 case .font:

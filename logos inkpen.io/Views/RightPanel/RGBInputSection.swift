@@ -120,9 +120,7 @@ struct RGBInputSection: View {
                             .onChange(of: redSlider) {
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -140,9 +138,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -176,9 +172,7 @@ struct RGBInputSection: View {
                             .onChange(of: greenSlider) {
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -196,9 +190,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -230,9 +222,7 @@ struct RGBInputSection: View {
                             .onChange(of: blueSlider) {
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -250,9 +240,7 @@ struct RGBInputSection: View {
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                DispatchQueue.main.async {
-                                    updateSharedColor()
-                                }
+                                updateSharedColor()
                             }
                         }
                 }
@@ -302,9 +290,7 @@ struct RGBInputSection: View {
                     .frame(width: 70)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
-                        DispatchQueue.main.async {
-                            updateSharedColor()
-                        }
+                        updateSharedColor()
                     }
                 
             }
@@ -348,18 +334,100 @@ struct RGBInputSection: View {
     
     private func updateSharedColor() {
         sharedColor = .rgb(currentColor)
+        let vectorColor = VectorColor.rgb(currentColor)
         
-        // Check if we're in gradient editing mode - if so, apply live updates
+        // Priority 1: If we're in gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            let vectorColor = VectorColor.rgb(currentColor)
             gradientCallback(vectorColor)
-            print("🎨 RGB INPUT: Live gradient update: \(vectorColor)")
+            // print("🎨 RGB INPUT: Live gradient update: \(vectorColor)")
+            return
         }
         
-        // DISABLED for normal editing: Auto-application of colors when adjusting sliders
-        // Only update preview, don't apply to objects automatically for non-gradient editing
-        // Colors should only be applied through explicit actions (Apply buttons, color swatch clicks)
-        // print("🎨 RGB color updated for preview only: \(currentColor)")
+        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
+           let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
+           case .gradient(let gradient) = fillStyle.color {
+            
+            // Update the first stop color of the gradient
+            if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
+                var updatedStops = gradient.stops
+                updatedStops[firstStopIndex].color = vectorColor
+                
+                // Create new gradient with updated stops
+                let updatedGradient: VectorGradient
+                switch gradient {
+                case .linear(var linear):
+                    linear.stops = updatedStops
+                    updatedGradient = .linear(linear)
+                case .radial(var radial):
+                    radial.stops = updatedStops
+                    updatedGradient = .radial(radial)
+                }
+                
+                // Apply the updated gradient to the shape
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
+                // print("🎨 RGB INPUT: Updated gradient first stop color: \(vectorColor)")
+            }
+            return
+        }
+        
+        // Priority 3: Apply color to selected objects and update document defaults
+        // Update document defaults based on active color target
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
+        }
+        
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+                        }
+                    case .stroke:
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            if document.selectedShapeIDs.isEmpty {
+                // Only save to undo stack if we didn't already save for shapes
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    switch document.activeColorTarget {
+                    case .fill:
+                        document.textObjects[textIndex].typography.fillColor = vectorColor
+                    case .stroke:
+                        document.textObjects[textIndex].typography.hasStroke = true
+                        document.textObjects[textIndex].typography.strokeColor = vectorColor
+                    }
+                }
+            }
+            document.objectWillChange.send()
+        }
+        
+        // print("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
     }
     
     private func loadFromSharedColor() {
@@ -429,7 +497,9 @@ struct RGBInputSection: View {
                 setRGBValues(red: 0, green: 0, blue: 0)
             }
         case .clear:
-            setRGBValues(red: 0, green: 0, blue: 0)
+            // For clear colors, we don't update RGB values since they're not applicable
+            // The clear color should be handled separately
+            return
         case .black:
             setRGBValues(red: 0, green: 0, blue: 0)
         case .white:
@@ -450,19 +520,19 @@ struct RGBInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
         
-        print("🎨 RGB INPUT: applyColorToActiveSelection called")
-        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
-        print("🎨 RGB INPUT: appState.gradientEditingState details: \(String(describing: appState.gradientEditingState))")
+        // print("🎨 RGB INPUT: applyColorToActiveSelection called")
+        // print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        // print("🎨 RGB INPUT: appState.gradientEditingState details: \(String(describing: appState.gradientEditingState))")
         
         // Priority 1: If we're in gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            print("🎨 RGB INPUT: Using gradient callback")
+            // print("🎨 RGB INPUT: Using gradient callback")
             gradientCallback(vectorColor)
             return
         }
         
         // Priority 2: Otherwise, apply to document's active selection
-        print("🎨 RGB INPUT: Using document setActiveColor")
+        // print("🎨 RGB INPUT: Using document setActiveColor")
         document.setActiveColor(vectorColor)
     }
     

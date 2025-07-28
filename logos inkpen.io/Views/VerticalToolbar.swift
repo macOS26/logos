@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+
+
 // MARK: - Custom Skewed Rectangle Icon
 struct SkewedRectangleIcon: View {
     let isSelected: Bool
@@ -275,14 +277,19 @@ struct ColorSwatchGrid: View {
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
+                            // Checkerboard pattern for clear color
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+                            
                             Rectangle()
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color.clear)
                                 .frame(width: 22, height: 22)
                                 .border(document.activeColorTarget == .stroke ? Color.blue : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
                             
                             Path { path in
-                                path.move(to: CGPoint(x: 22, y: 0))
-                                path.addLine(to: CGPoint(x: 0, y: 22))
+                                path.move(to: CGPoint(x: 0, y: 0))
+                                path.addLine(to: CGPoint(x: 22, y: 22))
                             }
                             .stroke(Color.red, lineWidth: 1.5)
                             .frame(width: 22, height: 22)
@@ -304,14 +311,19 @@ struct ColorSwatchGrid: View {
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
+                            // Checkerboard pattern for clear color
+                            CheckerboardPattern(size: 4)
+                                .frame(width: 22, height: 22)
+                                .clipped()
+                            
                             Rectangle()
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color.clear)
                                 .frame(width: 22, height: 22)
                                 .border(document.activeColorTarget == .fill ? Color.blue : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
                             
                             Path { path in
-                                path.move(to: CGPoint(x: 22, y: 0))
-                                path.addLine(to: CGPoint(x: 0, y: 22))
+                                path.move(to: CGPoint(x: 0, y: 0))
+                                path.addLine(to: CGPoint(x: 22, y: 22))
                             }
                             .stroke(Color.red, lineWidth: 1.5)
                             .frame(width: 22, height: 22)
@@ -348,27 +360,32 @@ struct ColorSwatchGrid: View {
                         }
                     } label: {
                         ZStack {
-                            // Base color (gray background for clear, normal color for others)
+                            // Base color (checkerboard for clear, normal color for others)
                             if case .clear = color {
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.3))
+                                ZStack {
+                                    // Checkerboard pattern for clear color
+                                    CheckerboardPattern(size: 2)
+                                        .frame(width: 10, height: 10)
+                                        .clipped()
+                                    
+                                    Rectangle()
+                                        .fill(Color.clear)
+                                        .frame(width: 10, height: 10)
+                                        .border(Color.gray, width: 0.5)
+                                    
+                                    // Red slash overlay for clear color
+                                    Path { path in
+                                        path.move(to: CGPoint(x: 0, y: 0))
+                                        path.addLine(to: CGPoint(x: 10, y: 10))
+                                    }
+                                    .stroke(Color.red, lineWidth: 1)
                                     .frame(width: 10, height: 10)
-                                    .border(Color.gray, width: 0.5)
+                                }
                             } else {
                                 Rectangle()
                                     .fill(color.color)
                                     .frame(width: 10, height: 10)
                                     .border(Color.gray, width: 0.5)
-                            }
-                            
-                            // Red slash overlay for clear color
-                            if case .clear = color {
-                                Path { path in
-                                    path.move(to: CGPoint(x: 10, y: 0))
-                                    path.addLine(to: CGPoint(x: 0, y: 10))
-                                }
-                                .stroke(Color.red, lineWidth: 1)
-                                .frame(width: 10, height: 10)
                             }
                         }
                         .contentShape(Rectangle())
