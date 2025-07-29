@@ -797,7 +797,9 @@ struct GradientFillSection: View {
                 getScale: getGradientScale,
                 updateScale: updateGradientScale,
                 getAspectRatio: getGradientAspectRatio,
-                updateAspectRatio: updateGradientAspectRatio
+                updateAspectRatio: updateGradientAspectRatio,
+                getRadius: getGradientRadius,
+                updateRadius: updateGradientRadius
             )
             
             GradientPreviewAndStopsView(
@@ -816,6 +818,7 @@ struct GradientFillSection: View {
                 updateOriginY: { updateGradientOriginY($0, applyToShapes: $1) },
                 addColorStop: addColorStop,
                 updateStopPosition: updateStopPosition,
+                updateStopOpacity: updateStopOpacity,
                 removeColorStop: removeColorStop,
                 applyGradientToSelectedShapes: applyGradientToSelectedShapes
             )
@@ -844,18 +847,14 @@ struct GradientFillSection: View {
     }
     
     private func showGradientColorWindow(stopId: UUID) {
-        print("🎨 SHOW GRADIENT WINDOW: Opening color picker for stop \(stopId)")
-        
         // CRITICAL: Clear any existing gradient editing state first
         appState.finishGradientStopEditing()
-        print("🎨 SHOW GRADIENT WINDOW: Cleared existing gradient editing state")
         
         // Close existing window if any
         closeGradientColorWindow()
         
         // Find the actual color of this gradient stop
         let actualColor = findGradientStopColor(stopId: stopId)
-        print("🎨 SHOW GRADIENT WINDOW: Stop color is \(actualColor)")
         
         // Create the content view with AppState environment
         let contentView = GradientColorPickerSheet(
@@ -865,59 +864,62 @@ struct GradientFillSection: View {
             currentGradient: currentGradient,
             showingColorPicker: .constant(true),
             updateStopColor: { [self] targetStopId, color in
-                print("🎨 DIRECT CALLBACK: Updating stop \(targetStopId) with color \(color)")
                 self.updateStopColor(stopId: targetStopId, color: color)
             },
+            turnOffEditingState: { [self] in
+                self.turnOffEditingState()
+            },
             onClose: {
-                print("🎨 GRADIENT SHEET: Close requested - closing window without releasing state")
                 self.closeGradientColorWindowWithoutStateCleanup()
             }
         )
         .environment(appState) // Pass the AppState environment object
         
-        // Create window with minimal style (no toolbar)
+        // Create HUD window (no title bar, no close/minimize buttons)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 300, height: 550),
-            styleMask: [.titled, .closable],  // Removed .resizable and no toolbar
+            styleMask: [.borderless],  // HUD style - no title bar or buttons
             backing: .buffered,
             defer: false
         )
         
-        window.title = "Select Gradient Color"  // Simplified title without stop ID
+        window.title = "Select Gradient Color"  // Keep title for identification
         window.toolbar = nil  // Explicitly remove any toolbar
+        window.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)  // HUD background
+        window.isOpaque = false  // Allow transparency
+        window.hasShadow = true  // Add shadow for HUD effect
         window.contentView = NSHostingView(rootView: contentView)
         window.center()
         window.level = .floating
         window.makeKeyAndOrderFront(nil)
         
-        // Store reference and set up close handler
+        // Store reference
         gradientColorWindow = window
         
-        print("🎨 SHOW GRADIENT WINDOW: Window created and shown for stop \(stopId)")
-        
-        // Handle window closing - DON'T release state to avoid crashes
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            print("🎨 GRADIENT WINDOW: Window closing, keeping gradient editing state intact")
-            // DON'T clear editingGradientStopId or call finishGradientStopEditing()
-            // Keep the state alive to prevent SwiftUI crashes
+        // Add window delegate to handle closing
+        window.delegate = GradientWindowDelegate { [self] in
+            DispatchQueue.main.async {
+                self.turnOffEditingState()
+            }
         }
     }
     
     // Function to close window while keeping state intact
     private func closeGradientColorWindowWithoutStateCleanup() {
-        print("🎨 CLOSE GRADIENT WINDOW: Manual close requested, keeping state intact")
         gradientColorWindow?.close()
+        // CRITICAL: DO NOT set gradientColorWindow = nil - this causes the crash!
         // Keep ALL state intact - don't clear editingGradientStopId or call finishGradientStopEditing()
+        // The window will be deallocated automatically when closed
     }
     
     private func closeGradientColorWindow() {
         gradientColorWindow?.close()
         // Don't set gradientColorWindow = nil here to avoid crash
         // The window will be deallocated automatically when closed
+    }
+    
+    private func turnOffEditingState() {
+        editingGradientStopId = nil
     }
     
     // MARK: - Selection and Angle Management
@@ -984,6 +986,8 @@ struct GradientFillSection: View {
             currentGradient = .linear(linear)
         case .radial(var radial):
             radial.originPoint.x = newX
+            // Set focal point to match origin point
+            radial.focalPoint = CGPoint(x: newX, y: radial.originPoint.y)
             currentGradient = .radial(radial)
         }
         // Only apply to shapes if requested (for performance during drag)
@@ -1001,6 +1005,8 @@ struct GradientFillSection: View {
             currentGradient = .linear(linear)
         case .radial(var radial):
             radial.originPoint.y = newY
+            // Set focal point to match origin point
+            radial.focalPoint = CGPoint(x: radial.originPoint.x, y: newY)
             currentGradient = .radial(radial)
         }
         // Only apply to shapes if requested (for performance during drag)
@@ -1070,6 +1076,32 @@ struct GradientFillSection: View {
         }
     }
     
+    // NEW: Radius Controls
+    private func getGradientRadius(_ gradient: VectorGradient) -> Double {
+        switch gradient {
+        case .linear(_):
+            return 0.5 // Not applicable for linear gradients
+        case .radial(let radial):
+            return radial.radius
+        }
+    }
+    
+    private func updateGradientRadius(_ newRadius: Double) {
+        guard let gradient = currentGradient else { return }
+        
+        // Radius only works for radial gradients
+        switch gradient {
+        case .linear(_):
+            // Radius is disabled for linear gradients
+            return
+        case .radial(var radial):
+            radial.radius = newRadius
+            currentGradient = .radial(radial)
+            // Apply live to selected shapes
+            applyGradientToSelectedShapes()
+        }
+    }
+    
 
     
 
@@ -1094,18 +1126,18 @@ struct GradientFillSection: View {
         
         switch vectorGradient {
         case .linear(let linear):
-            // FIXED: Simplified linear gradient scaling - scale affects gradient length
-            let originOffsetX = linear.originPoint.x - 0.5
-            let originOffsetY = linear.originPoint.y - 0.5
-            
-            // Calculate adjusted start and end points
-            let adjustedStartX = linear.startPoint.x + originOffsetX
-            let adjustedStartY = linear.startPoint.y + originOffsetY
-            let adjustedEndX = linear.endPoint.x + originOffsetX
-            let adjustedEndY = linear.endPoint.y + originOffsetY
-            
-            // FIXED: Apply scale (single value) to gradient length
+            // SIMPLE FIX: Scale origin point by scale factor
             let scale = linear.scaleX // Use scaleX as the single scale value
+            let scaledOriginX = linear.originPoint.x * scale
+            let scaledOriginY = linear.originPoint.y * scale
+            
+            // Calculate adjusted start and end points with scaled origin
+            let adjustedStartX = linear.startPoint.x + (scaledOriginX - 0.5)
+            let adjustedStartY = linear.startPoint.y + (scaledOriginY - 0.5)
+            let adjustedEndX = linear.endPoint.x + (scaledOriginX - 0.5)
+            let adjustedEndY = linear.endPoint.y + (scaledOriginY - 0.5)
+            
+            // Apply scale to gradient length
             let gradientVectorX = adjustedEndX - adjustedStartX
             let gradientVectorY = adjustedEndY - adjustedStartY
             let gradientLength = sqrt(gradientVectorX * gradientVectorX + gradientVectorY * gradientVectorY)
@@ -1186,47 +1218,51 @@ struct GradientFillSection: View {
         }
     }
     
+    func updateStopOpacity(stopId: UUID, opacity: Double) {
+        guard let gradient = currentGradient else { return }
+        
+        switch gradient {
+        case .linear(var linear):
+            if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                linear.stops[index].opacity = opacity
+                currentGradient = .linear(linear)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
+            }
+        case .radial(var radial):
+            if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                radial.stops[index].opacity = opacity
+                currentGradient = .radial(radial)
+                // Apply live to selected shapes
+                applyGradientToSelectedShapes()
+            }
+        }
+    }
+    
     func updateStopColor(stopId: UUID, color: VectorColor) {
         guard let gradient = currentGradient else { 
-            print("🎨 UPDATE STOP COLOR: No current gradient available")
             return 
         }
         
-        print("🎨 UPDATE STOP COLOR: Updating stop \(stopId) to color \(color)")
-        print("🎨 UPDATE STOP COLOR: Current editingGradientStopId: \(editingGradientStopId?.uuidString ?? "nil")")
-        print("🎨 UPDATE STOP COLOR: AppState gradientId: \(appState.gradientEditingState?.gradientId.uuidString ?? "nil")")
-        
         // Validate that we're updating the correct stop
         if let editingId = editingGradientStopId, editingId != stopId {
-            print("🎨 UPDATE STOP COLOR: WARNING - Attempting to update stop \(stopId) but editingGradientStopId is \(editingId)")
+            // Warning: Attempting to update wrong stop
         }
         
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
-                print("🎨 UPDATE STOP COLOR: Found linear stop at index \(index), position: \(linear.stops[index].position)")
-                print("🎨 UPDATE STOP COLOR: Old color: \(linear.stops[index].color)")
                 linear.stops[index].color = color
-                print("🎨 UPDATE STOP COLOR: New color: \(color)")
                 currentGradient = .linear(linear)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
-            } else {
-                print("🎨 UPDATE STOP COLOR: ERROR - Stop \(stopId) not found in linear gradient")
-                print("🎨 UPDATE STOP COLOR: Available stops: \(linear.stops.map { "\($0.id): \($0.color)" })")
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
-                print("🎨 UPDATE STOP COLOR: Found radial stop at index \(index), position: \(radial.stops[index].position)")
-                print("🎨 UPDATE STOP COLOR: Old color: \(radial.stops[index].color)")
                 radial.stops[index].color = color
-                print("🎨 UPDATE STOP COLOR: New color: \(color)")
                 currentGradient = .radial(radial)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
-            } else {
-                print("🎨 UPDATE STOP COLOR: ERROR - Stop \(stopId) not found in radial gradient")
-                print("🎨 UPDATE STOP COLOR: Available stops: \(radial.stops.map { "\($0.id): \($0.color)" })")
             }
         }
     }
@@ -1285,11 +1321,6 @@ struct GradientFillSection: View {
               let layerIndex = document.selectedLayerIndex,
               !document.selectedShapeIDs.isEmpty else { return }
         
-        print("🎨 APPLY GRADIENT: Applying gradient with \(gradient.stops.count) stops")
-        for (index, stop) in gradient.stops.enumerated() {
-            print("🎨 APPLY GRADIENT: Stop \(index): ID=\(stop.id), position=\(stop.position), color=\(stop.color)")
-        }
-        
         // Note: Undo stack saving is now handled by individual controls on mouse up/editing end
         
         for shapeID in document.selectedShapeIDs {
@@ -1297,8 +1328,6 @@ struct GradientFillSection: View {
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
             }
         }
-        
-        print("✅ Applied gradient to \(document.selectedShapeIDs.count) selected shapes")
     }
     
     // MARK: - Static Helper Functions
@@ -1333,25 +1362,29 @@ struct GradientFillSection: View {
         switch type {
         case .linear:
             var linear = LinearGradient(
-                startPoint: CGPoint(x: 0, y: 0),
-                endPoint: CGPoint(x: 1, y: 0),
+                startPoint: CGPoint(x: -0.5, y: 0),
+                endPoint: CGPoint(x: 0.5, y: 0),
                 stops: validStops,
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
+            // Set default origin point to center (0,0)
+            linear.originPoint = CGPoint(x: 0, y: 0)
             // Set default scale values for new gradients
             linear.scaleX = 1.0
             linear.scaleY = 1.0
             return .linear(linear)
         case .radial:
             var radial = RadialGradient(
-                centerPoint: CGPoint(x: 0.5, y: 0.5),
+                centerPoint: CGPoint(x: 0, y: 0),
                 radius: 0.5,
                 stops: validStops,
-                focalPoint: nil,
+                focalPoint: CGPoint(x: 0, y: 0), // Set focal point to match center point
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
+            // Set default origin point to center (0,0)
+            radial.originPoint = CGPoint(x: 0, y: 0)
             // Set default scale values for new gradients
             radial.scaleX = 1.0
             radial.scaleY = 1.0
@@ -1415,7 +1448,7 @@ struct GradientFillSection: View {
                 centerPoint: centerPoint,
                 radius: radius,
                 stops: validStops,
-                focalPoint: focalPoint,
+                focalPoint: centerPoint, // Set focal point to match center point
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
@@ -1458,7 +1491,6 @@ struct GradientFillSection: View {
             }
             
             if let stop = stops.first(where: { $0.id == stopId }) {
-                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId) in currentGradient: \(stop.color)")
                 return stop.color
             }
         }
@@ -1468,21 +1500,17 @@ struct GradientFillSection: View {
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
               let fillStyle = shape.fillStyle else {
-            print("🎨 GRADIENT STOP COLOR: No selected shape found, returning black")
             return .black
         }
         
         switch fillStyle.color {
         case .gradient(let gradient):
             if let stop = gradient.stops.first(where: { $0.id == stopId }) {
-                print("🎨 GRADIENT STOP COLOR: Found color for stop \(stopId) in shape: \(stop.color)")
                 return stop.color
             } else {
-                print("🎨 GRADIENT STOP COLOR: Stop \(stopId) not found in gradient, returning black")
                 return .black
             }
         default:
-            print("🎨 GRADIENT STOP COLOR: Selected shape doesn't have gradient fill, returning black")
             return .black
         }
     }
@@ -1839,13 +1867,27 @@ struct GradientAngleControlView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                Slider(value: Binding(
-                    get: { angle },
-                    set: onAngleChange
-                ), in: -180...180, onEditingChanged: { editing in
-                    if !editing { document.saveToUndoStack() }
-                })
-                .controlSize(.small)
+                HStack(spacing: 8) {
+                    Slider(value: Binding(
+                        get: { angle },
+                        set: onAngleChange
+                    ), in: -180...180, onEditingChanged: { editing in
+                        if !editing { document.saveToUndoStack() }
+                    })
+                    .controlSize(.small)
+                    
+                    TextField("", text: Binding(
+                        get: { String(format: "%.1f", angle) },
+                        set: { newValue in
+                            if let doubleValue = Double(newValue) {
+                                onAngleChange(doubleValue)
+                            }
+                        }
+                    ))
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 60)
+                    .font(.system(size: 11))
+                }
             }
         }
     }
@@ -1863,11 +1905,11 @@ struct GradientOriginControlView: View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Origin Point (SVG: 0,0 = upper left, 1,1 = lower right)")
+                    Text("Origin Point (0,0 = center, -1 to 1 = scaled range)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("0 to 1")
+                    Text("-1 to 1")
                         .font(.caption2)
                         .foregroundColor(.blue)
                         .padding(.horizontal, 4)
@@ -1877,31 +1919,59 @@ struct GradientOriginControlView: View {
                 
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("X: \(currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.50")")
+                        Text("X: \(currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.00")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
-                        Slider(value: Binding(
-                            get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.5 },
-                            set: updateOriginX
-                        ), in: 0.0...1.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
-                        })
-                        .controlSize(.small)
+                        HStack(spacing: 8) {
+                            Slider(value: Binding(
+                                get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
+                                set: updateOriginX
+                            ), in: -1.0...1.0, onEditingChanged: { editing in
+                                if !editing { document.saveToUndoStack() }
+                            })
+                            .controlSize(.small)
+                            
+                            TextField("", text: Binding(
+                                get: { currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.00" },
+                                set: { newValue in
+                                    if let doubleValue = Double(newValue) {
+                                        updateOriginX(doubleValue)
+                                    }
+                                }
+                            ))
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 50)
+                            .font(.system(size: 11))
+                        }
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Y: \(currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.50")")
+                        Text("Y: \(currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.00")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
-                        Slider(value: Binding(
-                            get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.5 },
-                            set: updateOriginY
-                        ), in: 0.0...1.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
-                        })
-                        .controlSize(.small)
+                        HStack(spacing: 8) {
+                            Slider(value: Binding(
+                                get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
+                                set: updateOriginY
+                            ), in: -1.0...1.0, onEditingChanged: { editing in
+                                if !editing { document.saveToUndoStack() }
+                            })
+                            .controlSize(.small)
+                            
+                            TextField("", text: Binding(
+                                get: { currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.00" },
+                                set: { newValue in
+                                    if let doubleValue = Double(newValue) {
+                                        updateOriginY(doubleValue)
+                                    }
+                                }
+                            ))
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 50)
+                            .font(.system(size: 11))
+                        }
                     }
                 }
             }
@@ -1916,6 +1986,8 @@ struct GradientScaleControlView: View {
     let updateScale: (Double) -> Void
     let getAspectRatio: (VectorGradient) -> Double
     let updateAspectRatio: (Double) -> Void
+    let getRadius: (VectorGradient) -> Double
+    let updateRadius: (Double) -> Void
     
     var body: some View {
         if currentGradient != nil {
@@ -1926,15 +1998,29 @@ struct GradientScaleControlView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Slider(value: Binding(
-                        get: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
-                        set: { newScale in
-                            updateScale(newScale)
-                        }
-                    ), in: 0.01...8.0, onEditingChanged: { editing in
-                        if !editing { document.saveToUndoStack() }
-                    })
-                    .controlSize(.small)
+                    HStack(spacing: 8) {
+                        Slider(value: Binding(
+                            get: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
+                            set: { newScale in
+                                updateScale(newScale)
+                            }
+                        ), in: 0.01...8.0, onEditingChanged: { editing in
+                            if !editing { document.saveToUndoStack() }
+                        })
+                        .controlSize(.small)
+                        
+                        TextField("", text: Binding(
+                            get: { currentGradient != nil ? String(format: "%.2f", getScale(currentGradient!)) : "1.00" },
+                            set: { newValue in
+                                if let doubleValue = Double(newValue) {
+                                    updateScale(doubleValue)
+                                }
+                            }
+                        ))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 50)
+                        .font(.system(size: 11))
+                    }
                 }
                 
                 // Aspect Ratio Control (X=1, Y=0 to 1) - ONLY for Radial Gradients
@@ -1944,15 +2030,60 @@ struct GradientScaleControlView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Slider(value: Binding(
-                            get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
-                            set: { newAspectRatio in
-                                updateAspectRatio(newAspectRatio)
-                            }
-                        ), in: 0.01...2.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
-                        })
-                        .controlSize(.small)
+                        HStack(spacing: 8) {
+                            Slider(value: Binding(
+                                get: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                                set: { newAspectRatio in
+                                    updateAspectRatio(newAspectRatio)
+                                }
+                            ), in: 0.01...2.0, onEditingChanged: { editing in
+                                if !editing { document.saveToUndoStack() }
+                            })
+                            .controlSize(.small)
+                            
+                            TextField("", text: Binding(
+                                get: { currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00" },
+                                set: { newValue in
+                                    if let doubleValue = Double(newValue) {
+                                        updateAspectRatio(doubleValue)
+                                    }
+                                }
+                            ))
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 50)
+                            .font(.system(size: 11))
+                        }
+                    }
+                    
+                    // Radius Control - ONLY for Radial Gradients
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Radius: \(currentGradient != nil ? String(format: "%.2f", getRadius(currentGradient!)) : "0.50")")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            Slider(value: Binding(
+                                get: { currentGradient != nil ? getRadius(currentGradient!) : 0.5 },
+                                set: { newRadius in
+                                    updateRadius(newRadius)
+                                }
+                            ), in: 0.1...2.0, onEditingChanged: { editing in
+                                if !editing { document.saveToUndoStack() }
+                            })
+                            .controlSize(.small)
+                            
+                            TextField("", text: Binding(
+                                get: { currentGradient != nil ? String(format: "%.2f", getRadius(currentGradient!)) : "0.50" },
+                                set: { newValue in
+                                    if let doubleValue = Double(newValue) {
+                                        updateRadius(doubleValue)
+                                    }
+                                }
+                            ))
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 50)
+                            .font(.system(size: 11))
+                        }
                     }
                 }
             }
@@ -1978,6 +2109,7 @@ struct GradientPreviewAndStopsView: View {
     let updateOriginY: (Double, Bool) -> Void
     let addColorStop: () -> Void
     let updateStopPosition: (UUID, Double) -> Void
+    let updateStopOpacity: (UUID, Double) -> Void
     let removeColorStop: (UUID) -> Void
     let applyGradientToSelectedShapes: () -> Void
     
@@ -2165,7 +2297,6 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
-                                print("🎨 STOP BUTTON: Clicked stop with ID \(stop.id), position \(stop.position), color \(stop.color)")
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
                             }) {
@@ -2180,10 +2311,6 @@ struct GradientPreviewAndStopsView: View {
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack {
-                                    Text("Position: \(Int(stop.position * 100))%")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                    
                                     // Show "EDITING" indicator for the selected stop
                                     if editingGradientStopId == stop.id {
                                         Text("EDITING")
@@ -2191,13 +2318,44 @@ struct GradientPreviewAndStopsView: View {
                                             .foregroundColor(.blue)
                                             .fontWeight(.bold)
                                     }
+                                    Spacer()
                                 }
                                 
-                                Slider(value: Binding(
-                                    get: { stop.position },
-                                    set: { updateStopPosition(stop.id, $0) }
-                                ), in: 0...1)
-                                .controlSize(.small)
+                                // Position and Opacity on same line
+                                HStack(spacing: 8) {
+                                    // Position slider
+                                    Slider(value: Binding(
+                                        get: { stop.position },
+                                        set: { updateStopPosition(stop.id, $0) }
+                                    ), in: 0...1)
+                                    .controlSize(.small)
+                                    
+                                    // Position text field
+                                    TextField("", text: Binding(
+                                        get: { String(format: "%.0f", stop.position * 100) },
+                                        set: { newValue in
+                                            if let doubleValue = Double(newValue) {
+                                                updateStopPosition(stop.id, doubleValue / 100.0)
+                                            }
+                                        }
+                                    ))
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 40)
+                                    .font(.system(size: 11))
+                                    
+                                    // Opacity text field
+                                    TextField("", text: Binding(
+                                        get: { String(format: "%.0f", stop.opacity * 100) },
+                                        set: { newValue in
+                                            if let doubleValue = Double(newValue) {
+                                                updateStopOpacity(stop.id, doubleValue / 100.0)
+                                            }
+                                        }
+                                    ))
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 40)
+                                    .font(.system(size: 11))
+                                }
                             }
                             
                             if stops.count > 2 {
@@ -2242,6 +2400,7 @@ struct GradientColorPickerSheet: View {
     let currentGradient: VectorGradient? // Add current gradient reference
     @Binding var showingColorPicker: Bool
     let updateStopColor: (UUID, VectorColor) -> Void
+    let turnOffEditingState: () -> Void
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
     
@@ -2251,13 +2410,14 @@ struct GradientColorPickerSheet: View {
     // Add close callback for the window
     var onClose: (() -> Void)?
     
-    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, currentGradient: VectorGradient?, showingColorPicker: Binding<Bool>, updateStopColor: @escaping (UUID, VectorColor) -> Void, onClose: (() -> Void)? = nil) {
+    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, currentGradient: VectorGradient?, showingColorPicker: Binding<Bool>, updateStopColor: @escaping (UUID, VectorColor) -> Void, turnOffEditingState: @escaping () -> Void, onClose: (() -> Void)? = nil) {
         self.document = document
         self.editingGradientStopId = editingGradientStopId
         self.editingGradientStopColor = editingGradientStopColor
         self.currentGradient = currentGradient
         self._showingColorPicker = showingColorPicker
         self.updateStopColor = updateStopColor
+        self.turnOffEditingState = turnOffEditingState
         self.onClose = onClose
         
         // Create a copy of the document with the correct initial color but preserve important properties
@@ -2273,16 +2433,12 @@ struct GradientColorPickerSheet: View {
         localDoc.hsbSwatches = document.hsbSwatches
         
         self._localDocument = State(initialValue: localDoc)
-        
-        print("🎨 GRADIENT SHEET INIT: Created local document with color \(editingGradientStopColor)")
-        print("🎨 GRADIENT SHEET INIT: Copied \(localDoc.currentSwatches.count) swatches for \(localDoc.settings.colorMode) mode")
     }
     
     var body: some View {
         VStack(spacing: 0) {
             ColorPanel(document: localDocument, onColorSelected: { newColor in
                 // When a color is selected, update the stop but DON'T close the window
-                print("🎨 COLOR PICKER: Color selected, updating stop")
                 if let stopId = editingGradientStopId {
                     updateStopColor(stopId, newColor)
                 }
@@ -2294,8 +2450,12 @@ struct GradientColorPickerSheet: View {
             HStack {
                 Spacer()
                 Button("Close") {
-                    print("🎨 GRADIENT SHEET: Close button clicked")
-                    onClose?()
+                    // Turn off editing state
+                    turnOffEditingState()
+                    // Hide the window
+                    if let window = NSApplication.shared.windows.first(where: { $0.title == "Select Gradient Color" }) {
+                        window.orderOut(nil)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .padding(.trailing, 16)
@@ -2307,8 +2467,6 @@ struct GradientColorPickerSheet: View {
         .task {
             // Set up gradient editing state
             if let stopId = editingGradientStopId, let gradient = currentGradient {
-                print("🎨 GRADIENT SHEET: Setting up gradient state for stop \(stopId)")
-                
                 // Find the correct stop and its current color
                 let stops: [GradientStop]
                 switch gradient {
@@ -2321,27 +2479,20 @@ struct GradientColorPickerSheet: View {
                 let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
                 let stopColor = stops.first(where: { $0.id == stopId })?.color ?? .black
                 
-                print("🎨 GRADIENT SHEET: Stop \(stopId) found at index \(stopIndex) with color \(stopColor)")
-                
                 // CRITICAL: Use the captured stopId to avoid closure issues
                 let capturedStopId = stopId
                 appState.gradientEditingState = GradientEditingState(
                     gradientId: capturedStopId,
                     stopIndex: stopIndex,
                     onColorSelected: { color in
-                        print("🎨 GRADIENT CALLBACK: Updating stop \(capturedStopId) with color \(color)")
                         updateStopColor(capturedStopId, color)
                         // Window stays open - user controls when to close
                     }
                 )
-                print("🎨 GRADIENT SHEET: Setup complete for stop index \(stopIndex)")
-            } else {
-                print("🎨 GRADIENT SHEET: No stop ID or gradient available")
             }
         }
         .onDisappear {
             // DON'T clean up gradient editing state to prevent SwiftUI crashes
-            print("🎨 GRADIENT SHEET: View disappearing, keeping state intact")
         }
     }
 }
@@ -2421,8 +2572,8 @@ struct CartesianGrid: View {
     var body: some View {
         ZStack {
             // Vertical grid lines (X-axis markers) - edge to edge
-            ForEach(0..<6) { index in
-                let position = CGFloat(index) / 5.0  // 0.0 to 1.0
+            ForEach(0..<5) { index in
+                let position = CGFloat(index) / 4.0  // 0.0 to 1.0
                 let xPosition = position * width
                 
                 // Full-height vertical line (edge to edge)
@@ -2433,8 +2584,8 @@ struct CartesianGrid: View {
             }
             
             // Horizontal grid lines (Y-axis markers) - edge to edge
-            ForEach(0..<6) { index in
-                let position = CGFloat(index) / 5.0  // 0.0 to 1.0
+            ForEach(0..<5) { index in
+                let position = CGFloat(index) / 4.0  // 0.0 to 1.0
                 let yPosition = position * height
                 
                 // Full-width horizontal line (edge to edge)
@@ -2447,17 +2598,17 @@ struct CartesianGrid: View {
             // Coordinate labels at key positions
             VStack {
                 HStack {
-                    Text("(0,0)")
+                    Text("(-1,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: 2)
                     Spacer()
-                    Text("(0.5,0)")
+                    Text("(0,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: 2)
                     Spacer()
-                    Text("(1,0)")
+                    Text("(1,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: 2)
@@ -2465,17 +2616,17 @@ struct CartesianGrid: View {
                 .padding(.horizontal, 4)
                 Spacer()
                 HStack {
-                    Text("(0,1)")
+                    Text("(-1,-1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: -2)
                     Spacer()
-                    Text("(0.5,1)")
+                    Text("(0,-1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: -2)
                     Spacer()
-                    Text("(1,1)")
+                    Text("(1,-1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: -2)
@@ -2485,52 +2636,67 @@ struct CartesianGrid: View {
             
             // Clickable coordinate points
             if let onCoordinateClick = onCoordinateClick {
-                // Top-left (0,0)
+                // Top-left (-1,1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: 0)
                     .onTapGesture {
-                        onCoordinateClick(0.0, 0.0)
+                        onCoordinateClick(-1.0, 1.0)
                     }
                 
-                // Top-right (1,0)
+                // Top-right (1,1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width, y: 0)
                     .onTapGesture {
-                        onCoordinateClick(1.0, 0.0)
+                        onCoordinateClick(1.0, 1.0)
                     }
                 
-                // Bottom-left (0,1)
+                // Bottom-left (-1,-1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: height)
                     .onTapGesture {
-                        onCoordinateClick(0.0, 1.0)
+                        onCoordinateClick(-1.0, -1.0)
                     }
                 
-                // Bottom-right (1,1)
+                // Bottom-right (1,-1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width, y: height)
                     .onTapGesture {
-                        onCoordinateClick(1.0, 1.0)
+                        onCoordinateClick(1.0, -1.0)
                     }
                 
-                // Center (0.5,0.5)
+                // Center (0,0)
                 Circle()
                     .fill(Color.green.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width/2, y: height/2)
                     .onTapGesture {
-                        onCoordinateClick(0.5, 0.5)
+                        onCoordinateClick(0.0, 0.0)
                     }
             }
         }
+    }
+}
+
+// MARK: - Gradient Window Delegate
+
+class GradientWindowDelegate: NSObject, NSWindowDelegate {
+    let onWindowClose: () -> Void
+    
+    init(onWindowClose: @escaping () -> Void) {
+        self.onWindowClose = onWindowClose
+        super.init()
+    }
+    
+    func windowWillClose(_ notification: Notification) {
+        onWindowClose()
     }
 }
 

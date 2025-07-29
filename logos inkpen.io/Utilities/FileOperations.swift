@@ -1806,15 +1806,26 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // Apply gradientTransform if present (only for angle calculation)
-            let transformedX1 = x1
-            var transformedY1 = y1
-            let transformedX2 = x2
-            var transformedY2 = y2
-            
+            // Parse gradientTransform to get the correct angle
+            var finalAngle = 0.0
             if let gradientTransform = attributes["gradientTransform"] {
+                print("🔧 Parsing gradientTransform: \(gradientTransform)")
+                
+                // Parse rotate transform
+                let rotatePattern = #"rotate\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
+                if let regex = try? NSRegularExpression(pattern: rotatePattern, options: []),
+                   let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
+                    
+                    if let angleRange = Range(match.range(at: 1), in: gradientTransform) {
+                        let angleStr = String(gradientTransform[angleRange])
+                        if let transformAngle = Double(angleStr) {
+                            finalAngle = transformAngle
+                            print("🔄 Found rotate transform: \(transformAngle)°")
+                        }
+                    }
+                }
+                
                 // Parse scale transform to check for Y-flip
-                // Matches patterns like scale(1 -1), scale(.98 -.98), scale(1,-1), etc.
                 let scalePattern = #"scale\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
                 if let regex = try? NSRegularExpression(pattern: scalePattern, options: []),
                    let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
@@ -1822,10 +1833,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                     if let scaleYRange = Range(match.range(at: 2), in: gradientTransform) {
                         let scaleYStr = String(gradientTransform[scaleYRange])
                         if let scaleY = Double(scaleYStr), scaleY < 0 {
-                            // Negative Y scale means Y-flip
-                            transformedY1 = -y1
-                            transformedY2 = -y2
-                            print("🔄 Applied Y-flip from gradientTransform scale(x, \(scaleY))")
+                            print("🔄 Found Y-flip scale: \(scaleY)")
                         }
                     }
                 }
@@ -1836,39 +1844,22 @@ class SVGParser: NSObject, XMLParserDelegate {
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // Determine gradient direction from transformed coordinates
-            let deltaX = transformedX2 - transformedX1
-            let deltaY = transformedY2 - transformedY1
+            // Use the original SVG coordinates directly
+            startPoint = CGPoint(x: x1, y: y1)
+            endPoint = CGPoint(x: x2, y: y2)
             
-            // Calculate the actual angle from the SVG coordinates
-            let angle = atan2(deltaY, deltaX)
+            // Use the transform angle if available, otherwise calculate from coordinates
+            let angleDegrees = finalAngle != 0.0 ? finalAngle : {
+                let deltaX = x2 - x1
+                let deltaY = y2 - y1
+                let angle = atan2(deltaY, deltaX)
+                return angle * 180.0 / .pi
+            }()
             
-            // Calculate normalized start and end points preserving the angle
-            // Project gradient line through center of shape at the specified angle
-            let centerX = 0.5
-            let centerY = 0.5
-            
-            // Calculate the maximum distance from center to edge of unit square
-            // This ensures gradient fully covers the shape at any angle
-            let maxDist = sqrt(0.5 * 0.5 + 0.5 * 0.5)
-            
-            // Calculate start and end points at the proper angle
-            startPoint = CGPoint(
-                x: centerX - maxDist * cos(angle),
-                y: centerY - maxDist * sin(angle)
-            )
-            endPoint = CGPoint(
-                x: centerX + maxDist * cos(angle),
-                y: centerY + maxDist * sin(angle)
-            )
-            
-            let angleDegrees = angle * 180.0 / .pi
-            print("🎯 GRADIENT AT ANGLE: \(String(format: "%.2f", angleDegrees))° from SVG")
+            print("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(finalAngle)°)")
             print("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))")
             print("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))")
-            print("🔥 FINAL GRADIENT: Linear gradient with angle=\(String(format: "%.2f", angleDegrees))°, stops=\(currentGradientStops.count)")
-            
-            // startPoint and endPoint are already defined above
+            print("🔥 FINAL GRADIENT: Linear gradient with original coordinates, stops=\(currentGradientStops.count)")
             
             // Parse spread method
             let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
@@ -1889,9 +1880,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Set the origin point to the center of the gradient
             linearGradient.originPoint = CGPoint(x: originX, y: originY)
             
+            // Set the angle from the calculated angle
+            linearGradient.angle = angleDegrees
+            
             vectorGradient = .linear(linearGradient)
             print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
-            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))° (shape-relative)")
+            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angleDegrees))° (shape-relative)")
             
         } else { // radialGradient
             // Parse gradient units first to handle coordinates properly
@@ -5525,7 +5519,15 @@ class FileOperations {
             svg += "      .\(className) {\n"
             
             // Parse fill and stroke data to generate proper CSS
-            if styleData.fill.contains("rgb(") {
+            if styleData.fill.contains("url(#") {
+                // Handle gradient fills
+                svg += "        fill: \(styleData.fill.replacingOccurrences(of: "fill=\"", with: "").replacingOccurrences(of: "\"", with: ""));\n"
+                
+                // Extract and include fill opacity
+                if let fillOpacity = extractOpacityFromSVGAttribute(styleData.fill, type: "fill") {
+                    svg += "        fill-opacity: \(fillOpacity);\n"
+                }
+            } else if styleData.fill.contains("rgb(") {
                 let fillColor = extractColorFromSVGAttribute(styleData.fill)
                 svg += "        fill: \(fillColor);\n"
                 
@@ -5537,7 +5539,19 @@ class FileOperations {
                 svg += "        fill: none;\n"
             }
             
-            if styleData.stroke.contains("rgb(") {
+            if styleData.stroke.contains("url(#") {
+                // Handle gradient strokes
+                svg += "        stroke: \(styleData.stroke.replacingOccurrences(of: "stroke=\"", with: "").replacingOccurrences(of: "\"", with: ""));\n"
+                let strokeWidth = extractStrokeWidthFromSVGAttribute(styleData.stroke)
+                if strokeWidth != "1" {
+                    svg += "        stroke-width: \(strokeWidth)px;\n"
+                }
+                
+                // Extract and include stroke opacity
+                if let strokeOpacity = extractOpacityFromSVGAttribute(styleData.stroke, type: "stroke") {
+                    svg += "        stroke-opacity: \(strokeOpacity);\n"
+                }
+            } else if styleData.stroke.contains("rgb(") {
                 let strokeColor = extractColorFromSVGAttribute(styleData.stroke)
                 let strokeWidth = extractStrokeWidthFromSVGAttribute(styleData.stroke)
                 svg += "        stroke: \(strokeColor);\n"
@@ -5759,10 +5773,23 @@ class FileOperations {
     // MARK: - Gradient Export Support
     
     private static func generateSVGGradientDefinition(_ gradient: VectorGradient, id: String) -> String {
+        print("🎨 Exporting gradient: \(id)")
+        
         switch gradient {
         case .linear(let linearGradient):
+            print("   Type: Linear gradient")
+            print("   Start: \(linearGradient.startPoint), End: \(linearGradient.endPoint)")
+            print("   Units: \(linearGradient.units), Spread: \(linearGradient.spreadMethod)")
+            print("   Angle: \(linearGradient.angle)°, Scale: (\(linearGradient.scaleX), \(linearGradient.scaleY))")
+            print("   Origin: \(linearGradient.originPoint), Stops: \(linearGradient.stops.count)")
             return generateLinearGradientDefinition(linearGradient, id: id)
         case .radial(let radialGradient):
+            print("   Type: Radial gradient")
+            print("   Center: \(radialGradient.centerPoint), Radius: \(radialGradient.radius)")
+            print("   Focal: \(radialGradient.focalPoint?.debugDescription ?? "none")")
+            print("   Units: \(radialGradient.units), Spread: \(radialGradient.spreadMethod)")
+            print("   Angle: \(radialGradient.angle)°, Scale: (\(radialGradient.scaleX), \(radialGradient.scaleY))")
+            print("   Origin: \(radialGradient.originPoint), Stops: \(radialGradient.stops.count)")
             return generateRadialGradientDefinition(radialGradient, id: id)
         }
     }
@@ -5772,11 +5799,42 @@ class FileOperations {
         <linearGradient id="\(id)" x1="\(gradient.startPoint.x)" y1="\(gradient.startPoint.y)" x2="\(gradient.endPoint.x)" y2="\(gradient.endPoint.y)"
         """
         
-        // Add gradientTransform if origin point or scale differs from default
-        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) || gradient.scale != 1.0 {
+        // Add gradientUnits attribute based on gradient units
+        switch gradient.units {
+        case .objectBoundingBox:
+            svg += " gradientUnits=\"objectBoundingBox\""
+        case .userSpaceOnUse:
+            svg += " gradientUnits=\"userSpaceOnUse\""
+        }
+        
+        // Add spreadMethod attribute
+        switch gradient.spreadMethod {
+        case .pad:
+            svg += " spreadMethod=\"pad\""
+        case .reflect:
+            svg += " spreadMethod=\"reflect\""
+        case .repeat:
+            svg += " spreadMethod=\"repeat\""
+        }
+        
+        // Build gradientTransform string for complex transformations
+        var transformParts: [String] = []
+        
+        // Add origin point translation if not at center
+        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) {
             let translateX = gradient.originPoint.x - 0.5
             let translateY = gradient.originPoint.y - 0.5
-            svg += " gradientTransform=\"translate(\(translateX) \(translateY)) scale(\(gradient.scale))\""
+            transformParts.append("translate(\(translateX) \(translateY))")
+        }
+        
+        // Add scaling if scaleX or scaleY differ from 1.0
+        if gradient.scaleX != 1.0 || gradient.scaleY != 1.0 {
+            transformParts.append("scale(\(gradient.scaleX) \(gradient.scaleY))")
+        }
+        
+        // Add gradientTransform if we have any transformations
+        if !transformParts.isEmpty {
+            svg += " gradientTransform=\"\(transformParts.joined(separator: " "))\""
         }
         
         svg += ">"
@@ -5814,11 +5872,47 @@ class FileOperations {
             svg += " fx=\"\(focalPoint.x)\" fy=\"\(focalPoint.y)\""
         }
         
-        // Add gradientTransform if origin point or scale differs from default
-        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) || gradient.scale != 1.0 {
+        // Add gradientUnits attribute based on gradient units
+        switch gradient.units {
+        case .objectBoundingBox:
+            svg += " gradientUnits=\"objectBoundingBox\""
+        case .userSpaceOnUse:
+            svg += " gradientUnits=\"userSpaceOnUse\""
+        }
+        
+        // Add spreadMethod attribute
+        switch gradient.spreadMethod {
+        case .pad:
+            svg += " spreadMethod=\"pad\""
+        case .reflect:
+            svg += " spreadMethod=\"reflect\""
+        case .repeat:
+            svg += " spreadMethod=\"repeat\""
+        }
+        
+        // Build gradientTransform string for complex transformations
+        var transformParts: [String] = []
+        
+        // Add origin point translation if not at center
+        if gradient.originPoint != CGPoint(x: 0.5, y: 0.5) {
             let translateX = gradient.originPoint.x - 0.5
             let translateY = gradient.originPoint.y - 0.5
-            svg += " gradientTransform=\"translate(\(translateX) \(translateY)) scale(\(gradient.scale))\""
+            transformParts.append("translate(\(translateX) \(translateY))")
+        }
+        
+        // Add rotation if angle is not 0
+        if gradient.angle != 0.0 {
+            transformParts.append("rotate(\(gradient.angle))")
+        }
+        
+        // Add scaling if scaleX or scaleY differ from 1.0
+        if gradient.scaleX != 1.0 || gradient.scaleY != 1.0 {
+            transformParts.append("scale(\(gradient.scaleX) \(gradient.scaleY))")
+        }
+        
+        // Add gradientTransform if we have any transformations
+        if !transformParts.isEmpty {
+            svg += " gradientTransform=\"\(transformParts.joined(separator: " "))\""
         }
         
         svg += ">"

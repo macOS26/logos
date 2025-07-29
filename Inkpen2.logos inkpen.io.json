@@ -1,0 +1,6749 @@
+{
+  "canvasOffset" : [
+    98,
+    50
+  ],
+  "cmykSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.5,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.75,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0.3,
+          "magenta" : 0.3,
+          "yellow" : 0.3
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0.4,
+          "magenta" : 0.4,
+          "yellow" : 0.4
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 0.3,
+          "yellow" : 0.45
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.1,
+          "cyan" : 0,
+          "magenta" : 0.4,
+          "yellow" : 0.6
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0.5,
+          "yellow" : 0.75
+        }
+      }
+    }
+  ],
+  "currentTool" : "Selection",
+  "defaultFillColor" : {
+    "white" : {
+
+    }
+  },
+  "defaultFillOpacity" : 1,
+  "defaultStrokeColor" : {
+    "black" : {
+
+    }
+  },
+  "defaultStrokeOpacity" : 1,
+  "hsbSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 0,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 30,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 60,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 90,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 120,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 150,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 180,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 210,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 240,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 270,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 300,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 330,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 0,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 60,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 120,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 180,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 240,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 300,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 0,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 90,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 180,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 270,
+          "saturation" : 0.8
+        }
+      }
+    }
+  ],
+  "layers" : [
+    {
+      "blendMode" : "Normal",
+      "id" : "0F0C80C7-1436-4446-B0E8-5783213F34C0",
+      "isLocked" : true,
+      "isVisible" : true,
+      "name" : "Pasteboard",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              -4608,
+              -4608
+            ],
+            [
+              10240,
+              10240
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "black" : {
+
+              }
+            },
+            "opacity" : 0.2
+          },
+          "geometricType" : "Rectangle",
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "30BD75EE-851F-4339-A9B1-CBB87E717C1C",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Pasteboard Background",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : -4608,
+                    "y" : -4608
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 5632,
+                    "y" : -4608
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 5632,
+                    "y" : 5632
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : -4608,
+                    "y" : 5632
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "2AD26D69-C54D-4CC5-8BBC-AAB8D6B97147",
+            "isClosed" : true
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "blendMode" : "Normal",
+      "id" : "326FD813-0C24-4AFC-9ABB-17F20D2D7386",
+      "isLocked" : true,
+      "isVisible" : true,
+      "name" : "Canvas",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              1024
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "white" : {
+
+              }
+            },
+            "opacity" : 1
+          },
+          "geometricType" : "Rectangle",
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "A409B4B1-0044-4056-850F-FC35D4A1C07F",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Canvas Background",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 0,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 1024,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 1024,
+                    "y" : 1024
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 0,
+                    "y" : 1024
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "C95A7C68-B65E-4ABF-9D7E-3C255CCC8C11",
+            "isClosed" : true
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "blendMode" : "Normal",
+      "id" : "508651C6-56AF-4CD8-8AE5-226E648FDBFF",
+      "isLocked" : false,
+      "isVisible" : true,
+      "name" : "Imported SVG",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              0,
+              0
+            ],
+            [
+              1024,
+              1024
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "rgb" : {
+                "_0" : {
+                  "alpha" : 1,
+                  "blue" : 0,
+                  "green" : 0,
+                  "red" : 0
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "geometricType" : "Rounded Rectangle",
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "BAB1CA4D-B077-471C-A0E5-A9784FB495C5",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Rectangle",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 143.49,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 880.51,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 1024,
+                    "y" : 0
+                  },
+                  "control2" : {
+                    "x" : 1024,
+                    "y" : 143.49
+                  },
+                  "to" : {
+                    "x" : 1024,
+                    "y" : 143.49
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 1024,
+                    "y" : 880.51
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 1024,
+                    "y" : 1024
+                  },
+                  "control2" : {
+                    "x" : 880.51,
+                    "y" : 1024
+                  },
+                  "to" : {
+                    "x" : 880.51,
+                    "y" : 1024
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 143.49,
+                    "y" : 1024
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 0,
+                    "y" : 1024
+                  },
+                  "control2" : {
+                    "x" : 0,
+                    "y" : 880.51
+                  },
+                  "to" : {
+                    "x" : 0,
+                    "y" : 880.51
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 0,
+                    "y" : 143.49
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 0,
+                    "y" : 0
+                  },
+                  "control2" : {
+                    "x" : 143.49,
+                    "y" : 0
+                  },
+                  "to" : {
+                    "x" : 143.49,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "C363DACA-916C-4BFA-B73F-52FC5B03F457",
+            "isClosed" : true
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              124.98000000000009,
+              112.18749999999997
+            ],
+            [
+              773.9146897130873,
+              799.723123662739
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "linear" : {
+                    "_0" : {
+                      "endPoint" : [
+                        0.18118164062499997,
+                        0.5
+                      ],
+                      "id" : "850570FA-1929-4A96-9486-832BB098A0FF",
+                      "originPoint" : [
+                        0.501142578125,
+                        0.5
+                      ],
+                      "scale" : 1,
+                      "scaleX" : 1,
+                      "scaleY" : 1,
+                      "spreadMethod" : "pad",
+                      "startPoint" : [
+                        0.821103515625,
+                        0.49999999999999994
+                      ],
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "94FB478A-51D0-4A64-BBBC-F9858FAE907D",
+                          "opacity" : 1,
+                          "position" : 0.05
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.9098039215686274,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "F6E0F356-9FC6-409D-917C-D17D22DAC7FE",
+                          "opacity" : 1,
+                          "position" : 0.11
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.18823529411764706,
+                                "green" : 0.7843137254901961,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "380E4294-64EC-49D5-B159-974F44B1BE57",
+                          "opacity" : 1,
+                          "position" : 0.23
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "DDAABE8E-AB54-4B4B-99B8-7F18F839E2ED",
+                          "opacity" : 1,
+                          "position" : 0.37
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.08627450980392157,
+                                "green" : 0.5450980392156862,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "F86D8037-C7DC-4DF2-A69D-398863E774AF",
+                          "opacity" : 1,
+                          "position" : 0.4
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.16470588235294117,
+                                "green" : 0.403921568627451,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "67E39785-532D-4A48-B6E2-DF5822C71B9F",
+                          "opacity" : 1,
+                          "position" : 0.46
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.21176470588235294,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "57B312C9-0A40-47A0-8EC6-11C92B95B286",
+                          "opacity" : 1,
+                          "position" : 0.53
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5294117647058824,
+                                "green" : 0.08235294117647059,
+                                "red" : 0.8901960784313725
+                              }
+                            }
+                          },
+                          "id" : "85CF373E-3FAA-4B2C-9623-17BD6F50D9DB",
+                          "opacity" : 1,
+                          "position" : 0.7
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "357048C7-C328-4883-A4E2-487DB40EA245",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 870.94,
+                    "y" : 380.62
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 854.1,
+                    "y" : 340.08
+                  },
+                  "control2" : {
+                    "x" : 819.95,
+                    "y" : 296.31
+                  },
+                  "to" : {
+                    "x" : 793.21,
+                    "y" : 282.47
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 812.2800000000001,
+                    "y" : 319.43
+                  },
+                  "control2" : {
+                    "x" : 825.52,
+                    "y" : 359.12
+                  },
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.13
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5200000000001,
+                    "y" : 400.78
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 788.71,
+                    "y" : 291.52
+                  },
+                  "control2" : {
+                    "x" : 714.45,
+                    "y" : 247.39999999999998
+                  },
+                  "to" : {
+                    "x" : 653.7700000000001,
+                    "y" : 151.44999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 650.7,
+                    "y" : 146.59999999999997
+                  },
+                  "control2" : {
+                    "x" : 647.6300000000001,
+                    "y" : 141.72999999999996
+                  },
+                  "to" : {
+                    "x" : 644.6400000000001,
+                    "y" : 136.59999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 642.9300000000001,
+                    "y" : 133.66999999999996
+                  },
+                  "control2" : {
+                    "x" : 641.5600000000001,
+                    "y" : 131.02999999999997
+                  },
+                  "to" : {
+                    "x" : 640.3700000000001,
+                    "y" : 128.59999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 637.8500000000001,
+                    "y" : 123.71999999999997
+                  },
+                  "control2" : {
+                    "x" : 635.9100000000001,
+                    "y" : 118.56999999999996
+                  },
+                  "to" : {
+                    "x" : 634.5900000000001,
+                    "y" : 113.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 634.5900000000001,
+                    "y" : 112.72999999999996
+                  },
+                  "control2" : {
+                    "x" : 634.2200000000001,
+                    "y" : 112.29999999999997
+                  },
+                  "to" : {
+                    "x" : 633.7100000000002,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 633.4700000000001,
+                    "y" : 112.16999999999997
+                  },
+                  "control2" : {
+                    "x" : 633.2200000000001,
+                    "y" : 112.16999999999997
+                  },
+                  "to" : {
+                    "x" : 632.9800000000001,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.9300000000002,
+                    "y" : 112.23999999999997
+                  },
+                  "control2" : {
+                    "x" : 632.8500000000001,
+                    "y" : 112.32999999999997
+                  },
+                  "to" : {
+                    "x" : 632.7900000000001,
+                    "y" : 112.34999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.73,
+                    "y" : 112.36999999999996
+                  },
+                  "control2" : {
+                    "x" : 632.6,
+                    "y" : 112.45999999999997
+                  },
+                  "to" : {
+                    "x" : 632.5100000000001,
+                    "y" : 112.49999999999997
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 632.6600000000001,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 535.3400000000001,
+                    "y" : 169.26999999999998
+                  },
+                  "control2" : {
+                    "x" : 502.30000000000007,
+                    "y" : 274.83
+                  },
+                  "to" : {
+                    "x" : 499.30000000000007,
+                    "y" : 327.65
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 460.4200000000001,
+                    "y" : 330.32
+                  },
+                  "control2" : {
+                    "x" : 423.25000000000006,
+                    "y" : 344.65
+                  },
+                  "to" : {
+                    "x" : 392.63000000000005,
+                    "y" : 368.78
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 389.44000000000005,
+                    "y" : 366.07
+                  },
+                  "control2" : {
+                    "x" : 386.1000000000001,
+                    "y" : 363.53999999999996
+                  },
+                  "to" : {
+                    "x" : 382.63000000000005,
+                    "y" : 361.2
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 373.80000000000007,
+                    "y" : 330.27
+                  },
+                  "control2" : {
+                    "x" : 373.43000000000006,
+                    "y" : 297.53999999999996
+                  },
+                  "to" : {
+                    "x" : 381.5400000000001,
+                    "y" : 266.41999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 345.80000000000007,
+                    "y" : 283.74999999999994
+                  },
+                  "control2" : {
+                    "x" : 314.0400000000001,
+                    "y" : 308.30999999999995
+                  },
+                  "to" : {
+                    "x" : 288.2800000000001,
+                    "y" : 338.55999999999995
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 288.1000000000001,
+                    "y" : 338.55999999999995
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 272.74000000000007,
+                    "y" : 319.0799999999999
+                  },
+                  "control2" : {
+                    "x" : 273.8200000000001,
+                    "y" : 254.84999999999997
+                  },
+                  "to" : {
+                    "x" : 274.7000000000001,
+                    "y" : 241.42999999999995
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 270.1600000000001,
+                    "y" : 243.25999999999996
+                  },
+                  "control2" : {
+                    "x" : 265.8200000000001,
+                    "y" : 245.55999999999995
+                  },
+                  "to" : {
+                    "x" : 261.7600000000001,
+                    "y" : 248.29999999999995
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 248.2000000000001,
+                    "y" : 257.97999999999996
+                  },
+                  "control2" : {
+                    "x" : 235.53000000000011,
+                    "y" : 268.84999999999997
+                  },
+                  "to" : {
+                    "x" : 223.8900000000001,
+                    "y" : 280.77
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 210.6200000000001,
+                    "y" : 294.22999999999996
+                  },
+                  "control2" : {
+                    "x" : 198.5100000000001,
+                    "y" : 308.78
+                  },
+                  "to" : {
+                    "x" : 187.6700000000001,
+                    "y" : 324.26
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.6700000000001,
+                    "y" : 324.32
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.6700000000001,
+                    "y" : 324.25
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 162.7600000000001,
+                    "y" : 359.58
+                  },
+                  "control2" : {
+                    "x" : 145.0900000000001,
+                    "y" : 399.51
+                  },
+                  "to" : {
+                    "x" : 135.6900000000001,
+                    "y" : 441.71
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 135.1700000000001,
+                    "y" : 444.27
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 134.4400000000001,
+                    "y" : 447.68
+                  },
+                  "control2" : {
+                    "x" : 131.8100000000001,
+                    "y" : 464.77
+                  },
+                  "to" : {
+                    "x" : 131.3600000000001,
+                    "y" : 468.47999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 131.3600000000001,
+                    "y" : 468.77
+                  },
+                  "control2" : {
+                    "x" : 131.3000000000001,
+                    "y" : 469.03999999999996
+                  },
+                  "to" : {
+                    "x" : 131.2700000000001,
+                    "y" : 469.33
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 127.8800000000001,
+                    "y" : 486.96999999999997
+                  },
+                  "control2" : {
+                    "x" : 125.7800000000001,
+                    "y" : 504.84
+                  },
+                  "to" : {
+                    "x" : 124.98000000000009,
+                    "y" : 522.79
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 124.98000000000009,
+                    "y" : 524.79
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 125.36000000000008,
+                    "y" : 738.97
+                  },
+                  "control2" : {
+                    "x" : 299.1500000000001,
+                    "y" : 912.29
+                  },
+                  "to" : {
+                    "x" : 513.1500000000001,
+                    "y" : 911.91
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 701.3500000000001,
+                    "y" : 911.5799999999999
+                  },
+                  "control2" : {
+                    "x" : 862.1000000000001,
+                    "y" : 775.9499999999999
+                  },
+                  "to" : {
+                    "x" : 894.2500000000001,
+                    "y" : 590.3599999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 894.9000000000001,
+                    "y" : 585.3599999999999
+                  },
+                  "control2" : {
+                    "x" : 895.4300000000001,
+                    "y" : 580.3999999999999
+                  },
+                  "to" : {
+                    "x" : 896.0100000000001,
+                    "y" : 575.3499999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 903.9900000000001,
+                    "y" : 509.3299999999999
+                  },
+                  "control2" : {
+                    "x" : 895.3500000000001,
+                    "y" : 442.3699999999999
+                  },
+                  "to" : {
+                    "x" : 870.8800000000001,
+                    "y" : 380.5499999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 870.9200000000001,
+                    "y" : 380.6099999999999
+                  }
+                }
+              },
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 424.37,
+                    "y" : 684.18
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 426.18,
+                    "y" : 685.05
+                  },
+                  "control2" : {
+                    "x" : 427.88,
+                    "y" : 685.9899999999999
+                  },
+                  "to" : {
+                    "x" : 429.74,
+                    "y" : 686.8199999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 430.01,
+                    "y" : 686.9899999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 428.13,
+                    "y" : 686.0899999999999
+                  },
+                  "control2" : {
+                    "x" : 426.25,
+                    "y" : 685.1499999999999
+                  },
+                  "to" : {
+                    "x" : 424.37,
+                    "y" : 684.18
+                  }
+                }
+              },
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 832.53,
+                    "y" : 400.89
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.53,
+                    "y" : 400.52
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.6,
+                    "y" : 400.93
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.53,
+                    "y" : 400.89
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "3E7993BA-A0A1-4725-B75C-B2BF3D1782F9",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              125.07000000000012,
+              282.47
+            ],
+            [
+              773.9146897130873,
+              629.4606236627392
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "CBEEC530-23C0-419C-A57B-ECC8F017B183",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.7411764705882353,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "1AAC1664-B826-4EBE-8CD7-2765D5D0E540",
+                          "opacity" : 1,
+                          "position" : 0.13
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.19215686274509805,
+                                "green" : 0.6745098039215687,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "CA668998-B7DD-495C-BEB6-CE4D7935D287",
+                          "opacity" : 1,
+                          "position" : 0.19
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.09019607843137255,
+                                "green" : 0.615686274509804,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "12334297-5CA7-43A4-BD8D-AADD2F3637D6",
+                          "opacity" : 1,
+                          "position" : 0.25
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "AA23E3F6-8477-4837-BB73-CBA7183DAD3C",
+                          "opacity" : 1,
+                          "position" : 0.28
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.23137254901960785,
+                                "green" : 0.33725490196078434,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "295C2225-3DE7-4309-9AA6-12EDD75C2123",
+                          "opacity" : 1,
+                          "position" : 0.4
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.3137254901960784,
+                                "green" : 0.21568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "B0F128F3-F9CC-4E4D-9BD5-93DBEE621A9B",
+                          "opacity" : 1,
+                          "position" : 0.47
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.4235294117647059,
+                                "green" : 0.08235294117647059,
+                                "red" : 0.9607843137254902
+                              }
+                            }
+                          },
+                          "id" : "71086147-2B26-4982-9997-511BC2167911",
+                          "opacity" : 1,
+                          "position" : 0.71
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.47058823529411764,
+                                "green" : 0.03137254901960784,
+                                "red" : 0.9215686274509803
+                              }
+                            }
+                          },
+                          "id" : "CC562E7C-325A-493B-8260-94D8E0646FDB",
+                          "opacity" : 1,
+                          "position" : 0.78
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5019607843137255,
+                                "green" : 0,
+                                "red" : 0.8980392156862745
+                              }
+                            }
+                          },
+                          "id" : "0193B118-7785-4343-A14B-DFDC9DCD0336",
+                          "opacity" : 1,
+                          "position" : 0.86
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "55D52A05-8D78-406B-B361-D8BC8CC70176",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 870.94,
+                    "y" : 380.62
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 854.1,
+                    "y" : 340.08
+                  },
+                  "control2" : {
+                    "x" : 819.95,
+                    "y" : 296.31
+                  },
+                  "to" : {
+                    "x" : 793.21,
+                    "y" : 282.47
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 812.2800000000001,
+                    "y" : 319.43
+                  },
+                  "control2" : {
+                    "x" : 825.52,
+                    "y" : 359.12
+                  },
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.13
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.5
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5200000000001,
+                    "y" : 400.91
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 862.3900000000001,
+                    "y" : 486.45000000000005
+                  },
+                  "control2" : {
+                    "x" : 858.07,
+                    "y" : 580.23
+                  },
+                  "to" : {
+                    "x" : 820.4600000000002,
+                    "y" : 662.6500000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 776.0500000000002,
+                    "y" : 758.0100000000001
+                  },
+                  "control2" : {
+                    "x" : 668.6000000000001,
+                    "y" : 855.7500000000001
+                  },
+                  "to" : {
+                    "x" : 500.35000000000014,
+                    "y" : 850.95
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 318.60000000000014,
+                    "y" : 845.8000000000001
+                  },
+                  "control2" : {
+                    "x" : 158.45000000000016,
+                    "y" : 710.7800000000001
+                  },
+                  "to" : {
+                    "x" : 128.56000000000012,
+                    "y" : 533.98
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 123.11000000000011,
+                    "y" : 506.1
+                  },
+                  "control2" : {
+                    "x" : 128.56000000000012,
+                    "y" : 491.96000000000004
+                  },
+                  "to" : {
+                    "x" : 131.30000000000013,
+                    "y" : 469.3
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 127.56000000000013,
+                    "y" : 486.90000000000003
+                  },
+                  "control2" : {
+                    "x" : 125.48000000000013,
+                    "y" : 504.82
+                  },
+                  "to" : {
+                    "x" : 125.07000000000012,
+                    "y" : 522.8100000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 125.07000000000012,
+                    "y" : 524.8100000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 125.45000000000012,
+                    "y" : 738.99
+                  },
+                  "control2" : {
+                    "x" : 299.2400000000001,
+                    "y" : 912.3100000000001
+                  },
+                  "to" : {
+                    "x" : 513.2400000000001,
+                    "y" : 911.9300000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 701.44,
+                    "y" : 911.6
+                  },
+                  "control2" : {
+                    "x" : 862.19,
+                    "y" : 775.97
+                  },
+                  "to" : {
+                    "x" : 894.3400000000001,
+                    "y" : 590.3800000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 894.9900000000001,
+                    "y" : 585.3800000000001
+                  },
+                  "control2" : {
+                    "x" : 895.5200000000001,
+                    "y" : 580.4200000000001
+                  },
+                  "to" : {
+                    "x" : 896.1000000000001,
+                    "y" : 575.3700000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 904.0800000000002,
+                    "y" : 509.35000000000014
+                  },
+                  "control2" : {
+                    "x" : 895.4400000000002,
+                    "y" : 442.3900000000001
+                  },
+                  "to" : {
+                    "x" : 870.9700000000001,
+                    "y" : 380.5700000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 870.9300000000002,
+                    "y" : 380.6200000000001
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "16BBE195-7253-45AF-AEB6-24661A15B5EB",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              125.07000000000012,
+              282.47
+            ],
+            [
+              773.9146897130873,
+              629.4606236627392
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "AF7831B7-2343-4F74-A1EB-21B0D0165654",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.09411764705882353,
+                                "green" : 0.054901960784313725,
+                                "red" : 0.5882352941176471
+                              }
+                            }
+                          },
+                          "id" : "BC6E8580-DBD6-4B7E-AA56-7A1EC0C72FD6",
+                          "opacity" : 1,
+                          "position" : 0.3
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.15294117647058825,
+                                "green" : 0.09803921568627451,
+                                "red" : 0.6941176470588235
+                              }
+                            }
+                          },
+                          "id" : "E57095C6-5E43-4259-82DE-62D0F82FB771",
+                          "opacity" : 0.74,
+                          "position" : 0.35
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.23921568627450981,
+                                "green" : 0.1607843137254902,
+                                "red" : 0.8588235294117647
+                              }
+                            }
+                          },
+                          "id" : "3F5473F9-1C5C-4CA5-B45D-DCB31A3FF795",
+                          "opacity" : 0.34,
+                          "position" : 0.43
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.29411764705882354,
+                                "green" : 0.2,
+                                "red" : 0.9607843137254902
+                              }
+                            }
+                          },
+                          "id" : "79D7FD45-30D7-4272-B392-374365B37DCE",
+                          "opacity" : 0.09,
+                          "position" : 0.5
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.3137254901960784,
+                                "green" : 0.21568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "2AE56180-9B3D-4342-8669-D1B5760C4298",
+                          "opacity" : 0,
+                          "position" : 0.53
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "D863C948-19E1-4BB2-B2A3-9CE96726EE0A",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 870.94,
+                    "y" : 380.62
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 854.1,
+                    "y" : 340.08
+                  },
+                  "control2" : {
+                    "x" : 819.95,
+                    "y" : 296.31
+                  },
+                  "to" : {
+                    "x" : 793.21,
+                    "y" : 282.47
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 812.2800000000001,
+                    "y" : 319.43
+                  },
+                  "control2" : {
+                    "x" : 825.52,
+                    "y" : 359.12
+                  },
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.13
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.5
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5200000000001,
+                    "y" : 400.91
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 862.3900000000001,
+                    "y" : 486.45000000000005
+                  },
+                  "control2" : {
+                    "x" : 858.07,
+                    "y" : 580.23
+                  },
+                  "to" : {
+                    "x" : 820.4600000000002,
+                    "y" : 662.6500000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 776.0500000000002,
+                    "y" : 758.0100000000001
+                  },
+                  "control2" : {
+                    "x" : 668.6000000000001,
+                    "y" : 855.7500000000001
+                  },
+                  "to" : {
+                    "x" : 500.35000000000014,
+                    "y" : 850.95
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 318.60000000000014,
+                    "y" : 845.8000000000001
+                  },
+                  "control2" : {
+                    "x" : 158.45000000000016,
+                    "y" : 710.7800000000001
+                  },
+                  "to" : {
+                    "x" : 128.56000000000012,
+                    "y" : 533.98
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 123.11000000000011,
+                    "y" : 506.1
+                  },
+                  "control2" : {
+                    "x" : 128.56000000000012,
+                    "y" : 491.96000000000004
+                  },
+                  "to" : {
+                    "x" : 131.30000000000013,
+                    "y" : 469.3
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 127.56000000000013,
+                    "y" : 486.90000000000003
+                  },
+                  "control2" : {
+                    "x" : 125.48000000000013,
+                    "y" : 504.82
+                  },
+                  "to" : {
+                    "x" : 125.07000000000012,
+                    "y" : 522.8100000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 125.07000000000012,
+                    "y" : 524.8100000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 125.45000000000012,
+                    "y" : 738.99
+                  },
+                  "control2" : {
+                    "x" : 299.2400000000001,
+                    "y" : 912.3100000000001
+                  },
+                  "to" : {
+                    "x" : 513.2400000000001,
+                    "y" : 911.9300000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 701.44,
+                    "y" : 911.6
+                  },
+                  "control2" : {
+                    "x" : 862.19,
+                    "y" : 775.97
+                  },
+                  "to" : {
+                    "x" : 894.3400000000001,
+                    "y" : 590.3800000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 894.9900000000001,
+                    "y" : 585.3800000000001
+                  },
+                  "control2" : {
+                    "x" : 895.5200000000001,
+                    "y" : 580.4200000000001
+                  },
+                  "to" : {
+                    "x" : 896.1000000000001,
+                    "y" : 575.3700000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 904.0800000000002,
+                    "y" : 509.35000000000014
+                  },
+                  "control2" : {
+                    "x" : 895.4400000000002,
+                    "y" : 442.3900000000001
+                  },
+                  "to" : {
+                    "x" : 870.9700000000001,
+                    "y" : 380.5700000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 870.9300000000002,
+                    "y" : 380.6200000000001
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "1AD9C098-8135-44D0-98CD-5F074A959A51",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              499.2299999999999,
+              112.18999999999991
+            ],
+            [
+              185.7800000000001,
+              315.73
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "81BAF211-593F-4C27-9FCD-E1D3443CA7DB",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "C34EAA61-D154-4146-AC0C-DB4A9A23B189",
+                          "opacity" : 1,
+                          "position" : 0.13
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.24313725490196078,
+                                "green" : 0.8627450980392157,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "CEC19213-55C5-4D08-B1DE-0C09A894C8C3",
+                          "opacity" : 1,
+                          "position" : 0.25
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.07058823529411765,
+                                "green" : 0.615686274509804,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "C59AAFEB-D9F9-4BEA-8DBC-9BF6CEF1D87F",
+                          "opacity" : 1,
+                          "position" : 0.51
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "4AC30C95-3C95-4091-9E51-2C102A8AC918",
+                          "opacity" : 1,
+                          "position" : 0.53
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "C174F679-9928-4886-B711-66B73C9BED63",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 682.6,
+                    "y" : 426.15
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 683.44,
+                    "y" : 426.73999999999995
+                  },
+                  "control2" : {
+                    "x" : 684.22,
+                    "y" : 427.33
+                  },
+                  "to" : {
+                    "x" : 685.01,
+                    "y" : 427.91999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 675.28,
+                    "y" : 410.65
+                  },
+                  "control2" : {
+                    "x" : 663.16,
+                    "y" : 394.8299999999999
+                  },
+                  "to" : {
+                    "x" : 649.02,
+                    "y" : 380.94999999999993
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 528.56,
+                    "y" : 260.38999999999993
+                  },
+                  "control2" : {
+                    "x" : 617.46,
+                    "y" : 119.60999999999996
+                  },
+                  "to" : {
+                    "x" : 632.4399999999999,
+                    "y" : 112.40999999999991
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 632.5899999999999,
+                    "y" : 112.18999999999991
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 535.27,
+                    "y" : 169.2199999999999
+                  },
+                  "control2" : {
+                    "x" : 502.2299999999999,
+                    "y" : 274.7799999999999
+                  },
+                  "to" : {
+                    "x" : 499.2299999999999,
+                    "y" : 327.5999999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 503.7499999999999,
+                    "y" : 327.2899999999999
+                  },
+                  "control2" : {
+                    "x" : 508.2299999999999,
+                    "y" : 326.9099999999999
+                  },
+                  "to" : {
+                    "x" : 512.8499999999999,
+                    "y" : 326.9099999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 583.1399999999999,
+                    "y" : 327.0499999999999
+                  },
+                  "control2" : {
+                    "x" : 647.9499999999999,
+                    "y" : 364.9299999999999
+                  },
+                  "to" : {
+                    "x" : 682.5999999999999,
+                    "y" : 426.1299999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 682.5999999999999,
+                    "y" : 426.14999999999986
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "8B6E21A3-614D-443B-B32F-8F142B76874C",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              338.38999999999993,
+              326.89
+            ],
+            [
+              344.18,
+              377.629581120195
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "F382A609-BE4B-4550-AF67-6E4B65ACC794",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.9019607843137255,
+                                "green" : 0.5568627450980392,
+                                "red" : 0.22745098039215686
+                              }
+                            }
+                          },
+                          "id" : "97C2071B-F1CB-476E-A0D7-1362F1125D65",
+                          "opacity" : 1,
+                          "position" : 0.35
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.9411764705882353,
+                                "green" : 0.4745098039215686,
+                                "red" : 0.3607843137254902
+                              }
+                            }
+                          },
+                          "id" : "6A14D8EB-6E44-4423-B4A0-5F185D6F9B0C",
+                          "opacity" : 1,
+                          "position" : 0.47
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 1,
+                                "green" : 0.34901960784313724,
+                                "red" : 0.5647058823529412
+                              }
+                            }
+                          },
+                          "id" : "A53BE904-C9CF-4B3F-B1FF-73BCE4483967",
+                          "opacity" : 1,
+                          "position" : 0.67
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.9019607843137255,
+                                "green" : 0.2235294117647059,
+                                "red" : 0.7568627450980392
+                              }
+                            }
+                          },
+                          "id" : "B232B1BD-B8EA-4B3A-A819-1CDC579DD587",
+                          "opacity" : 1,
+                          "position" : 1
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "6E3521BC-9E9B-4672-9CCD-BE1DFE36DF61",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 513.05,
+                    "y" : 450.26
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 512.41,
+                    "y" : 459.90999999999997
+                  },
+                  "control2" : {
+                    "x" : 478.35999999999996,
+                    "y" : 493.16999999999996
+                  },
+                  "to" : {
+                    "x" : 466.44999999999993,
+                    "y" : 493.16999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 356.2799999999999,
+                    "y" : 493.16999999999996
+                  },
+                  "control2" : {
+                    "x" : 338.38999999999993,
+                    "y" : 559.88
+                  },
+                  "to" : {
+                    "x" : 338.38999999999993,
+                    "y" : 559.88
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 343.2699999999999,
+                    "y" : 616.05
+                  },
+                  "control2" : {
+                    "x" : 382.37999999999994,
+                    "y" : 662.33
+                  },
+                  "to" : {
+                    "x" : 429.6499999999999,
+                    "y" : 686.75
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 431.80999999999995,
+                    "y" : 687.87
+                  },
+                  "control2" : {
+                    "x" : 433.99999999999994,
+                    "y" : 688.88
+                  },
+                  "to" : {
+                    "x" : 436.18999999999994,
+                    "y" : 689.87
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 439.97999999999996,
+                    "y" : 691.55
+                  },
+                  "control2" : {
+                    "x" : 443.7699999999999,
+                    "y" : 693.11
+                  },
+                  "to" : {
+                    "x" : 447.56999999999994,
+                    "y" : 694.53
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 463.79999999999995,
+                    "y" : 700.28
+                  },
+                  "control2" : {
+                    "x" : 480.78999999999996,
+                    "y" : 703.56
+                  },
+                  "to" : {
+                    "x" : 497.98999999999995,
+                    "y" : 704.27
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 691.1299999999999,
+                    "y" : 713.3299999999999
+                  },
+                  "control2" : {
+                    "x" : 728.52,
+                    "y" : 473.15
+                  },
+                  "to" : {
+                    "x" : 589.15,
+                    "y" : 403.40999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 622.03,
+                    "y" : 399.13
+                  },
+                  "control2" : {
+                    "x" : 655.3199999999999,
+                    "y" : 407.21999999999997
+                  },
+                  "to" : {
+                    "x" : 682.5699999999999,
+                    "y" : 426.10999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 647.92,
+                    "y" : 364.90999999999997
+                  },
+                  "control2" : {
+                    "x" : 583.1099999999999,
+                    "y" : 327.02
+                  },
+                  "to" : {
+                    "x" : 512.8199999999999,
+                    "y" : 326.89
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 508.2199999999999,
+                    "y" : 326.89
+                  },
+                  "control2" : {
+                    "x" : 503.7199999999999,
+                    "y" : 327.27
+                  },
+                  "to" : {
+                    "x" : 499.19999999999993,
+                    "y" : 327.58
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 460.31999999999994,
+                    "y" : 330.25
+                  },
+                  "control2" : {
+                    "x" : 423.1499999999999,
+                    "y" : 344.58
+                  },
+                  "to" : {
+                    "x" : 392.5299999999999,
+                    "y" : 368.71
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 398.43999999999994,
+                    "y" : 373.71
+                  },
+                  "control2" : {
+                    "x" : 405.1099999999999,
+                    "y" : 380.4
+                  },
+                  "to" : {
+                    "x" : 419.1499999999999,
+                    "y" : 394.25
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 445.43999999999994,
+                    "y" : 420.17
+                  },
+                  "control2" : {
+                    "x" : 512.8699999999999,
+                    "y" : 447.03
+                  },
+                  "to" : {
+                    "x" : 513.02,
+                    "y" : 450.18
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 513.04,
+                    "y" : 450.26
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "6079B579-5BD9-421E-9DC6-E3D37C363DE7",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              338.38999999999993,
+              326.89
+            ],
+            [
+              344.18,
+              377.629581120195
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 13.6,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "DDA5FC7E-376A-4DDE-85B1-0891F133F4F4",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 1.15,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 1,
+                                "green" : 0.34901960784313724,
+                                "red" : 0.5647058823529412
+                              }
+                            }
+                          },
+                          "id" : "54F44BC5-053C-45DC-8D5E-329AD5D05520",
+                          "opacity" : 0,
+                          "position" : 0.21
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.9529411764705882,
+                                "green" : 0.30980392156862746,
+                                "red" : 0.5490196078431373
+                              }
+                            }
+                          },
+                          "id" : "24A8C6F2-F1CA-424C-BC73-47C474BA932B",
+                          "opacity" : 0.06,
+                          "position" : 0.28
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.6588235294117647,
+                                "green" : 0.08627450980392157,
+                                "red" : 0.4666666666666667
+                              }
+                            }
+                          },
+                          "id" : "DC14C205-A217-4F97-888B-1AB71E66194D",
+                          "opacity" : 0.45,
+                          "position" : 0.75
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5450980392156862,
+                                "green" : 0,
+                                "red" : 0.43137254901960786
+                              }
+                            }
+                          },
+                          "id" : "39AB48BF-EE36-4497-8A57-303D361C8A8F",
+                          "opacity" : 0.6,
+                          "position" : 0.97
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "32AEE8E1-77A9-44C0-98EA-49EA88B3D491",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 513.05,
+                    "y" : 450.26
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 512.41,
+                    "y" : 459.90999999999997
+                  },
+                  "control2" : {
+                    "x" : 478.35999999999996,
+                    "y" : 493.16999999999996
+                  },
+                  "to" : {
+                    "x" : 466.44999999999993,
+                    "y" : 493.16999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 356.2799999999999,
+                    "y" : 493.16999999999996
+                  },
+                  "control2" : {
+                    "x" : 338.38999999999993,
+                    "y" : 559.88
+                  },
+                  "to" : {
+                    "x" : 338.38999999999993,
+                    "y" : 559.88
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 343.2699999999999,
+                    "y" : 616.05
+                  },
+                  "control2" : {
+                    "x" : 382.37999999999994,
+                    "y" : 662.33
+                  },
+                  "to" : {
+                    "x" : 429.6499999999999,
+                    "y" : 686.75
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 431.80999999999995,
+                    "y" : 687.87
+                  },
+                  "control2" : {
+                    "x" : 433.99999999999994,
+                    "y" : 688.88
+                  },
+                  "to" : {
+                    "x" : 436.18999999999994,
+                    "y" : 689.87
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 439.97999999999996,
+                    "y" : 691.55
+                  },
+                  "control2" : {
+                    "x" : 443.7699999999999,
+                    "y" : 693.11
+                  },
+                  "to" : {
+                    "x" : 447.56999999999994,
+                    "y" : 694.53
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 463.79999999999995,
+                    "y" : 700.28
+                  },
+                  "control2" : {
+                    "x" : 480.78999999999996,
+                    "y" : 703.56
+                  },
+                  "to" : {
+                    "x" : 497.98999999999995,
+                    "y" : 704.27
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 691.1299999999999,
+                    "y" : 713.3299999999999
+                  },
+                  "control2" : {
+                    "x" : 728.52,
+                    "y" : 473.15
+                  },
+                  "to" : {
+                    "x" : 589.15,
+                    "y" : 403.40999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 622.03,
+                    "y" : 399.13
+                  },
+                  "control2" : {
+                    "x" : 655.3199999999999,
+                    "y" : 407.21999999999997
+                  },
+                  "to" : {
+                    "x" : 682.5699999999999,
+                    "y" : 426.10999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 647.92,
+                    "y" : 364.90999999999997
+                  },
+                  "control2" : {
+                    "x" : 583.1099999999999,
+                    "y" : 327.02
+                  },
+                  "to" : {
+                    "x" : 512.8199999999999,
+                    "y" : 326.89
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 508.2199999999999,
+                    "y" : 326.89
+                  },
+                  "control2" : {
+                    "x" : 503.7199999999999,
+                    "y" : 327.27
+                  },
+                  "to" : {
+                    "x" : 499.19999999999993,
+                    "y" : 327.58
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 460.31999999999994,
+                    "y" : 330.25
+                  },
+                  "control2" : {
+                    "x" : 423.1499999999999,
+                    "y" : 344.58
+                  },
+                  "to" : {
+                    "x" : 392.5299999999999,
+                    "y" : 368.71
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 398.43999999999994,
+                    "y" : 373.71
+                  },
+                  "control2" : {
+                    "x" : 405.1099999999999,
+                    "y" : 380.4
+                  },
+                  "to" : {
+                    "x" : 419.1499999999999,
+                    "y" : 394.25
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 445.43999999999994,
+                    "y" : 420.17
+                  },
+                  "control2" : {
+                    "x" : 512.8699999999999,
+                    "y" : 447.03
+                  },
+                  "to" : {
+                    "x" : 513.02,
+                    "y" : 450.18
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 513.04,
+                    "y" : 450.26
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "344E0D20-71C5-4E1F-8BEB-0CD2C2BB215F",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              288.14000000000004,
+              266.44000000000005
+            ],
+            [
+              94.34999999999997,
+              94.77999999999997
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "D44BF1BB-4825-43D8-8924-CCBB8DD0C5F6",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.14901960784313725,
+                                "green" : 0.8862745098039215,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "5CE2F021-2859-4C59-ABF1-59150773455A",
+                          "opacity" : 1,
+                          "position" : 0
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.15294117647058825,
+                                "green" : 0.8588235294117647,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "D4F0E3B8-9ADF-4381-B88E-044622C250EF",
+                          "opacity" : 1,
+                          "position" : 0.12
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.16470588235294117,
+                                "green" : 0.7843137254901961,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "D7D8ED21-F546-4800-896E-EE9B1DAF7C9D",
+                          "opacity" : 1,
+                          "position" : 0.29
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.18823529411764706,
+                                "green" : 0.6627450980392157,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "4E2903E4-A207-4ED5-885F-0B061AE91957",
+                          "opacity" : 1,
+                          "position" : 0.5
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.21568627450980393,
+                                "green" : 0.49411764705882355,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "5C542CE9-6708-43C8-AFB6-CA9B3F005BA4",
+                          "opacity" : 1,
+                          "position" : 0.73
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2235294117647059,
+                                "green" : 0.44313725490196076,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "891FCC54-085D-4149-82C8-1944C4747F5F",
+                          "opacity" : 1,
+                          "position" : 0.79
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "3B6C2123-1705-4CF1-8BED-EF13E4E04F5F",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 374.49,
+                    "y" : 355.91
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 377.63,
+                    "y" : 357.91
+                  },
+                  "control2" : {
+                    "x" : 380.22,
+                    "y" : 359.65000000000003
+                  },
+                  "to" : {
+                    "x" : 382.49,
+                    "y" : 361.22
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 373.66,
+                    "y" : 330.29
+                  },
+                  "control2" : {
+                    "x" : 373.29,
+                    "y" : 297.56000000000006
+                  },
+                  "to" : {
+                    "x" : 381.40000000000003,
+                    "y" : 266.44000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 345.66,
+                    "y" : 283.77000000000004
+                  },
+                  "control2" : {
+                    "x" : 313.90000000000003,
+                    "y" : 308.33000000000004
+                  },
+                  "to" : {
+                    "x" : 288.14000000000004,
+                    "y" : 338.58000000000004
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 290.03000000000003,
+                    "y" : 338.53000000000003
+                  },
+                  "control2" : {
+                    "x" : 346.23,
+                    "y" : 337.52000000000004
+                  },
+                  "to" : {
+                    "x" : 374.49,
+                    "y" : 355.91
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "32FAC142-CBED-4F4D-B18C-87CDE6187C67",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              126.55982499627424,
+              241.60000000000008
+            ],
+            [
+              725.5477295625763,
+              609.5371085854822
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "42777DED-0417-468F-B319-E713CE526E14",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "F42F5583-FA63-4741-A87C-0337B16A5D6C",
+                          "opacity" : 1,
+                          "position" : 0.11
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "F7B045D5-7597-43F8-91BB-A7F1F6C58322",
+                          "opacity" : 1,
+                          "position" : 0.46
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.20392156862745098,
+                                "green" : 0.33725490196078434,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "2E152338-15C6-483A-A3F4-BEBE7D4CBCD7",
+                          "opacity" : 1,
+                          "position" : 0.62
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.21176470588235294,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "51EF3A75-6EBC-4ECD-8E4D-7319CBE252E0",
+                          "opacity" : 1,
+                          "position" : 0.72
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5294117647058824,
+                                "green" : 0.08235294117647059,
+                                "red" : 0.8901960784313725
+                              }
+                            }
+                          },
+                          "id" : "D291C8CB-AECC-4865-A2D4-B25F8A43ADC2",
+                          "opacity" : 1,
+                          "position" : 0.9
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "9AA134A8-91A0-405D-859F-126BB7A846FA",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 128.5,
+                    "y" : 534
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 158.4,
+                    "y" : 710.79
+                  },
+                  "control2" : {
+                    "x" : 318.53999999999996,
+                    "y" : 845.87
+                  },
+                  "to" : {
+                    "x" : 500.29,
+                    "y" : 850.97
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 668.54,
+                    "y" : 855.73
+                  },
+                  "control2" : {
+                    "x" : 776.01,
+                    "y" : 757.98
+                  },
+                  "to" : {
+                    "x" : 820.4000000000001,
+                    "y" : 662.6700000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 858.0100000000001,
+                    "y" : 580.2500000000001
+                  },
+                  "control2" : {
+                    "x" : 862.33,
+                    "y" : 486.4700000000001
+                  },
+                  "to" : {
+                    "x" : 832.46,
+                    "y" : 400.93000000000006
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.46,
+                    "y" : 400.56000000000006
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 832.46,
+                    "y" : 400.27000000000004
+                  },
+                  "control2" : {
+                    "x" : 832.4000000000001,
+                    "y" : 400.1000000000001
+                  },
+                  "to" : {
+                    "x" : 832.46,
+                    "y" : 400.19000000000005
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5300000000001,
+                    "y" : 400.84000000000003
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 846.2800000000001,
+                    "y" : 490.66
+                  },
+                  "control2" : {
+                    "x" : 800.6300000000001,
+                    "y" : 577.63
+                  },
+                  "to" : {
+                    "x" : 729.2600000000001,
+                    "y" : 636.57
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 729.0400000000001,
+                    "y" : 637.07
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 589.98,
+                    "y" : 750.4300000000001
+                  },
+                  "control2" : {
+                    "x" : 456.9200000000001,
+                    "y" : 705.45
+                  },
+                  "to" : {
+                    "x" : 430.0300000000001,
+                    "y" : 687.1
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 428.1500000000001,
+                    "y" : 686.2
+                  },
+                  "control2" : {
+                    "x" : 426.2700000000001,
+                    "y" : 685.26
+                  },
+                  "to" : {
+                    "x" : 424.3900000000001,
+                    "y" : 684.2900000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 343.3200000000001,
+                    "y" : 645.5100000000001
+                  },
+                  "control2" : {
+                    "x" : 309.8200000000001,
+                    "y" : 571.6300000000001
+                  },
+                  "to" : {
+                    "x" : 317.0200000000001,
+                    "y" : 508.20000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 277.7100000000001,
+                    "y" : 508.78000000000003
+                  },
+                  "control2" : {
+                    "x" : 241.7400000000001,
+                    "y" : 486.14000000000004
+                  },
+                  "to" : {
+                    "x" : 225.2400000000001,
+                    "y" : 450.4200000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 268.5100000000001,
+                    "y" : 423.8900000000001
+                  },
+                  "control2" : {
+                    "x" : 322.4400000000001,
+                    "y" : 421.7200000000001
+                  },
+                  "to" : {
+                    "x" : 367.7000000000001,
+                    "y" : 444.70000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 413.5800000000001,
+                    "y" : 465.54
+                  },
+                  "control2" : {
+                    "x" : 465.7800000000001,
+                    "y" : 467.6
+                  },
+                  "to" : {
+                    "x" : 513.1600000000001,
+                    "y" : 450.4200000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 513.0100000000001,
+                    "y" : 447.2700000000001
+                  },
+                  "control2" : {
+                    "x" : 445.5800000000001,
+                    "y" : 420.4000000000001
+                  },
+                  "to" : {
+                    "x" : 419.2900000000001,
+                    "y" : 394.49000000000007
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 405.24000000000007,
+                    "y" : 380.63000000000005
+                  },
+                  "control2" : {
+                    "x" : 398.5800000000001,
+                    "y" : 373.96000000000004
+                  },
+                  "to" : {
+                    "x" : 392.6700000000001,
+                    "y" : 368.95000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 389.4800000000001,
+                    "y" : 366.24000000000007
+                  },
+                  "control2" : {
+                    "x" : 386.1400000000001,
+                    "y" : 363.71000000000004
+                  },
+                  "to" : {
+                    "x" : 382.6700000000001,
+                    "y" : 361.37000000000006
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 380.37000000000006,
+                    "y" : 359.80000000000007
+                  },
+                  "control2" : {
+                    "x" : 377.7800000000001,
+                    "y" : 358.1000000000001
+                  },
+                  "to" : {
+                    "x" : 374.6700000000001,
+                    "y" : 356.06000000000006
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 346.4100000000001,
+                    "y" : 337.6700000000001
+                  },
+                  "control2" : {
+                    "x" : 290.20000000000005,
+                    "y" : 338.68000000000006
+                  },
+                  "to" : {
+                    "x" : 288.3500000000001,
+                    "y" : 338.7300000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 288.1700000000001,
+                    "y" : 338.7300000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 272.81000000000006,
+                    "y" : 319.25000000000006
+                  },
+                  "control2" : {
+                    "x" : 273.8900000000001,
+                    "y" : 255.0200000000001
+                  },
+                  "to" : {
+                    "x" : 274.7700000000001,
+                    "y" : 241.60000000000008
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 270.2300000000001,
+                    "y" : 243.4300000000001
+                  },
+                  "control2" : {
+                    "x" : 265.8900000000001,
+                    "y" : 245.73000000000008
+                  },
+                  "to" : {
+                    "x" : 261.8300000000001,
+                    "y" : 248.47000000000008
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 248.2700000000001,
+                    "y" : 258.1500000000001
+                  },
+                  "control2" : {
+                    "x" : 235.6000000000001,
+                    "y" : 269.0200000000001
+                  },
+                  "to" : {
+                    "x" : 223.9600000000001,
+                    "y" : 280.94000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 210.6500000000001,
+                    "y" : 294.36000000000007
+                  },
+                  "control2" : {
+                    "x" : 198.4800000000001,
+                    "y" : 308.88000000000005
+                  },
+                  "to" : {
+                    "x" : 187.5900000000001,
+                    "y" : 324.33000000000004
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.5900000000001,
+                    "y" : 324.39000000000004
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.5900000000001,
+                    "y" : 324.32000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 162.6800000000001,
+                    "y" : 359.65000000000003
+                  },
+                  "control2" : {
+                    "x" : 145.0100000000001,
+                    "y" : 399.58000000000004
+                  },
+                  "to" : {
+                    "x" : 135.6100000000001,
+                    "y" : 441.78000000000003
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 135.4200000000001,
+                    "y" : 442.57000000000005
+                  },
+                  "control2" : {
+                    "x" : 121.65000000000009,
+                    "y" : 502.8
+                  },
+                  "to" : {
+                    "x" : 128.4400000000001,
+                    "y" : 534.0400000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 128.5100000000001,
+                    "y" : 534.0200000000001
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "67ECE7E0-2A0B-4A3A-A146-270A9886A215",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              586.8344867256047,
+              111.99750000000006
+            ],
+            [
+              248.06334842626654,
+              524.4225
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : -83.98,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "CE3959A4-8745-4E23-BC6A-976430999361",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.64,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "04E9A41B-A8C8-4CF6-8815-577E996EC0EA",
+                          "opacity" : 1,
+                          "position" : 0
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.9098039215686274,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "033ECEB4-2CB9-4A30-854F-59CA46240518",
+                          "opacity" : 1,
+                          "position" : 0.06
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.18823529411764706,
+                                "green" : 0.7843137254901961,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "555096EA-9530-4E6C-8E96-BF1F77F3A3DB",
+                          "opacity" : 1,
+                          "position" : 0.17
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "6A36986A-2454-421B-B405-6BE6D5FEC3FA",
+                          "opacity" : 1,
+                          "position" : 0.3
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.08627450980392157,
+                                "green" : 0.5450980392156862,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "9EF02F81-AB2C-47C2-A662-CDB35F5B9CCB",
+                          "opacity" : 1,
+                          "position" : 0.36
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.16470588235294117,
+                                "green" : 0.403921568627451,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "CE4E5B22-93F2-4755-95DC-E8425BA402C8",
+                          "opacity" : 1,
+                          "position" : 0.46
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.21176470588235294,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "8E0690CA-7356-4E3E-8EB5-AFAB2FBECE84",
+                          "opacity" : 1,
+                          "position" : 0.57
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5294117647058824,
+                                "green" : 0.08235294117647059,
+                                "red" : 0.8901960784313725
+                              }
+                            }
+                          },
+                          "id" : "3B6C5CA2-65A2-4815-A22E-46FD9DCF0AE1",
+                          "opacity" : 1,
+                          "position" : 0.74
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "69006F2C-8AC9-444A-97B3-35FE0909CB3F",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 649.01,
+                    "y" : 380.92
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 663.16,
+                    "y" : 394.82
+                  },
+                  "control2" : {
+                    "x" : 675.27,
+                    "y" : 410.66
+                  },
+                  "to" : {
+                    "x" : 685,
+                    "y" : 427.95000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 687.13,
+                    "y" : 429.56000000000006
+                  },
+                  "control2" : {
+                    "x" : 689.12,
+                    "y" : 431.16
+                  },
+                  "to" : {
+                    "x" : 690.81,
+                    "y" : 432.71000000000004
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 778.65,
+                    "y" : 513.75
+                  },
+                  "control2" : {
+                    "x" : 732.63,
+                    "y" : 628.3100000000001
+                  },
+                  "to" : {
+                    "x" : 729.1999999999999,
+                    "y" : 636.4200000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 800.56,
+                    "y" : 577.58
+                  },
+                  "control2" : {
+                    "x" : 846.17,
+                    "y" : 490.5400000000001
+                  },
+                  "to" : {
+                    "x" : 832.4699999999999,
+                    "y" : 400.69000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 788.6399999999999,
+                    "y" : 291.33000000000004
+                  },
+                  "control2" : {
+                    "x" : 714.3,
+                    "y" : 247.21000000000006
+                  },
+                  "to" : {
+                    "x" : 653.7199999999999,
+                    "y" : 151.26000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 650.6499999999999,
+                    "y" : 146.41000000000005
+                  },
+                  "control2" : {
+                    "x" : 647.5799999999999,
+                    "y" : 141.54000000000005
+                  },
+                  "to" : {
+                    "x" : 644.5899999999999,
+                    "y" : 136.41000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 642.8799999999999,
+                    "y" : 133.48000000000005
+                  },
+                  "control2" : {
+                    "x" : 641.5099999999999,
+                    "y" : 130.84000000000006
+                  },
+                  "to" : {
+                    "x" : 640.3199999999999,
+                    "y" : 128.41000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 637.8,
+                    "y" : 123.53000000000006
+                  },
+                  "control2" : {
+                    "x" : 635.8599999999999,
+                    "y" : 118.38000000000005
+                  },
+                  "to" : {
+                    "x" : 634.54,
+                    "y" : 113.05000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 634.54,
+                    "y" : 112.54000000000005
+                  },
+                  "control2" : {
+                    "x" : 634.17,
+                    "y" : 112.11000000000006
+                  },
+                  "to" : {
+                    "x" : 633.66,
+                    "y" : 112.05000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 633.42,
+                    "y" : 111.98000000000006
+                  },
+                  "control2" : {
+                    "x" : 633.17,
+                    "y" : 111.98000000000006
+                  },
+                  "to" : {
+                    "x" : 632.93,
+                    "y" : 112.05000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.88,
+                    "y" : 112.05000000000005
+                  },
+                  "control2" : {
+                    "x" : 632.8,
+                    "y" : 112.14000000000006
+                  },
+                  "to" : {
+                    "x" : 632.7399999999999,
+                    "y" : 112.16000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.6799999999998,
+                    "y" : 112.18000000000005
+                  },
+                  "control2" : {
+                    "x" : 632.5499999999998,
+                    "y" : 112.27000000000005
+                  },
+                  "to" : {
+                    "x" : 632.4599999999999,
+                    "y" : 112.31000000000006
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 617.4699999999999,
+                    "y" : 119.42000000000006
+                  },
+                  "control2" : {
+                    "x" : 528.5899999999999,
+                    "y" : 260.2900000000001
+                  },
+                  "to" : {
+                    "x" : 649.06,
+                    "y" : 380.75000000000006
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 649.01,
+                    "y" : 380.9200000000001
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "ECAE4240-019A-464E-94A4-AB06C89C5C9A",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              429.6500000000001,
+              402.4010794064378
+            ],
+            [
+              314.62337443109914,
+              309.04994853354185
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "CB41AD6F-64AF-4389-B981-34D147CC6FCB",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "A5542B1D-0C13-495C-B76C-80C6C94DB534",
+                          "opacity" : 1,
+                          "position" : 0.14
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "DA42EDBF-98A4-49FC-AAD7-B1E3CFA8684C",
+                          "opacity" : 1,
+                          "position" : 0.48
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.20392156862745098,
+                                "green" : 0.33725490196078434,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "6191F6A2-78F2-4C31-B4FB-7AA146D1699A",
+                          "opacity" : 1,
+                          "position" : 0.59
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2784313725490196,
+                                "green" : 0.21176470588235294,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "7F5BB612-E84B-4AA1-986F-0A32C12E45B0",
+                          "opacity" : 1,
+                          "position" : 0.66
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.5294117647058824,
+                                "green" : 0.08235294117647059,
+                                "red" : 0.8901960784313725
+                              }
+                            }
+                          },
+                          "id" : "8920520A-3C6A-46E8-BFFB-F7CE43C9FC22",
+                          "opacity" : 1,
+                          "position" : 0.9
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "DD0D4701-F0D1-40C7-98D8-A7CA37FA4B66",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 690.79,
+                    "y" : 432.75
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 689.0999999999999,
+                    "y" : 431.2
+                  },
+                  "control2" : {
+                    "x" : 687.11,
+                    "y" : 429.6
+                  },
+                  "to" : {
+                    "x" : 684.98,
+                    "y" : 427.99
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 684.19,
+                    "y" : 427.40000000000003
+                  },
+                  "control2" : {
+                    "x" : 683.41,
+                    "y" : 426.81
+                  },
+                  "to" : {
+                    "x" : 682.57,
+                    "y" : 426.22
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 655.32,
+                    "y" : 407.33000000000004
+                  },
+                  "control2" : {
+                    "x" : 622.0200000000001,
+                    "y" : 399.24
+                  },
+                  "to" : {
+                    "x" : 589.1500000000001,
+                    "y" : 403.52000000000004
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 728.5100000000001,
+                    "y" : 473.26000000000005
+                  },
+                  "control2" : {
+                    "x" : 691.1200000000001,
+                    "y" : 713.3800000000001
+                  },
+                  "to" : {
+                    "x" : 497.9900000000001,
+                    "y" : 704.3800000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 480.79000000000013,
+                    "y" : 703.6700000000001
+                  },
+                  "control2" : {
+                    "x" : 463.8000000000001,
+                    "y" : 700.3900000000001
+                  },
+                  "to" : {
+                    "x" : 447.5700000000001,
+                    "y" : 694.6400000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 443.7800000000001,
+                    "y" : 693.2200000000001
+                  },
+                  "control2" : {
+                    "x" : 439.9900000000001,
+                    "y" : 691.6700000000001
+                  },
+                  "to" : {
+                    "x" : 436.1900000000001,
+                    "y" : 689.9800000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 434.0000000000001,
+                    "y" : 688.9800000000001
+                  },
+                  "control2" : {
+                    "x" : 431.8100000000001,
+                    "y" : 687.9800000000001
+                  },
+                  "to" : {
+                    "x" : 429.6500000000001,
+                    "y" : 686.8600000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 429.9200000000001,
+                    "y" : 687.0300000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 456.8500000000001,
+                    "y" : 705.4300000000001
+                  },
+                  "control2" : {
+                    "x" : 589.8700000000001,
+                    "y" : 750.3800000000001
+                  },
+                  "to" : {
+                    "x" : 728.9300000000001,
+                    "y" : 637.0000000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 729.1500000000001,
+                    "y" : 636.5000000000001
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 732.6200000000001,
+                    "y" : 628.4000000000001
+                  },
+                  "control2" : {
+                    "x" : 778.6500000000001,
+                    "y" : 513.8300000000002
+                  },
+                  "to" : {
+                    "x" : 690.7600000000001,
+                    "y" : 432.7900000000001
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 690.7800000000001,
+                    "y" : 432.75000000000006
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "67CF2FC0-D64F-45A7-B526-62737CC3F09A",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              225.1399999999999,
+              428.65994483258726
+            ],
+            [
+              287.9200000000001,
+              258.0500551674128
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "radial" : {
+                    "_0" : {
+                      "angle" : 0,
+                      "centerPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "focalPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "id" : "8F18528B-A20E-4139-B697-255429B757D7",
+                      "originPoint" : [
+                        0.5,
+                        0.5
+                      ],
+                      "radius" : 0.5,
+                      "scale" : 1,
+                      "scaleX" : 0.98,
+                      "scaleY" : 0.98,
+                      "spreadMethod" : "pad",
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "5317190C-8899-4941-B179-B6CFEE18AAA5",
+                          "opacity" : 1,
+                          "position" : 0.09
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.2549019607843137,
+                                "green" : 0.8823529411764706,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "20659BE7-A80B-4E7B-9A0E-147B5DCDE3A0",
+                          "opacity" : 1,
+                          "position" : 0.23
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.11764705882352941,
+                                "green" : 0.6862745098039216,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "391A86AE-2F06-420A-990A-8CF74883B360",
+                          "opacity" : 1,
+                          "position" : 0.51
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.054901960784313725,
+                                "green" : 0.596078431372549,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "72C61E90-E036-4004-8E18-AA47D35B3899",
+                          "opacity" : 1,
+                          "position" : 0.63
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "FFEC26BC-31B7-4BD4-BD76-4ACD266804D7",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 338.4,
+                    "y" : 559.82
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 338.4,
+                    "y" : 559.82
+                  },
+                  "control2" : {
+                    "x" : 356.28,
+                    "y" : 493.11000000000007
+                  },
+                  "to" : {
+                    "x" : 466.46,
+                    "y" : 493.11000000000007
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 478.37,
+                    "y" : 493.11000000000007
+                  },
+                  "control2" : {
+                    "x" : 512.4499999999999,
+                    "y" : 459.8400000000001
+                  },
+                  "to" : {
+                    "x" : 513.06,
+                    "y" : 450.20000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 465.68999999999994,
+                    "y" : 467.37000000000006
+                  },
+                  "control2" : {
+                    "x" : 413.47999999999996,
+                    "y" : 465.32000000000005
+                  },
+                  "to" : {
+                    "x" : 367.5999999999999,
+                    "y" : 444.48
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 322.3399999999999,
+                    "y" : 421.51
+                  },
+                  "control2" : {
+                    "x" : 268.4099999999999,
+                    "y" : 423.67
+                  },
+                  "to" : {
+                    "x" : 225.1399999999999,
+                    "y" : 450.20000000000005
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 241.6399999999999,
+                    "y" : 485.9200000000001
+                  },
+                  "control2" : {
+                    "x" : 277.6099999999999,
+                    "y" : 508.56000000000006
+                  },
+                  "to" : {
+                    "x" : 316.9199999999999,
+                    "y" : 507.98
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 309.7399999999999,
+                    "y" : 571.38
+                  },
+                  "control2" : {
+                    "x" : 343.2299999999999,
+                    "y" : 645.25
+                  },
+                  "to" : {
+                    "x" : 424.2899999999999,
+                    "y" : 684.07
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 426.0999999999999,
+                    "y" : 684.94
+                  },
+                  "control2" : {
+                    "x" : 427.7999999999999,
+                    "y" : 685.88
+                  },
+                  "to" : {
+                    "x" : 429.6599999999999,
+                    "y" : 686.71
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 382.3399999999999,
+                    "y" : 662.25
+                  },
+                  "control2" : {
+                    "x" : 343.2799999999999,
+                    "y" : 615.98
+                  },
+                  "to" : {
+                    "x" : 338.3999999999999,
+                    "y" : 559.84
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 338.3999999999999,
+                    "y" : 559.8100000000001
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "93784B4B-FC07-4358-ADE5-93CD302500EF",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        },
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              125.01000000000013,
+              112.18749999999997
+            ],
+            [
+              773.9146897130875,
+              799.8031236627389
+            ]
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "gradient" : {
+                "_0" : {
+                  "linear" : {
+                    "_0" : {
+                      "endPoint" : [
+                        0.26898437500000005,
+                        0.5
+                      ],
+                      "id" : "CDCFC86B-50F1-4215-953A-7FFACC7B3A45",
+                      "originPoint" : [
+                        0.5412353515625,
+                        0.5
+                      ],
+                      "scale" : 1,
+                      "scaleX" : 1,
+                      "scaleY" : 1,
+                      "spreadMethod" : "pad",
+                      "startPoint" : [
+                        0.813486328125,
+                        0.49999999999999994
+                      ],
+                      "stops" : [
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "09C30226-D479-45C9-ACED-A1D38DB6735A",
+                          "opacity" : 0.8,
+                          "position" : 0.17
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "FC91ACC2-5F21-4158-9E62-0A52F7B09AAF",
+                          "opacity" : 0.63,
+                          "position" : 0.27
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "FE98BC86-164D-43AF-BCA7-80E1B6C27F3D",
+                          "opacity" : 0.22,
+                          "position" : 0.49
+                        },
+                        {
+                          "color" : {
+                            "rgb" : {
+                              "_0" : {
+                                "alpha" : 1,
+                                "blue" : 0.30980392156862746,
+                                "green" : 0.9568627450980393,
+                                "red" : 1
+                              }
+                            }
+                          },
+                          "id" : "E9EED1FF-01D0-46DD-B826-CC4F6B535FEA",
+                          "opacity" : 0,
+                          "position" : 0.6
+                        }
+                      ],
+                      "units" : "objectBoundingBox"
+                    }
+                  }
+                }
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "D7E6D614-11E3-4B8D-ADE5-E29218A086C0",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Path",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 870.94,
+                    "y" : 380.62
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 854.1,
+                    "y" : 340.08
+                  },
+                  "control2" : {
+                    "x" : 819.95,
+                    "y" : 296.31
+                  },
+                  "to" : {
+                    "x" : 793.21,
+                    "y" : 282.47
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 812.2800000000001,
+                    "y" : 319.43
+                  },
+                  "control2" : {
+                    "x" : 825.52,
+                    "y" : 359.12
+                  },
+                  "to" : {
+                    "x" : 832.45,
+                    "y" : 400.13
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5200000000001,
+                    "y" : 400.78
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 788.71,
+                    "y" : 291.52
+                  },
+                  "control2" : {
+                    "x" : 714.45,
+                    "y" : 247.39999999999998
+                  },
+                  "to" : {
+                    "x" : 653.7700000000001,
+                    "y" : 151.44999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 650.7,
+                    "y" : 146.59999999999997
+                  },
+                  "control2" : {
+                    "x" : 647.6300000000001,
+                    "y" : 141.72999999999996
+                  },
+                  "to" : {
+                    "x" : 644.6400000000001,
+                    "y" : 136.59999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 642.9300000000001,
+                    "y" : 133.66999999999996
+                  },
+                  "control2" : {
+                    "x" : 641.5600000000001,
+                    "y" : 131.02999999999997
+                  },
+                  "to" : {
+                    "x" : 640.3700000000001,
+                    "y" : 128.59999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 637.8500000000001,
+                    "y" : 123.71999999999997
+                  },
+                  "control2" : {
+                    "x" : 635.9100000000001,
+                    "y" : 118.56999999999996
+                  },
+                  "to" : {
+                    "x" : 634.5900000000001,
+                    "y" : 113.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 634.5900000000001,
+                    "y" : 112.72999999999996
+                  },
+                  "control2" : {
+                    "x" : 634.2200000000001,
+                    "y" : 112.29999999999997
+                  },
+                  "to" : {
+                    "x" : 633.7100000000002,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 633.4700000000001,
+                    "y" : 112.16999999999997
+                  },
+                  "control2" : {
+                    "x" : 633.2200000000001,
+                    "y" : 112.16999999999997
+                  },
+                  "to" : {
+                    "x" : 632.9800000000001,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.9300000000002,
+                    "y" : 112.23999999999997
+                  },
+                  "control2" : {
+                    "x" : 632.8500000000001,
+                    "y" : 112.32999999999997
+                  },
+                  "to" : {
+                    "x" : 632.7900000000001,
+                    "y" : 112.34999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 632.73,
+                    "y" : 112.36999999999996
+                  },
+                  "control2" : {
+                    "x" : 632.6,
+                    "y" : 112.45999999999997
+                  },
+                  "to" : {
+                    "x" : 632.5100000000001,
+                    "y" : 112.49999999999997
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 632.6600000000001,
+                    "y" : 112.23999999999997
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 535.3400000000001,
+                    "y" : 169.26999999999998
+                  },
+                  "control2" : {
+                    "x" : 502.30000000000007,
+                    "y" : 274.83
+                  },
+                  "to" : {
+                    "x" : 499.30000000000007,
+                    "y" : 327.65
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 503.82000000000005,
+                    "y" : 327.34
+                  },
+                  "control2" : {
+                    "x" : 508.30000000000007,
+                    "y" : 326.96
+                  },
+                  "to" : {
+                    "x" : 512.9200000000001,
+                    "y" : 326.96
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 583.21,
+                    "y" : 327.09999999999997
+                  },
+                  "control2" : {
+                    "x" : 648.0200000000001,
+                    "y" : 364.97999999999996
+                  },
+                  "to" : {
+                    "x" : 682.6700000000001,
+                    "y" : 426.17999999999995
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 655.4200000000001,
+                    "y" : 407.28999999999996
+                  },
+                  "control2" : {
+                    "x" : 622.1200000000001,
+                    "y" : 399.19999999999993
+                  },
+                  "to" : {
+                    "x" : 589.2500000000001,
+                    "y" : 403.47999999999996
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 728.6100000000001,
+                    "y" : 473.21999999999997
+                  },
+                  "control2" : {
+                    "x" : 691.2200000000001,
+                    "y" : 713.3399999999999
+                  },
+                  "to" : {
+                    "x" : 498.09000000000015,
+                    "y" : 704.3399999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 480.89000000000016,
+                    "y" : 703.6299999999999
+                  },
+                  "control2" : {
+                    "x" : 463.90000000000015,
+                    "y" : 700.3499999999999
+                  },
+                  "to" : {
+                    "x" : 447.67000000000013,
+                    "y" : 694.5999999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 443.8800000000001,
+                    "y" : 693.18
+                  },
+                  "control2" : {
+                    "x" : 440.09000000000015,
+                    "y" : 691.6299999999999
+                  },
+                  "to" : {
+                    "x" : 436.29000000000013,
+                    "y" : 689.9399999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 434.10000000000014,
+                    "y" : 688.9399999999999
+                  },
+                  "control2" : {
+                    "x" : 431.91000000000014,
+                    "y" : 687.9399999999999
+                  },
+                  "to" : {
+                    "x" : 429.7500000000001,
+                    "y" : 686.8199999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 430.0200000000001,
+                    "y" : 686.9899999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 428.1400000000001,
+                    "y" : 686.0899999999999
+                  },
+                  "control2" : {
+                    "x" : 426.2600000000001,
+                    "y" : 685.1499999999999
+                  },
+                  "to" : {
+                    "x" : 424.3800000000001,
+                    "y" : 684.18
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 426.1900000000001,
+                    "y" : 685.05
+                  },
+                  "control2" : {
+                    "x" : 427.8900000000001,
+                    "y" : 685.9899999999999
+                  },
+                  "to" : {
+                    "x" : 429.7500000000001,
+                    "y" : 686.8199999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 382.4300000000001,
+                    "y" : 662.3499999999999
+                  },
+                  "control2" : {
+                    "x" : 343.3700000000001,
+                    "y" : 616.0799999999999
+                  },
+                  "to" : {
+                    "x" : 338.4900000000001,
+                    "y" : 559.9499999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 338.4900000000001,
+                    "y" : 559.9499999999999
+                  },
+                  "control2" : {
+                    "x" : 356.3700000000001,
+                    "y" : 493.23999999999995
+                  },
+                  "to" : {
+                    "x" : 466.5500000000001,
+                    "y" : 493.23999999999995
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 478.46000000000015,
+                    "y" : 493.23999999999995
+                  },
+                  "control2" : {
+                    "x" : 512.5400000000001,
+                    "y" : 459.96999999999997
+                  },
+                  "to" : {
+                    "x" : 513.1500000000001,
+                    "y" : 450.3299999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 513.0000000000001,
+                    "y" : 447.17999999999995
+                  },
+                  "control2" : {
+                    "x" : 445.5700000000001,
+                    "y" : 420.30999999999995
+                  },
+                  "to" : {
+                    "x" : 419.2800000000001,
+                    "y" : 394.3999999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 405.2300000000001,
+                    "y" : 380.5399999999999
+                  },
+                  "control2" : {
+                    "x" : 398.5700000000001,
+                    "y" : 373.8699999999999
+                  },
+                  "to" : {
+                    "x" : 392.6600000000001,
+                    "y" : 368.8599999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 389.4700000000001,
+                    "y" : 366.1499999999999
+                  },
+                  "control2" : {
+                    "x" : 386.1300000000001,
+                    "y" : 363.6199999999999
+                  },
+                  "to" : {
+                    "x" : 382.6600000000001,
+                    "y" : 361.2799999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 373.8300000000001,
+                    "y" : 330.3499999999999
+                  },
+                  "control2" : {
+                    "x" : 373.4600000000001,
+                    "y" : 297.6199999999999
+                  },
+                  "to" : {
+                    "x" : 381.5700000000001,
+                    "y" : 266.4999999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 345.8300000000001,
+                    "y" : 283.82999999999987
+                  },
+                  "control2" : {
+                    "x" : 314.0700000000001,
+                    "y" : 308.3899999999999
+                  },
+                  "to" : {
+                    "x" : 288.3100000000001,
+                    "y" : 338.6399999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 288.1300000000001,
+                    "y" : 338.6399999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 272.7700000000001,
+                    "y" : 319.15999999999985
+                  },
+                  "control2" : {
+                    "x" : 273.85000000000014,
+                    "y" : 254.9299999999999
+                  },
+                  "to" : {
+                    "x" : 274.73000000000013,
+                    "y" : 241.50999999999988
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 270.1900000000001,
+                    "y" : 243.3399999999999
+                  },
+                  "control2" : {
+                    "x" : 265.85000000000014,
+                    "y" : 245.63999999999987
+                  },
+                  "to" : {
+                    "x" : 261.79000000000013,
+                    "y" : 248.37999999999988
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 248.23000000000013,
+                    "y" : 258.0599999999999
+                  },
+                  "control2" : {
+                    "x" : 235.56000000000014,
+                    "y" : 268.9299999999999
+                  },
+                  "to" : {
+                    "x" : 223.92000000000013,
+                    "y" : 280.8499999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 210.65000000000012,
+                    "y" : 294.3099999999999
+                  },
+                  "control2" : {
+                    "x" : 198.54000000000013,
+                    "y" : 308.8599999999999
+                  },
+                  "to" : {
+                    "x" : 187.70000000000013,
+                    "y" : 324.3399999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.70000000000013,
+                    "y" : 324.3999999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 187.70000000000013,
+                    "y" : 324.3299999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 162.79000000000013,
+                    "y" : 359.6599999999999
+                  },
+                  "control2" : {
+                    "x" : 145.12000000000012,
+                    "y" : 399.5899999999999
+                  },
+                  "to" : {
+                    "x" : 135.72000000000014,
+                    "y" : 441.7899999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 135.20000000000013,
+                    "y" : 444.3499999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 134.47000000000014,
+                    "y" : 447.75999999999993
+                  },
+                  "control2" : {
+                    "x" : 131.20000000000013,
+                    "y" : 465.0899999999999
+                  },
+                  "to" : {
+                    "x" : 130.73000000000013,
+                    "y" : 468.8099999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 127.74000000000014,
+                    "y" : 486.6999999999999
+                  },
+                  "control2" : {
+                    "x" : 125.83000000000013,
+                    "y" : 504.7499999999999
+                  },
+                  "to" : {
+                    "x" : 125.01000000000013,
+                    "y" : 522.8699999999999
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 125.01000000000013,
+                    "y" : 524.8699999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 125.39000000000013,
+                    "y" : 739.05
+                  },
+                  "control2" : {
+                    "x" : 299.1800000000001,
+                    "y" : 912.3699999999999
+                  },
+                  "to" : {
+                    "x" : 513.1800000000002,
+                    "y" : 911.9899999999999
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 701.3800000000001,
+                    "y" : 911.6599999999999
+                  },
+                  "control2" : {
+                    "x" : 862.1300000000001,
+                    "y" : 776.0299999999999
+                  },
+                  "to" : {
+                    "x" : 894.2800000000002,
+                    "y" : 590.4399999999998
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 894.9300000000002,
+                    "y" : 585.4399999999998
+                  },
+                  "control2" : {
+                    "x" : 895.4600000000002,
+                    "y" : 580.4799999999998
+                  },
+                  "to" : {
+                    "x" : 896.0400000000002,
+                    "y" : 575.4299999999998
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 904.0200000000002,
+                    "y" : 509.40999999999985
+                  },
+                  "control2" : {
+                    "x" : 895.3800000000002,
+                    "y" : 442.4499999999998
+                  },
+                  "to" : {
+                    "x" : 870.9100000000002,
+                    "y" : 380.6299999999998
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 870.9300000000002,
+                    "y" : 380.60999999999984
+                  }
+                }
+              },
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 832.5,
+                    "y" : 400.54
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.57,
+                    "y" : 400.95000000000005
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 832.5,
+                    "y" : 400.54
+                  }
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "E9933C2F-670B-409F-84AC-73BF0D34990D",
+            "isClosed" : false
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "rgbSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 1,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 0,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 1,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 0,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 1,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0.5,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.518,
+            "red" : 0.04
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.478,
+            "red" : 0
+          },
+          "name" : "systemBlue"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.227,
+            "green" : 0.271,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.188,
+            "green" : 0.231,
+            "red" : 1
+          },
+          "name" : "systemRed"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.345,
+            "green" : 0.82,
+            "red" : 0.188
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.349,
+            "green" : 0.78,
+            "red" : 0.204
+          },
+          "name" : "systemGreen"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.039,
+            "green" : 0.839,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0.8,
+            "red" : 1
+          },
+          "name" : "systemYellow"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.039,
+            "green" : 0.624,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0.584,
+            "red" : 1
+          },
+          "name" : "systemOrange"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.949,
+            "green" : 0.352,
+            "red" : 0.749
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.871,
+            "green" : 0.322,
+            "red" : 0.686
+          },
+          "name" : "systemPurple"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.373,
+            "green" : 0.216,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.333,
+            "green" : 0.176,
+            "red" : 1
+          },
+          "name" : "systemPink"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.878,
+            "red" : 0.251
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.98,
+            "green" : 0.784,
+            "red" : 0.353
+          },
+          "name" : "systemTeal"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.949,
+            "green" : 0.365,
+            "red" : 0.365
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.839,
+            "green" : 0.337,
+            "red" : 0.345
+          },
+          "name" : "systemIndigo"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.407,
+            "green" : 0.557,
+            "red" : 0.675
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.368,
+            "green" : 0.518,
+            "red" : 0.635
+          },
+          "name" : "systemBrown"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.576,
+            "green" : 0.557,
+            "red" : 0.557
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.576,
+            "green" : 0.557,
+            "red" : 0.557
+          },
+          "name" : "systemGray"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.4,
+            "green" : 0.388,
+            "red" : 0.388
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.698,
+            "green" : 0.682,
+            "red" : 0.682
+          },
+          "name" : "systemGray2"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.29,
+            "green" : 0.282,
+            "red" : 0.282
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.8,
+            "green" : 0.78,
+            "red" : 0.78
+          },
+          "name" : "systemGray3"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 1,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0,
+            "red" : 0
+          },
+          "name" : "label"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 0.6,
+            "blue" : 0.961,
+            "green" : 0.922,
+            "red" : 0.922
+          },
+          "lightMode" : {
+            "alpha" : 0.6,
+            "blue" : 0.263,
+            "green" : 0.235,
+            "red" : 0.235
+          },
+          "name" : "secondaryLabel"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.518,
+            "red" : 0.04
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.478,
+            "red" : 0
+          },
+          "name" : "link"
+        }
+      }
+    }
+  ],
+  "selectedLayerIndex" : 2,
+  "selectedShapeIDs" : [
+
+  ],
+  "selectedTextIDs" : [
+
+  ],
+  "settings" : {
+    "backgroundColor" : {
+      "white" : {
+
+      }
+    },
+    "colorMode" : "RGB",
+    "gridSpacing" : 0.125,
+    "height" : 14.222222222222221,
+    "resolution" : 72,
+    "showGrid" : false,
+    "showRulers" : true,
+    "snapToGrid" : false,
+    "unit" : "Inches",
+    "width" : 14.222222222222221
+  },
+  "showRulers" : true,
+  "snapToGrid" : false,
+  "textObjects" : [
+
+  ],
+  "viewMode" : "Color View",
+  "zoomLevel" : 0.640625
+}
