@@ -15,6 +15,18 @@ struct GradientStopItem: Identifiable {
     let color: VectorColor
 }
 
+// MARK: - Helper Functions
+
+/// Formats a number for display, showing decimals only when needed
+func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {
+    // If the value is a whole number, show it without decimals
+    if value.truncatingRemainder(dividingBy: 1) == 0 {
+        return String(format: "%.0f", value)
+    }
+    // Otherwise show with specified decimal places
+    return String(format: "%.\(maxDecimals)f", value)
+}
+
 // MARK: - Main Stroke and Fill Panel
 
 struct StrokeFillPanel: View {
@@ -1860,7 +1872,7 @@ struct GradientAngleControlView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(String(format: "%.1f", angle))°")
+                    Text("\(formatNumberForDisplay(angle, maxDecimals: 1))°")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -1875,7 +1887,7 @@ struct GradientAngleControlView: View {
                     .controlSize(.small)
                     
                     TextField("", text: Binding(
-                        get: { String(format: "%.1f", angle) },
+                        get: { formatNumberForDisplay(angle, maxDecimals: 1) },
                         set: { newValue in
                             if let doubleValue = Double(newValue) {
                                 onAngleChange(doubleValue)
@@ -1917,7 +1929,7 @@ struct GradientOriginControlView: View {
                 
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("X: \(currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.00")")
+                        Text("X: \(currentGradient != nil ? formatNumberForDisplay(getOriginX(currentGradient!)) : "0")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
@@ -1931,7 +1943,7 @@ struct GradientOriginControlView: View {
                             .controlSize(.small)
                             
                             TextField("", text: Binding(
-                                get: { currentGradient != nil ? String(format: "%.2f", getOriginX(currentGradient!)) : "0.00" },
+                                get: { currentGradient != nil ? formatNumberForDisplay(getOriginX(currentGradient!)) : "0" },
                                 set: { newValue in
                                     if let doubleValue = Double(newValue) {
                                         updateOriginX(doubleValue)
@@ -1945,7 +1957,7 @@ struct GradientOriginControlView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Y: \(currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.00")")
+                        Text("Y: \(currentGradient != nil ? formatNumberForDisplay(getOriginY(currentGradient!)) : "0")")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
@@ -1959,7 +1971,7 @@ struct GradientOriginControlView: View {
                             .controlSize(.small)
                             
                             TextField("", text: Binding(
-                                get: { currentGradient != nil ? String(format: "%.2f", getOriginY(currentGradient!)) : "0.00" },
+                                get: { currentGradient != nil ? formatNumberForDisplay(getOriginY(currentGradient!)) : "0" },
                                 set: { newValue in
                                     if let doubleValue = Double(newValue) {
                                         updateOriginY(doubleValue)
@@ -2008,7 +2020,7 @@ struct GradientScaleControlView: View {
                         .controlSize(.small)
                         
                         TextField("", text: Binding(
-                            get: { currentGradient != nil ? String(format: "%.2f", getScale(currentGradient!)) : "1.00" },
+                            get: { currentGradient != nil ? formatNumberForDisplay(getScale(currentGradient!)) : "1" },
                             set: { newValue in
                                 if let doubleValue = Double(newValue) {
                                     updateScale(doubleValue)
@@ -2024,7 +2036,7 @@ struct GradientScaleControlView: View {
                 // Aspect Ratio Control (X=1, Y=0 to 1) - ONLY for Radial Gradients
                 if case .radial = currentGradient {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Aspect Ratio: \(currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00")")
+                        Text("Aspect Ratio: \(currentGradient != nil ? formatNumberForDisplay(getAspectRatio(currentGradient!)) : "1")")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
@@ -2040,7 +2052,7 @@ struct GradientScaleControlView: View {
                             .controlSize(.small)
                             
                             TextField("", text: Binding(
-                                get: { currentGradient != nil ? String(format: "%.2f", getAspectRatio(currentGradient!)) : "1.00" },
+                                get: { currentGradient != nil ? formatNumberForDisplay(getAspectRatio(currentGradient!)) : "1" },
                                 set: { newValue in
                                     if let doubleValue = Double(newValue) {
                                         updateAspectRatio(doubleValue)
@@ -2055,7 +2067,7 @@ struct GradientScaleControlView: View {
                     
                     // Radius Control - ONLY for Radial Gradients
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Radius: \(currentGradient != nil ? String(format: "%.2f", getRadius(currentGradient!)) : "0.50")")
+                        Text("Radius: \(currentGradient != nil ? formatNumberForDisplay(getRadius(currentGradient!)) : "0.5")")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
@@ -2071,7 +2083,7 @@ struct GradientScaleControlView: View {
                             .controlSize(.small)
                             
                             TextField("", text: Binding(
-                                get: { currentGradient != nil ? String(format: "%.2f", getRadius(currentGradient!)) : "0.50" },
+                                get: { currentGradient != nil ? formatNumberForDisplay(getRadius(currentGradient!)) : "0.5" },
                                 set: { newValue in
                                     if let doubleValue = Double(newValue) {
                                         updateRadius(doubleValue)
