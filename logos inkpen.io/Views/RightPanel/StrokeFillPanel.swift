@@ -1909,7 +1909,7 @@ struct GradientOriginControlView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("-1 to 1")
+                    Text("-8 to 8")
                         .font(.caption2)
                         .foregroundColor(.blue)
                         .padding(.horizontal, 4)
@@ -1927,7 +1927,7 @@ struct GradientOriginControlView: View {
                             Slider(value: Binding(
                                 get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
                                 set: updateOriginX
-                            ), in: -1.0...1.0, onEditingChanged: { editing in
+                            ), in: -8.0...8.0, onEditingChanged: { editing in
                                 if !editing { document.saveToUndoStack() }
                             })
                             .controlSize(.small)
@@ -1955,7 +1955,7 @@ struct GradientOriginControlView: View {
                             Slider(value: Binding(
                                 get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
                                 set: updateOriginY
-                            ), in: -1.0...1.0, onEditingChanged: { editing in
+                            ), in: -8.0...8.0, onEditingChanged: { editing in
                                 if !editing { document.saveToUndoStack() }
                             })
                             .controlSize(.small)
@@ -2153,8 +2153,8 @@ struct GradientPreviewAndStopsView: View {
                     center: UnitPoint(x: centerX, y: centerY),
                     startRadiusX: 0,
                     startRadiusY: 0,
-                    endRadiusX: 50.0 * CGFloat(abs(scale)),
-                    endRadiusY: 50.0 * CGFloat(abs(scale * aspectRatio)),
+                    endRadiusX: 50.0 * CGFloat(abs(scale * radial.radius)),
+                    endRadiusY: 50.0 * CGFloat(abs(scale * aspectRatio * radial.radius)),
                     angle: angle
                 )
                 .frame(width: squareSize, height: squareSize)
@@ -2164,6 +2164,7 @@ struct GradientPreviewAndStopsView: View {
                     updateOriginY(y, true)
                     document.saveToUndoStack()
                 })
+
             } else if case .linear(let linear) = currentGradient {
                 // FIXED: Create linear gradient with proper scale support
                 let scale = getScale(currentGradient!)
@@ -2598,17 +2599,17 @@ struct CartesianGrid: View {
             // Coordinate labels at key positions
             VStack {
                 HStack {
-                    Text("(-1,1)")
+                    Text("(0,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: 2)
                     Spacer()
-                    Text("(0,1)")
+                    Text("(0.5,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: 2)
                     Spacer()
-                    Text("(1,1)")
+                    Text("(1,0)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: 2)
@@ -2616,17 +2617,17 @@ struct CartesianGrid: View {
                 .padding(.horizontal, 4)
                 Spacer()
                 HStack {
-                    Text("(-1,-1)")
+                    Text("(0,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: 2, y: -2)
                     Spacer()
-                    Text("(0,-1)")
+                    Text("(0.5,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(y: -2)
                     Spacer()
-                    Text("(1,-1)")
+                    Text("(1,1)")
                         .font(.caption2)
                         .foregroundColor(.white)
                         .offset(x: -2, y: -2)
@@ -2636,49 +2637,49 @@ struct CartesianGrid: View {
             
             // Clickable coordinate points
             if let onCoordinateClick = onCoordinateClick {
-                // Top-left (-1,1)
+                // Top-left (0,0)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: 0)
                     .onTapGesture {
-                        onCoordinateClick(-1.0, 1.0)
+                        onCoordinateClick(0.0, 0.0)
                     }
                 
-                // Top-right (1,1)
+                // Top-right (1,0)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width, y: 0)
                     .onTapGesture {
-                        onCoordinateClick(1.0, 1.0)
+                        onCoordinateClick(1.0, 0.0)
                     }
                 
-                // Bottom-left (-1,-1)
+                // Bottom-left (0,1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: height)
                     .onTapGesture {
-                        onCoordinateClick(-1.0, -1.0)
+                        onCoordinateClick(0.0, 1.0)
                     }
                 
-                // Bottom-right (1,-1)
+                // Bottom-right (1,1)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width, y: height)
                     .onTapGesture {
-                        onCoordinateClick(1.0, -1.0)
+                        onCoordinateClick(1.0, 1.0)
                     }
                 
-                // Center (0,0)
+                // Center (0.5,0.5)
                 Circle()
                     .fill(Color.green.opacity(0.6))
                     .frame(width: 12, height: 12)
                     .position(x: width/2, y: height/2)
                     .onTapGesture {
-                        onCoordinateClick(0.0, 0.0)
+                        onCoordinateClick(0.5, 0.5)
                     }
             }
         }
