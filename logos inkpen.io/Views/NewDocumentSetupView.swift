@@ -203,7 +203,7 @@ struct NewDocumentSetupView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Picker("Template", selection: $selectedTemplate) {
+                Picker("", selection: $selectedTemplate) {
                     ForEach(TemplateManager.TemplateType.allCases, id: \.self) { template in
                         Text(template.displayName).tag(template)
                     }
@@ -212,7 +212,7 @@ struct NewDocumentSetupView: View {
                 .onChange(of: selectedTemplate) { _, newTemplate in
                     applyTemplate(newTemplate)
                 }
-                .frame(width: 120)
+                .frame(maxWidth: .infinity)
             }
             
             // Quick Size Buttons in ROWS
