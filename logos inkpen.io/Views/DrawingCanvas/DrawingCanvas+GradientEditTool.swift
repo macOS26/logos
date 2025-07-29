@@ -68,20 +68,35 @@ extension DrawingCanvas {
     private func getGradientCenterPoint(gradient: VectorGradient, shape: VectorShape) -> CGPoint {
         let shapeBounds = shape.bounds
         
-        // Get origin point using the same functions as the stroke/fill panel
-        let originX = getGradientOriginX(gradient)
-        let originY = getGradientOriginY(gradient)
-        
-        // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
-        // Scale origin point by scale factor (same as LayerView)
-        let scaledOriginX = originX * getGradientScale(gradient)
-        let scaledOriginY = originY * getGradientScale(gradient)
-        
-        // Calculate center using the same formula as LayerView
-        let centerX = shapeBounds.minX + shapeBounds.width * scaledOriginX
-        let centerY = shapeBounds.minY + shapeBounds.height * scaledOriginY
-        
-        return CGPoint(x: centerX, y: centerY)
+        switch gradient {
+        case .linear(let linear):
+            // FIXED: Linear gradients use startPoint/endPoint, not originPoint
+            // Calculate the center point between start and end points
+            let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
+            let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
+            
+            // Apply origin point offset (same as LayerView)
+            let originOffsetX = shapeBounds.width * (linear.originPoint.x - 0.5)
+            let originOffsetY = shapeBounds.height * (linear.originPoint.y - 0.5)
+            
+            // Convert to canvas coordinates
+            let canvasX = shapeBounds.minX + centerX * shapeBounds.width + originOffsetX
+            let canvasY = shapeBounds.minY + centerY * shapeBounds.height + originOffsetY
+            
+            return CGPoint(x: canvasX, y: canvasY)
+            
+        case .radial(let radial):
+            // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
+            // Scale origin point by scale factor (same as LayerView)
+            let scaledOriginX = radial.originPoint.x * radial.scaleX
+            let scaledOriginY = radial.originPoint.y * radial.scaleY
+            
+            // Calculate center using the same formula as LayerView
+            let centerX = shapeBounds.minX + shapeBounds.width * scaledOriginX
+            let centerY = shapeBounds.minY + shapeBounds.height * scaledOriginY
+            
+            return CGPoint(x: centerX, y: centerY)
+        }
     }
     
     /// Get gradient scale (same as stroke/fill panel)
@@ -119,19 +134,42 @@ extension DrawingCanvas {
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         
         let shapeBounds = shape.bounds
-        let scale = getGradientScale(gradient)
         
-        // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
-        // Convert canvas coordinates back to relative coordinates using the same formula
-        let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width / scale
-        let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height / scale
-        
-        print("🎯 Gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))")
-        
-        // Don't clamp the coordinates - allow them to extend beyond object bounds
-        // This allows the origin point to move freely within the scaled gradient area
-        updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
-        updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
+        switch gradient {
+        case .linear(let linear):
+            // FIXED: Linear gradients - update origin point offset
+            // Convert canvas coordinates to relative coordinates within shape bounds
+            let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
+            let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
+            
+            // Calculate center point between start and end points
+            let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
+            let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
+            
+            // Calculate origin point offset (inverse of the rendering formula)
+            let originX = relativeX - centerX + 0.5
+            let originY = relativeY - centerY + 0.5
+            
+            print("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(originX), \(originY))")
+            
+            updateGradientOriginX(originX, shape: shape, applyToShapes: true)
+            updateGradientOriginY(originY, shape: shape, applyToShapes: true)
+            
+        case .radial(let radial):
+            // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
+            let scale = radial.scaleX
+            
+            // Convert canvas coordinates back to relative coordinates using the same formula
+            let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width / scale
+            let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height / scale
+            
+            print("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))")
+            
+            // Don't clamp the coordinates - allow them to extend beyond object bounds
+            // This allows the origin point to move freely within the scaled gradient area
+            updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
+            updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
+        }
     }
     
     /// Same update functions as stroke/fill panel
