@@ -23,7 +23,7 @@ struct CheckerboardPattern: View {
                     ForEach(0..<cols, id: \.self) { col in
                         let isEven = (row + col) % 2 == 0
                         Rectangle()
-                            .fill(isEven ? Color.white : Color.gray.opacity(0.3))
+                            .fill(isEven ? Color.white : Color.black.opacity(0.1))
                             .frame(width: tileSize, height: tileSize)
                             .position(
                                 x: CGFloat(col) * tileSize + tileSize / 2,
@@ -42,8 +42,8 @@ struct CheckerboardPattern: View {
 func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: CGFloat, cornerRadius: CGFloat = 0, borderWidth: CGFloat = 0.5, opacity: Double = 1.0) -> some View {
     if case .clear = color {
         ZStack {
-            // Checkerboard pattern to show transparency
-            CheckerboardPattern(size: 8)
+            // Checkerboard pattern to show transparency (use smaller size like VerticalToolbar)
+            CheckerboardPattern(size: min(4, width / 4))
                 .frame(width: width, height: height)
                 .clipped()
             
@@ -51,27 +51,23 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(Color.clear)
                     .frame(width: width, height: height)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(Color.gray, lineWidth: borderWidth)
-                    )
+                    .border(Color.gray, width: borderWidth)
             } else {
                 Rectangle()
                     .fill(Color.clear)
                     .frame(width: width, height: height)
-                    .overlay(
-                        Rectangle()
-                            .stroke(Color.gray, lineWidth: borderWidth)
-                    )
+                    .border(Color.gray, width: borderWidth)
             }
             
-            // Diagonal slash through the clear color (forward slash)
+            // Diagonal slash through the clear color (forward slash) - match VerticalToolbar style
             Path { path in
                 path.move(to: CGPoint(x: 0, y: 0))
                 path.addLine(to: CGPoint(x: width, y: height))
             }
-            .stroke(Color.red, lineWidth: max(1, width / 15))
+            .stroke(Color.red, lineWidth: max(1, width / 20))
+            .frame(width: width, height: height)
         }
+        .allowsHitTesting(true) // Ensure the clear color swatch doesn't block interactions
     } else {
         if cornerRadius > 0 {
             RoundedRectangle(cornerRadius: cornerRadius)

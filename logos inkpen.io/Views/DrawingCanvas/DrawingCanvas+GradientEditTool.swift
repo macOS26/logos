@@ -70,18 +70,19 @@ extension DrawingCanvas {
         
         switch gradient {
         case .linear(let linear):
-            // FIXED: Linear gradients use startPoint/endPoint, not originPoint
-            // Calculate the center point between start and end points
-            let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
-            let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
+            // FIXED: Linear gradients should use origin point directly like radial gradients
+            // The origin point represents the center of the gradient, not an offset
+            let originX = linear.originPoint.x
+            let originY = linear.originPoint.y
             
-            // Apply origin point offset (same as LayerView)
-            let originOffsetX = shapeBounds.width * (linear.originPoint.x - 0.5)
-            let originOffsetY = shapeBounds.height * (linear.originPoint.y - 0.5)
+            // Apply scale factor to match LayerView rendering
+            let scale = CGFloat(linear.scaleX)
+            let scaledOriginX = originX * scale
+            let scaledOriginY = originY * scale
             
-            // Convert to canvas coordinates
-            let canvasX = shapeBounds.minX + centerX * shapeBounds.width + originOffsetX
-            let canvasY = shapeBounds.minY + centerY * shapeBounds.height + originOffsetY
+            // Convert to canvas coordinates using the same formula as radial gradients
+            let canvasX = shapeBounds.minX + shapeBounds.width * scaledOriginX
+            let canvasY = shapeBounds.minY + shapeBounds.height * scaledOriginY
             
             return CGPoint(x: canvasX, y: canvasY)
             
@@ -137,18 +138,17 @@ extension DrawingCanvas {
         
         switch gradient {
         case .linear(let linear):
-            // FIXED: Linear gradients - update origin point offset
+            // FIXED: Linear gradients should use origin point directly like radial gradients
             // Convert canvas coordinates to relative coordinates within shape bounds
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            // Calculate center point between start and end points
-            let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
-            let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
+            // Apply scale factor to match LayerView rendering
+            let scale = CGFloat(linear.scaleX)
             
-            // Calculate origin point offset (inverse of the rendering formula)
-            let originX = relativeX - centerX + 0.5
-            let originY = relativeY - centerY + 0.5
+            // Calculate origin point using the same formula as radial gradients
+            let originX = relativeX / scale
+            let originY = relativeY / scale
             
             print("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(originX), \(originY))")
             

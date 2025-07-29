@@ -3712,36 +3712,38 @@ class GradientNSView: NSView {
         // Draw gradient
         switch gradient {
         case .linear(let linear):
-            // Apply origin point offset
-            let originOffsetX = pathBounds.width * (linear.originPoint.x - 0.5)
-            let originOffsetY = pathBounds.height * (linear.originPoint.y - 0.5)
+            // FIXED: Use the same coordinate system as the preview and gradient edit tool
+            // The origin point represents the center of the gradient, just like radial gradients
+            let originX = linear.originPoint.x
+            let originY = linear.originPoint.y
             
-            // Calculate base points without object bounds constraints
-            let baseStartX = linear.startPoint.x + originOffsetX / pathBounds.width
-            let baseStartY = linear.startPoint.y + originOffsetY / pathBounds.height
-            let baseEndX = linear.endPoint.x + originOffsetX / pathBounds.width
-            let baseEndY = linear.endPoint.y + originOffsetY / pathBounds.height
+            // Apply scale factor to match the coordinate system
+            let scale = CGFloat(linear.scaleX)
+            let scaledOriginX = originX * scale
+            let scaledOriginY = originY * scale
             
-            // Use a large coordinate space to allow scaling beyond object bounds
-            let coordinateScale: CGFloat = 1000 // Large coordinate space for scaling
-            let startPoint = CGPoint(x: baseStartX * coordinateScale, y: baseStartY * coordinateScale)
-            let endPoint = CGPoint(x: baseEndX * coordinateScale, y: baseEndY * coordinateScale)
+            // Calculate the center of the gradient in path coordinates
+            let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
+            let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
             
-            // FIXED: Apply scale (single value) and aspect ratio (X=100%, Y=variable)
-            let centerX = (startPoint.x + endPoint.x) / 2
-            let centerY = (startPoint.y + endPoint.y) / 2
+            // Calculate gradient direction based on startPoint and endPoint
+            let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
+            let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
+            let gradientAngle = atan2(gradientVector.y, gradientVector.x)
             
-            // Apply scale to both X and Y equally
-            let scale = CGFloat(linear.scaleX) // Use scaleX as the single scale value
-            let scaledStartX = centerX + (startPoint.x - centerX) * scale
-            let scaledStartY = centerY + (startPoint.y - centerY) * scale
-            let scaledEndX = centerX + (endPoint.x - centerX) * scale
-            let scaledEndY = centerY + (endPoint.y - centerY) * scale
+            // Apply scale to gradient length
+            let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)
             
-            let scaledStart = CGPoint(x: scaledStartX, y: scaledStartY)
-            let scaledEnd = CGPoint(x: scaledEndX, y: scaledEndY)
+            // Calculate start and end points
+            let startX = centerX - cos(gradientAngle) * scaledLength / 2
+            let startY = centerY - sin(gradientAngle) * scaledLength / 2
+            let endX = centerX + cos(gradientAngle) * scaledLength / 2
+            let endY = centerY + sin(gradientAngle) * scaledLength / 2
             
-            context.drawLinearGradient(cgGradient, start: scaledStart, end: scaledEnd, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+            let startPoint = CGPoint(x: startX, y: startY)
+            let endPoint = CGPoint(x: endX, y: endY)
+            
+            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 
         case .radial(let radial):
             // FIXED: Radial gradient coordinate system - centerPoint is already in 0-1 range

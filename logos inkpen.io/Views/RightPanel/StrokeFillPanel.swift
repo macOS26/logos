@@ -1374,14 +1374,14 @@ struct GradientFillSection: View {
         switch type {
         case .linear:
             var linear = LinearGradient(
-                startPoint: CGPoint(x: -0.5, y: 0),
-                endPoint: CGPoint(x: 0.5, y: 0),
+                startPoint: CGPoint(x: 0, y: 0),
+                endPoint: CGPoint(x: 1, y: 0),
                 stops: validStops,
                 spreadMethod: .pad,
                 units: .objectBoundingBox
             )
-            // Set default origin point to center (0,0)
-            linear.originPoint = CGPoint(x: 0, y: 0)
+            // FIXED: Set default origin point to center (0.5,0.5) to match rendering logic
+            linear.originPoint = CGPoint(x: 0.5, y: 0.5)
             // Set default scale values for new gradients
             linear.scaleX = 1.0
             linear.scaleY = 1.0
@@ -2127,17 +2127,36 @@ struct GradientPreviewAndStopsView: View {
     
     private func calculateDotPosition(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> CGPoint {
         guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
-        let originX = getOriginX(gradient)
-        let originY = getOriginY(gradient)
         
-        // Clamp the dot position to stay within preview bounds (0,0 to 1,1)
-        let clampedX = max(0.0, min(1.0, originX))
-        let clampedY = max(0.0, min(1.0, originY))
-        
-        return CGPoint(
-            x: clampedX * squareSize,
-            y: clampedY * squareSize
-        )
+        switch gradient {
+        case .linear(let linear):
+            // FIXED: Linear gradients should use origin point directly like radial gradients
+            let originX = getOriginX(gradient)
+            let originY = getOriginY(gradient)
+            
+            // Clamp the dot position to stay within preview bounds (0,0 to 1,1)
+            let clampedX = max(0.0, min(1.0, originX))
+            let clampedY = max(0.0, min(1.0, originY))
+            
+            return CGPoint(
+                x: clampedX * squareSize,
+                y: clampedY * squareSize
+            )
+            
+        case .radial(let radial):
+            // Radial gradients use origin point directly
+            let originX = getOriginX(gradient)
+            let originY = getOriginY(gradient)
+            
+            // Clamp the dot position to stay within preview bounds (0,0 to 1,1)
+            let clampedX = max(0.0, min(1.0, originX))
+            let clampedY = max(0.0, min(1.0, originY))
+            
+            return CGPoint(
+                x: clampedX * squareSize,
+                y: clampedY * squareSize
+            )
+        }
     }
     
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
@@ -2203,27 +2222,25 @@ struct GradientPreviewAndStopsView: View {
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
-                // FIXED: Apply scale (single value) to gradient length
-                let startPoint = UnitPoint(x: linear.startPoint.x, y: linear.startPoint.y)
-                let endPoint = UnitPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+                // FIXED: Use the same coordinate system as gradient edit tool
+                // Calculate the center point between start and end points
+                let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
+                let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
                 
-                // Apply origin offset
-                let adjustedStart = UnitPoint(x: startPoint.x + (originX - 0.5), y: startPoint.y + (originY - 0.5))
-                let adjustedEnd = UnitPoint(x: endPoint.x + (originX - 0.5), y: endPoint.y + (originY - 0.5))
+                // Apply origin point offset (same as gradient edit tool)
+                let adjustedCenterX = centerX + (originX - 0.5)
+                let adjustedCenterY = centerY + (originY - 0.5)
                 
                 // Apply scale to gradient length
-                let gradientVector = CGPoint(x: adjustedEnd.x - adjustedStart.x, y: adjustedEnd.y - adjustedStart.y)
+                let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
                 let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
                 let gradientAngle = atan2(gradientVector.y, gradientVector.x)
                 
                 let scaledLength = gradientLength * CGFloat(scale)
-                let centerX = (adjustedStart.x + adjustedEnd.x) / 2
-                let centerY = (adjustedStart.y + adjustedEnd.y) / 2
-                
-                let scaledStartX = centerX - cos(gradientAngle) * scaledLength / 2
-                let scaledStartY = centerY - sin(gradientAngle) * scaledLength / 2
-                let scaledEndX = centerX + cos(gradientAngle) * scaledLength / 2
-                let scaledEndY = centerY + sin(gradientAngle) * scaledLength / 2
+                let scaledStartX = adjustedCenterX - cos(gradientAngle) * scaledLength / 2
+                let scaledStartY = adjustedCenterY - sin(gradientAngle) * scaledLength / 2
+                let scaledEndX = adjustedCenterX + cos(gradientAngle) * scaledLength / 2
+                let scaledEndY = adjustedCenterY + sin(gradientAngle) * scaledLength / 2
                 
                 let finalStart = UnitPoint(x: scaledStartX, y: scaledStartY)
                 let finalEnd = UnitPoint(x: scaledEndX, y: scaledEndY)
