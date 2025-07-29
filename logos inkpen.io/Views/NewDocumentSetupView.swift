@@ -114,7 +114,7 @@ struct NewDocumentSetupView: View {
     // MARK: - Left Panel - Document Settings
     private var leftPanel: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
                 // Document Size Section
                 documentSizeSection
                 
@@ -124,67 +124,65 @@ struct NewDocumentSetupView: View {
                 // Advanced Settings Section
                 advancedSettingsSection
             }
-            .padding(24)
+            .padding(20)
         }
         .frame(width: 400)
     }
     
     // MARK: - Document Size Section
     private var documentSizeSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Document Size")
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            VStack(spacing: 12) {
-                // Width and Height
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Width")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            TextField("Width", value: $setupData.width, format: .number)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 80)
-                            
-                            Text(unitLabel)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Height")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        HStack {
-                            TextField("Height", value: $setupData.height, format: .number)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 80)
-                            
-                            Text(unitLabel)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                // Unit Picker
+            // Width and Height in HStack for compact layout
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Units")
+                    Text("Width")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Picker("Unit", selection: $setupData.unit) {
-                        ForEach(MeasurementUnit.allCases, id: \.self) { unit in
-                            Text(unit.rawValue).tag(unit)
-                        }
+                    HStack {
+                        TextField("Width", value: $setupData.width, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 80)
+                        
+                        Text(unitLabel)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
                 }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Height")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack {
+                        TextField("Height", value: $setupData.height, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 80)
+                        
+                        Text(unitLabel)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            // Unit Picker
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Units")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Picker("Unit", selection: $setupData.unit) {
+                    ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                        Text(unit.rawValue).tag(unit)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
             }
         }
         .onChange(of: setupData.width) { _, _ in generateDocumentPreview() }
@@ -194,12 +192,13 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Template Section
     private var templateSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Template")
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            VStack(spacing: 12) {
+            // Template Picker and Quick Sizes in HStack for compact layout
+            HStack(alignment: .top, spacing: 16) {
                 // Template Picker
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Preset")
@@ -216,6 +215,7 @@ struct NewDocumentSetupView: View {
                         applyTemplate(newTemplate)
                     }
                 }
+                .frame(width: 120)
                 
                 // Quick Size Buttons
                 VStack(alignment: .leading, spacing: 4) {
@@ -223,13 +223,14 @@ struct NewDocumentSetupView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 4) {
                         ForEach(quickSizes, id: \.name) { size in
                             Button(size.name) {
                                 applyQuickSize(size)
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
+                            .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -239,40 +240,44 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Advanced Settings Section
     private var advancedSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Advanced Settings")
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            VStack(spacing: 12) {
-                // Color Mode
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Color Mode")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Picker("Color Mode", selection: $setupData.colorMode) {
-                        ForEach(ColorMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
-                
-                // Resolution
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Resolution")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    HStack {
-                        TextField("Resolution", value: $setupData.resolution, format: .number)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 80)
-                        
-                        Text("DPI")
+            // Advanced settings in HStack for compact layout
+            HStack(alignment: .top, spacing: 16) {
+                // Color Mode and Resolution
+                VStack(alignment: .leading, spacing: 8) {
+                    // Color Mode
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Color Mode")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                        
+                        Picker("Color Mode", selection: $setupData.colorMode) {
+                            ForEach(ColorMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                    
+                    // Resolution
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Resolution")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        HStack {
+                            TextField("Resolution", value: $setupData.resolution, format: .number)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .frame(width: 80)
+                            
+                            Text("DPI")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
                 
@@ -293,7 +298,7 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Right Panel - Preview and Filename
     private var rightPanel: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 16) {
             // Filename Section
             filenameSection
             
@@ -302,13 +307,13 @@ struct NewDocumentSetupView: View {
             
             Spacer()
         }
-        .padding(24)
+        .padding(20)
         .frame(maxWidth: .infinity)
     }
     
     // MARK: - Filename Section
     private var filenameSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Document Name")
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -331,7 +336,7 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Preview Section
     private var previewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Document Preview")
                 .font(.headline)
                 .fontWeight(.semibold)
@@ -374,7 +379,7 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Footer Section
     private var footerSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             Divider()
             
             HStack {
@@ -392,7 +397,7 @@ struct NewDocumentSetupView: View {
                 .disabled(setupData.filename.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
+        .padding(20)
         .background(Color(NSColor.controlBackgroundColor))
     }
     
