@@ -212,6 +212,112 @@ extension DrawingCanvas {
     
     // MARK: - Smooth Handle Management for Coincident Points
     
+    /// Enhanced function to move coincident points together with smooth curve logic
+    /// This ensures that when coincident points are moved, their handles maintain 180-degree alignment
+    func moveCoincidentPointsWithSmoothLogic(pointID: PointID, to newPosition: CGPoint, delta: CGPoint) {
+        let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+        
+        for coincidentPointID in coincidentPoints {
+            // Skip the original point (it's handled separately)
+            if coincidentPointID == pointID { continue }
+            
+            // Find and update the coincident point
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == coincidentPointID.shapeID }) {
+                    guard coincidentPointID.elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { continue }
+                    
+                    var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+                    let newPoint = VectorPoint(newPosition.x, newPosition.y)
+                    
+                    // Move the coincident point to the same new position
+                    switch elements[coincidentPointID.elementIndex] {
+                    case .move(_):
+                        elements[coincidentPointID.elementIndex] = .move(to: newPoint)
+                    case .line(_):
+                        elements[coincidentPointID.elementIndex] = .line(to: newPoint)
+                    case .curve(_, let control1, let control2):
+                        elements[coincidentPointID.elementIndex] = .curve(to: newPoint, control1: control1, control2: control2)
+                    case .quadCurve(_, let control):
+                        elements[coincidentPointID.elementIndex] = .quadCurve(to: newPoint, control: control)
+                    case .close:
+                        continue
+                    }
+                    
+                    // Apply smooth curve logic if this coincident point is a smooth curve point
+                    if isSmoothCurvePoint(elements: elements, elementIndex: coincidentPointID.elementIndex) {
+                        moveSmoothCurveHandles(elements: &elements, elementIndex: coincidentPointID.elementIndex, delta: delta)
+                        print("🔗 COINCIDENT SMOOTH: Applied smooth curve logic to coincident point at element \(coincidentPointID.elementIndex) in shape \(coincidentPointID.shapeID)")
+                    }
+                    
+                    // Update the shape
+                    document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    break
+                }
+            }
+        }
+    }
+    
+    /// Detects if a point is a smooth curve point (has handles that are not collapsed to the anchor)
+    private func isSmoothCurvePoint(elements: [PathElement], elementIndex: Int) -> Bool {
+        guard elementIndex < elements.count else { return false }
+        
+        switch elements[elementIndex] {
+        case .curve(let to, _, let control2):
+            // Check if incoming handle (control2) is not collapsed to anchor point
+            let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+            
+            // Check if outgoing handle (control1 of NEXT element) is not collapsed to anchor point
+            var outgoingHandleCollapsed = true // Default to true if no next element
+            if elementIndex + 1 < elements.count {
+                let nextElement = elements[elementIndex + 1]
+                if case .curve(_, let nextControl1, _) = nextElement {
+                    outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                }
+            }
+            
+            // Point is smooth if BOTH handles are NOT collapsed (opposite of corner point logic)
+            return !incomingHandleCollapsed && !outgoingHandleCollapsed
+            
+        default:
+            return false
+        }
+    }
+    
+    /// Moves the handles of a smooth curve point while maintaining 180-degree alignment
+    private func moveSmoothCurveHandles(elements: inout [PathElement], elementIndex: Int, delta: CGPoint) {
+        guard elementIndex < elements.count else { return }
+        
+        switch elements[elementIndex] {
+        case .curve(let to, let control1, let control2):
+            // Move the anchor point (already done in the calling function)
+            let anchorPoint = CGPoint(x: to.x, y: to.y)
+            
+            // Move incoming handle (control2) of current element
+            let newControl2 = VectorPoint(control2.x + delta.x, control2.y + delta.y)
+            elements[elementIndex] = .curve(to: to, control1: control1, control2: newControl2)
+            
+            // Move outgoing handle (control1 of NEXT element) if it exists
+            if elementIndex + 1 < elements.count {
+                let nextElement = elements[elementIndex + 1]
+                if case .curve(let nextTo, let nextControl1, let nextControl2) = nextElement {
+                    // Use the existing calculateLinkedHandle logic to maintain 180-degree alignment
+                    let oppositeHandle = calculateLinkedHandle(
+                        anchorPoint: anchorPoint,
+                        draggedHandle: CGPoint(x: newControl2.x, y: newControl2.y),
+                        originalOppositeHandle: CGPoint(x: nextControl1.x, y: nextControl1.y)
+                    )
+                    
+                    let newNextControl1 = VectorPoint(oppositeHandle.x, oppositeHandle.y)
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
+                }
+            }
+            
+        default:
+            break
+        }
+    }
+    
     /// Handles smooth curve behavior for coincident points (first/last in closed paths)
     /// Uses EXACT coordinate matching (no tolerance) and applies smooth point logic
     func handleCoincidentSmoothPoints(elements: inout [PathElement], draggedHandleID: HandleID, newDraggedPosition: CGPoint) -> Bool {

@@ -32,6 +32,12 @@ I've implemented a comprehensive system to handle coincident points (points at t
 - **Access**: Available through right-click context menu when using Direct Selection tool
 - **Output**: Detailed console logging of coincident point groups
 
+### 6. NEW: Smooth Curve Movement for Coincident Points
+- **Function**: `moveCoincidentPointsWithSmoothLogic(pointID: PointID, to newPosition: CGPoint, delta: CGPoint)`
+- **Purpose**: Applies the same 180-degree handle alignment logic to coincident points when they're moved
+- **Behavior**: When coincident points are moved, their handles move with them while maintaining smooth curve alignment
+- **Benefits**: Ensures consistent smooth curve behavior across all coincident points, maintaining professional vector graphics standards
+
 ## How It Works
 
 ### Selection Behavior
@@ -44,6 +50,7 @@ I've implemented a comprehensive system to handle coincident points (points at t
 1. **Unified Movement**: All selected coincident points move together as a single unit
 2. **Coordinate Consistency**: Maintains exact coordinate alignment during movement
 3. **Path Continuity**: Preserves path integrity for closed shapes
+4. **NEW: Smooth Curve Alignment**: When coincident points are smooth curve points, their handles maintain 180-degree alignment during movement
 
 ### Visual Indicators
 - **Standard Points**: White fill with blue stroke
@@ -58,14 +65,14 @@ I've implemented a comprehensive system to handle coincident points (points at t
 2. Switch to Direct Selection tool
 3. Click on any anchor point
 4. Notice that the start and end points are automatically selected together
-5. Move them - they stay perfectly aligned
+5. Move them - they stay perfectly aligned with smooth curve handles maintained
 
-### Path Editing
-1. Create a path with overlapping points
-2. Use Direct Selection tool
-3. Right-click and select "Analyze Coincident Points" to see groups
-4. Select any point in a coincident group
-5. All points in the group are selected and move together
+### Path Editing with Smooth Curves
+1. Create a path with smooth curve points that are coincident
+2. Use Direct Selection tool to select one of the coincident points
+3. Move the point - all coincident points move together
+4. **NEW**: If the coincident points are smooth curve points, their handles maintain 180-degree alignment during movement
+5. This ensures consistent smooth curve behavior across all coincident points
 
 ### Debugging Path Issues
 1. Right-click in Direct Selection mode
@@ -90,6 +97,7 @@ I've implemented a comprehensive system to handle coincident points (points at t
 - **Movement System**: Works with existing drag handling code
 - **Visual System**: Integrated with professional bezier display
 - **Context Menu**: Added analysis option to Direct Selection context menu
+- **NEW: Smooth Curve System**: Integrated with existing smooth curve handle calculations
 
 ## Code Structure
 
@@ -105,6 +113,9 @@ static func findCoincidentPointsStatic(to targetPointID: PointID, in document: V
 
 // Analysis and debugging
 private func analyzeCoincidentPoints()
+
+// NEW: Enhanced coincident point movement with smooth curve logic
+func moveCoincidentPointsWithSmoothLogic(pointID: PointID, to newPosition: CGPoint, delta: CGPoint)
 ```
 
 ## Benefits for Vector Graphics Work
@@ -123,11 +134,17 @@ private func analyzeCoincidentPoints()
 - Matches behavior of professional tools
 - Maintains vector precision and accuracy
 - Supports complex path editing workflows
+- **NEW**: Ensures consistent smooth curve behavior across coincident points
 
 ### 4. Debugging Capabilities
 - Analysis tool helps identify path structure issues
 - Console logging provides detailed coincident point information
 - Helps troubleshoot import/export problems
+
+### 5. NEW: Smooth Curve Consistency
+- Coincident points that are smooth curve points maintain their 180-degree handle alignment when moved
+- Ensures consistent curve behavior across all coincident points
+- Maintains professional vector graphics standards for smooth curves
 
 ## Future Enhancements
 
@@ -136,5 +153,6 @@ private func analyzeCoincidentPoints()
 2. **Automatic Coincident Creation**: Snap nearby points to become coincident
 3. **Path Validation**: Automatically detect and fix broken path continuity
 4. **Import/Export Handling**: Ensure coincident points are preserved during file operations
+5. **Enhanced Smooth Curve Logic**: Further refine the smooth curve handling for complex coincident point scenarios
 
-This implementation significantly improves the path editing experience and ensures that your vector graphics maintain professional-quality continuity, especially for closed shapes like circles where start and end points must remain perfectly aligned. 
+This implementation significantly improves the path editing experience and ensures that your vector graphics maintain professional-quality continuity, especially for closed shapes like circles where start and end points must remain perfectly aligned. The new smooth curve movement functionality ensures that coincident points behave consistently with professional vector graphics standards. 

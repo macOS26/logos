@@ -901,11 +901,12 @@ struct GradientFillSection: View {
         gradientColorWindow = window
         
         // Add window delegate to handle closing
-        window.delegate = GradientWindowDelegate { [self] in
+        let delegate = GradientWindowDelegate { [self] in
             DispatchQueue.main.async {
                 self.turnOffEditingState()
             }
         }
+        window.delegate = delegate
     }
     
     // Function to close window while keeping state intact
@@ -930,14 +931,6 @@ struct GradientFillSection: View {
     
     private func updateSelectedGradient() {
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
-            let originPoint: CGPoint
-            switch selectedGradient {
-            case .linear(let linear):
-                originPoint = linear.originPoint
-            case .radial(let radial):
-                originPoint = radial.originPoint
-            }
-            //print("🔄 Updating gradient in panel - Origin: (\(originPoint.x), \(originPoint.y))")
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(_):
@@ -1439,7 +1432,7 @@ struct GradientFillSection: View {
             
         case .radial:
             // Start with smart defaults based on existing gradient
-            let (centerPoint, radius, focalPoint) = {
+            let (centerPoint, radius, _) = {
                 switch existingGradient {
                 case .radial(let existingRadial):
                     return (existingRadial.centerPoint, existingRadial.radius, existingRadial.focalPoint)
@@ -2122,7 +2115,7 @@ struct GradientPreviewAndStopsView: View {
         guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
         
         switch gradient {
-        case .linear(let linear):
+        case .linear:
             // FIXED: Linear gradients should use origin point directly like radial gradients
             let originX = getOriginX(gradient)
             let originY = getOriginY(gradient)
@@ -2136,7 +2129,7 @@ struct GradientPreviewAndStopsView: View {
                 y: clampedY * squareSize
             )
             
-        case .radial(let radial):
+        case .radial:
             // Radial gradients use origin point directly
             let originX = getOriginX(gradient)
             let originY = getOriginY(gradient)
@@ -2520,7 +2513,6 @@ struct GradientColorPickerSheet: View {
                 }
                 
                 let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-                let stopColor = stops.first(where: { $0.id == stopId })?.color ?? .black
                 
                 // CRITICAL: Use the captured stopId to avoid closure issues
                 let capturedStopId = stopId
