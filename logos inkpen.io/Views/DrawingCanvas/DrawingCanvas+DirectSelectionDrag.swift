@@ -10,6 +10,40 @@ import SwiftUI
 extension DrawingCanvas {
     // MARK: - Direct Selection Drag Handling
     internal func handleDirectSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+        // IMPROVED: Enable immediate click-and-drag without prior selection
+        // If nothing is selected, try to auto-select at the drag start location
+        if selectedPoints.isEmpty && selectedHandles.isEmpty && !isDraggingPoint && !isDraggingHandle {
+            let canvasLocation = screenToCanvas(value.startLocation, geometry: geometry)
+            let screenTolerance: Double = 15.0
+            let tolerance: Double = screenTolerance / document.zoomLevel
+            
+            print("🎯 IMMEDIATE DRAG: Attempting auto-selection at start location \(canvasLocation)")
+            
+            // Try to auto-select a point or handle at the drag start location
+            var foundPointOrHandle = false
+            
+            // Check all direct-selected shapes first
+            if !directSelectedShapeIDs.isEmpty {
+                foundPointOrHandle = selectIndividualAnchorPointOrHandle(at: canvasLocation, tolerance: tolerance)
+            }
+            
+            // If no direct-selected shapes, try to direct-select a shape and then select a point/handle
+            if !foundPointOrHandle {
+                if directSelectWholeShape(at: canvasLocation) {
+                    // Shape was direct-selected, now try to select a point/handle on it
+                    foundPointOrHandle = selectIndividualAnchorPointOrHandle(at: canvasLocation, tolerance: tolerance)
+                }
+            }
+            
+            if !foundPointOrHandle {
+                print("🎯 IMMEDIATE DRAG: No point or handle found at drag start - early return")
+                return
+            }
+            
+            print("🎯 IMMEDIATE DRAG: Auto-selected for dragging")
+        }
+        
+        // Now proceed with normal drag logic (points/handles should be selected)
         guard !selectedPoints.isEmpty || !selectedHandles.isEmpty else { return }
         
         // PROTECT LOCKED LAYERS: Don't allow editing points/handles on locked layers

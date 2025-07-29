@@ -39,22 +39,8 @@ extension DrawingCanvas {
             finishTextEditing()
         }
         
-        // PROFESSIONAL TOOL BEHAVIOR: Clear regular selection when switching TO direct selection or convert point tools
-        if (newTool == .directSelection || newTool == .convertAnchorPoint) &&
-            (previousTool != .directSelection && previousTool != .convertAnchorPoint) {
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
-            print("🎯 Switched to Direct Selection/Convert Point - cleared regular selection handles")
-        }
-        
-        // Clear direct selection state when switching away from direct selection tools
-        if (previousTool == .directSelection || previousTool == .convertAnchorPoint) &&
-            (newTool != .directSelection && newTool != .convertAnchorPoint) {
-            selectedPoints.removeAll()
-            selectedHandles.removeAll()
-            directSelectedShapeIDs.removeAll()
-            print("🎯 Switched away from Direct Selection/Convert Point - cleared direct selection state")
-        }
+        // PROFESSIONAL TOOL BEHAVIOR: Auto-convert selections when switching tools
+        handleSelectionConversion(from: oldTool, to: newTool)
         
         previousTool = newTool
     }
@@ -77,5 +63,73 @@ extension DrawingCanvas {
         
         print("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)")
         print("🔧 FONT SETTINGS: Preserved all typography properties for this text box")
+    }
+    
+    // MARK: - Selection Conversion Between Tools
+    
+    /// Handles automatic selection conversion when switching between tools
+    private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
+        print("🔧 TOOL CONVERSION: \(oldTool.rawValue) → \(newTool.rawValue)")
+        
+        // CASE 1: Switching TO Arrow Tool (Selection)
+        if newTool == .selection {
+            // Convert direct selection to regular selection
+            if !directSelectedShapeIDs.isEmpty {
+                print("🎯 Converting direct selection to regular selection")
+                document.selectedShapeIDs = directSelectedShapeIDs
+                // Clear direct selection state
+                directSelectedShapeIDs.removeAll()
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+            }
+        }
+        
+        // CASE 2: Switching TO Direct Selection Tool
+        else if newTool == .directSelection {
+            // Convert regular selection to direct selection
+            if !document.selectedShapeIDs.isEmpty {
+                print("🎯 Converting regular selection to direct selection")
+                directSelectedShapeIDs = document.selectedShapeIDs
+                // Clear regular selection
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+                // Don't select individual points/handles yet - let user click to refine
+            }
+            // Keep existing direct selection if switching from convert point tool
+            else if oldTool == .convertAnchorPoint {
+                print("🎯 Maintaining direct selection from convert point tool")
+            }
+        }
+        
+        // CASE 3: Switching TO Convert Point Tool
+        else if newTool == .convertAnchorPoint {
+            // Convert regular selection to direct selection (same as direct selection tool)
+            if !document.selectedShapeIDs.isEmpty {
+                print("🎯 Converting regular selection to direct selection for convert point tool")
+                directSelectedShapeIDs = document.selectedShapeIDs
+                // Clear regular selection
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+            }
+            // Keep existing direct selection if switching from direct selection tool
+            else if oldTool == .directSelection {
+                print("🎯 Maintaining direct selection from direct selection tool")
+            }
+        }
+        
+        // CASE 4: Switching AWAY from direct selection tools to other tools (not arrow)
+        else if (oldTool == .directSelection || oldTool == .convertAnchorPoint) && 
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint {
+            // Clear all selection state when switching to drawing tools
+            print("🎯 Switching to drawing tool - clearing all selections")
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs.removeAll()
+            directSelectedShapeIDs.removeAll()
+            selectedPoints.removeAll()
+            selectedHandles.removeAll()
+        }
+        
+        // Force UI update to show new selection state
+        document.objectWillChange.send()
     }
 } 
