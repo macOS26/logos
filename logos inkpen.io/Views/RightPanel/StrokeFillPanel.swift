@@ -2180,17 +2180,21 @@ struct GradientPreviewAndStopsView: View {
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
-                // FIXED: Radial gradient coordinate system - ensure coordinates are properly mapped to the preview area
+                // FIXED: Use the same radius calculation as LayerView
                 let centerX = originX
                 let centerY = originY
+                
+                // Use the same radius calculation as LayerView: max(width, height) * radius
+                let previewSize = squareSize
+                let radius = previewSize * CGFloat(radial.radius)
                 
                 EllipticalGradient(
                     gradient: gradient,
                     center: UnitPoint(x: centerX, y: centerY),
                     startRadiusX: 0,
                     startRadiusY: 0,
-                    endRadiusX: 50.0 * CGFloat(abs(scale * radial.radius)),
-                    endRadiusY: 50.0 * CGFloat(abs(scale * aspectRatio * radial.radius)),
+                    endRadiusX: radius,
+                    endRadiusY: radius * CGFloat(aspectRatio),
                     angle: angle
                 )
                 .frame(width: squareSize, height: squareSize)
