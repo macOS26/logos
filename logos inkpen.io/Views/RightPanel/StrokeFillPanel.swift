@@ -1138,58 +1138,51 @@ struct GradientFillSection: View {
         
         switch vectorGradient {
         case .linear(let linear):
-            // SIMPLE FIX: Scale origin point by scale factor
-            let scale = linear.scaleX // Use scaleX as the single scale value
-            let scaledOriginX = linear.originPoint.x * scale
-            let scaledOriginY = linear.originPoint.y * scale
+            // FIXED: Use the same coordinate system as LayerView and GradientEditTool
+            // The origin point represents the center of the gradient, just like radial gradients
+            let originX = linear.originPoint.x
+            let originY = linear.originPoint.y
             
-            // Calculate adjusted start and end points with scaled origin
-            let adjustedStartX = linear.startPoint.x + (scaledOriginX - 0.5)
-            let adjustedStartY = linear.startPoint.y + (scaledOriginY - 0.5)
-            let adjustedEndX = linear.endPoint.x + (scaledOriginX - 0.5)
-            let adjustedEndY = linear.endPoint.y + (scaledOriginY - 0.5)
+            // Apply scale factor to match the coordinate system
+            let scale = CGFloat(linear.scaleX)
+            let scaledOriginX = originX * scale
+            let scaledOriginY = originY * scale
+            
+            // Calculate the center of the gradient (same as LayerView)
+            let centerX = scaledOriginX
+            let centerY = scaledOriginY
+            
+            // Calculate gradient direction based on startPoint and endPoint
+            let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
+            let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
+            let gradientAngle = atan2(gradientVector.y, gradientVector.x)
             
             // Apply scale to gradient length
-            let gradientVectorX = adjustedEndX - adjustedStartX
-            let gradientVectorY = adjustedEndY - adjustedStartY
-            let gradientLength = sqrt(gradientVectorX * gradientVectorX + gradientVectorY * gradientVectorY)
-            let gradientAngle = atan2(gradientVectorY, gradientVectorX)
+            let scaledLength = gradientLength * scale
             
-            let scaledLength = gradientLength * CGFloat(scale)
-            let centerX = (adjustedStartX + adjustedEndX) / 2
-            let centerY = (adjustedStartY + adjustedEndY) / 2
+            // Calculate start and end points
+            let startX = centerX - cos(gradientAngle) * scaledLength / 2
+            let startY = centerY - sin(gradientAngle) * scaledLength / 2
+            let endX = centerX + cos(gradientAngle) * scaledLength / 2
+            let endY = centerY + sin(gradientAngle) * scaledLength / 2
             
-            let scaledStartX = centerX - cos(gradientAngle) * scaledLength / 2
-            let scaledStartY = centerY - sin(gradientAngle) * scaledLength / 2
-            let scaledEndX = centerX + cos(gradientAngle) * scaledLength / 2
-            let scaledEndY = centerY + sin(gradientAngle) * scaledLength / 2
-            
-            let startPoint = UnitPoint(x: scaledStartX, y: scaledStartY)
-            let endPoint = UnitPoint(x: scaledEndX, y: scaledEndY)
+            let startPoint = UnitPoint(x: startX, y: startY)
+            let endPoint = UnitPoint(x: endX, y: endY)
             
             return AnyShapeStyle(SwiftUI.LinearGradient(gradient: gradient, startPoint: startPoint, endPoint: endPoint))
             
         case .radial(let radial):
-            // Apply origin point offset
-            let originOffsetX = radial.originPoint.x - 0.5
-            let originOffsetY = radial.originPoint.y - 0.5
+            // FIXED: Use the same coordinate system as LayerView and GradientEditTool
+            // Scale origin point by scale factor (same as LayerView)
+            let scaledOriginX = radial.originPoint.x * radial.scaleX
+            let scaledOriginY = radial.originPoint.y * radial.scaleY
             
-            // Calculate adjusted center
-            let adjustedCenterX = radial.centerPoint.x + originOffsetX
-            let adjustedCenterY = radial.centerPoint.y + originOffsetY
-            let center = UnitPoint(x: adjustedCenterX, y: adjustedCenterY)
+            // Calculate center using the same formula as LayerView
+            let center = UnitPoint(x: scaledOriginX, y: scaledOriginY)
             
-            // Apply truly independent X and Y scale - EXACTLY like aspect ratio did
-            let scaleX = radial.scaleX
-            let scaleY = radial.scaleY
-            
-            // For elliptical gradients, we need to use a custom approach
-            // SwiftUI RadialGradient doesn't support elliptical, so we create an elliptical effect
-            let baseRadius = 50.0
-            
-            // For elliptical gradients, use a scaled radial as approximation for ShapeStyle
-            // The actual elliptical rendering happens in the custom preview view
-            let maxScale = max(abs(scaleX), abs(scaleY))
+            // Apply scale to radius
+            let baseRadius = 0.5 // Use 0.5 as base radius for 0-1 coordinate system
+            let maxScale = max(abs(radial.scaleX), abs(radial.scaleY))
             let scaledRadius = baseRadius * CGFloat(maxScale)
             
             return AnyShapeStyle(SwiftUI.RadialGradient(gradient: gradient, center: center, startRadius: 0, endRadius: scaledRadius))
@@ -2162,12 +2155,6 @@ struct GradientPreviewAndStopsView: View {
     private func createGradientPreview(geometry: GeometryProxy, squareSize: CGFloat) -> some View {
         return Group {
             if case .radial(let radial) = currentGradient {
-                let scale = getScale(currentGradient!)
-                let aspectRatio = getAspectRatio(currentGradient!)
-                let originX = getOriginX(currentGradient!)
-                let originY = getOriginY(currentGradient!)
-                let angle = radial.angle
-                
                 let gradientStops = getGradientStops(currentGradient!).map { stop in
                     // Handle clear colors properly for SwiftUI gradients
                     let swiftUIColor: Color
@@ -2180,9 +2167,14 @@ struct GradientPreviewAndStopsView: View {
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
-                // FIXED: Use the same radius calculation as LayerView
-                let centerX = originX
-                let centerY = originY
+                // FIXED: Use the same coordinate system as LayerView and GradientEditTool
+                // Scale origin point by scale factor (same as LayerView)
+                let scaledOriginX = radial.originPoint.x * radial.scaleX
+                let scaledOriginY = radial.originPoint.y * radial.scaleY
+                
+                // Calculate center using the same formula as LayerView
+                let centerX = scaledOriginX
+                let centerY = scaledOriginY
                 
                 // Use the same radius calculation as LayerView: max(width, height) * radius
                 let previewSize = squareSize
@@ -2193,9 +2185,9 @@ struct GradientPreviewAndStopsView: View {
                     center: UnitPoint(x: centerX, y: centerY),
                     startRadiusX: 0,
                     startRadiusY: 0,
-                    endRadiusX: radius,
-                    endRadiusY: radius * CGFloat(aspectRatio),
-                    angle: angle
+                    endRadiusX: radius * CGFloat(radial.scaleX),
+                    endRadiusY: radius * CGFloat(radial.scaleY),
+                    angle: radial.angle
                 )
                 .frame(width: squareSize, height: squareSize)
                 .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
@@ -2209,11 +2201,6 @@ struct GradientPreviewAndStopsView: View {
                 })
 
             } else if case .linear(let linear) = currentGradient {
-                // FIXED: Create linear gradient with proper scale support
-                let scale = getScale(currentGradient!)
-                let originX = getOriginX(currentGradient!)
-                let originY = getOriginY(currentGradient!)
-                
                 let gradientStops = getGradientStops(currentGradient!).map { stop in
                     // Handle clear colors properly for SwiftUI gradients
                     let swiftUIColor: Color
@@ -2226,30 +2213,38 @@ struct GradientPreviewAndStopsView: View {
                 }
                 let gradient = SwiftUI.Gradient(stops: gradientStops)
                 
-                // FIXED: Use the same coordinate system as gradient edit tool
-                // Calculate the center point between start and end points
-                let centerX = (linear.startPoint.x + linear.endPoint.x) / 2.0
-                let centerY = (linear.startPoint.y + linear.endPoint.y) / 2.0
+                // FIXED: Use the same coordinate system as LayerView and GradientEditTool
+                // The origin point represents the center of the gradient, just like radial gradients
+                let originX = linear.originPoint.x
+                let originY = linear.originPoint.y
                 
-                // Apply origin point offset (same as gradient edit tool)
-                let adjustedCenterX = centerX + (originX - 0.5)
-                let adjustedCenterY = centerY + (originY - 0.5)
+                // Apply scale factor to match the coordinate system
+                let scale = CGFloat(linear.scaleX)
+                let scaledOriginX = originX * scale
+                let scaledOriginY = originY * scale
                 
-                // Apply scale to gradient length
+                // Calculate the center of the gradient (same as LayerView)
+                let centerX = scaledOriginX
+                let centerY = scaledOriginY
+                
+                // Calculate gradient direction based on startPoint and endPoint
                 let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
                 let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
                 let gradientAngle = atan2(gradientVector.y, gradientVector.x)
                 
-                let scaledLength = gradientLength * CGFloat(scale)
-                let scaledStartX = adjustedCenterX - cos(gradientAngle) * scaledLength / 2
-                let scaledStartY = adjustedCenterY - sin(gradientAngle) * scaledLength / 2
-                let scaledEndX = adjustedCenterX + cos(gradientAngle) * scaledLength / 2
-                let scaledEndY = adjustedCenterY + sin(gradientAngle) * scaledLength / 2
+                // Apply scale to gradient length
+                let scaledLength = gradientLength * scale
                 
-                let finalStart = UnitPoint(x: scaledStartX, y: scaledStartY)
-                let finalEnd = UnitPoint(x: scaledEndX, y: scaledEndY)
+                // Calculate start and end points
+                let startX = centerX - cos(gradientAngle) * scaledLength / 2
+                let startY = centerY - sin(gradientAngle) * scaledLength / 2
+                let endX = centerX + cos(gradientAngle) * scaledLength / 2
+                let endY = centerY + sin(gradientAngle) * scaledLength / 2
                 
-                SwiftUI.LinearGradient(gradient: gradient, startPoint: finalStart, endPoint: finalEnd)
+                let startPoint = UnitPoint(x: startX, y: startY)
+                let endPoint = UnitPoint(x: endX, y: endY)
+                
+                SwiftUI.LinearGradient(gradient: gradient, startPoint: startPoint, endPoint: endPoint)
                     .frame(width: squareSize, height: squareSize)
                     .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                     .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
@@ -2257,6 +2252,7 @@ struct GradientPreviewAndStopsView: View {
                         updateOriginY(y, true)
                         document.saveToUndoStack()
                     })
+                
             } else {
                 let gradient = createGradient(currentGradient!)
                 Rectangle()
