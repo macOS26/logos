@@ -139,9 +139,15 @@ struct NewDocumentSetupView: View {
             // Width and Height in HStack for compact layout
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Width")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.left.and.right")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        
+                        Text("Width")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     HStack {
                         TextField("Width", value: $setupData.width, format: .number)
@@ -155,9 +161,15 @@ struct NewDocumentSetupView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Height")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.and.down")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        
+                        Text("Height")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
                     HStack {
                         TextField("Height", value: $setupData.height, format: .number)
