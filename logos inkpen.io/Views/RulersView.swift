@@ -101,16 +101,20 @@ struct HorizontalRuler: View {
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 
+                // Calculate position within the inch (0.0 to 1.0)
+                let positionInInch = (x / pointsPerUnit).truncatingRemainder(dividingBy: 1.0)
+                
                 if isMajorTick {
                     tickHeight = 12 // 1 inch ticks - full height
                     lineWidth = 1.0
-                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001 {
+                } else if abs(positionInInch - 0.5) < 0.001 {
                     tickHeight = 9  // 1/2 inch ticks - three-quarter height
                     lineWidth = 0.75
-                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 4)) < 0.001 {
+                } else if abs(positionInInch - 0.25) < 0.001 || abs(positionInInch - 0.75) < 0.001 {
                     tickHeight = 6  // 1/4 inch ticks - half height
                     lineWidth = 0.6
-                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 8)) < 0.001 {
+                } else if abs(positionInInch - 0.125) < 0.001 || abs(positionInInch - 0.375) < 0.001 || 
+                          abs(positionInInch - 0.625) < 0.001 || abs(positionInInch - 0.875) < 0.001 {
                     tickHeight = 3  // 1/8 inch ticks - quarter height
                     lineWidth = 0.5
                 } else {
@@ -207,16 +211,20 @@ struct VerticalRuler: View {
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 
+                // Calculate position within the inch (0.0 to 1.0)
+                let positionInInch = (y / pointsPerUnit).truncatingRemainder(dividingBy: 1.0)
+                
                 if isMajorTick {
                     tickWidth = 12 // 1 inch ticks - full width
                     lineWidth = 1.0
-                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001 {
+                } else if abs(positionInInch - 0.5) < 0.001 {
                     tickWidth = 9  // 1/2 inch ticks - three-quarter width
                     lineWidth = 0.75
-                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 4)) < 0.001 {
+                } else if abs(positionInInch - 0.25) < 0.001 || abs(positionInInch - 0.75) < 0.001 {
                     tickWidth = 6  // 1/4 inch ticks - half width
                     lineWidth = 0.6
-                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 8)) < 0.001 {
+                } else if abs(positionInInch - 0.125) < 0.001 || abs(positionInInch - 0.375) < 0.001 || 
+                          abs(positionInInch - 0.625) < 0.001 || abs(positionInInch - 0.875) < 0.001 {
                     tickWidth = 3  // 1/8 inch ticks - quarter width
                     lineWidth = 0.5
                 } else {
@@ -244,10 +252,10 @@ struct VerticalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    // Rotate text for vertical ruler - AFTER the tick, not on top
+                    // Rotate text for vertical ruler - AFTER the tick, not BEFORE
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 12, y: size.width - 14))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 16, y: size.width - 14))
                 }
             }
             
