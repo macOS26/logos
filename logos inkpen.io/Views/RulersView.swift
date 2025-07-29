@@ -280,8 +280,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // Use 1/8 inch intervals for minor ticks
         baseSpacing = pointsPerUnit / 8
     case .centimeters:
-        // Use 1cm intervals for major ticks, 2mm for minor
-        baseSpacing = pointsPerUnit / 5
+        // PROFESSIONAL METRIC: Use 1cm intervals for major ticks, 1mm for minor
+        baseSpacing = pointsPerUnit / 10 // 1mm intervals for minor ticks
     case .millimeters:
         // Use 10mm intervals for major ticks, 1mm for minor
         baseSpacing = pointsPerUnit
