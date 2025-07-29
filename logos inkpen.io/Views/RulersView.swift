@@ -86,7 +86,7 @@ struct HorizontalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
-        let majorTickInterval = tickSpacing * 5
+        let majorTickInterval = getMajorTickInterval(for: unit)
         
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
@@ -96,28 +96,43 @@ struct HorizontalRuler: View {
             
             if rulerX >= 0 && rulerX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
-                let tickHeight: CGFloat = isMajorTick ? 8 : 4
+                let isMediumTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001
                 
-                // Draw tick
+                // PROFESSIONAL TICK HEIGHTS: Like Illustrator - clear hierarchy
+                let tickHeight: CGFloat
+                let lineWidth: CGFloat
+                
+                if isMajorTick {
+                    tickHeight = 12 // Major ticks - longest
+                    lineWidth = 1.0
+                } else if isMediumTick {
+                    tickHeight = 8  // Medium ticks - medium length
+                    lineWidth = 0.75
+                } else {
+                    tickHeight = 4  // Minor ticks - shortest
+                    lineWidth = 0.5
+                }
+                
+                // Draw tick with professional styling
                 context.stroke(
                     Path { path in
                         path.move(to: CGPoint(x: rulerX, y: size.height - tickHeight))
                         path.addLine(to: CGPoint(x: rulerX, y: size.height))
                     },
                     with: .color(.primary),
-                    lineWidth: 0.5
+                    lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks
+                // Draw label for major ticks only
                 if isMajorTick {
                     let value = x / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
                     
                     let text = Text(labelText)
-                        .font(.system(size: 8))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    context.draw(text, at: CGPoint(x: rulerX + 2, y: size.height - 12))
+                    context.draw(text, at: CGPoint(x: rulerX + 2, y: size.height - 14))
                 }
             }
             
@@ -170,7 +185,7 @@ struct VerticalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
-        let majorTickInterval = tickSpacing * 5
+        let majorTickInterval = getMajorTickInterval(for: unit)
         
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
@@ -180,31 +195,46 @@ struct VerticalRuler: View {
             
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
-                let tickWidth: CGFloat = isMajorTick ? 8 : 4
+                let isMediumTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001
                 
-                // Draw tick
+                // PROFESSIONAL TICK WIDTHS: Like Illustrator - clear hierarchy
+                let tickWidth: CGFloat
+                let lineWidth: CGFloat
+                
+                if isMajorTick {
+                    tickWidth = 12 // Major ticks - longest
+                    lineWidth = 1.0
+                } else if isMediumTick {
+                    tickWidth = 8  // Medium ticks - medium length
+                    lineWidth = 0.75
+                } else {
+                    tickWidth = 4  // Minor ticks - shortest
+                    lineWidth = 0.5
+                }
+                
+                // Draw tick with professional styling
                 context.stroke(
                     Path { path in
                         path.move(to: CGPoint(x: size.width - tickWidth, y: rulerY))
                         path.addLine(to: CGPoint(x: size.width, y: rulerY))
                     },
                     with: .color(.primary),
-                    lineWidth: 0.5
+                    lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks
+                // Draw label for major ticks only
                 if isMajorTick {
                     let value = y / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
                     
                     let text = Text(labelText)
-                        .font(.system(size: 8))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
                     // Rotate text for vertical ruler
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 8, y: size.width - 12))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 8, y: size.width - 14))
                 }
             }
             
@@ -214,34 +244,62 @@ struct VerticalRuler: View {
 }
 
 // Helper functions
+private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
+    let pointsPerUnit = unit.pointsPerUnit
+    
+    switch unit {
+    case .pixels:
+        return 50.0 // Major ticks every 50 pixels
+    case .points:
+        return 72.0 // Major ticks every 72 points (1 inch)
+    case .inches:
+        return pointsPerUnit // Major ticks every inch
+    case .centimeters:
+        return pointsPerUnit // Major ticks every centimeter
+    case .millimeters:
+        return pointsPerUnit * 10 // Major ticks every 10mm
+    case .picas:
+        return pointsPerUnit // Major ticks every pica
+    }
+}
+
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
     
-    // PROFESSIONAL TICK SPACING: Reduce noise for pixels/points, normal for others
+    // PROFESSIONAL TICK SPACING: Like Illustrator - clear, readable, properly scaled
     let baseSpacing: Double
     
     switch unit {
     case .pixels:
-        // LESS NOISY: Use larger base spacing for pixels/points to reduce visual clutter
-        baseSpacing = pointsPerUnit / 2 // 1/2 unit (instead of 1/8) - much less detailed
+        // PROFESSIONAL: Use 50-pixel intervals for major ticks, 10-pixel for minor
+        baseSpacing = 10.0 // 10-pixel minor ticks
     case .points:
-        // Use a base spacing of 72 points for the 'points' unit
-        baseSpacing = 72.0
-    default:
-        // Normal spacing for inches, cm, mm, picas
-        baseSpacing = pointsPerUnit / 8 // 1/8 unit by default
+        // Use 72-point intervals (1 inch) for major ticks, 12-point for minor
+        baseSpacing = 12.0
+    case .inches:
+        // Use 1/8 inch intervals for minor ticks
+        baseSpacing = pointsPerUnit / 8
+    case .centimeters:
+        // Use 1cm intervals for major ticks, 2mm for minor
+        baseSpacing = pointsPerUnit / 5
+    case .millimeters:
+        // Use 10mm intervals for major ticks, 1mm for minor
+        baseSpacing = pointsPerUnit
+    case .picas:
+        // Use 1 pica intervals for major ticks, 1 point for minor
+        baseSpacing = pointsPerUnit / 12
     }
     
-    // Adjust spacing based on zoom level
+    // Adjust spacing based on zoom level for professional readability
     let scaledSpacing = baseSpacing * zoomLevel
     
-    // Choose appropriate spacing to avoid overcrowding
-    if scaledSpacing < 10 {
-        return baseSpacing * 4
-    } else if scaledSpacing < 20 {
-        return baseSpacing * 2
+    // Choose appropriate spacing to avoid overcrowding while maintaining readability
+    if scaledSpacing < 8 {
+        return baseSpacing * 5 // Major ticks only when very zoomed out
+    } else if scaledSpacing < 15 {
+        return baseSpacing * 2 // Fewer minor ticks when zoomed out
     } else {
-        return baseSpacing
+        return baseSpacing // Full detail when zoomed in
     }
 }
 
