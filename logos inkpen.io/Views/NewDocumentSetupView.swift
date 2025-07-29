@@ -215,72 +215,18 @@ struct NewDocumentSetupView: View {
                 .frame(maxWidth: .infinity)
             }
             
-            // Quick Size Buttons in ROWS
+            // Quick Size Buttons - PROFESSIONAL GRID LAYOUT
             VStack(alignment: .leading, spacing: 4) {
                 Text("Quick Sizes")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                // Row 1: Letter, Legal, A4, Business Card
-                HStack(spacing: 4) {
-                    Button("Letter") {
-                        applyQuickSize(quickSizes[0])
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
+                    ForEach(quickSizes, id: \.name) { size in
+                        QuickSizeButton(size: size) {
+                            applyQuickSize(size)
+                        }
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Legal") {
-                        applyQuickSize(quickSizes[1])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("A4") {
-                        applyQuickSize(quickSizes[2])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Business Card") {
-                        applyQuickSize(quickSizes[3])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                }
-                
-                // Row 2: Web HD, Mobile, Square, Wide
-                HStack(spacing: 4) {
-                    Button("Web HD") {
-                        applyQuickSize(quickSizes[4])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Mobile") {
-                        applyQuickSize(quickSizes[5])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Square") {
-                        applyQuickSize(quickSizes[6])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
-                    
-                    Button("Wide") {
-                        applyQuickSize(quickSizes[7])
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .frame(maxWidth: .infinity)
                 }
             }
         }
@@ -577,6 +523,58 @@ struct NewDocumentSetupView: View {
         
         onDocumentCreated(document, suggestedURL)
         isPresented = false
+    }
+}
+
+// MARK: - Quick Size Button Component
+struct QuickSizeButton: View {
+    let size: (name: String, width: Double, height: Double, unit: MeasurementUnit)
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: iconName)
+                    .font(.system(size: 12))
+                    .foregroundColor(.accentColor)
+                
+                Text(size.name)
+                    .font(.caption2)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.primary)
+            }
+            .frame(height: 42)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.accentColor.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.accentColor.opacity(0.3), lineWidth: 0.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help("\(Int(size.width)) × \(Int(size.height)) \(size.unit.rawValue)")
+    }
+    
+    private var iconName: String {
+        switch size.name {
+        case "Letter", "Legal", "A4":
+            return "doc.text"
+        case "Business Card":
+            return "creditcard"
+        case "Web HD", "Wide":
+            return "display"
+        case "Mobile":
+            return "iphone"
+        case "Square":
+            return "square"
+        default:
+            return "doc"
+        }
     }
 }
 
