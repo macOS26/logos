@@ -25,63 +25,66 @@ struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     
     var body: some View {
-        VStack(spacing: 2) {
-            // Drawing Tools
-            ToolSection(title: "Drawing") {
-                ForEach(DrawingTool.allCases, id: \.self) { tool in
-                    Button {
-                        // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                        var popCount = 0
-                        while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                            NSCursor.pop()
-                            popCount += 1
-                        }
-                        
-                        // If still not arrow cursor, force reset
-                        if NSCursor.current != NSCursor.arrow {
-                            NSCursor.arrow.set()
-                        }
-                        
-                        document.currentTool = tool
-                        tool.cursor.push()
-                        
-                        print("🛠️ Switched to tool: \(tool.rawValue)")
-                    } label: {
-                        Group {
-                            if tool == .shear {
-                                // Use custom skewed rectangle icon for shear tool
-                                SkewedRectangleIcon(isSelected: document.currentTool == tool)
-                            } else {
-                                // Use SF Symbols for all other tools
-                                Image(systemName: tool.iconName)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(document.currentTool == tool ? .white : .primary)
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 2) {
+                // Drawing Tools
+                ToolSection(title: "Drawing") {
+                    ForEach(DrawingTool.allCases, id: \.self) { tool in
+                        Button {
+                            // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
+                            var popCount = 0
+                            while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                                NSCursor.pop()
+                                popCount += 1
                             }
+                            
+                            // If still not arrow cursor, force reset
+                            if NSCursor.current != NSCursor.arrow {
+                                NSCursor.arrow.set()
+                            }
+                            
+                            document.currentTool = tool
+                            tool.cursor.push()
+                            
+                            print("🛠️ Switched to tool: \(tool.rawValue)")
+                        } label: {
+                            Group {
+                                if tool == .shear {
+                                    // Use custom skewed rectangle icon for shear tool
+                                    SkewedRectangleIcon(isSelected: document.currentTool == tool)
+                                } else {
+                                    // Use SF Symbols for all other tools
+                                    Image(systemName: tool.iconName)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(document.currentTool == tool ? .white : .primary)
+                                }
+                            }
+                            .frame(width: 32, height: 32)
+                            .background(
+                                document.currentTool == tool 
+                                ? Color.blue.opacity(0.8)
+                                : Color.clear
+                            )
+                            .cornerRadius(4)
+                            .contentShape(Rectangle()) // Extend hit area to match entire button area
                         }
-                        .frame(width: 32, height: 32)
-                        .background(
-                            document.currentTool == tool 
-                            ? Color.blue.opacity(0.8)
-                            : Color.clear
-                        )
-                        .cornerRadius(4)
-                        .contentShape(Rectangle()) // Extend hit area to match entire button area
+                        .buttonStyle(PlainButtonStyle())
+                        .help(toolTooltip(for: tool))
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(toolTooltip(for: tool))
                 }
+                
+                Divider()
+                
+                // Quick Color Swatches
+                ToolSection(title: "Colors") {
+                    ColorSwatchGrid(document: document)
+                }
+                
+                Spacer()
             }
-            
-            Divider()
-            
-            // Quick Color Swatches
-            ToolSection(title: "Colors") {
-                ColorSwatchGrid(document: document)
-            }
-            
-            Spacer()
+            .padding(.vertical, 8)
+            .frame(width: 48) // ENSURE: Maintain fixed toolbar width
         }
-        .padding(.vertical, 8)
         .background(Color(NSColor.controlBackgroundColor))
         .overlay(
             Rectangle()

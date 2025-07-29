@@ -41,7 +41,7 @@ struct MainView: View {
                     .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
                     .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
                 
-                                // Center Drawing Area - Flexible width - STRICTLY CONSTRAINED TO CENTER COLUMN
+                                // Center Drawing Area - Flexible width with minimum - STRICTLY CONSTRAINED TO CENTER COLUMN
                 GeometryReader { geometry in
                     VStack(spacing: 0) {
                         // Drawing canvas area - CLIPPED AND CONSTRAINED
@@ -66,24 +66,30 @@ struct MainView: View {
                                 .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
                         // CRITICAL FIX: NO CLIPPING - use zIndex to layer toolbar above DrawingCanvas
                         
-                        // Status Bar at bottom
+                        // Status Bar at bottom - PROTECTED HEIGHT
                         StatusBar(document: document)
                             .frame(height: 24)
+                            .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
                 .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
                 .allowsHitTesting(true) // CRITICAL: Center column captures all gestures
                 
                 // Right Panel - Fixed width, hugs right
                 RightPanel(document: document)
                     .frame(width: 280)
+                    .frame(minWidth: 280) // ENSURE: Panel width is always preserved
                     .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
         }
+        .frame(minHeight: 500) // MINIMUM: Ensure overall height accommodates all elements
         .toolbar {
             MainToolbarContent(
             document: document,
@@ -219,7 +225,7 @@ struct MainView: View {
             }
             .frame(width: 1000, height: 800)
         }
-        .frame(minWidth: 1200, minHeight: 800)
+        .frame(minWidth: 1400, minHeight: 900)
         // Note: No longer using focusedValue - using focusedSceneObject instead
         .onAppear {
             // SOLUTION: Connect document to menu system using NEW approach
@@ -280,16 +286,10 @@ struct MainView: View {
         do {
             try FileOperations.exportToJSON(document, url: url)
             
-            print("✅ Successfully saved document to: \(url.path)")
+            // Generate and set custom document icon
+            DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
             
-            // Show success notification
-            DispatchQueue.main.async {
-                let alert = NSAlert()
-                alert.messageText = "Document Saved"
-                alert.informativeText = "Document saved successfully"
-                alert.alertStyle = .informational
-                alert.runModal()
-            }
+            print("✅ Successfully saved document to: \(url.path)")
             
         } catch {
             print("❌ Save failed: \(error)")
@@ -311,6 +311,10 @@ struct MainView: View {
     }
     
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
+        // Reset view state BEFORE loading document to prevent two-step process
+        document.zoomLevel = 1.0
+        document.canvasOffset = .zero
+        
         // Load the imported SVG document into the main Ink Pen interface
         document.settings = importedDoc.settings
         document.layers = importedDoc.layers
@@ -367,6 +371,10 @@ struct MainView: View {
                     
                     // Replace current document with loaded one
                     await MainActor.run {
+                        // Reset view state BEFORE loading document to prevent two-step process
+                        document.zoomLevel = 1.0
+                        document.canvasOffset = .zero
+                        
                         // Update the document by copying all properties
                         document.settings = loadedDocument.settings
                         document.layers = loadedDocument.layers
@@ -380,8 +388,7 @@ struct MainView: View {
                         document.textObjects = loadedDocument.textObjects
                         document.currentTool = loadedDocument.currentTool
                         document.viewMode = loadedDocument.viewMode
-                        document.zoomLevel = loadedDocument.zoomLevel
-                        document.canvasOffset = loadedDocument.canvasOffset
+                        // DON'T copy zoom/offset - we'll set them to fit-to-page
                         document.showRulers = loadedDocument.showRulers
                         document.snapToGrid = loadedDocument.snapToGrid
                         
@@ -396,12 +403,6 @@ struct MainView: View {
                             print("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established")
                         }
                         
-                        // Show success notification
-                        let alert = NSAlert()
-                        alert.messageText = "Document Opened"
-                        alert.informativeText = "\(fileExtension.uppercased()) document loaded successfully"
-                        alert.alertStyle = .informational
-                        alert.runModal()
                     }
                     
                 } catch {
@@ -479,15 +480,6 @@ struct MainView: View {
                 try FileOperations.exportDWF(document, url: url, options: options)
                 
                 print("✅ Successfully exported DWF to: \(url.path)")
-                
-                // Show success notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWF Export Successful"
-                    alert.informativeText = "File exported to \(url.lastPathComponent)\nScale: \(options.scale.description)\nUnits: \(options.targetUnits.rawValue)"
-                    alert.alertStyle = .informational
-                    alert.runModal()
-                }
                 
             } catch {
                 print("❌ DWF export failed: \(error)")
@@ -630,15 +622,6 @@ struct MainView: View {
                 try FileOperations.exportDWG(document, url: url, options: options)
                 
                 print("✅ Successfully exported DWG to: \(url.path)")
-                
-                // Show success notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "DWG Export Successful"
-                    alert.informativeText = "File exported to \(url.lastPathComponent)\nScale: \(options.scale.description)\nUnits: \(options.targetUnits.rawValue)\nVersion: \(options.dwgVersion.displayName)"
-                    alert.alertStyle = .informational
-                    alert.runModal()
-                }
                 
             } catch {
                 print("❌ DWG export failed: \(error)")
@@ -1546,15 +1529,6 @@ struct ExportView: View {
                 }
                 
                 print("✅ Successfully exported document as \(exportFormat.rawValue) to: \(url.path)")
-                
-                // Show success notification
-                DispatchQueue.main.async {
-                    let alert = NSAlert()
-                    alert.messageText = "Export Successful"
-                    alert.informativeText = "Document exported as \(exportFormat.rawValue)"
-                    alert.alertStyle = .informational
-                    alert.runModal()
-                }
                 
             } catch {
                 print("❌ Export failed: \(error)")

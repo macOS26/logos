@@ -568,4 +568,8 @@ extension UTType {
     static var inkpen: UTType {
         UTType(exportedAs: "com.toddbruss.logos-inkpen-io.document")
     }
+    
+    static var draggableVectorObject: UTType {
+        UTType(exportedAs: "com.toddbruss.logos-inkpen-io.draggableVectorObject")
+    }
 }
