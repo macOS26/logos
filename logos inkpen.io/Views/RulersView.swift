@@ -259,7 +259,7 @@ private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
     case .millimeters:
         return pointsPerUnit * 10 // Major ticks every 10mm
     case .picas:
-        return pointsPerUnit // Major ticks every pica
+        return pointsPerUnit // Major ticks every pica (12 points)
     }
 }
 
@@ -286,8 +286,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // Use 10mm intervals for major ticks, 1mm for minor
         baseSpacing = pointsPerUnit
     case .picas:
-        // Use 1 pica intervals for major ticks, 1 point for minor
-        baseSpacing = pointsPerUnit / 12
+        // PROFESSIONAL PICAS: Use 1 pica intervals for major ticks, 1 point for minor
+        baseSpacing = pointsPerUnit / 12 // 1 point intervals for minor ticks
     }
     
     // Adjust spacing based on zoom level for professional readability
@@ -328,7 +328,8 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
         // LESS NOISY: Use cleaner formatting for pixels (no decimals but better spacing)
         return String(format: "%.0f", value)
     case .picas:
-        return String(format: "%.1f", value)
+        // PROFESSIONAL PICAS: Show whole numbers like Illustrator, no decimals
+        return String(format: "%.0f", value)
     }
 }
 
