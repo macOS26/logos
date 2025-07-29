@@ -19,9 +19,9 @@ extension DrawingCanvas {
     
     /// Setup canvas with default settings
     internal func setupCanvas(geometry: GeometryProxy) {
-        // FIXED COORDINATE SYSTEM: Set up default view with deterministic positioning
-        setupDefaultView(geometry: geometry)
+        // SKIP INITIAL POSITIONING: Don't call setupDefaultView to avoid transition
+        // The MainView will handle fit-to-page directly without intermediate positioning
         initialZoomLevel = document.zoomLevel // Initialize for zoom gestures
-        print("🎯 FIXED CANVAS SETUP: Using default 75% zoom, no race conditions")
+        print("🎯 STREAMLINED CANVAS SETUP: Skipping intermediate positioning for direct fit-to-page")
     }
 } 

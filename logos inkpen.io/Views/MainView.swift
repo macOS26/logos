@@ -134,9 +134,10 @@ struct MainView: View {
                     
                     print("✅ Created new document with custom settings")
                     
-                    // Auto-fit to page
+                    // DIRECT FIT TO PAGE: Skip intermediate steps
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
+                        print("🔍 DIRECT FIT TO PAGE: Applied for new document without transition")
                     }
                 }
             )
@@ -224,12 +225,11 @@ struct MainView: View {
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
             
-            setupDocument()
-            
-            // Auto-fit to page on startup for professional presentation
+            // DIRECT FIT TO PAGE: Skip intermediate positioning - go straight to final state
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                // Use simplified fit-to-page without parameters
-                fitToPage()
+                // Go directly to fit-to-page without intermediate transitions
+                document.requestZoom(to: 0.0, mode: .fitToPage)
+                print("🔍 DIRECT FIT TO PAGE: Applied on app launch without transition")
             }
         }
         .focusedSceneObject(documentState)
@@ -248,28 +248,6 @@ struct MainView: View {
         // Fit the entire page to the view (Adobe Illustrator standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
         print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
-    }
-    
-    private func setupDocument() {
-        // Document starts completely empty - no default shapes
-        print("✅ Document setup complete - starting with empty canvas")
-        
-        // PROFESSIONAL STARTUP BEHAVIOR: Auto-fit to full space on launch
-        // Temporarily disable rulers for full-space fit, then restore
-        let originalRulerState = document.showRulers
-        document.showRulers = false
-        
-        // Use a small delay to ensure the view is fully rendered before fitting
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-            print("🔍 AUTO-FIT TO FULL SPACE: Applied on app launch for professional startup experience")
-            
-            // Restore original ruler state after fit
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                document.showRulers = originalRulerState
-                print("🔍 RULERS RESTORED: Back to original state after startup fit")
-            }
-        }
     }
     
     // MARK: - Document Save/Load Functionality
@@ -355,10 +333,10 @@ struct MainView: View {
         
         print("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes")
         
-        // Auto-fit to show the imported content
+        // DIRECT FIT TO PAGE: Show imported shapes immediately (like Adobe Illustrator)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            print("🔍 AUTO-FIT TO PAGE: Applied for imported SVG document")
+            print("🔍 DIRECT FIT TO PAGE: Applied after vector import without transition")
         }
     }
     
@@ -413,21 +391,10 @@ struct MainView: View {
                         
                         print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
-                        // PROFESSIONAL DOCUMENT OPEN BEHAVIOR: Auto-fit to full available space (no padding)
-                        // Temporarily disable rulers for full-space fit, then restore
-                        let originalRulerState = document.showRulers
-                        document.showRulers = false
-                        
-                        // Use a small delay to ensure the view is updated before fitting
+                        // DIRECT FIT TO PAGE: Skip ruler dance and intermediate steps
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-                            print("🔍 AUTO-FIT TO FULL SPACE: Applied for opened document")
-                            
-                            // Restore original ruler state after fit
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                document.showRulers = originalRulerState
-                                print("🔍 RULERS RESTORED: Back to original state after fit")
-                            }
+                            document.requestZoom(to: 0.0, mode: .fitToPage)
+                            print("🔍 DIRECT FIT TO PAGE: Applied for opened document without transition")
                         }
                         
                         // Show success notification
