@@ -76,13 +76,11 @@ struct HorizontalRuler: View {
         
         // CORRECTED RULER ALIGNMENT: Match exactly how canvas content is positioned
         // Canvas content position: x * zoomLevel + canvasOffset.x (in canvas coordinate space)
-        // But canvas is offset by 20px due to ruler padding in MainView
-        // So canvas coordinate 0 appears at: 0 * zoomLevel + canvasOffset.x + 20 in ruler space
+        // Canvas now fills the full view with no padding offset
         
         // Calculate what canvas coordinates are visible in the ruler
-        let canvasPaddingOffset = 20.0  // Canvas is padded 20px from ruler edge
-        let startX = (-canvasOffset.x - canvasPaddingOffset) / zoomLevel
-        let endX = (size.width - canvasOffset.x - canvasPaddingOffset) / zoomLevel
+        let startX = (-canvasOffset.x) / zoomLevel
+        let endX = (size.width - canvasOffset.x) / zoomLevel
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -91,28 +89,28 @@ struct HorizontalRuler: View {
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
         while x <= endX {
-            // CORRECTED: Canvas coordinate x appears at ruler position (x * zoom + offset + padding)
-            let rulerX = x * zoomLevel + canvasOffset.x + canvasPaddingOffset
+            // CORRECTED: Canvas coordinate x appears at ruler position (x * zoom + offset)
+            let rulerX = x * zoomLevel + canvasOffset.x
             
             if rulerX >= 0 && rulerX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 
-                // PROFESSIONAL INCH TICK HIERARCHY: Like Illustrator - 4 tiers
+                // PROFESSIONAL TICK HIERARCHY: Like Illustrator - 4 tiers (LONGER TICKS)
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 
-                // FIXED INCH HIERARCHY: Check exact 1/8" intervals
+                // Apply this hierarchy to ALL units based on their subdivision intervals
                 if isMajorTick {
-                    tickHeight = 12 // 1 inch ticks - full height
+                    tickHeight = 16 // Major ticks - full height (LONGER)
                     lineWidth = 1.0
                 } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
-                    tickHeight = 9  // 1/2 inch ticks - three-quarter height
+                    tickHeight = 12  // Half-unit ticks - three-quarter height (LONGER)
                     lineWidth = 0.75
                 } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
-                    tickHeight = 6  // 1/4 inch ticks - half height
+                    tickHeight = 8  // Quarter-unit ticks - half height (LONGER)
                     lineWidth = 0.6
                 } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
-                    tickHeight = 3  // 1/8 inch ticks - quarter height
+                    tickHeight = 4  // Eighth-unit ticks - quarter height (LONGER)
                     lineWidth = 0.5
                 } else {
                     // Skip ticks that aren't at proper intervals
@@ -130,7 +128,7 @@ struct HorizontalRuler: View {
                     lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks only - AFTER the tick, not on top
+                // Draw label for major ticks only - BEFORE the tick, not after
                 if isMajorTick {
                     let value = x / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
@@ -139,8 +137,8 @@ struct HorizontalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    // Position AFTER the tick, not on top - like Illustrator
-                    context.draw(text, at: CGPoint(x: rulerX + 4, y: size.height - 14))
+                    // Position RIGHT AFTER the tick mark
+                    context.draw(text, at: CGPoint(x: rulerX + 8, y: size.height - 14))
                 }
             }
             
@@ -182,14 +180,12 @@ struct VerticalRuler: View {
         let canvasOffset = document.canvasOffset
         
         // PRECISE FIX: Vertical ruler alignment correction
-        // User reported ticks are 12 pixels too low (south)
-        // The vertical ruler needs to be shifted up by 12 pixels to align with canvas objects
+        // Canvas now fills the full view with no padding offset
         
         // Calculate what canvas coordinates are visible in the ruler
-        let canvasPaddingOffset = 20.0  // Canvas is padded 20px from ruler edge
         let verticalAlignmentCorrection = 12.0  // Correction for vertical ruler positioning
-        let startY = (-canvasOffset.y - canvasPaddingOffset) / zoomLevel
-        let endY = (size.height - canvasOffset.y - canvasPaddingOffset) / zoomLevel
+        let startY = (-canvasOffset.y) / zoomLevel
+        let endY = (size.height - canvasOffset.y) / zoomLevel
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
@@ -199,26 +195,26 @@ struct VerticalRuler: View {
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
             // PRECISE FIX: Apply 12-pixel upward correction to align with canvas objects
-            let rulerY = y * zoomLevel + canvasOffset.y + canvasPaddingOffset - verticalAlignmentCorrection
+            let rulerY = y * zoomLevel + canvasOffset.y - verticalAlignmentCorrection
             
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 
-                // FIXED INCH HIERARCHY: Use same logic as horizontal ruler
+                // PROFESSIONAL TICK HIERARCHY: Use same longer logic as horizontal ruler
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 
                 if isMajorTick {
-                    tickWidth = 12 // 1 inch ticks - full width
+                    tickWidth = 16 // Major ticks - full width (LONGER)
                     lineWidth = 1.0
                 } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
-                    tickWidth = 9  // 1/2 inch ticks - three-quarter width
+                    tickWidth = 12  // Half-unit ticks - three-quarter width (LONGER)
                     lineWidth = 0.75
                 } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
-                    tickWidth = 6  // 1/4 inch ticks - half width
+                    tickWidth = 8  // Quarter-unit ticks - half width (LONGER)
                     lineWidth = 0.6
                 } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
-                    tickWidth = 3  // 1/8 inch ticks - quarter width
+                    tickWidth = 4  // Eighth-unit ticks - quarter width (LONGER)
                     lineWidth = 0.5
                 } else {
                     // Skip ticks that aren't at proper intervals
@@ -245,10 +241,10 @@ struct VerticalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    // Rotate text for vertical ruler - BEFORE the tick, not AFTER
+                    // Rotate text for vertical ruler - RIGHT AFTER the tick, matching horizontal logic
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY + 4, y: size.width - 14))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY + 8, y: size.width - 14))
                 }
             }
             
@@ -280,28 +276,28 @@ private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
 private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
     
-    // PROFESSIONAL TICK SPACING: Like Illustrator - clear, readable, properly scaled
+    // PROFESSIONAL TICK SPACING: Use PICAS frequency as model - avoid excessive ticks
     let baseSpacing: Double
     
     switch unit {
     case .pixels:
-        // PROFESSIONAL: Use 50-pixel intervals for major ticks, 10-pixel for minor
-        baseSpacing = 10.0 // 10-pixel minor ticks
+        // REDUCED: Use larger intervals to avoid excessive ticks (was 10, now 20)
+        baseSpacing = 20.0 // 20-pixel minor ticks - matches pica density better
     case .points:
-        // Use 72-point intervals (1 inch) for major ticks, 12-point for minor
-        baseSpacing = 12.0
+        // REDUCED: Use pica intervals (was 12, now 6 for better density)
+        baseSpacing = 6.0 // 6-point minor ticks - matches pica spacing
     case .inches:
-        // PROFESSIONAL INCHES: Use 1/8 inch intervals for ALL ticks (Illustrator standard)
-        baseSpacing = pointsPerUnit / 8 // 1/8 inch intervals for finest subdivision
+        // PROFESSIONAL INCHES: Use 1/8 inch intervals (works well)
+        baseSpacing = pointsPerUnit / 8 // 1/8 inch intervals (9 points)
     case .centimeters:
-        // PROFESSIONAL METRIC: Use 1cm intervals for major ticks, 1mm for minor
-        baseSpacing = pointsPerUnit / 10 // 1mm intervals for minor ticks
+        // REDUCED: Use 2mm intervals instead of 1mm to avoid excessive ticks
+        baseSpacing = pointsPerUnit / 5 // 2mm intervals (5.66 points) - matches pica density
     case .millimeters:
-        // Use 10mm intervals for major ticks, 1mm for minor
-        baseSpacing = pointsPerUnit
+        // MUCH REDUCED: Use 5mm intervals instead of 1mm to avoid excessive ticks
+        baseSpacing = pointsPerUnit * 5 // 5mm intervals (14.17 points) - reasonable density
     case .picas:
-        // PROFESSIONAL PICAS: Use 1 pica intervals for major ticks, 1 point for minor
-        baseSpacing = pointsPerUnit / 12 // 1 point intervals for minor ticks
+        // PERFECT: Use 1 pica intervals for major ticks, 1 point for minor (THIS IS THE MODEL)
+        baseSpacing = pointsPerUnit / 12 // 1 point intervals - PERFECT frequency
     }
     
     // Adjust spacing based on zoom level for professional readability

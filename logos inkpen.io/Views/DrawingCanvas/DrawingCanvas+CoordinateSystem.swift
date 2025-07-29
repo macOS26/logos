@@ -53,9 +53,8 @@ extension DrawingCanvas {
         let viewSize = geometry.size
         
         // ASPECT RATIO SCALING: Calculate both scales and use minimum for uniform scaling
-        let padding: CGFloat = 100.0  // Leave some padding for professional look
-        let availableWidth = viewSize.width - (padding * 2)
-        let availableHeight = viewSize.height - (padding * 2)
+        let availableWidth = viewSize.width
+        let availableHeight = viewSize.height
         
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
@@ -85,7 +84,7 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 DOCUMENT SCALING (Standard Approach):")
+        print("🎯 DOCUMENT SCALING (Standard Approach - NO PADDING):")
         print("   Document Bounds: \(documentBounds)")
         print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
         print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
@@ -105,10 +104,9 @@ extension DrawingCanvas {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
         
-        // Calculate zoom level to fit the canvas in the view with padding
-        let padding: CGFloat = 50.0
-        let availableWidth = viewSize.width - (padding * 2)
-        let availableHeight = viewSize.height - (padding * 2)
+        // Calculate zoom level to fit the canvas in the view - NO PADDING for full fill
+        let availableWidth = viewSize.width
+        let availableHeight = viewSize.height
         
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
@@ -137,9 +135,10 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🔍 FIT TO PAGE: Using standard document bounds")
+        print("🔍 FIT TO PAGE: Using standard document bounds - FULL FILL NO PADDING")
         print("   Document Bounds: \(documentBounds)")
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
+        print("   Available space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
         print("   Standard coordinate system approach")
     }
     

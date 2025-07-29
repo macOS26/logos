@@ -57,8 +57,6 @@ struct MainView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                 .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
                                 .background(Color.clear) // Ensure no background extension
-                                .padding(.top, document.showRulers ? 20 : 0)
-                                .padding(.leading, document.showRulers ? 20 : 0)
                                 .zIndex(1) // CRITICAL: Canvas below panels but above background
                                 .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
                             
@@ -256,11 +254,21 @@ struct MainView: View {
         // Document starts completely empty - no default shapes
         print("✅ Document setup complete - starting with empty canvas")
         
-        // PROFESSIONAL STARTUP BEHAVIOR: Auto-fit to page on launch (like Adobe Illustrator)
+        // PROFESSIONAL STARTUP BEHAVIOR: Auto-fit to full space on launch
+        // Temporarily disable rulers for full-space fit, then restore
+        let originalRulerState = document.showRulers
+        document.showRulers = false
+        
         // Use a small delay to ensure the view is fully rendered before fitting
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-            print("🔍 AUTO-FIT TO PAGE: Applied on app launch for professional startup experience")
+            print("🔍 AUTO-FIT TO FULL SPACE: Applied on app launch for professional startup experience")
+            
+            // Restore original ruler state after fit
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                document.showRulers = originalRulerState
+                print("🔍 RULERS RESTORED: Back to original state after startup fit")
+            }
         }
     }
     
@@ -405,11 +413,21 @@ struct MainView: View {
                         
                         print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
-                        // PROFESSIONAL DOCUMENT OPEN BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
+                        // PROFESSIONAL DOCUMENT OPEN BEHAVIOR: Auto-fit to full available space (no padding)
+                        // Temporarily disable rulers for full-space fit, then restore
+                        let originalRulerState = document.showRulers
+                        document.showRulers = false
+                        
                         // Use a small delay to ensure the view is updated before fitting
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-                            print("🔍 AUTO-FIT TO PAGE: Applied for opened document")
+                            print("🔍 AUTO-FIT TO FULL SPACE: Applied for opened document")
+                            
+                            // Restore original ruler state after fit
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                document.showRulers = originalRulerState
+                                print("🔍 RULERS RESTORED: Back to original state after fit")
+                            }
                         }
                         
                         // Show success notification
