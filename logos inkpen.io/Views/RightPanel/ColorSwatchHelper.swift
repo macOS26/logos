@@ -22,8 +22,8 @@ struct CheckerboardPattern: View {
                 ForEach(0..<rows, id: \.self) { row in
                     ForEach(0..<cols, id: \.self) { col in
                         let isEven = (row + col) % 2 == 0
-                        Rectangle()
-                            .fill(isEven ? Color.white : Color.black.opacity(0.1))
+                                Rectangle()
+            .fill(isEven ? Color.white : Color.gray.opacity(0.15))
                             .frame(width: tileSize, height: tileSize)
                             .position(
                                 x: CGFloat(col) * tileSize + tileSize / 2,
@@ -60,12 +60,12 @@ func renderColorSwatchRightPanel(_ color: VectorColor, width: CGFloat, height: C
             }
             
             // Diagonal slash through the clear color (forward slash) - match VerticalToolbar style
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: width, y: height))
-            }
-            .stroke(Color.red, lineWidth: max(1, width / 20))
-            .frame(width: width, height: height)
+                    Path { path in
+            path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: width, y: height))
+        }
+        .stroke(Color.red, lineWidth: 3)
+        .frame(width: width, height: height)
         }
         .allowsHitTesting(true) // Ensure the clear color swatch doesn't block interactions
     } else {
