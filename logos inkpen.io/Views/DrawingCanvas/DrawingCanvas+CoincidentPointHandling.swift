@@ -259,11 +259,11 @@ extension DrawingCanvas {
             // Dragging OUTGOING handle from first point (control1 of second element)
             // Update INCOMING handle of last point (control2 of last element)
             
-            if case .curve(let lastTo, let lastControl1, _) = elements[lastElementIndex] {
+            if case .curve(let lastTo, let lastControl1, let lastControl2) = elements[lastElementIndex] {
                 let oppositeHandle = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
                     draggedHandle: newDraggedPosition,
-                    originalOppositeHandle: CGPoint(x: lastControl1.x, y: lastControl1.y) // Keep original length
+                    originalOppositeHandle: CGPoint(x: lastControl2.x, y: lastControl2.y) // Use INCOMING handle of last point
                 )
                 
                 // Update both handles
@@ -278,11 +278,11 @@ extension DrawingCanvas {
             // Dragging INCOMING handle to last point (control2 of last element)
             // Update OUTGOING handle from first point (control1 of second element)
             
-            if elements.count > 1, case .curve(let secondTo, _, let secondControl2) = elements[1] {
+            if elements.count > 1, case .curve(let secondTo, let secondControl1, let secondControl2) = elements[1] {
                 let oppositeHandle = calculateLinkedHandle(
                     anchorPoint: anchorPoint,
                     draggedHandle: newDraggedPosition,
-                    originalOppositeHandle: CGPoint(x: secondControl2.x, y: secondControl2.y) // Keep original length
+                    originalOppositeHandle: CGPoint(x: secondControl1.x, y: secondControl1.y) // Use OUTGOING handle from first point
                 )
                 
                 // Update both handles
