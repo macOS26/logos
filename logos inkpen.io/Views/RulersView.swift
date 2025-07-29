@@ -308,11 +308,11 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
     case .inches:
         return String(format: "%.2f", value)
     case .centimeters:
-        // FIXED: Handle negative values properly for cm
+        // PROFESSIONAL CENTIMETERS: Show whole numbers like Illustrator, no decimals
         if value < 0 {
-            return String(format: "-%.1f", abs(value))
+            return String(format: "-%.0f", abs(value))
         } else {
-            return String(format: "%.1f", value)
+            return String(format: "%.0f", value)
         }
     case .millimeters:
         // FIXED: Handle negative values properly for mm
