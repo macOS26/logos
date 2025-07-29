@@ -101,20 +101,17 @@ struct HorizontalRuler: View {
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 
-                // Calculate position within the inch (0.0 to 1.0)
-                let positionInInch = (x / pointsPerUnit).truncatingRemainder(dividingBy: 1.0)
-                
+                // FIXED INCH HIERARCHY: Check exact 1/8" intervals
                 if isMajorTick {
                     tickHeight = 12 // 1 inch ticks - full height
                     lineWidth = 1.0
-                } else if abs(positionInInch - 0.5) < 0.001 {
+                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
                     tickHeight = 9  // 1/2 inch ticks - three-quarter height
                     lineWidth = 0.75
-                } else if abs(positionInInch - 0.25) < 0.001 || abs(positionInInch - 0.75) < 0.001 {
+                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
                     tickHeight = 6  // 1/4 inch ticks - half height
                     lineWidth = 0.6
-                } else if abs(positionInInch - 0.125) < 0.001 || abs(positionInInch - 0.375) < 0.001 || 
-                          abs(positionInInch - 0.625) < 0.001 || abs(positionInInch - 0.875) < 0.001 {
+                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
                     tickHeight = 3  // 1/8 inch ticks - quarter height
                     lineWidth = 0.5
                 } else {
@@ -207,24 +204,20 @@ struct VerticalRuler: View {
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 
-                // PROFESSIONAL INCH TICK HIERARCHY: Like Illustrator - 4 tiers
+                // FIXED INCH HIERARCHY: Use same logic as horizontal ruler
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
-                
-                // Calculate position within the inch (0.0 to 1.0)
-                let positionInInch = (y / pointsPerUnit).truncatingRemainder(dividingBy: 1.0)
                 
                 if isMajorTick {
                     tickWidth = 12 // 1 inch ticks - full width
                     lineWidth = 1.0
-                } else if abs(positionInInch - 0.5) < 0.001 {
+                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
                     tickWidth = 9  // 1/2 inch ticks - three-quarter width
                     lineWidth = 0.75
-                } else if abs(positionInInch - 0.25) < 0.001 || abs(positionInInch - 0.75) < 0.001 {
+                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
                     tickWidth = 6  // 1/4 inch ticks - half width
                     lineWidth = 0.6
-                } else if abs(positionInInch - 0.125) < 0.001 || abs(positionInInch - 0.375) < 0.001 || 
-                          abs(positionInInch - 0.625) < 0.001 || abs(positionInInch - 0.875) < 0.001 {
+                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
                     tickWidth = 3  // 1/8 inch ticks - quarter width
                     lineWidth = 0.5
                 } else {
@@ -243,7 +236,7 @@ struct VerticalRuler: View {
                     lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks only
+                // Draw label for major ticks only - BEFORE the tick, not AFTER
                 if isMajorTick {
                     let value = y / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
@@ -252,10 +245,10 @@ struct VerticalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    // Rotate text for vertical ruler - AFTER the tick, not BEFORE
+                    // Rotate text for vertical ruler - BEFORE the tick, not AFTER
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 16, y: size.width - 14))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY + 4, y: size.width - 14))
                 }
             }
             
@@ -327,8 +320,12 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
     switch unit {
     case .inches:
-        // PROFESSIONAL INCHES: Show whole numbers like Illustrator, no decimals
-        return String(format: "%.0f", value)
+        // FIXED INCHES: Handle negative values properly like other units
+        if value < 0 {
+            return String(format: "-%.0f", abs(value))
+        } else {
+            return String(format: "%.0f", value)
+        }
     case .centimeters:
         // PROFESSIONAL CENTIMETERS: Show whole numbers like Illustrator, no decimals
         if value < 0 {
@@ -344,14 +341,26 @@ private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String 
             return String(format: "%.0f", value)
         }
     case .points:
-        // LESS NOISY: Use cleaner formatting for points (no decimals but better spacing)
-        return String(format: "%.0f", value)
+        // FIXED: Handle negative values properly for points
+        if value < 0 {
+            return String(format: "-%.0f", abs(value))
+        } else {
+            return String(format: "%.0f", value)
+        }
     case .pixels:
-        // LESS NOISY: Use cleaner formatting for pixels (no decimals but better spacing)
-        return String(format: "%.0f", value)
+        // FIXED: Handle negative values properly for pixels
+        if value < 0 {
+            return String(format: "-%.0f", abs(value))
+        } else {
+            return String(format: "%.0f", value)
+        }
     case .picas:
-        // PROFESSIONAL PICAS: Show whole numbers like Illustrator, no decimals
-        return String(format: "%.0f", value)
+        // FIXED: Handle negative values properly for picas
+        if value < 0 {
+            return String(format: "-%.0f", abs(value))
+        } else {
+            return String(format: "%.0f", value)
+        }
     }
 }
 
