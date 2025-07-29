@@ -197,93 +197,90 @@ struct NewDocumentSetupView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            // Template Picker and Quick Sizes in HStack for compact layout
-            HStack(alignment: .top, spacing: 12) {
-                // Template Picker
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Preset")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Picker("Template", selection: $selectedTemplate) {
-                        ForEach(TemplateManager.TemplateType.allCases, id: \.self) { template in
-                            Text(template.displayName).tag(template)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedTemplate) { _, newTemplate in
-                        applyTemplate(newTemplate)
+            // Template Picker
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Preset")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Picker("Template", selection: $selectedTemplate) {
+                    ForEach(TemplateManager.TemplateType.allCases, id: \.self) { template in
+                        Text(template.displayName).tag(template)
                     }
                 }
+                .pickerStyle(MenuPickerStyle())
+                .onChange(of: selectedTemplate) { _, newTemplate in
+                    applyTemplate(newTemplate)
+                }
                 .frame(width: 120)
+            }
+            
+            // Quick Size Buttons in ROWS
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Quick Sizes")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 
-                // Quick Size Buttons in ROWS
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Quick Sizes")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    // Row 1: Letter, Legal, A4, Business Card
-                    HStack(spacing: 4) {
-                        Button("Letter") {
-                            applyQuickSize(quickSizes[0])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("Legal") {
-                            applyQuickSize(quickSizes[1])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("A4") {
-                            applyQuickSize(quickSizes[2])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("Business Card") {
-                            applyQuickSize(quickSizes[3])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
+                // Row 1: Letter, Legal, A4, Business Card
+                HStack(spacing: 4) {
+                    Button("Letter") {
+                        applyQuickSize(quickSizes[0])
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
                     
-                    // Row 2: Web HD, Mobile, Square, Wide
-                    HStack(spacing: 4) {
-                        Button("Web HD") {
-                            applyQuickSize(quickSizes[4])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("Mobile") {
-                            applyQuickSize(quickSizes[5])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("Square") {
-                            applyQuickSize(quickSizes[6])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
-                        
-                        Button("Wide") {
-                            applyQuickSize(quickSizes[7])
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .frame(maxWidth: .infinity)
+                    Button("Legal") {
+                        applyQuickSize(quickSizes[1])
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("A4") {
+                        applyQuickSize(quickSizes[2])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("Business Card") {
+                        applyQuickSize(quickSizes[3])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                }
+                
+                // Row 2: Web HD, Mobile, Square, Wide
+                HStack(spacing: 4) {
+                    Button("Web HD") {
+                        applyQuickSize(quickSizes[4])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("Mobile") {
+                        applyQuickSize(quickSizes[5])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("Square") {
+                        applyQuickSize(quickSizes[6])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
+                    
+                    Button("Wide") {
+                        applyQuickSize(quickSizes[7])
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
