@@ -258,7 +258,7 @@ extension DrawingCanvas {
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
                             .fill(Color.blue)
-                            .frame(width: 4, height: 4) // Fixed UI size - does not scale with artwork
+                            .frame(width: 6, height: 6) // Fixed UI size - does not scale with artwork
                             .position(CGPoint(
                                 x: control1Location.x * document.zoomLevel + document.canvasOffset.x,
                                 y: control1Location.y * document.zoomLevel + document.canvasOffset.y
@@ -278,7 +278,7 @@ extension DrawingCanvas {
                         // Control handle circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
                         Circle()
                             .fill(Color.blue)
-                            .frame(width: 4, height: 4) // Fixed UI size - does not scale with artwork
+                            .frame(width: 6, height: 6) // Fixed UI size - does not scale with artwork
                             .position(CGPoint(
                                 x: control2Location.x * document.zoomLevel + document.canvasOffset.x,
                                 y: control2Location.y * document.zoomLevel + document.canvasOffset.y
@@ -308,7 +308,7 @@ extension DrawingCanvas {
                         Rectangle()
                             .stroke(isActive ? Color.white : Color.black, lineWidth: 1.0)
                     )
-                    .frame(width: 6, height: 6) // Fixed UI size - does not scale with artwork
+                    .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork
                     .position(CGPoint(
                         x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
                         y: pointLocation.y * document.zoomLevel + document.canvasOffset.y

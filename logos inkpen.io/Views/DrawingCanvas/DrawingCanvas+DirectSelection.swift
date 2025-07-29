@@ -105,7 +105,9 @@ extension DrawingCanvas {
                             
                             // INCOMING HANDLE (control2 of current element)
                             let handle2Location = CGPoint(x: control2.x, y: control2.y)
-                            if distance(location, handle2Location) <= tolerance {
+                            let handle2Distance = distance(location, handle2Location)
+                            print("🎯 Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance)), tolerance: \(String(format: "%.1f", tolerance))")
+                            if handle2Distance <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
                                     pathIndex: 0,
@@ -132,7 +134,9 @@ extension DrawingCanvas {
                                 let nextElement = shape.path.elements[elementIndex + 1]
                                 if case .curve(_, let nextControl1, _) = nextElement {
                                     let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                    if distance(location, outgoingHandleLocation) <= tolerance {
+                                    let outgoingDistance = distance(location, outgoingHandleLocation)
+                                    print("🎯 Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance)), tolerance: \(String(format: "%.1f", tolerance))")
+                                    if outgoingDistance <= tolerance {
                                         // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
                                         let handleID = HandleID(
                                             shapeID: shape.id,
@@ -332,7 +336,12 @@ extension DrawingCanvas {
         
         // TEXT EDITING REMOVED
         
-        let tolerance: Double = 15.0
+        // IMPROVED: Scale tolerance with zoom level for consistent screen-space tolerance
+        // At 1x zoom: 15 canvas units = 15 screen pixels
+        // At 2x zoom: 7.5 canvas units = 15 screen pixels
+        // At 0.5x zoom: 30 canvas units = 15 screen pixels
+        let screenTolerance: Double = 15.0
+        let tolerance: Double = screenTolerance / document.zoomLevel
         var foundSelection = false
         
         // STAGE 1: Check if clicking on individual anchor points/handles (for already direct-selected shapes)

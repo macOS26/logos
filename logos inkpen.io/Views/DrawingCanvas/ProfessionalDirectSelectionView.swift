@@ -60,7 +60,7 @@ struct ProfessionalDirectSelectionView: View {
                     Circle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 6, height: 6) // Fixed UI size - does not scale with artwork
+                        .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork
                         .position(CGPoint(
                             x: handleInfo.handleLocation.x * document.zoomLevel + document.canvasOffset.x,
                             y: handleInfo.handleLocation.y * document.zoomLevel + document.canvasOffset.y
@@ -75,7 +75,7 @@ struct ProfessionalDirectSelectionView: View {
                     Rectangle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork
+                        .frame(width: 10, height: 10) // Fixed UI size - does not scale with artwork
                         .position(CGPoint(
                             x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
                             y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
@@ -166,7 +166,7 @@ struct ProfessionalDirectSelectionView: View {
         Circle()
             .fill(Color.blue)
             .stroke(Color.white, lineWidth: 0.5)
-            .frame(width: 4, height: 4)
+            .frame(width: 6, height: 6)
             .position(CGPoint(
                 x: to.x * document.zoomLevel + document.canvasOffset.x,
                 y: to.y * document.zoomLevel + document.canvasOffset.y
@@ -191,7 +191,7 @@ struct ProfessionalDirectSelectionView: View {
             Rectangle()
                 .fill(isPointSelected ? Color.blue : Color.white)
                 .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
-                .frame(width: 6, height: 6)
+                .frame(width: 8, height: 8)
                 .position(CGPoint(
                     x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
                     y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
