@@ -26,6 +26,7 @@ struct MainView: View {
     @State private var showingDWGExportDialog = false
     @State private var dwgExportOptions = DWGExportOptions()
     @State private var showingSVGTestHarness = false // Add SVG test access
+    @State private var showingNewDocumentSetup = false // New document setup window
     
     // MARK: - Development Views State (moved to AppState)
     
@@ -107,6 +108,40 @@ struct MainView: View {
         }
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
+        }
+        .sheet(isPresented: $showingNewDocumentSetup) {
+            NewDocumentSetupView(
+                isPresented: $showingNewDocumentSetup,
+                onDocumentCreated: { newDocument, suggestedURL in
+                    // Replace current document with new one
+                    document.settings = newDocument.settings
+                    document.layers = newDocument.layers
+                    document.rgbSwatches = newDocument.rgbSwatches
+                    document.cmykSwatches = newDocument.cmykSwatches
+                    document.hsbSwatches = newDocument.hsbSwatches
+                    
+                    document.selectedLayerIndex = newDocument.selectedLayerIndex
+                    document.selectedShapeIDs = newDocument.selectedShapeIDs
+                    document.selectedTextIDs = newDocument.selectedTextIDs
+                    document.textObjects = newDocument.textObjects
+                    document.currentTool = newDocument.currentTool
+                    document.viewMode = newDocument.viewMode
+                    document.zoomLevel = newDocument.zoomLevel
+                    document.canvasOffset = newDocument.canvasOffset
+                    document.showRulers = newDocument.showRulers
+                    document.snapToGrid = newDocument.snapToGrid
+                    
+                    // Set the suggested URL as current document URL
+                    currentDocumentURL = suggestedURL
+                    
+                    print("✅ Created new document with custom settings")
+                    
+                    // Auto-fit to page
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        document.requestZoom(to: 0.0, mode: .fitToPage)
+                    }
+                }
+            )
         }
         .sheet(isPresented: $showingExportDialog) {
             ExportView(document: document)
@@ -243,8 +278,8 @@ struct MainView: View {
     
     private func saveDocumentAs() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.json]
-        panel.nameFieldStringValue = "Document.logos inkpen.io"
+        panel.allowedContentTypes = [UTType.json, UTType.inkpen]
+        panel.nameFieldStringValue = "Document.inkpen"
         panel.title = "Save Document"
         
         panel.begin { response in
@@ -286,38 +321,8 @@ struct MainView: View {
     }
     
     private func newDocument() {
-        // PROFESSIONAL TEMPLATE SYSTEM: Use proper document template creation
-        let newDoc = TemplateManager.shared.createBlankDocument()
-        
-        // Update the current document by copying all properties
-        document.settings = newDoc.settings
-        document.layers = newDoc.layers
-        document.rgbSwatches = newDoc.rgbSwatches
-        document.cmykSwatches = newDoc.cmykSwatches
-        document.hsbSwatches = newDoc.hsbSwatches
-        
-        document.selectedLayerIndex = newDoc.selectedLayerIndex
-        document.selectedShapeIDs = newDoc.selectedShapeIDs
-        document.selectedTextIDs = newDoc.selectedTextIDs
-        document.textObjects = newDoc.textObjects
-        document.currentTool = newDoc.currentTool
-        document.viewMode = newDoc.viewMode
-        document.zoomLevel = newDoc.zoomLevel
-        document.canvasOffset = newDoc.canvasOffset
-        document.showRulers = newDoc.showRulers
-        document.snapToGrid = newDoc.snapToGrid
-        
-        // Clear the current document URL (new document has no saved location)
-        currentDocumentURL = nil
-        
-        print("✅ Created new document using TemplateManager - completely empty")
-        
-        // PROFESSIONAL NEW DOCUMENT BEHAVIOR: Auto-fit to page (like Adobe Illustrator)
-        // Use a small delay to ensure the view is updated before fitting
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-            print("🔍 AUTO-FIT TO PAGE: Applied for new document creation")
-        }
+        // Show the new document setup window
+        showingNewDocumentSetup = true
     }
     
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
@@ -351,7 +356,7 @@ struct MainView: View {
     
     private func openDocument() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [UTType.json, UTType.svg]
+        panel.allowedContentTypes = [UTType.json, UTType.svg, UTType.inkpen]
         panel.allowsMultipleSelection = false
         panel.title = "Open Document"
         
@@ -367,6 +372,9 @@ struct MainView: View {
                     if fileExtension == "svg" {
                         // Import SVG file
                         loadedDocument = try await FileOperations.importFromSVG(url: url)
+                    } else if fileExtension == "inkpen" {
+                        // Import Ink Pen document file
+                        loadedDocument = try FileOperations.importFromJSON(url: url)
                     } else {
                         // Import JSON file (default)
                         loadedDocument = try FileOperations.importFromJSON(url: url)
