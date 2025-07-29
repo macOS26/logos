@@ -72,21 +72,16 @@ extension DrawingCanvas {
         let originX = getGradientOriginX(gradient)
         let originY = getGradientOriginY(gradient)
         
-        // Get gradient scale to account for scaled gradient positioning
-        let scale = getGradientScale(gradient)
+        // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
+        // Scale origin point by scale factor (same as LayerView)
+        let scaledOriginX = originX * getGradientScale(gradient)
+        let scaledOriginY = originY * getGradientScale(gradient)
         
-        // Calculate scaled bounds - when gradient is scaled, origin point can extend beyond object bounds
-        let scaledWidth = shapeBounds.width * scale
-        let scaledHeight = shapeBounds.height * scale
+        // Calculate center using the same formula as LayerView
+        let centerX = shapeBounds.minX + shapeBounds.width * scaledOriginX
+        let centerY = shapeBounds.minY + shapeBounds.height * scaledOriginY
         
-        // Calculate offset from object center to scaled gradient center
-        let offsetX = (scaledWidth - shapeBounds.width) / 2.0
-        let offsetY = (scaledHeight - shapeBounds.height) / 2.0
-        
-        // Convert to canvas coordinates accounting for scale
-        let canvasX = shapeBounds.minX - offsetX + scaledWidth * originX
-        let canvasY = shapeBounds.minY - offsetY + scaledHeight * originY
-        return CGPoint(x: canvasX, y: canvasY)
+        return CGPoint(x: centerX, y: centerY)
     }
     
     /// Get gradient scale (same as stroke/fill panel)
@@ -123,22 +118,15 @@ extension DrawingCanvas {
         // Convert screen coordinates to canvas coordinates
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         
-        // Get gradient scale to account for scaled gradient positioning
-        let scale = getGradientScale(gradient)
         let shapeBounds = shape.bounds
+        let scale = getGradientScale(gradient)
         
-        // Calculate scaled bounds
-        let scaledWidth = shapeBounds.width * scale
-        let scaledHeight = shapeBounds.height * scale
+        // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
+        // Convert canvas coordinates back to relative coordinates using the same formula
+        let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width / scale
+        let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height / scale
         
-        // Calculate offset from object center to scaled gradient center
-        let offsetX = (scaledWidth - shapeBounds.width) / 2.0
-        let offsetY = (scaledHeight - shapeBounds.height) / 2.0
-        
-        // Convert to relative coordinates within the scaled gradient bounds
-        // Allow coordinates to extend beyond 0-1 range when gradient is scaled
-        let relativeX = (canvasPoint.x - (shapeBounds.minX - offsetX)) / scaledWidth
-        let relativeY = (canvasPoint.y - (shapeBounds.minY - offsetY)) / scaledHeight
+        print("🎯 Gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))")
         
         // Don't clamp the coordinates - allow them to extend beyond object bounds
         // This allows the origin point to move freely within the scaled gradient area
@@ -149,6 +137,8 @@ extension DrawingCanvas {
     /// Same update functions as stroke/fill panel
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
+        
+        print("📐 Updating gradient origin X to: \(newX)")
         
         switch selectedGradient {
         case .linear(var linear):
@@ -164,6 +154,8 @@ extension DrawingCanvas {
     
     private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
+        
+        print("📐 Updating gradient origin Y to: \(newY)")
         
         switch selectedGradient {
         case .linear(var linear):
@@ -187,8 +179,11 @@ extension DrawingCanvas {
             updatedShape.fillStyle = FillStyle(color: .gradient(newGradient))
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
             
-            // Trigger document update to refresh UI
-            document.objectWillChange.send()
+            // CRITICAL: Force UI refresh by triggering document change
+            // This ensures the StrokeFillPanel updates its gradient display
+            DispatchQueue.main.async {
+                self.document.objectWillChange.send()
+            }
         }
     }
     

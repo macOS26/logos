@@ -833,6 +833,10 @@ struct GradientFillSection: View {
         .cornerRadius(12)
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
+        .onReceive(document.objectWillChange) { _ in
+            // Force refresh when document changes (including gradient updates)
+            updateSelectedGradient()
+        }
         .onChange(of: editingGradientStopId) { _, newStopId in
             if let stopId = newStopId {
                 showGradientColorWindow(stopId: stopId)
@@ -926,6 +930,14 @@ struct GradientFillSection: View {
     
     private func updateSelectedGradient() {
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+            let originPoint: CGPoint
+            switch selectedGradient {
+            case .linear(let linear):
+                originPoint = linear.originPoint
+            case .radial(let radial):
+                originPoint = radial.originPoint
+            }
+            print("🔄 Updating gradient in panel - Origin: (\(originPoint.x), \(originPoint.y))")
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(_):
@@ -2117,9 +2129,14 @@ struct GradientPreviewAndStopsView: View {
         guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
         let originX = getOriginX(gradient)
         let originY = getOriginY(gradient)
+        
+        // Clamp the dot position to stay within preview bounds (0,0 to 1,1)
+        let clampedX = max(0.0, min(1.0, originX))
+        let clampedY = max(0.0, min(1.0, originY))
+        
         return CGPoint(
-            x: originX * squareSize,
-            y: originY * squareSize
+            x: clampedX * squareSize,
+            y: clampedY * squareSize
         )
     }
     
@@ -2160,8 +2177,11 @@ struct GradientPreviewAndStopsView: View {
                 .frame(width: squareSize, height: squareSize)
                 .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                 .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
-                    updateOriginX(x, true)
-                    updateOriginY(y, true)
+                    // Clamp preview to 0,0 to 1,1 bounds for visual clarity
+                    let clampedX = max(0.0, min(1.0, x))
+                    let clampedY = max(0.0, min(1.0, y))
+                    updateOriginX(clampedX, true)
+                    updateOriginY(clampedY, true)
                     document.saveToUndoStack()
                 })
 
@@ -2223,8 +2243,11 @@ struct GradientPreviewAndStopsView: View {
                     .frame(width: squareSize, height: squareSize)
                     .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
                     .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
-                        updateOriginX(x, true)
-                        updateOriginY(y, true)
+                        // Clamp preview to 0,0 to 1,1 bounds for visual clarity
+                        let clampedX = max(0.0, min(1.0, x))
+                        let clampedY = max(0.0, min(1.0, y))
+                        updateOriginX(clampedX, true)
+                        updateOriginY(clampedY, true)
                         document.saveToUndoStack()
                     })
             }
@@ -2240,6 +2263,7 @@ struct GradientPreviewAndStopsView: View {
             .gesture(
                 DragGesture()
                     .onChanged { value in
+                        // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                         let normalizedX = max(0.0, min(1.0, value.location.x / squareSize))
                         let normalizedY = max(0.0, min(1.0, value.location.y / squareSize))
                         updateOriginX(normalizedX, true) // Enable live preview on shapes
@@ -2259,6 +2283,7 @@ struct GradientPreviewAndStopsView: View {
         
         return createGradientPreview(geometry: geometry, squareSize: squareSize)
             .onTapGesture { location in
+                // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                 let normalizedX = max(0.0, min(1.0, location.x / fullWidth))
                 let normalizedY = max(0.0, min(1.0, location.y / fullWidth))
                 updateOriginX(normalizedX, true)
@@ -2637,6 +2662,7 @@ struct CartesianGrid: View {
             
             // Clickable coordinate points
             if let onCoordinateClick = onCoordinateClick {
+                // Corner points
                 // Top-left (0,0)
                 Circle()
                     .fill(Color.blue.opacity(0.6))
@@ -2680,6 +2706,116 @@ struct CartesianGrid: View {
                     .position(x: width/2, y: height/2)
                     .onTapGesture {
                         onCoordinateClick(0.5, 0.5)
+                    }
+                
+                // Edge midpoints
+                // Top center (0.5,0)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width/2, y: 0)
+                    .onTapGesture {
+                        onCoordinateClick(0.5, 0.0)
+                    }
+                
+                // Bottom center (0.5,1)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width/2, y: height)
+                    .onTapGesture {
+                        onCoordinateClick(0.5, 1.0)
+                    }
+                
+                // Left center (0,0.5)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: 0, y: height/2)
+                    .onTapGesture {
+                        onCoordinateClick(0.0, 0.5)
+                    }
+                
+                // Right center (1,0.5)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width, y: height/2)
+                    .onTapGesture {
+                        onCoordinateClick(1.0, 0.5)
+                    }
+                
+                // Grid intersections (8 additional points)
+                // Top-left quadrant center (0.25,0.25)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.25, y: height * 0.25)
+                    .onTapGesture {
+                        onCoordinateClick(0.25, 0.25)
+                    }
+                
+                // Top-right quadrant center (0.75,0.25)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.75, y: height * 0.25)
+                    .onTapGesture {
+                        onCoordinateClick(0.75, 0.25)
+                    }
+                
+                // Bottom-left quadrant center (0.25,0.75)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.25, y: height * 0.75)
+                    .onTapGesture {
+                        onCoordinateClick(0.25, 0.75)
+                    }
+                
+                // Bottom-right quadrant center (0.75,0.75)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.75, y: height * 0.75)
+                    .onTapGesture {
+                        onCoordinateClick(0.75, 0.75)
+                    }
+                
+                // Left middle (0.25,0.5)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.25, y: height * 0.5)
+                    .onTapGesture {
+                        onCoordinateClick(0.25, 0.5)
+                    }
+                
+                // Right middle (0.75,0.5)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.75, y: height * 0.5)
+                    .onTapGesture {
+                        onCoordinateClick(0.75, 0.5)
+                    }
+                
+                // Top middle (0.5,0.25)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.5, y: height * 0.25)
+                    .onTapGesture {
+                        onCoordinateClick(0.5, 0.25)
+                    }
+                
+                // Bottom middle (0.5,0.75)
+                Circle()
+                    .fill(Color.blue.opacity(0.6))
+                    .frame(width: 12, height: 12)
+                    .position(x: width * 0.5, y: height * 0.75)
+                    .onTapGesture {
+                        onCoordinateClick(0.5, 0.75)
                     }
             }
         }

@@ -61,8 +61,10 @@ extension DrawingCanvas {
             )
         }
         
-        // Gradient center point visualization and editing
-        gradientCenterPointOverlay(geometry: geometry)
+        // Gradient center point visualization and editing - only when gradient tool is selected
+        if document.currentTool == .gradient {
+            gradientCenterPointOverlay(geometry: geometry)
+        }
     }
     
     @ViewBuilder

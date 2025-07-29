@@ -126,6 +126,8 @@ struct VerticalToolbar: View {
             return "Zoom Tool (Z) - Zoom in and out"
         case .warp:
             return "Warp Tool"
+        case .gradient:
+            return "Gradient Tool (G) - Edit gradient origin and focal points"
 
         }
     }
