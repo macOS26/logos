@@ -114,7 +114,7 @@ struct NewDocumentSetupView: View {
     // MARK: - Left Panel - Document Settings
     private var leftPanel: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 // Document Size Section
                 documentSizeSection
                 
@@ -124,7 +124,7 @@ struct NewDocumentSetupView: View {
                 // Advanced Settings Section
                 advancedSettingsSection
             }
-            .padding(20)
+            .padding(16)
         }
         .frame(width: 400)
     }
@@ -192,13 +192,13 @@ struct NewDocumentSetupView: View {
     
     // MARK: - Template Section
     private var templateSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Template")
                 .font(.headline)
                 .fontWeight(.semibold)
             
             // Template Picker and Quick Sizes in HStack for compact layout
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: 12) {
                 // Template Picker
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Preset")
@@ -217,21 +217,72 @@ struct NewDocumentSetupView: View {
                 }
                 .frame(width: 120)
                 
-                // Quick Size Buttons
+                // Quick Size Buttons in ROWS
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quick Sizes")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 4) {
-                        ForEach(quickSizes, id: \.name) { size in
-                            Button(size.name) {
-                                applyQuickSize(size)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                            .frame(maxWidth: .infinity)
+                    // Row 1: Letter, Legal, A4, Business Card
+                    HStack(spacing: 4) {
+                        Button("Letter") {
+                            applyQuickSize(quickSizes[0])
                         }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("Legal") {
+                            applyQuickSize(quickSizes[1])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("A4") {
+                            applyQuickSize(quickSizes[2])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("Business Card") {
+                            applyQuickSize(quickSizes[3])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Row 2: Web HD, Mobile, Square, Wide
+                    HStack(spacing: 4) {
+                        Button("Web HD") {
+                            applyQuickSize(quickSizes[4])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("Mobile") {
+                            applyQuickSize(quickSizes[5])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("Square") {
+                            applyQuickSize(quickSizes[6])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
+                        
+                        Button("Wide") {
+                            applyQuickSize(quickSizes[7])
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
