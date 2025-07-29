@@ -96,21 +96,27 @@ struct HorizontalRuler: View {
             
             if rulerX >= 0 && rulerX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
-                let isMediumTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001
                 
-                // PROFESSIONAL TICK HEIGHTS: Like Illustrator - clear hierarchy
+                // PROFESSIONAL INCH TICK HIERARCHY: Like Illustrator - 4 tiers
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
                 
                 if isMajorTick {
-                    tickHeight = 12 // Major ticks - longest
+                    tickHeight = 12 // 1 inch ticks - full height
                     lineWidth = 1.0
-                } else if isMediumTick {
-                    tickHeight = 8  // Medium ticks - medium length
+                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001 {
+                    tickHeight = 9  // 1/2 inch ticks - three-quarter height
                     lineWidth = 0.75
-                } else {
-                    tickHeight = 4  // Minor ticks - shortest
+                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 4)) < 0.001 {
+                    tickHeight = 6  // 1/4 inch ticks - half height
+                    lineWidth = 0.6
+                } else if abs(x.truncatingRemainder(dividingBy: majorTickInterval / 8)) < 0.001 {
+                    tickHeight = 3  // 1/8 inch ticks - quarter height
                     lineWidth = 0.5
+                } else {
+                    // Skip ticks that aren't at proper intervals
+                    x += tickSpacing
+                    continue
                 }
                 
                 // Draw tick with professional styling
@@ -123,7 +129,7 @@ struct HorizontalRuler: View {
                     lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks only
+                // Draw label for major ticks only - AFTER the tick, not on top
                 if isMajorTick {
                     let value = x / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
@@ -132,7 +138,8 @@ struct HorizontalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    context.draw(text, at: CGPoint(x: rulerX + 2, y: size.height - 14))
+                    // Position AFTER the tick, not on top - like Illustrator
+                    context.draw(text, at: CGPoint(x: rulerX + 4, y: size.height - 14))
                 }
             }
             
@@ -195,21 +202,27 @@ struct VerticalRuler: View {
             
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
-                let isMediumTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001
                 
-                // PROFESSIONAL TICK WIDTHS: Like Illustrator - clear hierarchy
+                // PROFESSIONAL INCH TICK HIERARCHY: Like Illustrator - 4 tiers
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
                 
                 if isMajorTick {
-                    tickWidth = 12 // Major ticks - longest
+                    tickWidth = 12 // 1 inch ticks - full width
                     lineWidth = 1.0
-                } else if isMediumTick {
-                    tickWidth = 8  // Medium ticks - medium length
+                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 2)) < 0.001 {
+                    tickWidth = 9  // 1/2 inch ticks - three-quarter width
                     lineWidth = 0.75
-                } else {
-                    tickWidth = 4  // Minor ticks - shortest
+                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 4)) < 0.001 {
+                    tickWidth = 6  // 1/4 inch ticks - half width
+                    lineWidth = 0.6
+                } else if abs(y.truncatingRemainder(dividingBy: majorTickInterval / 8)) < 0.001 {
+                    tickWidth = 3  // 1/8 inch ticks - quarter width
                     lineWidth = 0.5
+                } else {
+                    // Skip ticks that aren't at proper intervals
+                    y += tickSpacing
+                    continue
                 }
                 
                 // Draw tick with professional styling
@@ -231,10 +244,10 @@ struct VerticalRuler: View {
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.primary)
                     
-                    // Rotate text for vertical ruler
+                    // Rotate text for vertical ruler - AFTER the tick, not on top
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 8, y: size.width - 14))
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY - 12, y: size.width - 14))
                 }
             }
             
@@ -277,8 +290,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // Use 72-point intervals (1 inch) for major ticks, 12-point for minor
         baseSpacing = 12.0
     case .inches:
-        // Use 1/8 inch intervals for minor ticks
-        baseSpacing = pointsPerUnit / 8
+        // PROFESSIONAL INCHES: Use 1/8 inch intervals for ALL ticks (Illustrator standard)
+        baseSpacing = pointsPerUnit / 8 // 1/8 inch intervals for finest subdivision
     case .centimeters:
         // PROFESSIONAL METRIC: Use 1cm intervals for major ticks, 1mm for minor
         baseSpacing = pointsPerUnit / 10 // 1mm intervals for minor ticks
@@ -306,7 +319,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
     switch unit {
     case .inches:
-        return String(format: "%.2f", value)
+        // PROFESSIONAL INCHES: Show whole numbers like Illustrator, no decimals
+        return String(format: "%.0f", value)
     case .centimeters:
         // PROFESSIONAL CENTIMETERS: Show whole numbers like Illustrator, no decimals
         if value < 0 {
