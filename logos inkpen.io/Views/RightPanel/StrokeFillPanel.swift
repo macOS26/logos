@@ -937,7 +937,7 @@ struct GradientFillSection: View {
             case .radial(let radial):
                 originPoint = radial.originPoint
             }
-            print("🔄 Updating gradient in panel - Origin: (\(originPoint.x), \(originPoint.y))")
+            //print("🔄 Updating gradient in panel - Origin: (\(originPoint.x), \(originPoint.y))")
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(_):

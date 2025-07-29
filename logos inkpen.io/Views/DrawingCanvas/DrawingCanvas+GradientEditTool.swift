@@ -176,7 +176,7 @@ extension DrawingCanvas {
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         
-        print("📐 Updating gradient origin X to: \(newX)")
+        //print("📐 Updating gradient origin X to: \(newX)")
         
         switch selectedGradient {
         case .linear(var linear):
@@ -193,7 +193,7 @@ extension DrawingCanvas {
     private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         
-        print("📐 Updating gradient origin Y to: \(newY)")
+        //print("📐 Updating gradient origin Y to: \(newY)")
         
         switch selectedGradient {
         case .linear(var linear):
