@@ -134,10 +134,10 @@ struct MainView: View {
                     
                     print("✅ Created new document with custom settings")
                     
-                    // DIRECT FIT TO PAGE: Skip intermediate steps
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // MICRO DELAY: Just enough for geometry to be established
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        print("🔍 DIRECT FIT TO PAGE: Applied for new document without transition")
+                        print("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established")
                     }
                 }
             )
@@ -225,11 +225,10 @@ struct MainView: View {
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
             
-            // DIRECT FIT TO PAGE: Skip intermediate positioning - go straight to final state
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                // Go directly to fit-to-page without intermediate transitions
+            // MICRO DELAY: Just enough for geometry to be established
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                 document.requestZoom(to: 0.0, mode: .fitToPage)
-                print("🔍 DIRECT FIT TO PAGE: Applied on app launch without transition")
+                print("🔍 PROPER FIT TO PAGE: Applied after geometry established")
             }
         }
         .focusedSceneObject(documentState)
@@ -333,10 +332,10 @@ struct MainView: View {
         
         print("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes")
         
-        // DIRECT FIT TO PAGE: Show imported shapes immediately (like Adobe Illustrator)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // MICRO DELAY: Just enough for geometry to be established (like Adobe Illustrator)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            print("🔍 DIRECT FIT TO PAGE: Applied after vector import without transition")
+            print("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established")
         }
     }
     
@@ -391,10 +390,10 @@ struct MainView: View {
                         
                         print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
-                        // DIRECT FIT TO PAGE: Skip ruler dance and intermediate steps
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        // MICRO DELAY: Just enough for geometry to be established
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                             document.requestZoom(to: 0.0, mode: .fitToPage)
-                            print("🔍 DIRECT FIT TO PAGE: Applied for opened document without transition")
+                            print("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established")
                         }
                         
                         // Show success notification
@@ -450,11 +449,10 @@ struct MainView: View {
                     
                     print("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack")
                     
-                    // PROFESSIONAL IMPORT BEHAVIOR: Auto-fit to page after import (like Adobe Illustrator)
-                    // Use a small delay to ensure the shapes are added before fitting
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-                        print("🔍 AUTO-FIT TO PAGE: Applied after vector import")
+                    // MICRO DELAY: Just enough for geometry to be established (like Adobe Illustrator)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                        document.requestZoom(to: 0.0, mode: .fitToPage)
+                        print("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established")
                     }
                 } else {
                     print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")

@@ -6,18 +6,23 @@
 	<array>
 		<dict>
 			<key>UTTypeIdentifier</key>
-			<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
+			<string>com.toddbruss.logos-inkpen-io.document</string>
 			<key>UTTypeDescription</key>
-			<string>Draggable Vector Object</string>
+			<string>Ink Pen Document</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
+				<string>public.content</string>
 			</array>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
 				<array>
-					<string>dvo</string>
+					<string>inkpen</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-inkpen-document</string>
 				</array>
 			</dict>
 		</dict>
@@ -30,14 +35,14 @@
 			<key>CFBundleTypeIconSystemGenerated</key>
 			<integer>1</integer>
 			<key>CFBundleTypeName</key>
-			<string>Draggable Vector Object</string>
+			<string>Ink Pen Document</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>LSHandlerRank</key>
 			<string>Default</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
+				<string>com.toddbruss.logos-inkpen-io.document</string>
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
