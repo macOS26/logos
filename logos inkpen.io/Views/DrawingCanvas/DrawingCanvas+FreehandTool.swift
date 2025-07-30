@@ -217,32 +217,41 @@ extension DrawingCanvas {
             let p0 = points[i - 1]
             let p1 = points[i]
             
-            // Calculate control points for smooth curves
-            let tension: Double = 0.25 // Curve tension factor
-            let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
+            // SURGICAL FIX: Make first and last segments lines (corner points) instead of curves
+            let isFirstSegment = (i == 1)
+            let isLastSegment = (i == points.count - 1)
             
-            // Calculate tangent directions
-            let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-            let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-            
-            // Create control points
-            let controlLength = distance * tension
-            
-            let control1 = CGPoint(
-                x: p0.x + prevTangent.x * controlLength,
-                y: p0.y + prevTangent.y * controlLength
-            )
-            
-            let control2 = CGPoint(
-                x: p1.x - nextTangent.x * controlLength,
-                y: p1.y - nextTangent.y * controlLength
-            )
-            
-            elements.append(.curve(
-                to: VectorPoint(p1),
-                control1: VectorPoint(control1),
-                control2: VectorPoint(control2)
-            ))
+            if isFirstSegment || isLastSegment {
+                // Create corner points for start and end - no handles
+                elements.append(.line(to: VectorPoint(p1)))
+            } else {
+                // Calculate control points for smooth curves (middle segments only)
+                let tension: Double = 0.25 // Curve tension factor
+                let distance = sqrt(pow(p1.x - p0.x, 2) + pow(p1.y - p0.y, 2))
+                
+                // Calculate tangent directions
+                let prevTangent = i > 1 ? calculateTangent(p0: points[i - 2], p1: p0, p2: p1) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
+                let nextTangent = i < points.count - 1 ? calculateTangent(p0: p0, p1: p1, p2: points[i + 1]) : CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
+                
+                // Create control points
+                let controlLength = distance * tension
+                
+                let control1 = CGPoint(
+                    x: p0.x + prevTangent.x * controlLength,
+                    y: p0.y + prevTangent.y * controlLength
+                )
+                
+                let control2 = CGPoint(
+                    x: p1.x - nextTangent.x * controlLength,
+                    y: p1.y - nextTangent.y * controlLength
+                )
+                
+                elements.append(.curve(
+                    to: VectorPoint(p1),
+                    control1: VectorPoint(control1),
+                    control2: VectorPoint(control2)
+                ))
+            }
         }
         
         return elements
