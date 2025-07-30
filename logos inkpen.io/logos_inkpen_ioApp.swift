@@ -415,7 +415,7 @@ struct DocumentTitleToolbar: View {
     
     private var documentName: String {
         if let fileURL = fileURL {
-            return fileURL.deletingPathExtension().lastPathComponent
+            return fileURL.lastPathComponent
         } else {
             return "Untitled"
         }
@@ -445,11 +445,11 @@ struct DocumentTitleToolbar: View {
                 Image(nsImage: documentIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 30, height: 30)
                 
                 // Document Name ONLY (no path, no zoom)
                 Text(documentName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
             }

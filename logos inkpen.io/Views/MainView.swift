@@ -955,11 +955,11 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        ToolbarItem(placement: .status) {
-            Text("Zoom: \(Int(document.zoomLevel * 100))%")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
+//        ToolbarItem(placement: .status) {
+//            Text("Zoom: \(Int(document.zoomLevel * 100))%")
+//                .font(.caption)
+//                .foregroundColor(.secondary)
+//        }
     }
     
     // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
