@@ -5016,12 +5016,8 @@ class FileOperations {
     static func exportToJSON(_ document: VectorDocument, url: URL) throws {
         print("💾 Exporting document to JSON: \(url.path)")
         
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        
         do {
-            let jsonData = try encoder.encode(document)
+            let jsonData = try exportToJSON(document: document)
             try jsonData.write(to: url)
             print("✅ Successfully exported JSON document")
         } catch {
@@ -5030,20 +5026,46 @@ class FileOperations {
         }
     }
     
+    // MARK: - Data versions for DocumentGroup
+    static func exportToJSON(document: VectorDocument) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        
+        do {
+            let jsonData = try encoder.encode(document)
+            print("✅ Successfully exported JSON document data")
+            return jsonData
+        } catch {
+            print("❌ JSON data export failed: \(error)")
+            throw VectorImportError.parsingError("Failed to export JSON data: \(error.localizedDescription)", line: nil)
+        }
+    }
+    
     static func importFromJSON(url: URL) throws -> VectorDocument {
         print("📂 Importing document from JSON: \(url.path)")
         
         do {
             let jsonData = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            
-            let document = try decoder.decode(VectorDocument.self, from: jsonData)
-            print("✅ Successfully imported JSON document with \(document.layers.count) layers")
-            return document
+            return try importFromJSON(data: jsonData)
         } catch {
             print("❌ JSON import failed: \(error)")
             throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
+        }
+    }
+    
+    // MARK: - Data versions for DocumentGroup
+    static func importFromJSON(data: Data) throws -> VectorDocument {
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            let document = try decoder.decode(VectorDocument.self, from: data)
+            print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+            return document
+        } catch {
+            print("❌ JSON data import failed: \(error)")
+            throw VectorImportError.parsingError("Failed to import JSON data: \(error.localizedDescription)", line: nil)
         }
     }
     
