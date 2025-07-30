@@ -9,12 +9,18 @@ import SwiftUI
 import AppKit
 import Combine
 
-//// MARK: - AppDelegate to Remove Default Menus
-//final class AppDelegate: NSObject, NSApplicationDelegate {
-//    func applicationWillUpdate(_ notification: Notification) {
-//       
-//    }
-//}
+// MARK: - AppDelegate for File Opening ONLY
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func application(_ application: NSApplication, open urls: [URL]) {
+        print("🔗 AppDelegate received URLs: \(urls)")
+        // For now just log - we'll implement later without breaking UI
+        for url in urls {
+            if url.pathExtension.lowercased() == "inkpen" {
+                print("📄 Would open .inkpen file: \(url.path)")
+            }
+        }
+    }
+}
 
 // MARK: - Document State Object (THE SOLUTION!)
 // This is the key to automatic menu state updates
@@ -372,7 +378,7 @@ class DocumentState: ObservableObject {
 
 @main
 struct logos_inken_ioApp: App {
-    //@NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
     @State private var appState = AppState()
     
