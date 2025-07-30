@@ -409,18 +409,88 @@ class DocumentState: ObservableObject {
     }
 }
 
+// MARK: - DocumentTitleToolbar (Custom toolbar with icon and clickable navigation)
+struct DocumentTitleToolbar: View {
+    let fileURL: URL?
+    
+    private var documentName: String {
+        if let fileURL = fileURL {
+            return fileURL.deletingPathExtension().lastPathComponent
+        } else {
+            return "Untitled"
+        }
+    }
+    
+    private var documentPath: String {
+        if let fileURL = fileURL {
+            return fileURL.path
+        } else {
+            return ""
+        }
+    }
+    
+    private var documentIcon: NSImage {
+        if let fileURL = fileURL {
+            return NSWorkspace.shared.icon(forFile: fileURL.path)
+        } else {
+            // Create a generic document icon for untitled documents
+            return NSWorkspace.shared.icon(for: .inkpen)
+        }
+    }
+    
+    var body: some View {
+        Button(action: {
+            // Navigate to document in Finder
+            if let fileURL = fileURL {
+                NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: fileURL.deletingLastPathComponent().path)
+                print("📁 Navigating to document in Finder: \(fileURL.path)")
+            } else {
+                print("📁 No file URL available for navigation")
+            }
+        }) {
+            HStack(spacing: 8) {
+                // Document Icon
+                Image(nsImage: documentIcon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 16, height: 16)
+                
+                VStack(alignment: .leading, spacing: 1) {
+                    // Document Name
+                    Text(documentName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    // Document Path (if available)
+                    if !documentPath.isEmpty {
+                        Text(documentPath)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help(fileURL != nil ? "Click to show in Finder: \(documentPath)" : "Untitled Document")
+    }
+}
+
 // MARK: - DocumentBasedContentView (integrates DocumentGroup with MainView)
 struct DocumentBasedContentView: View {
     @Binding var inkpenDocument: InkpenDocument
+    let fileURL: URL?
     
     var body: some View {
-        DocumentBasedMainView(document: inkpenDocument.document)
+        DocumentBasedMainView(document: inkpenDocument.document, fileURL: fileURL)
     }
 }
 
 // MARK: - DocumentBasedMainView (MainView that accepts external document)
 struct DocumentBasedMainView: View {
     @ObservedObject var document: VectorDocument // External document from DocumentGroup
+    let fileURL: URL? // Current document file URL
     @StateObject private var documentState = DocumentState()
     @Environment(AppState.self) private var appState
     @State private var showingDocumentSettings = false
@@ -499,6 +569,11 @@ struct DocumentBasedMainView: View {
         }
         .frame(minHeight: 500)
         .toolbar {
+            // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
+            ToolbarItem(placement: .principal) {
+                DocumentTitleToolbar(fileURL: fileURL)
+            }
+            
             MainToolbarContent(
                 document: document,
                 currentDocumentURL: $currentDocumentURL,
@@ -558,36 +633,47 @@ struct DocumentBasedMainView: View {
 // MARK: - AppDelegate to ensure proper document tabbing
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // CRITICAL: Ensure automatic window tabbing is enabled for DocumentGroup
+        // CRITICAL: Force window tabbing preference for ALL windows
         NSWindow.allowsAutomaticWindowTabbing = true
+        UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
         
-        // CRITICAL: Configure document-based app behavior for proper tabbing
+        // CRITICAL: Configure document controller for tabbing behavior
         let documentController = NSDocumentController.shared
-        documentController.autosavingDelay = 30.0 // Enable autosaving
+        documentController.autosavingDelay = 30.0
         
-        print("📄 App: Automatic window tabbing enabled for DocumentGroup")
-        print("📄 App: Document controller configured for document-based behavior")
+        // FORCE: Set window tabbing mode to always
+        NSApplication.shared.windows.forEach { window in
+            window.tabbingMode = .preferred
+        }
+        
+        print("📄 App: FORCED automatic window tabbing for all windows")
+        print("📄 App: Document controller configured for tabbing behavior")
+    }
+    
+    func applicationDidBecomeActive(_ notification: Notification) {
+        // Ensure tabbing mode is maintained
+        NSApplication.shared.windows.forEach { window in
+            window.tabbingMode = .preferred
+        }
     }
     
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         // Return true to enable proper document-based app behavior
-        // This allows "File > New" to work correctly
         return true
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         // If no windows are visible, create a new document
         if !flag {
-            // Let DocumentGroup handle new document creation
             return true
         }
         return false
     }
     
-    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
-        // Let DocumentGroup handle file opening
-        print("📄 App: Request to open file: \(filename)")
-        return false // Let system handle it through DocumentGroup
+    // CRITICAL: Override to force tabbing behavior
+    func application(_ application: NSApplication, willPresentError error: Error) -> Error {
+        print("📄 App: Error intercepted: \(error)")
+        return error
     }
 }
 
@@ -600,10 +686,9 @@ struct logos_inken_ioApp: App {
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            DocumentBasedContentView(inkpenDocument: file.$document)
+            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
                 .environment(appState)
-                .navigationTitle(file.fileURL?.deletingPathExtension().lastPathComponent ?? "Untitled")
-                .navigationSubtitle(file.fileURL?.path ?? "")
+                .navigationTitle("")  // Clear default title - we'll use custom toolbar
         }
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
