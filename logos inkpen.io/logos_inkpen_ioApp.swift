@@ -560,12 +560,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // CRITICAL: Ensure automatic window tabbing is enabled for DocumentGroup
         NSWindow.allowsAutomaticWindowTabbing = true
+        
+        // CRITICAL: Configure document-based app behavior for proper tabbing
+        let documentController = NSDocumentController.shared
+        documentController.autosavingDelay = 30.0 // Enable autosaving
+        
         print("📄 App: Automatic window tabbing enabled for DocumentGroup")
+        print("📄 App: Document controller configured for document-based behavior")
     }
     
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        // Return false to prevent automatic untitled document creation on launch
+        // Return true to enable proper document-based app behavior
+        // This allows "File > New" to work correctly
+        return true
+    }
+    
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        // If no windows are visible, create a new document
+        if !flag {
+            // Let DocumentGroup handle new document creation
+            return true
+        }
         return false
+    }
+    
+    func application(_ sender: NSApplication, openFile filename: String) -> Bool {
+        // Let DocumentGroup handle file opening
+        print("📄 App: Request to open file: \(filename)")
+        return false // Let system handle it through DocumentGroup
     }
 }
 
@@ -580,14 +602,19 @@ struct logos_inken_ioApp: App {
         DocumentGroup(newDocument: InkpenDocument()) { file in
             DocumentBasedContentView(inkpenDocument: file.$document)
                 .environment(appState)
+                .navigationTitle(file.fileURL?.deletingPathExtension().lastPathComponent ?? "Untitled")
+                .navigationSubtitle(file.fileURL?.path ?? "")
         }
         
-        // SECONDARY: WindowGroup for non-document windows (templates, etc.)
-        // NOTE: Commented out to avoid interfering with DocumentGroup tab behavior
-        // WindowGroup("New Document Setup") {
-        //     ContentView()
-        //         .environment(appState)
-        // }
+        // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
+        // Re-enabled but configured to not interfere with document tabbing
+        WindowGroup("New Document Setup") {
+            ContentView()
+                .environment(appState)
+        }
+        // Make this window group non-default so it doesn't interfere with DocumentGroup
+        .defaultSize(width: 800, height: 600)
+        .windowResizability(.contentSize)
         .commands {
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
