@@ -410,54 +410,54 @@ class DocumentState: ObservableObject {
 }
 
 // MARK: - DocumentTitleToolbar (Clean toolbar with icon and filename only)
-struct DocumentTitleToolbar: View {
-    let fileURL: URL?
-    
-    private var documentName: String {
-        if let fileURL = fileURL {
-            return fileURL.lastPathComponent
-        } else {
-            return "Untitled"
-        }
-    }
-    
-    private var documentIcon: NSImage {
-        if let fileURL = fileURL {
-            return NSWorkspace.shared.icon(forFile: fileURL.path)
-        } else {
-            // Create a generic document icon for untitled documents
-            return NSWorkspace.shared.icon(for: .inkpen)
-        }
-    }
-    
-    var body: some View {
-        Button(action: {
-            // Navigate to document in Finder
-            if let fileURL = fileURL {
-                NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: fileURL.deletingLastPathComponent().path)
-                print("📁 Navigating to document in Finder: \(fileURL.path)")
-            } else {
-                print("📁 No file URL available for navigation")
-            }
-        }) {
-            HStack(spacing: 6) {
-                // Document Icon - ALWAYS showing on the left
-                Image(nsImage: documentIcon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 30, height: 30)
-                
-                // Document Name ONLY (no path, no zoom)
-                Text(documentName)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .help(fileURL != nil ? "Click to show in Finder" : "Untitled Document")
-    }
-}
+//struct DocumentTitleToolbarX: View {
+//    let fileURL: URL?
+//    
+//    private var documentName: String {
+//        if let fileURL = fileURL {
+//            return fileURL.lastPathComponent
+//        } else {
+//            return "Untitled"
+//        }
+//    }
+//    
+//    private var documentIcon: NSImage {
+//        if let fileURL = fileURL {
+//            return NSWorkspace.shared.icon(forFile: fileURL.path)
+//        } else {
+//            // Create a generic document icon for untitled documents
+//            return NSWorkspace.shared.icon(for: .inkpen)
+//        }
+//    }
+//    
+//    var body: some View {
+//        Button(action: {
+//            // Navigate to document in Finder
+//            if let fileURL = fileURL {
+//                NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: fileURL.deletingLastPathComponent().path)
+//                print("📁 Navigating to document in Finder: \(fileURL.path)")
+//            } else {
+//                print("📁 No file URL available for navigation")
+//            }
+//        }) {
+//            HStack(spacing: 6) {
+//                // Document Icon - ALWAYS showing on the left
+//                Image(nsImage: documentIcon)
+//                    .resizable()
+//                    .aspectRatio(contentMode: .fit)
+//                    .frame(width: 30, height: 30)
+//                
+//                // Document Name ONLY (no path, no zoom)
+//                Text(documentName)
+//                    .font(.system(size: 20, weight: .medium))
+//                    .foregroundColor(.primary)
+//                    .lineLimit(1)
+//            }
+//        }
+//        .buttonStyle(PlainButtonStyle())
+//        .help(fileURL != nil ? "Click to show in Finder" : "Untitled Document")
+//    }
+//}
 
 // MARK: - DocumentBasedContentView (integrates DocumentGroup with MainView)
 struct DocumentBasedContentView: View {
@@ -552,9 +552,9 @@ struct DocumentBasedMainView: View {
         .frame(minHeight: 500)
         .toolbar {
             // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
-            ToolbarItem(placement: .principal) {
-                DocumentTitleToolbar(fileURL: fileURL)
-            }
+//            ToolbarItem(placement: .principal) {
+//                DocumentTitleToolbar(fileURL: fileURL)
+//            }
             
             MainToolbarContent(
                 document: document,
@@ -618,7 +618,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // CRITICAL: Force window tabbing preference for ALL windows
         NSWindow.allowsAutomaticWindowTabbing = true
         UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
-        
+    
         // CRITICAL: Configure document controller for tabbing behavior
         let documentController = NSDocumentController.shared
         documentController.autosavingDelay = 30.0
@@ -680,7 +680,7 @@ struct logos_inken_ioApp: App {
                 .environment(appState)
         }
         // Make this window group non-default so it doesn't interfere with DocumentGroup
-        .defaultSize(width: 800, height: 600)
+        .defaultSize(width: 1200, height: 800)
         .windowResizability(.contentSize)
         .commands {
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
