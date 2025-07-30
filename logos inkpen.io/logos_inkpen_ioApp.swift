@@ -552,9 +552,9 @@ struct DocumentBasedMainView: View {
         .frame(minHeight: 500)
         .toolbar {
             // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
-            ToolbarItem(placement: .principal) {
-                DocumentTitleToolbar(fileURL: fileURL)
-            }
+//            ToolbarItem(placement: .principal) {
+//                DocumentTitleToolbar(fileURL: fileURL)
+//            }
             
             MainToolbarContent(
                 document: document,
