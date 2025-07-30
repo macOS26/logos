@@ -289,20 +289,22 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // FIXED: Use PICA model - same 12-point intervals (1 pica worth)
         baseSpacing = 12.0 // 12-point intervals - exactly matches pica spacing
     case .inches:
-        // CRITICAL FIX: Ensure full inch markings ALWAYS visible at every zoom level
-        // At low zoom: use 1/2 inch intervals (36 points) - ensures full inches show
-        // At normal zoom: use 1/8 inch intervals (9 points) - full detail
+        // Adaptive tick spacing for inches based on zoom level
+        // Show all tick marks above 50%, then progressively drop ticks at lower zoom levels
         let scaledSpacing = (pointsPerUnit / 8) * zoomLevel // 1/8 inch intervals (9 points)
         
-        if scaledSpacing < 8 {
-            // Very zoomed out: Use 1/2 inch spacing to ensure full inch marks remain visible
-            return pointsPerUnit / 2 // 36 points = 1/2 inch intervals
-        } else if scaledSpacing < 15 {
-            // Moderately zoomed out: Use 1/4 inch spacing 
-            return pointsPerUnit / 4 // 18 points = 1/4 inch intervals
-        } else {
-            // Zoomed in: Use full 1/8 inch detail
+        if zoomLevel >= 0.5 {
+            // Above 50% zoom: Show all tick marks (1/8 inch intervals)
             return pointsPerUnit / 8 // 9 points = 1/8 inch intervals
+        } else if zoomLevel >= 0.33 {
+            // At 33% zoom: Show 1/4 inch intervals
+            return pointsPerUnit / 4 // 18 points = 1/4 inch intervals
+        } else if zoomLevel >= 0.25 {
+            // At 25% zoom: Show 1/2 inch intervals
+            return pointsPerUnit / 2 // 36 points = 1/2 inch intervals
+        } else {
+            // Below 25% zoom: Show tick marks every 2 inches
+            return pointsPerUnit * 2 // 144 points = 2 inch intervals
         }
     case .centimeters:
         // FIXED: Use larger intervals - match pica density (was 2mm, now ~3mm)

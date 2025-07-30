@@ -13,7 +13,7 @@ struct DocumentSetupData {
     var width: Double = 11.0
     var height: Double = 8.5
     var unit: MeasurementUnit = .inches
-    var filename: String = "Untitled"
+    var filename: String = "Untitlede"
     var colorMode: ColorMode = .rgb
     var resolution: Double = 72.0
     var showRulers: Bool = true

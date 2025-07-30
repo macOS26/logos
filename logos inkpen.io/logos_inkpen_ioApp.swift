@@ -612,7 +612,7 @@ struct DocumentBasedMainView: View {
     }
 }
 
-// MARK: - AppDelegate to ensure proper document tabbing
+// MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // CRITICAL: Force window tabbing preference for ALL windows
@@ -628,14 +628,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.tabbingMode = .preferred
         }
         
+        // ENABLE: Window state restoration (remembers size and position)
+        UserDefaults.standard.set(true, forKey: "NSQuitAlwaysKeepsWindows")
+        
         print("📄 App: FORCED automatic window tabbing for all windows")
         print("📄 App: Document controller configured for tabbing behavior")
+        print("📄 App: Window state restoration enabled")
     }
     
     func applicationDidBecomeActive(_ notification: Notification) {
         // Ensure tabbing mode is maintained
         NSApplication.shared.windows.forEach { window in
             window.tabbingMode = .preferred
+        }
+        
+        // Restore window state if needed
+        restoreWindowState()
+    }
+    
+    private func restoreWindowState() {
+        // Check if we have saved window state
+        if let savedFrame = UserDefaults.standard.string(forKey: "MainWindowFrame") {
+            let frame = NSRectFromString(savedFrame)
+            if let window = NSApplication.shared.windows.first {
+                window.setFrame(frame, display: true)
+                print("📄 App: Restored window frame: \(frame)")
+            }
         }
     }
     
@@ -657,6 +675,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("📄 App: Error intercepted: \(error)")
         return error
     }
+    
+    // SAVE: Window state when app is about to terminate
+    func applicationWillTerminate(_ notification: Notification) {
+        if let window = NSApplication.shared.windows.first {
+            let frame = window.frame
+            UserDefaults.standard.set(NSStringFromRect(frame), forKey: "MainWindowFrame")
+            print("📄 App: Saved window frame: \(frame)")
+        }
+    }
 }
 
 @main
@@ -672,6 +699,8 @@ struct logos_inken_ioApp: App {
                 .environment(appState)
                 .navigationTitle("")  // Clear default title - we'll use custom toolbar
         }
+        .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
+        .windowResizability(.contentSize)
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
