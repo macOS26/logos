@@ -37,36 +37,23 @@ class DocumentIconGenerator {
     private func createDocumentIcon(context: CGContext, size: CGSize, document: VectorDocument) {
         let rect = CGRect(origin: .zero, size: size)
         
-        // Background - white paper with shadow
-        context.setFillColor(NSColor.white.cgColor)
-        context.fill(rect)
+        // FIXED: Remove white background and padding - use full rect for content
+        // Add a preview of the document content using full space
+        createDocumentPreview(context: context, rect: rect, document: document)
         
-        // Add subtle shadow
-        context.setShadow(offset: CGSize(width: 2, height: -2), blur: 4, color: NSColor.black.withAlphaComponent(0.2).cgColor)
-        context.fill(rect.insetBy(dx: 4, dy: 4))
-        context.setShadow(offset: .zero, blur: 0, color: nil)
-        
-        // Document border
-        context.setStrokeColor(NSColor.systemGray.cgColor)
-        context.setLineWidth(1.0)
-        context.stroke(rect.insetBy(dx: 4, dy: 4))
-        
-        // Add a small preview of the document content
-        let previewRect = rect.insetBy(dx: 20, dy: 40)
-        createDocumentPreview(context: context, rect: previewRect, document: document)
-        
-        // Add "Ink Pen" text at the bottom
+        // FIXED: Add ghost "Ink Pen" text using Marker Felt font near the bottom
         let text = "Ink Pen"
-        let font = NSFont.systemFont(ofSize: 14, weight: .medium)
+        // Use Marker Felt font which is available on macOS
+        let markerFont = NSFont(name: "Marker Felt", size: 12) ?? NSFont.systemFont(ofSize: 12, weight: .medium)
         let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.systemBlue
+            .font: markerFont,
+            .foregroundColor: NSColor.white.withAlphaComponent(0.3) // Ghost effect
         ]
         
         let textSize = text.size(withAttributes: textAttributes)
         let textRect = CGRect(
             x: (size.width - textSize.width) / 2,
-            y: 10,
+            y: 8, // Near the bottom
             width: textSize.width,
             height: textSize.height
         )
@@ -138,9 +125,10 @@ class DocumentIconGenerator {
         let x = rect.midX - scaledWidth / 2
         let y = rect.midY - scaledHeight / 2
         
-        // Apply transform to center and scale the SVG
-        context.translateBy(x: x, y: y)
-        context.scaleBy(x: scale, y: scale)
+        // FIXED: Apply transform to center and scale the SVG without Y-inversion
+        // The regular renderToVectorContext inverts Y, so we pre-compensate
+        context.translateBy(x: x, y: y + scaledHeight)
+        context.scaleBy(x: scale, y: -scale)
         
         // Render the SVG to the context
         svg.renderToVectorContext(context, targetSize: svgSize)
@@ -211,113 +199,13 @@ class DocumentIconGenerator {
     // MARK: - SVG Preview Generation
     
     func generateSVGPreview(for document: VectorDocument) -> String {
-        // Use the existing SVG export code from FileOperations but with custom modifications
+        // Use the existing SVG export code from FileOperations
         do {
-            let baseSVG = try FileOperations.generateSVGContent(from: document)
-            return modifySVGForPreview(baseSVG, document: document)
+            return try FileOperations.generateSVGContent(from: document)
         } catch {
             // Fallback to simple preview if SVG generation fails
             return generateSimpleSVGPreview(for: document)
         }
-    }
-    
-    private func modifySVGForPreview(_ baseSVG: String, document: VectorDocument) -> String {
-        // Parse the base SVG to modify it for preview
-        var modifiedSVG = baseSVG
-        
-        // Remove background/canvas elements
-        modifiedSVG = removeBackgroundElements(from: modifiedSVG)
-        
-        // Fix Y-axis inversion by applying a transform
-        modifiedSVG = fixYAxisInversion(in: modifiedSVG, document: document)
-        
-        // Remove padding by adjusting viewBox to content bounds
-        modifiedSVG = removePadding(from: modifiedSVG, document: document)
-        
-        // Add "Ink Pen" text
-        modifiedSVG = addInkPenText(to: modifiedSVG, document: document)
-        
-        return modifiedSVG
-    }
-    
-    private func removeBackgroundElements(from svg: String) -> String {
-        // Remove background rectangles and canvas elements
-        var modifiedSVG = svg
-        
-        // Remove background rect elements
-        let backgroundPatterns = [
-            #"<rect[^>]*fill="[^"]*white[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*#FFFFFF[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*#ffffff[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*rgb\(255,255,255\)[^"]*"[^>]*/>"#,
-            #"<rect[^>]*class="[^"]*background[^"]*"[^>]*/>"#,
-            #"<rect[^>]*id="[^"]*background[^"]*"[^>]*/>"#
-        ]
-        
-        for pattern in backgroundPatterns {
-            modifiedSVG = modifiedSVG.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
-        }
-        
-        return modifiedSVG
-    }
-    
-    private func fixYAxisInversion(in svg: String, document: VectorDocument) -> String {
-        // Apply Y-axis flip to fix mirror image issue
-        let documentSize = document.settings.sizeInPoints
-        let height = documentSize.height
-        
-        // Add a transform to flip the Y-axis
-        // Find the opening svg tag and add transform attribute
-        if let range = svg.range(of: #"<svg[^>]*>"#, options: .regularExpression) {
-            let svgTag = String(svg[range])
-            let transformAttribute = " transform=\"scale(1,-1) translate(0,-\(height))\""
-            
-            // Insert transform attribute before the closing >
-            if let closingBracketRange = svgTag.range(of: ">") {
-                let newSvgTag = svgTag.replacingCharacters(in: closingBracketRange, with: transformAttribute + ">")
-                return svg.replacingCharacters(in: range, with: newSvgTag)
-            }
-        }
-        
-        return svg
-    }
-    
-    private func removePadding(from svg: String, document: VectorDocument) -> String {
-        // Calculate content bounds and adjust viewBox to remove padding
-        let contentBounds = document.getDocumentBounds()
-        let minX = contentBounds.minX
-        let minY = contentBounds.minY
-        let width = contentBounds.width
-        let height = contentBounds.height
-        
-        // Update viewBox to match content bounds
-        if let range = svg.range(of: #"viewBox="[^"]*""#, options: .regularExpression) {
-            let newViewBox = "viewBox=\"\(minX) \(minY) \(width) \(height)\""
-            return svg.replacingCharacters(in: range, with: newViewBox)
-        }
-        
-        return svg
-    }
-    
-    private func addInkPenText(to svg: String, document: VectorDocument) -> String {
-        // Add "Ink Pen" text near the bottom using a marker font
-        let contentBounds = document.getDocumentBounds()
-        let textX = contentBounds.midX
-        let textY = contentBounds.maxY - 20 // 20 points from bottom
-        
-        let inkPenText = """
-        
-        <!-- Ink Pen Text -->
-        <text x="\(textX)" y="\(textY)" 
-              font-family="Marker Felt, Arial, sans-serif" 
-              font-size="16" 
-              fill="#666666" 
-              text-anchor="middle" 
-              opacity="0.7">Ink Pen</text>
-        """
-        
-        // Insert before closing </svg> tag
-        return svg.replacingOccurrences(of: "</svg>", with: "\(inkPenText)\n</svg>")
     }
     
     private func generateSimpleSVGPreview(for document: VectorDocument) -> String {
