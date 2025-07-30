@@ -8,6 +8,7 @@
 import Foundation
 import AppKit
 import UniformTypeIdentifiers
+import CoreGraphics
 
 class DocumentIconGenerator {
     
@@ -74,30 +75,137 @@ class DocumentIconGenerator {
     }
     
     private func createDocumentPreview(context: CGContext, rect: CGRect, document: VectorDocument) {
-        // Create a simple preview showing document content
-        context.setFillColor(NSColor.systemBlue.withAlphaComponent(0.1).cgColor)
-        context.fill(rect)
+        // Check if document has any art content
+        let hasArtContent = documentHasArtContent(document)
         
-        // Add some sample shapes to show it's a vector document
+        if hasArtContent {
+            // Render actual SVG content of the art
+            renderSVGArtPreview(context: context, rect: rect, document: document)
+        } else {
+            // Use fallback preview when no art content
+            renderFallbackPreview(context: context, rect: rect)
+        }
+    }
+    
+    private func documentHasArtContent(_ document: VectorDocument) -> Bool {
+        // Check if document has any visible shapes or text
+        let hasVisibleShapes = document.layers.contains { layer in
+            layer.isVisible && layer.shapes.contains { shape in
+                shape.isVisible
+            }
+        }
+        
+        let hasVisibleText = document.textObjects.contains { textObj in
+            textObj.isVisible
+        }
+        
+        return hasVisibleShapes || hasVisibleText
+    }
+    
+    private func renderSVGArtPreview(context: CGContext, rect: CGRect, document: VectorDocument) {
+        // Generate SVG content from the document's art
+        let svgContent = generateSVGPreview(for: document)
+        
+        // Convert SVG content to Data
+        guard let svgData = svgContent.data(using: .utf8) else {
+            renderFallbackPreview(context: context, rect: rect)
+            return
+        }
+        
+        // Create SVG document using the existing SVG class
+        guard let svg = SVG(svgData) else {
+            renderFallbackPreview(context: context, rect: rect)
+            return
+        }
+        
+        // Save current context state
+        context.saveGState()
+        
+        // Set up context for SVG rendering
+        context.interpolationQuality = .high
+        context.setShouldAntialias(true)
+        context.setAllowsAntialiasing(true)
+        
+        // Calculate scale to fit SVG in preview rect while maintaining aspect ratio
+        let svgSize = svg.size
+        let scaleX = rect.width / svgSize.width
+        let scaleY = rect.height / svgSize.height
+        let scale = min(scaleX, scaleY)
+        
+        // Calculate centered position
+        let scaledWidth = svgSize.width * scale
+        let scaledHeight = svgSize.height * scale
+        let x = rect.midX - scaledWidth / 2
+        let y = rect.midY - scaledHeight / 2
+        
+        // Apply transform to center and scale the SVG
+        context.translateBy(x: x, y: y)
+        context.scaleBy(x: scale, y: scale)
+        
+        // Render the SVG to the context
+        svg.renderToVectorContext(context, targetSize: svgSize)
+        
+        // Restore context state
+        context.restoreGState()
+    }
+    
+    private func renderFallbackPreview(context: CGContext, rect: CGRect) {
+        // Create a fallback preview for empty documents
         let centerX = rect.midX
         let centerY = rect.midY
-        let radius = min(rect.width, rect.height) * 0.15
         
-        // Draw a sample circle
-        context.setFillColor(NSColor.systemBlue.withAlphaComponent(0.3).cgColor)
-        context.fillEllipse(in: CGRect(x: centerX - radius, y: centerY - radius, width: radius * 2, height: radius * 2))
+        // Background - light gray to indicate empty state
+        context.setFillColor(NSColor.systemGray.withAlphaComponent(0.1).cgColor)
+        context.fill(rect)
         
-        // Draw a sample rectangle
-        let rectSize = radius * 1.5
-        context.setFillColor(NSColor.systemGreen.withAlphaComponent(0.3).cgColor)
-        context.fill(CGRect(x: centerX + radius * 0.5, y: centerY - rectSize/2, width: rectSize, height: rectSize))
+        // Draw a document icon to indicate this is an empty document
+        let iconSize = min(rect.width, rect.height) * 0.3
+        let iconRect = CGRect(
+            x: centerX - iconSize / 2,
+            y: centerY - iconSize / 2,
+            width: iconSize,
+            height: iconSize
+        )
         
-        // Draw a sample line
-        context.setStrokeColor(NSColor.systemRed.cgColor)
-        context.setLineWidth(2.0)
-        context.move(to: CGPoint(x: centerX - radius * 1.5, y: centerY + radius))
-        context.addLine(to: CGPoint(x: centerX + radius * 1.5, y: centerY - radius))
-        context.strokePath()
+        // Draw a simple document icon
+        context.setFillColor(NSColor.systemGray.withAlphaComponent(0.3).cgColor)
+        context.setStrokeColor(NSColor.systemGray.withAlphaComponent(0.5).cgColor)
+        context.setLineWidth(1.0)
+        
+        // Document shape
+        let documentRect = iconRect.insetBy(dx: iconSize * 0.1, dy: iconSize * 0.1)
+        context.fill(documentRect)
+        context.stroke(documentRect)
+        
+        // Document fold corner
+        let foldSize = iconSize * 0.15
+        let foldRect = CGRect(
+            x: documentRect.maxX - foldSize,
+            y: documentRect.minY,
+            width: foldSize,
+            height: foldSize
+        )
+        
+        context.setFillColor(NSColor.systemGray.withAlphaComponent(0.2).cgColor)
+        context.fill(foldRect)
+        
+        // Add "Empty" text
+        let text = "Empty"
+        let font = NSFont.systemFont(ofSize: iconSize * 0.2, weight: .medium)
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: NSColor.systemGray.withAlphaComponent(0.6)
+        ]
+        
+        let textSize = text.size(withAttributes: textAttributes)
+        let textRect = CGRect(
+            x: centerX - textSize.width / 2,
+            y: centerY + iconSize * 0.4,
+            width: textSize.width,
+            height: textSize.height
+        )
+        
+        text.draw(in: textRect, withAttributes: textAttributes)
     }
     
     // MARK: - SVG Preview Generation
@@ -243,6 +351,54 @@ class DocumentIconGenerator {
     func clearCustomIcon(for url: URL) {
         // Clear the custom icon and use default
         NSWorkspace.shared.setIcon(nil, forFile: url.path, options: [])
+    }
+    
+    // MARK: - Inkpen Preview Generation
+    
+    /// Generate SVG preview content for Inkpen files
+    /// This can be used for QuickLook, file previews, or other preview systems
+    func generateInkpenPreview(for document: VectorDocument) -> String {
+        // Check if document has any art content
+        let hasArtContent = documentHasArtContent(document)
+        
+        if hasArtContent {
+            // Generate full SVG content from the document's art
+            return generateSVGPreview(for: document)
+        } else {
+            // Generate a simple placeholder SVG for empty documents
+            return generateEmptyDocumentSVG(for: document)
+        }
+    }
+    
+    private func generateEmptyDocumentSVG(for document: VectorDocument) -> String {
+        let documentSize = document.settings.sizeInPoints
+        let width = documentSize.width
+        let height = documentSize.height
+        
+        return """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <svg width="\(width)" height="\(height)" viewBox="0 0 \(width) \(height)" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <style>
+                    .empty-text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 24px; fill: #8E8E93; }
+                    .empty-icon { fill: #C7C7CC; stroke: #8E8E93; stroke-width: 1; }
+                </style>
+            </defs>
+            
+            <!-- Background -->
+            <rect width="\(width)" height="\(height)" fill="\(document.settings.backgroundColor.svgColor)"/>
+            
+            <!-- Empty document icon -->
+            <g transform="translate(\(width/2 - 50), \(height/2 - 60))">
+                <!-- Document shape -->
+                <rect x="0" y="0" width="100" height="120" class="empty-icon" fill="rgba(199,199,204,0.3)"/>
+                <!-- Document fold corner -->
+                <path d="M 80 0 L 100 20 L 80 20 Z" class="empty-icon" fill="rgba(142,142,147,0.2)"/>
+                <!-- Empty text -->
+                <text x="50" y="160" text-anchor="middle" class="empty-text">Empty Document</text>
+            </g>
+        </svg>
+        """
     }
 }
 
