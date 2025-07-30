@@ -16,6 +16,12 @@ extension DrawingCanvas {
             finishBezierPath()
         }
         
+        // ✅ EXPLICIT USER ACTION: Auto-finish freehand path when user switches away from freehand tool
+        if previousTool == .freehand && newTool != .freehand && isFreehandDrawing {
+            print("🔧 USER SWITCHED TOOLS: Auto-finishing current freehand path (explicit user action)")
+            handleFreehandDragEnd()
+        }
+        
         // CRITICAL FIX: Preserve text box font settings when switching tools
         // This prevents font settings from changing when switching between font tool and arrow tool
         if previousTool == .font && newTool == .selection {

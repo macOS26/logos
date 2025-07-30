@@ -75,6 +75,14 @@ struct DrawingCanvas: View {
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
     @State internal var activeBezierShape: VectorShape? = nil // Real shape being built
     
+    // FREEHAND DRAWING STATE (Professional curve fitting)
+    @State internal var freehandPath: VectorPath?
+    @State internal var freehandRawPoints: [CGPoint] = [] // Raw mouse tracking points
+    @State internal var freehandSimplifiedPoints: [VectorPoint] = [] // Douglas-Peucker simplified points
+    @State internal var isFreehandDrawing = false
+    @State internal var activeFreehandShape: VectorShape? = nil // Real-time freehand shape preview
+    @State internal var freehandSmoothingTolerance: Double = 2.0 // Curve fitting tolerance
+    
     // Track previous tool to detect changes
     @State internal var previousTool: DrawingTool = .selection
     

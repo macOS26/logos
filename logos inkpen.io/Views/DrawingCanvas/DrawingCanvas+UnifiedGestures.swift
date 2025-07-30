@@ -128,6 +128,14 @@ extension DrawingCanvas {
         case .bezierPen:
             handleBezierPenDrag(value: value, geometry: geometry)
             
+        case .freehand:
+            let currentLocation = screenToCanvas(value.location, geometry: geometry)
+            if !isFreehandDrawing {
+                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                handleFreehandDragStart(at: startLocation)
+            }
+            handleFreehandDragUpdate(at: currentLocation)
+            
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
@@ -167,6 +175,9 @@ extension DrawingCanvas {
             
         case .bezierPen:
             finishBezierPenDrag()
+            
+        case .freehand:
+            handleFreehandDragEnd()
             
         default:
             break

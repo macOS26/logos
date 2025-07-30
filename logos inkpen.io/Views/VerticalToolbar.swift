@@ -109,6 +109,8 @@ struct VerticalToolbar: View {
             return "Convert Anchor Point Tool (C) - Convert between smooth and corner points"
         case .bezierPen:
             return "Bezier Pen Tool (P) - Draw bezier curves and paths"
+        case .freehand:
+            return "Freehand Tool (F) - Draw freehand with smooth curves"
         case .font:
             return "Font Tool (T) - Add and edit text"
         case .line:
