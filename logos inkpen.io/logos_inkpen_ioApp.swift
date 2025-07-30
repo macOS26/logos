@@ -439,54 +439,63 @@ struct DocumentBasedMainView: View {
     @State private var showingNewDocumentSetup = false
     
     var body: some View {
+        // EXACT REPLICATION of MainView structure
         VStack(spacing: 0) {
-            
-            // MAIN CONTENT: Using EXACT same structure as MainView
-            GeometryReader { geometry in
-                ZStack {
-                    // Background - subtle texture
-                    Color(NSColor.textBackgroundColor)
-                        .zIndex(0)
-                    
-                    // Drawing Canvas - EXACTLY as in MainView
-                    DrawingCanvas(document: document)
-                        .zIndex(1) // CRITICAL: Canvas below panels but above background
-                        .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
-                    
-                    // Rulers - CRITICAL: Above canvas but below panels (EXACT MainView structure)
-                    RulersView(document: document, geometry: geometry)
-                        .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
-                        .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
+            // Main Content Area - EXACT HStack structure from MainView
+            HStack(spacing: 0) {
+                // Left Toolbar - Fixed width, hugs left - EXACT MainView specs
+                VerticalToolbar(document: document)
+                    .frame(width: 48) // EXACT MainView width
+                    .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
+                    .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
+                    .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
                 
-                // Left Vertical Toolbar - EXACTLY as in MainView
-                HStack {
-                    VerticalToolbar(document: document)
-                        .frame(width: 50, alignment: .top)
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .zIndex(100) // CRITICAL: Toolbar above canvas and rulers
-                    
-                    Spacer() // Push toolbar to left
+                // Center Drawing Area - Flexible width with minimum - EXACT MainView structure
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        // Drawing canvas area - CLIPPED AND CONSTRAINED
+                        ZStack {
+                            // DEBUGGING: Background to see exact bounds
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.1))
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .allowsHitTesting(false) // Background doesn't capture gestures
+                            
+                            // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
+                            DrawingCanvas(document: document)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
+                                .background(Color.clear) // Ensure no background extension
+                                .zIndex(1) // CRITICAL: Canvas below panels but above background
+                                .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
+                            
+                            // Rulers - CRITICAL: Above canvas but below panels 
+                            RulersView(document: document, geometry: geometry)
+                                .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
+                                .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
+                        
+                        // Status Bar at bottom - PROTECTED HEIGHT (EXACT MainView position)
+                        StatusBar(document: document)
+                            .frame(height: 24) // EXACT MainView height
+                            .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
+                .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
+                .allowsHitTesting(true) // CRITICAL: Center column captures all gestures
                 
-                // Right Panel - EXACTLY as in MainView
-                HStack {
-                    Spacer() // Push panel to right
-                    
-                    RightPanel(document: document)
-                        .frame(width: 280) // EXACT same width as MainView
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .zIndex(75) // CRITICAL: Panel above canvas but below toolbar
-                }
+                // Right Panel - Fixed width, hugs right - EXACT MainView specs
+                RightPanel(document: document)
+                    .frame(width: 280) // EXACT MainView width
+                    .frame(minWidth: 280) // ENSURE: Panel width is always preserved
+                    .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            // Status Bar at bottom - EXACTLY as in MainView
-            StatusBar(document: document)
-                .frame(height: 30)
-                .zIndex(200)
+            .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
         }
         .frame(minHeight: 500)
         .toolbar {
