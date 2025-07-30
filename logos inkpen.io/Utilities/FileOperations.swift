@@ -5403,7 +5403,7 @@ class FileOperations {
         }
     }
     
-    private static func generateSVGContent(from document: VectorDocument) throws -> String {
+    static func generateSVGContent(from document: VectorDocument) throws -> String {
         // FIXED: Use pasteboard bounds for consistent export sizing
         // This ensures exported SVGs maintain the same page dimensions as the document
         let pasteboardBounds = CGRect(origin: .zero, size: document.settings.sizeInPoints)

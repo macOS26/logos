@@ -53,20 +53,17 @@ private func saveDocumentToURL(_ url: URL) {
 }
 ```
 
-### 3. Standalone QuickLook Generator
+### 3. SVG Export Integration
 
-**Location**: `logos inkpen.io/QuickLookGenerator/InkPenQuickLookGenerator.swift`
+**Location**: `logos inkpen.io/Utilities/FileOperations.swift`
 
-**Purpose**: A standalone command-line tool that can generate preview images from .inkpen files.
+**Purpose**: The system reuses the existing comprehensive SVG export functionality that's already built into the app.
 
-**Usage**:
-```bash
-# Compile the generator
-swiftc InkPenQuickLookGenerator.swift -o InkPenQuickLookGenerator
-
-# Generate a preview
-./InkPenQuickLookGenerator input.inkpen output.png
-```
+**Key Features**:
+- Uses `FileOperations.generateSVGContent()` for full SVG generation
+- Supports all document features: gradients, text, shapes, colors
+- Handles complex color conversions (RGB, CMYK, HSB, Pantone, etc.)
+- Fallback to simple preview if full SVG generation fails
 
 ## How It Works
 
@@ -109,9 +106,7 @@ The system handles multiple color formats:
 logos inkpen.io/
 ├── Utilities/
 │   ├── DocumentIconGenerator.swift          # Main icon generation
-│   └── InkPenQuickLookGenerator.swift       # Internal generator
-├── QuickLookGenerator/
-│   └── InkPenQuickLookGenerator.swift       # Standalone tool
+│   └── FileOperations.swift                 # SVG export (reused)
 └── Views/
     └── MainView.swift                       # Integration point
 ```

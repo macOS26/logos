@@ -103,6 +103,16 @@ class DocumentIconGenerator {
     // MARK: - SVG Preview Generation
     
     func generateSVGPreview(for document: VectorDocument) -> String {
+        // Use the existing SVG export code from FileOperations
+        do {
+            return try FileOperations.generateSVGContent(from: document)
+        } catch {
+            // Fallback to simple preview if SVG generation fails
+            return generateSimpleSVGPreview(for: document)
+        }
+    }
+    
+    private func generateSimpleSVGPreview(for document: VectorDocument) -> String {
         let documentSize = document.settings.sizeInPoints
         let width = documentSize.width
         let height = documentSize.height
@@ -138,7 +148,7 @@ class DocumentIconGenerator {
     }
     
     private func generateGradientDefinitions(from document: VectorDocument) -> String {
-        var definitions = ""
+        let definitions = ""
         
         // Add any gradient definitions here if needed
         // For now, return empty string
@@ -247,32 +257,39 @@ extension VectorColor {
             return "#000000"
         case .white:
             return "#FFFFFF"
-        case .red:
-            return "#FF0000"
-        case .green:
-            return "#00FF00"
-        case .blue:
-            return "#0000FF"
-        case .yellow:
-            return "#FFFF00"
-        case .cyan:
-            return "#00FFFF"
-        case .magenta:
-            return "#FF00FF"
-        case .gray:
-            return "#808080"
-        case .rgb(let r, let g, let b):
-            return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
-        case .cmyk(let c, let m, let y, let k):
+        case .rgb(let rgbColor):
+            return String(format: "#%02X%02X%02X", 
+                         Int(rgbColor.red * 255), 
+                         Int(rgbColor.green * 255), 
+                         Int(rgbColor.blue * 255))
+        case .cmyk(let cmykColor):
             // Convert CMYK to RGB for SVG
-            let r = (1 - c) * (1 - k)
-            let g = (1 - m) * (1 - k)
-            let b = (1 - y) * (1 - k)
+            let r = (1 - cmykColor.cyan) * (1 - cmykColor.black)
+            let g = (1 - cmykColor.magenta) * (1 - cmykColor.black)
+            let b = (1 - cmykColor.yellow) * (1 - cmykColor.black)
             return String(format: "#%02X%02X%02X", Int(r * 255), Int(g * 255), Int(b * 255))
-        case .hsb(let h, let s, let b):
+        case .hsb(let hsbColor):
             // Convert HSB to RGB for SVG
-            let rgb = hsbToRgb(h: h, s: s, b: b)
+            let rgb = hsbToRgb(h: hsbColor.hue, s: hsbColor.saturation, b: hsbColor.brightness)
             return String(format: "#%02X%02X%02X", Int(rgb.r * 255), Int(rgb.g * 255), Int(rgb.b * 255))
+        case .pantone(let pantoneColor):
+            return String(format: "#%02X%02X%02X", 
+                         Int(pantoneColor.rgbEquivalent.red * 255), 
+                         Int(pantoneColor.rgbEquivalent.green * 255), 
+                         Int(pantoneColor.rgbEquivalent.blue * 255))
+        case .spot(let spotColor):
+            return String(format: "#%02X%02X%02X", 
+                         Int(spotColor.rgbEquivalent.red * 255), 
+                         Int(spotColor.rgbEquivalent.green * 255), 
+                         Int(spotColor.rgbEquivalent.blue * 255))
+        case .appleSystem(let systemColor):
+            return String(format: "#%02X%02X%02X", 
+                         Int(systemColor.rgbEquivalent.red * 255), 
+                         Int(systemColor.rgbEquivalent.green * 255), 
+                         Int(systemColor.rgbEquivalent.blue * 255))
+        case .gradient(let gradient):
+            // For gradients, return the first stop color as a fallback
+            return gradient.stops.first?.color.svgColor ?? "#000000"
         }
     }
     
