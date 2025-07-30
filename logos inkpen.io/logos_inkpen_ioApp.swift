@@ -555,9 +555,23 @@ struct DocumentBasedMainView: View {
     }
 }
 
+// MARK: - AppDelegate to ensure proper document tabbing
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // CRITICAL: Ensure automatic window tabbing is enabled for DocumentGroup
+        NSWindow.allowsAutomaticWindowTabbing = true
+        print("📄 App: Automatic window tabbing enabled for DocumentGroup")
+    }
+    
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        // Return false to prevent automatic untitled document creation on launch
+        return false
+    }
+}
+
 @main
 struct logos_inken_ioApp: App {
-    //@NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
     @State private var appState = AppState()
     
@@ -569,10 +583,11 @@ struct logos_inken_ioApp: App {
         }
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)
-        WindowGroup("New Document Setup") {
-            ContentView()
-                .environment(appState)
-        }
+        // NOTE: Commented out to avoid interfering with DocumentGroup tab behavior
+        // WindowGroup("New Document Setup") {
+        //     ContentView()
+        //         .environment(appState)
+        // }
         .commands {
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
