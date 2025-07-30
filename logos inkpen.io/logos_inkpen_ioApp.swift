@@ -409,7 +409,142 @@ class DocumentState: ObservableObject {
     }
 }
 
+// MARK: - DocumentBasedContentView (integrates DocumentGroup with MainView)
+struct DocumentBasedContentView: View {
+    @Binding var inkpenDocument: InkpenDocument
+    
+    var body: some View {
+        DocumentBasedMainView(document: inkpenDocument.document)
+    }
+}
 
+// MARK: - DocumentBasedMainView (MainView that accepts external document)
+struct DocumentBasedMainView: View {
+    @ObservedObject var document: VectorDocument // External document from DocumentGroup
+    @StateObject private var documentState = DocumentState()
+    @Environment(AppState.self) private var appState
+    @State private var showingDocumentSettings = false
+    @State private var showingExportDialog = false
+    @State private var showingColorPicker = false
+    @State private var currentDocumentURL: URL? = nil
+    @State private var showingImportDialog = false
+    @State private var importFileURL: URL?
+    @State private var importResult: VectorImportResult?
+    @State private var showingImportProgress = false
+    @State private var showingDWFExportDialog = false
+    @State private var dwfExportOptions = DWFExportOptions()
+    @State private var showingDWGExportDialog = false
+    @State private var dwgExportOptions = DWGExportOptions()
+    @State private var showingSVGTestHarness = false
+    @State private var showingNewDocumentSetup = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            
+            // MAIN CONTENT: Using EXACT same structure as MainView
+            GeometryReader { geometry in
+                ZStack {
+                    // Background - subtle texture
+                    Color(NSColor.textBackgroundColor)
+                        .zIndex(0)
+                    
+                    // Drawing Canvas - EXACTLY as in MainView
+                    DrawingCanvas(document: document)
+                        .zIndex(1) // CRITICAL: Canvas below panels but above background
+                        .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
+                    
+                    // Rulers - CRITICAL: Above canvas but below panels (EXACT MainView structure)
+                    RulersView(document: document, geometry: geometry)
+                        .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
+                        .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
+                
+                // Left Vertical Toolbar - EXACTLY as in MainView
+                HStack {
+                    VerticalToolbar(document: document)
+                        .frame(width: 50, alignment: .top)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .zIndex(100) // CRITICAL: Toolbar above canvas and rulers
+                    
+                    Spacer() // Push toolbar to left
+                }
+                
+                // Right Panel - EXACTLY as in MainView
+                HStack {
+                    Spacer() // Push panel to right
+                    
+                    RightPanel(document: document)
+                        .frame(width: 280) // EXACT same width as MainView
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .zIndex(75) // CRITICAL: Panel above canvas but below toolbar
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Status Bar at bottom - EXACTLY as in MainView
+            StatusBar(document: document)
+                .frame(height: 30)
+                .zIndex(200)
+        }
+        .frame(minHeight: 500)
+        .toolbar {
+            MainToolbarContent(
+                document: document,
+                currentDocumentURL: $currentDocumentURL,
+                showingDocumentSettings: $showingDocumentSettings,
+                showingExportDialog: $showingExportDialog,
+                showingColorPicker: $showingColorPicker,
+                onSave: saveDocument,
+                onSaveAs: saveDocumentAs,
+                onOpen: openDocument,
+                onNew: newDocument,
+                showingImportDialog: $showingImportDialog,
+                importResult: $importResult,
+                showingImportProgress: $showingImportProgress,
+                showingDWFExportDialog: $showingDWFExportDialog,
+                showingDWGExportDialog: $showingDWGExportDialog,
+                showingSVGTestHarness: $showingSVGTestHarness,
+                onRunDiagnostics: runPasteboardDiagnostics
+            )
+        }
+        .onAppear {
+            // Connect document to menu system
+            documentState.setDocument(document)
+            
+            // Fit to page after geometry is established
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                document.requestZoom(to: 0.0, mode: .fitToPage)
+                print("🔍 DocumentGroup: Applied fit to page")
+            }
+        }
+        .focusedSceneObject(documentState)
+    }
+    
+    // MARK: - Document Operations (simplified for DocumentGroup)
+    private func saveDocument() {
+        print("💾 DocumentGroup: Save handled by DocumentGroup")
+    }
+    
+    private func saveDocumentAs() {
+        print("💾 DocumentGroup: Save As handled by DocumentGroup")
+    }
+    
+    private func openDocument() {
+        print("📂 DocumentGroup: Open handled by DocumentGroup")
+    }
+    
+    private func newDocument() {
+        print("📄 DocumentGroup: New document handled by DocumentGroup")
+    }
+    
+    private func runPasteboardDiagnostics() {
+        print("🔧 DocumentGroup: Running pasteboard diagnostics")
+        let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
+        print("📊 Pasteboard Diagnostics: \(report)")
+    }
+}
 
 @main
 struct logos_inken_ioApp: App {
@@ -420,12 +555,8 @@ struct logos_inken_ioApp: App {
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            ContentView()
+            DocumentBasedContentView(inkpenDocument: file.$document)
                 .environment(appState)
-                .onAppear {
-                    // Connect opened document to existing UI
-                    print("📄 DocumentGroup: Document loaded")
-                }
         }
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)
