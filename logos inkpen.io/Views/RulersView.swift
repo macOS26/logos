@@ -289,8 +289,21 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // FIXED: Use PICA model - same 12-point intervals (1 pica worth)
         baseSpacing = 12.0 // 12-point intervals - exactly matches pica spacing
     case .inches:
-        // PERFECT: Keep existing 1/8 inch intervals (works beautifully)
-        baseSpacing = pointsPerUnit / 8 // 1/8 inch intervals (9 points)
+        // CRITICAL FIX: Ensure full inch markings ALWAYS visible at every zoom level
+        // At low zoom: use 1/2 inch intervals (36 points) - ensures full inches show
+        // At normal zoom: use 1/8 inch intervals (9 points) - full detail
+        let scaledSpacing = (pointsPerUnit / 8) * zoomLevel // 1/8 inch intervals (9 points)
+        
+        if scaledSpacing < 8 {
+            // Very zoomed out: Use 1/2 inch spacing to ensure full inch marks remain visible
+            return pointsPerUnit / 2 // 36 points = 1/2 inch intervals
+        } else if scaledSpacing < 15 {
+            // Moderately zoomed out: Use 1/4 inch spacing 
+            return pointsPerUnit / 4 // 18 points = 1/4 inch intervals
+        } else {
+            // Zoomed in: Use full 1/8 inch detail
+            return pointsPerUnit / 8 // 9 points = 1/8 inch intervals
+        }
     case .centimeters:
         // FIXED: Use larger intervals - match pica density (was 2mm, now ~3mm)
         baseSpacing = pointsPerUnit / 3 // ~3.33mm intervals (9.45 points) - matches pica density
@@ -302,17 +315,22 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         baseSpacing = pointsPerUnit / 12 // 1 point intervals - PERFECT frequency reference
     }
     
-    // Adjust spacing based on zoom level for professional readability
-    let scaledSpacing = baseSpacing * zoomLevel
-    
-    // Choose appropriate spacing to avoid overcrowding while maintaining readability
-    if scaledSpacing < 8 {
-        return baseSpacing * 5 // Major ticks only when very zoomed out
-    } else if scaledSpacing < 15 {
-        return baseSpacing * 2 // Fewer minor ticks when zoomed out
-    } else {
-        return baseSpacing // Full detail when zoomed in
+    // For non-inch units: Adjust spacing based on zoom level for professional readability
+    if unit != .inches {
+        let scaledSpacing = baseSpacing * zoomLevel
+        
+        // Choose appropriate spacing to avoid overcrowding while maintaining readability
+        if scaledSpacing < 8 {
+            return baseSpacing * 5 // Major ticks only when very zoomed out
+        } else if scaledSpacing < 15 {
+            return baseSpacing * 2 // Fewer minor ticks when zoomed out
+        } else {
+            return baseSpacing // Full detail when zoomed in
+        }
     }
+    
+    // This should never be reached for inches due to early return above
+    return baseSpacing
 }
 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
