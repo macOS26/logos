@@ -409,7 +409,7 @@ class DocumentState: ObservableObject {
     }
 }
 
-// MARK: - DocumentTitleToolbar (Custom toolbar with icon and clickable navigation)
+// MARK: - DocumentTitleToolbar (Clean toolbar with icon and filename only)
 struct DocumentTitleToolbar: View {
     let fileURL: URL?
     
@@ -418,14 +418,6 @@ struct DocumentTitleToolbar: View {
             return fileURL.deletingPathExtension().lastPathComponent
         } else {
             return "Untitled"
-        }
-    }
-    
-    private var documentPath: String {
-        if let fileURL = fileURL {
-            return fileURL.path
-        } else {
-            return ""
         }
     }
     
@@ -448,32 +440,22 @@ struct DocumentTitleToolbar: View {
                 print("📁 No file URL available for navigation")
             }
         }) {
-            HStack(spacing: 8) {
-                // Document Icon
+            HStack(spacing: 6) {
+                // Document Icon - ALWAYS showing on the left
                 Image(nsImage: documentIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 16, height: 16)
                 
-                VStack(alignment: .leading, spacing: 1) {
-                    // Document Name
-                    Text(documentName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    
-                    // Document Path (if available)
-                    if !documentPath.isEmpty {
-                        Text(documentPath)
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
+                // Document Name ONLY (no path, no zoom)
+                Text(documentName)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
             }
         }
         .buttonStyle(PlainButtonStyle())
-        .help(fileURL != nil ? "Click to show in Finder: \(documentPath)" : "Untitled Document")
+        .help(fileURL != nil ? "Click to show in Finder" : "Untitled Document")
     }
 }
 
