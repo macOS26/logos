@@ -202,6 +202,11 @@ struct StrokeFillPanel: View {
                         VariableStrokeSection(document: document)
                     }
                     
+                    // Blob Brush Section - Only show when blob brush tool is selected
+                    if document.currentTool == .blobBrush {
+                        BlobBrushSection(document: document)
+                    }
+                    
                     // Gradient Fill
                     GradientFillSection(document: document)
                 
@@ -3065,6 +3070,115 @@ struct VariableStrokeSection: View {
                 Spacer()
             }
             .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}
+
+struct BlobBrushSection: View {
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "circle.fill")
+                    .foregroundColor(.accentColor)
+                Text("Blob Brush")
+                    .font(.headline)
+                Spacer()
+            }
+            
+            // Blob Size
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Size")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBlobBrushSize))pt")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBlobBrushSize },
+                    set: { document.currentBlobBrushSize = $0 }
+                ), in: 5...200, step: 1) {
+                    Text("Blob Size")
+                } minimumValueLabel: {
+                    Text("5")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("200")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Adjust blob brush base size (5-200 points)")
+            }
+            
+            // Size Variation
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Size Variation")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentBlobBrushSizeVariation * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBlobBrushSizeVariation },
+                    set: { document.currentBlobBrushSizeVariation = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Size Variation")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("How much drawing speed affects blob size - fast drawing creates smaller blobs")
+            }
+            
+            // Blob Smoothness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothness")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBlobBrushSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBlobBrushSmoothingTolerance },
+                    set: { document.currentBlobBrushSmoothingTolerance = $0 }
+                ), in: 1...15, step: 0.5) {
+                    Text("Blob Smoothness")
+                } minimumValueLabel: {
+                    Text("1")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("15")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Path simplification tolerance - lower values preserve more detail, higher values create smoother blob shapes")
+            }
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
