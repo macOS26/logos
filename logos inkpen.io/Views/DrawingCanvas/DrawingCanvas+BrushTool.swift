@@ -134,7 +134,7 @@ extension DrawingCanvas {
         brushPath = VectorPath(elements: [.move(to: startPoint)])
         
         // Create real VectorShape for brush stroke using current user settings
-        let strokeStyle = StrokeStyle(
+        let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(), // Use whatever stroke color user has set
             width: getCurrentStrokeWidth(), // Use whatever stroke width user has set
             opacity: getCurrentStrokeOpacity() // Use whatever stroke opacity user has set
@@ -228,8 +228,8 @@ extension DrawingCanvas {
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
             document.layers[layerIndex].shapes[shapeIndex].path = previewPath
             
-            // Update stroke and fill using current user settings
-            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+            // Update stroke and fill using current user settings and toggles
+            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
                 color: getCurrentStrokeColor(),
                 width: getCurrentStrokeWidth(),
                 opacity: getCurrentStrokeOpacity()
@@ -301,10 +301,10 @@ extension DrawingCanvas {
         
         // Step 3: Replace the preview shape with the final brush stroke
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
-            // Update the shape with final brush stroke using current user settings
+            // Update the shape with final brush stroke using current user settings and toggles
             var finalShape = document.layers[layerIndex].shapes[shapeIndex]
             finalShape.path = brushStrokePath
-            finalShape.strokeStyle = StrokeStyle(
+            finalShape.strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
                 color: getCurrentStrokeColor(),
                 width: getCurrentStrokeWidth(),
                 opacity: getCurrentStrokeOpacity()
@@ -315,10 +315,39 @@ extension DrawingCanvas {
             )
             
             document.layers[layerIndex].shapes[shapeIndex] = finalShape
+            
+            // Apply self-union operation if remove overlap is enabled
+            if document.brushRemoveOverlap {
+                applySelfUnionToBrushStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+            }
         }
         
         print("🖌️ BRUSH: Generated variable width path with \(brushSimplifiedPoints.count) control points")
     }
+    
+    // MARK: - Remove Overlap Functionality
+    
+    /// Apply self-union operation to remove overlapping areas within the single brush stroke
+    private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
+        guard shapeIndex < document.layers[layerIndex].shapes.count else { return }
+        let brushStroke = document.layers[layerIndex].shapes[shapeIndex]
+        
+        // Convert VectorPath to CGPath for boolean operations
+        let originalPath = brushStroke.path.cgPath
+        
+        // Apply self-union to remove any self-intersections within the brush stroke
+        if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
+            let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
+            
+            // Update the brush stroke with the cleaned path
+            document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            
+            print("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke")
+        } else {
+            print("🖌️ BRUSH: Self-union operation failed, keeping original path")
+        }
+    }
+
     
     // MARK: - Live Preview Variable Width Path Generation
     

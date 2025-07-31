@@ -190,13 +190,24 @@ public class CoreGraphicsPathOperations {
     private static func getAllMosaicPieces(_ paths: [CGPath], using fillRule: CGPathFillRule) -> [(CGPath, Int)] {
         guard !paths.isEmpty else { return [] }
         
+        let shapeCount = paths.count
+        
+        // SAFETY CHECK: Prevent integer overflow crash
+        // Mosaic operation has exponential complexity (2^n combinations)
+        // Limit to reasonable number of shapes to prevent crash
+        guard shapeCount <= 20 else {
+            print("⚠️ MOSAIC: Too many shapes (\(shapeCount)) - limited to 20 shapes max to prevent exponential explosion")
+            print("   💡 TIP: Use Divide or other operations for large selections")
+            // Return original paths as fallback
+            return paths.enumerated().map { (index, path) in (path, index) }
+        }
+        
         print("   🪟 MOSAIC: TRUE stained glass - complete planar subdivision")
         
         var allPieces: [(CGPath, Int)] = []
         
         // GENERATE ALL POSSIBLE INTERSECTION COMBINATIONS
         // For n shapes, we need to check 2^n - 1 possible combinations (excluding empty set)
-        let shapeCount = paths.count
         
         for mask in 1..<(1 << shapeCount) {
             var intersectingIndices: [Int] = []

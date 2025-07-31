@@ -10,6 +10,11 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 
+// MARK: - Cleanup Notifications
+extension Notification.Name {
+    static let forceDocumentStateCleanup = Notification.Name("forceDocumentStateCleanup")
+}
+
 // MARK: - InkpenDocument for DocumentGroup (ADDITION - not replacement)
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
@@ -79,15 +84,27 @@ class DocumentState: ObservableObject {
     @Published var canExpandWarpObject = false
     
     private var cancellables = Set<AnyCancellable>()
+    private var isTerminating = false
     
     init() {
         print("🎯 DocumentState initialized with automatic menu state updates")
         // Defer observer setup until document is set to prevent blocking during launch
+        
+        // Listen for forced cleanup notification
+        NotificationCenter.default.addObserver(
+            forName: .forceDocumentStateCleanup,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.forceCleanup()
+        }
     }
     
     deinit {
         // CRITICAL: Clean up all subscriptions to prevent retain cycles
+        NotificationCenter.default.removeObserver(self)
         cancellables.removeAll()
+        document = nil
         print("🎯 DocumentState deallocated - subscriptions cleaned up")
     }
     
@@ -111,6 +128,36 @@ class DocumentState: ObservableObject {
         print("🎯 DocumentState cleanup completed")
     }
     
+    func forceCleanup() {
+        // Force cleanup called from app termination
+        print("🎯 DocumentState force cleanup initiated")
+        isTerminating = true
+        cancellables.removeAll()
+        
+        // Clear document reference to break any potential retain cycles
+        document = nil
+        
+        // Clear all @Published properties to prevent further updates
+        canUndo = false
+        canRedo = false
+        hasSelection = false
+        canCut = false
+        canCopy = false
+        canPaste = false
+        canGroup = false
+        canUngroup = false
+        canFlatten = false
+        canUnflatten = false
+        canMakeCompoundPath = false
+        canReleaseCompoundPath = false
+        canMakeLoopingPath = false
+        canReleaseLoopingPath = false
+        canUnwrapWarpObject = false
+        canExpandWarpObject = false
+        
+        print("🎯 DocumentState force cleanup completed")
+    }
+    
     private func setupDocumentObserversAsync() async {
         guard let document = document else { return }
         
@@ -129,6 +176,12 @@ class DocumentState: ObservableObject {
     }
     
     private func updateAllStates() {
+        // CRITICAL: Don't update states during app termination to prevent SwiftUI constraint crashes
+        guard !isTerminating else {
+            print("🎯 DocumentState: Skipping state update during termination")
+            return
+        }
+        
         guard let document = document else {
             // No document = disable everything
             canUndo = false
@@ -689,7 +742,12 @@ struct DocumentBasedMainView: View {
         }
         .onDisappear {
             // CRITICAL: Clean up DocumentState when view disappears to prevent retain cycles
+            print("📄 DocumentBasedMainView disappearing - cleaning up DocumentState")
             documentState.cleanup()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .forceDocumentStateCleanup)) { _ in
+            // Handle forced cleanup during app termination
+            documentState.forceCleanup()
         }
         .focusedSceneObject(documentState)
     }
@@ -1409,6 +1467,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
     
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        print("📄 App: Application should terminate - starting graceful shutdown")
+        
+        // Notify all DocumentState instances to stop updating immediately
+        NotificationCenter.default.post(name: .forceDocumentStateCleanup, object: nil)
+        
+        // Allow a brief moment for cleanup to complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            print("📄 App: Cleanup phase completed, terminating now")
+        }
+        
+        return .terminateNow
+    }
+    
     // CRITICAL: Override to handle code signing errors gracefully
     func application(_ application: NSApplication, willPresentError error: Error) -> Error {
         print("📄 App: Error intercepted: \(error)")
@@ -1427,14 +1499,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
+        print("📄 App: Starting termination cleanup...")
+        
+        // CRITICAL: Stop all background monitoring first
+        StallDetector.shared.stopMonitoring()
+        
         // CRITICAL: Clean up all state objects to prevent retain cycles during shutdown
         cleanupAllStateObjects()
         
+        // CRITICAL: Force cleanup of all DocumentState instances
+        cleanupAllDocumentStates()
+        
+        // Save window frame
         if let window = NSApplication.shared.windows.first {
             let frame = window.frame
             UserDefaults.standard.set(NSStringFromRect(frame), forKey: "MainWindowFrame")
             print("📄 App: Saved window frame: \(frame)")
         }
+        
+        // Force synchronize UserDefaults before shutdown
+        UserDefaults.standard.synchronize()
         
         print("📄 App: Application termination cleanup completed")
     }
@@ -1446,6 +1530,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Clean up any remaining state objects
         // This helps prevent retain cycles during SwiftUI cleanup
         print("📄 App: Cleaning up state objects for shutdown")
+    }
+    
+    private func cleanupAllDocumentStates() {
+        // Force cleanup of any DocumentState instances that might still have active subscriptions
+        print("📄 App: Forcing cleanup of all DocumentState instances")
+        
+        // Post a notification to force all DocumentState instances to clean up
+        NotificationCenter.default.post(name: .forceDocumentStateCleanup, object: nil)
+        
+        // Give a brief moment for cleanup to complete
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
     }
 }
 

@@ -2884,7 +2884,7 @@ struct VariableStrokeSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "paintbrush.pointed")
+                Image(systemName: "scribble.variable")
                     .foregroundColor(.accentColor)
                 Text("Variable Stroke")
                     .font(.headline)
@@ -3009,6 +3009,50 @@ struct VariableStrokeSection: View {
                         .foregroundColor(.secondary)
                 }
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
+            
+            // Brush Tool Options
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                    .padding(.vertical, 4)
+                
+                // Apply No Stroke Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Apply No Stroke")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Remove stroke from brush shapes")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.brushApplyNoStroke },
+                        set: { document.brushApplyNoStroke = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .help("When enabled, brush shapes will have no stroke regardless of current stroke settings")
+                }
+                
+                // Remove Overlap Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Remove Overlap")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Union overlapping parts of same shape")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.brushRemoveOverlap },
+                        set: { document.brushRemoveOverlap = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .help("When enabled, overlapping parts of brush strokes will be merged using union operation")
+                }
             }
             
             // Pressure Input Status
