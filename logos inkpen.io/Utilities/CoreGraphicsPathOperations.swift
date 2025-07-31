@@ -7,6 +7,14 @@ import Foundation
 /// unlike ClipperPath which tessellates curves into line segments.
 public class CoreGraphicsPathOperations {
     
+    // MARK: - Helper Functions
+    
+    /// Check if a CGRect has finite values (no infinity or NaN)
+    private static func isFinite(_ rect: CGRect) -> Bool {
+        return rect.origin.x.isFinite && rect.origin.y.isFinite && 
+               rect.size.width.isFinite && rect.size.height.isFinite
+    }
+    
     // MARK: - Boolean Operations
     
     /// Performs a union operation on two paths using CoreGraphics
@@ -20,6 +28,40 @@ public class CoreGraphicsPathOperations {
             // Handle edge cases
             if pathA.isEmpty && pathB.isEmpty { return nil }
             return pathA.isEmpty ? pathB : pathA
+        }
+        
+        // CRASH FIX: Special handling for self-union (same path with itself)
+        if pathA === pathB {
+            print("🔍 UNION DEBUG: === SELF-UNION OPERATION (pathA === pathB) ===")
+            // For self-union, we can often just return the original path if it's already well-formed
+            // or use a different approach that's more stable
+            let pathBounds = pathA.boundingBox
+            guard isFinite(pathBounds) && !pathBounds.isNull else {
+                print("⚠️ CoreGraphics: Invalid path bounds for self-union, returning nil")
+                print("🔍 UNION DEBUG: === SELF-UNION ABORTED (invalid bounds) ===")
+                return nil
+            }
+            
+            print("🔍 UNION DEBUG: Path bounds are valid, proceeding with self-union")
+            
+            // Try the union operation with safety checks
+            let result = pathA.union(pathA, using: fillRule)
+            guard !result.isEmpty && isFinite(result.boundingBox) else {
+                print("⚠️ CoreGraphics: Self-union produced invalid result, returning original")
+                print("🔍 UNION DEBUG: === SELF-UNION RETURNING ORIGINAL (invalid result) ===")
+                return pathA
+            }
+            print("🔍 UNION DEBUG: ✅ Self-union successful, returning result")
+            print("🔍 UNION DEBUG: === SELF-UNION COMPLETED ===")
+            return result
+        }
+        
+        // Safety checks for path bounds
+        let boundsA = pathA.boundingBox
+        let boundsB = pathB.boundingBox
+        guard isFinite(boundsA) && !boundsA.isNull && isFinite(boundsB) && !boundsB.isNull else {
+            print("⚠️ CoreGraphics: Invalid path bounds for union operation")
+            return nil
         }
         
         let result = pathA.union(pathB, using: fillRule)
