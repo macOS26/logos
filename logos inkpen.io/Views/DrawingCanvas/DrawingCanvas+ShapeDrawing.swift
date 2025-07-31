@@ -119,7 +119,7 @@ extension DrawingCanvas {
         // FIXED: Use document's default colors instead of hardcoded values!
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
-            width: 1.0,
+            width: document.defaultStrokeWidth, // Use user's default stroke width
             opacity: document.defaultStrokeOpacity  // 100% opacity by default
         )
         let fillStyle = FillStyle(

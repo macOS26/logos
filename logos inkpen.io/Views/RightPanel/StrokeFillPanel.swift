@@ -72,12 +72,13 @@ struct StrokeFillPanel: View {
     }
     
     private var strokeWidth: Double {
+        // If shapes are selected, show their stroke width, otherwise show default for new shapes
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return 1.0
+            return document.defaultStrokeWidth // Show default width for new shapes
         }
-        return shape.strokeStyle?.width ?? 1.0
+        return shape.strokeStyle?.width ?? document.defaultStrokeWidth
     }
     
     private var strokePlacement: StrokePlacement {
@@ -329,15 +330,21 @@ struct StrokeFillPanel: View {
     }
     
     private func updateStrokeWidth(_ width: Double) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default stroke width for new shapes
+        document.defaultStrokeWidth = width
+        print("🎨 Set default stroke width: \(width)pt")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, opacity: document.defaultStrokeOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+                    }
                 }
             }
         }

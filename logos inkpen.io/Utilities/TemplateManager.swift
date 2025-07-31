@@ -14,9 +14,35 @@ import CoreGraphics
 class TemplateManager {
     
     static let shared = TemplateManager()
+    private var isInitialized = false
+    private let initializationQueue = DispatchQueue(label: "com.logos.templateManager", qos: .userInitiated)
     
     private init() {
-        loadAvailableTemplates()
+        // Start async initialization immediately
+        Task {
+            await initializeTemplates()
+        }
+    }
+    
+    // MARK: - Async Initialization
+    
+    private func initializeTemplates() async {
+        await MainActor.run {
+            print("📄 Starting async template initialization...")
+        }
+        
+        // Move heavy template loading to background queue
+        await withCheckedContinuation { continuation in
+            initializationQueue.async {
+                self.loadAvailableTemplates()
+                
+                DispatchQueue.main.async {
+                    self.isInitialized = true
+                    print("✅ Template initialization completed")
+                    continuation.resume()
+                }
+            }
+        }
     }
     
     // MARK: - Template Types
@@ -228,53 +254,51 @@ class TemplateManager {
             initialShapes: createLogoGuides(),
             metadata: TemplateMetadata(
                 description: "Square logo design with center guides",
-                tags: ["logo", "design", "square", "branding"]
+                tags: ["logo", "square", "web", "branding"]
             )
         )
         
-        // ARCHITECTURAL DRAWING
+        // ARCHITECTURAL (36" × 24")
         availableTemplates[.architectural] = TemplateConfiguration(
             type: .architectural,
             settings: DocumentSettings(
-                width: 36.0,  // 36 inches (3 feet)
-                height: 24.0, // 24 inches (2 feet)
+                width: 36.0, // 36 inches
+                height: 24.0, // 24 inches
                 unit: .inches,
-                colorMode: .rgb,
-                resolution: 72,
+                colorMode: .cmyk,
+                resolution: 150,
                 showRulers: true,
-                showGrid: false,
+                showGrid: true,
                 snapToGrid: true,
-                gridSpacing: 1.0,  // 1 inch grid
+                gridSpacing: 1.0,
                 backgroundColor: VectorColor.white
             ),
             initialShapes: createArchitecturalGuides(),
-            initialLayers: createArchitecturalLayers(),
             metadata: TemplateMetadata(
-                description: "Architectural drawing with standard layers",
-                tags: ["architectural", "construction", "technical", "CAD"]
+                description: "Architectural scale drawing with grid",
+                tags: ["architectural", "scale", "technical", "large"]
             )
         )
         
-        // ENGINEERING DRAWING
+        // ENGINEERING (11" × 8.5")
         availableTemplates[.engineering] = TemplateConfiguration(
             type: .engineering,
             settings: DocumentSettings(
-                width: 17.0,  // ANSI C size (17 inches)
-                height: 11.0, // 11 inches
+                width: 11.0, // 11 inches
+                height: 8.5, // 8.5 inches
                 unit: .inches,
-                colorMode: .rgb,
-                resolution: 72,
+                colorMode: .cmyk,
+                resolution: 300,
                 showRulers: true,
-                showGrid: false,
+                showGrid: true,
                 snapToGrid: true,
-                gridSpacing: 0.25,
+                gridSpacing: 0.125,
                 backgroundColor: VectorColor.white
             ),
             initialShapes: createEngineeringGuides(),
-            initialLayers: createEngineeringLayers(),
             metadata: TemplateMetadata(
-                description: "Engineering technical drawing with title block",
-                tags: ["engineering", "technical", "ANSI", "mechanical"]
+                description: "Engineering technical drawing with precision grid",
+                tags: ["engineering", "technical", "precision", "drafting"]
             )
         )
         
@@ -287,16 +311,16 @@ class TemplateManager {
                 unit: .pixels,
                 colorMode: .rgb,
                 resolution: 72,
-                showRulers: false,
+                showRulers: true,
                 showGrid: false,
-                snapToGrid: false,
-                gridSpacing: 8,
+                snapToGrid: true,
+                gridSpacing: 20,
                 backgroundColor: VectorColor.white
             ),
-            initialShapes: createWebGuides(),
+            initialShapes: createWebGraphicsGuides(),
             metadata: TemplateMetadata(
-                description: "Web graphics optimized for digital display",
-                tags: ["web", "digital", "screen", "1080p"]
+                description: "Web-optimized graphics with safe area guides",
+                tags: ["web", "digital", "responsive", "ui"]
             )
         )
         
@@ -426,6 +450,41 @@ class TemplateManager {
         ]
     }
     
+    private func createWebGraphicsGuides() -> [VectorShape] {
+        var guides: [VectorShape] = []
+        
+        // Safe area guides for web graphics (common safe margins)
+        let margin: CGFloat = 40 // 40px safe margin
+        
+        // Main content safe area
+        var contentSafeArea = VectorShape.rectangle(
+            at: CGPoint(x: margin, y: margin),
+            size: CGSize(width: 1920 - (margin * 2), height: 1080 - (margin * 2))
+        )
+        contentSafeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0, alpha: 1)), width: 1.0) // Green
+        contentSafeArea.fillStyle = FillStyle(color: VectorColor.clear)
+        guides.append(contentSafeArea)
+        
+        // Center cross guides for alignment
+        var verticalGuide = VectorShape.rectangle(
+            at: CGPoint(x: 959, y: 0), // Center at 1920/2 - 1
+            size: CGSize(width: 2, height: 1080)
+        )
+        verticalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5) // Red with transparency
+        verticalGuide.fillStyle = FillStyle(color: VectorColor.clear)
+        guides.append(verticalGuide)
+        
+        var horizontalGuide = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 539), // Center at 1080/2 - 1
+            size: CGSize(width: 1920, height: 2)
+        )
+        horizontalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5) // Red with transparency
+        horizontalGuide.fillStyle = FillStyle(color: VectorColor.clear)
+        guides.append(horizontalGuide)
+        
+        return guides
+    }
+    
     private func createWebGuides() -> [VectorShape] {
         var guides: [VectorShape] = []
         
@@ -502,6 +561,7 @@ class TemplateManager {
     func createBlankDocument() -> VectorDocument {
         print("📄 Creating truly blank document...")
         
+        // Create document immediately without waiting for template initialization
         let blankSettings = DocumentSettings(
             width: 11.0,
             height: 8.5,

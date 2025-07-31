@@ -36,12 +36,12 @@ extension DrawingCanvas {
         // Create real VectorShape with document default colors
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
-            width: 1.0,
+            width: document.defaultStrokeWidth, // Use user's default stroke width setting
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle = FillStyle(
             color: document.defaultFillColor,
-            opacity: 0.0 // Freehand paths are typically stroked only
+            opacity: document.defaultFillOpacity // Use user's default fill opacity setting
         )
         
         activeFreehandShape = VectorShape(
@@ -292,7 +292,7 @@ extension DrawingCanvas {
                 // Apply final styling (full opacity)
                 document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
                     color: document.defaultStrokeColor,
-                    width: 1.0,
+                    width: document.defaultStrokeWidth, // Use user's default stroke width
                     opacity: document.defaultStrokeOpacity
                 )
                 

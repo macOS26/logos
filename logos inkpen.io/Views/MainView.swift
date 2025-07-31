@@ -43,37 +43,30 @@ struct MainView: View {
                 
                                 // Center Drawing Area - Flexible width with minimum - STRICTLY CONSTRAINED TO CENTER COLUMN
                 GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        // Drawing canvas area - CLIPPED AND CONSTRAINED
-                        ZStack {
-                            // DEBUGGING: Background to see exact bounds
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.1))
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .allowsHitTesting(false) // Background doesn't capture gestures
-                            
-                            // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
-                            DrawingCanvas(document: document)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
-                                .background(Color.clear) // Ensure no background extension
-                                .zIndex(1) // CRITICAL: Canvas below panels but above background
-                                .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
-                            
-                            // Rulers - CRITICAL: Above canvas but below panels 
-                            RulersView(document: document, geometry: geometry)
-                                .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
-                                .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
-                        // CRITICAL FIX: NO CLIPPING - use zIndex to layer toolbar above DrawingCanvas
+                    // Drawing canvas area - CLIPPED AND CONSTRAINED
+                    ZStack {
+                        // DEBUGGING: Background to see exact bounds
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .allowsHitTesting(false) // Background doesn't capture gestures
                         
-                        // Status Bar at bottom - PROTECTED HEIGHT
-                        StatusBar(document: document)
-                            .frame(height: 24)
-                            .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
+                        // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
+                        DrawingCanvas(document: document)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
+                            .background(Color.clear) // Ensure no background extension
+                            .zIndex(1) // CRITICAL: Canvas below panels but above background
+                            .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
+                        
+                        // Rulers - CRITICAL: Above canvas but below panels 
+                        RulersView(document: document, geometry: geometry)
+                            .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
+                            .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
+                    // CRITICAL FIX: NO CLIPPING - use zIndex to layer toolbar above DrawingCanvas
                 }
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
@@ -88,8 +81,14 @@ struct MainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
+            
+            // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
+            StatusBar(document: document)
+                .frame(height: 24)
+                .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
+                .frame(maxWidth: .infinity) // ENSURE: Status bar spans full width
         }
-        .frame(minHeight: 500) // MINIMUM: Ensure overall height accommodates all elements
+        .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
         .toolbar {
             MainToolbarContent(
             document: document,
@@ -231,10 +230,9 @@ struct MainView: View {
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
             
-            // MICRO DELAY: Just enough for geometry to be established
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                document.requestZoom(to: 0.0, mode: .fitToPage)
-                print("🔍 PROPER FIT TO PAGE: Applied after geometry established")
+            // Defer fit to page operation to prevent blocking
+            Task {
+                await performInitialSetupAsync()
             }
         }
         .focusedSceneObject(documentState)
@@ -244,6 +242,18 @@ struct MainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             // Note: Menu states now update automatically via @Published properties
+        }
+    }
+    
+    // MARK: - Async Initialization
+    
+    private func performInitialSetupAsync() async {
+        // Wait a brief moment for geometry to be established
+        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        
+        await MainActor.run {
+            document.requestZoom(to: 0.0, mode: .fitToPage)
+            print("🔍 PROPER FIT TO PAGE: Applied after geometry established")
         }
     }
     
@@ -336,10 +346,29 @@ struct MainView: View {
         
         print("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes")
         
-        // MICRO DELAY: Just enough for geometry to be established (like Adobe Illustrator)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+        // Defer fit to page operation to prevent blocking
+        Task {
+            await performMainViewImportedDocumentSetupAsync()
+        }
+    }
+    
+    private func performMainViewImportedDocumentSetupAsync() async {
+        // Wait a brief moment for geometry to be established
+        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        
+        await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
             print("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established")
+        }
+    }
+    
+    private func performMainViewOpenDocumentSetupAsync() async {
+        // Wait a brief moment for geometry to be established
+        try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        
+        await MainActor.run {
+            document.requestZoom(to: 0.0, mode: .fitToPage)
+            print("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established")
         }
     }
     
@@ -397,10 +426,9 @@ struct MainView: View {
                         
                         print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
                         
-                        // MICRO DELAY: Just enough for geometry to be established
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            document.requestZoom(to: 0.0, mode: .fitToPage)
-                            print("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established")
+                        // Defer fit to page operation to prevent blocking
+                        Task {
+                            await performMainViewOpenDocumentSetupAsync()
                         }
                         
                     }
@@ -1186,23 +1214,24 @@ struct StatusBar: View {
             
             Spacer()
             
-            // Selection Info with Object Dimensions
-            VStack(alignment: .leading, spacing: 2) {
+            // Selection Info with Object Dimensions (single line)
+            HStack {
                 if document.selectedShapeIDs.isEmpty && document.selectedTextIDs.isEmpty {
                     Text("No selection")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 } else {
                     let totalSelected = document.selectedShapeIDs.count + document.selectedTextIDs.count
-                    Text("\(totalSelected) selected")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                     
-                    // Show dimensions of selected objects
+                    // Show selection count and dimensions on one line
                     if let bounds = getSelectionBounds() {
-                        Text("W: \(formatDimension(bounds.width))pt H: \(formatDimension(bounds.height))pt")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
+                        Text("\(totalSelected) selected  •  W: \(formatDimension(bounds.width))pt H: \(formatDimension(bounds.height))pt")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        Text("\(totalSelected) selected")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -1287,119 +1316,336 @@ struct DocumentSettingsView: View {
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Document Size")) {
-                    HStack {
-                        Text("Width:")
-                        TextField("Width", value: $document.settings.width, format: .number)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .onChange(of: document.settings.width) {
-                                document.onSettingsChanged()
-                            }
+        VStack(spacing: 0) {
+            // Professional Header
+            professionalHeader
+            
+            // Main Content
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Document Size Section
+                    documentSizeSection
+                    
+                    // Color Settings Section
+                    colorSettingsSection
+                    
+                    // Display Settings Section
+                    displaySettingsSection
+                    
+                    // Drawing Tools Section
+                    drawingToolsSection
+                }
+                .padding(24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Professional Footer
+            professionalFooter
+        }
+        .frame(width: 600, height: 700)
+        .background(Color(NSColor.windowBackgroundColor))
+    }
+    
+    // MARK: - Professional Header
+    private var professionalHeader: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 16) {
+                // App Icon and Title
+                HStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.blue)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.blue.opacity(0.1))
+                        )
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Document Settings")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Configure document properties and preferences")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                // Close Button
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.gray.opacity(0.1))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help("Close")
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            
+            Divider()
+        }
+        .background(Color(NSColor.controlBackgroundColor))
+    }
+    
+    // MARK: - Document Size Section
+    private var documentSizeSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "ruler")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
+                
+                Text("Document Size")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(spacing: 16) {
+                // Dimensions
+                HStack(spacing: 16) {
+                    // Width
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Width")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            TextField("Width", value: $document.settings.width, format: .number)
+                                .textFieldStyle(ProfessionalTextFieldStyle())
+                                .frame(width: 100)
+                                .onChange(of: document.settings.width) {
+                                    document.onSettingsChanged()
+                                }
+                            
+                            Text(document.settings.unit.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     
-                    HStack {
-                        Text("Height:")
-                        TextField("Height", value: $document.settings.height, format: .number)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .onChange(of: document.settings.height) {
-                                document.onSettingsChanged()
-                            }
+                    // Height
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Height")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            TextField("Height", value: $document.settings.height, format: .number)
+                                .textFieldStyle(ProfessionalTextFieldStyle())
+                                .frame(width: 100)
+                                .onChange(of: document.settings.height) {
+                                    document.onSettingsChanged()
+                                }
+                            
+                            Text(document.settings.unit.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
+                }
+                
+                // Units
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Units")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
                     
                     Picker("Unit", selection: $document.settings.unit) {
                         ForEach(MeasurementUnit.allCases, id: \.self) { unit in
-                            Text(unit.rawValue).tag(unit)
+                            Text(unit.rawValue.capitalized).tag(unit)
                         }
                     }
+                    .pickerStyle(SegmentedPickerStyle())
                     .onChange(of: document.settings.unit) {
                         document.onSettingsChanged()
                     }
                 }
+            }
+        }
+    }
+    
+    // MARK: - Color Settings Section
+    private var colorSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "paintpalette")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
                 
-                Section(header: Text("Color")) {
-                    Picker("Color Mode", selection: $document.settings.colorMode) {
-                        ForEach(ColorMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
+                Text("Color Settings")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Color Mode")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Picker("Color Mode", selection: $document.settings.colorMode) {
+                    ForEach(ColorMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue.uppercased()).tag(mode)
                     }
                 }
+                .pickerStyle(SegmentedPickerStyle())
+            }
+        }
+    }
+    
+    // MARK: - Display Settings Section
+    private var displaySettingsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "eye")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
                 
-                Section(header: Text("Grid")) {
-                    Toggle("Show Grid", isOn: $document.settings.showGrid)
+                Text("Display Settings")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(spacing: 16) {
+                // Resolution
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Resolution")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
                     
-                    HStack {
-                        Text("Grid Spacing:")
-                        TextField("Spacing", value: $document.settings.gridSpacing, format: .number)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    }
-                    
-                    Toggle("Snap to Grid", isOn: $document.settings.snapToGrid)
-                }
-                
-                Section(header: Text("View")) {
-                    Toggle("Show Rulers", isOn: $document.settings.showRulers)
-                    
-                    HStack {
-                        Text("Resolution:")
-                        TextField("DPI", value: $document.settings.resolution, format: .number)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack(spacing: 8) {
+                        TextField("Resolution", value: $document.settings.resolution, format: .number)
+                            .textFieldStyle(ProfessionalTextFieldStyle())
+                            .frame(width: 100)
+                        
                         Text("DPI")
-                    }
-                }
-                
-                Section(header: Text("Drawing Tools")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Freehand Smoothing:")
-                            Spacer()
-                            Text(String(format: "%.1f", document.settings.freehandSmoothingTolerance))
-                                .foregroundColor(.secondary)
-                                .font(.caption)
-                        }
-                        
-                        Slider(
-                            value: $document.settings.freehandSmoothingTolerance,
-                            in: 0.1...10.0,
-                            step: 0.1
-                        ) {
-                            Text("Freehand Smoothing")
-                        } minimumValueLabel: {
-                            Text("Detail")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        } maximumValueLabel: {
-                            Text("Smooth")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                        .onChange(of: document.settings.freehandSmoothingTolerance) {
-                            document.onSettingsChanged()
-                        }
-                        
-                        Text("Lower values preserve more detail, higher values create smoother curves")
-                            .font(.caption2)
+                            .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
-            }
-            .navigationTitle("Document Settings")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
+                
+                // Display Options
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Display Options")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    VStack(spacing: 6) {
+                        ProfessionalToggle(title: "Show Rulers", isOn: $document.settings.showRulers)
+                        ProfessionalToggle(title: "Show Grid", isOn: $document.settings.showGrid)
+                        ProfessionalToggle(title: "Snap to Grid", isOn: $document.settings.snapToGrid)
+                            .disabled(!document.settings.showGrid)
                     }
                 }
                 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
+                // Grid Spacing
+                if document.settings.showGrid {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Grid Spacing")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            TextField("Grid Spacing", value: $document.settings.gridSpacing, format: .number)
+                                .textFieldStyle(ProfessionalTextFieldStyle())
+                                .frame(width: 100)
+                            
+                            Text(document.settings.unit.rawValue)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
             }
         }
-        .frame(width: 400, height: 500)
+    }
+    
+    // MARK: - Drawing Tools Section
+    private var drawingToolsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.blue)
+                
+                Text("Drawing Tools")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Freehand Smoothing")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text(String(format: "%.1f", document.settings.freehandSmoothingTolerance))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.blue.opacity(0.1))
+                        )
+                }
+                
+                VStack(spacing: 8) {
+                    Slider(
+                        value: $document.settings.freehandSmoothingTolerance,
+                        in: 0.1...10.0,
+                        step: 0.1
+                    ) {
+                        Text("Freehand Smoothing")
+                    } minimumValueLabel: {
+                        Text("Detail")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                    } maximumValueLabel: {
+                        Text("Smooth")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    .onChange(of: document.settings.freehandSmoothingTolerance) {
+                        document.onSettingsChanged()
+                    }
+                    
+                    Text("Lower values preserve more detail, higher values create smoother curves")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Professional Footer
+    private var professionalFooter: some View {
+        VStack(spacing: 0) {
+            Divider()
+            
+            HStack {
+                Spacer()
+                
+                Button("Done") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+                .buttonStyle(ProfessionalPrimaryButtonStyle())
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+        }
+        .background(Color(NSColor.controlBackgroundColor))
     }
 }
 

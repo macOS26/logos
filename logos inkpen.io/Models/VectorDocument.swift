@@ -54,6 +54,9 @@ struct DocumentSettings: Codable, Hashable {
     var backgroundColor: VectorColor
     var freehandSmoothingTolerance: Double // Curve fitting tolerance for freehand tool
     
+    // FIX: Store actual document size in points to prevent coordinate system corruption
+    private var _sizeInPoints: CGSize?
+    
     init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, freehandSmoothingTolerance: Double = 2.0) {
         self.width = width
         self.height = height
@@ -87,8 +90,32 @@ struct DocumentSettings: Codable, Hashable {
     }
     
     var sizeInPoints: CGSize {
-        let pointsPerUnit = unit.pointsPerUnit
-        return CGSize(width: width * pointsPerUnit, height: height * pointsPerUnit)
+        // FIX: Use stored size in points if available, otherwise calculate from current unit
+        if let storedSize = _sizeInPoints {
+            return storedSize
+        } else {
+            let pointsPerUnit = unit.pointsPerUnit
+            return CGSize(width: width * pointsPerUnit, height: height * pointsPerUnit)
+        }
+    }
+    
+    // FIX: Method to update unit while preserving document size in points
+    mutating func changeUnit(to newUnit: MeasurementUnit) {
+        // Store current size in points before changing unit
+        let currentSizeInPoints = sizeInPoints
+        
+        // Update the unit
+        unit = newUnit
+        
+        // Update width and height to match the new unit while preserving actual size
+        let newPointsPerUnit = newUnit.pointsPerUnit
+        width = currentSizeInPoints.width / newPointsPerUnit
+        height = currentSizeInPoints.height / newPointsPerUnit
+        
+        // Store the preserved size in points
+        _sizeInPoints = currentSizeInPoints
+        
+        print("🔄 Unit changed to \(newUnit.rawValue) - Document size preserved: \(String(format: "%.1f", currentSizeInPoints.width))×\(String(format: "%.1f", currentSizeInPoints.height)) points")
     }
 }
 
@@ -157,6 +184,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultStrokeColor: VectorColor = .black // Professional default: black stroke
     @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
+    @Published var defaultStrokeWidth: Double = 1.0  // Default stroke width for new shapes
     
     // ACTIVE COLOR STATE
     @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
@@ -168,10 +196,10 @@ class VectorDocument: ObservableObject, Codable {
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
         
-        // Initialize separate swatch arrays with defaults
-        self.rgbSwatches = Self.createDefaultRGBSwatches()
-        self.cmykSwatches = Self.createDefaultCMYKSwatches()
-        self.hsbSwatches = Self.createDefaultHSBSwatches()
+        // Initialize with minimal defaults first
+        self.rgbSwatches = [.black, .white, .clear] // Minimal initial swatches
+        self.cmykSwatches = [.black, .white, .clear] // Minimal initial swatches  
+        self.hsbSwatches = [.black, .white, .clear] // Minimal initial swatches
         
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
@@ -201,6 +229,36 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set up settings change observation
         setupSettingsObservation()
+        
+        // Load full swatches asynchronously to prevent blocking
+        Task {
+            await loadFullSwatchesAsync()
+        }
+    }
+    
+    // MARK: - Async Swatch Loading
+    
+    private func loadFullSwatchesAsync() async {
+        await MainActor.run {
+            print("🎨 Loading full color swatches asynchronously...")
+        }
+        
+        // Load swatches on background queue
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let fullRGBSwatches = Self.createDefaultRGBSwatches()
+                let fullCMYKSwatches = Self.createDefaultCMYKSwatches()
+                let fullHSBSwatches = Self.createDefaultHSBSwatches()
+                
+                DispatchQueue.main.async {
+                    self.rgbSwatches = fullRGBSwatches
+                    self.cmykSwatches = fullCMYKSwatches
+                    self.hsbSwatches = fullHSBSwatches
+                    print("✅ Full color swatches loaded asynchronously")
+                    continuation.resume()
+                }
+            }
+        }
     }
     
     // Current color swatches based on mode - computed property

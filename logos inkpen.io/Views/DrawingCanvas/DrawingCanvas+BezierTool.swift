@@ -54,7 +54,7 @@ extension DrawingCanvas {
                 // Create real VectorShape with document default colors
                 let strokeStyle = StrokeStyle(
                     color: document.defaultStrokeColor,
-                    width: 1.0,
+                    width: document.defaultStrokeWidth, // Use user's default stroke width
                     opacity: document.defaultStrokeOpacity
                 )
                 let fillStyle = FillStyle(
@@ -141,7 +141,7 @@ extension DrawingCanvas {
             // Create real VectorShape with document default colors
             let strokeStyle = StrokeStyle(
                 color: document.defaultStrokeColor,
-                width: 1.0,
+                width: document.defaultStrokeWidth, // Use user's default stroke width
                 opacity: document.defaultStrokeOpacity
             )
             let fillStyle = FillStyle(
@@ -312,7 +312,7 @@ extension DrawingCanvas {
                 // Update stroke color to match current toolbar selection (real-time)
                 document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
                     color: document.defaultStrokeColor,
-                    width: 1.0,
+                    width: document.defaultStrokeWidth, // Use user's default stroke width
                     opacity: document.defaultStrokeOpacity
                 )
                 
@@ -346,7 +346,7 @@ extension DrawingCanvas {
                     // Update the existing shape to have proper fill and stroke from toolbar
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
                         color: document.defaultStrokeColor,
-                        width: 1.0,
+                        width: document.defaultStrokeWidth, // Use user's default stroke width
                         opacity: document.defaultStrokeOpacity
                     )
                     // FINAL FILL: Make fully opaque when path is finished
@@ -365,7 +365,7 @@ extension DrawingCanvas {
         print("Shape bounds: \(activeBezierShape.bounds)")
         print("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
         print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
-        print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: document.defaultStrokeOpacity))")
+        print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, opacity: document.defaultStrokeOpacity))")
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
