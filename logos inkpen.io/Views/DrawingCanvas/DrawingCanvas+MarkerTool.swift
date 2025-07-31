@@ -529,12 +529,14 @@ extension DrawingCanvas {
             let p0 = points[i - 1]
             let p1 = points[i]
             
-            // Make first and last segments lines (corner points) instead of curves
+            // MARKER SPECIFIC: Make first, second, second-last and last segments lines (corner points)
             let isFirstSegment = (i == 1)
+            let isSecondSegment = (i == 2) 
+            let isSecondLastSegment = (i == points.count - 2)
             let isLastSegment = (i == points.count - 1)
             
-            if isFirstSegment || isLastSegment {
-                // Create corner points for start and end - no handles
+            if isFirstSegment || isSecondSegment || isSecondLastSegment || isLastSegment {
+                // Create corner points for start, second, second-last, and end - no handles
                 elements.append(.line(to: VectorPoint(p1)))
             } else {
                 // Calculate control points for smooth curves (middle segments only)

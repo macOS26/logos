@@ -2917,7 +2917,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .bezierPen: return "beziercurve"
         case .freehand: return "scribble"
         case .brush: return "scribble.variable"
-        case .marker: return "pen"
+        case .marker: return "pencil.tip"
         case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
