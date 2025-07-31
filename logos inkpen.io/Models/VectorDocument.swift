@@ -207,6 +207,10 @@ class VectorDocument: ObservableObject, Codable {
     // ACTIVE COLOR STATE
     @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
     
+    // COLOR CHANGE NOTIFICATION FOR ACTIVE DRAWING TOOLS
+    @Published var colorChangeNotification: UUID = UUID() // Changes when colors are updated to notify active tools
+    @Published var lastColorChangeType: ColorChangeType = .fillOpacity // What type of change occurred
+    
     private let maxUndoStackSize = 50
     
 
@@ -1595,6 +1599,36 @@ class VectorDocument: ObservableObject, Codable {
         case .pms:
             hsbSwatches.removeAll { $0 == color }
         }
+    }
+    
+    // MARK: - Active Drawing Tool Notification
+    
+    /// Notify active drawing tools that fill opacity has changed
+    func notifyActiveToolsOfFillOpacityChange() {
+        lastColorChangeType = .fillOpacity
+        colorChangeNotification = UUID()
+        print("🎨 VectorDocument: Notified active drawing tools of fill opacity change")
+    }
+    
+    /// Notify active drawing tools that stroke color has changed 
+    func notifyActiveToolsOfStrokeColorChange() {
+        lastColorChangeType = .strokeColor
+        colorChangeNotification = UUID()
+        print("🎨 VectorDocument: Notified active drawing tools of stroke color change")
+    }
+    
+    /// Notify active drawing tools that stroke opacity has changed
+    func notifyActiveToolsOfStrokeOpacityChange() {
+        lastColorChangeType = .strokeOpacity
+        colorChangeNotification = UUID()
+        print("🎨 VectorDocument: Notified active drawing tools of stroke opacity change")
+    }
+    
+    /// Generic notification for any color/opacity change (legacy support)
+    func notifyActiveToolsOfColorChange() {
+        lastColorChangeType = .fillOpacity // Default to fill opacity for legacy calls
+        colorChangeNotification = UUID()
+        print("🎨 VectorDocument: Notified active drawing tools of color change")
     }
     
     func setActiveColor(_ color: VectorColor) {

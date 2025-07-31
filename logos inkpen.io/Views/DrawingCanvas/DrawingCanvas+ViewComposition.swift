@@ -224,6 +224,7 @@ extension DrawingCanvas {
                     handleZoomRequest(request, geometry: geometry)
                 }
             }
+
             .contextMenu {
                 directSelectionContextMenu
             }

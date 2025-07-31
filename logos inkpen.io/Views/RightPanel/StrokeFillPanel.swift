@@ -294,6 +294,8 @@ struct StrokeFillPanel: View {
                 }
             }
         }
+        
+
     }
     
     private func updateStrokeColor(_ color: VectorColor) {
@@ -332,6 +334,8 @@ struct StrokeFillPanel: View {
                 }
             }
         }
+        
+
     }
     
     private func updateStrokeWidth(_ width: Double) {
@@ -390,6 +394,8 @@ struct StrokeFillPanel: View {
                 }
             }
         }
+        
+
     }
     
 

@@ -29,6 +29,14 @@ enum ColorTarget: String, CaseIterable, Codable {
     case stroke = "Stroke"
 }
 
+// MARK: - Color Change Type for Notifications
+enum ColorChangeType: String, CaseIterable, Codable {
+    case fillColor = "FillColor"
+    case fillOpacity = "FillOpacity"
+    case strokeColor = "StrokeColor"
+    case strokeOpacity = "StrokeOpacity"
+}
+
 // MARK: - Color Definitions
 struct RGBColor: Codable, Hashable {
     var red: Double

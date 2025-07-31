@@ -10,6 +10,102 @@ import Foundation
 
 extension DrawingCanvas {
     
+    // MARK: - Current Color Helpers (Same as other tools)
+    
+    /// Get the current fill color that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentFillColor() -> VectorColor {
+        // PRIORITY 1: If text objects are selected, use their fill color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillColor
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let fillColor = shape.fillStyle?.color {
+            return fillColor
+        }
+        
+        // PRIORITY 3: Use default color for new shapes
+        return document.defaultFillColor
+    }
+    
+    /// Get the current fill opacity that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentFillOpacity() -> Double {
+        // PRIORITY 1: If text objects are selected, use their fill opacity
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillOpacity
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their opacity
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.fillStyle?.opacity {
+            return opacity
+        }
+        
+        // PRIORITY 3: Use default opacity for new shapes
+        return document.defaultFillOpacity
+    }
+    
+    /// Get the current stroke color that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentStrokeColor() -> VectorColor {
+        // PRIORITY 1: If text objects are selected, use their stroke color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.strokeColor
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let strokeColor = shape.strokeStyle?.color {
+            return strokeColor
+        }
+        
+        // PRIORITY 3: Use default color for new shapes
+        return document.defaultStrokeColor
+    }
+    
+    /// Get the current stroke opacity that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentStrokeOpacity() -> Double {
+        // PRIORITY 1: If text objects are selected, use their stroke opacity
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.strokeOpacity
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their opacity
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.strokeStyle?.opacity {
+            return opacity
+        }
+        
+        // PRIORITY 3: Use default opacity for new shapes
+        return document.defaultStrokeOpacity
+    }
+    
+    /// Get the current stroke width that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentStrokeWidth() -> Double {
+        // If shapes are selected, use their stroke width
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let width = shape.strokeStyle?.width {
+            return width
+        }
+        
+        // Use default width for new shapes
+        return document.defaultStrokeWidth
+    }
+    
     // MARK: - Brush Tool Management
     
     internal func cancelBrushDrawing() {
@@ -37,15 +133,15 @@ extension DrawingCanvas {
         let startPoint = VectorPoint(location)
         brushPath = VectorPath(elements: [.move(to: startPoint)])
         
-        // Create real VectorShape for brush stroke with proper preview styling
+        // Create real VectorShape for brush stroke using current user settings
         let strokeStyle = StrokeStyle(
-            color: VectorColor.clear, // No stroke outline for brush preview
-            width: 0.0,
-            opacity: 0.0
+            color: getCurrentStrokeColor(), // Use whatever stroke color user has set
+            width: getCurrentStrokeWidth(), // Use whatever stroke width user has set
+            opacity: getCurrentStrokeOpacity() // Use whatever stroke opacity user has set
         )
         let fillStyle = FillStyle(
-            color: document.defaultStrokeColor, // Brush uses stroke color as fill
-            opacity: document.defaultFillOpacity
+            color: getCurrentFillColor(), // Use whatever fill color user has set
+            opacity: getCurrentFillOpacity() // Use whatever fill opacity user has set
         )
         
         activeBrushShape = VectorShape(
@@ -80,6 +176,8 @@ extension DrawingCanvas {
             brushRawPoints = Array(brushRawPoints.suffix(800))
         }
     }
+    
+
     
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
@@ -130,11 +228,15 @@ extension DrawingCanvas {
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
             document.layers[layerIndex].shapes[shapeIndex].path = previewPath
             
-            // Update stroke and fill to show the actual brush appearance
-            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: VectorColor.clear, width: 0) // No stroke outline
+            // Update stroke and fill using current user settings
+            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                color: getCurrentStrokeColor(),
+                width: getCurrentStrokeWidth(),
+                opacity: getCurrentStrokeOpacity()
+            )
             document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                color: document.defaultStrokeColor, // Use stroke color as fill
-                opacity: document.defaultFillOpacity
+                color: getCurrentFillColor(),
+                opacity: getCurrentFillOpacity()
             )
         }
     }
@@ -199,13 +301,17 @@ extension DrawingCanvas {
         
         // Step 3: Replace the preview shape with the final brush stroke
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
-            // Update the shape with filled brush stroke
+            // Update the shape with final brush stroke using current user settings
             var finalShape = document.layers[layerIndex].shapes[shapeIndex]
             finalShape.path = brushStrokePath
-            finalShape.strokeStyle = StrokeStyle(color: VectorColor.clear, width: 0) // No stroke
+            finalShape.strokeStyle = StrokeStyle(
+                color: getCurrentStrokeColor(),
+                width: getCurrentStrokeWidth(),
+                opacity: getCurrentStrokeOpacity()
+            )
             finalShape.fillStyle = FillStyle(
-                color: document.defaultStrokeColor,
-                opacity: document.defaultFillOpacity
+                color: getCurrentFillColor(),
+                opacity: getCurrentFillOpacity()
             )
             
             document.layers[layerIndex].shapes[shapeIndex] = finalShape
