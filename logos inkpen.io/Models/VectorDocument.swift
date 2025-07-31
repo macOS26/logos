@@ -215,6 +215,17 @@ class VectorDocument: ObservableObject, Codable {
     
     private let maxUndoStackSize = 50
     
+    // MARKER SETTINGS (Felt-tip marker specific)
+    @Published var currentMarkerPressureSensitivity: Double = 0.6 // Marker pressure sensitivity (0.0-1.0)
+    @Published var currentMarkerSmoothingTolerance: Double = 2.0 // Marker smoothing tolerance (0.0-10.0)
+    @Published var currentMarkerTipSize: Double = 8.0 // Marker tip size in points (1.0-50.0)
+    @Published var currentMarkerOpacity: Double = 0.9 // Marker ink opacity (0.0-1.0)
+    @Published var currentMarkerFeathering: Double = 0.3 // Marker edge feathering (0.0-1.0)
+    @Published var currentMarkerTaperStart: Double = 0.1 // Marker start taper (0.0-0.5)
+    @Published var currentMarkerTaperEnd: Double = 0.1 // Marker end taper (0.0-0.5)
+    
+    // BRUSH SETTINGS (Variable width brush strokes)
+    
 
     
     init(settings: DocumentSettings = DocumentSettings()) {
@@ -2877,7 +2888,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case bezierPen = "Bezier Pen"
     case freehand = "Freehand"
     case brush = "Brush"
-    case blobBrush = "Blob Brush"
+    case marker = "Marker"
     case convertAnchorPoint = "Convert Anchor Point"
     case scale = "Scale"
     case rotate = "Rotate"
@@ -2906,7 +2917,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .bezierPen: return "beziercurve"
         case .freehand: return "scribble"
         case .brush: return "scribble.variable"
-        case .blobBrush: return "circle.fill"
+        case .marker: return "pen"
         case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
@@ -2932,7 +2943,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .bezierPen: return .crosshair
         case .freehand: return .crosshair
         case .brush: return .crosshair
-        case .blobBrush: return .crosshair
+        case .marker: return .crosshair
         case .font: return .iBeam
         case .line: return .crosshair
         case .rectangle: return .crosshair

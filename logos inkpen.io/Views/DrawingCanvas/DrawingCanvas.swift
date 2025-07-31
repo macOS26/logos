@@ -89,12 +89,12 @@ struct DrawingCanvas: View {
     @State internal var isBrushDrawing = false
     @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
 
-    // BLOB BRUSH DRAWING STATE (Filled shapes that merge overlapping areas)
-    @State internal var blobBrushPath: VectorPath?
-    @State internal var blobBrushRawPoints: [BlobBrushPoint] = [] // Raw mouse tracking points with pressure
-    @State internal var blobBrushSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
-    @State internal var isBlobBrushDrawing = false
-    @State internal var activeBlobBrushShape: VectorShape? = nil // Real-time blob brush shape preview
+    // MARKER DRAWING STATE (Felt-tip marker with circular strokes)
+    @State internal var markerPath: VectorPath?
+    @State internal var markerRawPoints: [MarkerPoint] = [] // Raw mouse tracking points with pressure
+    @State internal var markerSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
+    @State internal var isMarkerDrawing = false
+    @State internal var activeMarkerShape: VectorShape? = nil // Real-time marker shape preview
 
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
     

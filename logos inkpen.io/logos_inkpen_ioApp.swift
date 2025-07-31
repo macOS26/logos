@@ -481,6 +481,14 @@ class DocumentState: ObservableObject {
         ProfessionalPathOperations.testDuplicatePointMerger()
         print("🧪 MENU: Ran duplicate point merger test")
     }
+    
+    // MARK: - Tool Switching Commands
+    func switchToTool(_ tool: DrawingTool) {
+        guard let document = document else { return }
+        let previousTool = document.currentTool
+        document.currentTool = tool
+        print("🛠️ MENU: Switched from \(previousTool.rawValue) to \(tool.rawValue)")
+    }
 }
 
 // MARK: - DocumentTitleToolbar (Clean toolbar with icon and filename only)
@@ -1050,6 +1058,13 @@ class StallDetector {
         // Start monitoring in background
         Task.detached(priority: .background) {
             await self.monitorForStalls()
+        }
+        
+        // Auto-stop monitoring after 10 seconds
+        Task.detached(priority: .background) {
+            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+            self.stopMonitoring()
+            print("📄 StallDetector: Auto-stopped monitoring after 10 seconds")
         }
     }
     
@@ -1899,6 +1914,71 @@ struct logos_inken_ioApp: App {
                     documentState?.toggleSnapToGrid()
                 }
                 .keyboardShortcut(";", modifiers: [.command])
+            }
+            
+            // TOOLS MENU - Tool Switching
+            CommandMenu("Tools") {
+                Button("Selection Tool") {
+                    documentState?.switchToTool(.selection)
+                }
+                .keyboardShortcut("v", modifiers: [])
+                .help("Switch to selection tool")
+                
+                Button("Direct Selection Tool") {
+                    documentState?.switchToTool(.directSelection)
+                }
+                .keyboardShortcut("a", modifiers: [])
+                .help("Switch to direct selection tool")
+                
+                Button("Bezier Pen Tool") {
+                    documentState?.switchToTool(.bezierPen)
+                }
+                .keyboardShortcut("p", modifiers: [])
+                .help("Switch to bezier pen tool")
+                
+                Button("Freehand Tool") {
+                    documentState?.switchToTool(.freehand)
+                }
+                .keyboardShortcut("f", modifiers: [])
+                .help("Switch to freehand tool")
+                
+                Button("Brush Tool") {
+                    documentState?.switchToTool(.brush)
+                }
+                .keyboardShortcut("b", modifiers: [])
+                .help("Switch to brush tool")
+                
+                Button("Marker Tool") {
+                    documentState?.switchToTool(.marker)
+                }
+                .keyboardShortcut("m", modifiers: [])
+                .help("Switch to marker tool")
+                
+                Button("Font Tool") {
+                    documentState?.switchToTool(.font)
+                }
+                .keyboardShortcut("t", modifiers: [])
+                .help("Switch to font tool")
+                
+                Divider()
+                
+                Button("Line Tool") {
+                    documentState?.switchToTool(.line)
+                }
+                .keyboardShortcut("l", modifiers: [])
+                .help("Switch to line tool")
+                
+                Button("Rectangle Tool") {
+                    documentState?.switchToTool(.rectangle)
+                }
+                .keyboardShortcut("r", modifiers: [])
+                .help("Switch to rectangle tool")
+                
+                Button("Circle Tool") {
+                    documentState?.switchToTool(.circle)
+                }
+                .keyboardShortcut("c", modifiers: [])
+                .help("Switch to circle tool")
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState (no more notifications!)

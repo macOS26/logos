@@ -202,6 +202,11 @@ struct StrokeFillPanel: View {
                         VariableStrokeSection(document: document)
                     }
                     
+                    // Marker Settings Section - Only show when marker tool is selected
+                    if document.currentTool == .marker {
+                        MarkerSettingsSection(document: document)
+                    }
+                    
                     // Gradient Fill
                     GradientFillSection(document: document)
                 
@@ -3060,6 +3065,248 @@ struct VariableStrokeSection: View {
                 Image(systemName: document.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
                     .foregroundColor(document.hasPressureInput ? .green : .orange)
                 Text(document.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Marker Settings Section
+struct MarkerSettingsSection: View {
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "pen")
+                    .foregroundColor(.accentColor)
+                Text("Marker Settings")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            
+            // Marker Tip Size
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Tip Size")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerTipSize))pt")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerTipSize },
+                    set: { document.currentMarkerTipSize = $0 }
+                ), in: 1...50, step: 1) {
+                    Text("Marker Tip Size")
+                } minimumValueLabel: {
+                    Text("1")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("50")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Adjust marker tip thickness (1-50 points)")
+            }
+            
+            // Marker Opacity
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Opacity")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerOpacity * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerOpacity },
+                    set: { document.currentMarkerOpacity = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Marker Opacity")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Adjust marker ink opacity (0-100%)")
+            }
+            
+            // Pressure Sensitivity
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Pressure Sensitivity")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerPressureSensitivity * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerPressureSensitivity },
+                    set: { document.currentMarkerPressureSensitivity = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Marker Pressure Sensitivity")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("How much pressure affects marker thickness (simulated if no pressure input)")
+            }
+            
+            // Smoothing Tolerance
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothing")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentMarkerSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerSmoothingTolerance },
+                    set: { document.currentMarkerSmoothingTolerance = $0 }
+                ), in: 0.5...10, step: 0.25) {
+                    Text("Marker Smoothing")
+                } minimumValueLabel: {
+                    Text("0.5")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("10")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
+            
+            // Feathering
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Feathering")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerFeathering * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerFeathering },
+                    set: { document.currentMarkerFeathering = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Marker Feathering")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Edge softness for felt-tip marker appearance")
+            }
+            
+            // Start Taper
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Start Taper")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerTaperStart * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerTaperStart },
+                    set: { document.currentMarkerTaperStart = $0 }
+                ), in: 0...0.5, step: 0.05) {
+                    Text("Marker Start Taper")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("50%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Thickness tapering at the start of marker strokes")
+            }
+            
+            // End Taper
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("End Taper")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentMarkerTaperEnd * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentMarkerTaperEnd },
+                    set: { document.currentMarkerTaperEnd = $0 }
+                ), in: 0...0.5, step: 0.05) {
+                    Text("Marker End Taper")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("50%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Thickness tapering at the end of marker strokes")
+            }
+            
+            // Marker Info
+            HStack {
+                Image(systemName: "info.circle")
+                    .foregroundColor(.blue)
+                Text("Felt-tip marker with variable width based on drawing speed")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
