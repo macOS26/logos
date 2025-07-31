@@ -144,14 +144,6 @@ extension DrawingCanvas {
             }
             handleBrushDragUpdate(at: currentLocation)
             
-        case .blobBrush:
-            let currentLocation = screenToCanvas(value.location, geometry: geometry)
-            if !isBlobBrushDrawing {
-                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
-                handleBlobBrushDragStart(at: startLocation)
-            }
-            handleBlobBrushDragUpdate(at: currentLocation)
-            
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
@@ -197,9 +189,6 @@ extension DrawingCanvas {
             
         case .brush:
             handleBrushDragEnd()
-            
-        case .blobBrush:
-            handleBlobBrushDragEnd()
             
         default:
             break
