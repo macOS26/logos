@@ -89,6 +89,13 @@ struct DrawingCanvas: View {
     @State internal var isBrushDrawing = false
     @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
 
+    // BLOB BRUSH DRAWING STATE (Filled blob shapes with circular points)
+    @State internal var blobBrushPath: VectorPath?
+    @State internal var blobBrushRawPoints: [BlobPoint] = [] // Raw mouse tracking points with size
+    @State internal var blobBrushSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points
+    @State internal var isBlobBrushDrawing = false
+    @State internal var activeBlobBrushShape: VectorShape? = nil // Real-time blob shape preview
+
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
     
     // Track previous tool to detect changes

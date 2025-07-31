@@ -183,6 +183,11 @@ class VectorDocument: ObservableObject, Codable {
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
     @Published var brushRemoveOverlap: Bool = false // When enabled, applies union operation to merge overlapping parts
+    
+    // BLOB BRUSH TOOL SETTINGS (Current tool settings, not document settings)
+    @Published var currentBlobBrushSize: Double = 30.0 // Current blob brush size (circular diameter)
+    @Published var currentBlobBrushSizeVariation: Double = 0.3 // Size variation based on speed (0.0-1.0)
+    @Published var currentBlobBrushSmoothingTolerance: Double = 3.0 // Current blob smoothing tolerance
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -2877,6 +2882,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case bezierPen = "Bezier Pen"
     case freehand = "Freehand"
     case brush = "Brush"
+    case blobBrush = "Blob Brush"
     case convertAnchorPoint = "Convert Anchor Point"
     case scale = "Scale"
     case rotate = "Rotate"
@@ -2905,6 +2911,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .bezierPen: return "beziercurve"
         case .freehand: return "scribble"
         case .brush: return "scribble.variable"
+        case .blobBrush: return "circle.fill"
         case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
@@ -2930,6 +2937,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .bezierPen: return .crosshair
         case .freehand: return .crosshair
         case .brush: return .crosshair
+        case .blobBrush: return .crosshair
         case .font: return .iBeam
         case .line: return .crosshair
         case .rectangle: return .crosshair

@@ -198,6 +198,11 @@ extension DrawingCanvas {
         // Clean up state
         cancelBrushDrawing()
         
+        // AUTO-DESELECT: Clear selection after completing brush stroke
+        // This allows user to immediately change colors for the next stroke
+        document.selectedShapeIDs.removeAll()
+        print("🎨 BRUSH: Auto-deselected shape to enable color changes for next stroke")
+        
         print("✅ BRUSH: Stroke completed and converted to variable width path")
     }
     

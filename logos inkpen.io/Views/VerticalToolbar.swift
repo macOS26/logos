@@ -113,6 +113,8 @@ struct VerticalToolbar: View {
             return "Freehand Tool (F) - Draw freehand with smooth curves"
         case .brush:
             return "Brush Tool (B) - Draw variable width brush strokes"
+        case .blobBrush:
+            return "Blob Brush Tool - Draw filled blob shapes with variable size"
         case .font:
             return "Font Tool (T) - Add and edit text"
         case .line:
