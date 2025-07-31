@@ -146,23 +146,21 @@ extension DrawingCanvas {
             return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
         
-        // PERFORMANCE OPTIMIZATION: Use recent points only for smooth real-time preview
-        let maxPreviewPoints = 100 // Limit preview to last 100 points for performance
-        let recentPoints = brushRawPoints.suffix(maxPreviewPoints)
-        let rawPointLocations = recentPoints.map { $0.location }
+        // FIXED: Show the COMPLETE stroke, not just recent points!
+        let rawPointLocations = brushRawPoints.map { $0.location }
         
-        // SIMPLIFIED SMOOTHING: Use a slightly higher tolerance for live preview to improve performance
-        let previewSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.5 // Slightly less detailed for speed
+        // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview to maintain smooth performance
+        let previewSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25 // Slightly less detailed for speed
         let simplifiedPoints = douglasPeuckerSimplify(
             points: rawPointLocations,
             tolerance: previewSmoothingTolerance
         )
         
-        // Generate variable width preview with proper pressure mapping
+        // Generate variable width preview with proper pressure mapping for the FULL stroke
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: Array(recentPoints), // Pass recent raw points for pressure mapping
+                recentRawPoints: brushRawPoints, // Pass ALL raw points for complete pressure mapping
                 thickness: document.currentBrushThickness,
                 pressureSensitivity: document.currentBrushPressureSensitivity,
                 taper: document.currentBrushTaper
