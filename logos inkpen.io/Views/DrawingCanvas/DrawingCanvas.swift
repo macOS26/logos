@@ -81,6 +81,14 @@ struct DrawingCanvas: View {
     @State internal var freehandSimplifiedPoints: [VectorPoint] = [] // Douglas-Peucker simplified points
     @State internal var isFreehandDrawing = false
     @State internal var activeFreehandShape: VectorShape? = nil // Real-time freehand shape preview
+
+    // BRUSH DRAWING STATE (Variable width brush strokes)
+    @State internal var brushPath: VectorPath?
+    @State internal var brushRawPoints: [BrushPoint] = [] // Raw mouse tracking points with pressure
+    @State internal var brushSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
+    @State internal var isBrushDrawing = false
+    @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
+
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
     
     // Track previous tool to detect changes

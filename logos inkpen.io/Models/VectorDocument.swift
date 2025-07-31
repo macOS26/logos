@@ -53,11 +53,14 @@ struct DocumentSettings: Codable, Hashable {
     var gridSpacing: Double
     var backgroundColor: VectorColor
     var freehandSmoothingTolerance: Double // Curve fitting tolerance for freehand tool
+    var brushThickness: Double // Default brush stroke thickness
+    var brushPressureSensitivity: Double // How much pressure affects thickness (0.0-1.0)
+    var brushTaper: Double // Amount of tapering at start/end (0.0-1.0)
     
     // FIX: Store actual document size in points to prevent coordinate system corruption
     private var _sizeInPoints: CGSize?
     
-    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, freehandSmoothingTolerance: Double = 2.0) {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, freehandSmoothingTolerance: Double = 2.0, brushThickness: Double = 10.0, brushPressureSensitivity: Double = 0.5, brushTaper: Double = 0.3) {
         self.width = width
         self.height = height
         self.unit = unit
@@ -69,6 +72,9 @@ struct DocumentSettings: Codable, Hashable {
         self.gridSpacing = gridSpacing
         self.backgroundColor = backgroundColor
         self.freehandSmoothingTolerance = freehandSmoothingTolerance
+        self.brushThickness = brushThickness
+        self.brushPressureSensitivity = brushPressureSensitivity
+        self.brushTaper = brushTaper
     }
     
     // MARK: - Custom Decoding for Backward Compatibility
@@ -87,6 +93,11 @@ struct DocumentSettings: Codable, Hashable {
         
         // NEW FIELD: Use default value if not present in older documents
         freehandSmoothingTolerance = try container.decodeIfPresent(Double.self, forKey: .freehandSmoothingTolerance) ?? 2.0
+        
+        // BRUSH SETTINGS: Use default values if not present in older documents
+        brushThickness = try container.decodeIfPresent(Double.self, forKey: .brushThickness) ?? 10.0
+        brushPressureSensitivity = try container.decodeIfPresent(Double.self, forKey: .brushPressureSensitivity) ?? 0.5
+        brushTaper = try container.decodeIfPresent(Double.self, forKey: .brushTaper) ?? 0.3
     }
     
     var sizeInPoints: CGSize {
@@ -163,6 +174,13 @@ class VectorDocument: ObservableObject, Codable {
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
     @Published var shearAnchor: ShearAnchor = .center // NEW: Shear anchor point selection
+    
+    // BRUSH TOOL SETTINGS (Current tool settings, not document settings)
+    @Published var currentBrushThickness: Double = 20.0 // Current brush thickness
+    @Published var currentBrushPressureSensitivity: Double = 0.5 // Current pressure sensitivity (0.0-1.0)
+    @Published var currentBrushTaper: Double = 0.3 // Current brush taper (0.0-1.0)
+    @Published var currentBrushSmoothingTolerance: Double = 2.0 // Current brush smoothing tolerance (like freehand)
+    @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero
@@ -196,10 +214,10 @@ class VectorDocument: ObservableObject, Codable {
     init(settings: DocumentSettings = DocumentSettings()) {
         self.settings = settings
         
-        // Initialize with minimal defaults first
-        self.rgbSwatches = [.black, .white, .clear] // Minimal initial swatches
-        self.cmykSwatches = [.black, .white, .clear] // Minimal initial swatches  
-        self.hsbSwatches = [.black, .white, .clear] // Minimal initial swatches
+        // Initialize separate swatch arrays with defaults
+        self.rgbSwatches = Self.createDefaultRGBSwatches()
+        self.cmykSwatches = Self.createDefaultCMYKSwatches()
+        self.hsbSwatches = Self.createDefaultHSBSwatches()
         
         self.selectedLayerIndex = nil // Will be set after layer creation
         self.selectedShapeIDs = []
@@ -229,36 +247,6 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set up settings change observation
         setupSettingsObservation()
-        
-        // Load full swatches asynchronously to prevent blocking
-        Task {
-            await loadFullSwatchesAsync()
-        }
-    }
-    
-    // MARK: - Async Swatch Loading
-    
-    private func loadFullSwatchesAsync() async {
-        await MainActor.run {
-            print("🎨 Loading full color swatches asynchronously...")
-        }
-        
-        // Load swatches on background queue
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let fullRGBSwatches = Self.createDefaultRGBSwatches()
-                let fullCMYKSwatches = Self.createDefaultCMYKSwatches()
-                let fullHSBSwatches = Self.createDefaultHSBSwatches()
-                
-                DispatchQueue.main.async {
-                    self.rgbSwatches = fullRGBSwatches
-                    self.cmykSwatches = fullCMYKSwatches
-                    self.hsbSwatches = fullHSBSwatches
-                    print("✅ Full color swatches loaded asynchronously")
-                    continuation.resume()
-                }
-            }
-        }
     }
     
     // Current color swatches based on mode - computed property
@@ -2852,6 +2840,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case directSelection = "Direct Selection"
     case bezierPen = "Bezier Pen"
     case freehand = "Freehand"
+    case brush = "Brush"
     case convertAnchorPoint = "Convert Anchor Point"
     case scale = "Scale"
     case rotate = "Rotate"
@@ -2879,6 +2868,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .convertAnchorPoint: return "chevron.up"
         case .bezierPen: return "beziercurve"
         case .freehand: return "scribble"
+        case .brush: return "paintbrush"
         case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
@@ -2903,6 +2893,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .convertAnchorPoint: return .pointingHand
         case .bezierPen: return .crosshair
         case .freehand: return .crosshair
+        case .brush: return .crosshair
         case .font: return .iBeam
         case .line: return .crosshair
         case .rectangle: return .crosshair

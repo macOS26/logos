@@ -85,7 +85,16 @@ class DocumentState: ObservableObject {
         // Defer observer setup until document is set to prevent blocking during launch
     }
     
+    deinit {
+        // CRITICAL: Clean up all subscriptions to prevent retain cycles
+        cancellables.removeAll()
+        print("🎯 DocumentState deallocated - subscriptions cleaned up")
+    }
+    
     func setDocument(_ document: VectorDocument) {
+        // Clean up previous subscriptions before setting new document
+        cancellables.removeAll()
+        
         self.document = document
         updateAllStates()
         
@@ -93,6 +102,13 @@ class DocumentState: ObservableObject {
         Task {
             await setupDocumentObserversAsync()
         }
+    }
+    
+    func cleanup() {
+        // Explicit cleanup method for app shutdown
+        cancellables.removeAll()
+        document = nil
+        print("🎯 DocumentState cleanup completed")
     }
     
     private func setupDocumentObserversAsync() async {
@@ -670,6 +686,10 @@ struct DocumentBasedMainView: View {
             Task {
                 await performDocumentGroupSetupAsync()
             }
+        }
+        .onDisappear {
+            // CRITICAL: Clean up DocumentState when view disappears to prevent retain cycles
+            documentState.cleanup()
         }
         .focusedSceneObject(documentState)
     }
@@ -1407,11 +1427,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
+        // CRITICAL: Clean up all state objects to prevent retain cycles during shutdown
+        cleanupAllStateObjects()
+        
         if let window = NSApplication.shared.windows.first {
             let frame = window.frame
             UserDefaults.standard.set(NSStringFromRect(frame), forKey: "MainWindowFrame")
             print("📄 App: Saved window frame: \(frame)")
         }
+        
+        print("📄 App: Application termination cleanup completed")
+    }
+    
+    private func cleanupAllStateObjects() {
+        // Stop monitoring systems
+        StallDetector.shared.stopMonitoring()
+        
+        // Clean up any remaining state objects
+        // This helps prevent retain cycles during SwiftUI cleanup
+        print("📄 App: Cleaning up state objects for shutdown")
     }
 }
 

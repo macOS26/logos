@@ -136,6 +136,14 @@ extension DrawingCanvas {
             }
             handleFreehandDragUpdate(at: currentLocation)
             
+        case .brush:
+            let currentLocation = screenToCanvas(value.location, geometry: geometry)
+            if !isBrushDrawing {
+                let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
+                handleBrushDragStart(at: startLocation)
+            }
+            handleBrushDragUpdate(at: currentLocation)
+            
         case .scale, .rotate, .shear, .warp:
             // Transform tools don't use drag gestures - handled by their own handles
             break
@@ -178,6 +186,9 @@ extension DrawingCanvas {
             
         case .freehand:
             handleFreehandDragEnd()
+            
+        case .brush:
+            handleBrushDragEnd()
             
         default:
             break

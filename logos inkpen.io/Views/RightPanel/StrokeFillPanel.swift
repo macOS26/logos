@@ -197,6 +197,11 @@ struct StrokeFillPanel: View {
                         .keyboardShortcut("o", modifiers: [.command, .shift])
                     }
                     
+                    // Variable Stroke Section - Only show when brush tool is selected
+                    if document.currentTool == .brush {
+                        VariableStrokeSection(document: document)
+                    }
+                    
                     // Gradient Fill
                     GradientFillSection(document: document)
                 
@@ -2862,6 +2867,158 @@ class GradientWindowDelegate: NSObject, NSWindowDelegate {
     
     func windowWillClose(_ notification: Notification) {
         onWindowClose()
+    }
+}
+
+// MARK: - Variable Stroke Section
+
+struct VariableStrokeSection: View {
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "paintbrush.pointed")
+                    .foregroundColor(.accentColor)
+                Text("Variable Stroke")
+                    .font(.headline)
+                Spacer()
+            }
+            
+            // Brush Thickness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Thickness")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBrushThickness))pt")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBrushThickness },
+                    set: { document.currentBrushThickness = $0 }
+                ), in: 1...100, step: 0.5) {
+                    Text("Brush Thickness")
+                } minimumValueLabel: {
+                    Text("1")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Adjust brush stroke thickness (1-100 points)")
+            }
+            
+            // Pressure Sensitivity
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Pressure Sensitivity")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentBrushPressureSensitivity * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBrushPressureSensitivity },
+                    set: { document.currentBrushPressureSensitivity = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Pressure Sensitivity")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("How much pressure affects thickness (simulated if no pressure input)")
+            }
+            
+            // Brush Taper
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Taper")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(Int(document.currentBrushTaper * 100))%")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBrushTaper },
+                    set: { document.currentBrushTaper = $0 }
+                ), in: 0...1, step: 0.05) {
+                    Text("Brush Taper")
+                } minimumValueLabel: {
+                    Text("0%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("100%")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Amount of tapering at start and end of stroke")
+            }
+            
+            // Brush Smoothness
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Smoothness")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .monospacedDigit()
+                }
+                
+                Slider(value: Binding(
+                    get: { document.currentBrushSmoothingTolerance },
+                    set: { document.currentBrushSmoothingTolerance = $0 }
+                ), in: 0.5...10, step: 0.25) {
+                    Text("Brush Smoothness")
+                } minimumValueLabel: {
+                    Text("0.5")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } maximumValueLabel: {
+                    Text("10")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
+            }
+            
+            // Pressure Input Status
+            HStack {
+                Image(systemName: document.hasPressureInput ? "hand.point.up.braille" : "hand.tap")
+                    .foregroundColor(document.hasPressureInput ? .green : .orange)
+                Text(document.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
     }
 }
 

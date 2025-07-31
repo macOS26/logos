@@ -21,6 +21,9 @@ struct DocumentSetupData {
     var snapToGrid: Bool = false
     var backgroundColor: VectorColor = .white
     var freehandSmoothingTolerance: Double = 2.0
+    var brushThickness: Double = 10.0
+    var brushPressureSensitivity: Double = 0.5
+    var brushTaper: Double = 0.3
     
     var documentSettings: DocumentSettings {
         DocumentSettings(
@@ -34,7 +37,10 @@ struct DocumentSetupData {
             snapToGrid: snapToGrid,
             gridSpacing: 0.125,
             backgroundColor: backgroundColor,
-            freehandSmoothingTolerance: freehandSmoothingTolerance
+            freehandSmoothingTolerance: freehandSmoothingTolerance,
+            brushThickness: brushThickness,
+            brushPressureSensitivity: brushPressureSensitivity,
+            brushTaper: brushTaper
         )
     }
 }
