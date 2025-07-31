@@ -328,34 +328,34 @@ extension DrawingCanvas {
         let controlPointDistance = radius * 0.552284749831 // Magic number for circle approximation
         
         // Start at right point
-        elements.append(.move(to: VectorPoint(x: center.x + radius, y: center.y)))
+        elements.append(.move(to: VectorPoint(center.x + radius, center.y)))
         
         // Top curve
         elements.append(.curve(
-            to: VectorPoint(x: center.x, y: center.y + radius),
-            control1: VectorPoint(x: center.x + radius, y: center.y + controlPointDistance),
-            control2: VectorPoint(x: center.x + controlPointDistance, y: center.y + radius)
+            to: VectorPoint(center.x, center.y + radius),
+            control1: VectorPoint(center.x + radius, center.y + controlPointDistance),
+            control2: VectorPoint(center.x + controlPointDistance, center.y + radius)
         ))
         
         // Left curve
         elements.append(.curve(
-            to: VectorPoint(x: center.x - radius, y: center.y),
-            control1: VectorPoint(x: center.x - controlPointDistance, y: center.y + radius),
-            control2: VectorPoint(x: center.x - radius, y: center.y + controlPointDistance)
+            to: VectorPoint(center.x - radius, center.y),
+            control1: VectorPoint(center.x - controlPointDistance, center.y + radius),
+            control2: VectorPoint(center.x - radius, center.y + controlPointDistance)
         ))
         
         // Bottom curve
         elements.append(.curve(
-            to: VectorPoint(x: center.x, y: center.y - radius),
-            control1: VectorPoint(x: center.x - radius, y: center.y - controlPointDistance),
-            control2: VectorPoint(x: center.x - controlPointDistance, y: center.y - radius)
+            to: VectorPoint(center.x, center.y - radius),
+            control1: VectorPoint(center.x - radius, center.y - controlPointDistance),
+            control2: VectorPoint(center.x - controlPointDistance, center.y - radius)
         ))
         
         // Right curve (back to start)
         elements.append(.curve(
-            to: VectorPoint(x: center.x + radius, y: center.y),
-            control1: VectorPoint(x: center.x + controlPointDistance, y: center.y - radius),
-            control2: VectorPoint(x: center.x + radius, y: center.y - controlPointDistance)
+            to: VectorPoint(center.x + radius, center.y),
+            control1: VectorPoint(center.x + controlPointDistance, center.y - radius),
+            control2: VectorPoint(center.x + radius, center.y - controlPointDistance)
         ))
         
         elements.append(.close)
@@ -436,7 +436,7 @@ extension DrawingCanvas {
         // Connect to the right edge at the end
         if let lastLeftPoint = leftEdgePath.elements.last {
             switch lastLeftPoint {
-            case .move(let point), .line(let point), .curve(let point, _, _), .quadCurve(let point, _):
+            case .move(let _), .line(let _), .curve(let _, _, _), .quadCurve(let _, _):
                 // Connect to start of right edge path
                 if let firstRightElement = rightEdgePath.elements.first {
                     switch firstRightElement {
