@@ -259,11 +259,11 @@ struct StrokeFillPanel: View {
             
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: 1.0)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                    }
+                                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
+                } else {
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                }
                 }
             }
         }
@@ -335,7 +335,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: .black, width: width, opacity: 1.0)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
                 }
@@ -350,7 +350,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: .black, width: 1.0, placement: placement, opacity: 1.0)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, placement: placement, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.placement = placement
                 }
@@ -390,7 +390,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineJoin: lineJoin)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
                 }
@@ -406,7 +406,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineCap: lineCap)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
                 }
@@ -422,7 +422,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, miterLimit: miterLimit)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
                 }
