@@ -66,7 +66,7 @@ struct MainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
-                    // CRITICAL FIX: NO CLIPPING - use zIndex to layer toolbar above DrawingCanvas
+                    .clipped() // CRITICAL: Clip content to prevent overflow into other panels
                 }
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
@@ -79,8 +79,9 @@ struct MainView: View {
                     .frame(minWidth: 280) // ENSURE: Panel width is always preserved
                     .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
             .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
+            .layoutPriority(1) // Give content area priority over status bar
             
             // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
             StatusBar(document: document)
