@@ -81,7 +81,7 @@ struct DrawingCanvas: View {
     @State internal var freehandSimplifiedPoints: [VectorPoint] = [] // Douglas-Peucker simplified points
     @State internal var isFreehandDrawing = false
     @State internal var activeFreehandShape: VectorShape? = nil // Real-time freehand shape preview
-    @State internal var freehandSmoothingTolerance: Double = 2.0 // Curve fitting tolerance
+    // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
     
     // Track previous tool to detect changes
     @State internal var previousTool: DrawingTool = .selection

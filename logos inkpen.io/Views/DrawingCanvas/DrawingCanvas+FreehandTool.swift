@@ -126,8 +126,9 @@ extension DrawingCanvas {
         }
         
         // STEP 1: Apply Douglas-Peucker simplification to reduce point count
-        let simplifiedPoints = douglasPeuckerSimplify(points: freehandRawPoints, tolerance: freehandSmoothingTolerance)
-        print("🖊️ CURVE FITTING: Simplified \(freehandRawPoints.count) points to \(simplifiedPoints.count)")
+        let tolerance = document.settings.freehandSmoothingTolerance
+        let simplifiedPoints = douglasPeuckerSimplify(points: freehandRawPoints, tolerance: tolerance)
+        print("🖊️ CURVE FITTING: Simplified \(freehandRawPoints.count) points to \(simplifiedPoints.count) (tolerance: \(String(format: "%.1f", tolerance)))")
         
         // STEP 2: Convert simplified points to smooth bezier curves
         let smoothPath = createSmoothBezierPath(from: simplifiedPoints)

@@ -52,9 +52,13 @@ extension DrawingCanvas {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
         
+        // RULER ADJUSTMENT: Account for ruler space when calculating available area
+        let rulerThickness: CGFloat = 20
+        let rulerOffset = document.showRulers ? rulerThickness : 0
+        
         // ASPECT RATIO SCALING: Calculate both scales and use minimum for uniform scaling
-        let availableWidth = viewSize.width
-        let availableHeight = viewSize.height
+        let availableWidth = viewSize.width - rulerOffset
+        let availableHeight = viewSize.height - rulerOffset
         
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
@@ -65,9 +69,10 @@ extension DrawingCanvas {
         document.zoomLevel = defaultZoom
         
         // Center canvas in view using the calculated uniform scale
+        // RULER ADJUSTMENT: Offset center point when rulers are visible
         let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
+            x: (viewSize.width + rulerOffset) / 2.0,
+            y: (viewSize.height + rulerOffset) / 2.0
         )
         
         let documentCenter = CGPoint(
@@ -104,9 +109,13 @@ extension DrawingCanvas {
         let documentBounds = document.documentBounds
         let viewSize = geometry.size
         
-        // Calculate zoom level to fit the canvas in the view - NO PADDING for full fill
-        let availableWidth = viewSize.width
-        let availableHeight = viewSize.height
+        // RULER ADJUSTMENT: Account for ruler space when calculating available area
+        let rulerThickness: CGFloat = 20
+        let rulerOffset = document.showRulers ? rulerThickness : 0
+        
+        // Calculate zoom level to fit the canvas in the view - accounting for ruler space
+        let availableWidth = viewSize.width - rulerOffset
+        let availableHeight = viewSize.height - rulerOffset
         
         let scaleX = availableWidth / documentBounds.width
         let scaleY = availableHeight / documentBounds.height
@@ -116,9 +125,10 @@ extension DrawingCanvas {
         document.zoomLevel = max(0.1, min(10.0, fitZoom))
         
         // Center canvas in view at the fit zoom
+        // RULER ADJUSTMENT: Offset center point when rulers are visible
         let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
+            x: (viewSize.width + rulerOffset) / 2.0,
+            y: (viewSize.height + rulerOffset) / 2.0
         )
         
         let documentCenter = CGPoint(
@@ -135,21 +145,27 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🔍 FIT TO PAGE: Using standard document bounds - FULL FILL NO PADDING")
+        print("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness")
         print("   Document Bounds: \(documentBounds)")
+        print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
         print("   Available space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   Standard coordinate system approach")
+        print("   View center adjusted for rulers: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
     }
     
     /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
     internal func actualSize(geometry: GeometryProxy) {
         let newZoomLevel: Double = 1.0 // 100% actual size
         
+        // RULER ADJUSTMENT: Account for ruler space when centering
+        let rulerThickness: CGFloat = 20
+        let rulerOffset = document.showRulers ? rulerThickness : 0
+        
         // Calculate what canvas point is currently at the view center
+        // RULER ADJUSTMENT: Offset center point when rulers are visible
         let viewCenter = CGPoint(
-            x: geometry.size.width / 2.0,
-            y: geometry.size.height / 2.0
+            x: (geometry.size.width + rulerOffset) / 2.0,
+            y: (geometry.size.height + rulerOffset) / 2.0
         )
         
         // For actual size, we want to center the document center in the view
@@ -171,9 +187,10 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        print("🎯 ACTUAL SIZE: Set to 100% and centered document")
+        print("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness")
         print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   View center adjusted for rulers: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
     

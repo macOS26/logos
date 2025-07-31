@@ -20,6 +20,7 @@ struct DocumentSetupData {
     var showGrid: Bool = false
     var snapToGrid: Bool = false
     var backgroundColor: VectorColor = .white
+    var freehandSmoothingTolerance: Double = 2.0
     
     var documentSettings: DocumentSettings {
         DocumentSettings(
@@ -32,7 +33,8 @@ struct DocumentSetupData {
             showGrid: showGrid,
             snapToGrid: snapToGrid,
             gridSpacing: 0.125,
-            backgroundColor: backgroundColor
+            backgroundColor: backgroundColor,
+            freehandSmoothingTolerance: freehandSmoothingTolerance
         )
     }
 }

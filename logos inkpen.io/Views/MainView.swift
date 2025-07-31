@@ -1348,6 +1348,41 @@ struct DocumentSettingsView: View {
                         Text("DPI")
                     }
                 }
+                
+                Section(header: Text("Drawing Tools")) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Freehand Smoothing:")
+                            Spacer()
+                            Text(String(format: "%.1f", document.settings.freehandSmoothingTolerance))
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                        
+                        Slider(
+                            value: $document.settings.freehandSmoothingTolerance,
+                            in: 0.1...10.0,
+                            step: 0.1
+                        ) {
+                            Text("Freehand Smoothing")
+                        } minimumValueLabel: {
+                            Text("Detail")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        } maximumValueLabel: {
+                            Text("Smooth")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                        .onChange(of: document.settings.freehandSmoothingTolerance) {
+                            document.onSettingsChanged()
+                        }
+                        
+                        Text("Lower values preserve more detail, higher values create smoother curves")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             .navigationTitle("Document Settings")
             .toolbar {

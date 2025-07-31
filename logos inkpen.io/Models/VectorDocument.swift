@@ -52,8 +52,9 @@ struct DocumentSettings: Codable, Hashable {
     var snapToGrid: Bool
     var gridSpacing: Double
     var backgroundColor: VectorColor
+    var freehandSmoothingTolerance: Double // Curve fitting tolerance for freehand tool
     
-    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white) {
+    init(width: Double = 11.0, height: Double = 8.5, unit: MeasurementUnit = .inches, colorMode: ColorMode = .rgb, resolution: Double = 72.0, showRulers: Bool = true, showGrid: Bool = false, snapToGrid: Bool = false, gridSpacing: Double = 0.125, backgroundColor: VectorColor = .white, freehandSmoothingTolerance: Double = 2.0) {
         self.width = width
         self.height = height
         self.unit = unit
@@ -64,6 +65,25 @@ struct DocumentSettings: Codable, Hashable {
         self.snapToGrid = snapToGrid
         self.gridSpacing = gridSpacing
         self.backgroundColor = backgroundColor
+        self.freehandSmoothingTolerance = freehandSmoothingTolerance
+    }
+    
+    // MARK: - Custom Decoding for Backward Compatibility
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        width = try container.decode(Double.self, forKey: .width)
+        height = try container.decode(Double.self, forKey: .height)
+        unit = try container.decode(MeasurementUnit.self, forKey: .unit)
+        colorMode = try container.decode(ColorMode.self, forKey: .colorMode)
+        resolution = try container.decode(Double.self, forKey: .resolution)
+        showRulers = try container.decode(Bool.self, forKey: .showRulers)
+        showGrid = try container.decode(Bool.self, forKey: .showGrid)
+        snapToGrid = try container.decode(Bool.self, forKey: .snapToGrid)
+        gridSpacing = try container.decode(Double.self, forKey: .gridSpacing)
+        backgroundColor = try container.decode(VectorColor.self, forKey: .backgroundColor)
+        
+        // NEW FIELD: Use default value if not present in older documents
+        freehandSmoothingTolerance = try container.decodeIfPresent(Double.self, forKey: .freehandSmoothingTolerance) ?? 2.0
     }
     
     var sizeInPoints: CGSize {
