@@ -6,6 +6,8 @@ class ToolGroupManager: ObservableObject {
     @Published var selectedVariant: StarVariant = .fivePoint
     @Published var selectedVariantIndex: Int? = nil // For star variants
     @Published var showingAllItems: Bool = false
+    @Published var expansionAnchorTool: DrawingTool? = nil // Tool that triggered expansion
+    @Published var expansionAnchorVariant: StarVariant? = nil // Star variant that triggered expansion
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
     
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -21,16 +23,27 @@ class ToolGroupManager: ObservableObject {
         if currentToolInGroup == tool && toolGroup.count > 1 {
             // Same tool long-pressed - toggle state
             showingAllItems.toggle()
+            if showingAllItems {
+                expansionAnchorTool = tool // Track which tool triggered expansion
+                expansionAnchorVariant = nil // Clear star variant anchor
+            } else {
+                expansionAnchorTool = nil
+                expansionAnchorVariant = nil
+            }
             print("🔧 Toggled \(tool.rawValue): showing all = \(showingAllItems)")
         } else if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup {
             // Different tool in same group - hide others, show only this one
             currentToolInGroup = tool
             showingAllItems = false
+            expansionAnchorTool = nil
+            expansionAnchorVariant = nil
             print("🔧 Switched to \(tool.rawValue) in same group, hiding others")
         } else {
             // New tool group - show all items
             currentToolInGroup = tool
             showingAllItems = true
+            expansionAnchorTool = tool // Track which tool triggered expansion
+            expansionAnchorVariant = nil // Clear star variant anchor
             print("🔧 New tool group \(tool.rawValue), showing all items")
         }
     }
@@ -39,12 +52,21 @@ class ToolGroupManager: ObservableObject {
         if currentToolInGroup == .star && selectedVariantIndex == variantIndex {
             // Same variant long-pressed - toggle showing all
             showingAllItems.toggle()
+            if showingAllItems {
+                expansionAnchorTool = .star // Track star as expansion anchor
+                expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
+            } else {
+                expansionAnchorTool = nil
+                expansionAnchorVariant = nil
+            }
             print("⭐ Toggled star variant \(variantIndex): showing all = \(showingAllItems)")
         } else if currentToolInGroup == .star {
             // Different variant in same group - hide others, show only this one
             selectedVariantIndex = variantIndex
             selectedVariant = StarVariant.allCases[variantIndex]
             showingAllItems = false
+            expansionAnchorTool = nil
+            expansionAnchorVariant = nil
             print("⭐ Switched to star variant \(variantIndex), hiding others")
         } else {
             // New star group - show all variants
@@ -52,13 +74,14 @@ class ToolGroupManager: ObservableObject {
             selectedVariantIndex = variantIndex
             selectedVariant = StarVariant.allCases[variantIndex]
             showingAllItems = true
+            expansionAnchorTool = .star // Track star as expansion anchor
+            expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
             print("⭐ New star group, showing all variants")
         }
     }
     
     func selectStarVariant(_ variant: StarVariant) {
         selectedVariant = variant
-        currentToolInGroup = .star
         print("⭐ Selected star variant: \(variant.rawValue)")
     }
     

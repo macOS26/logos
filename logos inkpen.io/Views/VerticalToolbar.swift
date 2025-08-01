@@ -265,27 +265,43 @@ struct VerticalToolbar: View {
             let primaryTool = toolGroup[0]
             
             // Check if this tool group should show all items
-            if let currentTool = toolGroupManager.currentToolInGroup,
-               toolGroup.contains(currentTool) && toolGroupManager.showingAllItems {
+            if toolGroupManager.showingAllItems && 
+               ((toolGroupManager.currentToolInGroup != nil && toolGroup.contains(toolGroupManager.currentToolInGroup!)) ||
+                (toolGroupManager.expansionAnchorTool != nil && toolGroup.contains(toolGroupManager.expansionAnchorTool!))) {
                 
                 if primaryTool == .star {
-                    // Show current star variant first, then siblings below
-                    let currentVariant = starHUDManager.selectedVariant
-                    toolsToShow.append(ToolItem(tool: .star, starVariant: currentVariant))
-                    
-                    // Add other variants below (sorted, excluding current)
-                    let otherVariants = StarVariant.allCases.filter { $0 != currentVariant }.sorted { $0.rawValue < $1.rawValue }
-                    for variant in otherVariants {
-                        toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
+                    // If we have an expansion anchor, put it first; otherwise natural order
+                    if let anchorTool = toolGroupManager.expansionAnchorTool, anchorTool == .star,
+                       let anchorVariant = toolGroupManager.expansionAnchorVariant {
+                        // Put the anchor variant first
+                        toolsToShow.append(ToolItem(tool: .star, starVariant: anchorVariant))
+                        
+                        // Add other variants below (sorted, excluding anchor)
+                        let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }.sorted { $0.rawValue < $1.rawValue }
+                        for variant in otherVariants {
+                            toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
+                        }
+                    } else {
+                        // No expansion anchor, show in natural order
+                        for variant in StarVariant.allCases {
+                            toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
+                        }
                     }
                 } else {
-                    // Show current tool first, then siblings below
-                    toolsToShow.append(ToolItem(tool: currentTool, starVariant: nil))
-                    
-                    // Add other tools in group below (sorted, excluding current)
-                    let otherTools = toolGroup.filter { $0 != currentTool }.sorted { $0.rawValue < $1.rawValue }
-                    for tool in otherTools {
-                        toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
+                    // If we have an expansion anchor, put it first; otherwise natural order
+                    if let anchorTool = toolGroupManager.expansionAnchorTool, toolGroup.contains(anchorTool) {
+                        toolsToShow.append(ToolItem(tool: anchorTool, starVariant: nil))
+                        
+                        // Add other tools below (sorted, excluding anchor)
+                        let otherTools = toolGroup.filter { $0 != anchorTool }.sorted { $0.rawValue < $1.rawValue }
+                        for tool in otherTools {
+                            toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
+                        }
+                    } else {
+                        // No expansion anchor, show in natural order
+                        for tool in toolGroup {
+                            toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
+                        }
                     }
                 }
             } else {
@@ -359,15 +375,9 @@ struct VerticalToolbar: View {
                                     toolGroupManager.selectStarVariant(starVariant)
                                     starHUDManager.selectedVariant = starVariant
                                     document.currentTool = .star
-                                    
-                                    // Update tool group to make this the primary tool
-                                    toolGroupManager.currentToolInGroup = .star
                                     print("⭐ Selected star variant: \(starVariant.rawValue)")
                                 } else {
                                     document.currentTool = toolItem.tool
-                                    
-                                    // Update tool group to make this the primary tool
-                                    toolGroupManager.currentToolInGroup = toolItem.tool
                                     print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
                                 }
                                 
@@ -441,15 +451,9 @@ struct VerticalToolbar: View {
                                             toolGroupManager.selectStarVariant(starVariant)
                                             starHUDManager.selectedVariant = starVariant
                                             document.currentTool = .star
-                                            
-                                            // Update tool group to make this the primary tool
-                                            toolGroupManager.currentToolInGroup = .star
                                             print("🔧 Tool tap detected: \(starVariant.rawValue)")
                                         } else {
                                             document.currentTool = toolItem.tool
-                                            
-                                            // Update tool group to make this the primary tool
-                                            toolGroupManager.currentToolInGroup = toolItem.tool
                                             print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
                                         }
                                         
