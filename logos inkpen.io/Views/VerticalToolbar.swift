@@ -269,13 +269,22 @@ struct VerticalToolbar: View {
                toolGroup.contains(currentTool) && toolGroupManager.showingAllItems {
                 
                 if primaryTool == .star {
-                    // Show all star variants
-                    for variant in StarVariant.allCases {
+                    // Show current star variant first, then siblings below
+                    let currentVariant = starHUDManager.selectedVariant
+                    toolsToShow.append(ToolItem(tool: .star, starVariant: currentVariant))
+                    
+                    // Add other variants below (sorted, excluding current)
+                    let otherVariants = StarVariant.allCases.filter { $0 != currentVariant }.sorted { $0.rawValue < $1.rawValue }
+                    for variant in otherVariants {
                         toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
                     }
                 } else {
-                    // Show all tools in the group
-                    for tool in toolGroup {
+                    // Show current tool first, then siblings below
+                    toolsToShow.append(ToolItem(tool: currentTool, starVariant: nil))
+                    
+                    // Add other tools in group below (sorted, excluding current)
+                    let otherTools = toolGroup.filter { $0 != currentTool }.sorted { $0.rawValue < $1.rawValue }
+                    for tool in otherTools {
                         toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
                     }
                 }
