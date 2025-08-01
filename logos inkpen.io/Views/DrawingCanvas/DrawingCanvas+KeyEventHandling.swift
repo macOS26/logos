@@ -18,9 +18,15 @@ extension DrawingCanvas {
             if event.type == .flagsChanged {
                 DispatchQueue.main.async {
                     self.isShiftPressed = event.modifierFlags.contains(.shift)
-                    // Debug logging for shift state changes
+                    self.isOptionPressed = event.modifierFlags.contains(.option)
+                    self.isCommandPressed = event.modifierFlags.contains(.command)
+                    
+                    // Debug logging for key state changes
                     if self.isShiftPressed {
                         print("⬆️ SHIFT KEY PRESSED: Transform constraints enabled")
+                    }
+                    if self.isOptionPressed {
+                        print("⌥ OPTION KEY PRESSED: Path-based selection enabled")
                     }
                 }
                 return event // Let flagsChanged pass through normally

@@ -354,6 +354,7 @@ struct SelectionHandlesView: View {
     @ObservedObject var document: VectorDocument
     let geometry: GeometryProxy
     let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
+    let isOptionPressed: Bool  // Passed from DrawingCanvas for path-based selection
     
     var body: some View {
         ZStack {
@@ -388,7 +389,8 @@ struct SelectionHandlesView: View {
                                     document: document,
                                     shape: shape,
                                     zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset
+                                    canvasOffset: document.canvasOffset,
+                                    isOptionPressed: isOptionPressed
                                 )
                             } else if document.currentTool == .scale {
                                 // Scale tool: Only corner scaling handles
@@ -465,47 +467,105 @@ struct SelectionOutline: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let isOptionPressed: Bool  // Path-based selection when true
     
     private let handleSize: CGFloat = 8
     
     var body: some View {
-        // SELECTION TOOL: Show bounding box outline with blue corner handles and center point
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        
-        ZStack {
-            // Bounding box outline
-            Rectangle()
-                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-                .frame(width: bounds.width, height: bounds.height)
-                .position(center)
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+        if isOptionPressed {
+            // OPTION KEY HELD: Show blue path outline instead of bounding box
+            ZStack {
+                if shape.isGroup && !shape.groupedShapes.isEmpty {
+                    // GROUP/FLATTENED SHAPE: Show outline of each individual shape
+                    ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                        let groupedShape = shape.groupedShapes[index]
+                        // PERFORMANCE OPTIMIZATION: Use cached path creation
+                        let cachedPath = Path { path in
+                            for element in groupedShape.path.elements {
+                                switch element {
+                                case .move(let to):
+                                    path.move(to: to.cgPoint)
+                                case .line(let to):
+                                    path.addLine(to: to.cgPoint)
+                                case .curve(let to, let control1, let control2):
+                                    path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                                case .quadCurve(let to, let control):
+                                    path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                                case .close:
+                                    path.closeSubpath()
+                                }
+                            }
+                        }
+                        cachedPath
+                            .stroke(Color.blue, lineWidth: 2.0 / zoomLevel)
+                            .scaleEffect(zoomLevel, anchor: .topLeading)
+                            .offset(x: canvasOffset.x, y: canvasOffset.y)
+                            .transformEffect(groupedShape.transform)
+                    }
+                } else {
+                    // REGULAR SHAPE: Show single path outline with cached path
+                    let cachedPath = Path { path in
+                        for element in shape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                path.move(to: to.cgPoint)
+                            case .line(let to):
+                                path.addLine(to: to.cgPoint)
+                            case .curve(let to, let control1, let control2):
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            case .quadCurve(let to, let control):
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                    }
+                    cachedPath
+                        .stroke(Color.blue, lineWidth: 2.0 / zoomLevel)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                        .transformEffect(shape.transform)
+                }
+            }
+        } else {
+            // NORMAL SELECTION: Show bounding box outline with blue corner handles and center point
+            // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+            let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            let center = CGPoint(x: bounds.midX, y: bounds.midY)
             
-            // CENTER POINT: Blue square same size as corners
-            Rectangle()
-                .fill(Color.blue)
-                .stroke(Color.white, lineWidth: 1.0)
-                .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
-                .position(CGPoint(
-                    x: center.x * zoomLevel + canvasOffset.x,
-                    y: center.y * zoomLevel + canvasOffset.y
-                ))
-            
-            // 4 Corner handles - ALL BLUE
-            ForEach(0..<4) { i in
-                let position = cornerPosition(for: i, in: bounds, center: center)
+            ZStack {
+                // Bounding box outline
+                Rectangle()
+                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
+                    .frame(width: bounds.width, height: bounds.height)
+                    .position(center)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    .transformEffect(shape.transform)
                 
+                // CENTER POINT: Blue square same size as corners
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
                     .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
                     .position(CGPoint(
-                        x: position.x * zoomLevel + canvasOffset.x,
-                        y: position.y * zoomLevel + canvasOffset.y
+                        x: center.x * zoomLevel + canvasOffset.x,
+                        y: center.y * zoomLevel + canvasOffset.y
                     ))
+                
+                // 4 Corner handles - ALL BLUE
+                ForEach(0..<4) { i in
+                    let position = cornerPosition(for: i, in: bounds, center: center)
+                    
+                    Rectangle()
+                        .fill(Color.blue)
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
+                        .position(CGPoint(
+                            x: position.x * zoomLevel + canvasOffset.x,
+                            y: position.y * zoomLevel + canvasOffset.y
+                        ))
+                }
             }
         }
     }

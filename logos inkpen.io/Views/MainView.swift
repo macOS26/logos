@@ -28,14 +28,40 @@ struct MainView: View {
     @State private var showingSVGTestHarness = false // Add SVG test access
     @State private var showingNewDocumentSetup = false // New document setup window
     
+    // Drawer state management
+    @State private var isBottomDrawerOpen = false
+    @State private var isLeftDrawerOpen = false
+    
     // MARK: - Development Views State (moved to AppState)
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Main Content Area
-            HStack(spacing: 0) {
-                // Left Toolbar - Fixed width, hugs left - ISOLATED HIT TESTING
-                VerticalToolbar(document: document)
+        ZStack {
+            // Main app layout
+            VStack(spacing: 0) {
+                // Main Content Area
+                HStack(spacing: 0) {
+                    // Left Toolbar - Fixed width, hugs left - ISOLATED HIT TESTING
+                    VStack(spacing: 8) {
+                        VerticalToolbar(document: document)
+                        
+                        // Drawer toggle buttons
+                        VStack(spacing: 4) {
+                            DrawerToggleButton(icon: "sidebar.left") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isLeftDrawerOpen.toggle()
+                                }
+                            }
+                            
+                            DrawerToggleButton(icon: "rectangle.bottomhalf.inset.filled") {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isBottomDrawerOpen.toggle()
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        
+                        Spacer()
+                    }
                     .frame(width: 48)
                     .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
                     .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
@@ -88,6 +114,108 @@ struct MainView: View {
                 .frame(height: 24)
                 .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
                 .frame(maxWidth: .infinity) // ENSURE: Status bar spans full width
+            }
+            
+            // Drawer overlays
+            DrawerView(direction: .left, size: 320, isOpen: $isLeftDrawerOpen) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Left Drawer")
+                        .font(.headline)
+                        .padding(.top)
+                    
+                    Text("This is a sliding drawer from the left! You can put any content here.")
+                        .font(.body)
+                    
+                    Divider()
+                    
+                    // Example content
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Quick Actions")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Button("Create New Layer") {
+                            document.addLayer(name: "New Layer")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        
+                        Button("Duplicate Selection") {
+                            // Add duplicate functionality
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Clear Canvas") {
+                            // Add clear functionality  
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Close Drawer") {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isLeftDrawerOpen = false
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.secondary)
+                }
+                .padding()
+            }
+            
+            DrawerView(direction: .bottom, size: 240, isOpen: $isBottomDrawerOpen) {
+                VStack(spacing: 16) {
+                    Text("Bottom Drawer")
+                        .font(.headline)
+                    
+                    Text("This is a sliding drawer from the bottom!")
+                        .font(.body)
+                    
+                    Divider()
+                    
+                    // Example content
+                    HStack(spacing: 16) {
+                        VStack {
+                            Text("Tools")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                Button("Brush") { document.currentTool = .brush }
+                                Button("Pen") { document.currentTool = .bezierPen }
+                                Button("Selection") { document.currentTool = .selection }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        
+                        Spacer()
+                        
+                        VStack {
+                            Text("Quick Settings")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            HStack {
+                                Button("Grid On") { }
+                                Button("Snap On") { }
+                                Button("Guides") { }
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Close Drawer") {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isBottomDrawerOpen = false
+                        }
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.secondary)
+                }
+                .padding()
+            }
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
         .toolbar {

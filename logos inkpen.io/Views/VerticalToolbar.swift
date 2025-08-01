@@ -6,6 +6,37 @@
 //
 
 import SwiftUI
+import AppKit
+
+// MARK: - Star Variants
+enum StarVariant: String, CaseIterable {
+    case threePoint = "3-Point Star"
+    case fourPoint = "4-Point Star" 
+    case fivePoint = "5-Point Star"
+    case sixPoint = "6-Point Star"
+    case eightPoint = "8-Point Star"
+    
+    @ViewBuilder
+    func iconView(isSelected: Bool, color: Color = .primary) -> some View {
+        switch self {
+        case .threePoint:
+            ThreePointStarIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .fourPoint:
+            FourPointStarIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .fivePoint:
+            FivePointStarIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .sixPoint:
+            SixPointStarIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .eightPoint:
+            EightPointStarIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        }
+    }
+}
 
 // MARK: - Conditional View Modifier Extension
 extension View {
@@ -16,9 +47,173 @@ extension View {
             self
         }
     }
+    
 }
 
 
+
+// MARK: - Custom Star Icons
+
+// 3-Point Star (Mercedes-style curved)
+struct ThreePointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Create a 3-pointed curved star like the Mercedes logo in your image
+            let center = CGPoint(x: 10, y: 10)
+            let radius: CGFloat = 7
+            
+            // Top point
+            path.move(to: CGPoint(x: center.x, y: center.y - radius))
+            
+            // Curve to bottom right
+            path.addQuadCurve(
+                to: CGPoint(x: center.x + radius * 0.866, y: center.y + radius * 0.5),
+                control: CGPoint(x: center.x + radius * 0.3, y: center.y - radius * 0.3)
+            )
+            
+            // Curve to bottom left
+            path.addQuadCurve(
+                to: CGPoint(x: center.x - radius * 0.866, y: center.y + radius * 0.5),
+                control: CGPoint(x: center.x, y: center.y + radius * 0.8)
+            )
+            
+            // Curve back to top
+            path.addQuadCurve(
+                to: CGPoint(x: center.x, y: center.y - radius),
+                control: CGPoint(x: center.x - radius * 0.3, y: center.y - radius * 0.3)
+            )
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// 4-Point Star (diamond/cross shaped)
+struct FourPointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Create a 4-pointed star like the second image
+            let center = CGPoint(x: 10, y: 10)
+            let outerRadius: CGFloat = 8
+            let innerRadius: CGFloat = 3
+            
+            // Start at top
+            path.move(to: CGPoint(x: center.x, y: center.y - outerRadius))
+            path.addLine(to: CGPoint(x: center.x + innerRadius, y: center.y - innerRadius))
+            
+            // Right point
+            path.addLine(to: CGPoint(x: center.x + outerRadius, y: center.y))
+            path.addLine(to: CGPoint(x: center.x + innerRadius, y: center.y + innerRadius))
+            
+            // Bottom point
+            path.addLine(to: CGPoint(x: center.x, y: center.y + outerRadius))
+            path.addLine(to: CGPoint(x: center.x - innerRadius, y: center.y + innerRadius))
+            
+            // Left point
+            path.addLine(to: CGPoint(x: center.x - outerRadius, y: center.y))
+            path.addLine(to: CGPoint(x: center.x - innerRadius, y: center.y - innerRadius))
+            
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// 5-Point Star (classic star)
+struct FivePointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        // Use SF Symbol as fallback since custom path is complex
+        Image(systemName: "star")
+            .font(.system(size: 16))
+            .foregroundColor(.primary)
+            .frame(width: 20, height: 20)
+    }
+}
+
+// 6-Point Star (Star of David style)
+struct SixPointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Create a 6-pointed star like the third image
+            let center = CGPoint(x: 10, y: 10)
+            let outerRadius: CGFloat = 8
+            let innerRadius: CGFloat = 4
+            
+            for i in 0..<6 {
+                let angle = Double(i) * .pi / 3 - .pi / 2 // Start from top
+                let nextAngle = Double(i + 1) * .pi / 3 - .pi / 2
+                
+                let outerPoint = CGPoint(
+                    x: center.x + outerRadius * cos(angle),
+                    y: center.y + outerRadius * sin(angle)
+                )
+                
+                let innerPoint = CGPoint(
+                    x: center.x + innerRadius * cos(nextAngle - .pi / 6),
+                    y: center.y + innerRadius * sin(nextAngle - .pi / 6)
+                )
+                
+                if i == 0 {
+                    path.move(to: outerPoint)
+                } else {
+                    path.addLine(to: outerPoint)
+                }
+                path.addLine(to: innerPoint)
+            }
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// 8-Point Star (compass rose style)
+struct EightPointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Create an 8-pointed star like the fourth image
+            let center = CGPoint(x: 10, y: 10)
+            let outerRadius: CGFloat = 8
+            let innerRadius: CGFloat = 4
+            
+            for i in 0..<8 {
+                let angle = Double(i) * .pi / 4 - .pi / 2 // Start from top
+                let nextAngle = Double(i + 1) * .pi / 4 - .pi / 2
+                
+                let outerPoint = CGPoint(
+                    x: center.x + outerRadius * cos(angle),
+                    y: center.y + outerRadius * sin(angle)
+                )
+                
+                let innerPoint = CGPoint(
+                    x: center.x + innerRadius * cos(nextAngle - .pi / 8),
+                    y: center.y + innerRadius * sin(nextAngle - .pi / 8)
+                )
+                
+                if i == 0 {
+                    path.move(to: outerPoint)
+                } else {
+                    path.addLine(to: outerPoint)
+                }
+                path.addLine(to: innerPoint)
+            }
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
 
 // MARK: - Custom Skewed Rectangle Icon
 struct SkewedRectangleIcon: View {
@@ -34,8 +229,14 @@ struct SkewedRectangleIcon: View {
 
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
-    @State private var isStarLongPressed = false
+    @StateObject private var starHUDManager = StarToolHUDManager()
 
+    // MARK: - Star Tool HUD Functions
+    
+    private func showStarHUD() {
+        // Use the HUD manager to show the HUD with proper positioning
+        starHUDManager.showHUD()
+    }
 
     
     var body: some View {
@@ -67,10 +268,11 @@ struct VerticalToolbar: View {
                                     // Use custom skewed rectangle icon for shear tool
                                     SkewedRectangleIcon(isSelected: document.currentTool == tool)
                                 } else if tool == .star {
-                                    // Use different icon for star tool when long pressed
-                                    Image(systemName: isStarLongPressed ? "star.fill" : tool.iconName)
-                                        .font(.system(size: 16))
-                                        .foregroundColor(document.currentTool == tool ? .white : .primary)
+                                    // Use selected star variant custom icon
+                                                                starHUDManager.selectedVariant.iconView(
+                                isSelected: document.currentTool == tool,
+                                color: document.currentTool == tool ? .white : .primary
+                            )
                                 } else {
                                     // Use SF Symbols for all other tools
                                     Image(systemName: tool.iconName)
@@ -90,7 +292,21 @@ struct VerticalToolbar: View {
                         .buttonStyle(PlainButtonStyle())
                         .help(toolTooltip(for: tool))
                         .if(tool == .star) { view in
-                            view.highPriorityGesture(
+                            view.background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            // Store the button's frame for HUD positioning
+                                            let globalFrame = geometry.frame(in: .global)
+                                            starHUDManager.starButtonFrame = globalFrame
+                                        }
+                                        .onChange(of: geometry.frame(in: .global)) { _, newFrame in
+                                            // Update frame if it changes (e.g., during scrolling)
+                                            starHUDManager.starButtonFrame = newFrame
+                                        }
+                                }
+                            )
+                            .highPriorityGesture(
                                 TapGesture()
                                     .onEnded { _ in
                                         // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
@@ -114,11 +330,9 @@ struct VerticalToolbar: View {
                             .simultaneousGesture(
                                 LongPressGesture(minimumDuration: 0.5)
                                     .onEnded { _ in
-                                        // Long press completed - toggle state
-                                        withAnimation(.easeOut(duration: 0.3)) {
-                                            isStarLongPressed.toggle()
-                                        }
-                                        print("⭐ Star tool long press completed!")
+                                        // Long press completed - show HUD window
+                                        showStarHUD()
+                                        print("⭐ Star tool long press - showing HUD!")
                                     }
                             )
                         }
@@ -143,7 +357,10 @@ struct VerticalToolbar: View {
                 .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
             alignment: .trailing
         )
+
     }
+    
+
     
     private func toolTooltip(for tool: DrawingTool) -> String {
         switch tool {
@@ -176,7 +393,7 @@ struct VerticalToolbar: View {
         case .circle:
             return "Circle Tool (C) - Draw circles and ellipses"
         case .star:
-            return "Star Tool - Draw star shapes (Long press to change icon)"
+            return "Star Tool - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
         case .polygon:
             return "Polygon Tool - Draw polygon shapes"
         case .eyedropper:

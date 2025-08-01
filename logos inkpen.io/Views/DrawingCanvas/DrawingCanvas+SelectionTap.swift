@@ -125,62 +125,83 @@ extension DrawingCanvas {
                         
                         print("    - Testing grouped shape '\(groupedShape.name)'")
                         
-                        // Apply the same hit testing logic to grouped shapes
-                        let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
-                        
-                        if isStrokeOnly && groupedShape.strokeStyle != nil {
-                            // Stroke-only shapes: Use stroke-based hit testing
-                            let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
-                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
+                        // OPTION KEY ENHANCEMENT: Use path-based selection for grouped shapes too
+                        if isOptionPressed {
+                            // Option key held: Use precise path-based hit testing only
+                            let tolerance: CGFloat = 8.0
+                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: tolerance) {
                                 isHit = true
-                                print("      - Stroke hit: YES")
+                                print("      - ⌥ Option group path hit: YES")
                                 break
                             } else {
-                                print("      - Stroke hit: NO")
+                                print("      - ⌥ Option group path hit: NO")
                             }
                         } else {
-                            // Regular grouped shapes: Use bounds + path hit testing
-                            let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
-                            let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                            // Regular selection: Apply the same hit testing logic to grouped shapes
+                            let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
                             
-                            if expandedBounds.contains(location) {
-                                isHit = true
-                                print("      - Bounds hit: YES")
-                                break
-                            } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
-                                isHit = true
-                                print("      - Path hit: YES")
-                                break
+                            if isStrokeOnly && groupedShape.strokeStyle != nil {
+                                // Stroke-only shapes: Use stroke-based hit testing
+                                let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
+                                let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                                if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
+                                    isHit = true
+                                    print("      - Stroke hit: YES")
+                                    break
+                                } else {
+                                    print("      - Stroke hit: NO")
+                                }
                             } else {
-                                print("      - Bounds hit: NO, Path hit: NO")
+                                // Regular grouped shapes: Use bounds + path hit testing
+                                let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
+                                let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
+                                
+                                if expandedBounds.contains(location) {
+                                    isHit = true
+                                    print("      - Bounds hit: YES")
+                                    break
+                                } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
+                                    isHit = true
+                                    print("      - Path hit: YES")
+                                    break
+                                } else {
+                                    print("      - Bounds hit: NO, Path hit: NO")
+                                }
                             }
                         }
                     }
                     print("  - Group overall hit result: \(isHit)")
                 } else {
-                    // Regular shapes: Use different logic for stroke vs filled
-                    let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
-                    
-                    if isStrokeOnly && shape.strokeStyle != nil {
-                        // Method 1: Stroke-only shapes - use stroke-based hit testing only
-                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                        
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        print("  - Regular stroke hit test: \(isHit)")
+                    // OPTION KEY ENHANCEMENT: Use path-based selection when Option key is held
+                    if isOptionPressed {
+                        // Option key held: Use precise path-based hit testing only
+                        let tolerance: CGFloat = 8.0
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+                        print("  - ⌥ Option path-only hit test: \(isHit)")
                     } else {
-                        // Method 2: Filled shapes - use bounds + path hit testing
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                        // Regular selection: Use different logic for stroke vs filled
+                        let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                         
-                        if expandedBounds.contains(location) {
-                            isHit = true
-                            print("  - Regular bounds hit test: \(isHit)")
+                        if isStrokeOnly && shape.strokeStyle != nil {
+                            // Method 1: Stroke-only shapes - use stroke-based hit testing only
+                            let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                            
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                            print("  - Regular stroke hit test: \(isHit)")
                         } else {
-                            // Fallback: precise path hit test
-                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            print("  - Regular path hit test: \(isHit)")
+                            // Method 2: Filled shapes - use bounds + path hit testing
+                            let transformedBounds = shape.bounds.applying(shape.transform)
+                            let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                            
+                            if expandedBounds.contains(location) {
+                                isHit = true
+                                print("  - Regular bounds hit test: \(isHit)")
+                            } else {
+                                // Fallback: precise path hit test
+                                isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                                print("  - Regular path hit test: \(isHit)")
+                            }
                         }
                     }
                 }

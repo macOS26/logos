@@ -40,7 +40,8 @@ extension DrawingCanvas {
             SelectionHandlesView(
                 document: document,
                 geometry: geometry,
-                isShiftPressed: self.isShiftPressed
+                isShiftPressed: self.isShiftPressed,
+                isOptionPressed: self.isOptionPressed
             )
         }
         
