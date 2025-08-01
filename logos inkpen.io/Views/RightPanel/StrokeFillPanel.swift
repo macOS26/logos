@@ -3302,6 +3302,69 @@ struct MarkerSettingsSection: View {
                 .help("Thickness tapering at the end of marker strokes")
             }
             
+            // Marker Tool Options
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                    .padding(.vertical, 4)
+                
+                // Use Fill Color for Stroke Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Use Fill Color for Stroke")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Use fill color for both fill and stroke")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.markerUseFillAsStroke },
+                        set: { document.markerUseFillAsStroke = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .help("When enabled, marker uses fill color for both fill and stroke. When disabled, uses stroke color for both.")
+                }
+                
+                // Apply No Stroke Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Apply No Stroke")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Remove stroke from marker shapes")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.markerApplyNoStroke },
+                        set: { document.markerApplyNoStroke = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .help("When enabled, marker shapes will have no stroke regardless of current stroke settings")
+                }
+                
+                // Remove Overlap Toggle
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Remove Overlap")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                        Text("Union overlapping parts of same shape")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { document.markerRemoveOverlap },
+                        set: { document.markerRemoveOverlap = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                    .help("When enabled, overlapping parts of marker strokes will be merged using union operation")
+                }
+            }
+            
             // Marker Info
             HStack {
                 Image(systemName: "info.circle")

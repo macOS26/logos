@@ -35,20 +35,33 @@ extension DrawingCanvas {
         markerPath = VectorPath(elements: [.move(to: startPoint)])
         
         // Create real VectorShape for marker stroke using current user settings
-        // MARKER SPECIFIC: Creates strokes with circular felt-tip appearance
-        let strokeStyle = StrokeStyle(
-            color: getCurrentStrokeColor(), // Use stroke color for marker ink
-            width: document.currentMarkerTipSize, // Use dedicated marker tip size
-            lineCap: .round, // Felt-tip markers have rounded ends
-            lineJoin: .round, // Felt-tip markers have rounded joins
-            opacity: document.currentMarkerOpacity // Use dedicated marker opacity
+        // MARKER SPECIFIC: Creates variable width filled shapes instead of strokes
+        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeWidth = getCurrentStrokeWidth() // Use stroke weight from fill/stroke tool
+        
+        // For marker tool: if "Use Fill as Stroke" is enabled, use fill color for both fill and stroke
+        // Otherwise, use stroke color for both fill and stroke
+        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        
+        let strokeStyle = strokeColor != nil ? StrokeStyle(
+            color: markerStrokeColor,
+            width: strokeWidth,
+            lineCap: .round,
+            lineJoin: .round,
+            opacity: getCurrentStrokeOpacity()
+        ) : nil
+        
+        let fillStyle = FillStyle(
+            color: markerFillColor,
+            opacity: getCurrentFillOpacity()
         )
         
         activeMarkerShape = VectorShape(
             name: "Marker Stroke",
             path: markerPath!,
             strokeStyle: strokeStyle,
-            fillStyle: nil // Marker has no fill, only stroke
+            fillStyle: fillStyle
         )
         
         // Add the preview shape to the document immediately
@@ -131,15 +144,27 @@ extension DrawingCanvas {
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeMarkerShape.id }) {
             document.layers[layerIndex].shapes[shapeIndex].path = previewPath
             
-            // Update stroke using current user settings (marker has stroke, no fill)
-            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
-                color: getCurrentStrokeColor(),
-                width: document.currentMarkerTipSize,
+            // Update colors using current user settings and marker options
+            let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+            let strokeWidth = getCurrentStrokeWidth()
+            
+            // For marker tool: if "Use Fill as Stroke" is enabled, use fill color for both fill and stroke
+            // Otherwise, use stroke color for both fill and stroke
+            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            
+            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = strokeColor != nil ? StrokeStyle(
+                color: markerStrokeColor,
+                width: strokeWidth,
                 lineCap: .round,
                 lineJoin: .round,
-                opacity: document.currentMarkerOpacity
+                opacity: getCurrentStrokeOpacity()
+            ) : nil
+            
+            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                color: markerFillColor,
+                opacity: getCurrentFillOpacity()
             )
-            document.layers[layerIndex].shapes[shapeIndex].fillStyle = nil // No fill
         }
     }
     
@@ -197,19 +222,44 @@ extension DrawingCanvas {
         
         // Step 3: Replace the preview shape with the final marker stroke
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeMarkerShape.id }) {
-            // Update the shape with final marker stroke
+            // Update the shape with final marker stroke using current user settings and toggles
             var finalShape = document.layers[layerIndex].shapes[shapeIndex]
             finalShape.path = markerStrokePath
-            finalShape.strokeStyle = StrokeStyle(
-                color: getCurrentStrokeColor(),
-                width: document.currentMarkerTipSize,
+            
+            let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+            let strokeWidth = getCurrentStrokeWidth()
+            
+            // For marker tool: if "Use Fill Color for Stroke" is enabled, use fill color for both fill and stroke
+            // Otherwise, use stroke color for both fill and stroke
+            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+            
+            finalShape.strokeStyle = strokeColor != nil ? StrokeStyle(
+                color: markerStrokeColor,
+                width: strokeWidth,
                 lineCap: .round,
                 lineJoin: .round,
-                opacity: document.currentMarkerOpacity
+                opacity: getCurrentStrokeOpacity()
+            ) : nil
+            
+            finalShape.fillStyle = FillStyle(
+                color: markerFillColor,
+                opacity: getCurrentFillOpacity()
             )
-            finalShape.fillStyle = nil // Marker has no fill
             
             document.layers[layerIndex].shapes[shapeIndex] = finalShape
+            
+            // Apply self-union operation if remove overlap is enabled
+            if document.markerRemoveOverlap {
+                print("🔍 MARKER DEBUG: === MARKER REMOVE OVERLAP ENABLED ===")
+                print("🔍 MARKER DEBUG: About to call applySelfUnionToMarkerStroke with shapeIndex: \(shapeIndex)")
+                print("🔍 MARKER DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes BEFORE remove overlap")
+                
+                applySelfUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+                
+                print("🔍 MARKER DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes AFTER remove overlap")
+                print("🔍 MARKER DEBUG: === MARKER REMOVE OVERLAP COMPLETED ===")
+            }
         } else {
             print("🚨 MARKER ERROR: Could not find activeMarkerShape in layer! ID: \(activeMarkerShape.id)")
         }
@@ -529,14 +579,13 @@ extension DrawingCanvas {
             let p0 = points[i - 1]
             let p1 = points[i]
             
-            // MARKER SPECIFIC: Make first, second, second-last and last segments lines (corner points)
+            // MARKER SPECIFIC: Make only first and last segments lines (corner points)
+            // The second and second-last points should be smooth for better marker appearance
             let isFirstSegment = (i == 1)
-            let isSecondSegment = (i == 2) 
-            let isSecondLastSegment = (i == points.count - 2)
             let isLastSegment = (i == points.count - 1)
             
-            if isFirstSegment || isSecondSegment || isSecondLastSegment || isLastSegment {
-                // Create corner points for start, second, second-last, and end - no handles
+            if isFirstSegment || isLastSegment {
+                // Create corner points only for start and end - no handles
                 elements.append(.line(to: VectorPoint(p1)))
             } else {
                 // Calculate control points for smooth curves (middle segments only)
@@ -591,7 +640,256 @@ extension DrawingCanvas {
         }
     }
     
+    // MARK: - Remove Overlap Functionality
+    
+    /// Apply self-union operation to remove overlapping areas within the single marker stroke
+    private func applySelfUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
+        print("🔍 MARKER OVERLAP DEBUG: === STARTING SELF-UNION OPERATION ===")
+        print("🔍 MARKER OVERLAP DEBUG: Target shapeIndex: \(shapeIndex), layerIndex: \(layerIndex)")
+        print("🔍 MARKER OVERLAP DEBUG: BEFORE operation - Layer has \(document.layers[layerIndex].shapes.count) shapes:")
+        for (i, shape) in document.layers[layerIndex].shapes.enumerated() {
+            print("🔍 MARKER OVERLAP DEBUG:   Shape \(i): '\(shape.name)' ID: \(shape.id)")
+        }
+        
+        guard shapeIndex < document.layers[layerIndex].shapes.count else { 
+            print("🚨 MARKER ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes")
+            return 
+        }
+        
+        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        
+        // VERIFY: Make sure we're operating on the correct shape
+        guard markerStroke.id == activeMarkerShape?.id else {
+            print("🚨 MARKER ERROR: Shape ID mismatch! Expected \(activeMarkerShape?.id ?? UUID()), got \(markerStroke.id)")
+            print("🚨 MARKER ERROR: This would affect the WRONG shape - ABORTING self-union")
+            return
+        }
+        
+        print("🔍 MARKER OVERLAP DEBUG: ✅ Verified correct shape - proceeding with self-union")
+        
+        // Handle different behaviors based on stroke/fill color matching
+        let hasStroke = markerStroke.strokeStyle != nil
+        let hasFill = markerStroke.fillStyle != nil
+        
+        if hasStroke && hasFill {
+            let strokeColor = markerStroke.strokeStyle!.color
+            let fillColor = markerStroke.fillStyle!.color
+            
+            if strokeColor == fillColor {
+                // Same color: expand stroke and combine with fill as one shape
+                print("🔍 MARKER OVERLAP DEBUG: Stroke and fill are same color - expanding stroke and combining")
+                applyExpandedStrokeUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+            } else {
+                // Different colors: union stroke separately, union fill separately
+                print("🔍 MARKER OVERLAP DEBUG: Stroke and fill are different colors - processing separately")
+                applyDualUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+            }
+        } else {
+            // Only stroke or only fill: simple union
+            print("🔍 MARKER OVERLAP DEBUG: Single color mode - applying simple union")
+            applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+        }
+    }
+    
+    /// Apply union operation for markers with same stroke/fill color or single color
+    private func applySingleUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
+        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        
+        // Convert VectorPath to CGPath for boolean operations
+        let originalPath = markerStroke.path.cgPath
+        
+        // SAFETY CHECK: Ensure path is valid before union operation
+        guard !originalPath.isEmpty else {
+            print("🚨 MARKER ERROR: Original path is empty - ABORTING self-union")
+            return
+        }
+        
+        // SAFETY CHECK: Verify path has valid bounds
+        let pathBounds = originalPath.boundingBox
+        guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
+            print("🚨 MARKER ERROR: Path has invalid bounds - ABORTING self-union")
+            return
+        }
+        
+        // Apply self-union to remove any self-intersections within the marker stroke
+        if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
+            // SAFETY CHECK: Verify the result path is valid
+            guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
+                print("🚨 MARKER ERROR: Union operation produced invalid path - keeping original")
+                return
+            }
+            
+            let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
+            
+            print("🔍 MARKER OVERLAP DEBUG: About to update shape at index \(shapeIndex)")
+            print("🔍 MARKER OVERLAP DEBUG: Current shapes count: \(document.layers[layerIndex].shapes.count)")
+            
+            // Update the marker stroke with the cleaned path
+            document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            
+            print("🔍 MARKER OVERLAP DEBUG: ✅ Updated shape at index \(shapeIndex)")
+            print("🖊️ MARKER: Applied self-union to remove overlapping areas within marker stroke")
+        } else {
+            print("🖊️ MARKER: Self-union operation failed, keeping original path")
+        }
+    }
+    
+    /// Apply expanded stroke union for markers with same stroke/fill color
+    private func applyExpandedStrokeUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
+        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        
+        // Convert VectorPath to CGPath for boolean operations
+        let originalPath = markerStroke.path.cgPath
+        
+        // SAFETY CHECK: Ensure path is valid before union operation
+        guard !originalPath.isEmpty else {
+            print("🚨 MARKER ERROR: Original path is empty - ABORTING expanded stroke union")
+            return
+        }
+        
+        // SAFETY CHECK: Verify path has valid bounds
+        let pathBounds = originalPath.boundingBox
+        guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
+            print("🚨 MARKER ERROR: Path has invalid bounds - ABORTING expanded stroke union")
+            return
+        }
+        
+        // Step 1: Expand the stroke of the original path
+        if let strokeStyle = markerStroke.strokeStyle,
+           let expandedStroke = PathOperations.outlineStroke(path: originalPath, strokeStyle: strokeStyle) {
+            
+            // Step 2: Union the expanded stroke with itself to remove overlaps
+            if let unionedExpandedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding) {
+                
+                // Step 3: Union the expanded stroke with the original fill path
+                if let finalPath = CoreGraphicsPathOperations.union(originalPath, unionedExpandedStroke, using: .winding) {
+                    
+                    // SAFETY CHECK: Verify the result path is valid
+                    guard !finalPath.isEmpty && isPathBoundsFinite(finalPath.boundingBox) else {
+                        print("🚨 MARKER ERROR: Final union operation produced invalid path - keeping original")
+                        return
+                    }
+                    
+                    let finalVectorPath = VectorPath(cgPath: finalPath)
+                    
+                    print("🔍 MARKER OVERLAP DEBUG: About to update shape at index \(shapeIndex)")
+                    print("🔍 MARKER OVERLAP DEBUG: Current shapes count: \(document.layers[layerIndex].shapes.count)")
+                    
+                    // Update the marker stroke with the combined path and remove the stroke style
+                    var updatedShape = markerStroke
+                    updatedShape.path = finalVectorPath
+                    updatedShape.strokeStyle = nil // Remove stroke since it's now part of the fill
+                    updatedShape.fillStyle = FillStyle(
+                        color: markerStroke.strokeStyle!.color, // Use stroke color for the combined fill
+                        opacity: markerStroke.strokeStyle!.opacity
+                    )
+                    
+                    document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                    
+                    print("🔍 MARKER OVERLAP DEBUG: ✅ Updated shape at index \(shapeIndex) with expanded stroke combined")
+                    print("🖊️ MARKER: Applied expanded stroke union - stroke and fill combined as single shape")
+                } else {
+                    print("🖊️ MARKER: Final union operation failed, keeping original path")
+                }
+            } else {
+                print("🖊️ MARKER: Expanded stroke union operation failed, keeping original path")
+            }
+        } else {
+            print("🖊️ MARKER: Stroke expansion failed, falling back to simple union")
+            applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+        }
+    }
+    
+    /// Apply separate union operations for markers with different stroke/fill colors
+    private func applyDualUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
+        let markerStroke = document.layers[layerIndex].shapes[shapeIndex]
+        
+        // For different colors, we need to expand the stroke and union separately
+        if let strokeStyle = markerStroke.strokeStyle {
+            // Expand the stroke of the original path
+            if let expandedStroke = PathOperations.outlineStroke(path: markerStroke.path.cgPath, strokeStyle: strokeStyle) {
+                // Union the expanded stroke with itself
+                if let unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding) {
+                    // Create a new shape for the unioned stroke
+                    let strokeVectorPath = VectorPath(cgPath: unionedStroke)
+                    let strokeShape = VectorShape(
+                        name: "Marker Stroke (Outline)",
+                        path: strokeVectorPath,
+                        strokeStyle: nil, // Convert to fill
+                        fillStyle: FillStyle(color: strokeStyle.color, opacity: strokeStyle.opacity)
+                    )
+                    
+                    // Replace the original shape's stroke with no stroke and union the fill separately
+                    var originalShape = markerStroke
+                    originalShape.strokeStyle = nil // Remove stroke since we created separate stroke shape
+                    
+                    // Union the fill path with itself
+                    if let cleanedFillPath = CoreGraphicsPathOperations.union(markerStroke.path.cgPath, markerStroke.path.cgPath) {
+                        originalShape.path = VectorPath(cgPath: cleanedFillPath)
+                    }
+                    
+                    // Update the original shape (now fill-only)
+                    document.layers[layerIndex].shapes[shapeIndex] = originalShape
+                    
+                    // Add the stroke shape
+                    document.layers[layerIndex].shapes.append(strokeShape)
+                    
+                    print("🖊️ MARKER: Applied dual union - separated stroke and fill with different colors")
+                } else {
+                    print("🖊️ MARKER: Stroke union operation failed")
+                    applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+                }
+            } else {
+                print("🖊️ MARKER: Stroke expansion failed")
+                applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+            }
+        } else {
+            // No stroke, just union the fill
+            applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+        }
+    }
+    
     // MARK: - Helper Functions (Same as Brush Tool)
+    
+    /// Get the current fill color that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentFillColor() -> VectorColor {
+        // PRIORITY 1: If text objects are selected, use their fill color
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillColor
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their color
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let fillColor = shape.fillStyle?.color {
+            return fillColor
+        }
+        
+        // PRIORITY 3: Use default color for new shapes
+        return document.defaultFillColor
+    }
+    
+    /// Get the current fill opacity that the user has set (same logic as StrokeFillPanel)
+    private func getCurrentFillOpacity() -> Double {
+        // PRIORITY 1: If text objects are selected, use their fill opacity
+        if let firstSelectedTextID = document.selectedTextIDs.first,
+           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
+            return textObject.typography.fillOpacity
+        }
+        
+        // PRIORITY 2: If shapes are selected, use their opacity
+        if let layerIndex = document.selectedLayerIndex,
+           let firstSelectedID = document.selectedShapeIDs.first,
+           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
+           let opacity = shape.fillStyle?.opacity {
+            return opacity
+        }
+        
+        // PRIORITY 3: Use default opacity for new shapes
+        return document.defaultFillOpacity
+    }
     
     /// Get the current stroke color that the user has set
     private func getCurrentStrokeColor() -> VectorColor {

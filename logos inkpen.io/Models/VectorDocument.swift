@@ -223,6 +223,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentMarkerFeathering: Double = 0.3 // Marker edge feathering (0.0-1.0)
     @Published var currentMarkerTaperStart: Double = 0.1 // Marker start taper (0.0-0.5)
     @Published var currentMarkerTaperEnd: Double = 0.1 // Marker end taper (0.0-0.5)
+    @Published var markerUseFillAsStroke: Bool = false // When enabled, uses fill color as stroke color for marker
+    @Published var markerApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
+    @Published var markerRemoveOverlap: Bool = false // When enabled, applies union operation to merge overlapping parts
     
     // BRUSH SETTINGS (Variable width brush strokes)
     
