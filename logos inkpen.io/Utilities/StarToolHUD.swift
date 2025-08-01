@@ -3,6 +3,9 @@ import AppKit
 
 // MARK: - Star Tool HUD Window
 class StarToolHUDWindow: NSWindow {
+    weak var hudManager: StarToolHUDManager?
+    private var clickOutsideMonitor: Any?
+    
     init() {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 200, height: 50),
@@ -17,10 +20,38 @@ class StarToolHUDWindow: NSWindow {
         self.backgroundColor = NSColor.clear
         self.hasShadow = true
         self.isMovable = false
+        
+        // Set up click-outside monitoring
+        setupClickOutsideMonitoring()
     }
     
     override var canBecomeKey: Bool {
         return true
+    }
+    
+    private func setupClickOutsideMonitoring() {
+        // Monitor for clicks outside the HUD window
+        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self = self else { return }
+            
+            // Get the mouse location in screen coordinates
+            let mouseLocation = NSEvent.mouseLocation
+            
+            // Check if the click is outside our HUD window
+            if !self.frame.contains(mouseLocation) {
+                print("⭐ Click detected outside HUD - closing")
+                DispatchQueue.main.async {
+                    self.hudManager?.hideHUD()
+                }
+            }
+        }
+    }
+    
+    deinit {
+        // Clean up the event monitor
+        if let monitor = clickOutsideMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
     }
 }
 
@@ -40,6 +71,7 @@ class StarToolHUDManager: ObservableObject {
         
         // Create new HUD window
         hudWindow = StarToolHUDWindow()
+        hudWindow?.hudManager = self // Set reference for click-outside monitoring
         
         // Create SwiftUI content
         let hudContent = StarVariantHUDView(
@@ -116,8 +148,8 @@ class StarToolHUDManager: ObservableObject {
         // NSWindow: origin bottom-left, Y increases upward
         // So we DO need coordinate conversion!
         let hudFrame = NSRect(
-            x: buttonRightEdge + gapBetweenToolbarAndHUD, // X is correct: 44.0
-            y: approach1_Y - (hudHeight / 2), // USE APPROACH 1: screen - maxY = proper conversion
+            x: buttonRightEdge + gapBetweenToolbarAndHUD - 8 + 4, // X moved left by 8px for padding, then right 4px: 40.0
+            y: approach1_Y - (hudHeight / 2) - 8 + 4 - 1, // USE APPROACH 1: screen - maxY = proper conversion, lowered by 8px for padding, then up 4px, then down 1px
             width: hudWidth,
             height: hudHeight
         )
@@ -147,9 +179,20 @@ struct StarVariantHUDView: View {
     @Binding var selectedVariant: StarVariant
     let onSelection: (StarVariant) -> Void
     
+    // Computed property to reorder variants with selected variant first
+    private var orderedVariants: [StarVariant] {
+        var variants = StarVariant.allCases
+        // Move selected variant to the front
+        if let selectedIndex = variants.firstIndex(of: selectedVariant) {
+            let selected = variants.remove(at: selectedIndex)
+            variants.insert(selected, at: 0)
+        }
+        return variants
+    }
+    
     var body: some View {
         HStack(spacing: 2) {
-            ForEach(StarVariant.allCases, id: \.self) { variant in
+            ForEach(orderedVariants, id: \.self) { variant in
                 Button {
                     onSelection(variant)
                     print("⭐ HUD: Selected star variant: \(variant.rawValue)")
