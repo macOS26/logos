@@ -1,64 +1,291 @@
 import SwiftUI
-import AppKit
 
-// MARK: - Star Tool HUD Window
-class StarToolHUDWindow: NSWindow {
-    weak var hudManager: StarToolHUDManager?
-    private var clickOutsideMonitor: Any?
+// MARK: - Tool Group Manager
+class ToolGroupManager: ObservableObject {
+    @Published var currentToolInGroup: DrawingTool? = nil
+    @Published var selectedVariant: StarVariant = .fivePoint
+    @Published var selectedVariantIndex: Int? = nil // For star variants
+    @Published var showingAllItems: Bool = false
+    var toolButtonFrames: [DrawingTool: CGRect] = [:]
     
-    init() {
-        super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 50),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
-        )
+    func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
+        let toolGroup = getToolGroup(for: tool)
         
-        // Configure as HUD window - child window doesn't need floating level
-        self.level = .normal
-        self.isOpaque = false
-        self.backgroundColor = NSColor.clear
-        self.hasShadow = true
-        self.isMovable = false
+        // Handle star variants separately
+        if tool == .star && variantIndex != nil {
+            handleStarVariantLongPress(variantIndex: variantIndex!)
+            return
+        }
         
-        // Set up click-outside monitoring
-        setupClickOutsideMonitoring()
-    }
-    
-    override var canBecomeKey: Bool {
-        return true
-    }
-    
-    private func setupClickOutsideMonitoring() {
-        // Monitor for clicks outside the HUD window
-        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self = self else { return }
-            
-            // Get the mouse location in screen coordinates
-            let mouseLocation = NSEvent.mouseLocation
-            
-            // Check if the click is outside our HUD window
-            if !self.frame.contains(mouseLocation) {
-                print("⭐ Click detected outside HUD - closing")
-                DispatchQueue.main.async {
-                    self.hudManager?.hideHUD()
-                }
-            }
+        // For non-star tools
+        if currentToolInGroup == tool && toolGroup.count > 1 {
+            // Same tool long-pressed - toggle state
+            showingAllItems.toggle()
+            print("🔧 Toggled \(tool.rawValue): showing all = \(showingAllItems)")
+        } else if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup {
+            // Different tool in same group - hide others, show only this one
+            currentToolInGroup = tool
+            showingAllItems = false
+            print("🔧 Switched to \(tool.rawValue) in same group, hiding others")
+        } else {
+            // New tool group - show all items
+            currentToolInGroup = tool
+            showingAllItems = true
+            print("🔧 New tool group \(tool.rawValue), showing all items")
         }
     }
     
-    deinit {
-        // Clean up the event monitor
-        if let monitor = clickOutsideMonitor {
-            NSEvent.removeMonitor(monitor)
+    private func handleStarVariantLongPress(variantIndex: Int) {
+        if currentToolInGroup == .star && selectedVariantIndex == variantIndex {
+            // Same variant long-pressed - toggle showing all
+            showingAllItems.toggle()
+            print("⭐ Toggled star variant \(variantIndex): showing all = \(showingAllItems)")
+        } else if currentToolInGroup == .star {
+            // Different variant in same group - hide others, show only this one
+            selectedVariantIndex = variantIndex
+            selectedVariant = StarVariant.allCases[variantIndex]
+            showingAllItems = false
+            print("⭐ Switched to star variant \(variantIndex), hiding others")
+        } else {
+            // New star group - show all variants
+            currentToolInGroup = .star
+            selectedVariantIndex = variantIndex
+            selectedVariant = StarVariant.allCases[variantIndex]
+            showingAllItems = true
+            print("⭐ New star group, showing all variants")
+        }
+    }
+    
+    func selectStarVariant(_ variant: StarVariant) {
+        selectedVariant = variant
+        print("⭐ Selected star variant: \(variant.rawValue)")
+    }
+    
+    func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
+        toolButtonFrames[tool] = frame
+    }
+    
+    private func getToolGroup(for tool: DrawingTool) -> [DrawingTool] {
+        switch tool {
+        case .star:
+            return [.star] // Star is its own group with variants
+        case .rectangle, .circle, .polygon:
+            return [.rectangle, .circle, .polygon]
+        case .line, .bezierPen, .freehand:
+            return [.line, .bezierPen, .freehand]
+        case .brush, .marker:
+            return [.brush, .marker]
+        default:
+            return [tool]
         }
     }
 }
 
-// MARK: - Star Tool HUD Manager
+// MARK: - Expandable Tool Dock
+struct ExpandableToolDock: View {
+    @ObservedObject var groupManager: ToolGroupManager
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        if let currentTool = groupManager.currentToolInGroup, groupManager.showingAllItems {
+            // Show the expanded tool group
+            VStack(spacing: 2) {
+                if currentTool == .star {
+                    // Show all star variants
+                    ForEach(Array(StarVariant.allCases.enumerated()), id: \.element) { index, variant in
+                        ToolDockButton(
+                            tool: .star,
+                            isSelected: document.currentTool == .star && groupManager.selectedVariant == variant,
+                            isExpanded: true,
+                            onTap: {
+                                selectStarVariant(variant)
+                            },
+                            onLongPress: {
+                                // Long press to hide siblings and show only this variant
+                                groupManager.longPressedTool(.star, variantIndex: index)
+                            },
+                            variantIndex: index
+                        )
+                    }
+                } else {
+                    // Show all tools in the group
+                    ForEach(getAllToolsInGroup(for: currentTool), id: \.self) { tool in
+                        ToolDockButton(
+                            tool: tool,
+                            isSelected: document.currentTool == tool,
+                            isExpanded: true,
+                            onTap: {
+                                selectTool(tool)
+                            },
+                            onLongPress: {
+                                // Long press to hide siblings and show only this tool
+                                groupManager.longPressedTool(tool)
+                            }
+                        )
+                    }
+                }
+            }
+            .padding(4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.black.opacity(0.9))
+                    .shadow(radius: 8)
+            )
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 0.2), value: groupManager.currentToolInGroup)
+            .animation(.easeInOut(duration: 0.2), value: groupManager.showingAllItems)
+            .position(
+                x: groupManager.toolButtonFrames[currentTool]?.midX ?? 0,
+                y: (groupManager.toolButtonFrames[currentTool]?.maxY ?? 0) + 50
+            )
+        } else if let currentTool = groupManager.currentToolInGroup, !groupManager.showingAllItems {
+            // Show only the current tool/variant
+            VStack(spacing: 2) {
+                if currentTool == .star, let variantIndex = groupManager.selectedVariantIndex {
+                    // Show only the selected star variant
+                    ToolDockButton(
+                        tool: .star,
+                        isSelected: document.currentTool == .star && groupManager.selectedVariant == StarVariant.allCases[variantIndex],
+                        isExpanded: false,
+                        onTap: {
+                            selectStarVariant(StarVariant.allCases[variantIndex])
+                        },
+                        onLongPress: {
+                            // Long press to show all variants again
+                            groupManager.longPressedTool(.star, variantIndex: variantIndex)
+                        },
+                        variantIndex: variantIndex
+                    )
+                } else {
+                    // Show only the current tool
+                    ToolDockButton(
+                        tool: currentTool,
+                        isSelected: document.currentTool == currentTool,
+                        isExpanded: false,
+                        onTap: {
+                            selectTool(currentTool)
+                        },
+                        onLongPress: {
+                            // Long press to show all tools in group again
+                            groupManager.longPressedTool(currentTool)
+                        }
+                    )
+                }
+            }
+            .padding(4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.black.opacity(0.9))
+                    .shadow(radius: 8)
+            )
+            .transition(.opacity.combined(with: .scale))
+            .animation(.easeInOut(duration: 0.2), value: groupManager.currentToolInGroup)
+            .animation(.easeInOut(duration: 0.2), value: groupManager.showingAllItems)
+            .position(
+                x: groupManager.toolButtonFrames[currentTool]?.midX ?? 0,
+                y: (groupManager.toolButtonFrames[currentTool]?.maxY ?? 0) + 50
+            )
+        }
+    }
+    
+    private func getAllToolsInGroup(for tool: DrawingTool) -> [DrawingTool] {
+        switch tool {
+        case .star:
+            // For star, we'll show all star variants
+            return Array(repeating: .star, count: StarVariant.allCases.count)
+        case .rectangle, .circle, .polygon:
+            return [.rectangle, .circle, .polygon]
+        case .line, .bezierPen, .freehand:
+            return [.line, .bezierPen, .freehand]
+        case .brush, .marker:
+            return [.brush, .marker]
+        default:
+            return [tool]
+        }
+    }
+    
+    private func selectTool(_ tool: DrawingTool) {
+        document.currentTool = tool
+        // Reset cursor
+        NSCursor.arrow.set()
+        print("🔧 Selected tool: \(tool.rawValue)")
+    }
+    
+    private func selectStarVariant(_ variant: StarVariant) {
+        groupManager.selectStarVariant(variant)
+        document.currentTool = .star
+        // Reset cursor
+        NSCursor.arrow.set()
+        print("⭐ Selected star variant: \(variant.rawValue)")
+    }
+}
+
+// MARK: - Tool Dock Button
+struct ToolDockButton: View {
+    let tool: DrawingTool
+    let isSelected: Bool
+    let isExpanded: Bool
+    let onTap: () -> Void
+    let onLongPress: () -> Void
+    let variantIndex: Int? // For star variants
+    
+    init(tool: DrawingTool, isSelected: Bool, isExpanded: Bool, onTap: @escaping () -> Void, onLongPress: @escaping () -> Void, variantIndex: Int? = nil) {
+        self.tool = tool
+        self.isSelected = isSelected
+        self.isExpanded = isExpanded
+        self.onTap = onTap
+        self.onLongPress = onLongPress
+        self.variantIndex = variantIndex
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            Group {
+                if tool == .star, let index = variantIndex, index < StarVariant.allCases.count {
+                    // Show specific star variant
+                    let variant = StarVariant.allCases[index]
+                    variant.iconView(
+                        isSelected: isSelected,
+                        color: .white
+                    )
+                } else if tool == .star {
+                    // Fallback for star tool
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: tool.iconName)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(width: 32, height: 32)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(isSelected ? Color.blue : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help(toolTooltip(for: tool))
+        .onLongPressGesture {
+            onLongPress()
+        }
+    }
+    
+    private func toolTooltip(for tool: DrawingTool) -> String {
+        if tool == .star, let index = variantIndex, index < StarVariant.allCases.count {
+            let variant = StarVariant.allCases[index]
+            return variant.rawValue
+        }
+        return tool.rawValue.capitalized
+    }
+}
+
+// MARK: - Legacy HUD Manager (for backward compatibility)
 class StarToolHUDManager: ObservableObject {
-    private var hudWindow: StarToolHUDWindow?
     @Published var selectedVariant: StarVariant = .fivePoint
+    @Published var isHUDVisible: Bool = false
     var starButtonFrame: CGRect = .zero
     
     func showHUD() {
@@ -67,144 +294,45 @@ class StarToolHUDManager: ObservableObject {
             return
         }
         
-        hideHUD() // Hide any existing HUD first
-        
-        // Create new HUD window
-        hudWindow = StarToolHUDWindow()
-        hudWindow?.hudManager = self // Set reference for click-outside monitoring
-        
-        // Create SwiftUI content
-        let hudContent = StarVariantHUDView(
-            selectedVariant: Binding(
-                get: { self.selectedVariant },
-                set: { self.selectedVariant = $0 }
-            ),
-            onSelection: { [weak self] variant in
-                self?.selectedVariant = variant
-                self?.hideHUD()
-            }
-        )
-        
-        // Host SwiftUI content in NSHostingView
-        let hostingView = NSHostingView(rootView: hudContent)
-        hudWindow?.contentView = hostingView
-        
-        // SOLUTION: Make HUD a child window of the main window
-        // This keeps it contained within our app and gives us the same coordinate system!
-        if let mainWindow = NSApplication.shared.mainWindow {
-            mainWindow.addChildWindow(hudWindow!, ordered: .above)
-            print("⭐ HUD added as child window to main window")
-        } else {
-            print("⭐ Warning: No main window found - HUD will float independently")
-        }
-        
-        // COORDINATE SYSTEM FACTS (from Apple documentation):
-        // - SwiftUI .global coordinates on macOS: Origin at BOTTOM-LEFT (AppKit style)
-        // - Child window coordinates: SAME as parent window (main window coordinates)
-        // - Therefore: NO CONVERSION NEEDED - we're in the same coordinate space!
-        
-        let hudWidth: CGFloat = 200
-        let hudHeight: CGFloat = 40
-        let gapBetweenToolbarAndHUD: CGFloat = 4
-        
-        print("⭐ SwiftUI global frame: \(starButtonFrame)")
-        print("⭐ Button center: (\(starButtonFrame.midX), \(starButtonFrame.midY))")
-        
-        // DETAILED DEBUGGING: Capture ALL coordinate information
-        let screenHeight = NSScreen.main?.frame.height ?? 800
-        let mainWindow = NSApplication.shared.mainWindow
-        let windowFrame = mainWindow?.frame ?? NSRect.zero
-        
-        print("=== COMPLETE COORDINATE DEBUG ===")
-        print("⭐ Screen: \(NSScreen.main?.frame ?? NSRect.zero)")
-        print("⭐ Window: \(windowFrame)")
-        print("⭐ Button frame (SwiftUI global): \(starButtonFrame)")
-        print("⭐ Button minX: \(starButtonFrame.minX), maxX: \(starButtonFrame.maxX)")
-        print("⭐ Button minY: \(starButtonFrame.minY), maxY: \(starButtonFrame.maxY), midY: \(starButtonFrame.midY)")
-        print("⭐ Screen height: \(screenHeight)")
-        
-        // TEST MULTIPLE POSITIONING APPROACHES
-        let approach1_Y = screenHeight - starButtonFrame.maxY
-        let approach2_Y = screenHeight - starButtonFrame.minY  
-        let approach3_Y = screenHeight - starButtonFrame.midY
-        let approach4_Y = starButtonFrame.minY
-        let approach5_Y = starButtonFrame.maxY
-        let approach6_Y = starButtonFrame.midY
-        
-        print("⭐ Y Approach 1 (screen - maxY): \(approach1_Y)")
-        print("⭐ Y Approach 2 (screen - minY): \(approach2_Y)")
-        print("⭐ Y Approach 3 (screen - midY): \(approach3_Y)")
-        print("⭐ Y Approach 4 (raw minY): \(approach4_Y)")
-        print("⭐ Y Approach 5 (raw maxY): \(approach5_Y)")
-        print("⭐ Y Approach 6 (raw midY): \(approach6_Y)")
-        
-        // TEST X POSITIONING - try button's actual right edge
-        let buttonRightEdge = starButtonFrame.maxX
-        print("⭐ Button right edge: \(buttonRightEdge)")
-        print("⭐ Proposed X position: \(buttonRightEdge + gapBetweenToolbarAndHUD)")
-        
-        // THE ISSUE: SwiftUI global coordinates ARE flipped relative to NSWindow!
-        // SwiftUI: origin top-left, Y increases downward
-        // NSWindow: origin bottom-left, Y increases upward
-        // So we DO need coordinate conversion!
-        let hudFrame = NSRect(
-            x: buttonRightEdge + gapBetweenToolbarAndHUD - 8 + 4, // X moved left by 8px for padding, then right 4px: 40.0
-            y: approach1_Y - (hudHeight / 2) - 8 + 4 - 1, // USE APPROACH 1: screen - maxY = proper conversion, lowered by 8px for padding, then up 4px, then down 1px
-            width: hudWidth,
-            height: hudHeight
-        )
-        
-        print("⭐ HUD frame: \(hudFrame)")
-        
-        hudWindow?.setFrame(hudFrame, display: true)
-        hudWindow?.orderFront(nil)
-        hudWindow?.makeKey()
+        isHUDVisible = true
+        print("⭐ HUD visibility set to true")
     }
     
     func hideHUD() {
-        if let window = hudWindow {
-            // Remove from parent window if it's a child window
-            if let parentWindow = window.parent {
-                parentWindow.removeChildWindow(window)
-                print("⭐ HUD removed from parent window")
-            }
-            window.orderOut(nil)
-        }
-        hudWindow = nil
+        isHUDVisible = false
+        print("⭐ HUD visibility set to false")
+    }
+    
+    func selectVariant(_ variant: StarVariant) {
+        selectedVariant = variant
+        hideHUD()
+        print("⭐ HUD: Selected star variant: \(variant.rawValue)")
     }
 }
 
-// MARK: - SwiftUI HUD Content
-struct StarVariantHUDView: View {
-    @Binding var selectedVariant: StarVariant
-    let onSelection: (StarVariant) -> Void
+// MARK: - Legacy HUD Views (keeping for now)
+struct StarToolHUDView: View {
+    @ObservedObject var hudManager: StarToolHUDManager
     
-    // Computed property to reorder variants with selected variant first
-    private var orderedVariants: [StarVariant] {
-        var variants = StarVariant.allCases
-        // Move selected variant to the front
-        if let selectedIndex = variants.firstIndex(of: selectedVariant) {
-            let selected = variants.remove(at: selectedIndex)
-            variants.insert(selected, at: 0)
-        }
-        return variants
+    private var availableVariants: [StarVariant] {
+        StarVariant.allCases.filter { $0 != hudManager.selectedVariant }
     }
     
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(orderedVariants, id: \.self) { variant in
+        VStack(spacing: 2) {
+            ForEach(availableVariants, id: \.self) { variant in
                 Button {
-                    onSelection(variant)
-                    print("⭐ HUD: Selected star variant: \(variant.rawValue)")
+                    print("⭐ HUD: Button tapped for variant: \(variant.rawValue)")
+                    hudManager.selectVariant(variant)
                 } label: {
                     variant.iconView(
-                        isSelected: selectedVariant == variant,
-                        color: selectedVariant == variant ? .white : .primary
+                        isSelected: false,
+                        color: .white
                     )
                     .frame(width: 32, height: 32)
                     .background(
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(selectedVariant == variant ? Color.blue : Color.clear)
+                            .fill(Color.clear)
                     )
                     .contentShape(Rectangle())
                 }
@@ -218,5 +346,41 @@ struct StarVariantHUDView: View {
                 .fill(Color.black.opacity(0.9))
                 .shadow(radius: 8)
         )
+        .transition(.opacity.combined(with: .scale))
+        .animation(.easeInOut(duration: 0.2), value: hudManager.isHUDVisible)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                if hudManager.isHUDVisible {
+                    hudManager.hideHUD()
+                }
+            }
+        }
+    }
+}
+
+struct StarToolHUDContainer: View {
+    @ObservedObject var hudManager: StarToolHUDManager
+    
+    var body: some View {
+        if hudManager.isHUDVisible {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    print("⭐ HUD: Tap detected outside HUD - dismissing")
+                    hudManager.hideHUD()
+                }
+                .overlay(
+                    StarToolHUDView(hudManager: hudManager)
+                        .position(
+                            x: hudManager.starButtonFrame.midX,
+                            y: hudManager.starButtonFrame.maxY + 50
+                        )
+                        .allowsHitTesting(true)
+                        .onTapGesture {
+                            print("⭐ HUD: Tap detected on HUD content")
+                        }
+                )
+                .allowsHitTesting(true)
+        }
     }
 }
