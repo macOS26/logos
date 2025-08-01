@@ -244,198 +244,98 @@ struct VerticalToolbar: View {
         ZStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 2) {
-                                         // Drawing Tools
-                     ToolSection(title: "Drawing") {
-                         ForEach(DrawingTool.allCases, id: \.self) { tool in
-                             Button {
-                                 // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                                 var popCount = 0
-                                 while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                                     NSCursor.pop()
-                                     popCount += 1
-                                 }
-                                 
-                                 // If still not arrow cursor, force reset
-                                 if NSCursor.current != NSCursor.arrow {
-                                     NSCursor.arrow.set()
-                                 }
-                                 
-                                 document.currentTool = tool
-                                 tool.cursor.push()
-                                 
-                                 print("🛠️ Switched to tool: \(tool.rawValue)")
-                             } label: {
-                                 Group {
-                                     if tool == .shear {
-                                         // Use custom skewed rectangle icon for shear tool
-                                         SkewedRectangleIcon(isSelected: document.currentTool == tool)
-                                     } else if tool == .star {
-                                         // Use selected star variant custom icon
-                                         toolGroupManager.selectedVariant.iconView(
-                                             isSelected: document.currentTool == tool,
-                                             color: document.currentTool == tool ? .white : .primary
-                                         )
-                                     } else {
-                                         // Use SF Symbols for all other tools
-                                         Image(systemName: tool.iconName)
-                                             .font(.system(size: 16))
-                                             .foregroundColor(document.currentTool == tool ? .white : .primary)
-                                     }
-                                 }
-                                 .frame(width: 32, height: 32)
-                                 .background(
-                                     document.currentTool == tool 
-                                     ? Color.blue.opacity(0.8)
-                                     : Color.clear
-                                 )
-                                 .cornerRadius(4)
-                                 .contentShape(Rectangle()) // Extend hit area to match entire button area
-                             }
-                             .buttonStyle(PlainButtonStyle())
-                             .help(toolTooltip(for: tool))
-                             .background(
-                             GeometryReader { geometry in
-                                 Color.clear
-                                     .onAppear {
-                                         // Store the button's frame for tool group positioning
-                                         let globalFrame = geometry.frame(in: .global)
-                                         toolGroupManager.setToolButtonFrame(tool, frame: globalFrame)
-                                     }
-                                     .onChange(of: geometry.frame(in: .global)) { _, newFrame in
-                                         // Update frame if it changes (e.g., during scrolling)
-                                         toolGroupManager.setToolButtonFrame(tool, frame: newFrame)
-                                     }
-                             }
-                         )
-                         .highPriorityGesture(
-                             TapGesture()
-                                 .onEnded { _ in
-                                     // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                                     var popCount = 0
-                                     while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                                         NSCursor.pop()
-                                         popCount += 1
-                                     }
-                                     
-                                     // If still not arrow cursor, force reset
-                                     if NSCursor.current != NSCursor.arrow {
-                                         NSCursor.arrow.set()
-                                     }
-                                     
-                                     document.currentTool = tool
-                                     tool.cursor.push()
-                                     
-                                     print("🔧 Tool tap detected: \(tool.rawValue)")
-                                 }
-                         )
-                         .simultaneousGesture(
-                             LongPressGesture(minimumDuration: 0.5)
-                                 .onEnded { _ in
-                                     // Long press completed - expand tool group
-                                     handleToolLongPress(tool)
-                                 }
-                         )
-                         
-                         // INSERT TOOL GROUP VARIANTS DIRECTLY INTO TOOLBAR
-                         if let currentTool = toolGroupManager.currentToolInGroup, currentTool == tool {
-                             if tool == .star {
-                                 // Show star variants in toolbar
-                                 if toolGroupManager.showingAllItems {
-                                     // Show all star variants
-                                     ForEach(Array(StarVariant.allCases.enumerated()), id: \.element) { varIndex, variant in
-                                         Button {
-                                             toolGroupManager.selectStarVariant(variant)
-                                             document.currentTool = .star
-                                             print("⭐ Selected star variant: \(variant.rawValue)")
-                                         } label: {
-                                             variant.iconView(
-                                                 isSelected: document.currentTool == .star && toolGroupManager.selectedVariant == variant,
-                                                 color: (document.currentTool == .star && toolGroupManager.selectedVariant == variant) ? .white : .primary
-                                             )
-                                             .frame(width: 32, height: 32)
-                                             .background(
-                                                 (document.currentTool == .star && toolGroupManager.selectedVariant == variant)
-                                                 ? Color.blue.opacity(0.8)
-                                                 : Color.gray.opacity(0.3)
-                                             )
-                                             .cornerRadius(4)
-                                             .contentShape(Rectangle())
-                                         }
-                                         .buttonStyle(PlainButtonStyle())
-                                         .help(variant.rawValue)
-                                         .simultaneousGesture(
-                                             LongPressGesture(minimumDuration: 0.5)
-                                                 .onEnded { _ in
-                                                     toolGroupManager.longPressedTool(.star, variantIndex: varIndex)
-                                                 }
-                                         )
-                                     }
-                                 } else if let selectedIndex = toolGroupManager.selectedVariantIndex {
-                                     // Show only selected variant
-                                     let variant = StarVariant.allCases[selectedIndex]
-                                     Button {
-                                         toolGroupManager.selectStarVariant(variant)
-                                         document.currentTool = .star
-                                         print("⭐ Selected star variant: \(variant.rawValue)")
-                                     } label: {
-                                         variant.iconView(
-                                             isSelected: document.currentTool == .star && toolGroupManager.selectedVariant == variant,
-                                             color: (document.currentTool == .star && toolGroupManager.selectedVariant == variant) ? .white : .primary
-                                         )
-                                         .frame(width: 32, height: 32)
-                                         .background(
-                                             (document.currentTool == .star && toolGroupManager.selectedVariant == variant)
-                                             ? Color.blue.opacity(0.8)
-                                             : Color.gray.opacity(0.3)
-                                         )
-                                         .cornerRadius(4)
-                                         .contentShape(Rectangle())
-                                     }
-                                     .buttonStyle(PlainButtonStyle())
-                                     .help(variant.rawValue)
-                                     .simultaneousGesture(
-                                         LongPressGesture(minimumDuration: 0.5)
-                                             .onEnded { _ in
-                                                 toolGroupManager.longPressedTool(.star, variantIndex: selectedIndex)
-                                             }
-                                     )
-                                 }
-                             } else {
-                                 // Show other tool group variants in toolbar
-                                 let toolGroup = getAllToolsInGroup(for: tool)
-                                 if toolGroupManager.showingAllItems {
-                                     // Show all tools in group (except the main tool)
-                                     ForEach(toolGroup.filter { $0 != tool }, id: \.self) { groupTool in
-                                         Button {
-                                             document.currentTool = groupTool
-                                             groupTool.cursor.push()
-                                             print("🛠️ Switched to tool: \(groupTool.rawValue)")
-                                         } label: {
-                                             Image(systemName: groupTool.iconName)
-                                                 .font(.system(size: 16))
-                                                 .foregroundColor(document.currentTool == groupTool ? .white : .primary)
-                                                 .frame(width: 32, height: 32)
-                                                 .background(
-                                                     document.currentTool == groupTool 
-                                                     ? Color.blue.opacity(0.8)
-                                                     : Color.gray.opacity(0.3)
-                                                 )
-                                                 .cornerRadius(4)
-                                                 .contentShape(Rectangle())
-                                         }
-                                         .buttonStyle(PlainButtonStyle())
-                                         .help(toolTooltip(for: groupTool))
-                                         .simultaneousGesture(
-                                             LongPressGesture(minimumDuration: 0.5)
-                                                 .onEnded { _ in
-                                                     toolGroupManager.longPressedTool(groupTool)
-                                                 }
-                                         )
-                                     }
-                                 }
-                             }
-                         }
-                         }
+                    // Drawing Tools
+                    ToolSection(title: "Drawing") {
+                        ForEach(DrawingTool.allCases, id: \.self) { tool in
+                            Button {
+                                // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
+                                var popCount = 0
+                                while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                                    NSCursor.pop()
+                                    popCount += 1
+                                }
+                                
+                                // If still not arrow cursor, force reset
+                                if NSCursor.current != NSCursor.arrow {
+                                    NSCursor.arrow.set()
+                                }
+                                
+                                document.currentTool = tool
+                                tool.cursor.push()
+                                
+                                print("🛠️ Switched to tool: \(tool.rawValue)")
+                            } label: {
+                                Group {
+                                    if tool == .shear {
+                                        // Use custom skewed rectangle icon for shear tool
+                                        SkewedRectangleIcon(isSelected: document.currentTool == tool)
+                                    } else if tool == .star {
+                                        // Use selected star variant custom icon
+                                        starHUDManager.selectedVariant.iconView(
+                                            isSelected: document.currentTool == tool,
+                                            color: document.currentTool == tool ? .white : .primary
+                                        )
+                                    } else {
+                                        // Use SF Symbols for all other tools
+                                        Image(systemName: tool.iconName)
+                                            .font(.system(size: 16))
+                                            .foregroundColor(document.currentTool == tool ? .white : .primary)
+                                    }
+                                }
+                                .frame(width: 32, height: 32)
+                                .background(
+                                    document.currentTool == tool 
+                                    ? Color.blue.opacity(0.8)
+                                    : Color.clear
+                                )
+                                .cornerRadius(4)
+                                .contentShape(Rectangle()) // Extend hit area to match entire button area
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .help(toolTooltip(for: tool))
+                                                    .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onAppear {
+                                        // Store the button's frame for tool group positioning
+                                        let globalFrame = geometry.frame(in: .global)
+                                        toolGroupManager.setToolButtonFrame(tool, frame: globalFrame)
+                                    }
+                                    .onChange(of: geometry.frame(in: .global)) { _, newFrame in
+                                        // Update frame if it changes (e.g., during scrolling)
+                                        toolGroupManager.setToolButtonFrame(tool, frame: newFrame)
+                                    }
+                            }
+                        )
+                        .highPriorityGesture(
+                            TapGesture()
+                                .onEnded { _ in
+                                    // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
+                                    var popCount = 0
+                                    while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                                        NSCursor.pop()
+                                        popCount += 1
+                                    }
+                                    
+                                    // If still not arrow cursor, force reset
+                                    if NSCursor.current != NSCursor.arrow {
+                                        NSCursor.arrow.set()
+                                    }
+                                    
+                                    document.currentTool = tool
+                                    tool.cursor.push()
+                                    
+                                    print("🔧 Tool tap detected: \(tool.rawValue)")
+                                }
+                        )
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.5)
+                                .onEnded { _ in
+                                    // Long press completed - expand tool group
+                                    handleToolLongPress(tool)
+                                }
+                        )
+                        }
                     }
                     
                     Divider()
