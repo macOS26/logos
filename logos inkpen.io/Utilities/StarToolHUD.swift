@@ -1,5 +1,20 @@
 import SwiftUI
 
+/*
+ 🔧 FLEXIBLE TOOL GROUP CONFIGURATION
+ 
+ To modify tool groups, edit the `toolGroupConfig` dictionary around line 99.
+ 
+ Example:
+ - Keep basic shapes together: [.rectangle, .circle]
+ - Separate polygons: [.polygon]
+ - Group drawing tools: [.line, .bezierPen]
+ - Group paint tools: [.brush, .marker, .freehand]
+ - Group transformation tools: [.scale, .rotate, .shear, .warp]
+ 
+ Just add/remove tools from the arrays to change groupings!
+*/
+
 // MARK: - Tool Group Manager
 class ToolGroupManager: ObservableObject {
     @Published var currentToolInGroup: DrawingTool? = nil
@@ -20,17 +35,19 @@ class ToolGroupManager: ObservableObject {
         }
         
         // For non-star tools
-        if currentToolInGroup == tool && toolGroup.count > 1 {
-            // Same tool long-pressed - toggle state
-            showingAllItems.toggle()
-            if showingAllItems {
-                expansionAnchorTool = tool // Track which tool triggered expansion
-                expansionAnchorVariant = nil // Clear star variant anchor
-            } else {
-                expansionAnchorTool = nil
-                expansionAnchorVariant = nil
-            }
-            print("🔧 Toggled \(tool.rawValue): showing all = \(showingAllItems)")
+        if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup && showingAllItems {
+            // Any tool in currently expanded group long-pressed - hide siblings
+            showingAllItems = false
+            expansionAnchorTool = nil
+            expansionAnchorVariant = nil
+            currentToolInGroup = tool // Update to the long-pressed tool
+            print("🔧 Hiding siblings for \(tool.rawValue)")
+        } else if currentToolInGroup == tool && toolGroup.count > 1 {
+            // Same tool long-pressed when not expanded - show siblings
+            showingAllItems = true
+            expansionAnchorTool = tool // Track which tool triggered expansion
+            expansionAnchorVariant = nil // Clear star variant anchor
+            print("🔧 Showing siblings for \(tool.rawValue)")
         } else if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup {
             // Different tool in same group - hide others, show only this one
             currentToolInGroup = tool
@@ -49,17 +66,20 @@ class ToolGroupManager: ObservableObject {
     }
     
     private func handleStarVariantLongPress(variantIndex: Int) {
-        if currentToolInGroup == .star && selectedVariantIndex == variantIndex {
-            // Same variant long-pressed - toggle showing all
-            showingAllItems.toggle()
-            if showingAllItems {
-                expansionAnchorTool = .star // Track star as expansion anchor
-                expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
-            } else {
-                expansionAnchorTool = nil
-                expansionAnchorVariant = nil
-            }
-            print("⭐ Toggled star variant \(variantIndex): showing all = \(showingAllItems)")
+        if currentToolInGroup == .star && showingAllItems {
+            // Any star variant long-pressed when siblings showing - hide siblings
+            showingAllItems = false
+            expansionAnchorTool = nil
+            expansionAnchorVariant = nil
+            selectedVariantIndex = variantIndex
+            selectedVariant = StarVariant.allCases[variantIndex]
+            print("⭐ Hiding star siblings for variant \(variantIndex)")
+        } else if currentToolInGroup == .star && selectedVariantIndex == variantIndex {
+            // Same variant long-pressed when not expanded - show siblings
+            showingAllItems = true
+            expansionAnchorTool = .star // Track star as expansion anchor
+            expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
+            print("⭐ Showing star siblings for variant \(variantIndex)")
         } else if currentToolInGroup == .star {
             // Different variant in same group - hide others, show only this one
             selectedVariantIndex = variantIndex
@@ -89,19 +109,37 @@ class ToolGroupManager: ObservableObject {
         toolButtonFrames[tool] = frame
     }
     
-    private func getToolGroup(for tool: DrawingTool) -> [DrawingTool] {
-        switch tool {
-        case .star:
-            return [.star] // Star is its own group with variants
-        case .rectangle, .circle, .polygon:
-            return [.rectangle, .circle, .polygon]
-        case .line, .bezierPen, .freehand:
-            return [.line, .bezierPen, .freehand]
-        case .brush, .marker:
-            return [.brush, .marker]
-        default:
-            return [tool]
+    // MARK: - FLEXIBLE TOOL GROUP CONFIGURATION
+    // 🔧 EASY TO MODIFY: Just edit this configuration to change tool groups
+    private static let toolGroupConfig: [String: [DrawingTool]] = [
+        "basicShapes": [.rectangle, .circle],
+        "polygons": [.polygon],
+        "lines": [.line, .bezierPen],
+        "brushes": [.brush, .marker, .freehand],
+        "transforms": [.scale, .rotate, .shear, .warp],
+        "stars": [.star] // Star has variants handled separately
+    ]
+    
+    func getToolGroup(for tool: DrawingTool) -> [DrawingTool] {
+        // Find which group this tool belongs to
+        for (_, tools) in Self.toolGroupConfig {
+            if tools.contains(tool) {
+                return tools
+            }
         }
+        
+        // If not in any group, return just the tool itself
+        return [tool]
+    }
+    
+    private func getToolGroupName(for tool: DrawingTool) -> String? {
+        // Find the group name for this tool (useful for debugging)
+        for (groupName, tools) in Self.toolGroupConfig {
+            if tools.contains(tool) {
+                return groupName
+            }
+        }
+        return nil
     }
 }
 
@@ -213,18 +251,12 @@ struct ExpandableToolDock: View {
     }
     
     private func getAllToolsInGroup(for tool: DrawingTool) -> [DrawingTool] {
-        switch tool {
-        case .star:
+        if tool == .star {
             // For star, we'll show all star variants
             return Array(repeating: .star, count: StarVariant.allCases.count)
-        case .rectangle, .circle, .polygon:
-            return [.rectangle, .circle, .polygon]
-        case .line, .bezierPen, .freehand:
-            return [.line, .bezierPen, .freehand]
-        case .brush, .marker:
-            return [.brush, .marker]
-        default:
-            return [tool]
+        } else {
+            // Use the flexible configuration for all other tools
+            return groupManager.getToolGroup(for: tool)
         }
     }
     

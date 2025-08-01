@@ -8,6 +8,37 @@
 import SwiftUI
 import AppKit
 
+// MARK: - Shape Variants
+
+// Rectangle Variants
+enum RectangleVariant: String, CaseIterable {
+    case rectangle = "Rectangle"
+    case square = "Square"
+}
+
+// Circle Variants  
+enum CircleVariant: String, CaseIterable {
+    case circle = "Circle"
+    case ellipse = "Ellipse"
+    case cone = "Cone"
+}
+
+// Triangle Variants
+enum TriangleVariant: String, CaseIterable {
+    case equilateral = "Equilateral Triangle"
+    case isosceles = "Isosceles Triangle"
+    case right = "Right Triangle"
+    case scalene = "Scalene Triangle"
+}
+
+// Polygon Variants
+enum PolygonVariant: String, CaseIterable {
+    case pentagon = "Pentagon (5 sides)"
+    case hexagon = "Hexagon (6 sides)"
+    case heptagon = "Heptagon (7 sides)"
+    case octagon = "Octagon (8 sides)"
+}
+
 // MARK: - Star Variants
 enum StarVariant: String, CaseIterable {
     case threePoint = "3-Point Star"
@@ -322,21 +353,18 @@ struct VerticalToolbar: View {
     
     private func getAllToolGroups() -> [[DrawingTool]] {
         return [
-            [.selection],
-            [.scale],
-            [.rotate],
-            [.shear],
-            [.directSelection],
-            [.convertAnchorPoint],
-            [.line, .bezierPen, .freehand],
-            [.brush, .marker],
+            [.selection, .directSelection],
+            [.scale, .rotate, .shear, .warp],
+            [.bezierPen, .convertAnchorPoint, .line],
+            [.brush, .marker, .freehand],
             [.font],
-            [.rectangle, .circle, .polygon],
-            [.star], // Special case - has variants
+            [.rectangle], // Rectangle variants
+            [.circle], // Circle variants  
+            [.polygon], // Triangle + Polygon variants
+            [.star], // Star variants
             [.eyedropper],
             [.hand],
             [.zoom],
-            [.warp],
             [.gradient]
         ]
     }
