@@ -78,24 +78,46 @@ class StarToolHUDManager: ObservableObject {
         print("⭐ SwiftUI global frame: \(starButtonFrame)")
         print("⭐ Button center: (\(starButtonFrame.midX), \(starButtonFrame.midY))")
         
-        // DEBUG: Let's see what coordinate system we're actually in
+        // DETAILED DEBUGGING: Capture ALL coordinate information
         let screenHeight = NSScreen.main?.frame.height ?? 800
+        let mainWindow = NSApplication.shared.mainWindow
+        let windowFrame = mainWindow?.frame ?? NSRect.zero
+        
+        print("=== COMPLETE COORDINATE DEBUG ===")
+        print("⭐ Screen: \(NSScreen.main?.frame ?? NSRect.zero)")
+        print("⭐ Window: \(windowFrame)")
+        print("⭐ Button frame (SwiftUI global): \(starButtonFrame)")
+        print("⭐ Button minX: \(starButtonFrame.minX), maxX: \(starButtonFrame.maxX)")
+        print("⭐ Button minY: \(starButtonFrame.minY), maxY: \(starButtonFrame.maxY), midY: \(starButtonFrame.midY)")
         print("⭐ Screen height: \(screenHeight)")
-        print("⭐ Button frame: \(starButtonFrame)")
-        print("⭐ Raw coordinates - minY: \(starButtonFrame.minY), maxY: \(starButtonFrame.maxY)")
         
-        // COORDINATE CONVERSION: SwiftUI global coordinates need conversion for NSWindow
-        // SwiftUI origin is top-left, NSWindow origin is bottom-left
-        let convertedY = screenHeight - starButtonFrame.maxY
-        let toolbarWidth: CGFloat = 48
+        // TEST MULTIPLE POSITIONING APPROACHES
+        let approach1_Y = screenHeight - starButtonFrame.maxY
+        let approach2_Y = screenHeight - starButtonFrame.minY  
+        let approach3_Y = screenHeight - starButtonFrame.midY
+        let approach4_Y = starButtonFrame.minY
+        let approach5_Y = starButtonFrame.maxY
+        let approach6_Y = starButtonFrame.midY
         
-        print("⭐ Converted Y: \(convertedY)")
-        print("⭐ Toolbar width: \(toolbarWidth)")
+        print("⭐ Y Approach 1 (screen - maxY): \(approach1_Y)")
+        print("⭐ Y Approach 2 (screen - minY): \(approach2_Y)")
+        print("⭐ Y Approach 3 (screen - midY): \(approach3_Y)")
+        print("⭐ Y Approach 4 (raw minY): \(approach4_Y)")
+        print("⭐ Y Approach 5 (raw maxY): \(approach5_Y)")
+        print("⭐ Y Approach 6 (raw midY): \(approach6_Y)")
         
-        // CORRECTED POSITIONING:
+        // TEST X POSITIONING - try button's actual right edge
+        let buttonRightEdge = starButtonFrame.maxX
+        print("⭐ Button right edge: \(buttonRightEdge)")
+        print("⭐ Proposed X position: \(buttonRightEdge + gapBetweenToolbarAndHUD)")
+        
+        // THE ISSUE: SwiftUI global coordinates ARE flipped relative to NSWindow!
+        // SwiftUI: origin top-left, Y increases downward
+        // NSWindow: origin bottom-left, Y increases upward
+        // So we DO need coordinate conversion!
         let hudFrame = NSRect(
-            x: toolbarWidth + gapBetweenToolbarAndHUD, // RIGHT of ENTIRE TOOLBAR
-            y: convertedY, // Use converted coordinates
+            x: buttonRightEdge + gapBetweenToolbarAndHUD, // X is correct: 44.0
+            y: approach1_Y - (hudHeight / 2), // USE APPROACH 1: screen - maxY = proper conversion
             width: hudWidth,
             height: hudHeight
         )
