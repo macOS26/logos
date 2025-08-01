@@ -13,7 +13,7 @@ extension DrawingCanvas {
     // MARK: - Helper Functions
     
     /// Check if a CGRect has finite values (no infinity or NaN)
-    private func isPathBoundsFinite(_ rect: CGRect) -> Bool {
+    func isPathBoundsFinite(_ rect: CGRect) -> Bool {
         return rect.origin.x.isFinite && rect.origin.y.isFinite && 
                rect.size.width.isFinite && rect.size.height.isFinite
     }

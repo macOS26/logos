@@ -15,4 +15,8 @@ extension Notification.Name {
     // Document lifecycle notifications  
     static let documentWillClose = Notification.Name("documentWillClose")
     static let documentDidClose = Notification.Name("documentDidClose")
+    
+    // StallDetector notifications
+    static let stallDetectorStallDetected = Notification.Name("stallDetectorStallDetected")
+    static let stallDetectorRecoveryCompleted = Notification.Name("stallDetectorRecoveryCompleted")
 }

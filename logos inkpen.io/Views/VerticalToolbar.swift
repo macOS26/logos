@@ -7,6 +7,17 @@
 
 import SwiftUI
 
+// MARK: - Conditional View Modifier Extension
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
+    }
+}
+
 
 
 // MARK: - Custom Skewed Rectangle Icon
@@ -23,6 +34,9 @@ struct SkewedRectangleIcon: View {
 
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
+    @State private var isStarLongPressed = false
+
+
     
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -52,6 +66,11 @@ struct VerticalToolbar: View {
                                 if tool == .shear {
                                     // Use custom skewed rectangle icon for shear tool
                                     SkewedRectangleIcon(isSelected: document.currentTool == tool)
+                                } else if tool == .star {
+                                    // Use different icon for star tool when long pressed
+                                    Image(systemName: isStarLongPressed ? "star.fill" : tool.iconName)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(document.currentTool == tool ? .white : .primary)
                                 } else {
                                     // Use SF Symbols for all other tools
                                     Image(systemName: tool.iconName)
@@ -70,6 +89,39 @@ struct VerticalToolbar: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .help(toolTooltip(for: tool))
+                        .if(tool == .star) { view in
+                            view.highPriorityGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
+                                        var popCount = 0
+                                        while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                                            NSCursor.pop()
+                                            popCount += 1
+                                        }
+                                        
+                                        // If still not arrow cursor, force reset
+                                        if NSCursor.current != NSCursor.arrow {
+                                            NSCursor.arrow.set()
+                                        }
+                                        
+                                        document.currentTool = tool
+                                        tool.cursor.push()
+                                        
+                                        print("⭐ Star tool tap detected - tool selected!")
+                                    }
+                            )
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5)
+                                    .onEnded { _ in
+                                        // Long press completed - toggle state
+                                        withAnimation(.easeOut(duration: 0.3)) {
+                                            isStarLongPressed.toggle()
+                                        }
+                                        print("⭐ Star tool long press completed!")
+                                    }
+                            )
+                        }
                     }
                 }
                 
@@ -124,7 +176,7 @@ struct VerticalToolbar: View {
         case .circle:
             return "Circle Tool (C) - Draw circles and ellipses"
         case .star:
-            return "Star Tool - Draw star shapes"
+            return "Star Tool - Draw star shapes (Long press to change icon)"
         case .polygon:
             return "Polygon Tool - Draw polygon shapes"
         case .eyedropper:

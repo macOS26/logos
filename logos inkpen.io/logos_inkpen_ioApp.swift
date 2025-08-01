@@ -1076,6 +1076,12 @@ class StallDetector {
             // If no activity for more than 5 seconds, consider it stalled
             if timeSinceLastActivity > 5.0 {
                 print("📄 StallDetector: Detected potential stall - attempting recovery")
+                
+                // Post notification
+                await MainActor.run {
+                    NotificationCenter.default.post(name: .stallDetectorStallDetected, object: nil)
+                }
+                
                 await attemptStallRecovery()
             }
             
@@ -1085,8 +1091,8 @@ class StallDetector {
     }
     
     private func attemptStallRecovery() async {
+        // Force any pending operations to complete on main actor
         await MainActor.run {
-            // Force any pending operations to complete
             NSApplication.shared.windows.forEach { window in
                 window.contentView?.needsDisplay = true
                 window.display()
@@ -1102,6 +1108,11 @@ class StallDetector {
             
             print("📄 StallDetector: Stall recovery completed")
         }
+        
+        // Post recovery completed notification
+        await MainActor.run {
+            NotificationCenter.default.post(name: .stallDetectorRecoveryCompleted, object: nil)
+        }
     }
     
     func updateActivity() {
@@ -1110,6 +1121,71 @@ class StallDetector {
     
     func stopMonitoring() {
         isMonitoring = false
+    }
+}
+
+// MARK: - StallDetector Observer Manager
+class StallDetectorObserverManager {
+    static let shared = StallDetectorObserverManager()
+    
+    private var stallObserver: NSObjectProtocol?
+    private var recoveryObserver: NSObjectProtocol?
+    private var removalTask: Task<Void, Never>?
+    
+    private init() {}
+    
+    func startObserving() {
+        // Remove any existing observers first
+        stopObserving()
+        
+        // Set up observers for stall detection notifications
+        stallObserver = NotificationCenter.default.addObserver(
+            forName: .stallDetectorStallDetected,
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🔍 Observer: Received stall detection notification")
+        }
+        
+        recoveryObserver = NotificationCenter.default.addObserver(
+            forName: .stallDetectorRecoveryCompleted,
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("🔍 Observer: Received recovery completion notification")
+        }
+        
+        print("🔍 Observer: Started observing StallDetector notifications")
+        
+        // Auto-remove observer after 10 seconds
+        removalTask = Task {
+            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+            await MainActor.run {
+                self.stopObserving()
+                print("🔍 Observer: Auto-removed StallDetector observers after 10 seconds")
+            }
+        }
+    }
+    
+    func stopObserving() {
+        if let stallObserver = stallObserver {
+            NotificationCenter.default.removeObserver(stallObserver)
+            self.stallObserver = nil
+        }
+        
+        if let recoveryObserver = recoveryObserver {
+            NotificationCenter.default.removeObserver(recoveryObserver)
+            self.recoveryObserver = nil
+        }
+        
+        removalTask?.cancel()
+        removalTask = nil
+        
+        print("🔍 Observer: Stopped observing StallDetector notifications")
+    }
+    
+    deinit {
+        stopObserving()
     }
 }
 
@@ -1180,6 +1256,9 @@ class StartupCoordinator {
         
         // Start stall detection
         StallDetector.shared.startMonitoring()
+        
+        // Start observing stall detector notifications (will auto-remove after 10 seconds)
+        StallDetectorObserverManager.shared.startObserving()
         
         // Set up system call monitoring
         SystemCallInterceptor.shared.setupSystemCallMonitoring()
@@ -1518,6 +1597,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // CRITICAL: Stop all background monitoring first
         StallDetector.shared.stopMonitoring()
+        StallDetectorObserverManager.shared.stopObserving()
         
         // CRITICAL: Clean up all state objects to prevent retain cycles during shutdown
         cleanupAllStateObjects()
@@ -1541,6 +1621,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func cleanupAllStateObjects() {
         // Stop monitoring systems
         StallDetector.shared.stopMonitoring()
+        StallDetectorObserverManager.shared.stopObserving()
         
         // Clean up any remaining state objects
         // This helps prevent retain cycles during SwiftUI cleanup
