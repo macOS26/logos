@@ -227,6 +227,20 @@ struct SkewedRectangleIcon: View {
     }
 }
 
+// MARK: - Tool Item for flexible toolbar display
+struct ToolItem {
+    let tool: DrawingTool
+    let starVariant: StarVariant?
+    
+    var toolIdentifier: String {
+        if let variant = starVariant {
+            return "star_\(variant.rawValue)"
+        } else {
+            return tool.rawValue
+        }
+    }
+}
+
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var starHUDManager = StarToolHUDManager()
@@ -234,9 +248,80 @@ struct VerticalToolbar: View {
 
     // MARK: - Tool Group Functions
     
-    private func handleToolLongPress(_ tool: DrawingTool) {
-        toolGroupManager.longPressedTool(tool)
+    private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
+        toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
         print("🔧 Long press on tool: \(tool.rawValue)")
+    }
+    
+    // MARK: - Flexible Toolbar Display Logic
+    
+    private func getToolsToDisplay() -> [ToolItem] {
+        var toolsToShow: [ToolItem] = []
+        
+        // Get all unique tool groups
+        let allToolGroups = getAllToolGroups()
+        
+        for toolGroup in allToolGroups {
+            let primaryTool = toolGroup[0]
+            
+            // Check if this tool group should show all items
+            if let currentTool = toolGroupManager.currentToolInGroup,
+               toolGroup.contains(currentTool) && toolGroupManager.showingAllItems {
+                
+                if primaryTool == .star {
+                    // Show all star variants
+                    for variant in StarVariant.allCases {
+                        toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
+                    }
+                } else {
+                    // Show all tools in the group
+                    for tool in toolGroup {
+                        toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
+                    }
+                }
+            } else {
+                // Show only primary tool for this group
+                if primaryTool == .star {
+                    // Show selected star variant or default
+                    toolsToShow.append(ToolItem(tool: .star, starVariant: starHUDManager.selectedVariant))
+                } else {
+                    // Show primary tool or the current tool if it's in this group
+                    let toolToShow = toolGroupManager.currentToolInGroup != nil && toolGroup.contains(toolGroupManager.currentToolInGroup!) ? toolGroupManager.currentToolInGroup! : primaryTool
+                    toolsToShow.append(ToolItem(tool: toolToShow, starVariant: nil))
+                }
+            }
+        }
+        
+        return toolsToShow
+    }
+    
+    private func getAllToolGroups() -> [[DrawingTool]] {
+        return [
+            [.selection],
+            [.scale],
+            [.rotate],
+            [.shear],
+            [.directSelection],
+            [.convertAnchorPoint],
+            [.line, .bezierPen, .freehand],
+            [.brush, .marker],
+            [.font],
+            [.rectangle, .circle, .polygon],
+            [.star], // Special case - has variants
+            [.eyedropper],
+            [.hand],
+            [.zoom],
+            [.warp],
+            [.gradient]
+        ]
+    }
+    
+    private func isToolSelected(_ toolItem: ToolItem) -> Bool {
+        if let starVariant = toolItem.starVariant {
+            return document.currentTool == .star && starHUDManager.selectedVariant == starVariant
+        } else {
+            return document.currentTool == toolItem.tool
+        }
     }
 
     
@@ -246,7 +331,7 @@ struct VerticalToolbar: View {
                 VStack(spacing: 2) {
                     // Drawing Tools
                     ToolSection(title: "Drawing") {
-                        ForEach(DrawingTool.allCases, id: \.self) { tool in
+                        ForEach(getToolsToDisplay(), id: \.toolIdentifier) { toolItem in
                             Button {
                                 // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
                                 var popCount = 0
@@ -260,31 +345,51 @@ struct VerticalToolbar: View {
                                     NSCursor.arrow.set()
                                 }
                                 
-                                document.currentTool = tool
-                                tool.cursor.push()
+                                // Handle tool selection
+                                if let starVariant = toolItem.starVariant {
+                                    toolGroupManager.selectStarVariant(starVariant)
+                                    starHUDManager.selectedVariant = starVariant
+                                    document.currentTool = .star
+                                    
+                                    // Update tool group to make this the primary tool
+                                    toolGroupManager.currentToolInGroup = .star
+                                    print("⭐ Selected star variant: \(starVariant.rawValue)")
+                                } else {
+                                    document.currentTool = toolItem.tool
+                                    
+                                    // Update tool group to make this the primary tool
+                                    toolGroupManager.currentToolInGroup = toolItem.tool
+                                    print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
+                                }
                                 
-                                print("🛠️ Switched to tool: \(tool.rawValue)")
+                                toolItem.tool.cursor.push()
                             } label: {
                                 Group {
-                                    if tool == .shear {
+                                    if toolItem.tool == .shear {
                                         // Use custom skewed rectangle icon for shear tool
-                                        SkewedRectangleIcon(isSelected: document.currentTool == tool)
-                                    } else if tool == .star {
+                                        SkewedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
+                                    } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
+                                        // Use specific star variant custom icon
+                                        starVariant.iconView(
+                                            isSelected: document.currentTool == .star && starHUDManager.selectedVariant == starVariant,
+                                            color: (document.currentTool == .star && starHUDManager.selectedVariant == starVariant) ? .white : .primary
+                                        )
+                                    } else if toolItem.tool == .star {
                                         // Use selected star variant custom icon
                                         starHUDManager.selectedVariant.iconView(
-                                            isSelected: document.currentTool == tool,
-                                            color: document.currentTool == tool ? .white : .primary
+                                            isSelected: document.currentTool == toolItem.tool,
+                                            color: document.currentTool == toolItem.tool ? .white : .primary
                                         )
                                     } else {
                                         // Use SF Symbols for all other tools
-                                        Image(systemName: tool.iconName)
+                                        Image(systemName: toolItem.tool.iconName)
                                             .font(.system(size: 16))
-                                            .foregroundColor(document.currentTool == tool ? .white : .primary)
+                                            .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
                                     }
                                 }
                                 .frame(width: 32, height: 32)
                                 .background(
-                                    document.currentTool == tool 
+                                    isToolSelected(toolItem)
                                     ? Color.blue.opacity(0.8)
                                     : Color.clear
                                 )
@@ -292,49 +397,68 @@ struct VerticalToolbar: View {
                                 .contentShape(Rectangle()) // Extend hit area to match entire button area
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .help(toolTooltip(for: tool))
-                                                    .background(
-                            GeometryReader { geometry in
-                                Color.clear
-                                    .onAppear {
-                                        // Store the button's frame for tool group positioning
-                                        let globalFrame = geometry.frame(in: .global)
-                                        toolGroupManager.setToolButtonFrame(tool, frame: globalFrame)
-                                    }
-                                    .onChange(of: geometry.frame(in: .global)) { _, newFrame in
-                                        // Update frame if it changes (e.g., during scrolling)
-                                        toolGroupManager.setToolButtonFrame(tool, frame: newFrame)
-                                    }
-                            }
-                        )
-                        .highPriorityGesture(
-                            TapGesture()
-                                .onEnded { _ in
-                                    // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                                    var popCount = 0
-                                    while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                                        NSCursor.pop()
-                                        popCount += 1
-                                    }
-                                    
-                                    // If still not arrow cursor, force reset
-                                    if NSCursor.current != NSCursor.arrow {
-                                        NSCursor.arrow.set()
-                                    }
-                                    
-                                    document.currentTool = tool
-                                    tool.cursor.push()
-                                    
-                                    print("🔧 Tool tap detected: \(tool.rawValue)")
+                            .help(toolTooltip(for: toolItem.tool, variant: toolItem.starVariant))
+                            .background(
+                                GeometryReader { geometry in
+                                    Color.clear
+                                        .onAppear {
+                                            // Store the button's frame for tool group positioning
+                                            let globalFrame = geometry.frame(in: .global)
+                                            toolGroupManager.setToolButtonFrame(toolItem.tool, frame: globalFrame)
+                                        }
+                                        .onChange(of: geometry.frame(in: .global)) { _, newFrame in
+                                            // Update frame if it changes (e.g., during scrolling)
+                                            toolGroupManager.setToolButtonFrame(toolItem.tool, frame: newFrame)
+                                        }
                                 }
-                        )
-                        .simultaneousGesture(
-                            LongPressGesture(minimumDuration: 0.5)
-                                .onEnded { _ in
-                                    // Long press completed - expand tool group
-                                    handleToolLongPress(tool)
-                                }
-                        )
+                            )
+                            .highPriorityGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
+                                        var popCount = 0
+                                        while NSCursor.current != NSCursor.arrow && popCount < 10 {
+                                            NSCursor.pop()
+                                            popCount += 1
+                                        }
+                                        
+                                        // If still not arrow cursor, force reset
+                                        if NSCursor.current != NSCursor.arrow {
+                                            NSCursor.arrow.set()
+                                        }
+                                        
+                                        // Handle tool selection
+                                        if let starVariant = toolItem.starVariant {
+                                            toolGroupManager.selectStarVariant(starVariant)
+                                            starHUDManager.selectedVariant = starVariant
+                                            document.currentTool = .star
+                                            
+                                            // Update tool group to make this the primary tool
+                                            toolGroupManager.currentToolInGroup = .star
+                                            print("🔧 Tool tap detected: \(starVariant.rawValue)")
+                                        } else {
+                                            document.currentTool = toolItem.tool
+                                            
+                                            // Update tool group to make this the primary tool
+                                            toolGroupManager.currentToolInGroup = toolItem.tool
+                                            print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
+                                        }
+                                        
+                                        toolItem.tool.cursor.push()
+                                    }
+                            )
+                            .simultaneousGesture(
+                                LongPressGesture(minimumDuration: 0.5)
+                                    .onEnded { _ in
+                                        // Long press completed - expand tool group
+                                        if let starVariant = toolItem.starVariant {
+                                            let variantIndex = StarVariant.allCases.firstIndex(of: starVariant) ?? 0
+                                            handleToolLongPress(.star, variantIndex: variantIndex)
+                                        } else {
+                                            handleToolLongPress(toolItem.tool)
+                                        }
+                                    }
+                            )
                         }
                     }
                     
@@ -356,18 +480,16 @@ struct VerticalToolbar: View {
                     .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
                 alignment: .trailing
             )
-            
-            // Expandable Tool Dock
-            ExpandableToolDock(groupManager: toolGroupManager, document: document)
-            
-            // Legacy Star HUD (keeping for now)
-            StarToolHUDContainer(hudManager: starHUDManager)
         }
     }
     
 
     
-    private func toolTooltip(for tool: DrawingTool) -> String {
+    private func toolTooltip(for tool: DrawingTool, variant: StarVariant? = nil) -> String {
+        if let starVariant = variant {
+            return "Star Tool - Draw \(starVariant.rawValue) (Long press for more variants)"
+        }
+        
         switch tool {
         case .selection:
             return "Selection Tool (V) - Select and move objects"

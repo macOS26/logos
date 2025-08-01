@@ -58,6 +58,7 @@ class ToolGroupManager: ObservableObject {
     
     func selectStarVariant(_ variant: StarVariant) {
         selectedVariant = variant
+        currentToolInGroup = .star
         print("⭐ Selected star variant: \(variant.rawValue)")
     }
     
