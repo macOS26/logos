@@ -310,10 +310,11 @@ extension DrawingCanvas {
             tolerance: smoothingTolerance
         )
         
-        // Step 2: Generate variable width brush stroke path using the SIMPLIFIED POINTS (like freehand!)
+        // Step 2: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling
         let brushStrokePath = generateSmoothVariableWidthPath(
             centerPoints: brushSimplifiedPoints,  // Use the clean simplified points!
+            rawPoints: brushRawPoints,  // Pass raw points with pressure data
             thickness: document.currentBrushThickness,  // Use current tool settings
             pressureSensitivity: document.currentBrushPressureSensitivity,  // Use current tool settings
             taper: document.currentBrushTaper  // Use current tool settings
@@ -487,15 +488,56 @@ extension DrawingCanvas {
         return createSmoothBrushOutline(leftEdgePath: leftEdgePath, rightEdgePath: rightEdgePath, startPoint: centerPoints.first!, endPoint: centerPoints.last!)
     }
     
-    // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
+    // MARK: - Pressure Interpolation
     
-    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
-        guard centerPoints.count >= 2 else {
-            // Fallback for single point
-            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
+    /// Interpolates pressure value for a simplified point based on nearby raw points
+    private func interpolatePressureForPoint(_ targetPoint: CGPoint, from rawPoints: [BrushPoint]) -> Double {
+        guard !rawPoints.isEmpty else { return 1.0 }
+        
+        // For better interpolation, find the two closest points and interpolate between them
+        var firstClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
+        var secondClosest: (distance: Double, pressure: Double) = (Double.infinity, 1.0)
+        
+        for rawPoint in rawPoints {
+            let distance = hypot(
+                targetPoint.x - rawPoint.location.x,
+                targetPoint.y - rawPoint.location.y
+            )
+            
+            if distance < firstClosest.distance {
+                // New closest point, move current closest to second
+                secondClosest = firstClosest
+                firstClosest = (distance, rawPoint.pressure)
+            } else if distance < secondClosest.distance {
+                // New second closest point
+                secondClosest = (distance, rawPoint.pressure)
+            }
         }
         
-        // Calculate variable thickness at each simplified point (NOT millions of points!)
+        // If we have two close points, interpolate between them
+        if secondClosest.distance != Double.infinity && firstClosest.distance > 0 {
+            let totalDistance = firstClosest.distance + secondClosest.distance
+            if totalDistance > 0 {
+                let weight1 = secondClosest.distance / totalDistance
+                let weight2 = firstClosest.distance / totalDistance
+                
+                return weight1 * firstClosest.pressure + weight2 * secondClosest.pressure
+            }
+        }
+        
+        // Otherwise, just use the closest point
+        return firstClosest.pressure
+    }
+    
+    // MARK: - Smooth Variable Width Path Generation (SAME APPROACH AS FREEHAND!)
+    
+    private func generateSmoothVariableWidthPath(centerPoints: [CGPoint], rawPoints: [BrushPoint], thickness: Double, pressureSensitivity: Double, taper: Double) -> VectorPath {
+        guard centerPoints.count >= 2 else {
+            // Fallback for single point
+            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
+        }
+        
+        // Calculate variable thickness at each simplified point with proper pressure interpolation
         var thicknessPoints: [(location: CGPoint, thickness: Double)] = []
         
         for (index, point) in centerPoints.enumerated() {
@@ -513,10 +555,12 @@ extension DrawingCanvas {
                 finalThickness *= endProgress
             }
             
-            // Apply pressure variation if we have pressure data (map to simplified points)
-            if index < brushRawPoints.count {
-                finalThickness *= brushRawPoints[index].pressure
-            }
+            // Interpolate pressure from raw points to simplified points
+            let interpolatedPressure = interpolatePressureForPoint(point, from: rawPoints)
+            
+            // Apply pressure variation with sensitivity control
+            let pressureMultiplier = 1.0 + (interpolatedPressure - 1.0) * pressureSensitivity
+            finalThickness *= pressureMultiplier
             
             thicknessPoints.append((location: point, thickness: finalThickness))
         }

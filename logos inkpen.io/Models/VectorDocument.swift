@@ -181,8 +181,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushTaper: Double = 0.3 // Current brush taper (0.0-1.0)
     @Published var currentBrushSmoothingTolerance: Double = 2.0 // Current brush smoothing tolerance (like freehand)
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
-    @Published var brushApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
-    @Published var brushRemoveOverlap: Bool = false // When enabled, applies union operation to merge overlapping parts
+    @Published var brushApplyNoStroke: Bool = true // When enabled, applies no stroke regardless of current stroke settings
+    @Published var brushRemoveOverlap: Bool = true // When enabled, applies union operation to merge overlapping parts
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
     @Published var canvasOffset: CGPoint = .zero

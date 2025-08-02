@@ -86,26 +86,46 @@ struct PathOperationsPanel: View {
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
                 
-                HStack(spacing: 6) {
-                    Button("Clean Duplicate Points") {
-                        if !document.selectedShapeIDs.isEmpty {
-                            ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
-                        } else {
-                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+                VStack(spacing: 6) {
+                    HStack(spacing: 6) {
+                        Button("Clean Duplicate Points") {
+                            if !document.selectedShapeIDs.isEmpty {
+                                ProfessionalPathOperations.cleanupSelectedShapesDuplicates(document, tolerance: 5.0)
+                            } else {
+                                ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 5.0)
+                            }
                         }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
+                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
+                        
+                        Button("Clean All Paths") {
+                            ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
+                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .help("Remove overlapping points and merge their curve data smoothly (⌘⇧K)")
-                    .disabled(document.layers.flatMap(\.shapes).isEmpty)
                     
-                    Button("Clean All Paths") {
-                        ProfessionalPathOperations.cleanupDocumentDuplicates(document, tolerance: 1.0)
+                    HStack(spacing: 6) {
+                        Button("Remove Overlap") {
+                            removeOverlapFromSelectedShapes()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .help("Remove self-intersections and overlapping areas within selected shapes")
+                        .disabled(document.selectedShapeIDs.isEmpty)
+                        
+                        Button("Remove All Overlaps") {
+                            removeOverlapFromAllShapes()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .help("Remove overlaps from all shapes in the document")
+                        .disabled(document.layers.flatMap(\.shapes).isEmpty)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("Clean duplicate points in all shapes in the document (⌘⌥K)")
-                    .disabled(document.layers.flatMap(\.shapes).isEmpty)
                 }
                 .padding(.horizontal, 12)
             }
@@ -478,5 +498,74 @@ struct PathOperationsPanel: View {
         print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
     }
     
+    // MARK: - Remove Overlap Functions
+    
+    /// Remove overlapping areas from selected shapes by applying self-union
+    private func removeOverlapFromSelectedShapes() {
+        guard !document.selectedShapeIDs.isEmpty else { return }
+        
+        let selectedShapes = document.getSelectedShapes()
+        var processedCount = 0
+        
+        for shape in selectedShapes {
+            if removeOverlapFromShape(shape) {
+                processedCount += 1
+            }
+        }
+        
+        print("✅ REMOVE OVERLAP: Processed \(processedCount) of \(selectedShapes.count) selected shapes")
+    }
+    
+    /// Remove overlapping areas from all shapes in the document
+    private func removeOverlapFromAllShapes() {
+        let allShapes = document.layers.flatMap { $0.shapes }
+        guard !allShapes.isEmpty else { return }
+        
+        var processedCount = 0
+        
+        for shape in allShapes {
+            if removeOverlapFromShape(shape) {
+                processedCount += 1
+            }
+        }
+        
+        print("✅ REMOVE ALL OVERLAPS: Processed \(processedCount) of \(allShapes.count) shapes")
+    }
+    
+    /// Remove overlapping areas from a single shape using self-union
+    @discardableResult
+    private func removeOverlapFromShape(_ shape: VectorShape) -> Bool {
+        let originalPath = shape.path.cgPath
+        
+        // Skip if path is empty or invalid
+        guard !originalPath.isEmpty && !originalPath.boundingBox.isNull && !originalPath.boundingBox.isInfinite else {
+            print("⚠️ REMOVE OVERLAP: Skipping shape with invalid path: \(shape.name)")
+            return false
+        }
+        
+        // Apply self-union to remove any self-intersections
+        if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
+            // Verify the cleaned path is valid
+            guard !cleanedPath.isEmpty && !cleanedPath.boundingBox.isNull && !cleanedPath.boundingBox.isInfinite else {
+                print("⚠️ REMOVE OVERLAP: Union produced invalid path for: \(shape.name)")
+                return false
+            }
+            
+            // Update the shape with the cleaned path
+            if let layerIndex = document.layers.firstIndex(where: { $0.shapes.contains { $0.id == shape.id } }),
+               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                
+                var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+                updatedShape.path = VectorPath(cgPath: cleanedPath)
+                document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                
+                print("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)")
+                return true
+            }
+        }
+        
+        print("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)")
+        return false
+    }
 
 } 

@@ -28,6 +28,9 @@ class PressureManager: ObservableObject {
     private var lastLocation: CGPoint?
     private var lastTimestamp: Date?
     
+    /// Debug tracking for pressure changes
+    private var lastRecordedPressure: Double?
+    
     /// Speed-based pressure simulation parameters
     private let maxSpeed: Double = 100.0
     private let speedSmoothingFactor: Double = 0.3
@@ -64,6 +67,12 @@ class PressureManager: ObservableObject {
             return
         }
         
+        // Mark that we have real pressure input
+        if !hasRealPressureInput {
+            hasRealPressureInput = true
+            print("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!")
+        }
+        
         // Real pressure is already in good range, just clamp it
         let clampedPressure = max(0.1, min(2.0, pressure))
         
@@ -74,6 +83,15 @@ class PressureManager: ObservableObject {
         // Update tracking for hybrid scenarios
         lastLocation = location
         lastTimestamp = timestamp
+        
+        // Debug output for pressure changes (only log significant changes to avoid spam)
+        if let lastPressure = lastRecordedPressure, abs(pressure - lastPressure) > 0.1 {
+            print("🎨 PRESSURE: \(String(format: "%.2f", pressure)) at (\(Int(location.x)), \(Int(location.y)))")
+            lastRecordedPressure = pressure
+        } else if lastRecordedPressure == nil {
+            lastRecordedPressure = pressure
+            print("🎨 PRESSURE: First pressure reading: \(String(format: "%.2f", pressure))")
+        }
     }
     
     /// Simulates pressure based on drawing speed when real pressure unavailable
@@ -131,7 +149,9 @@ class PressureManager: ObservableObject {
     func resetForNewDrawing() {
         lastLocation = nil
         lastTimestamp = nil
+        lastRecordedPressure = nil
         currentPressure = 1.0
+        print("🎨 PRESSURE MANAGER: Reset for new stroke")
     }
     
     /// Gets pressure for a specific point in a drawing operation
