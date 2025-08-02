@@ -2885,6 +2885,7 @@ class GradientWindowDelegate: NSObject, NSWindowDelegate {
 
 struct VariableStrokeSection: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -2926,18 +2927,36 @@ struct VariableStrokeSection: View {
                 .help("Adjust brush stroke thickness (1-100 points)")
             }
             
-            // Pressure Sensitivity
+            // Pressure Sensitivity Toggle
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Pressure Sensitivity")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(Int(document.currentBrushPressureSensitivity * 100))%")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .monospacedDigit()
+                    Toggle("", isOn: Binding(
+                        get: { appState.pressureSensitivityEnabled },
+                        set: { appState.pressureSensitivityEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle())
+                    .scaleEffect(0.8)
                 }
+                .help("Enable or disable pressure sensitivity for variable stroke")
+            }
+            
+            // Pressure Sensitivity Slider (only show when enabled)
+            if appState.pressureSensitivityEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Sensitivity")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(document.currentBrushPressureSensitivity * 100))%")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .monospacedDigit()
+                    }
                 
                 Slider(value: Binding(
                     get: { document.currentBrushPressureSensitivity },
@@ -2954,6 +2973,7 @@ struct VariableStrokeSection: View {
                         .foregroundColor(.secondary)
                 }
                 .help("How much pressure affects thickness (simulated if no pressure input)")
+            }
             }
             
             // Brush Taper
@@ -3080,6 +3100,7 @@ struct VariableStrokeSection: View {
 // MARK: - Marker Settings Section
 struct MarkerSettingsSection: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -3152,18 +3173,36 @@ struct MarkerSettingsSection: View {
                 .help("Adjust marker ink opacity (0-100%)")
             }
             
-            // Pressure Sensitivity
+            // Pressure Sensitivity Toggle
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("Pressure Sensitivity")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text("\(Int(document.currentMarkerPressureSensitivity * 100))%")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                        .monospacedDigit()
+                    Toggle("", isOn: Binding(
+                        get: { appState.pressureSensitivityEnabled },
+                        set: { appState.pressureSensitivityEnabled = $0 }
+                    ))
+                    .toggleStyle(SwitchToggleStyle())
+                    .scaleEffect(0.8)
                 }
+                .help("Enable or disable pressure sensitivity for marker tool")
+            }
+            
+            // Pressure Sensitivity Slider (only show when enabled)
+            if appState.pressureSensitivityEnabled {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Sensitivity")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(Int(document.currentMarkerPressureSensitivity * 100))%")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .monospacedDigit()
+                    }
                 
                 Slider(value: Binding(
                     get: { document.currentMarkerPressureSensitivity },
@@ -3180,6 +3219,7 @@ struct MarkerSettingsSection: View {
                         .foregroundColor(.secondary)
                 }
                 .help("How much pressure affects marker thickness (simulated if no pressure input)")
+            }
             }
             
             // Smoothing Tolerance

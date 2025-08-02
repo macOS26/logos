@@ -18,6 +18,9 @@ struct GradientEditingState {
 class AppState {
     var selectedPanelTab: PanelTab = .layers
     
+    // MARK: - Pressure Sensitivity Toggle
+    var pressureSensitivityEnabled: Bool = true
+    
     // MARK: - Gradient Editing State
     var gradientEditingState: GradientEditingState? = nil
     

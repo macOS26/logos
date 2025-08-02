@@ -28,6 +28,7 @@ struct HashableCGPoint: Hashable, Equatable {
 
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
     @State internal var isDrawing = false
     @State internal var dragOffset = CGSize.zero

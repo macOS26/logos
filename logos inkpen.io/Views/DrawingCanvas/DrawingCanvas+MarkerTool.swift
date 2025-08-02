@@ -112,6 +112,11 @@ extension DrawingCanvas {
     // MARK: - Pressure Simulation for Felt-Tip Marker
     
     private func calculateMarkerPressure(at location: CGPoint) -> Double {
+        // If pressure sensitivity is disabled, return constant pressure
+        if !appState.pressureSensitivityEnabled {
+            return 1.0
+        }
+        
         guard markerRawPoints.count > 1 else { return 1.0 }
         
         let lastPoint = markerRawPoints.last!.location

@@ -10,7 +10,48 @@ import SwiftUI
 // MARK: - Shape Creation Functions
 extension DrawingCanvas {
     
-    /// Create a professional 4-curve circle path
+    /// Create a professional 4-curve circle path that FILLS the entire bounds (like rectangle/ellipse tools)
+    internal func createCirclePath(rect: CGRect) -> VectorPath {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        // FIXED: Fill entire bounds like rectangle tool, not just inscribed circle
+        let radiusX = rect.width / 2   // Use full width
+        let radiusY = rect.height / 2  // Use full height  
+        let controlPointOffsetX = radiusX * 0.552
+        let controlPointOffsetY = radiusY * 0.552
+        
+        // PROFESSIONAL 4-CURVE ELLIPSE that fills bounds: Each quadrant gets its own curve
+        // Start at 3 o'clock, go clockwise: Right → Bottom → Left → Top → Back to Right
+        return VectorPath(elements: [
+            // Start at right (3 o'clock)
+            .move(to: VectorPoint(center.x + radiusX, center.y)),
+            
+            // Curve 1: Right → Bottom (3 o'clock to 6 o'clock)
+            .curve(to: VectorPoint(center.x, center.y + radiusY),
+                   control1: VectorPoint(center.x + radiusX, center.y + controlPointOffsetY),
+                   control2: VectorPoint(center.x + controlPointOffsetX, center.y + radiusY)),
+            
+            // Curve 2: Bottom → Left (6 o'clock to 9 o'clock)
+            .curve(to: VectorPoint(center.x - radiusX, center.y),
+                   control1: VectorPoint(center.x - controlPointOffsetX, center.y + radiusY),
+                   control2: VectorPoint(center.x - radiusX, center.y + controlPointOffsetY)),
+            
+            // Curve 3: Left → Top (9 o'clock to 12 o'clock)
+            .curve(to: VectorPoint(center.x, center.y - radiusY),
+                   control1: VectorPoint(center.x - radiusX, center.y - controlPointOffsetY),
+                   control2: VectorPoint(center.x - controlPointOffsetX, center.y - radiusY)),
+            
+            // Curve 4: Top → Right (12 o'clock back to 3 o'clock) - CRITICAL!
+            // This completes the ellipse with a proper curve, not a straight line
+            .curve(to: VectorPoint(center.x + radiusX, center.y),
+                   control1: VectorPoint(center.x + controlPointOffsetX, center.y - radiusY),
+                   control2: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY)),
+            
+            // Close the path (this just marks it as closed, the curves do the actual work)
+            .close
+        ], isClosed: true)
+    }
+
+    /// Create a professional 4-curve circle path (legacy center/radius method)
     internal func createCirclePath(center: CGPoint, radius: Double) -> VectorPath {
         let controlPointOffset = radius * 0.552
         

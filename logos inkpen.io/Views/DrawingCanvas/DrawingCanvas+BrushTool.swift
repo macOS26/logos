@@ -209,6 +209,11 @@ extension DrawingCanvas {
     // MARK: - Pressure Simulation
     
     private func calculateSimulatedPressure(at location: CGPoint) -> Double {
+        // If pressure sensitivity is disabled, return constant pressure
+        if !appState.pressureSensitivityEnabled {
+            return 1.0
+        }
+        
         guard brushRawPoints.count > 1 else { return 1.0 }
         
         let lastPoint = brushRawPoints.last!.location

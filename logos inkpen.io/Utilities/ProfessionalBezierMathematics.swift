@@ -292,6 +292,7 @@ struct ProfessionalBezierMathematics {
     // MARK: - Professional Handle Generation
     
     /// Generate smooth handles for a point based on neighboring points (Adobe Illustrator algorithm)
+    /// Enhanced with dynamic handle length scaling based on point distances
     static func generateSmoothHandles(previousPoint: VectorPoint?, currentPoint: VectorPoint, nextPoint: VectorPoint?, tension: Double = 0.33) -> (VectorPoint?, VectorPoint?) {
         var incomingHandle: VectorPoint?
         var outgoingHandle: VectorPoint?
@@ -310,8 +311,16 @@ struct ProfessionalBezierMathematics {
             let prevDistance = sqrt((currentPoint.x - prev.x) * (currentPoint.x - prev.x) + (currentPoint.y - prev.y) * (currentPoint.y - prev.y))
             let nextDistance = sqrt((next.x - currentPoint.x) * (next.x - currentPoint.x) + (next.y - currentPoint.y) * (next.y - currentPoint.y))
             
-            let incomingLength = prevDistance * tension
-            let outgoingLength = nextDistance * tension
+            // Enhanced dynamic tension calculation based on point distances
+            // For closer points: use standard tension
+            // For farther points: increase tension proportionally (longer handles)
+            let avgDistance = (prevDistance + nextDistance) / 2.0
+            let baseTension = tension
+            let distanceMultiplier = min(avgDistance / 50.0, 2.0) // Cap at 2x for very large distances
+            let dynamicTension = baseTension * (1.0 + distanceMultiplier * 0.5)
+            
+            let incomingLength = prevDistance * dynamicTension
+            let outgoingLength = nextDistance * dynamicTension
             
             // Generate handles
             incomingHandle = VectorPoint(
@@ -327,9 +336,13 @@ struct ProfessionalBezierMathematics {
             // Only previous point available
             let direction = VectorPoint(currentPoint.x - prev.x, currentPoint.y - prev.y)
             let directionLength = sqrt(direction.x * direction.x + direction.y * direction.y)
-            let handleLength = directionLength * tension
             
             if directionLength > 1e-10 {
+                // Apply dynamic tension for single point case
+                let distanceMultiplier = min(directionLength / 50.0, 2.0)
+                let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
+                let handleLength = directionLength * dynamicTension
+                
                 let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
                 outgoingHandle = VectorPoint(
                     currentPoint.x + normalizedDirection.x * handleLength,
@@ -340,9 +353,13 @@ struct ProfessionalBezierMathematics {
             // Only next point available
             let direction = VectorPoint(next.x - currentPoint.x, next.y - currentPoint.y)
             let directionLength = sqrt(direction.x * direction.x + direction.y * direction.y)
-            let handleLength = directionLength * tension
             
             if directionLength > 1e-10 {
+                // Apply dynamic tension for single point case
+                let distanceMultiplier = min(directionLength / 50.0, 2.0)
+                let dynamicTension = tension * (1.0 + distanceMultiplier * 0.5)
+                let handleLength = directionLength * dynamicTension
+                
                 let normalizedDirection = VectorPoint(direction.x / directionLength, direction.y / directionLength)
                 incomingHandle = VectorPoint(
                     currentPoint.x - normalizedDirection.x * handleLength,

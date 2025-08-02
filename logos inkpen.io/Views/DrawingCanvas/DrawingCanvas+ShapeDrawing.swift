@@ -87,19 +87,26 @@ extension DrawingCanvas {
                 .close
             ], isClosed: true)
         case .square:
-            // Create a square (equal width and height)
-            let size = max(abs(currentLocation.x - startPoint.x), abs(currentLocation.y - startPoint.y))
+            // FIXED: Pin square from upper left corner exactly like rectangle tool, but force square bounds
             let rect = CGRect(
-                x: min(startPoint.x, startPoint.x + (currentLocation.x > startPoint.x ? size : -size)),
-                y: min(startPoint.y, startPoint.y + (currentLocation.y > startPoint.y ? size : -size)),
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            // Force square by using the larger dimension for both width and height
+            let size = max(rect.width, rect.height)
+            let squareRect = CGRect(
+                x: rect.minX,
+                y: rect.minY,
                 width: size,
                 height: size
             )
             currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(rect.minX, rect.minY)),
-                .line(to: VectorPoint(rect.maxX, rect.minY)),
-                .line(to: VectorPoint(rect.maxX, rect.maxY)),
-                .line(to: VectorPoint(rect.minX, rect.maxY)),
+                .move(to: VectorPoint(squareRect.minX, squareRect.minY)),
+                .line(to: VectorPoint(squareRect.maxX, squareRect.minY)),
+                .line(to: VectorPoint(squareRect.maxX, squareRect.maxY)),
+                .line(to: VectorPoint(squareRect.minX, squareRect.maxY)),
                 .close
             ], isClosed: true)
         case .roundedRectangle:
@@ -123,13 +130,16 @@ extension DrawingCanvas {
             let cornerRadius = min(rect.width, rect.height) / 2 // Half of smallest dimension
             currentPath = createRoundedRectPath(rect: rect, cornerRadius: cornerRadius)
         case .circle:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
+            // FIXED: Pin circle from upper left corner exactly like rectangle tool
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
             )
-            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
-            currentPath = createCirclePath(center: center, radius: radius)
+            currentPath = createCirclePath(rect: rect)
         case .ellipse:
+            // FIXED: Pin ellipse from upper left corner exactly like rectangle tool
             let rect = CGRect(
                 x: min(startPoint.x, currentLocation.x),
                 y: min(startPoint.y, currentLocation.y),
