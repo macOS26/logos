@@ -206,18 +206,23 @@ extension DrawingCanvas {
                 .close
             ], isClosed: true)
         case .rightTriangle:
-            // FIXED: Pin triangle from start point AND flip based on drag direction
-            let dragDeltaX = currentLocation.x - startPoint.x
-            let dragDeltaY = currentLocation.y - startPoint.y
+            // Use rectangle pattern to avoid Y inversion issues
             let rect = CGRect(
-                x: startPoint.x,
-                y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
             )
-            // Determine orientation based on drag direction
-            let rightAngleAtStart = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0)
-            currentPath = createRightTrianglePath(rect: rect, rightAngleAtStart: rightAngleAtStart)
+            // Determine orientation based on X direction
+            let dragDirection = currentLocation.x >= startPoint.x ? "RIGHT" : "LEFT"
+            
+            print("🔺 RIGHT TRIANGLE DEBUG:")
+            print("  startPoint: (\(startPoint.x), \(startPoint.y))")
+            print("  currentLocation: (\(currentLocation.x), \(currentLocation.y))")
+            print("  rect: \(rect)")
+            print("  dragDirection: \(dragDirection)")
+            
+            currentPath = createRightTrianglePath(rect: rect, dragDirection: dragDirection)
         case .acuteTriangle:
             // FIXED: Pin triangle from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x

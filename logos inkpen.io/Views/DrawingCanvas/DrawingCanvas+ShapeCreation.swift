@@ -260,8 +260,8 @@ extension DrawingCanvas {
     }
     
     /// Create a right triangle path that flips based on drag direction
-    internal func createRightTrianglePath(rect: CGRect, rightAngleAtStart: Bool = true) -> VectorPath {
-        // Normalize rect to handle negative width/height from different drag directions
+    internal func createRightTrianglePath(rect: CGRect, dragDirection: String) -> VectorPath {
+        // Normalize rect to get proper bounds, but handle flipping separately
         let normalizedRect = CGRect(
             x: min(rect.minX, rect.maxX),
             y: min(rect.minY, rect.maxY),
@@ -274,20 +274,31 @@ extension DrawingCanvas {
         let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
         let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
         
-        if rightAngleAtStart {
-            // Right angle at start point (top-left): topLeft -> bottomLeft -> bottomRight
+        print("🔺 CREATE RIGHT TRIANGLE DEBUG:")
+        print("  input rect: \(rect)")
+        print("  normalizedRect: \(normalizedRect)")
+        print("  topLeft: \(topLeft)")
+        print("  topRight: \(topRight)")
+        print("  bottomLeft: \(bottomLeft)")
+        print("  bottomRight: \(bottomRight)")
+        print("  dragDirection: \(dragDirection)")
+        
+        if dragDirection == "RIGHT" {
+            // Dragging right: Right angle at bottom-left, hypotenuse from top-left to bottom-right
+            print("  CREATING: Right triangle for RIGHT drag - right angle at bottom-left")
             return VectorPath(elements: [
-                .move(to: topLeft),
-                .line(to: bottomLeft),
+                .move(to: bottomLeft),
+                .line(to: topLeft),
                 .line(to: bottomRight),
                 .close
             ], isClosed: true)
         } else {
-            // Right angle at opposite corner (bottom-right): topLeft -> topRight -> bottomRight
+            // Dragging left: Right angle at bottom-right, hypotenuse from top-right to bottom-left  
+            print("  CREATING: Right triangle for LEFT drag - right angle at bottom-right")
             return VectorPath(elements: [
-                .move(to: topLeft),
+                .move(to: bottomRight),
                 .line(to: topRight),
-                .line(to: bottomRight),
+                .line(to: bottomLeft),
                 .close
             ], isClosed: true)
         }
