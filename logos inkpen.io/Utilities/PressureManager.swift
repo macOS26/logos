@@ -41,8 +41,10 @@ class PressureManager: ObservableObject {
     // MARK: - Pressure Detection
     
     private func detectInitialPressureSupport() {
-        hasRealPressureInput = NSEvent.pressureSupported
-        print("🎨 PRESSURE MANAGER: Initial detection - hasRealPressureInput: \(hasRealPressureInput)")
+        // Check if the system supports pressure by checking available input devices
+        // We'll detect this more accurately when we actually receive pressure events
+        hasRealPressureInput = false // Start as false, will be updated when real events detected
+        print("🎨 PRESSURE MANAGER: Initial detection - will detect on first pressure event")
     }
     
     /// Updates pressure support status based on actual events
