@@ -16,7 +16,10 @@ extension DrawingCanvas {
         // CRITICAL FIX: Shape tools should only work on DRAG, not click
         // Calculate actual drag distance to distinguish click vs drag
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let minimumDragThreshold: Double = 12.0 // Must drag at least 12 pixels to start drawing shapes
+        
+        // EQUILATERAL TRIANGLE: Allow truly free drawing from 0,0 (no minimum threshold)
+        // OTHER SHAPES: Must drag at least 12 pixels to start drawing shapes
+        let minimumDragThreshold: Double = (document.currentTool == .equilateralTriangle) ? 0.0 : 12.0
         
         // Only proceed with shape creation if user has dragged significantly
         if dragDistance < minimumDragThreshold {
