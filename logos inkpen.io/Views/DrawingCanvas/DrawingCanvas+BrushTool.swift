@@ -133,9 +133,11 @@ extension DrawingCanvas {
         brushRawPoints = [BrushPoint(location: location, pressure: 1.0, timestamp: Date())]
         brushSimplifiedPoints = []
         
-        // Detect pressure input capability (for now, we use simulated pressure)
-        // TODO: Implement real pressure detection when available
-        document.hasPressureInput = false
+        // Detect pressure input capability using PressureManager
+        document.hasPressureInput = PressureManager.shared.hasRealPressureInput
+        
+        // Reset pressure manager for new drawing
+        PressureManager.shared.resetForNewDrawing()
         
         // Create initial VectorPath for center line
         let startPoint = VectorPoint(location)
@@ -168,8 +170,8 @@ extension DrawingCanvas {
     internal func handleBrushDragUpdate(at location: CGPoint) {
         guard isBrushDrawing else { return }
         
-        // Calculate pressure simulation (can be enhanced with real pressure data)
-        let pressure = calculateSimulatedPressure(at: location)
+        // Get pressure using smart detection (real or simulated)
+        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
         
         // Add point to raw path with pressure data
         let brushPoint = BrushPoint(location: location, pressure: pressure, timestamp: Date())

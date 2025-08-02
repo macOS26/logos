@@ -19,7 +19,10 @@ class AppState {
     var selectedPanelTab: PanelTab = .layers
     
     // MARK: - Pressure Sensitivity Toggle
-    var pressureSensitivityEnabled: Bool = true
+    var pressureSensitivityEnabled: Bool {
+        get { PressureManager.shared.pressureSensitivityEnabled }
+        set { PressureManager.shared.pressureSensitivityEnabled = newValue }
+    }
     
     // MARK: - Gradient Editing State
     var gradientEditingState: GradientEditingState? = nil

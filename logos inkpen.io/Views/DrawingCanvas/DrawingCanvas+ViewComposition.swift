@@ -174,14 +174,19 @@ extension DrawingCanvas {
     
     @ViewBuilder
     internal func canvasMainContent(geometry: GeometryProxy) -> some View {
-        canvasBaseContent(geometry: geometry)
-            // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
-            .onAppear {
-                setupCanvas(geometry: geometry)
-                setupKeyEventMonitoring()
-                setupToolKeyboardShortcuts()
-                previousTool = document.currentTool
-            }
+        ZStack {
+            canvasBaseContent(geometry: geometry)
+            
+            // Pressure-sensitive overlay for real Apple Pencil pressure detection
+            pressureSensitiveOverlay(geometry: geometry)
+        }
+        // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
+        .onAppear {
+            setupCanvas(geometry: geometry)
+            setupKeyEventMonitoring()
+            setupToolKeyboardShortcuts()
+            previousTool = document.currentTool
+        }
             .onDisappear {
                 teardownKeyEventMonitoring()
             }
@@ -240,5 +245,92 @@ extension DrawingCanvas {
         gradientEditTool(geometry: geometry)
     }
     
+    // MARK: - Pressure-Sensitive Overlay
+    
+    @ViewBuilder
+    internal func pressureSensitiveOverlay(geometry: GeometryProxy) -> some View {
+        // Only show pressure overlay for drawing tools that use pressure
+        if document.currentTool == .brush || document.currentTool == .marker {
+            PressureSensitiveCanvasRepresentable(
+                onPressureEvent: { location, pressure, eventType in
+                    handlePressureEvent(location: location, pressure: pressure, eventType: eventType, geometry: geometry)
+                },
+                hasPressureSupport: .constant(PressureManager.shared.hasRealPressureInput)
+            )
+            .allowsHitTesting(true)
+            .background(Color.clear)
+        }
+    }
+    
+    // MARK: - Pressure Event Handling
+    
+    private func handlePressureEvent(
+        location: CGPoint, 
+        pressure: Double, 
+        eventType: PressureSensitiveCanvasView.PressureEventType,
+        geometry: GeometryProxy
+    ) {
+        // Convert to canvas coordinates
+        let canvasLocation = screenToCanvas(location, geometry: geometry)
+        
+        // Update pressure manager with real pressure data
+        PressureManager.shared.processRealPressure(pressure, at: canvasLocation)
+        PressureManager.shared.updatePressureSupport(true)
+        
+        // Route to appropriate tool based on event type and current tool
+        switch eventType {
+        case .began:
+            handlePressureDrawingStart(at: canvasLocation)
+        case .changed:
+            handlePressureDrawingUpdate(at: canvasLocation)
+        case .ended:
+            handlePressureDrawingEnd(at: canvasLocation)
+        }
+    }
+    
+    private func handlePressureDrawingStart(at location: CGPoint) {
+        switch document.currentTool {
+        case .brush:
+            if !isBrushDrawing {
+                handleBrushDragStart(at: location)
+            }
+        case .marker:
+            if !isMarkerDrawing {
+                handleMarkerDragStart(at: location)
+            }
+        default:
+            break
+        }
+    }
+    
+    private func handlePressureDrawingUpdate(at location: CGPoint) {
+        switch document.currentTool {
+        case .brush:
+            if isBrushDrawing {
+                handleBrushDragUpdate(at: location)
+            }
+        case .marker:
+            if isMarkerDrawing {
+                handleMarkerDragUpdate(at: location)
+            }
+        default:
+            break
+        }
+    }
+    
+    private func handlePressureDrawingEnd(at location: CGPoint) {
+        switch document.currentTool {
+        case .brush:
+            if isBrushDrawing {
+                handleBrushDragEnd()
+            }
+        case .marker:
+            if isMarkerDrawing {
+                handleMarkerDragEnd()
+            }
+        default:
+            break
+        }
+    }
 
 } 

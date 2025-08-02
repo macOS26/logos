@@ -30,6 +30,9 @@ extension DrawingCanvas {
         markerRawPoints = [MarkerPoint(location: location, pressure: 1.0, timestamp: Date())]
         markerSimplifiedPoints = []
         
+        // Reset pressure manager for new drawing
+        PressureManager.shared.resetForNewDrawing()
+        
         // Create initial VectorPath for center line
         let startPoint = VectorPoint(location)
         markerPath = VectorPath(elements: [.move(to: startPoint)])
@@ -73,8 +76,8 @@ extension DrawingCanvas {
     internal func handleMarkerDragUpdate(at location: CGPoint) {
         guard isMarkerDrawing else { return }
         
-        // Calculate pressure simulation for felt-tip marker
-        let pressure = calculateMarkerPressure(at: location)
+        // Get pressure using smart detection (real or simulated)
+        let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentMarkerPressureSensitivity)
         
         // Add point to raw path with pressure data
         let markerPoint = MarkerPoint(location: location, pressure: pressure, timestamp: Date())
