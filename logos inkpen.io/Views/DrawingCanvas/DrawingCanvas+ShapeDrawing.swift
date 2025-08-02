@@ -192,19 +192,50 @@ extension DrawingCanvas {
             )
             currentPath = createEllipsePath(rect: adjustedRect)
         case .equilateralTriangle:
-            // EXACT SAME PATTERN AS RECTANGLE - NO FLOATING!
-            let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+            // FIXED: Use square tool's pinning approach to prevent drift + make truly equilateral
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
+            
+            // Use the larger absolute delta to maintain equilateral proportions
+            let size = max(abs(dragDeltaX), abs(dragDeltaY))
+            
+            // Create equilateral triangle that grows from startPoint in direction of cursor
+            // For equilateral triangle: height = side * sqrt(3)/2, so side = height * 2/sqrt(3)
+            let triangleHeight = dragDeltaY >= 0 ? size : -size
+            let triangleWidth = abs(triangleHeight) * 2.0 / sqrt(3.0) // Convert height to equilateral base width
+            
+            // Pin triangle from start point (upper left corner of bounding box)
+            let triangleRect = CGRect(
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX >= 0 ? triangleWidth : -triangleWidth,
+                height: triangleHeight
             )
+            
+            // Create true equilateral triangle with equal side lengths
+            let centerX = triangleRect.midX
+            let topY = triangleRect.minY
+            let bottomY = triangleRect.maxY
+            let baseHalfWidth = triangleWidth / 2.0
+            
             currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(rect.midX, rect.minY)),
-                .line(to: VectorPoint(rect.minX, rect.maxY)),
-                .line(to: VectorPoint(rect.maxX, rect.maxY)),
+                .move(to: VectorPoint(centerX, topY)),
+                .line(to: VectorPoint(centerX - baseHalfWidth, bottomY)),
+                .line(to: VectorPoint(centerX + baseHalfWidth, bottomY)),
                 .close
             ], isClosed: true)
+            
+            // DEBUG: Add visual bounding box to verify no drift (pin upper left corner)
+            let boundingBox = VectorPath(elements: [
+                .move(to: VectorPoint(triangleRect.minX, triangleRect.minY)),
+                .line(to: VectorPoint(triangleRect.maxX, triangleRect.minY)),
+                .line(to: VectorPoint(triangleRect.maxX, triangleRect.maxY)),
+                .line(to: VectorPoint(triangleRect.minX, triangleRect.maxY)),
+                .close
+            ], isClosed: false)
+            
+            // Store bounding box for visual verification (temporary debug feature)
+            tempBoundingBoxPath = boundingBox
         case .rightTriangle:
             // Use rectangle pattern to avoid Y inversion issues
             let rect = CGRect(

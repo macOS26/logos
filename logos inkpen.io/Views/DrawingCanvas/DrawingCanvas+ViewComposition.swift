@@ -23,6 +23,16 @@ extension DrawingCanvas {
             drawingDimensionsOverlay(for: currentPath)
         }
         
+        // DEBUG: Bounding box visualization for triangle drift verification
+        if let boundingBoxPath = tempBoundingBoxPath {
+            Path { path in
+                addPathElements(boundingBoxPath.elements, to: &path)
+            }
+            .stroke(Color.red, style: SwiftUI.StrokeStyle(lineWidth: 1.0, dash: [5, 5]))
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+        
         // PROFESSIONAL REAL-TIME BEZIER PATH (Adobe Illustrator style - shows actual path with real colors)
         // Note: Real bezier shapes are now shown as actual VectorShapes in the document
         

@@ -30,6 +30,7 @@ struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) internal var appState
     @State internal var currentPath: VectorPath?
+    @State internal var tempBoundingBoxPath: VectorPath? // DEBUG: Temporary bounding box for triangle drift verification
     @State internal var isDrawing = false
     @State internal var dragOffset = CGSize.zero
     @State internal var lastPanLocation = CGPoint.zero

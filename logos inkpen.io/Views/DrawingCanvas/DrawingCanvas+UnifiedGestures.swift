@@ -248,6 +248,7 @@ extension DrawingCanvas {
     private func resetShapeDrawingState() {
         isDrawing = false
         currentPath = nil
+        tempBoundingBoxPath = nil // Clear debug bounding box
         currentDrawingPoints.removeAll()
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
