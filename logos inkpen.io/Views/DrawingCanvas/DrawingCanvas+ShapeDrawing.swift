@@ -128,7 +128,8 @@ extension DrawingCanvas {
                 width: abs(rect.width),
                 height: abs(rect.height)
             )
-            let cornerRadius = min(normalizedRect.width, normalizedRect.height) * 0.15 // 15% of smallest dimension
+            // Use 20pt radius for drawing preview (matches creation default)
+            let cornerRadius: Double = 20.0
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .pill:
             // FIXED: Pin pill from start point like rectangle tool
@@ -349,14 +350,46 @@ extension DrawingCanvas {
             opacity: document.defaultFillOpacity  // 100% opacity by default
         )
         
-        let shape = VectorShape(
-            name: document.currentTool.rawValue,
-            path: path,
-            strokeStyle: strokeStyle,
-            fillStyle: fillStyle
-        )
-        
-        document.addShape(shape)
+        // LIVE CORNER RADIUS: Special handling for rounded rectangles
+        if document.currentTool == .roundedRectangle {
+            // Calculate original bounds from drawing coordinates
+            let startPoint = shapeStartPoint
+            let currentLocation = screenToCanvas(value.location, geometry: geometry)
+            
+            let originalBounds = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            
+            // Initial radius in POINTS (like Adobe Illustrator) - start with 20pt
+            let initialRadius: Double = 20.0
+            let cornerRadii = [initialRadius, initialRadius, initialRadius, initialRadius] // All corners equal initially
+            
+            let shape = VectorShape(
+                name: document.currentTool.rawValue,
+                path: path,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle,
+                isRoundedRectangle: true,
+                originalBounds: originalBounds,
+                cornerRadii: cornerRadii
+            )
+            
+            document.addShape(shape)
+            print("✅ Created LIVE rounded rectangle: bounds=\(originalBounds), radii=\(cornerRadii)pt")
+        } else {
+            // Standard shape creation
+            let shape = VectorShape(
+                name: document.currentTool.rawValue,
+                path: path,
+                strokeStyle: strokeStyle,
+                fillStyle: fillStyle
+            )
+            
+            document.addShape(shape)
+        }
         print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
         
         // PROFESSIONAL SHAPE DRAWING: Clean state reset for next drawing operation

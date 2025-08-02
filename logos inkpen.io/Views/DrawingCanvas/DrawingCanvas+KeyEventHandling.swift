@@ -20,6 +20,7 @@ extension DrawingCanvas {
                     self.isShiftPressed = event.modifierFlags.contains(.shift)
                     self.isOptionPressed = event.modifierFlags.contains(.option)
                     self.isCommandPressed = event.modifierFlags.contains(.command)
+                    self.isControlPressed = event.modifierFlags.contains(.control)
                     
                     // Debug logging for key state changes
                     if self.isShiftPressed {

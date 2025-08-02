@@ -60,6 +60,7 @@ struct DrawingCanvas: View {
     @State internal var isShiftPressed = false
     @State internal var isCommandPressed = false
     @State internal var isOptionPressed = false
+    @State internal var isControlPressed = false
     @State internal var keyEventMonitor: Any?
     
     // Bezier tool specific state
@@ -114,6 +115,7 @@ struct DrawingCanvas: View {
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []
     @State internal var directSelectedShapeIDs: Set<UUID> = [] // Track which shapes have been direct-selected
+    @State internal var isCornerRadiusEditMode = false // Control-Click to enter corner radius editing mode
     @State internal var isDraggingPoint = false
     @State internal var isDraggingHandle = false
     @State internal var dragStartLocation: CGPoint = .zero

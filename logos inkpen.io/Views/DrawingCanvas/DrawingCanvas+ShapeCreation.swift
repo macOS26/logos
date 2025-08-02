@@ -190,6 +190,64 @@ extension DrawingCanvas {
         return VectorPath(elements: elements, isClosed: true)
     }
     
+    /// Create a rounded rectangle path with individual corner radii (Adobe Illustrator style)
+    internal func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Double]) -> VectorPath {
+        // Ensure we have exactly 4 radii: [topLeft, topRight, bottomRight, bottomLeft]
+        guard cornerRadii.count == 4 else {
+            return createRoundedRectPath(rect: rect, cornerRadius: 0)
+        }
+        
+        let topLeftRadius = min(cornerRadii[0], min(rect.width, rect.height) / 2)
+        let topRightRadius = min(cornerRadii[1], min(rect.width, rect.height) / 2)
+        let bottomRightRadius = min(cornerRadii[2], min(rect.width, rect.height) / 2)
+        let bottomLeftRadius = min(cornerRadii[3], min(rect.width, rect.height) / 2)
+        
+        // Bezier control point offsets for each corner
+        let topLeftOffset = topLeftRadius * 0.552
+        let topRightOffset = topRightRadius * 0.552
+        let bottomRightOffset = bottomRightRadius * 0.552
+        let bottomLeftOffset = bottomLeftRadius * 0.552
+        
+        return VectorPath(elements: [
+            // Start at top-left corner (after radius)
+            .move(to: VectorPoint(rect.minX + topLeftRadius, rect.minY)),
+            
+            // Top edge
+            .line(to: VectorPoint(rect.maxX - topRightRadius, rect.minY)),
+            
+            // Top-right corner curve
+            .curve(to: VectorPoint(rect.maxX, rect.minY + topRightRadius),
+                   control1: VectorPoint(rect.maxX - topRightRadius + topRightOffset, rect.minY),
+                   control2: VectorPoint(rect.maxX, rect.minY + topRightRadius - topRightOffset)),
+            
+            // Right edge
+            .line(to: VectorPoint(rect.maxX, rect.maxY - bottomRightRadius)),
+            
+            // Bottom-right corner curve
+            .curve(to: VectorPoint(rect.maxX - bottomRightRadius, rect.maxY),
+                   control1: VectorPoint(rect.maxX, rect.maxY - bottomRightRadius + bottomRightOffset),
+                   control2: VectorPoint(rect.maxX - bottomRightRadius + bottomRightOffset, rect.maxY)),
+            
+            // Bottom edge
+            .line(to: VectorPoint(rect.minX + bottomLeftRadius, rect.maxY)),
+            
+            // Bottom-left corner curve
+            .curve(to: VectorPoint(rect.minX, rect.maxY - bottomLeftRadius),
+                   control1: VectorPoint(rect.minX + bottomLeftRadius - bottomLeftOffset, rect.maxY),
+                   control2: VectorPoint(rect.minX, rect.maxY - bottomLeftRadius + bottomLeftOffset)),
+            
+            // Left edge
+            .line(to: VectorPoint(rect.minX, rect.minY + topLeftRadius)),
+            
+            // Top-left corner curve
+            .curve(to: VectorPoint(rect.minX + topLeftRadius, rect.minY),
+                   control1: VectorPoint(rect.minX, rect.minY + topLeftRadius - topLeftOffset),
+                   control2: VectorPoint(rect.minX + topLeftRadius - topLeftOffset, rect.minY)),
+            
+            .close
+        ], isClosed: true)
+    }
+
     /// Create a rounded rectangle path
     internal func createRoundedRectPath(rect: CGRect, cornerRadius: Double) -> VectorPath {
         let radius = min(cornerRadius, min(rect.width, rect.height) / 2)

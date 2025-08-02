@@ -25,11 +25,63 @@ extension DrawingCanvas {
             return
         }
         
-        // CRITICAL: Regular Selection tool must clear direct selection
+        // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (Adobe Illustrator style)
+        if isControlPressed && document.currentTool == .selection {
+            print("🎯 CONTROL+CLICK: Checking for rounded rectangle to enter corner radius mode")
+            
+            // Find the clicked shape first
+            var clickedShape: VectorShape? = nil
+            
+            // Search through layers from top to bottom (same logic as regular selection)
+            outerLoop: for layerIndex in document.layers.indices.reversed() {
+                let layer = document.layers[layerIndex]
+                if !layer.isVisible { continue }
+                
+                for shape in layer.shapes.reversed() {
+                    if !shape.isVisible { continue }
+                    
+                    // Skip background shapes
+                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+                    if isBackgroundShape { continue }
+                    
+                    // Simple bounds-based hit test for Control-Click
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                    
+                    if expandedBounds.contains(location) {
+                        clickedShape = shape
+                        break outerLoop
+                    }
+                }
+            }
+            
+            // Check if the clicked shape is a rounded rectangle
+            if let shape = clickedShape, shape.isRoundedRectangle {
+                print("🎯 CONTROL+CLICK: Entering corner radius edit mode for rounded rectangle")
+                
+                // Select the shape and enter corner radius mode
+                document.selectedShapeIDs = [shape.id]
+                isCornerRadiusEditMode = true
+                
+                // Clear other selection modes
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+                directSelectedShapeIDs.removeAll()
+                
+                return
+            } else if clickedShape != nil {
+                print("🎯 CONTROL+CLICK: Clicked shape is not a rounded rectangle")
+            } else {
+                print("🎯 CONTROL+CLICK: No shape found at click location")
+            }
+        }
+        
+        // CRITICAL: Regular Selection tool must clear direct selection and corner radius mode
         // Professional tools have mutually exclusive selection modes
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
+        isCornerRadiusEditMode = false // Exit corner radius mode when doing regular selection
         
         // Only handle selection for selection and transform tools
         guard document.currentTool == .selection || 
@@ -273,6 +325,7 @@ extension DrawingCanvas {
             let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
+            isCornerRadiusEditMode = false // Exit corner radius mode when clicking empty space
             
             if wasSelected {
                 print("🎯 DESELECTED: Cleared selection due to empty area tap")

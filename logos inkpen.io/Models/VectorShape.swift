@@ -264,7 +264,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var warpEnvelope: [CGPoint]    // 4 corner points defining the current warp envelope
     var originalEnvelope: [CGPoint] // 4 corner points defining the original envelope (for continuous warping)
     
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = []) {
+    // MARK: - Live Corner Radius Properties (Professional Corner Editing)
+    var isRoundedRectangle: Bool = false
+    var originalBounds: CGRect?    // Original rectangle bounds (never changes, like originalPath)
+    var cornerRadii: [Double] = [] // Current radius for each corner [topLeft, topRight, bottomRight, bottomLeft] in points
+    
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = []) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -285,6 +290,9 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.originalPath = originalPath
         self.warpEnvelope = warpEnvelope
         self.originalEnvelope = originalEnvelope
+        self.isRoundedRectangle = isRoundedRectangle
+        self.originalBounds = originalBounds
+        self.cornerRadii = cornerRadii
     }
     
     var transformedPath: CGPath {
@@ -508,6 +516,48 @@ struct VectorShape: Codable, Hashable, Identifiable {
         
         let path = VectorPath(elements: elements, isClosed: true)
         return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(), fillStyle: FillStyle(color: .white))
+    }
+    
+    // MARK: - Backward Compatibility for Corner Radius
+    
+    /// Custom decoder to handle documents created before corner radius feature
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Decode existing properties
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        path = try container.decode(VectorPath.self, forKey: .path)
+        geometricType = try container.decodeIfPresent(GeometricShapeType.self, forKey: .geometricType)
+        strokeStyle = try container.decodeIfPresent(StrokeStyle.self, forKey: .strokeStyle)
+        fillStyle = try container.decodeIfPresent(FillStyle.self, forKey: .fillStyle)
+        transform = try container.decode(CGAffineTransform.self, forKey: .transform)
+        isVisible = try container.decode(Bool.self, forKey: .isVisible)
+        isLocked = try container.decode(Bool.self, forKey: .isLocked)
+        opacity = try container.decode(Double.self, forKey: .opacity)
+        blendMode = try container.decode(BlendMode.self, forKey: .blendMode)
+        bounds = try container.decode(CGRect.self, forKey: .bounds)
+        isGroup = try container.decode(Bool.self, forKey: .isGroup)
+        groupedShapes = try container.decode([VectorShape].self, forKey: .groupedShapes)
+        groupTransform = try container.decode(CGAffineTransform.self, forKey: .groupTransform)
+        isCompoundPath = try container.decode(Bool.self, forKey: .isCompoundPath)
+        isWarpObject = try container.decode(Bool.self, forKey: .isWarpObject)
+        originalPath = try container.decodeIfPresent(VectorPath.self, forKey: .originalPath)
+        warpEnvelope = try container.decode([CGPoint].self, forKey: .warpEnvelope)
+        originalEnvelope = try container.decode([CGPoint].self, forKey: .originalEnvelope)
+        
+        // NEW: Decode corner radius properties with defaults for backward compatibility
+        isRoundedRectangle = try container.decodeIfPresent(Bool.self, forKey: .isRoundedRectangle) ?? false
+        originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
+        cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
+        
+        print("📄 BACKWARD COMPATIBILITY: Loaded document successfully with corner radius defaults")
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, name, path, geometricType, strokeStyle, fillStyle, transform, isVisible, isLocked, opacity, blendMode, bounds
+        case isGroup, groupedShapes, groupTransform, isCompoundPath, isWarpObject, originalPath, warpEnvelope, originalEnvelope
+        case isRoundedRectangle, originalBounds, cornerRadii
     }
 }
 

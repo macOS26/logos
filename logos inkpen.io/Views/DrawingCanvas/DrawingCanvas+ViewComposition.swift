@@ -76,6 +76,11 @@ extension DrawingCanvas {
         if document.currentTool == .gradient {
             gradientCenterPointOverlay(geometry: geometry)
         }
+        
+        // Corner radius editing - ONLY when in corner radius mode (Control-Click to activate)
+        if document.currentTool == .selection && isCornerRadiusEditMode {
+            cornerRadiusEditTool(geometry: geometry)
+        }
     }
     
     @ViewBuilder
