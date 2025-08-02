@@ -235,15 +235,21 @@ extension DrawingCanvas {
         ], isClosed: true)
     }
     
-    /// Create an equilateral triangle path
+    /// Create an equilateral triangle path that fills the full rectangle bounds (like square tool)
     internal func createEquilateralTrianglePath(rect: CGRect) -> VectorPath {
-        let size = min(rect.width, rect.height)
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let height = size * sqrt(3) / 2
+        // Normalize rect to handle negative width/height from different drag directions
+        let normalizedRect = CGRect(
+            x: min(rect.minX, rect.maxX),
+            y: min(rect.minY, rect.maxY),
+            width: abs(rect.width),
+            height: abs(rect.height)
+        )
         
-        let topPoint = VectorPoint(center.x, center.y - height / 2)
-        let bottomLeft = VectorPoint(center.x - size / 2, center.y + height / 2)
-        let bottomRight = VectorPoint(center.x + size / 2, center.y + height / 2)
+        // FIXED: Fill the entire rectangle bounds (like square tool), don't center it
+        // Create equilateral triangle that fits within the full rectangle
+        let topPoint = VectorPoint(normalizedRect.midX, normalizedRect.minY)
+        let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
+        let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
         
         return VectorPath(elements: [
             .move(to: topPoint),
@@ -253,29 +259,57 @@ extension DrawingCanvas {
         ], isClosed: true)
     }
     
-    /// Create a right triangle path
-    internal func createRightTrianglePath(rect: CGRect) -> VectorPath {
-        let topLeft = VectorPoint(rect.minX, rect.minY)
-        let bottomLeft = VectorPoint(rect.minX, rect.maxY)
-        let bottomRight = VectorPoint(rect.maxX, rect.maxY)
+    /// Create a right triangle path that flips based on drag direction
+    internal func createRightTrianglePath(rect: CGRect, rightAngleAtStart: Bool = true) -> VectorPath {
+        // Normalize rect to handle negative width/height from different drag directions
+        let normalizedRect = CGRect(
+            x: min(rect.minX, rect.maxX),
+            y: min(rect.minY, rect.maxY),
+            width: abs(rect.width),
+            height: abs(rect.height)
+        )
         
-        return VectorPath(elements: [
-            .move(to: topLeft),
-            .line(to: bottomLeft),
-            .line(to: bottomRight),
-            .close
-        ], isClosed: true)
+        let topLeft = VectorPoint(normalizedRect.minX, normalizedRect.minY)
+        let topRight = VectorPoint(normalizedRect.maxX, normalizedRect.minY)
+        let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
+        let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
+        
+        if rightAngleAtStart {
+            // Right angle at start point (top-left): topLeft -> bottomLeft -> bottomRight
+            return VectorPath(elements: [
+                .move(to: topLeft),
+                .line(to: bottomLeft),
+                .line(to: bottomRight),
+                .close
+            ], isClosed: true)
+        } else {
+            // Right angle at opposite corner (bottom-right): topLeft -> topRight -> bottomRight
+            return VectorPath(elements: [
+                .move(to: topLeft),
+                .line(to: topRight),
+                .line(to: bottomRight),
+                .close
+            ], isClosed: true)
+        }
     }
     
     /// Create an acute triangle path (all angles less than 90 degrees)
     internal func createAcuteTrianglePath(rect: CGRect) -> VectorPath {
-        // Create a tall, narrow triangle with all acute angles
-        let baseWidth = rect.width * 0.6 // Make it narrower for acute angles
+        // Normalize rect to handle negative width/height from different drag directions
+        let normalizedRect = CGRect(
+            x: min(rect.minX, rect.maxX),
+            y: min(rect.minY, rect.maxY),
+            width: abs(rect.width),
+            height: abs(rect.height)
+        )
         
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let topPoint = VectorPoint(center.x, rect.minY)
-        let bottomLeft = VectorPoint(center.x - baseWidth / 2, rect.maxY)
-        let bottomRight = VectorPoint(center.x + baseWidth / 2, rect.maxY)
+        // Create a tall, narrow triangle with all acute angles
+        let baseWidth = normalizedRect.width * 0.6 // Make it narrower for acute angles
+        
+        let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+        let topPoint = VectorPoint(center.x, normalizedRect.minY)
+        let bottomLeft = VectorPoint(center.x - baseWidth / 2, normalizedRect.maxY)
+        let bottomRight = VectorPoint(center.x + baseWidth / 2, normalizedRect.maxY)
         
         return VectorPath(elements: [
             .move(to: topPoint),
@@ -287,9 +321,17 @@ extension DrawingCanvas {
     
     /// Create an isosceles triangle path
     internal func createIsoscelesTrianglePath(rect: CGRect) -> VectorPath {
-        let topPoint = VectorPoint(rect.midX, rect.minY)
-        let bottomLeft = VectorPoint(rect.minX, rect.maxY)
-        let bottomRight = VectorPoint(rect.maxX, rect.maxY)
+        // Normalize rect to handle negative width/height from different drag directions
+        let normalizedRect = CGRect(
+            x: min(rect.minX, rect.maxX),
+            y: min(rect.minY, rect.maxY),
+            width: abs(rect.width),
+            height: abs(rect.height)
+        )
+        
+        let topPoint = VectorPoint(normalizedRect.midX, normalizedRect.minY)
+        let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
+        let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
         
         return VectorPath(elements: [
             .move(to: topPoint),

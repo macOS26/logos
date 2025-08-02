@@ -87,20 +87,20 @@ extension DrawingCanvas {
                 .close
             ], isClosed: true)
         case .square:
-            // FIXED: Pin square from upper left corner exactly like rectangle tool, but force square bounds
-            let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
-            )
-            // Force square by using the larger dimension for both width and height
-            let size = max(rect.width, rect.height)
+            // FIXED: Pin square from exact start point and grow square in direction of cursor movement
+            // This ensures consistent behavior with rectangle tool - top-left corner stays pinned
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
+            
+            // Use the larger absolute delta to maintain square proportions while following cursor direction
+            let size = max(abs(dragDeltaX), abs(dragDeltaY))
+            
+            // Create square that grows from startPoint in the direction of cursor movement
             let squareRect = CGRect(
-                x: rect.minX,
-                y: rect.minY,
-                width: size,
-                height: size
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX >= 0 ? size : -size,
+                height: dragDeltaY >= 0 ? size : -size
             )
             currentPath = VectorPath(elements: [
                 .move(to: VectorPoint(squareRect.minX, squareRect.minY)),
@@ -110,107 +110,161 @@ extension DrawingCanvas {
                 .close
             ], isClosed: true)
         case .roundedRectangle:
-            // Create a rounded rectangle
+            // FIXED: Pin rounded rectangle from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
-            let cornerRadius = min(rect.width, rect.height) * 0.15 // 15% of smallest dimension
-            currentPath = createRoundedRectPath(rect: rect, cornerRadius: cornerRadius)
+            let normalizedRect = CGRect(
+                x: min(rect.minX, rect.maxX),
+                y: min(rect.minY, rect.maxY),
+                width: abs(rect.width),
+                height: abs(rect.height)
+            )
+            let cornerRadius = min(normalizedRect.width, normalizedRect.height) * 0.15 // 15% of smallest dimension
+            currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .pill:
-            // Create a pill shape (capsule)
+            // FIXED: Pin pill from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
-            let cornerRadius = min(rect.width, rect.height) / 2 // Half of smallest dimension
-            currentPath = createRoundedRectPath(rect: rect, cornerRadius: cornerRadius)
+            let normalizedRect = CGRect(
+                x: min(rect.minX, rect.maxX),
+                y: min(rect.minY, rect.maxY),
+                width: abs(rect.width),
+                height: abs(rect.height)
+            )
+            let cornerRadius = min(normalizedRect.width, normalizedRect.height) / 2 // Half of smallest dimension
+            currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .circle:
-            // FIXED: Pin circle from upper left corner exactly like rectangle tool
+            // FIXED: Pin circle from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
             currentPath = createCirclePath(rect: rect)
         case .ellipse:
-            // FIXED: Pin ellipse from upper left corner exactly like rectangle tool
+            // FIXED: Pin ellipse from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
             currentPath = createEllipsePath(rect: rect)
         case .oval:
-            // Create an oval (less rounded than ellipse)
+            // FIXED: Pin oval from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
             // Make it slightly less rounded by constraining the aspect ratio
+            let normalizedRect = CGRect(
+                x: min(rect.minX, rect.maxX),
+                y: min(rect.minY, rect.maxY),
+                width: abs(rect.width),
+                height: abs(rect.height)
+            )
             let adjustedRect = CGRect(
-                x: rect.minX,
-                y: rect.minY,
-                width: rect.width,
-                height: min(rect.height, rect.width * 0.75) // Constrain height to 75% of width max
+                x: normalizedRect.minX,
+                y: normalizedRect.minY,
+                width: normalizedRect.width,
+                height: min(normalizedRect.height, normalizedRect.width * 0.75) // Constrain height to 75% of width max
             )
             currentPath = createEllipsePath(rect: adjustedRect)
         case .equilateralTriangle:
+            // EXACT SAME PATTERN AS RECTANGLE - NO FLOATING!
             let rect = CGRect(
                 x: min(startPoint.x, currentLocation.x),
                 y: min(startPoint.y, currentLocation.y),
                 width: abs(currentLocation.x - startPoint.x),
                 height: abs(currentLocation.y - startPoint.y)
             )
-            currentPath = createEquilateralTrianglePath(rect: rect)
+            currentPath = VectorPath(elements: [
+                .move(to: VectorPoint(rect.midX, rect.minY)),
+                .line(to: VectorPoint(rect.minX, rect.maxY)),
+                .line(to: VectorPoint(rect.maxX, rect.maxY)),
+                .close
+            ], isClosed: true)
         case .rightTriangle:
+            // FIXED: Pin triangle from start point AND flip based on drag direction
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
-            currentPath = createRightTrianglePath(rect: rect)
+            // Determine orientation based on drag direction
+            let rightAngleAtStart = (dragDeltaX >= 0 && dragDeltaY >= 0) || (dragDeltaX < 0 && dragDeltaY < 0)
+            currentPath = createRightTrianglePath(rect: rect, rightAngleAtStart: rightAngleAtStart)
         case .acuteTriangle:
+            // FIXED: Pin triangle from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
             currentPath = createAcuteTrianglePath(rect: rect)
         case .isoscelesTriangle:
+            // FIXED: Pin triangle from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
             currentPath = createIsoscelesTrianglePath(rect: rect)
         case .cone:
-            // Create a proper cone shape with curved bottom
+            // FIXED: Pin cone from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
             let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
-            let topPoint = VectorPoint(rect.midX, rect.minY)
-            let bottomLeft = VectorPoint(rect.minX, rect.maxY)
-            let bottomRight = VectorPoint(rect.maxX, rect.maxY)
+            // Normalize rect for proper cone drawing
+            let normalizedRect = CGRect(
+                x: min(rect.minX, rect.maxX),
+                y: min(rect.minY, rect.maxY),
+                width: abs(rect.width),
+                height: abs(rect.height)
+            )
+            let topPoint = VectorPoint(normalizedRect.midX, normalizedRect.minY)
+            let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)
+            let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
             
             // Create control point for curved bottom - positioned below the base
             // This creates a natural arc that represents the circular base of a cone
-            let curveDepth = rect.height * 0.3 // 30% of height for nice curve
-            let controlPoint = VectorPoint(rect.midX, rect.maxY + curveDepth)
+            let curveDepth = normalizedRect.height * 0.3 // 30% of height for nice curve
+            let controlPoint = VectorPoint(normalizedRect.midX, normalizedRect.maxY + curveDepth)
             
             currentPath = VectorPath(elements: [
                 .move(to: topPoint),
