@@ -213,13 +213,16 @@ extension DrawingCanvas {
                 width: abs(currentLocation.x - startPoint.x),
                 height: abs(currentLocation.y - startPoint.y)
             )
-            // Determine orientation based on X direction
-            let dragDirection = currentLocation.x >= startPoint.x ? "RIGHT" : "LEFT"
+            // Determine orientation based on BOTH X and Y directions
+            let dragX = currentLocation.x >= startPoint.x ? "RIGHT" : "LEFT"
+            let dragY = currentLocation.y >= startPoint.y ? "DOWN" : "UP"
+            let dragDirection = "\(dragX)_\(dragY)"
             
             print("🔺 RIGHT TRIANGLE DEBUG:")
             print("  startPoint: (\(startPoint.x), \(startPoint.y))")
             print("  currentLocation: (\(currentLocation.x), \(currentLocation.y))")
             print("  rect: \(rect)")
+            print("  dragX: \(dragX), dragY: \(dragY)")
             print("  dragDirection: \(dragDirection)")
             
             currentPath = createRightTrianglePath(rect: rect, dragDirection: dragDirection)

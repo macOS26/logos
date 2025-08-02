@@ -283,22 +283,54 @@ extension DrawingCanvas {
         print("  bottomRight: \(bottomRight)")
         print("  dragDirection: \(dragDirection)")
         
-        if dragDirection == "RIGHT" {
-            // Dragging right: Right angle at bottom-left, hypotenuse from top-left to bottom-right
-            print("  CREATING: Right triangle for RIGHT drag - right angle at bottom-left")
+        switch dragDirection {
+        case "RIGHT_DOWN":
+            // Dragging right and down: Right angle at top-left, sharp angle at bottom-right
+            print("  CREATING: Right triangle for RIGHT_DOWN drag - right angle at top-left, points to bottom-right")
             return VectorPath(elements: [
-                .move(to: bottomLeft),
-                .line(to: topLeft),
+                .move(to: topLeft),
+                .line(to: bottomLeft),
                 .line(to: bottomRight),
                 .close
             ], isClosed: true)
-        } else {
-            // Dragging left: Right angle at bottom-right, hypotenuse from top-right to bottom-left  
-            print("  CREATING: Right triangle for LEFT drag - right angle at bottom-right")
+            
+        case "RIGHT_UP":
+            // Dragging right and up: Right angle at bottom-left, sharp angle at top-right
+            print("  CREATING: Right triangle for RIGHT_UP drag - right angle at bottom-left, points to top-right")
+            return VectorPath(elements: [
+                .move(to: bottomLeft),
+                .line(to: topLeft),
+                .line(to: topRight),
+                .close
+            ], isClosed: true)
+            
+        case "LEFT_DOWN":
+            // Dragging left and down: Right angle at top-right, sharp angle at bottom-left
+            print("  CREATING: Right triangle for LEFT_DOWN drag - right angle at top-right, points to bottom-left")
+            return VectorPath(elements: [
+                .move(to: topRight),
+                .line(to: bottomRight),
+                .line(to: bottomLeft),
+                .close
+            ], isClosed: true)
+            
+        case "LEFT_UP":
+            // Dragging left and up: Right angle at bottom-right, sharp angle at top-left
+            print("  CREATING: Right triangle for LEFT_UP drag - right angle at bottom-right, points to top-left")
             return VectorPath(elements: [
                 .move(to: bottomRight),
                 .line(to: topRight),
+                .line(to: topLeft),
+                .close
+            ], isClosed: true)
+            
+        default:
+            // Fallback to right-down for any unexpected direction
+            print("  CREATING: Right triangle for UNKNOWN drag (\(dragDirection)) - using RIGHT_DOWN fallback")
+            return VectorPath(elements: [
+                .move(to: topLeft),
                 .line(to: bottomLeft),
+                .line(to: bottomRight),
                 .close
             ], isClosed: true)
         }
