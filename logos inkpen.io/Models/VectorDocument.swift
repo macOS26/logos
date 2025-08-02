@@ -2900,7 +2900,17 @@ enum DrawingTool: String, CaseIterable, Codable {
     case font = "Font"
     case line = "Line"
     case rectangle = "Rectangle"
+    case square = "Square"
+    case roundedRectangle = "Rounded Rectangle"
+    case pill = "Pill"
     case circle = "Circle"
+    case ellipse = "Ellipse"
+    case oval = "Oval"
+    case cone = "Cone"
+    case equilateralTriangle = "Equilateral Triangle"
+    case isoscelesTriangle = "Isosceles Triangle"
+    case rightTriangle = "Right Triangle"
+    case acuteTriangle = "Acute Triangle"
     case star = "Star"
     case polygon = "Polygon"
     case eyedropper = "Eyedropper"
@@ -2924,7 +2934,17 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .font: return "textformat"
         case .line: return "line.diagonal"
         case .rectangle: return "rectangle"
+        case .square: return "square"
+        case .roundedRectangle: return "rectangle.fill"
+        case .pill: return "capsule"
         case .circle: return "circle"
+        case .ellipse: return "oval"
+        case .oval: return "oval.fill"
+        case .cone: return "triangle"
+        case .equilateralTriangle: return "triangle"
+        case .isoscelesTriangle: return "triangle.fill"
+        case .rightTriangle: return "triangle.righthalf.filled"
+        case .acuteTriangle: return "triangle.lefthalf.filled"
         case .star: return "star"
         case .polygon: return "hexagon"
         case .eyedropper: return "eyedropper"
@@ -2950,7 +2970,17 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .font: return .iBeam
         case .line: return .crosshair
         case .rectangle: return .crosshair
+        case .square: return .crosshair
+        case .roundedRectangle: return .crosshair
+        case .pill: return .crosshair
         case .circle: return .crosshair
+        case .ellipse: return .crosshair
+        case .oval: return .crosshair
+        case .cone: return .crosshair
+        case .equilateralTriangle: return .crosshair
+        case .isoscelesTriangle: return .crosshair
+        case .rightTriangle: return .crosshair
+        case .acuteTriangle: return .crosshair
         case .star: return .crosshair
         case .polygon: return .crosshair
         case .eyedropper: return .crosshair

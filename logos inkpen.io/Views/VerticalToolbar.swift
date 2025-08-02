@@ -14,13 +14,52 @@ import AppKit
 enum RectangleVariant: String, CaseIterable {
     case rectangle = "Rectangle"
     case square = "Square"
+    case roundedRectangle = "Rounded Rectangle"
+    case pill = "Pill"
+    
+    @ViewBuilder
+    func iconView(isSelected: Bool, color: Color = .primary) -> some View {
+        switch self {
+        case .rectangle:
+            RectangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .square:
+            SquareIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .roundedRectangle:
+            RoundedRectangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .pill:
+            PillIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        }
+    }
 }
 
 // Circle Variants  
 enum CircleVariant: String, CaseIterable {
-    case circle = "Circle"
     case ellipse = "Ellipse"
+    case oval = "Oval"
+    case circle = "Circle"
     case cone = "Cone"
+    
+    @ViewBuilder
+    func iconView(isSelected: Bool, color: Color = .primary) -> some View {
+        switch self {
+        case .ellipse:
+            EllipseIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .oval:
+            OvalIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .circle:
+            CircleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .cone:
+            ConeIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        }
+    }
 }
 
 // Triangle Variants
@@ -28,7 +67,25 @@ enum TriangleVariant: String, CaseIterable {
     case equilateral = "Equilateral Triangle"
     case isosceles = "Isosceles Triangle"
     case right = "Right Triangle"
-    case scalene = "Scalene Triangle"
+    case acute = "Acute Triangle"
+    
+    @ViewBuilder
+    func iconView(isSelected: Bool, color: Color = .primary) -> some View {
+        switch self {
+        case .equilateral:
+            EquilateralTriangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .isosceles:
+            IsoscelesTriangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .right:
+            RightTriangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .acute:
+            AcuteTriangleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        }
+    }
 }
 
 // Polygon Variants
@@ -246,6 +303,216 @@ struct EightPointStarIcon: View {
     }
 }
 
+// MARK: - Custom Rectangle Icons
+
+struct RectangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 4, y: 6, width: 12, height: 8)
+            path.addRect(rect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct SquareIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 5, y: 5, width: 10, height: 10)
+            path.addRect(rect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct RoundedRectangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 4, y: 6, width: 12, height: 8)
+            path.addRoundedRect(in: rect, cornerSize: CGSize(width: 2, height: 2))
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct PillIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 4, y: 7, width: 12, height: 6)
+            path.addRoundedRect(in: rect, cornerSize: CGSize(width: 3, height: 3))
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// MARK: - Custom Circle Icons
+
+struct EllipseIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 3, y: 6, width: 14, height: 8)
+            path.addEllipse(in: rect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct OvalIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 4, y: 5, width: 12, height: 10)
+            path.addEllipse(in: rect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct CircleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            let rect = CGRect(x: 5, y: 5, width: 10, height: 10)
+            path.addEllipse(in: rect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct ConeIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Triangle with oval base
+            let topPoint = CGPoint(x: 10, y: 4)
+            let bottomLeft = CGPoint(x: 5, y: 14)
+            let bottomRight = CGPoint(x: 15, y: 14)
+            
+            path.move(to: topPoint)
+            path.addLine(to: bottomLeft)
+            path.addLine(to: bottomRight)
+            path.closeSubpath()
+            
+            // Add oval base
+            let ovalRect = CGRect(x: 6, y: 13, width: 8, height: 3)
+            path.addEllipse(in: ovalRect)
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// MARK: - Custom Triangle Icons
+
+struct EquilateralTriangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Perfect equilateral triangle
+            let center = CGPoint(x: 10, y: 10)
+            let height: CGFloat = 8
+            let width: CGFloat = height * 2 / sqrt(3)
+            
+            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.6)
+            let bottomLeft = CGPoint(x: center.x - width * 0.5, y: center.y + height * 0.4)
+            let bottomRight = CGPoint(x: center.x + width * 0.5, y: center.y + height * 0.4)
+            
+            path.move(to: topPoint)
+            path.addLine(to: bottomLeft)
+            path.addLine(to: bottomRight)
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct RightTriangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Right triangle with 90-degree angle at bottom left
+            let topLeft = CGPoint(x: 5, y: 5)
+            let bottomLeft = CGPoint(x: 5, y: 15)
+            let bottomRight = CGPoint(x: 15, y: 15)
+            
+            path.move(to: topLeft)
+            path.addLine(to: bottomLeft)
+            path.addLine(to: bottomRight)
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct AcuteTriangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Acute triangle (all angles less than 90 degrees)
+            // Tall, narrow triangle with sharp angles
+            let baseWidth: CGFloat = 8
+            let height: CGFloat = 12
+            
+            let center = CGPoint(x: 10, y: 10)
+            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.5)
+            let bottomLeft = CGPoint(x: center.x - baseWidth * 0.5, y: center.y + height * 0.5)
+            let bottomRight = CGPoint(x: center.x + baseWidth * 0.5, y: center.y + height * 0.5)
+            
+            path.move(to: topPoint)
+            path.addLine(to: bottomLeft)
+            path.addLine(to: bottomRight)
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
+struct IsoscelesTriangleIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Isosceles triangle with two equal sides
+            let topPoint = CGPoint(x: 10, y: 5)
+            let bottomLeft = CGPoint(x: 4, y: 15)
+            let bottomRight = CGPoint(x: 16, y: 15)
+            
+            path.move(to: topPoint)
+            path.addLine(to: bottomLeft)
+            path.addLine(to: bottomRight)
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
 // MARK: - Custom Skewed Rectangle Icon
 struct SkewedRectangleIcon: View {
     let isSelected: Bool
@@ -282,6 +549,65 @@ struct VerticalToolbar: View {
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
         print("🔧 Long press on tool: \(tool.rawValue)")
+    }
+    
+    // MARK: - Icon Display Functions
+    
+    @ViewBuilder
+    private func toolIconView(for toolItem: ToolItem) -> some View {
+        if toolItem.tool == .shear {
+            // Use custom skewed rectangle icon for shear tool
+            SkewedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
+        } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
+            // Use specific star variant custom icon
+            starVariant.iconView(
+                isSelected: document.currentTool == .star && starHUDManager.selectedVariant == starVariant,
+                color: (document.currentTool == .star && starHUDManager.selectedVariant == starVariant) ? .white : .primary
+            )
+        } else if toolItem.tool == .star {
+            // Use selected star variant custom icon
+            starHUDManager.selectedVariant.iconView(
+                isSelected: document.currentTool == toolItem.tool,
+                color: document.currentTool == toolItem.tool ? .white : .primary
+            )
+        } else {
+            customShapeIconView(for: toolItem)
+        }
+    }
+    
+    @ViewBuilder
+    private func customShapeIconView(for toolItem: ToolItem) -> some View {
+        switch toolItem.tool {
+        case .rectangle:
+            RectangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .square:
+            SquareIcon(isSelected: document.currentTool == toolItem.tool)
+        case .roundedRectangle:
+            RoundedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .pill:
+            PillIcon(isSelected: document.currentTool == toolItem.tool)
+        case .ellipse:
+            EllipseIcon(isSelected: document.currentTool == toolItem.tool)
+        case .oval:
+            OvalIcon(isSelected: document.currentTool == toolItem.tool)
+        case .circle:
+            CircleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .cone:
+            ConeIcon(isSelected: document.currentTool == toolItem.tool)
+        case .equilateralTriangle:
+            EquilateralTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .isoscelesTriangle:
+            IsoscelesTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .rightTriangle:
+            RightTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .acuteTriangle:
+            AcuteTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+        default:
+            // Use SF Symbols for all other tools
+            Image(systemName: toolItem.tool.iconName)
+                .font(.system(size: 16))
+                .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
+        }
     }
     
     // MARK: - Flexible Toolbar Display Logic
@@ -358,10 +684,11 @@ struct VerticalToolbar: View {
             [.bezierPen, .convertAnchorPoint, .line],
             [.brush, .marker, .freehand],
             [.font],
-            [.rectangle], // Rectangle variants
-            [.circle], // Circle variants  
-            [.polygon], // Triangle + Polygon variants
-            [.star], // Star variants
+            [.rectangle, .square, .roundedRectangle, .pill], // Rectangle group
+            [.ellipse, .oval, .circle, .cone], // Circle group  
+            [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle], // Triangle group
+            [.polygon], // Multi-sided polygon group
+            [.star], // Star variants (handled separately)
             [.eyedropper],
             [.hand],
             [.zoom],
@@ -411,29 +738,7 @@ struct VerticalToolbar: View {
                                 
                                 toolItem.tool.cursor.push()
                             } label: {
-                                Group {
-                                    if toolItem.tool == .shear {
-                                        // Use custom skewed rectangle icon for shear tool
-                                        SkewedRectangleIcon(isSelected: document.currentTool == toolItem.tool)
-                                    } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
-                                        // Use specific star variant custom icon
-                                        starVariant.iconView(
-                                            isSelected: document.currentTool == .star && starHUDManager.selectedVariant == starVariant,
-                                            color: (document.currentTool == .star && starHUDManager.selectedVariant == starVariant) ? .white : .primary
-                                        )
-                                    } else if toolItem.tool == .star {
-                                        // Use selected star variant custom icon
-                                        starHUDManager.selectedVariant.iconView(
-                                            isSelected: document.currentTool == toolItem.tool,
-                                            color: document.currentTool == toolItem.tool ? .white : .primary
-                                        )
-                                    } else {
-                                        // Use SF Symbols for all other tools
-                                        Image(systemName: toolItem.tool.iconName)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(isToolSelected(toolItem) ? .white : .primary)
-                                    }
-                                }
+                                toolIconView(for: toolItem)
                                 .frame(width: 32, height: 32)
                                 .background(
                                     isToolSelected(toolItem)
@@ -558,8 +863,28 @@ struct VerticalToolbar: View {
             return "Line Tool (L) - Draw straight lines"
         case .rectangle:
             return "Rectangle Tool (R) - Draw rectangles"
+        case .square:
+            return "Square Tool - Draw perfect squares"
+        case .roundedRectangle:
+            return "Rounded Rectangle Tool - Draw rectangles with rounded corners"
+        case .pill:
+            return "Pill Tool - Draw capsule/pill shapes"
         case .circle:
-            return "Circle Tool (C) - Draw circles and ellipses"
+            return "Circle Tool (C) - Draw perfect circles"
+        case .ellipse:
+            return "Ellipse Tool - Draw ellipses and ovals"
+        case .oval:
+            return "Oval Tool - Draw oval shapes"
+        case .cone:
+            return "Cone Tool - Draw triangle/cone shapes"
+        case .equilateralTriangle:
+            return "Equilateral Triangle Tool - Draw triangles with equal sides"
+        case .isoscelesTriangle:
+            return "Isosceles Triangle Tool - Draw triangles with two equal sides"
+        case .rightTriangle:
+            return "Right Triangle Tool - Draw 90-degree triangles"
+        case .acuteTriangle:
+            return "Acute Triangle Tool - Draw triangles with all angles less than 90°"
         case .star:
             return "Star Tool - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
         case .polygon:

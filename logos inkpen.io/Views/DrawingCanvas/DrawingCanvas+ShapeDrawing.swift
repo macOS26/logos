@@ -86,6 +86,42 @@ extension DrawingCanvas {
                 .line(to: VectorPoint(rect.minX, rect.maxY)),
                 .close
             ], isClosed: true)
+        case .square:
+            // Create a square (equal width and height)
+            let size = max(abs(currentLocation.x - startPoint.x), abs(currentLocation.y - startPoint.y))
+            let rect = CGRect(
+                x: min(startPoint.x, startPoint.x + (currentLocation.x > startPoint.x ? size : -size)),
+                y: min(startPoint.y, startPoint.y + (currentLocation.y > startPoint.y ? size : -size)),
+                width: size,
+                height: size
+            )
+            currentPath = VectorPath(elements: [
+                .move(to: VectorPoint(rect.minX, rect.minY)),
+                .line(to: VectorPoint(rect.maxX, rect.minY)),
+                .line(to: VectorPoint(rect.maxX, rect.maxY)),
+                .line(to: VectorPoint(rect.minX, rect.maxY)),
+                .close
+            ], isClosed: true)
+        case .roundedRectangle:
+            // Create a rounded rectangle
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            let cornerRadius = min(rect.width, rect.height) * 0.15 // 15% of smallest dimension
+            currentPath = createRoundedRectPath(rect: rect, cornerRadius: cornerRadius)
+        case .pill:
+            // Create a pill shape (capsule)
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            let cornerRadius = min(rect.width, rect.height) / 2 // Half of smallest dimension
+            currentPath = createRoundedRectPath(rect: rect, cornerRadius: cornerRadius)
         case .circle:
             let center = CGPoint(
                 x: (startPoint.x + currentLocation.x) / 2,
@@ -93,6 +129,86 @@ extension DrawingCanvas {
             )
             let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
             currentPath = createCirclePath(center: center, radius: radius)
+        case .ellipse:
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            currentPath = createEllipsePath(rect: rect)
+        case .oval:
+            // Create an oval (less rounded than ellipse)
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            // Make it slightly less rounded by constraining the aspect ratio
+            let adjustedRect = CGRect(
+                x: rect.minX,
+                y: rect.minY,
+                width: rect.width,
+                height: min(rect.height, rect.width * 0.75) // Constrain height to 75% of width max
+            )
+            currentPath = createEllipsePath(rect: adjustedRect)
+        case .equilateralTriangle:
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            currentPath = createEquilateralTrianglePath(rect: rect)
+        case .rightTriangle:
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            currentPath = createRightTrianglePath(rect: rect)
+        case .acuteTriangle:
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            currentPath = createAcuteTrianglePath(rect: rect)
+        case .isoscelesTriangle:
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            currentPath = createIsoscelesTrianglePath(rect: rect)
+        case .cone:
+            // Create a proper cone shape with curved bottom
+            let rect = CGRect(
+                x: min(startPoint.x, currentLocation.x),
+                y: min(startPoint.y, currentLocation.y),
+                width: abs(currentLocation.x - startPoint.x),
+                height: abs(currentLocation.y - startPoint.y)
+            )
+            let topPoint = VectorPoint(rect.midX, rect.minY)
+            let bottomLeft = VectorPoint(rect.minX, rect.maxY)
+            let bottomRight = VectorPoint(rect.maxX, rect.maxY)
+            
+            // Create control point for curved bottom - positioned below the base
+            // This creates a natural arc that represents the circular base of a cone
+            let curveDepth = rect.height * 0.3 // 30% of height for nice curve
+            let controlPoint = VectorPoint(rect.midX, rect.maxY + curveDepth)
+            
+            currentPath = VectorPath(elements: [
+                .move(to: topPoint),
+                .line(to: bottomLeft),
+                .quadCurve(to: bottomRight, control: controlPoint),
+                .line(to: topPoint),
+                .close
+            ], isClosed: true)
         case .star:
             let center = CGPoint(
                 x: (startPoint.x + currentLocation.x) / 2,

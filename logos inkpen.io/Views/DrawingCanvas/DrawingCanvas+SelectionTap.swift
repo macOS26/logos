@@ -16,6 +16,15 @@ extension DrawingCanvas {
         print("🎯 SELECTION TAP: Starting selection at location \(location)")
         print("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)")
         
+        // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (Adobe Illustrator behavior)
+        if isOptionPressed && document.currentTool == .selection {
+            print("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection")
+            document.currentTool = .directSelection
+            // Perform direct selection at the click location
+            handleDirectSelectionTap(at: location)
+            return
+        }
+        
         // CRITICAL: Regular Selection tool must clear direct selection
         // Professional tools have mutually exclusive selection modes
         selectedPoints.removeAll()

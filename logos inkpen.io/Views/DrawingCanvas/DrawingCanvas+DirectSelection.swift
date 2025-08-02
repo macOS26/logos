@@ -262,23 +262,16 @@ extension DrawingCanvas {
                                 break
                             }
                         } else {
-                            // Regular grouped shapes: Use bounds + path hit testing
-                            let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
-                            let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
-                            
-                            if expandedBounds.contains(location) {
+                            // Regular grouped shapes: Use path-based hit testing for object-precise selection
+                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
                                 isHit = true
-                                print("    - Grouped shape '\(groupedShape.name)' bounds hit: \(isHit)")
-                                break
-                            } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
-                                isHit = true
-                                print("    - Grouped shape '\(groupedShape.name)' path hit: \(isHit)")
+                                print("    - Grouped shape '\(groupedShape.name)' object-based path hit: \(isHit)")
                                 break
                             }
                         }
                     }
                 } else {
-                    // Regular shapes: Use different logic for stroke vs filled
+                    // Regular shapes: Use path-based hit testing for object-precise selection
                     let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
                     
                     if isStrokeOnly && shape.strokeStyle != nil {
@@ -288,17 +281,9 @@ extension DrawingCanvas {
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
                         print("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))")
                     } else {
-                        // Regular shapes: Use bounds + path hit testing
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
-                        
-                        if expandedBounds.contains(location) {
-                            isHit = true
-                            print("  - Bounds hit test: \(isHit)")
-                        } else {
-                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            print("  - Path hit test: \(isHit)")
-                        }
+                        // Regular shapes: Use path-based hit testing for object-precise selection
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                        print("  - Object-based path hit test: \(isHit)")
                     }
                 }
                 
