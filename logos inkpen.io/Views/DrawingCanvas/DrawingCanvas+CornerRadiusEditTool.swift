@@ -96,15 +96,17 @@ extension DrawingCanvas {
                shapeName == "rounded rectangle" || shapeName == "pill"
     }
     
-    /// Get proper bounds for a shape - FIXED: Handle squares and rectangles correctly
+    /// Get proper bounds for a shape - ALWAYS uses current path bounds with transforms applied
     private func getProperShapeBounds(for shape: VectorShape) -> CGRect {
-        // If shape has originalBounds, use that (for rounded rectangles and pills)
-        if let originalBounds = shape.originalBounds {
-            return originalBounds
-        }
+        // FIXED: Always use current path bounds AND apply any pending transforms (handles scaling!)
+        // This ensures corner handles track the actual visual position/size of scaled objects
+        var pathBounds = shape.path.cgPath.boundingBox
         
-        // For regular squares and rectangles, calculate clean bounds from path
-        let pathBounds = shape.path.cgPath.boundingBox
+        // CRITICAL FIX: Apply any pending transforms (scaling, rotation, etc.)
+        if !shape.transform.isIdentity {
+            // Transform the bounds to match the actual displayed shape
+            pathBounds = pathBounds.applying(shape.transform)
+        }
         
         // FIXED: Check for squares more robustly - check both name AND if it's actually square-shaped
         let isSquareByName = shape.name.lowercased() == "square"
@@ -125,11 +127,60 @@ extension DrawingCanvas {
         return pathBounds
     }
     
+    /// Apply transform to corner radii and handle uneven scaling
+    internal func applyTransformToCornerRadii(shape: inout VectorShape) {
+        guard !shape.transform.isIdentity else { return }
+        
+        // Extract scale factors from transform
+        let scaleX = sqrt(shape.transform.a * shape.transform.a + shape.transform.c * shape.transform.c)
+        let scaleY = sqrt(shape.transform.b * shape.transform.b + shape.transform.d * shape.transform.d)
+        
+        // Check for uneven scaling that's too extreme
+        let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
+        let maxReasonableRatio: CGFloat = 3.0 // Threshold for "reasonable" scaling
+        
+        if scaleRatio > maxReasonableRatio {
+            // BREAK/EXPAND: Transform is too uneven - disable corner radius tools
+            
+            // Apply transform to path and reset transform
+            if let transformedPath = shape.path.cgPath.copy(using: &shape.transform) {
+                shape.path = VectorPath(cgPath: transformedPath)
+            }
+            shape.transform = .identity
+            
+            // Disable corner radius support
+            shape.isRoundedRectangle = false
+            shape.cornerRadii = []
+            shape.originalBounds = nil
+            
+            return
+        }
+        
+        // SCALE RADII: Apply proportional scaling to corner radii
+        if !shape.cornerRadii.isEmpty {
+            let averageScale = (scaleX + scaleY) / 2.0 // Use average scale for corner radii
+            
+            for i in shape.cornerRadii.indices {
+                let oldRadius = shape.cornerRadii[i]
+                let newRadius = oldRadius * Double(averageScale)
+                shape.cornerRadii[i] = max(0.0, newRadius) // Ensure non-negative
+            }
+        }
+        
+        // Apply transform to path and reset transform matrix
+        if let transformedPath = shape.path.cgPath.copy(using: &shape.transform) {
+            shape.path = VectorPath(cgPath: transformedPath)
+        }
+        shape.transform = .identity
+        
+        // Update originalBounds to new transformed bounds
+        shape.originalBounds = getProperShapeBounds(for: shape)
+    }
+    
     /// Get corner handle positions on the actual curves (not at rectangle corners)
     private func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
-        // Apply shape transform to bounds
-        let transform = shape.transform
-        let transformedBounds = bounds.applying(transform)
+        // The bounds are already transformed by getProperShapeBounds(), so use them directly
+        let transformedBounds = bounds
         
         // Calculate curve handle positions (on the curve at 45-degree angle from corner)
         var curvePositions: [CGPoint] = []
@@ -319,23 +370,22 @@ extension DrawingCanvas {
                 
                 shape.cornerRadii = updatedRadii
                 
-                // FIXED: Always regenerate path using proper bounds (handles squares correctly)
-                let boundsForRegeneration = getProperShapeBounds(for: shape)
+                // FIXED: Always regenerate path using current bounds (handles moved objects correctly)
+                // Get current bounds BEFORE modifying the shape to preserve position
+                let currentBounds = shape.path.cgPath.boundingBox
+                
                 let newPath = createRoundedRectPathWithIndividualCorners(
-                    rect: boundsForRegeneration,
+                    rect: currentBounds,
                     cornerRadii: updatedRadii
                 )
                 shape.path = newPath
                 shape.updateBounds()
                 
-                // Update originalBounds to the proper bounds for future operations
-                shape.originalBounds = boundsForRegeneration
-                print("🔄 Regenerated path using proper bounds: \(boundsForRegeneration)")
+                // Update originalBounds to current bounds for consistency
+                shape.originalBounds = currentBounds
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
-                
-                print("🔄 Updated corner \(cornerIndex) radius to \(String(format: "%.1f", newRadius))pt")
                 break
             }
         }
@@ -361,17 +411,19 @@ extension DrawingCanvas {
                 
                 shape.cornerRadii = updatedRadii
                 
-                // FIXED: Always regenerate path using proper bounds (handles squares correctly)
-                let boundsForRegeneration = getProperShapeBounds(for: shape)
+                // FIXED: Always regenerate path using current bounds (handles moved objects correctly)
+                // Get current bounds BEFORE modifying the shape to preserve position
+                let currentBounds = shape.path.cgPath.boundingBox
+                
                 let newPath = createRoundedRectPathWithIndividualCorners(
-                    rect: boundsForRegeneration,
+                    rect: currentBounds,
                     cornerRadii: updatedRadii
                 )
                 shape.path = newPath
                 shape.updateBounds()
                 
-                // Update originalBounds to the proper bounds for future operations
-                shape.originalBounds = boundsForRegeneration
+                // Update originalBounds to current bounds for consistency
+                shape.originalBounds = currentBounds
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape

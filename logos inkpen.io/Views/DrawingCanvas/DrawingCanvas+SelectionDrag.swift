@@ -383,6 +383,14 @@ extension DrawingCanvas {
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
+        // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
+        var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+        if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
+            updatedShape.transform = transform // Temporarily restore transform for scaling calculation
+            applyTransformToCornerRadii(shape: &updatedShape)
+            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+        }
+        
         print("✅ Shape coordinates updated after movement - object origin stays with object")
     }
 } 
