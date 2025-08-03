@@ -128,6 +128,7 @@ struct DrawingCanvas: View {
     @State internal var isDraggingCorner = false
     @State internal var draggedCornerIndex: Int = -1
     @State internal var cornerDragOffset: CGPoint = .zero
+    @State internal var currentMousePosition: CGPoint = .zero
     
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT
     // This handles the case where multiple points exist at the same X,Y coordinates
