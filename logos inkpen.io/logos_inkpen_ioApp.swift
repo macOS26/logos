@@ -37,7 +37,13 @@ class TabBarManager {
     private func configureAllWindows() {
         NSApplication.shared.windows.forEach { window in
             window.tabbingMode = .automatic
+            window.toolbarStyle = .unifiedCompact
+            //window.titlebarAppearsTransparent = true 
+            window.showsToolbarButton = false
+           // window.titleVisibility = .hidden
+            window.showsToolbarButton = false
             window.tabbingIdentifier = "InkPenDocument"
+        
             
             // Show tab bar if hidden (no flickering)
             if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
@@ -740,7 +746,6 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
-        .toolbarStyle(.compact)
         .sheet(isPresented: $showingNewDocumentSetup) {
             NewDocumentSetupView(
                 isPresented: $showingNewDocumentSetup,
@@ -1388,7 +1393,7 @@ class StartupCoordinator {
     
     private func configureWindowTabbing() async {
         await MainActor.run {
-            NSWindow.allowsAutomaticWindowTabbing = true
+            //NSWindow.allowsAutomaticWindowTabbing = true
             UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
             
             NSApplication.shared.windows.forEach { window in

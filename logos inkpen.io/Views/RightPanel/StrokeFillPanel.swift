@@ -2555,7 +2555,7 @@ struct GradientColorPickerSheet: View {
                     gradientId: capturedStopId,
                     stopIndex: stopIndex,
                     onColorSelected: { color in
-                        updateStopColor(capturedStopId, color)
+                        self.updateStopColor(capturedStopId, color)
                         // Window stays open - user controls when to close
                     }
                 )
