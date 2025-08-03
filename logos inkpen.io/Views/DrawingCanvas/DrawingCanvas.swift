@@ -127,7 +127,6 @@ struct DrawingCanvas: View {
     @State internal var initialCornerRadius: Double = 0.0
     @State internal var isDraggingCorner = false
     @State internal var draggedCornerIndex: Int = -1
-    @State internal var cornerDragOffset: CGPoint = .zero
     @State internal var currentMousePosition: CGPoint = .zero
     
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT

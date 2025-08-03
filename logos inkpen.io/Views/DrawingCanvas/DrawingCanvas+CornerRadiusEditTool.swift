@@ -165,20 +165,20 @@ extension DrawingCanvas {
             draggedCornerIndex = cornerIndex
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
-            cornerDragOffset = .zero
             
             print("🔄 CORNER DRAG: Started at cursor (\(String(format: "%.1f", cornerDragStart.x)), \(String(format: "%.1f", cornerDragStart.y)))")
             print("   Initial radius: \(String(format: "%.1f", initialCornerRadius))pt")
         }
         
-        // PERFECT 1:1 MOUSE TRACKING: Just like hand tool and square tool
-        // Calculate cursor movement from reference location (perfect 1:1 tracking)
-        let cursorDelta = CGPoint(
-            x: value.location.x - cornerDragStart.x,
-            y: value.location.y - cornerDragStart.y
-        )
+        // PERFECT MOUSE TRACKING: Handle follows mouse exactly, radius is constrained
+        // Like gradient tool: handle position = mouse position directly
+        currentMousePosition = value.location
         
-        // CONSTRAIN TO 45-DEGREE MOVEMENT: Project cursor onto diagonal line
+        // Convert screen coordinates to canvas coordinates for radius calculation
+        let canvasLocation = screenToCanvas(value.location, geometry: geometry)
+        let canvasStartLocation = screenToCanvas(cornerDragStart, geometry: geometry)
+        
+        // Get the direction for this corner (45-degree diagonal)
         let direction: CGPoint
         switch cornerIndex {
         case 0: // Top-left: move right and down (positive diagonal)
@@ -193,29 +193,17 @@ extension DrawingCanvas {
             direction = CGPoint(x: 1, y: 1)
         }
         
-        // Project cursor movement onto the 45-degree line (same as hand tool approach)
-        let projectedDistance = (cursorDelta.x * direction.x + cursorDelta.y * direction.y) / sqrt(2.0)
-        
-        // PERFECT 1:1 TRACKING: Handle position = drag start + constrained cursor movement
-        // This makes the handle follow the mouse EXACTLY like hand tool does
-        let constrainedCursorDelta = CGPoint(
-            x: direction.x * projectedDistance,
-            y: direction.y * projectedDistance
-        )
-        cornerDragOffset = constrainedCursorDelta
-        
-        // PERFECT 1:1 MOUSE TRACKING: Store the actual mouse position for handle positioning
-        currentMousePosition = CGPoint(
-            x: cornerDragStart.x + constrainedCursorDelta.x,
-            y: cornerDragStart.y + constrainedCursorDelta.y
+        // Project canvas movement onto the 45-degree line for radius calculation
+        let canvasDelta = CGPoint(
+            x: canvasLocation.x - canvasStartLocation.x,
+            y: canvasLocation.y - canvasStartLocation.y
         )
         
-        // Convert screen distance to canvas distance (accounting for zoom) - SAME AS HAND TOOL
-        let preciseZoom = Double(document.zoomLevel)
-        let canvasDistance = projectedDistance / preciseZoom
+        // Project onto 45-degree line for radius calculation only
+        let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / sqrt(2.0)
         
-        // Calculate new radius: distance along diagonal * sqrt(2) = radius change
-        let radiusChange = canvasDistance * sqrt(2.0)
+        // Calculate radius change from the projected distance (in canvas coordinates)
+        let radiusChange = projectedDistance * 0.5 // Scale factor for radius sensitivity
         let tentativeRadius = initialCornerRadius + radiusChange
         
         // Calculate maximum radius based on shape dimensions
@@ -257,7 +245,6 @@ extension DrawingCanvas {
             draggedCornerIndex = -1
             cornerDragStart = .zero
             initialCornerRadius = 0.0
-            cornerDragOffset = .zero
             currentMousePosition = .zero
             
             print("🔄 CORNER DRAG: Finished and saved to undo stack")
