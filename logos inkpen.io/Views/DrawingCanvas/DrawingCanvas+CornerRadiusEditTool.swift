@@ -23,7 +23,9 @@ extension DrawingCanvas {
                 ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
                     cornerRadiusHandle(
                         cornerIndex: index,
-                        position: screenPosition,
+                        position: (isDraggingCorner && draggedCornerIndex == index) 
+                            ? CGPoint(x: cornerDragStart.x + cornerDragOffset.x, y: cornerDragStart.y + cornerDragOffset.y)
+                            : screenPosition,
                         radius: selectedShape.cornerRadii[safe: index] ?? 0.0,
                         shape: selectedShape,
                         geometry: geometry
@@ -67,8 +69,7 @@ extension DrawingCanvas {
                     )
                 }
                 .onEnded { _ in
-                    // Save to undo stack when drag ends
-                    document.saveToUndoStack()
+                    finishCornerRadiusDrag()
                 }
         )
     }
@@ -89,40 +90,172 @@ extension DrawingCanvas {
         return nil
     }
     
-    /// Get corner positions in screen coordinates
+    /// Get corner handle positions on the actual curves (not at rectangle corners)
     private func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
         // Apply shape transform to bounds
         let transform = shape.transform
         let transformedBounds = bounds.applying(transform)
         
-        let corners = [
+        // Calculate curve handle positions (on the curve at 45-degree angle from corner)
+        var curvePositions: [CGPoint] = []
+        
+        let cornerPositions = [
             CGPoint(x: transformedBounds.minX, y: transformedBounds.minY), // Top-left
             CGPoint(x: transformedBounds.maxX, y: transformedBounds.minY), // Top-right
             CGPoint(x: transformedBounds.maxX, y: transformedBounds.maxY), // Bottom-right
             CGPoint(x: transformedBounds.minX, y: transformedBounds.maxY)  // Bottom-left
         ]
         
-        return corners.map { canvasToScreen($0, geometry: geometry) }
+        for (index, corner) in cornerPositions.enumerated() {
+            let radius = shape.cornerRadii[safe: index] ?? 0.0
+            
+            // When radius is 0, handle should be at the corner (square)
+            // When radius > 0, handle should be on the curve at 45-degree angle
+            let curvePosition: CGPoint
+            
+            if radius <= 0.0 {
+                // Square corner - handle at corner
+                curvePosition = corner
+            } else {
+                // Rounded corner - handle on curve at 45-degree angle
+                // Distance from corner to curve point = radius / sqrt(2)
+                let curveDistance = radius / sqrt(2.0)
+                
+                // Direction vectors for each corner (45-degree inward diagonal)
+                let direction: CGPoint
+                switch index {
+                case 0: // Top-left: move right and down
+                    direction = CGPoint(x: 1, y: 1)
+                case 1: // Top-right: move left and down
+                    direction = CGPoint(x: -1, y: 1)
+                case 2: // Bottom-right: move left and up
+                    direction = CGPoint(x: -1, y: -1)
+                case 3: // Bottom-left: move right and up
+                    direction = CGPoint(x: 1, y: -1)
+                default:
+                    direction = CGPoint(x: 0, y: 0)
+                }
+                
+                // Calculate curve handle position
+                curvePosition = CGPoint(
+                    x: corner.x + direction.x * curveDistance,
+                    y: corner.y + direction.y * curveDistance
+                )
+            }
+            
+            curvePositions.append(curvePosition)
+        }
+        
+        return curvePositions.map { canvasToScreen($0, geometry: geometry) }
     }
     
-    /// Handle corner radius drag
+    /// Handle corner radius drag with professional cursor tracking
     private func handleCornerRadiusDrag(
         cornerIndex: Int,
         value: DragGesture.Value,
         shape: VectorShape,
         geometry: GeometryProxy
     ) {
-        // Calculate radius change based on drag distance
-        let dragDistance = sqrt(pow(value.translation.width, 2) + pow(value.translation.height, 2))
-        let direction = value.translation.width + value.translation.height > 0 ? 1.0 : -1.0
-        let radiusChange = dragDistance * direction * 0.5 // Sensitivity adjustment
+        // PROFESSIONAL CORNER RADIUS DRAGGING: Perfect cursor-to-radius synchronization
+        // Uses the same precision approach as object dragging and hand tool
         
-        // Update the corner radius for this corner
-        updateCornerRadius(
-            shapeID: shape.id,
-            cornerIndex: cornerIndex,
-            radiusChange: radiusChange
+        // Initialize drag state on first drag event
+        if !isDraggingCorner {
+            isDraggingCorner = true
+            draggedCornerIndex = cornerIndex
+            cornerDragStart = value.startLocation
+            initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
+            cornerDragOffset = .zero
+            
+            print("🔄 CORNER DRAG: Started at cursor (\(String(format: "%.1f", cornerDragStart.x)), \(String(format: "%.1f", cornerDragStart.y)))")
+            print("   Initial radius: \(String(format: "%.1f", initialCornerRadius))pt")
+        }
+        
+        // Calculate cursor movement from reference location (perfect 1:1 tracking)
+        let cursorDelta = CGPoint(
+            x: value.location.x - cornerDragStart.x,
+            y: value.location.y - cornerDragStart.y
         )
+        
+        // CONSTRAIN TO 45-DEGREE MOVEMENT: Get the direction vector for this corner
+        let direction: CGPoint
+        switch cornerIndex {
+        case 0: // Top-left: move right and down (positive diagonal)
+            direction = CGPoint(x: 1, y: 1)
+        case 1: // Top-right: move left and down (negative diagonal)
+            direction = CGPoint(x: -1, y: 1)
+        case 2: // Bottom-right: move left and up (positive diagonal)
+            direction = CGPoint(x: -1, y: -1)
+        case 3: // Bottom-left: move right and up (negative diagonal)
+            direction = CGPoint(x: 1, y: -1)
+        default:
+            direction = CGPoint(x: 1, y: 1)
+        }
+        
+        // Project cursor movement onto the 45-degree line
+        let projectedDistance = (cursorDelta.x * direction.x + cursorDelta.y * direction.y) / sqrt(2.0)
+        
+        // CRITICAL FIX: Calculate exact constrained cursor position in screen coordinates
+        // This is where the mouse cursor would be if constrained to the 45-degree line
+        let constrainedCursorDelta = CGPoint(
+            x: direction.x * projectedDistance,
+            y: direction.y * projectedDistance
+        )
+        cornerDragOffset = constrainedCursorDelta
+        
+        print("🖱️ CURSOR SYNC: Mouse at (\(String(format: "%.1f", value.location.x)), \(String(format: "%.1f", value.location.y))) → Constrained to (\(String(format: "%.1f", cornerDragStart.x + constrainedCursorDelta.x)), \(String(format: "%.1f", cornerDragStart.y + constrainedCursorDelta.y)))")
+        
+        // Convert screen distance to canvas distance (accounting for zoom)
+        let preciseZoom = Double(document.zoomLevel)
+        let canvasDistance = projectedDistance / preciseZoom
+        
+        // Calculate new radius: distance along diagonal * sqrt(2) = radius change
+        let radiusChange = canvasDistance * sqrt(2.0)
+        let tentativeRadius = initialCornerRadius + radiusChange
+        
+        // Calculate maximum radius based on shape dimensions
+        if let originalBounds = shape.originalBounds {
+            let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
+            let newRadius = max(0.0, min(maxRadius, tentativeRadius))
+            
+            // Apply the constrained radius
+            updateCornerRadiusToValue(
+                shapeID: shape.id,
+                cornerIndex: cornerIndex,
+                newRadius: newRadius
+            )
+        } else {
+            // Fallback: just use minimum constraint
+            let newRadius = max(0.0, tentativeRadius)
+            updateCornerRadiusToValue(
+                shapeID: shape.id,
+                cornerIndex: cornerIndex,
+                newRadius: newRadius
+            )
+        }
+        
+        // Debug logging for fine-tuning
+        if abs(radiusChange) > 1.0 {
+            let currentRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
+            print("🔄 CORNER DRAG: Radius \(String(format: "%.1f", initialCornerRadius)) → \(String(format: "%.1f", currentRadius))pt (Δ\(String(format: "%.1f", radiusChange)))")
+        }
+    }
+    
+    /// Finish corner radius drag operation
+    private func finishCornerRadiusDrag() {
+        if isDraggingCorner {
+            // Save to undo stack when drag ends
+            document.saveToUndoStack()
+            
+            // Reset drag state
+            isDraggingCorner = false
+            draggedCornerIndex = -1
+            cornerDragStart = .zero
+            initialCornerRadius = 0.0
+            cornerDragOffset = .zero
+            
+            print("🔄 CORNER DRAG: Finished and saved to undo stack")
+        }
     }
     
     /// Update specific corner radius and regenerate path
@@ -164,6 +297,43 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex] = shape
                 
                 print("🔄 Updated corner \(cornerIndex) radius to \(String(format: "%.1f", newRadius))pt")
+                break
+            }
+        }
+    }
+    
+    /// Update specific corner radius to an absolute value and regenerate path
+    private func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
+        for layerIndex in document.layers.indices {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                var shape = document.layers[layerIndex].shapes[shapeIndex]
+                
+                // Update the corner radii array
+                var updatedRadii = shape.cornerRadii
+                if cornerIndex < updatedRadii.count {
+                    updatedRadii[cornerIndex] = newRadius
+                } else {
+                    // Extend array if needed
+                    while updatedRadii.count <= cornerIndex {
+                        updatedRadii.append(0.0)
+                    }
+                    updatedRadii[cornerIndex] = newRadius
+                }
+                
+                shape.cornerRadii = updatedRadii
+                
+                // Regenerate path from original bounds + new radii
+                if let originalBounds = shape.originalBounds {
+                    let newPath = createRoundedRectPathWithIndividualCorners(
+                        rect: originalBounds,
+                        cornerRadii: updatedRadii
+                    )
+                    shape.path = newPath
+                    shape.updateBounds()
+                }
+                
+                // Update the shape in the document
+                document.layers[layerIndex].shapes[shapeIndex] = shape
                 break
             }
         }

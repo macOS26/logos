@@ -45,8 +45,10 @@ extension DrawingCanvas {
         
         // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
         // PROFESSIONAL UX: Hide selection dots during movement (Adobe Illustrator standard)
+        // CORNER TOOL FIX: Hide bounding box and selection handles when in corner radius edit mode
         if !(document.currentTool == .bezierPen && isBezierDrawing) && 
-           !(document.currentTool == .selection && isDrawing) {
+           !(document.currentTool == .selection && isDrawing) &&
+           !isCornerRadiusEditMode {
             SelectionHandlesView(
                 document: document,
                 geometry: geometry,

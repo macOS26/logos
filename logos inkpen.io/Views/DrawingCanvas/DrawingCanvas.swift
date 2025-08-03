@@ -122,6 +122,13 @@ struct DrawingCanvas: View {
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     
+    // Corner radius drag state (professional cursor tracking)
+    @State internal var cornerDragStart: CGPoint = .zero
+    @State internal var initialCornerRadius: Double = 0.0
+    @State internal var isDraggingCorner = false
+    @State internal var draggedCornerIndex: Int = -1
+    @State internal var cornerDragOffset: CGPoint = .zero
+    
     // PROFESSIONAL COINCIDENT POINT MANAGEMENT
     // This handles the case where multiple points exist at the same X,Y coordinates
     // Essential for maintaining continuity in closed paths (circles, etc.)

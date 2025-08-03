@@ -211,6 +211,12 @@ extension DrawingCanvas {
     /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas  
     /// FIXED: Simplified logic to prevent bouncing behavior
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+        // CORNER TOOL FIX: Prevent object dragging when in corner radius edit mode
+        // In this mode, only corner handles should be interactive, not the object itself
+        if isCornerRadiusEditMode {
+            return
+        }
+        
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         
         // Start drag if not already dragging
