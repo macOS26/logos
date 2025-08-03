@@ -14,7 +14,7 @@ class PressureSensitiveCanvasView: NSView {
     // MARK: - Pressure Detection Properties
     
     /// Callback for pressure events with location and pressure data
-    var onPressureEvent: ((CGPoint, Double, PressureEventType) -> Void)?
+    var onPressureEvent: ((CGPoint, Double, PressureEventType, Bool) -> Void)?
     
     /// Whether this device/setup supports real pressure input
     private(set) var hasPressureSupport = false
@@ -67,9 +67,10 @@ class PressureSensitiveCanvasView: NSView {
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(startLocation)
         
-        onPressureEvent?(canvasLocation, pressure, .began)
+        let isTabletEvent = (event.subtype == .tabletPoint)
+        onPressureEvent?(canvasLocation, pressure, .began, isTabletEvent)
         
-        print("🎨 PRESSURE: Mouse down - pressure: \(pressure)")
+        print("🎨 PRESSURE: Mouse down - pressure: \(pressure), subtype: \(event.subtype.rawValue), tablet: \(isTabletEvent)")
         super.mouseDown(with: event)
     }
     
@@ -80,7 +81,8 @@ class PressureSensitiveCanvasView: NSView {
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
         
-        onPressureEvent?(canvasLocation, pressure, .changed)
+        let isTabletEvent = (event.subtype == .tabletPoint)
+        onPressureEvent?(canvasLocation, pressure, .changed, isTabletEvent)
         
         super.mouseDragged(with: event)
     }
@@ -92,7 +94,8 @@ class PressureSensitiveCanvasView: NSView {
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
         
-        onPressureEvent?(canvasLocation, pressure, .ended)
+        let isTabletEvent = (event.subtype == .tabletPoint)
+        onPressureEvent?(canvasLocation, pressure, .ended, isTabletEvent)
         
         isDragging = false
         print("🎨 PRESSURE: Mouse up - final pressure: \(pressure)")
@@ -106,11 +109,55 @@ class PressureSensitiveCanvasView: NSView {
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
         
-        // This is the key method for real Apple Pencil pressure!
-        onPressureEvent?(canvasLocation, pressure, .changed)
+        // This handles trackpad pressure changes (never tablet events)
+        onPressureEvent?(canvasLocation, pressure, .changed, false)
         
         print("🎨 PRESSURE: Pressure change - pressure: \(pressure)")
         super.pressureChange(with: event)
+    }
+    
+    // MARK: - Tablet Event Handling (Apple Pencil)
+    
+    override func tabletPoint(with event: NSEvent) {
+        let currentLocation = convert(event.locationInWindow, from: nil)
+        let pressure = extractPressure(from: event)
+        let canvasLocation = convertToCanvasCoordinates(currentLocation)
+        
+        // Determine event type based on current state and pressure
+        let eventType: PressureEventType
+        if !isDragging && pressure > 0.1 {
+            // Starting a new stroke
+            isDragging = true
+            eventType = .began
+            startLocation = currentLocation
+        } else if isDragging && pressure <= 0.1 {
+            // Ending the stroke
+            isDragging = false
+            eventType = .ended
+        } else {
+            // Continuing the stroke
+            eventType = .changed
+        }
+        
+        onPressureEvent?(canvasLocation, pressure, eventType, true) // Always tablet event
+        
+        print("🎨 TABLET: Tablet point - pressure: \(pressure), type: \(eventType)")
+        super.tabletPoint(with: event)
+    }
+    
+    override func tabletProximity(with event: NSEvent) {
+        if event.isEnteringProximity {
+            print("🎨 TABLET: Apple Pencil entering proximity")
+        } else {
+            print("🎨 TABLET: Apple Pencil leaving proximity")
+            // End any current drawing when stylus leaves proximity
+            if isDragging {
+                isDragging = false
+                let canvasLocation = convertToCanvasCoordinates(startLocation)
+                onPressureEvent?(canvasLocation, 0.1, .ended, true) // Tablet proximity end
+            }
+        }
+        super.tabletProximity(with: event)
     }
     
     // MARK: - Pressure Extraction
@@ -119,34 +166,35 @@ class PressureSensitiveCanvasView: NSView {
         var pressure: Double = 1.0
         var foundRealPressure = false
         
-        // Try to get real pressure data
+        // Try to get real pressure data based on event type and subtype
         switch event.type {
-        case .leftMouseDown:
-            // For mouse down, check if pressure is available
-            if event.pressure > 0.0 && event.pressure != 1.0 {
+        case .tabletPoint:
+            // Native tablet events (Apple Pencil, Wacom, etc.)
+            pressure = Double(event.pressure)
+            foundRealPressure = true
+            print("🎨 PRESSURE: Tablet point pressure: \(pressure)")
+            
+        case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
+            // Check if this is a tablet event disguised as a mouse event
+            if event.subtype == .tabletPoint {
+                // Apple Pencil events often come as mouse events with tablet subtype
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-                print("🎨 PRESSURE: Real pressure in mouse down: \(pressure)")
+                print("🎨 PRESSURE: Tablet subtype pressure: \(pressure)")
+            } else if event.pressure > 0.0 && event.pressure != 1.0 {
+                // Regular trackpad pressure
+                pressure = Double(event.pressure)
+                foundRealPressure = true
+                print("🎨 PRESSURE: Mouse/trackpad pressure: \(pressure)")
             } else {
                 pressure = 1.0
             }
             
-        case .leftMouseDragged:
-            // For drag events, pressure might be available
-            if event.pressure > 0.0 && event.pressure != 1.0 {
-                pressure = Double(event.pressure)
-                foundRealPressure = true
-                print("🎨 PRESSURE: Real pressure in drag: \(pressure)")
-            } else {
-                pressure = 1.0 // Fallback for non-pressure devices
-            }
-            
         case .pressure:
-            // This is the real Apple Pencil pressure event!
-            // The pressure value in this event is the change, so we add it to base
+            // Trackpad pressure change events (relative to baseline pressure)
             pressure = 1.0 + Double(event.pressure)
             foundRealPressure = true
-            print("🎨 PRESSURE: Real pressure event detected: \(pressure)")
+            print("🎨 PRESSURE: Pressure change event: 1.0 + \(event.pressure) = \(pressure)")
             
         default:
             pressure = 1.0
@@ -171,7 +219,7 @@ class PressureSensitiveCanvasView: NSView {
 
 /// SwiftUI wrapper for pressure-sensitive canvas
 struct PressureSensitiveCanvasRepresentable: NSViewRepresentable {
-    let onPressureEvent: (CGPoint, Double, PressureSensitiveCanvasView.PressureEventType) -> Void
+    let onPressureEvent: (CGPoint, Double, PressureSensitiveCanvasView.PressureEventType, Bool) -> Void
     @Binding var hasPressureSupport: Bool
     
     func makeNSView(context: Context) -> PressureSensitiveCanvasView {

@@ -22,6 +22,21 @@ class PressureManager: ObservableObject {
     /// Whether pressure sensitivity is enabled by user
     @Published var pressureSensitivityEnabled = true
     
+    /// Calibration tracking - whether calibration is active
+    @Published var isCalibrating = false
+    
+    /// Minimum pressure recorded during calibration
+    @Published var calibrationMinPressure: Double = 1.0
+    
+    /// Maximum pressure recorded during calibration  
+    @Published var calibrationMaxPressure: Double = 1.0
+    
+    /// Number of pressure samples recorded during calibration
+    @Published var calibrationSampleCount: Int = 0
+    
+    /// Whether to only track tablet/stylus events during calibration
+    @Published var tabletOnlyCalibration: Bool = true
+    
     // MARK: - Private Properties
     
     /// Tracks points for simulation fallback
@@ -61,9 +76,15 @@ class PressureManager: ObservableObject {
     // MARK: - Pressure Processing
     
     /// Processes pressure from real input events
-    func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date()) {
+    func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
         guard pressureSensitivityEnabled else {
             currentPressure = 1.0
+            return
+        }
+        
+        // If in tablet-only calibration mode, ignore non-tablet events during calibration
+        if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
+            print("🎨 CALIBRATION: Ignoring non-tablet event (tablet-only mode)")
             return
         }
         
@@ -84,13 +105,20 @@ class PressureManager: ObservableObject {
         lastLocation = location
         lastTimestamp = timestamp
         
+        // Update calibration if active
+        if isCalibrating {
+            updateCalibrationData(pressure: clampedPressure, isTabletEvent: isTabletEvent)
+        }
+        
         // Debug output for pressure changes (only log significant changes to avoid spam)
         if let lastPressure = lastRecordedPressure, abs(pressure - lastPressure) > 0.1 {
-            print("🎨 PRESSURE: \(String(format: "%.2f", pressure)) at (\(Int(location.x)), \(Int(location.y)))")
+            let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
+            print("🎨 \(eventType): \(String(format: "%.3f", pressure)) at (\(Int(location.x)), \(Int(location.y)))")
             lastRecordedPressure = pressure
         } else if lastRecordedPressure == nil {
             lastRecordedPressure = pressure
-            print("🎨 PRESSURE: First pressure reading: \(String(format: "%.2f", pressure))")
+            let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
+            print("🎨 \(eventType): First pressure reading: \(String(format: "%.3f", pressure))")
         }
     }
     
@@ -162,6 +190,56 @@ class PressureManager: ObservableObject {
         } else {
             // Fall back to simulation
             return processSimulatedPressure(at: location, sensitivity: sensitivity)
+        }
+    }
+    
+    // MARK: - Pressure Calibration
+    
+    /// Starts pressure calibration tracking
+    func startCalibration() {
+        DispatchQueue.main.async {
+            self.isCalibrating = true
+            self.calibrationMinPressure = self.currentPressure
+            self.calibrationMaxPressure = self.currentPressure
+            self.calibrationSampleCount = 0
+            print("🎨 CALIBRATION: Started pressure calibration")
+        }
+    }
+    
+    /// Stops pressure calibration tracking
+    func stopCalibration() {
+        DispatchQueue.main.async {
+            self.isCalibrating = false
+            print("🎨 CALIBRATION: Stopped pressure calibration")
+            print("🎨 CALIBRATION: Final range: \(String(format: "%.3f", self.calibrationMinPressure)) - \(String(format: "%.3f", self.calibrationMaxPressure))")
+            print("🎨 CALIBRATION: Total samples: \(self.calibrationSampleCount)")
+        }
+    }
+    
+    /// Resets calibration data
+    func resetCalibration() {
+        DispatchQueue.main.async {
+            self.calibrationMinPressure = self.currentPressure
+            self.calibrationMaxPressure = self.currentPressure
+            self.calibrationSampleCount = 0
+            print("🎨 CALIBRATION: Reset calibration data")
+        }
+    }
+    
+    /// Updates calibration tracking with new pressure value
+    private func updateCalibrationData(pressure: Double, isTabletEvent: Bool = false) {
+        DispatchQueue.main.async {
+            if pressure < self.calibrationMinPressure {
+                self.calibrationMinPressure = pressure
+                let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
+                print("🎨 CALIBRATION (\(eventType)): New minimum pressure: \(String(format: "%.3f", pressure))")
+            }
+            if pressure > self.calibrationMaxPressure {
+                self.calibrationMaxPressure = pressure
+                let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
+                print("🎨 CALIBRATION (\(eventType)): New maximum pressure: \(String(format: "%.3f", pressure))")
+            }
+            self.calibrationSampleCount += 1
         }
     }
 }

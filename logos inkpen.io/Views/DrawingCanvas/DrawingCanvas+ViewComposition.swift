@@ -269,9 +269,9 @@ extension DrawingCanvas {
         // Only show pressure overlay for drawing tools that use pressure
         if document.currentTool == .brush || document.currentTool == .marker {
             PressureSensitiveCanvasRepresentable(
-                onPressureEvent: { location, pressure, eventType in
-                    handlePressureEvent(location: location, pressure: pressure, eventType: eventType, geometry: geometry)
-                },
+                                            onPressureEvent: { location, pressure, eventType, isTabletEvent in
+                                handlePressureEvent(location: location, pressure: pressure, eventType: eventType, isTabletEvent: isTabletEvent, geometry: geometry)
+                            },
                 hasPressureSupport: .constant(PressureManager.shared.hasRealPressureInput)
             )
             .allowsHitTesting(true)
@@ -285,13 +285,14 @@ extension DrawingCanvas {
         location: CGPoint, 
         pressure: Double, 
         eventType: PressureSensitiveCanvasView.PressureEventType,
+        isTabletEvent: Bool,
         geometry: GeometryProxy
     ) {
         // Convert to canvas coordinates
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
         // Update pressure manager with real pressure data
-        PressureManager.shared.processRealPressure(pressure, at: canvasLocation)
+        PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
         PressureManager.shared.updatePressureSupport(true)
         
         // Route to appropriate tool based on event type and current tool

@@ -571,6 +571,7 @@ struct DocumentBasedMainView: View {
     @State private var showingDWGExportDialog = false
     @State private var dwgExportOptions = DWGExportOptions()
     @State private var showingSVGTestHarness = false
+    @State private var showingPressureCalibration = false
     @State private var showingNewDocumentSetup = false
     
     var body: some View {
@@ -654,6 +655,7 @@ struct DocumentBasedMainView: View {
                 showingDWFExportDialog: $showingDWFExportDialog,
                 showingDWGExportDialog: $showingDWGExportDialog,
                 showingSVGTestHarness: $showingSVGTestHarness,
+                showingPressureCalibration: $showingPressureCalibration,
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
@@ -739,6 +741,9 @@ struct DocumentBasedMainView: View {
                 loadImportedDocument(importedDoc)
             }
             .frame(width: 1000, height: 800)
+        }
+        .sheet(isPresented: $showingPressureCalibration) {
+            PressureCalibrationView()
         }
         .onAppear {
             // Connect document to menu system

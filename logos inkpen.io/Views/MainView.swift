@@ -27,6 +27,7 @@ struct MainView: View {
     @State private var dwgExportOptions = DWGExportOptions()
     @State private var showingSVGTestHarness = false // Add SVG test access
     @State private var showingNewDocumentSetup = false // New document setup window
+    @State private var showingPressureCalibration = false // Pressure calibration window
     
     // Drawer state management
     @State private var isBottomDrawerOpen = false
@@ -235,6 +236,7 @@ struct MainView: View {
             showingDWFExportDialog: $showingDWFExportDialog,
             showingDWGExportDialog: $showingDWGExportDialog,
             showingSVGTestHarness: $showingSVGTestHarness,
+            showingPressureCalibration: $showingPressureCalibration,
             onRunDiagnostics: runPasteboardDiagnostics
         )
         }
@@ -352,6 +354,9 @@ struct MainView: View {
                 loadImportedDocument(importedDoc)
             }
             .frame(width: 1000, height: 800)
+        }
+        .sheet(isPresented: $showingPressureCalibration) {
+            PressureCalibrationView()
         }
         .frame(minWidth: 1400, minHeight: 900)
         // Note: No longer using focusedValue - using focusedSceneObject instead
@@ -812,6 +817,7 @@ struct MainToolbarContent: ToolbarContent {
     @Binding var showingDWFExportDialog: Bool
     @Binding var showingDWGExportDialog: Bool
     @Binding var showingSVGTestHarness: Bool
+    @Binding var showingPressureCalibration: Bool
     let onRunDiagnostics: () -> Void
     
     // MARK: - Path Closing Support Functions
@@ -999,6 +1005,13 @@ struct MainToolbarContent: ToolbarContent {
                         showingSVGTestHarness = true
                     }
                     .help("Test SVG import and Core Graphics conversion")
+                    
+                    Button("Pressure Calibration") {
+                        showingPressureCalibration = true
+                    }
+                    .help("Calibrate pressure-sensitive input devices")
+                    
+                    Divider()
                     
                     Button("Run Diagnostics") {
                         onRunDiagnostics()

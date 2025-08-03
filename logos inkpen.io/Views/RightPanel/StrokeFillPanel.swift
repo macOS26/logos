@@ -869,8 +869,6 @@ struct GradientFillSection: View {
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
-            print("🚨 STROKE FILL: document.objectWillChange triggered!")
-            print("🚨 STROKE FILL: This might be causing unwanted gradient updates!")
             // DISABLED: This was causing unwanted gradient modifications when switching panels
             // updateSelectedGradient()
         }
