@@ -64,7 +64,7 @@ struct MainView: View {
                     }
                     .frame(width: 48)
                     .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
-                    .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
+                    .background(Color.ui.darkOverlay) // Visual confirmation of toolbar bounds
                     .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
                 
                                 // Center Drawing Area - Flexible width with minimum - STRICTLY CONSTRAINED TO CENTER COLUMN
@@ -73,7 +73,7 @@ struct MainView: View {
                     ZStack {
                         // DEBUGGING: Background to see exact bounds
                         Rectangle()
-                            .fill(Color.gray.opacity(0.1))
+                            .fill(Color.ui.lightGrayBackground)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .allowsHitTesting(false) // Background doesn't capture gestures
                         
@@ -81,7 +81,7 @@ struct MainView: View {
                         DrawingCanvas(document: document)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
-                            .background(Color.clear) // Ensure no background extension
+                            .background(Color.ui.clear) // Ensure no background extension
                             .zIndex(1) // CRITICAL: Canvas below panels but above background
                             .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
                         
@@ -1514,7 +1514,7 @@ struct DocumentSettingsView: View {
                         .frame(width: 28, height: 28)
                         .background(
                             RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.gray.opacity(0.1))
+                                .fill(Color.ui.lightGrayBackground)
                         )
                 }
                 .buttonStyle(PlainButtonStyle())

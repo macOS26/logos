@@ -37,7 +37,7 @@ struct CornerRadiusToolbar: View {
         HStack(spacing: 4) {
             // Shape type indicator
             Image(systemName: shapeIcon)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ui.secondaryText)
                 .font(.caption)
             
             // Corner radius fields based on corner count
@@ -45,7 +45,7 @@ struct CornerRadiusToolbar: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.ui.controlBackground)
         .cornerRadius(6)
     }
     
@@ -71,17 +71,17 @@ struct CornerRadiusToolbar: View {
             HStack(spacing: 1) {
                 Text(label + ":")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 
                 // Visual indicator for rounded corner
                 if isRounded && cornerValue > 0 {
                     Image(systemName: "circle.fill")
                         .font(.system(size: 4))
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color.ui.primaryBlue)
                 } else {
                     Image(systemName: "square.fill")
                         .font(.system(size: 4))
-                        .foregroundColor(.gray)
+                        .foregroundColor(Color.ui.standardBorder)
                 }
             }
             

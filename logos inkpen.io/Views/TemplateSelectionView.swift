@@ -46,7 +46,7 @@ struct TemplateSelectionView: View {
                     
                     Text("Choose a template to get started")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 
                 Spacer()
@@ -68,7 +68,7 @@ struct TemplateSelectionView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Professional Templates")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(Color.ui.primaryText)
             
             ScrollView {
                 LazyVStack(spacing: 8) {
@@ -92,11 +92,11 @@ struct TemplateSelectionView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Preview")
                 .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(Color.ui.primaryText)
             
             TemplatePreviewView(template: selectedTemplate)
                 .frame(width: 400, height: 300)
-                .background(Color.gray.opacity(0.1))
+                .background(Color.ui.lightGrayBackground)
                 .cornerRadius(8)
             
             templateDetailsSection
@@ -111,7 +111,7 @@ struct TemplateSelectionView: View {
             
             Text(selectedTemplate.description)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ui.secondaryText)
             
             if let templateConfig = templateManager.getTemplate(selectedTemplate) {
                 templateSpecificationsSection(templateConfig)
@@ -130,7 +130,7 @@ struct TemplateSelectionView: View {
             specificationRow("Initial Objects:", "\(templateConfig.initialShapes.count)")
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
+        .background(Color.ui.veryLightGrayBackground)
         .cornerRadius(8)
     }
     
@@ -140,7 +140,7 @@ struct TemplateSelectionView: View {
                 .fontWeight(.medium)
             Spacer()
             Text(value)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ui.secondaryText)
         }
     }
     
@@ -267,7 +267,7 @@ struct BusinessCardTemplatePreview: View {
     var body: some View {
         VStack(spacing: 8) {
             Rectangle()
-                .fill(Color.blue.opacity(0.1))
+                .fill(Color.ui.lightBlueBackground)
                 .frame(height: 20)
             
             HStack {
@@ -298,7 +298,7 @@ struct LetterheadTemplatePreview: View {
     var body: some View {
         VStack(spacing: 0) {
             Rectangle()
-                .fill(Color.blue.opacity(0.1))
+                .fill(Color.ui.lightBlueBackground)
                 .frame(height: 40)
             
             Rectangle()
@@ -329,7 +329,7 @@ struct PosterTemplatePreview: View {
                 .frame(height: 120)
             
             Rectangle()
-                .fill(Color.green.opacity(0.1))
+                .fill(Color.ui.lightSuccessBackground)
                 .frame(height: 40)
         }
         .background(Color.white)
@@ -372,7 +372,7 @@ struct ArchitecturalTemplatePreview: View {
                     .frame(width: 2, height: 60)
                 
                 Rectangle()
-                    .fill(Color.blue.opacity(0.1))
+                    .fill(Color.ui.lightBlueBackground)
                     .frame(width: 100, height: 60)
                 
                 Rectangle()
@@ -380,7 +380,7 @@ struct ArchitecturalTemplatePreview: View {
                     .frame(width: 2, height: 60)
                 
                 Rectangle()
-                    .fill(Color.green.opacity(0.1))
+                    .fill(Color.ui.lightSuccessBackground)
                     .frame(width: 80, height: 60)
                 
                 Rectangle()
@@ -447,16 +447,16 @@ struct WebGraphicsTemplatePreview: View {
     var body: some View {
         VStack(spacing: 8) {
             Rectangle()
-                .fill(Color.blue.opacity(0.2))
+                .fill(Color.ui.lightErrorBackground2)
                 .frame(height: 30)
             
             HStack(spacing: 8) {
                 Rectangle()
-                    .fill(Color.red.opacity(0.2))
+                    .fill(Color.ui.lightErrorBackground2)
                     .frame(width: 100)
                 
                 Rectangle()
-                    .fill(Color.green.opacity(0.2))
+                    .fill(Color.ui.lightErrorBackground2)
                     .frame(width: 120)
                 
                 Rectangle()

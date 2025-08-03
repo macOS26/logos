@@ -28,12 +28,12 @@ struct RulersView: View {
                 
                 // Corner Square
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.ui.controlBackground)
                     .frame(width: rulerThickness, height: rulerThickness)
                     .position(x: rulerThickness / 2, y: rulerThickness / 2)
                     .overlay(
                         Rectangle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
+                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5)
                             .frame(width: rulerThickness, height: rulerThickness)
                             .position(x: rulerThickness / 2, y: rulerThickness / 2)
                     )
@@ -53,10 +53,10 @@ struct HorizontalRuler: View {
             ZStack {
                 // Background
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.ui.controlBackground)
                     .overlay(
                         Rectangle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
+                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5),
                         alignment: .bottom
                     )
                 
@@ -135,7 +135,7 @@ struct HorizontalRuler: View {
                     
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                     
                     // Position RIGHT AFTER the tick mark
                     context.draw(text, at: CGPoint(x: rulerX + 8, y: size.height - 14))
@@ -158,10 +158,10 @@ struct VerticalRuler: View {
             ZStack {
                 // Background
                 Rectangle()
-                    .fill(Color(NSColor.controlBackgroundColor))
+                    .fill(Color.ui.controlBackground)
                     .overlay(
                         Rectangle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 0.5),
+                            .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5),
                         alignment: .trailing
                     )
                 
@@ -240,7 +240,7 @@ struct VerticalRuler: View {
                     
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                     
                     // Rotate text for vertical ruler - RIGHT AFTER the tick, matching horizontal logic
                     var rotatedContext = context

@@ -505,7 +505,7 @@ struct CurrentColorsView: View {
                 
                 Text("Fill")
                     .font(.caption2)  // Smaller font to match ColorPanel
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
             }
             
             // Stroke Color
@@ -517,11 +517,11 @@ struct CurrentColorsView: View {
                 
                 Text("Stroke")
                     .font(.caption2)  // Smaller font to match ColorPanel
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
             }
         }
         .padding(12)  // Compact padding
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(8)
     }
 }
@@ -543,11 +543,11 @@ struct FillPropertiesSection: View {
                 HStack {
                     Text("Opacity")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(fillOpacity * 100))%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 
                 Slider(value: Binding(
@@ -567,7 +567,7 @@ struct FillPropertiesSection: View {
             }
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
     }
 }
@@ -599,11 +599,11 @@ struct StrokePropertiesSection: View {
                 HStack {
                     Text("Width")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(String(format: "%.1f", strokeWidth)) pt")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 
                 Slider(value: Binding(
@@ -618,11 +618,11 @@ struct StrokePropertiesSection: View {
                 HStack {
                     Text("Opacity")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(strokeOpacity * 100))%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 
                 Slider(value: Binding(
@@ -636,7 +636,7 @@ struct StrokePropertiesSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Placement")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 
                 Picker("Placement", selection: Binding(
                     get: { strokePlacement },
@@ -658,7 +658,7 @@ struct StrokePropertiesSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Joins")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 
                 HStack(spacing: 6) {
                     ForEach([CGLineJoin.round, .miter, .bevel], id: \.self) { joinType in
@@ -695,7 +695,7 @@ struct StrokePropertiesSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("End Caps")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 
                 HStack(spacing: 6) {
                     ForEach([CGLineCap.butt, .round, .square], id: \.self) { capType in
@@ -734,11 +734,11 @@ struct StrokePropertiesSection: View {
                     HStack {
                         Text("Miter Limit")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         Spacer()
                         Text("\(String(format: "%.1f", strokeMiterLimit))")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     
                     Slider(value: Binding(
@@ -752,7 +752,7 @@ struct StrokePropertiesSection: View {
             }
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
     }
 }
@@ -864,7 +864,7 @@ struct GradientFillSection: View {
             )
         }
         .padding()
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+        .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
@@ -1578,7 +1578,7 @@ struct ColorPickerSheet: View {
                         
                         Text("Enter values from 0-100%")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         
                         // CMYK Input Grid
                         HStack(spacing: 12) {
@@ -1607,12 +1607,12 @@ struct ColorPickerSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("CMYK(\(Int((cmykPreview.cyan * 100).isFinite ? cmykPreview.cyan * 100 : 0)), \(Int((cmykPreview.magenta * 100).isFinite ? cmyk.magenta * 100 : 0)), \(Int((cmykPreview.yellow * 100).isFinite ? cmyk.yellow * 100 : 0)), \(Int((cmykPreview.black * 100).isFinite ? cmyk.black * 100 : 0)))")
                                     .font(.caption)
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(Color.ui.primaryText)
                                 
                                 let rgbEquivalent = cmykPreview.rgbColor
                                 Text("RGB(\(Int(rgbEquivalent.red * 255)), \(Int(rgbEquivalent.green * 255)), \(Int(rgbEquivalent.blue * 255)))")
                                     .font(.caption2)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(Color.ui.secondaryText)
                             }
                             Spacer()
                         }
@@ -1629,12 +1629,12 @@ struct ColorPickerSheet: View {
                             HStack {
                                 renderColorSwatchRightPanel(.clear, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
                                 Text("Clear Color")
-                                    .foregroundColor(.primary)
+                                    .foregroundColor(Color.ui.primaryText)
                                 Spacer()
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.gray.opacity(0.1))
+                            .background(Color.ui.lightGrayBackground)
                             .cornerRadius(8)
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -1850,7 +1850,7 @@ struct GradientTypePickerView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Type")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ui.secondaryText)
             
             Picker("Gradient Type", selection: $gradientType) {
                 ForEach(GradientFillSection.GradientType.allCases, id: \.self) { type in
@@ -1893,11 +1893,11 @@ struct GradientAngleControlView: View {
                 HStack {
                     Text("Angle")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(formatNumberForDisplay(angle, maxDecimals: 1))°")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 
                 HStack(spacing: 8) {
@@ -1940,13 +1940,13 @@ struct GradientOriginControlView: View {
                 HStack {
                     Text("Origin Point (0,0 = center, -1 to 1 = scaled range)")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("-8 to 8")
                         .font(.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color.ui.primaryBlue)
                         .padding(.horizontal, 4)
-                        .background(Color.blue.opacity(0.1))
+                        .background(Color.ui.lightBlueBackground)
                         .cornerRadius(3)
                 }
                 
@@ -1954,7 +1954,7 @@ struct GradientOriginControlView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("X: \(currentGradient != nil ? formatNumberForDisplay(getOriginX(currentGradient!)) : "0")")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
@@ -1982,7 +1982,7 @@ struct GradientOriginControlView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Y: \(currentGradient != nil ? formatNumberForDisplay(getOriginY(currentGradient!)) : "0")")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
@@ -2029,7 +2029,7 @@ struct GradientScaleControlView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Scale: \(currentGradient != nil ? Int(getScale(currentGradient!) * 100) : 100)%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     
                     HStack(spacing: 8) {
                         Slider(value: Binding(
@@ -2061,7 +2061,7 @@ struct GradientScaleControlView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Aspect Ratio: \(currentGradient != nil ? formatNumberForDisplay(getAspectRatio(currentGradient!)) : "1")")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
@@ -2092,7 +2092,7 @@ struct GradientScaleControlView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Radius: \(currentGradient != nil ? formatNumberForDisplay(getRadius(currentGradient!)) : "0.5")")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         
                         HStack(spacing: 8) {
                             Slider(value: Binding(
@@ -2218,7 +2218,7 @@ struct GradientPreviewAndStopsView: View {
                     angle: radial.angle
                 )
                 .frame(width: squareSize, height: squareSize)
-                .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                .overlay(Rectangle().stroke(Color.ui.lightGrayBorder, lineWidth: 1))
                 .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
                     // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                     let clampedX = max(0.0, min(1.0, x))
@@ -2274,7 +2274,7 @@ struct GradientPreviewAndStopsView: View {
                 
                 SwiftUI.LinearGradient(gradient: gradient, startPoint: startPoint, endPoint: endPoint)
                     .frame(width: squareSize, height: squareSize)
-                    .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                    .overlay(Rectangle().stroke(Color.ui.lightGrayBorder, lineWidth: 1))
                     .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
                         updateOriginX(x, true)
                         updateOriginY(y, true)
@@ -2286,7 +2286,7 @@ struct GradientPreviewAndStopsView: View {
                 Rectangle()
                     .fill(gradient)
                     .frame(width: squareSize, height: squareSize)
-                    .overlay(Rectangle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                    .overlay(Rectangle().stroke(Color.ui.lightGrayBorder, lineWidth: 1))
                     .overlay(CartesianGrid(width: squareSize, height: squareSize) { x, y in
                         // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                         let clampedX = max(0.0, min(1.0, x))
@@ -2343,7 +2343,7 @@ struct GradientPreviewAndStopsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Preview")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 
                 GeometryReader { geometry in
                     createPreviewContent(geometry: geometry)
@@ -2354,11 +2354,11 @@ struct GradientPreviewAndStopsView: View {
                     HStack {
                         Text("Color Stops")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         Spacer()
                         Button(action: addColorStop) {
                             Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.ui.primaryBlue)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -2386,7 +2386,7 @@ struct GradientPreviewAndStopsView: View {
                                     if editingGradientStopId == stop.id {
                                         Text("EDITING")
                                             .font(.caption2)
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(Color.ui.primaryBlue)
                                             .fontWeight(.bold)
                                     }
                                     Spacer()
@@ -2432,7 +2432,7 @@ struct GradientPreviewAndStopsView: View {
                             if stops.count > 2 {
                                 Button(action: { removeColorStop(stop.id) }) {
                                     Image(systemName: "minus.circle.fill")
-                                        .foregroundColor(.red)
+                                        .foregroundColor(Color.ui.errorColor)
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
@@ -2670,17 +2670,17 @@ struct CartesianGrid: View {
                 HStack {
                     Text("(0,0)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(x: 2, y: 2)
                     Spacer()
                     Text("(0.5,0)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(y: 2)
                     Spacer()
                     Text("(1,0)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(x: -2, y: 2)
                 }
                 .padding(.horizontal, 4)
@@ -2688,17 +2688,17 @@ struct CartesianGrid: View {
                 HStack {
                     Text("(0,1)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(x: 2, y: -2)
                     Spacer()
                     Text("(0.5,1)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(y: -2)
                     Spacer()
                     Text("(1,1)")
                         .font(.caption2)
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.ui.white)
                         .offset(x: -2, y: -2)
                 }
                 .padding(.horizontal, 4)
@@ -2709,7 +2709,7 @@ struct CartesianGrid: View {
                 // Corner points
                 // Top-left (0,0)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: 0)
                     .onTapGesture {
@@ -2718,7 +2718,7 @@ struct CartesianGrid: View {
                 
                 // Top-right (1,0)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width, y: 0)
                     .onTapGesture {
@@ -2727,7 +2727,7 @@ struct CartesianGrid: View {
                 
                 // Bottom-left (0,1)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: height)
                     .onTapGesture {
@@ -2736,7 +2736,7 @@ struct CartesianGrid: View {
                 
                 // Bottom-right (1,1)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width, y: height)
                     .onTapGesture {
@@ -2755,7 +2755,7 @@ struct CartesianGrid: View {
                 // Edge midpoints
                 // Top center (0.5,0)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width/2, y: 0)
                     .onTapGesture {
@@ -2764,7 +2764,7 @@ struct CartesianGrid: View {
                 
                 // Bottom center (0.5,1)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width/2, y: height)
                     .onTapGesture {
@@ -2773,7 +2773,7 @@ struct CartesianGrid: View {
                 
                 // Left center (0,0.5)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: 0, y: height/2)
                     .onTapGesture {
@@ -2782,7 +2782,7 @@ struct CartesianGrid: View {
                 
                 // Right center (1,0.5)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width, y: height/2)
                     .onTapGesture {
@@ -2792,7 +2792,7 @@ struct CartesianGrid: View {
                 // Grid intersections (8 additional points)
                 // Top-left quadrant center (0.25,0.25)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.25, y: height * 0.25)
                     .onTapGesture {
@@ -2801,7 +2801,7 @@ struct CartesianGrid: View {
                 
                 // Top-right quadrant center (0.75,0.25)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.75, y: height * 0.25)
                     .onTapGesture {
@@ -2810,7 +2810,7 @@ struct CartesianGrid: View {
                 
                 // Bottom-left quadrant center (0.25,0.75)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.25, y: height * 0.75)
                     .onTapGesture {
@@ -2819,7 +2819,7 @@ struct CartesianGrid: View {
                 
                 // Bottom-right quadrant center (0.75,0.75)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.75, y: height * 0.75)
                     .onTapGesture {
@@ -2828,7 +2828,7 @@ struct CartesianGrid: View {
                 
                 // Left middle (0.25,0.5)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.25, y: height * 0.5)
                     .onTapGesture {
@@ -2837,7 +2837,7 @@ struct CartesianGrid: View {
                 
                 // Right middle (0.75,0.5)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.75, y: height * 0.5)
                     .onTapGesture {
@@ -2846,7 +2846,7 @@ struct CartesianGrid: View {
                 
                 // Top middle (0.5,0.25)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.5, y: height * 0.25)
                     .onTapGesture {
@@ -2855,7 +2855,7 @@ struct CartesianGrid: View {
                 
                 // Bottom middle (0.5,0.75)
                 Circle()
-                    .fill(Color.blue.opacity(0.6))
+                    .fill(Color.ui.mediumBlueBackground)
                     .frame(width: 12, height: 12)
                     .position(x: width * 0.5, y: height * 0.75)
                     .onTapGesture {
@@ -2902,11 +2902,11 @@ struct VariableStrokeSection: View {
                 HStack {
                     Text("Thickness")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(formatNumberForDisplay(document.currentBrushThickness))pt")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -2918,11 +2918,11 @@ struct VariableStrokeSection: View {
                 } minimumValueLabel: {
                     Text("1")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Adjust brush stroke thickness (1-100 points)")
             }
@@ -2932,7 +2932,7 @@ struct VariableStrokeSection: View {
                 HStack {
                     Text("Pressure Sensitivity")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { appState.pressureSensitivityEnabled },
@@ -2950,11 +2950,11 @@ struct VariableStrokeSection: View {
                     HStack {
                         Text("Sensitivity")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         Spacer()
                         Text("\(Int(document.currentBrushPressureSensitivity * 100))%")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                             .monospacedDigit()
                     }
                 
@@ -2966,11 +2966,11 @@ struct VariableStrokeSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("How much pressure affects thickness (simulated if no pressure input)")
             }
@@ -2981,11 +2981,11 @@ struct VariableStrokeSection: View {
                 HStack {
                     Text("Taper")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentBrushTaper * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -2997,11 +2997,11 @@ struct VariableStrokeSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Amount of tapering at start and end of stroke")
             }
@@ -3011,11 +3011,11 @@ struct VariableStrokeSection: View {
                 HStack {
                     Text("Smoothness")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(formatNumberForDisplay(document.currentBrushSmoothingTolerance))")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3027,11 +3027,11 @@ struct VariableStrokeSection: View {
                 } minimumValueLabel: {
                     Text("0.5")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("10")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
@@ -3046,10 +3046,10 @@ struct VariableStrokeSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apply No Stroke")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                         Text("Remove stroke from brush shapes")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -3065,10 +3065,10 @@ struct VariableStrokeSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                         Text("Union overlapping parts of same shape")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -3086,7 +3086,7 @@ struct VariableStrokeSection: View {
                     .foregroundColor(document.hasPressureInput ? .green : .orange)
                 Text(document.hasPressureInput ? "Pressure input detected" : "Using simulated pressure")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 Spacer()
             }
             .padding(.top, 4)
@@ -3109,7 +3109,7 @@ struct MarkerSettingsSection: View {
                     .foregroundColor(.accentColor)
                 Text("Marker Settings")
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(Color.ui.primaryText)
                 Spacer()
             }
             
@@ -3118,11 +3118,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Tip Size")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentMarkerTipSize))pt")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3134,11 +3134,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("1")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("50")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Adjust marker tip thickness (1-50 points)")
             }
@@ -3148,11 +3148,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Opacity")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentMarkerOpacity * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3164,11 +3164,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Adjust marker ink opacity (0-100%)")
             }
@@ -3178,7 +3178,7 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Pressure Sensitivity")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Toggle("", isOn: Binding(
                         get: { appState.pressureSensitivityEnabled },
@@ -3196,11 +3196,11 @@ struct MarkerSettingsSection: View {
                     HStack {
                         Text("Sensitivity")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                         Spacer()
                         Text("\(Int(document.currentMarkerPressureSensitivity * 100))%")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                             .monospacedDigit()
                     }
                 
@@ -3212,11 +3212,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("How much pressure affects marker thickness (simulated if no pressure input)")
             }
@@ -3227,11 +3227,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Smoothing")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(formatNumberForDisplay(document.currentMarkerSmoothingTolerance))")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3243,11 +3243,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0.5")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("10")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Curve fitting tolerance - lower values preserve more detail, higher values create smoother curves")
             }
@@ -3257,11 +3257,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Feathering")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentMarkerFeathering * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3273,11 +3273,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("100%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Edge softness for felt-tip marker appearance")
             }
@@ -3287,11 +3287,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("Start Taper")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentMarkerTaperStart * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3303,11 +3303,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("50%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Thickness tapering at the start of marker strokes")
             }
@@ -3317,11 +3317,11 @@ struct MarkerSettingsSection: View {
                 HStack {
                     Text("End Taper")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                     Spacer()
                     Text("\(Int(document.currentMarkerTaperEnd * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ui.primaryText)
                         .monospacedDigit()
                 }
                 
@@ -3333,11 +3333,11 @@ struct MarkerSettingsSection: View {
                 } minimumValueLabel: {
                     Text("0%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 } maximumValueLabel: {
                     Text("50%")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ui.secondaryText)
                 }
                 .help("Thickness tapering at the end of marker strokes")
             }
@@ -3352,10 +3352,10 @@ struct MarkerSettingsSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Use Fill Color for Stroke")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                         Text("Use fill color for both fill and stroke")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -3371,10 +3371,10 @@ struct MarkerSettingsSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Apply No Stroke")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                         Text("Remove stroke from marker shapes")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -3390,10 +3390,10 @@ struct MarkerSettingsSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Remove Overlap")
                             .font(.subheadline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ui.primaryText)
                         Text("Union overlapping parts of same shape")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ui.secondaryText)
                     }
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -3408,10 +3408,10 @@ struct MarkerSettingsSection: View {
             // Marker Info
             HStack {
                 Image(systemName: "info.circle")
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color.ui.primaryBlue)
                 Text("Felt-tip marker with variable width based on drawing speed")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ui.secondaryText)
                 Spacer()
             }
             .padding(.top, 4)

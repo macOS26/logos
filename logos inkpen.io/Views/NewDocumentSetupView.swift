@@ -82,7 +82,7 @@ struct NewDocumentSetupView: View {
             professionalFooter
         }
         .frame(width: 1000, height: 700)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(Color.ui.windowBackground)
         .onAppear {
             generateDocumentPreview()
         }
@@ -135,7 +135,7 @@ struct NewDocumentSetupView: View {
             
             Divider()
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.ui.controlBackground)
     }
     
     // MARK: - Settings Panel
@@ -157,7 +157,7 @@ struct NewDocumentSetupView: View {
             .padding(24)
         }
         .frame(width: 450)
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.ui.controlBackground)
     }
     
     // MARK: - Document Name Section
@@ -290,7 +290,7 @@ struct NewDocumentSetupView: View {
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(NSColor.textBackgroundColor))
+                            .fill(Color.ui.textBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
@@ -473,7 +473,7 @@ struct NewDocumentSetupView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 20)
         }
-        .background(Color(NSColor.controlBackgroundColor))
+        .background(Color.ui.controlBackground)
     }
     
     // MARK: - Helper Properties
@@ -735,7 +735,7 @@ struct ProfessionalTextFieldStyle: TextFieldStyle {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(NSColor.textBackgroundColor))
+                    .fill(Color.ui.textBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
