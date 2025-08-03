@@ -2554,8 +2554,8 @@ struct GradientColorPickerSheet: View {
                 appState.gradientEditingState = GradientEditingState(
                     gradientId: capturedStopId,
                     stopIndex: stopIndex,
-                    onColorSelected: { color in
-                        updateStopColor(capturedStopId, color)
+                    onColorSelected: { [weak self] color in
+                        self?.updateStopColor(capturedStopId, color)
                         // Window stays open - user controls when to close
                     }
                 )

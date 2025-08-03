@@ -740,6 +740,7 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
+        .toolbarStyle(.compact)
         .sheet(isPresented: $showingNewDocumentSetup) {
             NewDocumentSetupView(
                 isPresented: $showingNewDocumentSetup,
@@ -1593,11 +1594,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("📄 GlobalErrorHandler: Allowing exception to propagate")
         }
     }
-    
 
-    
-
-    
     // Window configuration is now handled by TabBarManager
     
     func applicationDidBecomeActive(_ notification: Notification) {

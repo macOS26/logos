@@ -238,6 +238,7 @@ struct MainView: View {
             onRunDiagnostics: runPasteboardDiagnostics
         )
         }
+        .toolbarStyle(.compact)
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
         }
