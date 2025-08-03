@@ -407,52 +407,48 @@ struct EggIcon: View {
     
     var body: some View {
         Path { path in
-            // Create a proper egg shape using the same math as the tool
+            // Create a proper egg shape using simple 4-curve approach
             let center = CGPoint(x: 10, y: 10)
             let radiusX: CGFloat = 4
             let radiusY: CGFloat = 6
             
-            // Egg shape parameters: wider at bottom, narrower at top
-            let eggFactor: CGFloat = 0.3
-            let topRadiusX = radiusX * (1.0 - eggFactor)
-            let topRadiusY = radiusY * (1.0 - eggFactor)
-            let bottomRadiusX = radiusX * (1.0 + eggFactor * 0.5)
-            let bottomRadiusY = radiusY * (1.0 + eggFactor * 0.5)
+            // SIMPLE EGG FORMULA: Use standard ellipse with vertical offset
+            // The narrow end should be rounded, not pointed
+            let eggOffset = radiusY * 0.3  // Vertical offset to create egg asymmetry
             
-            // Create egg shape using 4 curves
-            // Start at top point
-            path.move(to: CGPoint(x: center.x, y: center.y - topRadiusY))
+            // Use standard ellipse control points (0.552) for smooth curves
+            let controlPointOffsetX = radiusX * 0.552
+            let controlPointOffsetY = radiusY * 0.552
             
-            // Top right curve (narrower)
-            let topControlOffsetX = topRadiusX * 0.552
-            let topControlOffsetY = topRadiusY * 0.552
+            // Start at rightmost point
+            path.move(to: CGPoint(x: center.x + radiusX, y: center.y))
+            
+            // Curve 1: Right → Top (wider end)
             path.addCurve(
-                to: CGPoint(x: center.x + topRadiusX, y: center.y),
-                control1: CGPoint(x: center.x + topControlOffsetX, y: center.y - topRadiusY),
-                control2: CGPoint(x: center.x + topRadiusX, y: center.y - topControlOffsetY)
+                to: CGPoint(x: center.x, y: center.y - radiusY - eggOffset),
+                control1: CGPoint(x: center.x + radiusX, y: center.y - controlPointOffsetY),
+                control2: CGPoint(x: center.x + controlPointOffsetX, y: center.y - radiusY - eggOffset)
             )
             
-            // Bottom right curve (wider)
-            let bottomControlOffsetX = bottomRadiusX * 0.552
-            let bottomControlOffsetY = bottomRadiusY * 0.552
+            // Curve 2: Top → Left (wider end)
             path.addCurve(
-                to: CGPoint(x: center.x, y: center.y + bottomRadiusY),
-                control1: CGPoint(x: center.x + bottomRadiusX, y: center.y + bottomControlOffsetY),
-                control2: CGPoint(x: center.x + bottomControlOffsetX, y: center.y + bottomRadiusY)
+                to: CGPoint(x: center.x - radiusX, y: center.y),
+                control1: CGPoint(x: center.x - controlPointOffsetX, y: center.y - radiusY - eggOffset),
+                control2: CGPoint(x: center.x - radiusX, y: center.y - controlPointOffsetY)
             )
             
-            // Bottom left curve (wider)
+            // Curve 3: Left → Bottom (narrower end)
             path.addCurve(
-                to: CGPoint(x: center.x - bottomRadiusX, y: center.y),
-                control1: CGPoint(x: center.x - bottomControlOffsetX, y: center.y + bottomRadiusY),
-                control2: CGPoint(x: center.x - bottomRadiusX, y: center.y + bottomControlOffsetY)
+                to: CGPoint(x: center.x, y: center.y + radiusY - eggOffset),
+                control1: CGPoint(x: center.x - radiusX, y: center.y + controlPointOffsetY),
+                control2: CGPoint(x: center.x - controlPointOffsetX, y: center.y + radiusY - eggOffset)
             )
             
-            // Top left curve (narrower)
+            // Curve 4: Bottom → Right (narrower end)
             path.addCurve(
-                to: CGPoint(x: center.x, y: center.y - topRadiusY),
-                control1: CGPoint(x: center.x - topRadiusX, y: center.y - topControlOffsetY),
-                control2: CGPoint(x: center.x - topControlOffsetX, y: center.y - topRadiusY)
+                to: CGPoint(x: center.x + radiusX, y: center.y),
+                control1: CGPoint(x: center.x + controlPointOffsetX, y: center.y + radiusY - eggOffset),
+                control2: CGPoint(x: center.x + radiusX, y: center.y + controlPointOffsetY)
             )
             
             path.closeSubpath()
@@ -939,6 +935,8 @@ struct VerticalToolbar: View {
             return "Ellipse Tool - Draw ellipses and ovals"
         case .oval:
             return "Oval Tool - Draw oval shapes"
+        case .egg:
+            return "Egg Tool - Draw egg shapes"
         case .cone:
             return "Cone Tool - Draw triangle/cone shapes"
         case .equilateralTriangle:

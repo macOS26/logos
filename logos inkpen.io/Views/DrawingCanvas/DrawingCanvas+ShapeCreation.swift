@@ -167,52 +167,87 @@ extension DrawingCanvas {
         ], isClosed: true)
     }
     
-    /// Create an egg path using mathematical egg curve formula
-    /// An egg shape is asymmetric with a pointed top and rounded bottom
+    /// Create a shield path using heraldic shield formula
+    /// A shield has a wide rounded top, straight sides, and pointed bottom
+    internal func createShieldPath(rect: CGRect) -> VectorPath {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radiusX = rect.width / 2
+        let radiusY = rect.height / 2
+        
+        // SHIELD FORMULA: Wide rounded top, straight sides, pointed bottom
+        // Top side: flatter curve (200% control points)
+        // Bottom side: more curved/narrower (50% control points)
+        let topControlOffsetX = radiusX * 0.552 * 2.0  // 200% - flatter curve
+        let topControlOffsetY = radiusY * 0.552 * 2.0  // 200% - flatter curve
+        let bottomControlOffsetX = radiusX * 0.552 * 0.5  // 50% - more curved
+        let bottomControlOffsetY = radiusY * 0.552 * 0.5  // 50% - more curved
+        
+        return VectorPath(elements: [
+            // Start at rightmost point
+            .move(to: VectorPoint(center.x + radiusX, center.y)),
+            
+            // Curve 1: Right → Bottom (more curved/narrower side)
+            .curve(to: VectorPoint(center.x, center.y + radiusY),
+                   control1: VectorPoint(center.x + radiusX, center.y + bottomControlOffsetY),
+                   control2: VectorPoint(center.x + bottomControlOffsetX, center.y + radiusY)),
+            
+            // Curve 2: Bottom → Left (more curved/narrower side)
+            .curve(to: VectorPoint(center.x - radiusX, center.y),
+                   control1: VectorPoint(center.x - bottomControlOffsetX, center.y + radiusY),
+                   control2: VectorPoint(center.x - radiusX, center.y + bottomControlOffsetY)),
+            
+            // Curve 3: Left → Top (flatter curve side)
+            .curve(to: VectorPoint(center.x, center.y - radiusY),
+                   control1: VectorPoint(center.x - radiusX, center.y - topControlOffsetY),
+                   control2: VectorPoint(center.x - topControlOffsetX, center.y - radiusY)),
+            
+            // Curve 4: Top → Right (flatter curve side)
+            .curve(to: VectorPoint(center.x + radiusX, center.y),
+                   control1: VectorPoint(center.x + topControlOffsetX, center.y - radiusY),
+                   control2: VectorPoint(center.x + radiusX, center.y - topControlOffsetY)),
+            
+            .close
+        ], isClosed: true)
+    }
+    
+    /// Create a proper egg path using simple 4-curve approach
+    /// An egg is an ellipse with one end narrower and more curved, the other wider and flatter
     internal func createEggPath(rect: CGRect) -> VectorPath {
         let center = CGPoint(x: rect.midX, y: rect.midY)
         let radiusX = rect.width / 2
         let radiusY = rect.height / 2
         
-        // Egg shape parameters: wider at bottom, narrower at top
-        let eggFactor = 0.3  // Controls the egg asymmetry
-        let topRadiusX = radiusX * (1.0 - eggFactor)
-        let topRadiusY = radiusY * (1.0 - eggFactor)
-        let bottomRadiusX = radiusX * (1.0 + eggFactor * 0.5)
-        let bottomRadiusY = radiusY * (1.0 + eggFactor * 0.5)
+        // SIMPLE EGG FORMULA: Use standard ellipse with vertical offset
+        // The narrow end should be rounded, not pointed
+        let eggOffset = radiusY * 0.3  // Vertical offset to create egg asymmetry
         
-        // Create egg shape using modified ellipse curves
-        // Top half (narrower)
-        let topControlOffsetX = topRadiusX * 0.552
-        let topControlOffsetY = topRadiusY * 0.552
-        
-        // Bottom half (wider)
-        let bottomControlOffsetX = bottomRadiusX * 0.552
-        let bottomControlOffsetY = bottomRadiusY * 0.552
+        // Use standard ellipse control points (0.552) for smooth curves
+        let controlPointOffsetX = radiusX * 0.552
+        let controlPointOffsetY = radiusY * 0.552
         
         return VectorPath(elements: [
-            // Start at top point
-            .move(to: VectorPoint(center.x, center.y - topRadiusY)),
+            // Start at rightmost point
+            .move(to: VectorPoint(center.x + radiusX, center.y)),
             
-            // Top right curve (narrower)
-            .curve(to: VectorPoint(center.x + topRadiusX, center.y),
-                   control1: VectorPoint(center.x + topControlOffsetX, center.y - topRadiusY),
-                   control2: VectorPoint(center.x + topRadiusX, center.y - topControlOffsetY)),
+            // Curve 1: Right → Top (wider end)
+            .curve(to: VectorPoint(center.x, center.y - radiusY - eggOffset),
+                   control1: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY),
+                   control2: VectorPoint(center.x + controlPointOffsetX, center.y - radiusY - eggOffset)),
             
-            // Bottom right curve (wider)
-            .curve(to: VectorPoint(center.x, center.y + bottomRadiusY),
-                   control1: VectorPoint(center.x + bottomRadiusX, center.y + bottomControlOffsetY),
-                   control2: VectorPoint(center.x + bottomControlOffsetX, center.y + bottomRadiusY)),
+            // Curve 2: Top → Left (wider end)
+            .curve(to: VectorPoint(center.x - radiusX, center.y),
+                   control1: VectorPoint(center.x - controlPointOffsetX, center.y - radiusY - eggOffset),
+                   control2: VectorPoint(center.x - radiusX, center.y - controlPointOffsetY)),
             
-            // Bottom left curve (wider)
-            .curve(to: VectorPoint(center.x - bottomRadiusX, center.y),
-                   control1: VectorPoint(center.x - bottomControlOffsetX, center.y + bottomRadiusY),
-                   control2: VectorPoint(center.x - bottomRadiusX, center.y + bottomControlOffsetY)),
+            // Curve 3: Left → Bottom (narrower end)
+            .curve(to: VectorPoint(center.x, center.y + radiusY - eggOffset),
+                   control1: VectorPoint(center.x - radiusX, center.y + controlPointOffsetY),
+                   control2: VectorPoint(center.x - controlPointOffsetX, center.y + radiusY - eggOffset)),
             
-            // Top left curve (narrower)
-            .curve(to: VectorPoint(center.x, center.y - topRadiusY),
-                   control1: VectorPoint(center.x - topRadiusX, center.y - topControlOffsetY),
-                   control2: VectorPoint(center.x - topControlOffsetX, center.y - topRadiusY)),
+            // Curve 4: Bottom → Right (narrower end)
+            .curve(to: VectorPoint(center.x + radiusX, center.y),
+                   control1: VectorPoint(center.x + controlPointOffsetX, center.y + radiusY - eggOffset),
+                   control2: VectorPoint(center.x + radiusX, center.y + controlPointOffsetY)),
             
             .close
         ], isClosed: true)
