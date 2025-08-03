@@ -236,9 +236,8 @@ struct MainView: View {
             showingDWGExportDialog: $showingDWGExportDialog,
             showingSVGTestHarness: $showingSVGTestHarness,
             onRunDiagnostics: runPasteboardDiagnostics
-            )
+        )
         }
-    
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
         }
