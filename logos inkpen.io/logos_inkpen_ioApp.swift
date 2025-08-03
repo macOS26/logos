@@ -15,6 +15,150 @@ extension Notification.Name {
     static let forceDocumentStateCleanup = Notification.Name("forceDocumentStateCleanup")
 }
 
+// MARK: - Centralized Tab Bar Manager
+class TabBarManager {
+    static let shared = TabBarManager()
+    private var enforcementTimer: Timer?
+    
+    private init() {}
+    
+    func setupTabBars() {
+        // Set global preferences
+        NSWindow.allowsAutomaticWindowTabbing = true
+        UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
+        
+        // Configure existing windows
+        configureAllWindows()
+        
+        // Start gentle monitoring
+        startGentleEnforcement()
+    }
+    
+    private func configureAllWindows() {
+        NSApplication.shared.windows.forEach { window in
+            window.tabbingMode = .automatic
+            window.tabbingIdentifier = "InkPenDocument"
+            
+            // Show tab bar if hidden (no flickering)
+            if #available(macOS 10.12, *) {
+                if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
+                    window.toggleTabBar(nil)
+                }
+            }
+        }
+    }
+    
+    private func startGentleEnforcement() {
+        enforcementTimer?.invalidate()
+        enforcementTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+            self.gentlyEnforceTabBars()
+        }
+    }
+    
+    private func gentlyEnforceTabBars() {
+        NSApplication.shared.windows.forEach { window in
+            if window.tabbingIdentifier == "InkPenDocument" {
+                if #available(macOS 10.12, *) {
+                    if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
+                        window.toggleTabBar(nil)
+                        print("📄 TabBarManager: Gently restored hidden tab bar")
+                    }
+                }
+            }
+        }
+    }
+    
+    func forceShowTabBar() {
+        // Manual override - for menu commands
+        NSApplication.shared.windows.forEach { window in
+            window.tabbingMode = .automatic
+            window.tabbingIdentifier = "InkPenDocument"
+            window.toggleTabBar(nil)
+        }
+        print("📄 TabBarManager: Manual tab bar show requested")
+    }
+    
+    func cleanup() {
+        enforcementTimer?.invalidate()
+        enforcementTimer = nil
+    }
+}
+
+// MARK: - Centralized Reusable Components (NO MORE DUPLICATION!)
+
+// Single canvas component used everywhere
+struct StandardDrawingCanvas: View {
+    @ObservedObject var document: VectorDocument
+    let geometry: GeometryProxy
+    
+    var body: some View {
+        ZStack {
+            // DEBUGGING: Background to see exact bounds
+            Rectangle()
+                .fill(Color.gray.opacity(0.1))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+            
+            // Main Drawing Canvas
+            DrawingCanvas(document: document)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .background(Color.clear)
+                .zIndex(1)
+                .allowsHitTesting(true)
+            
+            // Rulers
+            RulersView(document: document, geometry: geometry)
+                .zIndex(50)
+                .allowsHitTesting(false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 400, minHeight: 300)
+    }
+}
+
+// Single main layout component used everywhere
+struct StandardMainLayout: View {
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                // Left Toolbar
+                VerticalToolbar(document: document)
+                    .frame(width: 48)
+                    .contentShape(Rectangle())
+                    .background(Color.black.opacity(0.8))
+                    .zIndex(100)
+                
+                // Center Drawing Area
+                GeometryReader { geometry in
+                    StandardDrawingCanvas(document: document, geometry: geometry)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(minWidth: 500)
+                .contentShape(Rectangle())
+                .allowsHitTesting(true)
+                
+                // Right Panel
+                RightPanel(document: document)
+                    .frame(width: 280)
+                    .frame(minWidth: 280)
+                    .zIndex(100)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 828, minHeight: 400)
+            
+            // Status Bar
+            StatusBar(document: document)
+                .frame(height: 24)
+                .frame(minHeight: 24)
+                .frame(maxWidth: .infinity)
+        }
+        .frame(minHeight: 524)
+    }
+}
+
 // MARK: - InkpenDocument for DocumentGroup (ADDITION - not replacement)
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
@@ -573,64 +717,8 @@ struct DocumentBasedMainView: View {
     @State private var showingNewDocumentSetup = false
     
     var body: some View {
-        // EXACT REPLICATION of MainView structure - FIXED status bar position
-        VStack(spacing: 0) {
-            // Main Content Area - EXACT HStack structure from MainView
-            HStack(spacing: 0) {
-                // Left Toolbar - Fixed width, hugs left - EXACT MainView specs
-                VerticalToolbar(document: document)
-                    .frame(width: 48) // EXACT MainView width
-                    .contentShape(Rectangle()) // CRITICAL: Toolbar has its own hit testing bounds
-                    .background(Color.black.opacity(0.8)) // Visual confirmation of toolbar bounds
-                    .zIndex(100) // CRITICAL: Toolbar above DrawingCanvas
-                
-                // Center Drawing Area - Flexible width with minimum - EXACT MainView structure
-                GeometryReader { geometry in
-                    // Drawing canvas area - CLIPPED AND CONSTRAINED
-                    ZStack {
-                        // DEBUGGING: Background to see exact bounds
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.1))
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .allowsHitTesting(false) // Background doesn't capture gestures
-                        
-                        // Main Drawing Canvas - FULL PASTEBOARD GESTURE COVERAGE
-                        DrawingCanvas(document: document)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .contentShape(Rectangle()) // CRITICAL: Full gesture area including pasteboard
-                            .background(Color.clear) // Ensure no background extension
-                            .zIndex(1) // CRITICAL: Canvas below panels but above background
-                            .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
-                        
-                        // Rulers - CRITICAL: Above canvas but below panels 
-                        RulersView(document: document, geometry: geometry)
-                            .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
-                            .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
-                }
-                .frame(maxWidth: .infinity)
-                .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space
-                .contentShape(Rectangle()) // CRITICAL: Define exact hit testing bounds for center column
-                .allowsHitTesting(true) // CRITICAL: Center column captures all gestures
-                
-                // Right Panel - Fixed width, hugs right - EXACT MainView specs
-                RightPanel(document: document)
-                    .frame(width: 280) // EXACT MainView width
-                    .frame(minWidth: 280) // ENSURE: Panel width is always preserved
-                    .zIndex(100) // CRITICAL: Right panel above DrawingCanvas
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(minWidth: 828, minHeight: 400) // MINIMUM: 48 + 500 + 280 = 828 minimum layout width
-            
-            // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
-            StatusBar(document: document)
-                .frame(height: 24) // EXACT MainView height
-                .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
-                .frame(maxWidth: .infinity) // ENSURE: Status bar spans full width
-        }
-        .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
+        // Use the single standardized layout component
+        StandardMainLayout(document: document)
         .toolbar {
             // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
 //            ToolbarItem(placement: .principal) {
@@ -1307,9 +1395,13 @@ class StartupCoordinator {
             UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
             
             NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
+                window.tabbingMode = .automatic  // Force tab bar to show even with 1 window
+                window.tabbingIdentifier = "InkPenDocument"  // Group all documents together
+                
+                // Additional configuration to ensure tab bar visibility
+             
             }
-            print("📄 StartupCoordinator: Window tabbing configured")
+            print("📄 StartupCoordinator: Window tabbing configured for single document")
         }
     }
     
@@ -1440,22 +1532,24 @@ class SystemErrorHandler {
 
 // MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    
+    // MARK: - Force Tab Bar for New Windows
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Set up tab bars early
+        TabBarManager.shared.setupTabBars()
+        print("📄 App: Pre-configured tab bar settings before window creation")
+    }
+    
     func applicationDidFinishLaunching(_ notification: Notification) {
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
         
         print("📄 App: Starting graceful initialization sequence")
         
-        // Use the startup coordinator for robust initialization
-        Task {
-            await StartupCoordinator.shared.performStartupTasks()
-            
-            // After startup tasks complete, configure windows
-            await configureWindowsAsync()
-        }
+        // Tab bars are already set up in applicationWillFinishLaunching
+        print("📄 App: Tab bars already configured")
         
-        // Set up a fallback timer to ensure the app doesn't hang
-        setupFallbackTimer()
+        print("📄 App: Simplified startup completed")
     }
     
     private func setupFallbackTimer() {
@@ -1508,33 +1602,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
 
     
-    private func configureWindowsAsync() async {
-        await MainActor.run {
-            // FORCE: Set window tabbing mode to always
-            NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
-            }
-            print("📄 App: Window tabbing configured asynchronously")
-        }
-    }
+    // Window configuration is now handled by TabBarManager
     
     func applicationDidBecomeActive(_ notification: Notification) {
-        // Defer window operations to prevent blocking
-        Task {
-            await handleApplicationBecameActiveAsync()
-        }
-    }
-    
-    private func handleApplicationBecameActiveAsync() async {
-        await MainActor.run {
-            // Ensure tabbing mode is maintained
-            NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
-            }
-            
-            // Restore window state if needed
-            restoreWindowState()
-        }
+        // Simple tab bar maintenance when app becomes active
+        TabBarManager.shared.setupTabBars()
+        restoreWindowState()
     }
     
     private func restoreWindowState() {
@@ -1575,9 +1648,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateNow
     }
     
-    // CRITICAL: Override to handle code signing errors gracefully
+    // CRITICAL: Override to handle code signing errors gracefully and maintain tabbing
     func application(_ application: NSApplication, willPresentError error: Error) -> Error {
         print("📄 App: Error intercepted: \(error)")
+        
+        // Maintain tabbing preference using centralized manager
+        TabBarManager.shared.setupTabBars()
         
         // Use the custom error handler to check if this is a system-level error we should handle
         if SystemErrorHandler.shared.handleSystemError(error) {
@@ -1594,6 +1670,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // SAVE: Window state when app is about to terminate
     func applicationWillTerminate(_ notification: Notification) {
         print("📄 App: Starting termination cleanup...")
+        
+        // CRITICAL: Clean up tab bar manager
+        TabBarManager.shared.cleanup()
         
         // CRITICAL: Stop all background monitoring first
         StallDetector.shared.stopMonitoring()
@@ -1617,6 +1696,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         print("📄 App: Application termination cleanup completed")
     }
+    
+    // Tab bar management is now handled by TabBarManager - no more duplicate code!
     
     private func cleanupAllStateObjects() {
         // Stop monitoring systems
@@ -1652,6 +1733,10 @@ struct logos_inken_ioApp: App {
             DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
                 .environment(appState)
                 .navigationTitle("")  // Clear default title - we'll use custom toolbar
+                .onAppear {
+                    // Simple tab bar setup for new windows
+                    TabBarManager.shared.setupTabBars()
+                }
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
@@ -1995,6 +2080,14 @@ struct logos_inken_ioApp: App {
                     documentState?.toggleSnapToGrid()
                 }
                 .keyboardShortcut(";", modifiers: [.command])
+                
+                Divider()
+                
+                Button("Show Tab Bar") {
+                    TabBarManager.shared.forceShowTabBar()
+                }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .help("Force tab bar to be visible even with single document")
             }
             
             // TOOLS MENU - Tool Switching
