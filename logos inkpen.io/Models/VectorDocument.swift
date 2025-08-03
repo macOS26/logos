@@ -2906,6 +2906,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case circle = "Circle"
     case ellipse = "Ellipse"
     case oval = "Oval"
+    case egg = "Egg"
     case cone = "Cone"
     case equilateralTriangle = "Equilateral Triangle"
     case isoscelesTriangle = "Isosceles Triangle"
@@ -2940,6 +2941,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .circle: return "circle"
         case .ellipse: return "oval"
         case .oval: return "oval.fill"
+        case .egg: return "oval.fill"
         case .cone: return "triangle"
         case .equilateralTriangle: return "triangle"
         case .isoscelesTriangle: return "triangle.fill"
@@ -2976,6 +2978,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .circle: return .crosshair
         case .ellipse: return .crosshair
         case .oval: return .crosshair
+        case .egg: return .crosshair
         case .cone: return .crosshair
         case .equilateralTriangle: return .crosshair
         case .isoscelesTriangle: return .crosshair

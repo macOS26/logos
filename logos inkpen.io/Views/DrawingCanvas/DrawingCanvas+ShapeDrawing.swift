@@ -181,20 +181,34 @@ extension DrawingCanvas {
                 width: dragDeltaX,
                 height: dragDeltaY
             )
-            // Make it slightly less rounded by constraining the aspect ratio
+            // Normalize the rectangle to ensure proper oval construction
             let normalizedRect = CGRect(
                 x: min(rect.minX, rect.maxX),
                 y: min(rect.minY, rect.maxY),
                 width: abs(rect.width),
                 height: abs(rect.height)
             )
-            let adjustedRect = CGRect(
-                x: normalizedRect.minX,
-                y: normalizedRect.minY,
-                width: normalizedRect.width,
-                height: min(normalizedRect.height, normalizedRect.width * 0.75) // Constrain height to 75% of width max
+            // Use the new oval path function that creates a true oval using circular arcs
+            currentPath = createOvalPath(rect: normalizedRect)
+        case .egg:
+            // FIXED: Pin egg from start point like rectangle tool
+            let dragDeltaX = currentLocation.x - startPoint.x
+            let dragDeltaY = currentLocation.y - startPoint.y
+            let rect = CGRect(
+                x: startPoint.x,
+                y: startPoint.y,
+                width: dragDeltaX,
+                height: dragDeltaY
             )
-            currentPath = createEllipsePath(rect: adjustedRect)
+            // Normalize the rectangle to ensure proper egg construction
+            let normalizedRect = CGRect(
+                x: min(rect.minX, rect.maxX),
+                y: min(rect.minY, rect.maxY),
+                width: abs(rect.width),
+                height: abs(rect.height)
+            )
+            // Use the egg path function that creates a true egg shape
+            currentPath = createEggPath(rect: normalizedRect)
         case .equilateralTriangle:
             // FIXED: Use square tool's pinning approach to prevent drift + make truly equilateral
             let dragDeltaX = currentLocation.x - startPoint.x

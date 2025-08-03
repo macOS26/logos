@@ -348,6 +348,7 @@ extension ShapeView {
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
         }
     }
+
 }
 
 struct SelectionHandlesView: View {
@@ -1335,8 +1336,17 @@ struct ScaleHandles: View {
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
+        // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
+        var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+        if !updatedShape.cornerRadii.isEmpty && updatedShape.isRoundedRectangle {
+            applyTransformToCornerRadiiLocal(shape: &updatedShape, transform: currentTransform)
+            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+        }
+        
         print("✅ Shape coordinates updated after scaling - object origin stays with object")
     }
+    
+
     
     private func cornerPosition(for index: Int, in bounds: CGRect, center: CGPoint) -> CGPoint {
         // PROFESSIONAL COORDINATE SYSTEM: Use logical coordinates, let SwiftUI handle screen positioning
@@ -1431,6 +1441,40 @@ struct ScaleHandles: View {
         if let monitor = keyEventMonitor {
             NSEvent.removeMonitor(monitor)
             keyEventMonitor = nil
+        }
+    }
+    
+    // MARK: - Helper Functions for Transform Operations
+    
+    /// Apply transform to corner radii (local implementation to avoid import issues)
+    private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
+        guard !transform.isIdentity else { return }
+        
+        // Extract scale factors from transform
+        let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
+        let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
+        
+        // Check for uneven scaling that's too extreme
+        let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
+        let maxReasonableRatio: CGFloat = 3.0 // Threshold for "reasonable" scaling
+        
+        if scaleRatio > maxReasonableRatio {
+            // BREAK/EXPAND: Transform is too uneven - disable corner radius tools
+            shape.isRoundedRectangle = false
+            shape.cornerRadii = []
+            shape.originalBounds = nil
+            return
+        }
+        
+        // SCALE RADII: Apply proportional scaling to corner radii
+        if !shape.cornerRadii.isEmpty {
+            let averageScale = (scaleX + scaleY) / 2.0 // Use average scale for corner radii
+            
+            for i in shape.cornerRadii.indices {
+                let oldRadius = shape.cornerRadii[i]
+                let newRadius = oldRadius * Double(averageScale)
+                shape.cornerRadii[i] = max(0.0, newRadius) // Ensure non-negative
+            }
         }
     }
 }
@@ -1782,38 +1826,6 @@ struct RotateHandles: View {
         
         print("🔧 Applying rotation transform to shape coordinates: \(shape.name)")
         
-        // Helper function to apply transform to corner radii (local implementation)
-        func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
-            guard !transform.isIdentity else { return }
-            
-            // Extract scale factors from transform
-            let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
-            let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
-            
-            // Check for uneven scaling that's too extreme
-            let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
-            let maxReasonableRatio: CGFloat = 3.0 // Threshold for "reasonable" scaling
-            
-            if scaleRatio > maxReasonableRatio {
-                // BREAK/EXPAND: Transform is too uneven - disable corner radius tools
-                shape.isRoundedRectangle = false
-                shape.cornerRadii = []
-                shape.originalBounds = nil
-                return
-            }
-            
-            // SCALE RADII: Apply proportional scaling to corner radii
-            if !shape.cornerRadii.isEmpty {
-                let averageScale = (scaleX + scaleY) / 2.0 // Use average scale for corner radii
-                
-                for i in shape.cornerRadii.indices {
-                    let oldRadius = shape.cornerRadii[i]
-                    let newRadius = oldRadius * Double(averageScale)
-                    shape.cornerRadii[i] = max(0.0, newRadius) // Ensure non-negative
-                }
-            }
-        }
-        
         // Transform all path elements
         var transformedElements: [PathElement] = []
         
@@ -2072,6 +2084,40 @@ struct RotateHandles: View {
     // MARK: - Key Event Monitoring
     // NOTE: Shift key monitoring is now handled by the centralized keyEventMonitor in DrawingCanvas
     // to avoid multiple NSEvent monitors and ensure consistent behavior across all transform tools
+    
+    // MARK: - Helper Functions for Transform Operations
+    
+    /// Apply transform to corner radii (local implementation to avoid import issues)
+    private func applyTransformToCornerRadiiLocal(shape: inout VectorShape, transform: CGAffineTransform) {
+        guard !transform.isIdentity else { return }
+        
+        // Extract scale factors from transform
+        let scaleX = sqrt(transform.a * transform.a + transform.c * transform.c)
+        let scaleY = sqrt(transform.b * transform.b + transform.d * transform.d)
+        
+        // Check for uneven scaling that's too extreme
+        let scaleRatio = max(scaleX, scaleY) / min(scaleX, scaleY)
+        let maxReasonableRatio: CGFloat = 3.0 // Threshold for "reasonable" scaling
+        
+        if scaleRatio > maxReasonableRatio {
+            // BREAK/EXPAND: Transform is too uneven - disable corner radius tools
+            shape.isRoundedRectangle = false
+            shape.cornerRadii = []
+            shape.originalBounds = nil
+            return
+        }
+        
+        // SCALE RADII: Apply proportional scaling to corner radii
+        if !shape.cornerRadii.isEmpty {
+            let averageScale = (scaleX + scaleY) / 2.0 // Use average scale for corner radii
+            
+            for i in shape.cornerRadii.indices {
+                let oldRadius = shape.cornerRadii[i]
+                let newRadius = oldRadius * Double(averageScale)
+                shape.cornerRadii[i] = max(0.0, newRadius) // Ensure non-negative
+            }
+        }
+    }
 }
 
 // MARK: - Shear Tool Handles

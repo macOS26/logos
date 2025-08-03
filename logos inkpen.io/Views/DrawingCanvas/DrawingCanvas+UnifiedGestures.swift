@@ -96,7 +96,7 @@ extension DrawingCanvas {
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             // Shape tools are drag-only - ignore taps
             print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
             
@@ -113,7 +113,7 @@ extension DrawingCanvas {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
             
         case .font:
@@ -174,7 +174,7 @@ extension DrawingCanvas {
         case .hand:
             finishPanGesture()
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
             resetShapeDrawingState()
             

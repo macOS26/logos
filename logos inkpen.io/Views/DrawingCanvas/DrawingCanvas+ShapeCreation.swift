@@ -126,6 +126,98 @@ extension DrawingCanvas {
         ], isClosed: true)
     }
     
+    /// Create an oval path - a rounded, circle-like shape
+    /// An oval is a smooth, rounded shape that's more circular than an ellipse
+    internal func createOvalPath(rect: CGRect) -> VectorPath {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radiusX = rect.width / 2
+        let radiusY = rect.height / 2
+        
+        // Use control points that create a more rounded, circle-like appearance
+        // This makes the oval more rounded and less elliptical
+        let controlPointOffsetX = radiusX * 0.58  // More rounded than ellipse's 0.552
+        let controlPointOffsetY = radiusY * 0.58
+        
+        // Create a smooth oval using 4 curves, similar to ellipse but with slight variation
+        return VectorPath(elements: [
+            // Start at rightmost point
+            .move(to: VectorPoint(center.x + radiusX, center.y)),
+            
+            // Curve 1: Right → Bottom
+            .curve(to: VectorPoint(center.x, center.y + radiusY),
+                   control1: VectorPoint(center.x + radiusX, center.y + controlPointOffsetY),
+                   control2: VectorPoint(center.x + controlPointOffsetX, center.y + radiusY)),
+            
+            // Curve 2: Bottom → Left
+            .curve(to: VectorPoint(center.x - radiusX, center.y),
+                   control1: VectorPoint(center.x - controlPointOffsetX, center.y + radiusY),
+                   control2: VectorPoint(center.x - radiusX, center.y + controlPointOffsetY)),
+            
+            // Curve 3: Left → Top
+            .curve(to: VectorPoint(center.x, center.y - radiusY),
+                   control1: VectorPoint(center.x - radiusX, center.y - controlPointOffsetY),
+                   control2: VectorPoint(center.x - controlPointOffsetX, center.y - radiusY)),
+            
+            // Curve 4: Top → Right
+            .curve(to: VectorPoint(center.x + radiusX, center.y),
+                   control1: VectorPoint(center.x + controlPointOffsetX, center.y - radiusY),
+                   control2: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY)),
+            
+            .close
+        ], isClosed: true)
+    }
+    
+    /// Create an egg path using mathematical egg curve formula
+    /// An egg shape is asymmetric with a pointed top and rounded bottom
+    internal func createEggPath(rect: CGRect) -> VectorPath {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radiusX = rect.width / 2
+        let radiusY = rect.height / 2
+        
+        // Egg shape parameters: wider at bottom, narrower at top
+        let eggFactor = 0.3  // Controls the egg asymmetry
+        let topRadiusX = radiusX * (1.0 - eggFactor)
+        let topRadiusY = radiusY * (1.0 - eggFactor)
+        let bottomRadiusX = radiusX * (1.0 + eggFactor * 0.5)
+        let bottomRadiusY = radiusY * (1.0 + eggFactor * 0.5)
+        
+        // Create egg shape using modified ellipse curves
+        // Top half (narrower)
+        let topControlOffsetX = topRadiusX * 0.552
+        let topControlOffsetY = topRadiusY * 0.552
+        
+        // Bottom half (wider)
+        let bottomControlOffsetX = bottomRadiusX * 0.552
+        let bottomControlOffsetY = bottomRadiusY * 0.552
+        
+        return VectorPath(elements: [
+            // Start at top point
+            .move(to: VectorPoint(center.x, center.y - topRadiusY)),
+            
+            // Top right curve (narrower)
+            .curve(to: VectorPoint(center.x + topRadiusX, center.y),
+                   control1: VectorPoint(center.x + topControlOffsetX, center.y - topRadiusY),
+                   control2: VectorPoint(center.x + topRadiusX, center.y - topControlOffsetY)),
+            
+            // Bottom right curve (wider)
+            .curve(to: VectorPoint(center.x, center.y + bottomRadiusY),
+                   control1: VectorPoint(center.x + bottomRadiusX, center.y + bottomControlOffsetY),
+                   control2: VectorPoint(center.x + bottomControlOffsetX, center.y + bottomRadiusY)),
+            
+            // Bottom left curve (wider)
+            .curve(to: VectorPoint(center.x - bottomRadiusX, center.y),
+                   control1: VectorPoint(center.x - bottomControlOffsetX, center.y + bottomRadiusY),
+                   control2: VectorPoint(center.x - bottomRadiusX, center.y + bottomControlOffsetY)),
+            
+            // Top left curve (narrower)
+            .curve(to: VectorPoint(center.x, center.y - topRadiusY),
+                   control1: VectorPoint(center.x - topRadiusX, center.y - topControlOffsetY),
+                   control2: VectorPoint(center.x - topControlOffsetX, center.y - topRadiusY)),
+            
+            .close
+        ], isClosed: true)
+    }
+    
     /// Create a star path with specified parameters
     internal func createStarPath(center: CGPoint, outerRadius: Double, innerRadius: Double, points: Int) -> VectorPath {
         var elements: [PathElement] = []

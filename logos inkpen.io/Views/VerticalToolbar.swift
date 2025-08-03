@@ -41,6 +41,7 @@ enum CircleVariant: String, CaseIterable {
     case ellipse = "Ellipse"
     case oval = "Oval"
     case circle = "Circle"
+    case egg = "Egg"
     case cone = "Cone"
     
     @ViewBuilder
@@ -54,6 +55,9 @@ enum CircleVariant: String, CaseIterable {
                 .foregroundColor(color)
         case .circle:
             CircleIcon(isSelected: isSelected)
+                .foregroundColor(color)
+        case .egg:
+            EggIcon(isSelected: isSelected)
                 .foregroundColor(color)
         case .cone:
             ConeIcon(isSelected: isSelected)
@@ -398,6 +402,66 @@ struct CircleIcon: View {
     }
 }
 
+struct EggIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Create a proper egg shape using the same math as the tool
+            let center = CGPoint(x: 10, y: 10)
+            let radiusX: CGFloat = 4
+            let radiusY: CGFloat = 6
+            
+            // Egg shape parameters: wider at bottom, narrower at top
+            let eggFactor: CGFloat = 0.3
+            let topRadiusX = radiusX * (1.0 - eggFactor)
+            let topRadiusY = radiusY * (1.0 - eggFactor)
+            let bottomRadiusX = radiusX * (1.0 + eggFactor * 0.5)
+            let bottomRadiusY = radiusY * (1.0 + eggFactor * 0.5)
+            
+            // Create egg shape using 4 curves
+            // Start at top point
+            path.move(to: CGPoint(x: center.x, y: center.y - topRadiusY))
+            
+            // Top right curve (narrower)
+            let topControlOffsetX = topRadiusX * 0.552
+            let topControlOffsetY = topRadiusY * 0.552
+            path.addCurve(
+                to: CGPoint(x: center.x + topRadiusX, y: center.y),
+                control1: CGPoint(x: center.x + topControlOffsetX, y: center.y - topRadiusY),
+                control2: CGPoint(x: center.x + topRadiusX, y: center.y - topControlOffsetY)
+            )
+            
+            // Bottom right curve (wider)
+            let bottomControlOffsetX = bottomRadiusX * 0.552
+            let bottomControlOffsetY = bottomRadiusY * 0.552
+            path.addCurve(
+                to: CGPoint(x: center.x, y: center.y + bottomRadiusY),
+                control1: CGPoint(x: center.x + bottomRadiusX, y: center.y + bottomControlOffsetY),
+                control2: CGPoint(x: center.x + bottomControlOffsetX, y: center.y + bottomRadiusY)
+            )
+            
+            // Bottom left curve (wider)
+            path.addCurve(
+                to: CGPoint(x: center.x - bottomRadiusX, y: center.y),
+                control1: CGPoint(x: center.x - bottomControlOffsetX, y: center.y + bottomRadiusY),
+                control2: CGPoint(x: center.x - bottomRadiusX, y: center.y + bottomControlOffsetY)
+            )
+            
+            // Top left curve (narrower)
+            path.addCurve(
+                to: CGPoint(x: center.x, y: center.y - topRadiusY),
+                control1: CGPoint(x: center.x - topRadiusX, y: center.y - topControlOffsetY),
+                control2: CGPoint(x: center.x - topControlOffsetX, y: center.y - topRadiusY)
+            )
+            
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: 1.5)
+        .frame(width: 20, height: 20)
+    }
+}
+
 struct ConeIcon: View {
     let isSelected: Bool
     
@@ -685,7 +749,7 @@ struct VerticalToolbar: View {
             [.brush, .marker, .freehand],
             [.font],
             [.rectangle, .square, .roundedRectangle, .pill], // Rectangle group
-            [.ellipse, .oval, .circle, .cone], // Circle group  
+            [.ellipse, .oval, .circle, .egg, .cone], // Circle group  
             [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle], // Triangle group
             [.polygon], // Multi-sided polygon group
             [.star], // Star variants (handled separately)

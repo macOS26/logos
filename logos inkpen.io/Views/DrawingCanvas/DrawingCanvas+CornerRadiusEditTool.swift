@@ -297,20 +297,71 @@ extension DrawingCanvas {
             let maxRadius = min(originalBounds.width, originalBounds.height) / 2.0
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
             
-            // Apply the constrained radius
-            updateCornerRadiusToValue(
-                shapeID: shape.id,
-                cornerIndex: cornerIndex,
-                newRadius: newRadius
-            )
+            // PROPORTIONAL CORNER RADIUS: When shift is held, make all corners proportional
+            if isShiftPressed {
+                // Get all current corner radii
+                var allRadii = shape.cornerRadii
+                while allRadii.count < 4 {
+                    allRadii.append(0.0)
+                }
+                
+                // Calculate the ratio of the new radius to the original radius for this corner
+                let originalRadius = allRadii[cornerIndex]
+                let ratio = originalRadius > 0 ? newRadius / originalRadius : 1.0
+                
+                // Apply the same ratio to all corners
+                for i in 0..<4 {
+                    let originalCornerRadius = allRadii[i]
+                    let proportionalRadius = originalCornerRadius * ratio
+                    let constrainedRadius = max(0.0, min(maxRadius, proportionalRadius))
+                    allRadii[i] = constrainedRadius
+                }
+                
+                // Update all corner radii proportionally
+                updateAllCornerRadiiToValues(
+                    shapeID: shape.id,
+                    cornerRadii: allRadii
+                )
+                
+                print("🔄 PROPORTIONAL CORNER RADIUS: Shift held - all corners scaled by ratio \(String(format: "%.3f", ratio))")
+            } else {
+                // Apply the constrained radius to just this corner
+                updateCornerRadiusToValue(
+                    shapeID: shape.id,
+                    cornerIndex: cornerIndex,
+                    newRadius: newRadius
+                )
+            }
         } else {
             // Fallback: just use minimum constraint
             let newRadius = max(0.0, tentativeRadius)
-            updateCornerRadiusToValue(
-                shapeID: shape.id,
-                cornerIndex: cornerIndex,
-                newRadius: newRadius
-            )
+            
+            if isShiftPressed {
+                // Proportional behavior for fallback case
+                var allRadii = shape.cornerRadii
+                while allRadii.count < 4 {
+                    allRadii.append(0.0)
+                }
+                
+                let originalRadius = allRadii[cornerIndex]
+                let ratio = originalRadius > 0 ? newRadius / originalRadius : 1.0
+                
+                for i in 0..<4 {
+                    let originalCornerRadius = allRadii[i]
+                    allRadii[i] = max(0.0, originalCornerRadius * ratio)
+                }
+                
+                updateAllCornerRadiiToValues(
+                    shapeID: shape.id,
+                    cornerRadii: allRadii
+                )
+            } else {
+                updateCornerRadiusToValue(
+                    shapeID: shape.id,
+                    cornerIndex: cornerIndex,
+                    newRadius: newRadius
+                )
+            }
         }
         
 
@@ -326,11 +377,34 @@ extension DrawingCanvas {
                 
                 // Only update if the value actually changed (avoid unnecessary updates)
                 if abs(currentRadius - roundedRadius) > 0.01 {
-                    updateCornerRadiusToValue(
-                        shapeID: selectedShape.id,
-                        cornerIndex: draggedCornerIndex,
-                        newRadius: roundedRadius
-                    )
+                    if isShiftPressed {
+                        // PROPORTIONAL ROUNDING: Round all corners proportionally when shift is held
+                        var allRadii = selectedShape.cornerRadii
+                        while allRadii.count < 4 {
+                            allRadii.append(0.0)
+                        }
+                        
+                        let originalRadius = allRadii[draggedCornerIndex]
+                        let ratio = originalRadius > 0 ? roundedRadius / originalRadius : 1.0
+                        
+                        for i in 0..<4 {
+                            let originalCornerRadius = allRadii[i]
+                            allRadii[i] = round(originalCornerRadius * ratio)
+                        }
+                        
+                        updateAllCornerRadiiToValues(
+                            shapeID: selectedShape.id,
+                            cornerRadii: allRadii
+                        )
+                        
+                        print("🔄 PROPORTIONAL ROUNDING: Shift held - all corners rounded proportionally")
+                    } else {
+                        updateCornerRadiusToValue(
+                            shapeID: selectedShape.id,
+                            cornerIndex: draggedCornerIndex,
+                            newRadius: roundedRadius
+                        )
+                    }
                 }
             }
             
@@ -422,6 +496,44 @@ extension DrawingCanvas {
                         updatedRadii.append(0.0)
                     }
                     updatedRadii[cornerIndex] = newRadius
+                }
+                
+                shape.cornerRadii = updatedRadii
+                
+                // FIXED: Always regenerate path using current bounds (handles moved objects correctly)
+                // Get current bounds BEFORE modifying the shape to preserve position
+                let currentBounds = shape.path.cgPath.boundingBox
+                
+                let newPath = createRoundedRectPathWithIndividualCorners(
+                    rect: currentBounds,
+                    cornerRadii: updatedRadii
+                )
+                shape.path = newPath
+                shape.updateBounds()
+                
+                // Update originalBounds to current bounds for consistency
+                shape.originalBounds = currentBounds
+                
+                // Update the shape in the document
+                document.layers[layerIndex].shapes[shapeIndex] = shape
+                break
+            }
+        }
+    }
+    
+    /// Update all corner radii to absolute values and regenerate path (for proportional editing)
+    private func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
+        for layerIndex in document.layers.indices {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                var shape = document.layers[layerIndex].shapes[shapeIndex]
+                
+                // Ensure we have exactly 4 corner radii
+                var updatedRadii = cornerRadii
+                while updatedRadii.count < 4 {
+                    updatedRadii.append(0.0)
+                }
+                if updatedRadii.count > 4 {
+                    updatedRadii = Array(updatedRadii.prefix(4))
                 }
                 
                 shape.cornerRadii = updatedRadii
