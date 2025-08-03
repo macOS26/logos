@@ -135,7 +135,12 @@ extension DrawingCanvas {
         let sensitivity = document.currentMarkerPressureSensitivity
         let pressureVariation = (basePressure - 0.5) * sensitivity
         
-        return max(0.1, min(1.0, 0.5 + pressureVariation))
+        let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
+        
+        // Print pressure value during drawing
+        print("🎨 MARKER PRESSURE: \(String(format: "%.2f", finalPressure)) at (\(Int(location.x)), \(Int(location.y))) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]")
+        
+        return finalPressure
     }
     
     // MARK: - Real-time Preview

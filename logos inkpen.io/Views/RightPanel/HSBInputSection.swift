@@ -14,6 +14,9 @@ struct HSBInputSection: View {
     @Binding var sharedColor: VectorColor // Shared color state
     @Environment(AppState.self) private var appState
     
+    // Callback indicates we're in gradient editing mode
+    let onColorSelected: ((VectorColor) -> Void)?
+    
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
     @State private var brightnessValue: String = "100"
@@ -490,9 +493,20 @@ struct HSBInputSection: View {
         sharedColor = .hsb(currentColor)
         let vectorColor = VectorColor.hsb(currentColor)
         
-        // FIXED: Don't automatically update gradient stops during live changes
+        // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
-        // (This prevents unwanted gradient modifications when browsing color panel)
+        if isProgrammaticallyUpdating {
+            print("🎨 HSB INPUT: BLOCKED gradient update - programmatic change")
+            return
+        }
+        
+        // FIXED: Only allow gradient updates when we have an onColorSelected callback (gradient editing mode)
+        // This prevents unwanted gradient updates during casual Color Panel browsing
+        if onColorSelected == nil {
+            print("🎨 HSB INPUT: BLOCKED gradient update - not in gradient editing mode")
+            // Still update shared color for preview, but don't update actual gradients
+            return
+        }
         
         // Check if selected object has a gradient fill - update first stop color
         if let layerIndex = document.selectedLayerIndex,
@@ -501,8 +515,8 @@ struct HSBInputSection: View {
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
-            print("🚨 HSB INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
-            print("🚨 HSB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
+            print("🎨 HSB INPUT: Updating gradient stop in editing mode")
+            print("🎨 HSB INPUT: Current gradient has \(gradient.stops.count) stops")
             
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
@@ -510,8 +524,7 @@ struct HSBInputSection: View {
                 let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
                 
-                print("🚨 HSB INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
-                print("🚨 HSB INPUT: Old color: \(oldColor) → New color: \(vectorColor)")
+                print("🎨 HSB INPUT: Updated gradient stop \(firstStopIndex): \(oldColor) → \(vectorColor)")
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -526,7 +539,7 @@ struct HSBInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🚨 HSB INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! \(vectorColor)")
+                print("🎨 HSB INPUT: Applied gradient update to shape")
             }
             return
         }
@@ -639,6 +652,10 @@ struct HSBInputSection: View {
     }
     
     private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
+        print("🎨 HSB INPUT: setHSBValues called with H=\(hue), S=\(saturation), B=\(brightness)")
+        print("🎨 HSB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        
+        isProgrammaticallyUpdating = true
         hueValue = String(Int(hue))
         saturationValue = String(Int(saturation))
         brightnessValue = String(Int(brightness))
@@ -646,6 +663,9 @@ struct HSBInputSection: View {
         saturationSlider = saturation
         brightnessSlider = brightness
         updateHexFromHSB()
+        isProgrammaticallyUpdating = false
+        
+        print("🎨 HSB INPUT: setHSBValues completed")
     }
     
     private func applyColorToActiveSelection() {

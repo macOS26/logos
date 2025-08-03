@@ -80,13 +80,13 @@ struct ColorPanel: View {
             
             // Mode-specific input sections
             if document.settings.colorMode == .pms {
-                HSBInputSection(document: document, sharedColor: $currentPreviewColor)
+                HSBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
                     .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
-                CMYKInputSection(document: document, sharedColor: $currentPreviewColor)
+                CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
                         .padding(.horizontal, 12)
             } else if document.settings.colorMode == .rgb {
-                RGBInputSection(document: document, sharedColor: $currentPreviewColor)
+                RGBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
                         .padding(.horizontal, 12)
             }
                 

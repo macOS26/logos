@@ -18,6 +18,9 @@ struct RGBInputSection: View {
     @Binding var sharedColor: VectorColor // Shared color state
     @Environment(AppState.self) private var appState
     
+    // Callback indicates we're in gradient editing mode
+    let onColorSelected: ((VectorColor) -> Void)?
+    
     @State private var redValue: String = "133"
     @State private var greenValue: String = "78" 
     @State private var blueValue: String = "68"
@@ -357,9 +360,20 @@ struct RGBInputSection: View {
         
         sharedColor = .rgb(currentColor)
         
-        // FIXED: Don't automatically update gradient stops during live changes
+        // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
-        // (This prevents unwanted gradient modifications when browsing color panel)
+        if isProgrammaticallyUpdating {
+            print("🎨 RGB INPUT: BLOCKED gradient update - programmatic change")
+            return
+        }
+        
+        // FIXED: Only allow gradient updates when we have an onColorSelected callback (gradient editing mode)
+        // This prevents unwanted gradient updates during casual Color Panel browsing
+        if onColorSelected == nil {
+            print("🎨 RGB INPUT: BLOCKED gradient update - not in gradient editing mode")
+            // Still update shared color for preview, but don't update actual gradients
+            return
+        }
         
         // Check if selected object has a gradient fill - update first stop color
         if let layerIndex = document.selectedLayerIndex,
@@ -368,10 +382,8 @@ struct RGBInputSection: View {
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
-            print("🚨 RGB INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
-            print("🚨 RGB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
-            print("🚨 RGB INPUT: Gradient editing state = \(appState.gradientEditingState != nil)")
-            print("🚨 RGB INPUT: Current gradient has \(gradient.stops.count) stops")
+            print("🎨 RGB INPUT: Updating gradient stop in editing mode")
+            print("🎨 RGB INPUT: Current gradient has \(gradient.stops.count) stops")
             
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
@@ -379,11 +391,7 @@ struct RGBInputSection: View {
                 let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
                 
-                print("🚨 RGB INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
-                print("🚨 RGB INPUT: Stop index: \(firstStopIndex)")
-                print("🚨 RGB INPUT: Old color: \(oldColor)")
-                print("🚨 RGB INPUT: New color: \(vectorColor)")
-                print("🚨 RGB INPUT: Call stack: \(Thread.callStackSymbols.prefix(5))")
+                print("🎨 RGB INPUT: Updated gradient stop \(firstStopIndex): \(oldColor) → \(vectorColor)")
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -398,8 +406,7 @@ struct RGBInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🚨 RGB INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! Color: \(vectorColor)")
-                print("🚨 RGB INPUT: This should NOT happen during Color Panel browsing!")
+                print("🎨 RGB INPUT: Applied gradient update to shape")
             }
             return
         }
@@ -561,19 +568,22 @@ struct RGBInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
         
-        // print("🎨 RGB INPUT: applyColorToActiveSelection called")
-        // print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
-        // print("🎨 RGB INPUT: appState.gradientEditingState details: \(String(describing: appState.gradientEditingState))")
+        // Priority 1: If we have a color selection callback (gradient editing), use it
+        if let onColorSelected = onColorSelected {
+            print("🎨 RGB INPUT: Using ColorPanel callback for gradient editing")
+            onColorSelected(vectorColor)
+            return
+        }
         
-        // Priority 1: If we're in gradient editing mode, use that callback
+        // Priority 2: If we're in global gradient editing mode, use that callback
         if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            // print("🎨 RGB INPUT: Using gradient callback")
+            print("🎨 RGB INPUT: Using global gradient callback")
             gradientCallback(vectorColor)
             return
         }
         
-        // Priority 2: Otherwise, apply to document's active selection
-        // print("🎨 RGB INPUT: Using document setActiveColor")
+        // Priority 3: Otherwise, apply to document's active selection
+        print("🎨 RGB INPUT: Using document setActiveColor")
         document.setActiveColor(vectorColor)
     }
     
@@ -584,6 +594,6 @@ struct RGBInputSection: View {
 }
 
 #Preview {
-    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black))
+    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), onColorSelected: nil)
         .padding()
 }
