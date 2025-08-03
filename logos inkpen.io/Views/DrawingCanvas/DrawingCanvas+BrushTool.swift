@@ -850,17 +850,3 @@ extension DrawingCanvas {
 
 }
 
-// MARK: - Brush Point Data Structure
-
-struct BrushPoint {
-    let location: CGPoint
-    let pressure: Double // 0.0 to 1.0
-    let timestamp: Date
-    
-    init(location: CGPoint, pressure: Double = 1.0, timestamp: Date = Date()) {
-        self.location = location
-        self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
-        self.timestamp = timestamp
-    }
-}
-

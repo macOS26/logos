@@ -16,20 +16,23 @@ extension DrawingCanvas {
         keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
             // Handle modifier key changes for transform tools
             if event.type == .flagsChanged {
-                DispatchQueue.main.async {
-                    self.isShiftPressed = event.modifierFlags.contains(.shift)
-                    self.isOptionPressed = event.modifierFlags.contains(.option)
-                    self.isCommandPressed = event.modifierFlags.contains(.command)
-                    self.isControlPressed = event.modifierFlags.contains(.control)
-                    
-                    // Debug logging for key state changes
-                    if self.isShiftPressed {
-                        print("⬆️ SHIFT KEY PRESSED: Transform constraints enabled")
-                    }
-                    if self.isOptionPressed {
-                        print("⌥ OPTION KEY PRESSED: Path-based selection enabled")
-                    }
+                // FIXED: Remove async dispatch to prevent race conditions during rapid key events
+                // Update modifier states immediately for reliable corner radius tool behavior
+                self.isShiftPressed = event.modifierFlags.contains(.shift)
+                self.isOptionPressed = event.modifierFlags.contains(.option)
+                self.isCommandPressed = event.modifierFlags.contains(.command)
+                self.isControlPressed = event.modifierFlags.contains(.control)
+                
+                // Debug logging for key state changes
+                if self.isShiftPressed {
+                    print("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)")
+                } else {
+                    print("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)")
                 }
+                if self.isOptionPressed {
+                    print("⌥ OPTION KEY PRESSED: Path-based selection enabled")
+                }
+                
                 return event // Let flagsChanged pass through normally
             }
             

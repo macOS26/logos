@@ -298,23 +298,44 @@ extension DrawingCanvas {
             let newRadius = max(0.0, min(maxRadius, tentativeRadius))
             
             // PROPORTIONAL CORNER RADIUS: When shift is held, make all corners proportional
-            if isShiftPressed {
+            // IMPROVED: Check shift key state directly as backup to prevent sporadic behavior
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
+                print("🔄 CORNER RADIUS PROPORTIONAL: Shift detected - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))")
+            }
+            if isShiftCurrentlyPressed {
                 // Get all current corner radii
                 var allRadii = shape.cornerRadii
                 while allRadii.count < 4 {
                     allRadii.append(0.0)
                 }
                 
-                // Calculate the ratio of the new radius to the original radius for this corner
+                // FIXED: Use radius change instead of ratio for corners starting at 0
                 let originalRadius = allRadii[cornerIndex]
-                let ratio = originalRadius > 0 ? newRadius / originalRadius : 1.0
                 
-                // Apply the same ratio to all corners
-                for i in 0..<4 {
-                    let originalCornerRadius = allRadii[i]
-                    let proportionalRadius = originalCornerRadius * ratio
-                    let constrainedRadius = max(0.0, min(maxRadius, proportionalRadius))
-                    allRadii[i] = constrainedRadius
+                if originalRadius > 0 {
+                    // RATIO MODE: When corners have existing radius, scale proportionally
+                    let ratio = newRadius / originalRadius
+                    
+                    // Apply the same ratio to all corners
+                    for i in 0..<4 {
+                        let originalCornerRadius = allRadii[i]
+                        let proportionalRadius = originalCornerRadius * ratio
+                        let constrainedRadius = max(0.0, min(maxRadius, proportionalRadius))
+                        allRadii[i] = constrainedRadius
+                    }
+                    
+                    print("🔄 PROPORTIONAL CORNER RADIUS: Ratio mode - scaling by \(String(format: "%.3f", ratio))")
+                } else {
+                    // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
+                    // This ensures all corners move together when shift is held on a sharp rectangle
+                    
+                    for i in 0..<4 {
+                        let constrainedRadius = max(0.0, min(maxRadius, newRadius))
+                        allRadii[i] = constrainedRadius
+                    }
+                    
+                    print("🔄 PROPORTIONAL CORNER RADIUS: Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt")
                 }
                 
                 // Update all corner radii proportionally
@@ -322,8 +343,6 @@ extension DrawingCanvas {
                     shapeID: shape.id,
                     cornerRadii: allRadii
                 )
-                
-                print("🔄 PROPORTIONAL CORNER RADIUS: Shift held - all corners scaled by ratio \(String(format: "%.3f", ratio))")
             } else {
                 // Apply the constrained radius to just this corner
                 updateCornerRadiusToValue(
@@ -336,7 +355,8 @@ extension DrawingCanvas {
             // Fallback: just use minimum constraint
             let newRadius = max(0.0, tentativeRadius)
             
-            if isShiftPressed {
+            let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+            if isShiftCurrentlyPressed {
                 // Proportional behavior for fallback case
                 var allRadii = shape.cornerRadii
                 while allRadii.count < 4 {
@@ -344,11 +364,26 @@ extension DrawingCanvas {
                 }
                 
                 let originalRadius = allRadii[cornerIndex]
-                let ratio = originalRadius > 0 ? newRadius / originalRadius : 1.0
                 
-                for i in 0..<4 {
-                    let originalCornerRadius = allRadii[i]
-                    allRadii[i] = max(0.0, originalCornerRadius * ratio)
+                if originalRadius > 0 {
+                    // RATIO MODE: When corners have existing radius, scale proportionally
+                    let ratio = newRadius / originalRadius
+                    
+                    for i in 0..<4 {
+                        let originalCornerRadius = allRadii[i]
+                        allRadii[i] = max(0.0, originalCornerRadius * ratio)
+                    }
+                    
+                    print("🔄 PROPORTIONAL CORNER RADIUS (fallback): Ratio mode - scaling by \(String(format: "%.3f", ratio))")
+                } else {
+                    // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
+                    // This ensures all corners move together when shift is held on a sharp rectangle
+                    
+                    for i in 0..<4 {
+                        allRadii[i] = max(0.0, newRadius)
+                    }
+                    
+                    print("🔄 PROPORTIONAL CORNER RADIUS (fallback): Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt")
                 }
                 
                 updateAllCornerRadiiToValues(
@@ -377,7 +412,9 @@ extension DrawingCanvas {
                 
                 // Only update if the value actually changed (avoid unnecessary updates)
                 if abs(currentRadius - roundedRadius) > 0.01 {
-                    if isShiftPressed {
+                    let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
+                    if isShiftCurrentlyPressed {
+                        print("🔄 CORNER RADIUS ROUNDING: Shift detected during finish - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))")
                         // PROPORTIONAL ROUNDING: Round all corners proportionally when shift is held
                         var allRadii = selectedShape.cornerRadii
                         while allRadii.count < 4 {
@@ -385,19 +422,32 @@ extension DrawingCanvas {
                         }
                         
                         let originalRadius = allRadii[draggedCornerIndex]
-                        let ratio = originalRadius > 0 ? roundedRadius / originalRadius : 1.0
                         
-                        for i in 0..<4 {
-                            let originalCornerRadius = allRadii[i]
-                            allRadii[i] = round(originalCornerRadius * ratio)
+                        if originalRadius > 0 {
+                            // RATIO MODE: When corners have existing radius, scale proportionally
+                            let ratio = roundedRadius / originalRadius
+                            
+                            for i in 0..<4 {
+                                let originalCornerRadius = allRadii[i]
+                                allRadii[i] = round(originalCornerRadius * ratio)
+                            }
+                            
+                            print("🔄 PROPORTIONAL ROUNDING: Ratio mode - scaling by \(String(format: "%.3f", ratio))")
+                        } else {
+                            // UNIFORM MODE: When starting from 0, set ALL corners to the same radius as the dragged corner
+                            // This ensures all corners round to the same value when shift is held on a sharp rectangle
+                            
+                            for i in 0..<4 {
+                                allRadii[i] = round(max(0.0, roundedRadius))
+                            }
+                            
+                            print("🔄 PROPORTIONAL ROUNDING: Uniform mode - setting all corners to \(String(format: "%.1f", roundedRadius))pt")
                         }
                         
                         updateAllCornerRadiiToValues(
                             shapeID: selectedShape.id,
                             cornerRadii: allRadii
                         )
-                        
-                        print("🔄 PROPORTIONAL ROUNDING: Shift held - all corners rounded proportionally")
                     } else {
                         updateCornerRadiusToValue(
                             shapeID: selectedShape.id,

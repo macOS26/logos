@@ -26,6 +26,34 @@ struct HashableCGPoint: Hashable, Equatable {
     }
 }
 
+// MARK: - Shared Data Structures (Consolidated from extensions)
+
+// Brush Point Data Structure (used in BrushTool extension)
+struct BrushPoint {
+    let location: CGPoint
+    let pressure: Double // 0.0 to 1.0
+    let timestamp: Date
+    
+    init(location: CGPoint, pressure: Double = 1.0, timestamp: Date = Date()) {
+        self.location = location
+        self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
+        self.timestamp = timestamp
+    }
+}
+
+// Marker Point Data Structure (used in MarkerTool extension)
+struct MarkerPoint {
+    let location: CGPoint
+    let pressure: Double // 0.0 to 1.0
+    let timestamp: Date
+    
+    init(location: CGPoint, pressure: Double = 1.0, timestamp: Date = Date()) {
+        self.location = location
+        self.pressure = max(0.0, min(1.0, pressure)) // Clamp between 0 and 1
+        self.timestamp = timestamp
+    }
+}
+
 struct DrawingCanvas: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) internal var appState
@@ -144,6 +172,44 @@ struct DrawingCanvas: View {
     @State internal var lastTapLocation: CGPoint = .zero
     
     // Point and handle identification moved to PointAndHandleID.swift
+    
+    // MARK: - Shared Utility Variables (Consolidated from extensions)
+    // These variables are used across multiple DrawingCanvas extensions to avoid duplication
+    
+    // Shared hit testing variables
+    @State internal var isHit = false
+    @State internal var foundPointOrHandle = false
+    
+    // Shared path manipulation variables
+    @State internal var sharedElements: [PathElement] = []
+    @State internal var sharedNewElements: [PathElement] = []
+    @State internal var sharedValidElements: [PathElement] = []
+    
+    // Shared Douglas-Peucker algorithm variables (used in Brush, Marker, Freehand tools)
+    @State internal var sharedMaxDistance: Double = 0
+    @State internal var sharedMaxIndex: Int = 0
+    
+    // Shared pressure/closest point variables (used in Brush and Marker tools)
+    @State internal var sharedClosestDistance: Double = Double.infinity
+    @State internal var sharedClosestPressure: Double = 1.0
+    
+    // Shared thickness calculation variables (used in Brush and Marker tools)
+    @State internal var sharedThicknessPoints: [(location: CGPoint, thickness: Double)] = []
+    
+    // Shared handle analysis variables (used in multiple extensions)
+    @State internal var sharedOutgoingHandleCollapsed: Bool = true
+    
+    // Shared shape update variables
+    @State internal var sharedUpdatedShape: VectorShape?
+    @State internal var sharedOriginalShape: VectorShape?
+    
+    // Shared curve position variables
+    @State internal var sharedCurvePositions: [CGPoint] = []
+    
+    // Shared radius variables (used in corner radius editing)
+    @State internal var sharedAllRadii: [Double] = []
+    @State internal var sharedUpdatedRadii: [Double] = []
+    
     var body: some View {
         GeometryReader { geometry in
             canvasMainContent(geometry: geometry)

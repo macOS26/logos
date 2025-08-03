@@ -757,6 +757,98 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var useExtremeValueHandling = false
     private var detectedExtremeValues = false
     
+    // MARK: - Helper Computed Properties and Functions
+    
+    /// Computed property for viewBox scale calculations
+    private var viewBoxScale: (x: Double, y: Double) {
+        return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
+    }
+    
+    /// Helper function to parse gradient units from attributes
+    private func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {
+        return GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+    }
+    
+    /// Helper function to parse spread method from attributes
+    private func parseSpreadMethod(from attributes: [String: String]) -> GradientSpreadMethod {
+        return GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
+    }
+    
+    /// Helper function to parse radial gradient coordinates from attributes
+    private func parseRadialGradientCoordinates(from attributes: [String: String]) -> (cx: String, cy: String, r: String, fx: String?, fy: String?) {
+        return (
+            cx: attributes["cx"] ?? "50%",
+            cy: attributes["cy"] ?? "50%", 
+            r: attributes["r"] ?? "50%",
+            fx: attributes["fx"],
+            fy: attributes["fy"]
+        )
+    }
+    
+    /// Helper function to convert degrees to radians
+    private func degreesToRadians(_ degrees: Double) -> Double {
+        return degrees * .pi / 180.0
+    }
+    
+    /// Helper function to convert radians to degrees
+    private func radiansToDegrees(_ radians: Double) -> Double {
+        return radians * 180.0 / .pi
+    }
+    
+    /// Helper function to parse gradient transform from attributes
+    private func parseGradientTransformFromAttributes(_ attributes: [String: String]) -> (angle: Double, scaleX: Double, scaleY: Double) {
+        var gradientAngle: Double = 0.0
+        var gradientScaleX: Double = 1.0
+        var gradientScaleY: Double = 1.0
+        
+        if let gradientTransformRaw = attributes["gradientTransform"] {
+            print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
+            let transforms = parseGradientTransform(gradientTransformRaw)
+            gradientAngle = transforms.angle
+            gradientScaleX = transforms.scaleX
+            gradientScaleY = transforms.scaleY
+            print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
+        }
+        
+        return (angle: gradientAngle, scaleX: gradientScaleX, scaleY: gradientScaleY)
+    }
+    
+    /// Helper function to parse gradient transform angle from attributes
+    private func parseGradientTransformAngle(from attributes: [String: String]) -> Double {
+        var finalAngle = 0.0
+        if let gradientTransform = attributes["gradientTransform"] {
+            print("🔧 Parsing gradientTransform: \(gradientTransform)")
+            
+            // Parse rotate transform
+            let rotatePattern = #"rotate\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
+            if let regex = try? NSRegularExpression(pattern: rotatePattern, options: []),
+               let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
+                
+                if let angleRange = Range(match.range(at: 1), in: gradientTransform) {
+                    let angleStr = String(gradientTransform[angleRange])
+                    if let transformAngle = Double(angleStr) {
+                        finalAngle = transformAngle
+                        print("🔄 Found rotate transform: \(transformAngle)°")
+                    }
+                }
+            }
+            
+            // Parse scale transform to check for Y-flip
+            let scalePattern = #"scale\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
+            if let regex = try? NSRegularExpression(pattern: scalePattern, options: []),
+               let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
+                
+                if let scaleYRange = Range(match.range(at: 2), in: gradientTransform) {
+                    let scaleYStr = String(gradientTransform[scaleYRange])
+                    if let scaleY = Double(scaleYStr), scaleY < 0 {
+                        print("🔄 Found Y-flip scale: \(scaleY)")
+                    }
+                }
+            }
+        }
+        return finalAngle
+    }
+    
     struct ParseResult {
         let shapes: [VectorShape]
         let textObjects: [VectorText]
@@ -869,11 +961,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             // Reset transform when exiting SVG root
             if hasViewBox {
                 // Keep viewBox transform as the base
-                let scaleX = documentSize.width / viewBoxWidth
-                let scaleY = documentSize.height / viewBoxHeight
                 currentTransform = CGAffineTransform.identity
                     .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                    .scaledBy(x: scaleX, y: scaleY)
+                    .scaledBy(x: viewBoxScale.x, y: viewBoxScale.y)
             } else {
                 currentTransform = .identity
             }
@@ -885,7 +975,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 currentTransform = transformStack.last ?? (hasViewBox ? 
                     CGAffineTransform.identity
                         .translatedBy(x: -viewBoxX, y: -viewBoxY)
-                        .scaledBy(x: documentSize.width / viewBoxWidth, y: documentSize.height / viewBoxHeight) : 
+                        .scaledBy(x: viewBoxScale.x, y: viewBoxScale.y) : 
                     .identity)
             }
             
@@ -1016,8 +1106,8 @@ class SVGParser: NSObject, XMLParserDelegate {
                 }
                 
                 // Calculate the viewBox transform
-                let scaleX = documentSize.width / viewBoxWidth
-                let scaleY = documentSize.height / viewBoxHeight
+                let scaleX = viewBoxScale.x
+                let scaleY = viewBoxScale.y
                 
                 // Apply viewBox transform as the base transform
                 currentTransform = CGAffineTransform.identity
@@ -1600,7 +1690,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 // Handle rotate(angle [cx cy])
                 if params.count >= 3 {
                     // Rotation around a point: translate(-cx,-cy), rotate, translate(cx,cy)
-                    let angle = params[0] * .pi / 180.0
+                    let angle = degreesToRadians(params[0])
                     let cx = params[1]
                     let cy = params[2]
                     transform = transform.translatedBy(x: cx, y: cy)
@@ -1608,13 +1698,13 @@ class SVGParser: NSObject, XMLParserDelegate {
                     transform = transform.translatedBy(x: -cx, y: -cy)
                 } else if params.count >= 1 {
                     // Simple rotation around origin
-                    let angle = params[0] * .pi / 180.0
+                    let angle = degreesToRadians(params[0])
                     transform = transform.rotated(by: angle)
                 }
                 
             case "skewx":
                 if params.count >= 1 {
-                    let angle = params[0] * .pi / 180.0
+                    let angle = degreesToRadians(params[0])
                     transform = CGAffineTransform(a: transform.a, b: transform.b,
                                                  c: transform.c + transform.a * tan(angle),
                                                  d: transform.d + transform.b * tan(angle),
@@ -1623,7 +1713,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 
             case "skewy":
                 if params.count >= 1 {
-                    let angle = params[0] * .pi / 180.0
+                    let angle = degreesToRadians(params[0])
                     transform = CGAffineTransform(a: transform.a + transform.c * tan(angle),
                                                  b: transform.b + transform.d * tan(angle),
                                                  c: transform.c, d: transform.d,
@@ -1680,11 +1770,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         isParsingGradient = true
         
         // DETECT EXTREME VALUES: Check if this radial gradient has extreme coordinates
-        let cxRaw = attributes["cx"] ?? "50%"
-        let cyRaw = attributes["cy"] ?? "50%"
-        let rRaw = attributes["r"] ?? "50%"
-        let fxRaw = attributes["fx"]
-        let fyRaw = attributes["fy"]
+        let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
         
         // Check for extreme values in coordinates
         let hasExtremeValues = detectExtremeValuesInRadialGradient(
@@ -1788,7 +1874,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         if gradientType == "linearGradient" {
             // Parse gradient units first to handle coordinates properly
-            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            let gradientUnits = parseGradientUnits(from: attributes)
             
             // Parse linear gradient attributes with enhanced coordinate handling
             let x1Raw = attributes["x1"] ?? "0%"
@@ -1807,37 +1893,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
             // Parse gradientTransform to get the correct angle
-            var finalAngle = 0.0
-            if let gradientTransform = attributes["gradientTransform"] {
-                print("🔧 Parsing gradientTransform: \(gradientTransform)")
-                
-                // Parse rotate transform
-                let rotatePattern = #"rotate\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
-                if let regex = try? NSRegularExpression(pattern: rotatePattern, options: []),
-                   let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
-                    
-                    if let angleRange = Range(match.range(at: 1), in: gradientTransform) {
-                        let angleStr = String(gradientTransform[angleRange])
-                        if let transformAngle = Double(angleStr) {
-                            finalAngle = transformAngle
-                            print("🔄 Found rotate transform: \(transformAngle)°")
-                        }
-                    }
-                }
-                
-                // Parse scale transform to check for Y-flip
-                let scalePattern = #"scale\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
-                if let regex = try? NSRegularExpression(pattern: scalePattern, options: []),
-                   let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
-                    
-                    if let scaleYRange = Range(match.range(at: 2), in: gradientTransform) {
-                        let scaleYStr = String(gradientTransform[scaleYRange])
-                        if let scaleY = Double(scaleYStr), scaleY < 0 {
-                            print("🔄 Found Y-flip scale: \(scaleY)")
-                        }
-                    }
-                }
-            }
+            let finalAngle = parseGradientTransformAngle(from: attributes)
             
             // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
             // For ColecoVision: horizontal gradient should span left edge to right edge of EACH LETTER
@@ -1853,7 +1909,7 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let deltaX = x2 - x1
                 let deltaY = y2 - y1
                 let angle = atan2(deltaY, deltaX)
-                return angle * 180.0 / .pi
+                return radiansToDegrees(angle)
             }()
             
             print("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(finalAngle)°)")
@@ -1862,7 +1918,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("🔥 FINAL GRADIENT: Linear gradient with original coordinates, stops=\(currentGradientStops.count)")
             
             // Parse spread method
-            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
+            let spreadMethod = parseSpreadMethod(from: attributes)
             
             // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
             // Calculate origin point as the midpoint between start and end
@@ -1889,14 +1945,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             
         } else { // radialGradient
             // Parse gradient units first to handle coordinates properly
-            let gradientUnits = GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
+            let gradientUnits = parseGradientUnits(from: attributes)
             
             // Parse radial gradient attributes with enhanced coordinate handling
-            let cxRaw = attributes["cx"] ?? "50%"
-            let cyRaw = attributes["cy"] ?? "50%"
-            let rRaw = attributes["r"] ?? "50%"
-            let fxRaw = attributes["fx"]
-            let fyRaw = attributes["fy"]
+            let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
             
             print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
             
@@ -1952,21 +2004,10 @@ class SVGParser: NSObject, XMLParserDelegate {
             print("   Units: \(gradientUnits) - parseGradientCoordinate handled conversion")
             
             // Parse spread method
-            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
+            let spreadMethod = parseSpreadMethod(from: attributes)
             
             // NEW: Parse gradientTransform for angle and independent scaling
-            var gradientAngle: Double = 0.0
-            var gradientScaleX: Double = 1.0
-            var gradientScaleY: Double = 1.0
-            
-            if let gradientTransformRaw = attributes["gradientTransform"] {
-                print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
-                let transforms = parseGradientTransform(gradientTransformRaw)
-                gradientAngle = transforms.angle
-                gradientScaleX = transforms.scaleX
-                gradientScaleY = transforms.scaleY
-                print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
-            }
+            let (gradientAngle, gradientScaleX, gradientScaleY) = parseGradientTransformFromAttributes(attributes)
             
             // CORE GRAPHICS RADIAL GRADIENT: Use proper coordinate system conversion
             var radialGradient = RadialGradient(
@@ -3037,9 +3078,9 @@ class VectorExportManager {
         
         // Generate professional DWF content
         let dwfContent = try generateDWFContent(document: document, 
-                                               referenceRect: referenceRect,
-                                               transformation: transformation,
-                                               options: options)
+                                              referenceRect: referenceRect,
+                                              transformation: transformation,
+                                              options: options)
         
         // Write DWF file with proper headers and structure
         try writeDWFFile(content: dwfContent, to: url)
