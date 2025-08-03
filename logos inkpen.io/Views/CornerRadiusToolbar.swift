@@ -120,43 +120,30 @@ struct CornerRadiusToolbar: View {
     
     private func updateCornerValues() {
         guard let selectedShape = getSelectedShape() else {
-            print("🔍 CORNER DEBUG: No selected shape")
             cornerValues = []
             cornerCount = 0
             return
         }
         
-        print("🔍 CORNER DEBUG: Selected shape: \(selectedShape.name), ID: \(selectedShape.id)")
-        print("🔍 CORNER DEBUG: Path elements: \(selectedShape.path.elements.count)")
-        for (i, element) in selectedShape.path.elements.enumerated() {
-            print("🔍 CORNER DEBUG: Element \(i): \(element)")
-        }
-        
         // Count corners by analyzing path elements
         cornerCount = countShapeCorners(shape: selectedShape)
-        print("🔍 CORNER DEBUG: Detected \(cornerCount) corners")
         
         // Get corner radii (extend array if needed)
         let currentRadii = selectedShape.cornerRadii
         cornerValues = Array(0..<cornerCount).map { index in
             currentRadii[safe: index] ?? 0.0
         }
-        print("🔍 CORNER DEBUG: Corner values: \(cornerValues)")
     }
     
     private func countShapeCorners(shape: VectorShape) -> Int {
         // ROBUST DETECTION: Support basic shapes as requested
         let shapeName = shape.name.lowercased()
         
-        print("🔍 CORNER DEBUG: Analyzing shape '\(shape.name)'")
-        
         // Check shape name first (most reliable) - FIXED: Better matching
         if shapeName.contains("triangle") {
-            print("🔍 CORNER DEBUG: Triangle detected from name")
             return 3
         } else if shapeName == "rectangle" || shapeName == "square" || 
                   shapeName == "rounded rectangle" || shapeName == "pill" {
-            print("🔍 CORNER DEBUG: Rectangle/Square/Rounded/Pill detected from name: '\(shape.name)'")
             return 4
         }
         
@@ -178,24 +165,17 @@ struct CornerRadiusToolbar: View {
         
         let totalSegments = lineCount + curveCount
         
-        print("🔍 CORNER DEBUG: Path analysis - Lines: \(lineCount), Curves: \(curveCount), Total: \(totalSegments)")
-        
         // BASIC SHAPE DETECTION BY PATH STRUCTURE:
         if totalSegments == 3 {
-            print("🔍 CORNER DEBUG: Triangle detected (3 segments)")
             return 3
         } else if totalSegments == 4 {
-            print("🔍 CORNER DEBUG: Square/Rectangle detected (4 segments)")
             return 4
         } else if totalSegments == 8 && curveCount == 4 {
-            print("🔍 CORNER DEBUG: Rounded rectangle detected (4 lines + 4 curves)")
             return 4
         } else if curveCount == 4 && lineCount == 0 {
-            print("🔍 CORNER DEBUG: Fully rounded rectangle detected (4 curves only)")
             return 4
         }
         
-        print("🔍 CORNER DEBUG: Unsupported shape - Name: '\(shape.name)', Lines: \(lineCount), Curves: \(curveCount)")
         return 0  // Unsupported shape
     }
     
@@ -234,7 +214,7 @@ struct CornerRadiusToolbar: View {
         // - 4 curve segments (corners)
         // Corner N is rounded if there's a corresponding curve element
         
-        print("🔍 CORNER ROUNDED DEBUG: Lines: \(lineSegments.count), Curves: \(curves.count)")
+
         
         // If we have the same number of curves as corners, then corner at index is rounded
         if curves.count == cornerCount && cornerIndex < curves.count {

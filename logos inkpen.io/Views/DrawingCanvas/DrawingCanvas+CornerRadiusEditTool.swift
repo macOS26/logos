@@ -201,8 +201,7 @@ extension DrawingCanvas {
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
             
-            print("🔄 CORNER DRAG: Started at cursor (\(String(format: "%.1f", cornerDragStart.x)), \(String(format: "%.1f", cornerDragStart.y)))")
-            print("   Initial radius: \(String(format: "%.1f", initialCornerRadius))pt")
+
         }
         
         // PERFECT MOUSE TRACKING: Handle follows mouse exactly, radius is constrained
@@ -238,7 +237,8 @@ extension DrawingCanvas {
         let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / sqrt(2.0)
         
         // Calculate radius change from the projected distance (in canvas coordinates)
-        let radiusChange = projectedDistance * 0.5 // Scale factor for radius sensitivity
+        // FIXED: 1:1 mouse tracking - no scale factor needed
+        let radiusChange = projectedDistance
         let tentativeRadius = initialCornerRadius + radiusChange
         
         // Calculate maximum radius based on shape dimensions
@@ -262,11 +262,7 @@ extension DrawingCanvas {
             )
         }
         
-        // Debug logging for fine-tuning
-        if abs(radiusChange) > 1.0 {
-            let currentRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
-            print("🔄 CORNER DRAG: Radius \(String(format: "%.1f", initialCornerRadius)) → \(String(format: "%.1f", currentRadius))pt (Δ\(String(format: "%.1f", radiusChange)))")
-        }
+
     }
     
     /// Finish corner radius drag operation
@@ -282,7 +278,7 @@ extension DrawingCanvas {
             initialCornerRadius = 0.0
             currentMousePosition = .zero
             
-            print("🔄 CORNER DRAG: Finished and saved to undo stack")
+
         }
     }
     
@@ -295,8 +291,6 @@ extension DrawingCanvas {
                 
                 // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles/squares to corner-radius-enabled
                 if !shape.isRoundedRectangle && isRectangleBasedShape(shape) {
-                    print("🔄 Converting regular \(shape.name) to corner-radius-enabled shape during drag")
-                    
                     // Use proper bounds calculation that handles squares correctly
                     shape.originalBounds = getProperShapeBounds(for: shape)
                     shape.isRoundedRectangle = true
@@ -305,8 +299,6 @@ extension DrawingCanvas {
                     if shape.cornerRadii.isEmpty {
                         shape.cornerRadii = [0.0, 0.0, 0.0, 0.0]
                     }
-                    
-                    print("🔄 Set originalBounds: \(shape.originalBounds!)")
                 }
                 
                 // Update corner radius with bounds checking
