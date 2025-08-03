@@ -6,11 +6,12 @@ import SwiftUI
  To modify tool groups, edit the `toolGroupConfig` dictionary around line 99.
  
  Example:
- - Keep basic shapes together: [.rectangle, .square, .circle, .ellipse, .cone]
+ - Keep basic shapes together: [.rectangle, .square, .circle, .ellipse, .egg]
  - Separate polygons: [.polygon]
  - Group drawing tools: [.line, .bezierPen]
  - Group paint tools: [.brush, .marker, .freehand]
  - Group transformation tools: [.scale, .rotate, .shear, .warp]
+ - Group triangle shapes: [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone]
  
  Just add/remove tools from the arrays to change groupings!
 */
@@ -113,8 +114,8 @@ class ToolGroupManager: ObservableObject {
     // 🔧 EASY TO MODIFY: Just edit this configuration to change tool groups
     private static let toolGroupConfig: [String: [DrawingTool]] = [
         "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
-        "circles": [.ellipse, .oval, .circle, .cone],
-        "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle],
+        "circles": [.ellipse, .oval, .circle, .egg],
+        "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone],
         "polygons": [.polygon],
         "lines": [.line, .bezierPen],
         "brushes": [.brush, .marker, .freehand],

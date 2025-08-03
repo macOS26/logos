@@ -745,8 +745,8 @@ struct VerticalToolbar: View {
             [.brush, .marker, .freehand],
             [.font],
             [.rectangle, .square, .roundedRectangle, .pill], // Rectangle group
-            [.ellipse, .oval, .circle, .egg, .cone], // Circle group  
-            [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle], // Triangle group
+            [.ellipse, .oval, .circle, .egg], // Circle group  
+            [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone], // Triangle group
             [.polygon], // Multi-sided polygon group
             [.star], // Star variants (handled separately)
             [.eyedropper],
