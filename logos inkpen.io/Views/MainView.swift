@@ -1046,6 +1046,9 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Toggle Snap to Grid")
             
+            // Corner Radius Controls (for selected shapes)
+            CornerRadiusToolbar(document: document)
+            
             // Zoom Controls
             Menu {
                 Button("Zoom In") {

@@ -11,26 +11,25 @@ extension DrawingCanvas {
     
     // MARK: - Corner Radius Edit Tool
     
-    /// Shows corner radius edit controls when a rounded rectangle is selected
+    /// Shows corner radius edit controls when a rectangle-based shape is selected
     @ViewBuilder
     func cornerRadiusEditTool(geometry: GeometryProxy) -> some View {
-        if let selectedShape = getSelectedRoundedRectangle() {
+        if let selectedShape = getSelectedRectangleShape() {
             
-            // Get corner positions in screen coordinates
-            if let originalBounds = selectedShape.originalBounds {
-                let corners = getCornerScreenPositions(bounds: originalBounds, shape: selectedShape, geometry: geometry)
-                
-                ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
-                    cornerRadiusHandle(
-                        cornerIndex: index,
-                        position: (isDraggingCorner && draggedCornerIndex == index) 
-                            ? currentMousePosition
-                            : screenPosition,
-                        radius: selectedShape.cornerRadii[safe: index] ?? 0.0,
-                        shape: selectedShape,
-                        geometry: geometry
-                    )
-                }
+            // Get corner positions in screen coordinates - FIXED: Proper bounds for squares
+            let boundsToUse = getProperShapeBounds(for: selectedShape)
+            let corners = getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)
+            
+            ForEach(Array(corners.enumerated()), id: \.offset) { index, screenPosition in
+                cornerRadiusHandle(
+                    cornerIndex: index,
+                    position: (isDraggingCorner && draggedCornerIndex == index) 
+                        ? currentMousePosition
+                        : getCornerScreenPositions(bounds: boundsToUse, shape: selectedShape, geometry: geometry)[index], // FIXED: Always recalculate positions
+                    radius: selectedShape.cornerRadii[safe: index] ?? 0.0,
+                    shape: selectedShape,
+                    geometry: geometry
+                )
             }
         }
     }
@@ -76,18 +75,54 @@ extension DrawingCanvas {
     
     // MARK: - Helper Functions
     
-    /// Get the currently selected rounded rectangle
-    private func getSelectedRoundedRectangle() -> VectorShape? {
+    /// Get the currently selected rectangle-based shape (can have corner radius support)
+    private func getSelectedRectangleShape() -> VectorShape? {
         guard document.selectedShapeIDs.count == 1 else { return nil }
         
         for layer in document.layers {
             for shape in layer.shapes {
-                if document.selectedShapeIDs.contains(shape.id) && shape.isRoundedRectangle {
+                if document.selectedShapeIDs.contains(shape.id) && isRectangleBasedShape(shape) {
                     return shape
                 }
             }
         }
         return nil
+    }
+    
+    /// Check if a shape is a rectangle-based shape that can have corner radius
+    private func isRectangleBasedShape(_ shape: VectorShape) -> Bool {
+        let shapeName = shape.name.lowercased()
+        return shapeName == "rectangle" || shapeName == "square" ||
+               shapeName == "rounded rectangle" || shapeName == "pill"
+    }
+    
+    /// Get proper bounds for a shape - FIXED: Handle squares and rectangles correctly
+    private func getProperShapeBounds(for shape: VectorShape) -> CGRect {
+        // If shape has originalBounds, use that (for rounded rectangles and pills)
+        if let originalBounds = shape.originalBounds {
+            return originalBounds
+        }
+        
+        // For regular squares and rectangles, calculate clean bounds from path
+        let pathBounds = shape.path.cgPath.boundingBox
+        
+        // FIXED: Check for squares more robustly - check both name AND if it's actually square-shaped
+        let isSquareByName = shape.name.lowercased() == "square"
+        let isSquareBySizeRatio = abs(pathBounds.width - pathBounds.height) < 1.0 // Within 1 point difference
+        
+        if isSquareByName || (isSquareBySizeRatio && shape.name.lowercased() == "rectangle") {
+            // Make it a perfect square using the larger dimension to avoid shrinking
+            let size = max(pathBounds.width, pathBounds.height)
+            let squareBounds = CGRect(
+                x: pathBounds.origin.x,
+                y: pathBounds.origin.y,
+                width: size,
+                height: size
+            )
+            return squareBounds
+        }
+        
+        return pathBounds
     }
     
     /// Get corner handle positions on the actual curves (not at rectangle corners)
@@ -258,6 +293,22 @@ extension DrawingCanvas {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 var shape = document.layers[layerIndex].shapes[shapeIndex]
                 
+                // ENABLE CORNER RADIUS SUPPORT: Convert regular rectangles/squares to corner-radius-enabled
+                if !shape.isRoundedRectangle && isRectangleBasedShape(shape) {
+                    print("🔄 Converting regular \(shape.name) to corner-radius-enabled shape during drag")
+                    
+                    // Use proper bounds calculation that handles squares correctly
+                    shape.originalBounds = getProperShapeBounds(for: shape)
+                    shape.isRoundedRectangle = true
+                    
+                    // Initialize corner radii if empty
+                    if shape.cornerRadii.isEmpty {
+                        shape.cornerRadii = [0.0, 0.0, 0.0, 0.0]
+                    }
+                    
+                    print("🔄 Set originalBounds: \(shape.originalBounds!)")
+                }
+                
                 // Update corner radius with bounds checking
                 let currentRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
                 let newRadius = max(0.0, currentRadius + radiusChange) // Minimum 0pt
@@ -276,15 +327,18 @@ extension DrawingCanvas {
                 
                 shape.cornerRadii = updatedRadii
                 
-                // Regenerate path from original bounds + new radii
-                if let originalBounds = shape.originalBounds {
-                    let newPath = createRoundedRectPathWithIndividualCorners(
-                        rect: originalBounds,
-                        cornerRadii: updatedRadii
-                    )
-                    shape.path = newPath
-                    shape.updateBounds()
-                }
+                // FIXED: Always regenerate path using proper bounds (handles squares correctly)
+                let boundsForRegeneration = getProperShapeBounds(for: shape)
+                let newPath = createRoundedRectPathWithIndividualCorners(
+                    rect: boundsForRegeneration,
+                    cornerRadii: updatedRadii
+                )
+                shape.path = newPath
+                shape.updateBounds()
+                
+                // Update originalBounds to the proper bounds for future operations
+                shape.originalBounds = boundsForRegeneration
+                print("🔄 Regenerated path using proper bounds: \(boundsForRegeneration)")
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
@@ -315,15 +369,17 @@ extension DrawingCanvas {
                 
                 shape.cornerRadii = updatedRadii
                 
-                // Regenerate path from original bounds + new radii
-                if let originalBounds = shape.originalBounds {
-                    let newPath = createRoundedRectPathWithIndividualCorners(
-                        rect: originalBounds,
-                        cornerRadii: updatedRadii
-                    )
-                    shape.path = newPath
-                    shape.updateBounds()
-                }
+                // FIXED: Always regenerate path using proper bounds (handles squares correctly)
+                let boundsForRegeneration = getProperShapeBounds(for: shape)
+                let newPath = createRoundedRectPathWithIndividualCorners(
+                    rect: boundsForRegeneration,
+                    cornerRadii: updatedRadii
+                )
+                shape.path = newPath
+                shape.updateBounds()
+                
+                // Update originalBounds to the proper bounds for future operations
+                shape.originalBounds = boundsForRegeneration
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape

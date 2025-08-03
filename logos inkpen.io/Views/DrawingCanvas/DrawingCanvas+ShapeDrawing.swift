@@ -350,37 +350,76 @@ extension DrawingCanvas {
             opacity: document.defaultFillOpacity  // 100% opacity by default
         )
         
-        // LIVE CORNER RADIUS: Special handling for rounded rectangles
-        if document.currentTool == .roundedRectangle {
+        // CORNER RADIUS SUPPORT: Enable for all rectangle-based shapes
+        if document.currentTool == .rectangle || document.currentTool == .square || 
+           document.currentTool == .roundedRectangle || document.currentTool == .pill {
+            
             // Calculate original bounds from drawing coordinates
             let startPoint = shapeStartPoint
             let currentLocation = screenToCanvas(value.location, geometry: geometry)
             
-            let originalBounds = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
-            )
+            // FIXED: For squares, use square bounds not rectangular drag bounds
+            let originalBounds: CGRect
+            if document.currentTool == .square {
+                // For squares, calculate proper square bounds to match the actual path
+                let dragDeltaX = currentLocation.x - startPoint.x
+                let dragDeltaY = currentLocation.y - startPoint.y
+                let size = max(abs(dragDeltaX), abs(dragDeltaY))
+                
+                originalBounds = CGRect(
+                    x: startPoint.x,
+                    y: startPoint.y,
+                    width: dragDeltaX >= 0 ? size : -size,
+                    height: dragDeltaY >= 0 ? size : -size
+                )
+                print("🔍 SQUARE CREATION: Square originalBounds: \(originalBounds)")
+            } else {
+                // For rectangles and other shapes, use rectangular drag bounds
+                originalBounds = CGRect(
+                    x: min(startPoint.x, currentLocation.x),
+                    y: min(startPoint.y, currentLocation.y),
+                    width: abs(currentLocation.x - startPoint.x),
+                    height: abs(currentLocation.y - startPoint.y)
+                )
+            }
             
-            // Initial radius in POINTS (like Adobe Illustrator) - start with 20pt
-            let initialRadius: Double = 20.0
-            let cornerRadii = [initialRadius, initialRadius, initialRadius, initialRadius] // All corners equal initially
+            // Set initial corner radius based on shape type
+            let initialRadius: Double
+            let cornerRadii: [Double]
+            
+            switch document.currentTool {
+            case .rectangle, .square:
+                // Regular rectangles start with 0 radius (sharp corners)
+                initialRadius = 0.0
+                cornerRadii = [0.0, 0.0, 0.0, 0.0]
+            case .roundedRectangle:
+                // Rounded rectangles start with 20pt radius
+                initialRadius = 20.0
+                cornerRadii = [initialRadius, initialRadius, initialRadius, initialRadius]
+            case .pill:
+                // Pills start with maximum radius (half of smallest dimension)
+                let maxRadius = min(originalBounds.width, originalBounds.height) / 2
+                initialRadius = maxRadius
+                cornerRadii = [initialRadius, initialRadius, initialRadius, initialRadius]
+            default:
+                initialRadius = 0.0
+                cornerRadii = [0.0, 0.0, 0.0, 0.0]
+            }
             
             let shape = VectorShape(
                 name: document.currentTool.rawValue,
                 path: path,
                 strokeStyle: strokeStyle,
                 fillStyle: fillStyle,
-                isRoundedRectangle: true,
+                isRoundedRectangle: true, // Enable corner radius support for ALL rectangles
                 originalBounds: originalBounds,
                 cornerRadii: cornerRadii
             )
             
             document.addShape(shape)
-            print("✅ Created LIVE rounded rectangle: bounds=\(originalBounds), radii=\(cornerRadii)pt")
+            print("✅ Created shape with corner radius support: \(document.currentTool.rawValue), bounds=\(originalBounds), radii=\(cornerRadii)pt")
         } else {
-            // Standard shape creation
+            // Standard shape creation for non-rectangle shapes
             let shape = VectorShape(
                 name: document.currentTool.rawValue,
                 path: path,
@@ -389,6 +428,7 @@ extension DrawingCanvas {
             )
             
             document.addShape(shape)
+            print("✅ Created standard shape: \(document.currentTool.rawValue)")
         }
         print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
         

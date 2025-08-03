@@ -55,9 +55,15 @@ extension DrawingCanvas {
                 }
             }
             
-            // Check if the clicked shape is a rounded rectangle
-            if let shape = clickedShape, shape.isRoundedRectangle {
-                print("🎯 CONTROL+CLICK: Entering corner radius edit mode for rounded rectangle")
+            // Check if the clicked shape is a rectangle-based shape that can have corner radius
+            if let shape = clickedShape, isRectangleBasedShape(shape) {
+                print("🎯 CONTROL+CLICK: Entering corner radius edit mode for rectangle-based shape: \(shape.name)")
+                
+                // Enable corner radius support if not already enabled
+                if !shape.isRoundedRectangle {
+                    // This will be handled by the toolbar when it updates the shape
+                    print("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins")
+                }
                 
                 // Select the shape and enter corner radius mode
                 document.selectedShapeIDs = [shape.id]
@@ -70,7 +76,7 @@ extension DrawingCanvas {
                 
                 return
             } else if clickedShape != nil {
-                print("🎯 CONTROL+CLICK: Clicked shape is not a rounded rectangle")
+                print("🎯 CONTROL+CLICK: Clicked shape (\(clickedShape?.name ?? "unknown")) is not a rectangle-based shape")
             } else {
                 print("🎯 CONTROL+CLICK: No shape found at click location")
             }
@@ -332,5 +338,12 @@ extension DrawingCanvas {
                 document.objectWillChange.send()
             }
         }
+    }
+    
+    /// Check if a shape is a rectangle-based shape that can have corner radius
+    private func isRectangleBasedShape(_ shape: VectorShape) -> Bool {
+        let shapeName = shape.name.lowercased()
+        return shapeName == "rectangle" || shapeName == "square" ||
+               shapeName == "rounded rectangle" || shapeName == "pill"
     }
 } 
