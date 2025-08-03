@@ -869,8 +869,10 @@ struct GradientFillSection: View {
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
-            // Force refresh when document changes (including gradient updates)
-            updateSelectedGradient()
+            print("🚨 STROKE FILL: document.objectWillChange triggered!")
+            print("🚨 STROKE FILL: This might be causing unwanted gradient updates!")
+            // DISABLED: This was causing unwanted gradient modifications when switching panels
+            // updateSelectedGradient()
         }
         .onChange(of: editingGradientStopId) { _, newStopId in
             if let stopId = newStopId {
@@ -965,7 +967,11 @@ struct GradientFillSection: View {
     // MARK: - Selection and Angle Management
     
     private func updateSelectedGradient() {
+        print("🚨 STROKE FILL: updateSelectedGradient called!")
+        print("🚨 STROKE FILL: This function might be modifying gradients!")
+        
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+            print("🚨 STROKE FILL: Found selected gradient: \\(selectedGradient)")
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(_):
@@ -974,6 +980,9 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             gradientId = UUID() // Generate new ID for loaded gradient
+            print("🚨 STROKE FILL: Updated currentGradient and gradientId")
+        } else {
+            print("🚨 STROKE FILL: No selected gradient found")
         }
     }
     
@@ -1273,7 +1282,11 @@ struct GradientFillSection: View {
     }
     
     func updateStopColor(stopId: UUID, color: VectorColor) {
+        print("🚨 STROKE FILL: updateStopColor called - stopId: \(stopId), color: \(color)")
+        print("🚨 STROKE FILL: Gradient editing state: \(appState.gradientEditingState != nil)")
+        
         guard let gradient = currentGradient else { 
+            print("🚨 STROKE FILL: No current gradient!")
             return 
         }
         
@@ -1285,14 +1298,18 @@ struct GradientFillSection: View {
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
+                let oldColor = linear.stops[index].color
                 linear.stops[index].color = color
+                print("🚨 STROKE FILL: LINEAR GRADIENT STOP UPDATED: Stop \(index), \(oldColor) → \(color)")
                 currentGradient = .linear(linear)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
+                let oldColor = radial.stops[index].color
                 radial.stops[index].color = color
+                print("🚨 STROKE FILL: RADIAL GRADIENT STOP UPDATED: Stop \(index), \(oldColor) → \(color)")
                 currentGradient = .radial(radial)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()

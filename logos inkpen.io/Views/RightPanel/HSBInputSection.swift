@@ -25,6 +25,9 @@ struct HSBInputSection: View {
     @State private var saturationSlider: Double = 100 // 0-100%
     @State private var brightnessSlider: Double = 100 // 0-100%
     
+    // Flag to prevent automatic gradient updates during programmatic changes
+    @State private var isProgrammaticallyUpdating: Bool = false
+    
     // State for PMS entry
     @State private var pmsEntryText: String = ""
     
@@ -178,7 +181,7 @@ struct HSBInputSection: View {
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Add live gradient updates
+                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                                 // NO updateSharedColor() - HSB sliders are isolated
@@ -237,7 +240,7 @@ struct HSBInputSection: View {
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Add live gradient updates
+                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -257,7 +260,7 @@ struct HSBInputSection: View {
                                 if let intValue = Double(saturationValue) {
                                     saturationSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor() // Add live gradient updates
+                                    updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -295,7 +298,7 @@ struct HSBInputSection: View {
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Add live gradient updates
+                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -315,7 +318,7 @@ struct HSBInputSection: View {
                                 if let intValue = Double(brightnessValue) {
                                     brightnessSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor() // Add live gradient updates
+                                    updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -487,24 +490,28 @@ struct HSBInputSection: View {
         sharedColor = .hsb(currentColor)
         let vectorColor = VectorColor.hsb(currentColor)
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            print("🎨 HSB INPUT: Live gradient update: \(vectorColor)")
-            return
-        }
+        // FIXED: Don't automatically update gradient stops during live changes
+        // Only update gradients when user explicitly applies/selects colors
+        // (This prevents unwanted gradient modifications when browsing color panel)
         
-        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        // Check if selected object has a gradient fill - update first stop color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
+            print("🚨 HSB INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
+            print("🚨 HSB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
+            
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
                 var updatedStops = gradient.stops
+                let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
+                
+                print("🚨 HSB INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
+                print("🚨 HSB INPUT: Old color: \(oldColor) → New color: \(vectorColor)")
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -519,7 +526,7 @@ struct HSBInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🎨 HSB INPUT: Updated gradient first stop color: \(vectorColor)")
+                print("🚨 HSB INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! \(vectorColor)")
             }
             return
         }

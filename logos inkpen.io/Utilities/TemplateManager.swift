@@ -18,31 +18,11 @@ class TemplateManager {
     private let initializationQueue = DispatchQueue(label: "com.logos.templateManager", qos: .userInitiated)
     
     private init() {
-        // Start async initialization immediately
-        Task {
-            await initializeTemplates()
-        }
-    }
-    
-    // MARK: - Async Initialization
-    
-    private func initializeTemplates() async {
-        await MainActor.run {
-            print("📄 Starting async template initialization...")
-        }
-        
-        // Move heavy template loading to background queue
-        await withCheckedContinuation { continuation in
-            initializationQueue.async {
-                self.loadAvailableTemplates()
-                
-                DispatchQueue.main.async {
-                    self.isInitialized = true
-                    print("✅ Template initialization completed")
-                    continuation.resume()
-                }
-            }
-        }
+        // Initialize templates synchronously - they're fast to load
+        print("📄 Starting template initialization...")
+        loadAvailableTemplates()
+        isInitialized = true
+        print("✅ Template initialization completed")
     }
     
     // MARK: - Template Types

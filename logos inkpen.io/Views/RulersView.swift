@@ -291,7 +291,7 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     case .inches:
         // Adaptive tick spacing for inches based on zoom level
         // Show all tick marks above 50%, then progressively drop ticks at lower zoom levels
-        let scaledSpacing = (pointsPerUnit / 8) * zoomLevel // 1/8 inch intervals (9 points)
+        let _ = (pointsPerUnit / 8) * zoomLevel // 1/8 inch intervals (9 points)
         
         if zoomLevel >= 0.5 {
             // Above 50% zoom: Show all tick marks (1/8 inch intervals)

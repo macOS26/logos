@@ -25,6 +25,9 @@ struct CMYKInputSection: View {
     @State private var yellowSlider: Double = 0
     @State private var blackSlider: Double = 0
     
+    // Flag to prevent automatic gradient updates during programmatic changes
+    @State private var isProgrammaticallyUpdating: Bool = false
+    
     // Computed color from CMYK values
     private var currentColor: CMYKColor {
         let c = (Double(cyanValue) ?? 0) / 100.0
@@ -160,6 +163,7 @@ struct CMYKInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: cyanValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(cyanValue) {
                                 cyanSlider = min(100, max(0, intValue))
                                 updateSharedColor()
@@ -208,6 +212,7 @@ struct CMYKInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: magentaValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(magentaValue) {
                                 magentaSlider = min(100, max(0, intValue))
                                 updateSharedColor()
@@ -256,6 +261,7 @@ struct CMYKInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: yellowValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(yellowValue) {
                                 yellowSlider = min(100, max(0, intValue))
                                 updateSharedColor()
@@ -304,6 +310,7 @@ struct CMYKInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: blackValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(blackValue) {
                                 blackSlider = min(100, max(0, intValue))
                                 updateSharedColor()
@@ -357,24 +364,29 @@ struct CMYKInputSection: View {
         sharedColor = .cmyk(currentColor)
         let vectorColor = VectorColor.cmyk(currentColor)
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            print("🎨 CMYK INPUT: Live gradient update: \(vectorColor)")
-            return
-        }
+        // FIXED: Don't automatically update gradient stops during live changes
+        // Only update gradients when user explicitly applies/selects colors
+        // (This prevents unwanted gradient modifications when browsing color panel)
         
-        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        // Check if selected object has a gradient fill - update first stop color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
+            print("🚨 CMYK INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
+            print("🚨 CMYK INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
+            print("🚨 CMYK INPUT: Gradient editing state = \(appState.gradientEditingState != nil)")
+            
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
                 var updatedStops = gradient.stops
+                let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
+                
+                print("🚨 CMYK INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
+                print("🚨 CMYK INPUT: Old color: \(oldColor) → New color: \(vectorColor)")
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -389,7 +401,7 @@ struct CMYKInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🎨 CMYK INPUT: Updated gradient first stop color: \(vectorColor)")
+                print("🚨 CMYK INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! \(vectorColor)")
             }
             return
         }

@@ -20,6 +20,10 @@ struct ColorPanel: View {
         self.document = document
         self.onColorSelected = onColorSelected
         self.showGradientEditing = showGradientEditing
+        
+        print("🎨 COLOR PANEL INIT: document.defaultFillColor = \(document.defaultFillColor)")
+        print("🎨 COLOR PANEL INIT: showGradientEditing = \(showGradientEditing)")
+        
         self._currentPreviewColor = State(initialValue: document.defaultFillColor)
     }
     

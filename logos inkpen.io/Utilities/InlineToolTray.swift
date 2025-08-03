@@ -261,7 +261,7 @@ struct ToolDockButton: View {
     }
     
     private var toolIconName: String {
-        if tool == .star, let variantIndex = variantIndex {
+        if tool == .star, let _ = variantIndex {
             return "star.fill"
         }
         return tool.iconName

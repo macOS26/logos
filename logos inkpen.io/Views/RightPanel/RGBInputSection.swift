@@ -28,6 +28,9 @@ struct RGBInputSection: View {
     @State private var greenSlider: Double = 78
     @State private var blueSlider: Double = 68
     
+    // Flag to prevent automatic gradient updates during programmatic changes
+    @State private var isProgrammaticallyUpdating: Bool = false
+    
     // Computed color from RGB values
     private var currentColor: RGBColor {
         let r = Double(redValue) ?? 0
@@ -118,6 +121,11 @@ struct RGBInputSection: View {
                         Slider(value: $redSlider, in: 0...255)
                             .tint(Color.clear)
                             .onChange(of: redSlider) {
+                                guard !isProgrammaticallyUpdating else { 
+                                    print("🎨 RGB INPUT: redSlider onChange BLOCKED (programmatic)")
+                                    return 
+                                }
+                                print("🎨 RGB INPUT: redSlider onChange triggered: \(redSlider)")
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
                                 updateSharedColor()
@@ -135,6 +143,11 @@ struct RGBInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: redValue) {
+                            guard !isProgrammaticallyUpdating else { 
+                                print("🎨 RGB INPUT: redValue onChange BLOCKED (programmatic)")
+                                return 
+                            }
+                            print("🎨 RGB INPUT: redValue onChange triggered: \(redValue)")
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
@@ -170,6 +183,7 @@ struct RGBInputSection: View {
                         Slider(value: $greenSlider, in: 0...255)
                             .tint(Color.clear)
                             .onChange(of: greenSlider) {
+                                guard !isProgrammaticallyUpdating else { return }
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
                                 updateSharedColor()
@@ -187,6 +201,7 @@ struct RGBInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: greenValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
@@ -220,6 +235,7 @@ struct RGBInputSection: View {
                         Slider(value: $blueSlider, in: 0...255)
                             .tint(Color.clear)
                             .onChange(of: blueSlider) {
+                                guard !isProgrammaticallyUpdating else { return }
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
                                 updateSharedColor()
@@ -237,6 +253,7 @@ struct RGBInputSection: View {
                         .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: blueValue) {
+                            guard !isProgrammaticallyUpdating else { return }
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
@@ -333,27 +350,40 @@ struct RGBInputSection: View {
     }
     
     private func updateSharedColor() {
-        sharedColor = .rgb(currentColor)
         let vectorColor = VectorColor.rgb(currentColor)
+        print("🎨 RGB INPUT: updateSharedColor called with: \(vectorColor)")
+        print("🎨 RGB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
+        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            gradientCallback(vectorColor)
-            // print("🎨 RGB INPUT: Live gradient update: \(vectorColor)")
-            return
-        }
+        sharedColor = .rgb(currentColor)
         
-        // Priority 2: Check if selected object has a gradient fill - update first stop color
+        // FIXED: Don't automatically update gradient stops during live changes
+        // Only update gradients when user explicitly applies/selects colors
+        // (This prevents unwanted gradient modifications when browsing color panel)
+        
+        // Check if selected object has a gradient fill - update first stop color
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
+            print("🚨 RGB INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
+            print("🚨 RGB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
+            print("🚨 RGB INPUT: Gradient editing state = \(appState.gradientEditingState != nil)")
+            print("🚨 RGB INPUT: Current gradient has \(gradient.stops.count) stops")
+            
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
                 var updatedStops = gradient.stops
+                let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
+                
+                print("🚨 RGB INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
+                print("🚨 RGB INPUT: Stop index: \(firstStopIndex)")
+                print("🚨 RGB INPUT: Old color: \(oldColor)")
+                print("🚨 RGB INPUT: New color: \(vectorColor)")
+                print("🚨 RGB INPUT: Call stack: \(Thread.callStackSymbols.prefix(5))")
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -368,7 +398,8 @@ struct RGBInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                // print("🎨 RGB INPUT: Updated gradient first stop color: \(vectorColor)")
+                print("🚨 RGB INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! Color: \(vectorColor)")
+                print("🚨 RGB INPUT: This should NOT happen during Color Panel browsing!")
             }
             return
         }
@@ -431,6 +462,9 @@ struct RGBInputSection: View {
     }
     
     private func loadFromSharedColor() {
+        print("🎨 RGB INPUT: loadFromSharedColor called with: \(sharedColor)")
+        print("🎨 RGB INPUT: Current gradient editing state: \(appState.gradientEditingState != nil)")
+        
         switch sharedColor {
         case .rgb(let rgb):
             setRGBValues(
@@ -508,6 +542,10 @@ struct RGBInputSection: View {
     }
     
     private func setRGBValues(red: Int, green: Int, blue: Int) {
+        print("🎨 RGB INPUT: setRGBValues called with R=\(red), G=\(green), B=\(blue)")
+        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        
+        isProgrammaticallyUpdating = true
         redValue = String(red)
         greenValue = String(green)
         blueValue = String(blue)
@@ -515,6 +553,9 @@ struct RGBInputSection: View {
         greenSlider = Double(green)
         blueSlider = Double(blue)
         updateHexFromRGB()
+        isProgrammaticallyUpdating = false
+        
+        print("🎨 RGB INPUT: setRGBValues completed")
     }
     
     private func applyColorToActiveSelection() {

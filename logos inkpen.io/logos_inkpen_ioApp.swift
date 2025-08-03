@@ -166,8 +166,9 @@ class DocumentState: ObservableObject {
         
         // Monitor document changes that affect menu states
         document.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.updateAllStates()
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.updateAllStates()
             }
         }
         .store(in: &cancellables)
@@ -1042,152 +1043,7 @@ struct DocumentBasedMainView: View {
     }
 }
 
-// MARK: - Stall Detection and Recovery
-class StallDetector {
-    static let shared = StallDetector()
-    
-    private var lastActivityTime = Date()
-    private var isMonitoring = false
-    
-    private init() {}
-    
-    func startMonitoring() {
-        isMonitoring = true
-        lastActivityTime = Date()
-        
-        // Start monitoring in background
-        Task.detached(priority: .background) {
-            await self.monitorForStalls()
-        }
-        
-        // Auto-stop monitoring after 10 seconds
-        Task.detached(priority: .background) {
-            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
-            self.stopMonitoring()
-            print("📄 StallDetector: Auto-stopped monitoring after 10 seconds")
-        }
-    }
-    
-    private func monitorForStalls() async {
-        while isMonitoring {
-            let currentTime = Date()
-            let timeSinceLastActivity = currentTime.timeIntervalSince(lastActivityTime)
-            
-            // If no activity for more than 5 seconds, consider it stalled
-            if timeSinceLastActivity > 5.0 {
-                print("📄 StallDetector: Detected potential stall - attempting recovery")
-                
-                // Post notification
-                await MainActor.run {
-                    NotificationCenter.default.post(name: .stallDetectorStallDetected, object: nil)
-                }
-                
-                await attemptStallRecovery()
-            }
-            
-            // Wait before next check
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        }
-    }
-    
-    private func attemptStallRecovery() async {
-        // Force any pending operations to complete on main actor
-        await MainActor.run {
-            NSApplication.shared.windows.forEach { window in
-                window.contentView?.needsDisplay = true
-                window.display()
-            }
-            
-            // Force the main window to be responsive
-            if let mainWindow = NSApplication.shared.mainWindow {
-                mainWindow.makeKeyAndOrderFront(nil)
-            }
-            
-            // Update activity time
-            lastActivityTime = Date()
-            
-            print("📄 StallDetector: Stall recovery completed")
-        }
-        
-        // Post recovery completed notification
-        await MainActor.run {
-            NotificationCenter.default.post(name: .stallDetectorRecoveryCompleted, object: nil)
-        }
-    }
-    
-    func updateActivity() {
-        lastActivityTime = Date()
-    }
-    
-    func stopMonitoring() {
-        isMonitoring = false
-    }
-}
 
-// MARK: - StallDetector Observer Manager
-class StallDetectorObserverManager {
-    static let shared = StallDetectorObserverManager()
-    
-    private var stallObserver: NSObjectProtocol?
-    private var recoveryObserver: NSObjectProtocol?
-    private var removalTask: Task<Void, Never>?
-    
-    private init() {}
-    
-    func startObserving() {
-        // Remove any existing observers first
-        stopObserving()
-        
-        // Set up observers for stall detection notifications
-        stallObserver = NotificationCenter.default.addObserver(
-            forName: .stallDetectorStallDetected,
-            object: nil,
-            queue: .main
-        ) { _ in
-            print("🔍 Observer: Received stall detection notification")
-        }
-        
-        recoveryObserver = NotificationCenter.default.addObserver(
-            forName: .stallDetectorRecoveryCompleted,
-            object: nil,
-            queue: .main
-        ) { _ in
-            print("🔍 Observer: Received recovery completion notification")
-        }
-        
-        print("🔍 Observer: Started observing StallDetector notifications")
-        
-        // Auto-remove observer after 10 seconds
-        removalTask = Task {
-            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
-            await MainActor.run {
-                self.stopObserving()
-                print("🔍 Observer: Auto-removed StallDetector observers after 10 seconds")
-            }
-        }
-    }
-    
-    func stopObserving() {
-        if let stallObserver = stallObserver {
-            NotificationCenter.default.removeObserver(stallObserver)
-            self.stallObserver = nil
-        }
-        
-        if let recoveryObserver = recoveryObserver {
-            NotificationCenter.default.removeObserver(recoveryObserver)
-            self.recoveryObserver = nil
-        }
-        
-        removalTask?.cancel()
-        removalTask = nil
-        
-        print("🔍 Observer: Stopped observing StallDetector notifications")
-    }
-    
-    deinit {
-        stopObserving()
-    }
-}
 
 // MARK: - System Call Interceptor
 class SystemCallInterceptor {
@@ -1254,12 +1110,6 @@ class StartupCoordinator {
     func performStartupTasks() async {
         print("📄 StartupCoordinator: Beginning startup sequence")
         
-        // Start stall detection
-        StallDetector.shared.startMonitoring()
-        
-        // Start observing stall detector notifications (will auto-remove after 10 seconds)
-        StallDetectorObserverManager.shared.startObserving()
-        
         // Set up system call monitoring
         SystemCallInterceptor.shared.setupSystemCallMonitoring()
         
@@ -1274,19 +1124,16 @@ class StartupCoordinator {
             // Task 1: Configure window tabbing
             group.addTask {
                 await self.configureWindowTabbing()
-                StallDetector.shared.updateActivity()
             }
             
             // Task 2: Check file system access
             group.addTask {
                 await self.checkFileSystemAccessAsync()
-                StallDetector.shared.updateActivity()
             }
             
             // Task 3: Initialize document controller
             group.addTask {
                 await self.initializeDocumentController()
-                StallDetector.shared.updateActivity()
             }
         }
         
@@ -1531,20 +1378,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.windows.forEach { window in
                 window.tabbingMode = .preferred
             }
-            
-            // Restore window state if needed
-            restoreWindowState()
-        }
-    }
-    
-    private func restoreWindowState() {
-        // Check if we have saved window state
-        if let savedFrame = UserDefaults.standard.string(forKey: "MainWindowFrame") {
-            let frame = NSRectFromString(savedFrame)
-            if let window = NSApplication.shared.windows.first {
-                window.setFrame(frame, display: true)
-                print("📄 App: Restored window frame: \(frame)")
-            }
         }
     }
     
@@ -1595,22 +1428,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         print("📄 App: Starting termination cleanup...")
         
-        // CRITICAL: Stop all background monitoring first
-        StallDetector.shared.stopMonitoring()
-        StallDetectorObserverManager.shared.stopObserving()
-        
         // CRITICAL: Clean up all state objects to prevent retain cycles during shutdown
         cleanupAllStateObjects()
         
         // CRITICAL: Force cleanup of all DocumentState instances
         cleanupAllDocumentStates()
-        
-        // Save window frame
-        if let window = NSApplication.shared.windows.first {
-            let frame = window.frame
-            UserDefaults.standard.set(NSStringFromRect(frame), forKey: "MainWindowFrame")
-            print("📄 App: Saved window frame: \(frame)")
-        }
         
         // Force synchronize UserDefaults before shutdown
         UserDefaults.standard.synchronize()
@@ -1619,10 +1441,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     private func cleanupAllStateObjects() {
-        // Stop monitoring systems
-        StallDetector.shared.stopMonitoring()
-        StallDetectorObserverManager.shared.stopObserving()
-        
         // Clean up any remaining state objects
         // This helps prevent retain cycles during SwiftUI cleanup
         print("📄 App: Cleaning up state objects for shutdown")

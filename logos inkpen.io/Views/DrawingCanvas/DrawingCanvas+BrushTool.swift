@@ -680,7 +680,7 @@ extension DrawingCanvas {
         // Connect to the right edge at the end
         if let lastLeftPoint = leftEdgePath.elements.last {
             switch lastLeftPoint {
-            case .move(let point), .line(let point), .curve(let point, _, _), .quadCurve(let point, _):
+            case .move(_), .line(_), .curve(_, _, _), .quadCurve(_, _):
                 // Connect to start of right edge path
                 if let firstRightElement = rightEdgePath.elements.first {
                     switch firstRightElement {
