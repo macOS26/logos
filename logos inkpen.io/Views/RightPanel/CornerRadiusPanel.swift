@@ -25,6 +25,10 @@ struct CornerRadiusPanel: View {
         .onChange(of: document.selectedShapeIDs) { _, _ in
             updateCornerValues()
         }
+        .onReceive(document.objectWillChange) { _ in
+            // Update corner values when document changes (including during dragging)
+            updateCornerValues()
+        }
     }
     
     private var header: some View {
