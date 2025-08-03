@@ -40,10 +40,8 @@ class TabBarManager {
             window.tabbingIdentifier = "InkPenDocument"
             
             // Show tab bar if hidden (no flickering)
-            if #available(macOS 10.12, *) {
-                if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
-                    window.toggleTabBar(nil)
-                }
+            if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
+                window.toggleTabBar(nil)
             }
         }
     }
@@ -58,11 +56,9 @@ class TabBarManager {
     private func gentlyEnforceTabBars() {
         NSApplication.shared.windows.forEach { window in
             if window.tabbingIdentifier == "InkPenDocument" {
-                if #available(macOS 10.12, *) {
-                    if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
-                        window.toggleTabBar(nil)
-                        print("📄 TabBarManager: Gently restored hidden tab bar")
-                    }
+                if let tabGroup = window.tabGroup, !tabGroup.isTabBarVisible {
+                    window.toggleTabBar(nil)
+                    print("📄 TabBarManager: Gently restored hidden tab bar")
                 }
             }
         }
