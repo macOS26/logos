@@ -738,22 +738,7 @@ struct VerticalToolbar: View {
     }
     
     private func getAllToolGroups() -> [[DrawingTool]] {
-        return [
-            [.selection, .directSelection],
-            [.scale, .rotate, .shear, .warp],
-            [.bezierPen, .convertAnchorPoint, .line],
-            [.brush, .marker, .freehand],
-            [.font],
-            [.rectangle, .square, .roundedRectangle, .pill], // Rectangle group
-            [.ellipse, .oval, .circle, .egg], // Circle group  
-            [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone], // Triangle group
-            [.polygon], // Multi-sided polygon group
-            [.star], // Star variants (handled separately)
-            [.eyedropper],
-            [.hand],
-            [.zoom],
-            [.gradient]
-        ]
+        return ToolGroupConfiguration.getAllToolGroupsAsArrays()
     }
     
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
@@ -951,6 +936,14 @@ struct VerticalToolbar: View {
             return "Star Tool - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
         case .polygon:
             return "Polygon Tool - Draw polygon shapes"
+        case .pentagon:
+            return "Pentagon Tool - Draw 5-sided polygons"
+        case .hexagon:
+            return "Hexagon Tool - Draw 6-sided polygons"
+        case .heptagon:
+            return "Heptagon Tool - Draw 7-sided polygons"
+        case .octagon:
+            return "Octagon Tool - Draw 8-sided polygons"
         case .eyedropper:
             return "Eyedropper Tool (I) - Sample colors"
         case .hand:

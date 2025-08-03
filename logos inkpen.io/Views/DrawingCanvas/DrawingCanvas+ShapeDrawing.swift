@@ -345,6 +345,34 @@ extension DrawingCanvas {
             )
             let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
             currentPath = createPolygonPath(center: center, radius: radius, sides: 6) // Default hexagon
+        case .pentagon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            currentPath = createPolygonPath(center: center, radius: radius, sides: 5)
+        case .hexagon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            currentPath = createPolygonPath(center: center, radius: radius, sides: 6)
+        case .heptagon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            currentPath = createPolygonPath(center: center, radius: radius, sides: 7)
+        case .octagon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = sqrt(pow(currentLocation.x - startPoint.x, 2) + pow(currentLocation.y - startPoint.y, 2)) / 2
+            currentPath = createPolygonPath(center: center, radius: radius, sides: 8)
         default:
             break
         }

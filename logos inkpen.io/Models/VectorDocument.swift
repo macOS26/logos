@@ -2914,6 +2914,10 @@ enum DrawingTool: String, CaseIterable, Codable {
     case acuteTriangle = "Acute Triangle"
     case star = "Star"
     case polygon = "Polygon"
+    case pentagon = "Pentagon"
+    case hexagon = "Hexagon"
+    case heptagon = "Heptagon"
+    case octagon = "Octagon"
     case eyedropper = "Eyedropper"
     case hand = "Hand"
     case zoom = "Zoom"
@@ -2949,6 +2953,10 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .acuteTriangle: return "triangle.lefthalf.filled"
         case .star: return "star"
         case .polygon: return "hexagon"
+        case .pentagon: return "pentagon"
+        case .hexagon: return "hexagon"
+        case .heptagon: return "heptagon"
+        case .octagon: return "octagon"
         case .eyedropper: return "eyedropper"
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
@@ -2986,6 +2994,10 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .acuteTriangle: return .crosshair
         case .star: return .crosshair
         case .polygon: return .crosshair
+        case .pentagon: return .crosshair
+        case .hexagon: return .crosshair
+        case .heptagon: return .crosshair
+        case .octagon: return .crosshair
         case .eyedropper: return .crosshair
         case .hand: return .openHand
         case .zoom: return .crosshair

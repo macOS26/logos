@@ -1,19 +1,10 @@
 import SwiftUI
 
 /*
- 🔧 FLEXIBLE TOOL GROUP CONFIGURATION
+ 🔧 INLINE TOOL TRAY
  
- To modify tool groups, edit the `toolGroupConfig` dictionary around line 99.
- 
- Example:
- - Keep basic shapes together: [.rectangle, .square, .circle, .ellipse, .egg]
- - Separate polygons: [.polygon]
- - Group drawing tools: [.line, .bezierPen]
- - Group paint tools: [.brush, .marker, .freehand]
- - Group transformation tools: [.scale, .rotate, .shear, .warp]
- - Group triangle shapes: [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone]
- 
- Just add/remove tools from the arrays to change groupings!
+ This component provides the expandable tool tray that appears when long-pressing tool buttons.
+ It uses the centralized ToolGroupConfiguration for consistent tool grouping across the app.
 */
 
 // MARK: - Tool Group Manager
@@ -27,7 +18,7 @@ class ToolGroupManager: ObservableObject {
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
     
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
-        let toolGroup = getToolGroup(for: tool)
+        let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
         
         // Handle star variants separately
         if tool == .star && variantIndex != nil {
@@ -36,7 +27,7 @@ class ToolGroupManager: ObservableObject {
         }
         
         // For non-star tools
-        if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup && showingAllItems {
+        if let current = currentToolInGroup, ToolGroupConfiguration.getToolGroup(for: current) == toolGroup && showingAllItems {
             // Any tool in currently expanded group long-pressed - hide siblings
             showingAllItems = false
             expansionAnchorTool = nil
@@ -49,7 +40,7 @@ class ToolGroupManager: ObservableObject {
             expansionAnchorTool = tool // Track which tool triggered expansion
             expansionAnchorVariant = nil // Clear star variant anchor
             print("🔧 Showing siblings for \(tool.rawValue)")
-        } else if let current = currentToolInGroup, getToolGroup(for: current) == toolGroup {
+        } else if let current = currentToolInGroup, ToolGroupConfiguration.getToolGroup(for: current) == toolGroup {
             // Different tool in same group - hide others, show only this one
             currentToolInGroup = tool
             showingAllItems = false
@@ -108,41 +99,6 @@ class ToolGroupManager: ObservableObject {
     
     func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
         toolButtonFrames[tool] = frame
-    }
-    
-    // MARK: - FLEXIBLE TOOL GROUP CONFIGURATION
-    // 🔧 EASY TO MODIFY: Just edit this configuration to change tool groups
-    private static let toolGroupConfig: [String: [DrawingTool]] = [
-        "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
-        "circles": [.ellipse, .oval, .circle, .egg],
-        "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone],
-        "polygons": [.polygon],
-        "lines": [.line, .bezierPen],
-        "brushes": [.brush, .marker, .freehand],
-        "transforms": [.scale, .rotate, .shear, .warp],
-        "stars": [.star] // Star has variants handled separately
-    ]
-    
-    func getToolGroup(for tool: DrawingTool) -> [DrawingTool] {
-        // Find which group this tool belongs to
-        for (_, tools) in Self.toolGroupConfig {
-            if tools.contains(tool) {
-                return tools
-            }
-        }
-        
-        // If not in any group, return just the tool itself
-        return [tool]
-    }
-    
-    private func getToolGroupName(for tool: DrawingTool) -> String? {
-        // Find the group name for this tool (useful for debugging)
-        for (groupName, tools) in Self.toolGroupConfig {
-            if tools.contains(tool) {
-                return groupName
-            }
-        }
-        return nil
     }
 }
 
@@ -216,7 +172,7 @@ struct ExpandableToolDock: View {
                             selectStarVariant(StarVariant.allCases[variantIndex])
                         },
                         onLongPress: {
-                            // Long press to show all variants again
+                            // Long press to show all star variants
                             groupManager.longPressedTool(.star, variantIndex: variantIndex)
                         },
                         variantIndex: variantIndex
@@ -231,7 +187,7 @@ struct ExpandableToolDock: View {
                             selectTool(currentTool)
                         },
                         onLongPress: {
-                            // Long press to show all tools in group again
+                            // Long press to show all tools in the group
                             groupManager.longPressedTool(currentTool)
                         }
                     )
@@ -254,27 +210,17 @@ struct ExpandableToolDock: View {
     }
     
     private func getAllToolsInGroup(for tool: DrawingTool) -> [DrawingTool] {
-        if tool == .star {
-            // For star, we'll show all star variants
-            return Array(repeating: .star, count: StarVariant.allCases.count)
-        } else {
-            // Use the flexible configuration for all other tools
-            return groupManager.getToolGroup(for: tool)
-        }
+        return ToolGroupConfiguration.getToolGroup(for: tool)
     }
     
     private func selectTool(_ tool: DrawingTool) {
         document.currentTool = tool
-        // Reset cursor
-        NSCursor.arrow.set()
-        print("🔧 Selected tool: \(tool.rawValue)")
+        print("🛠️ Selected tool: \(tool.rawValue)")
     }
     
     private func selectStarVariant(_ variant: StarVariant) {
         groupManager.selectStarVariant(variant)
         document.currentTool = .star
-        // Reset cursor
-        NSCursor.arrow.set()
         print("⭐ Selected star variant: \(variant.rawValue)")
     }
 }
@@ -286,7 +232,7 @@ struct ToolDockButton: View {
     let isExpanded: Bool
     let onTap: () -> Void
     let onLongPress: () -> Void
-    let variantIndex: Int? // For star variants
+    let variantIndex: Int?
     
     init(tool: DrawingTool, isSelected: Bool, isExpanded: Bool, onTap: @escaping () -> Void, onLongPress: @escaping () -> Void, variantIndex: Int? = nil) {
         self.tool = tool
@@ -299,45 +245,26 @@ struct ToolDockButton: View {
     
     var body: some View {
         Button(action: onTap) {
-            Group {
-                if tool == .star, let index = variantIndex, index < StarVariant.allCases.count {
-                    // Show specific star variant
-                    let variant = StarVariant.allCases[index]
-                    variant.iconView(
-                        isSelected: isSelected,
-                        color: .white
-                    )
-                } else if tool == .star {
-                    // Fallback for star tool
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                } else {
-                    Image(systemName: tool.iconName)
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                }
-            }
-            .frame(width: 32, height: 32)
-            .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(isSelected ? Color.blue : Color.clear)
-            )
-            .contentShape(Rectangle())
+            Image(systemName: toolIconName)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(isSelected ? .white : .gray)
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isSelected ? Color.blue : Color.clear)
+                )
         }
         .buttonStyle(PlainButtonStyle())
-        .help(toolTooltip(for: tool))
-        .onLongPressGesture {
+        .onLongPressGesture(minimumDuration: 0.3) {
             onLongPress()
         }
     }
     
-    private func toolTooltip(for tool: DrawingTool) -> String {
-        if tool == .star, let index = variantIndex, index < StarVariant.allCases.count {
-            let variant = StarVariant.allCases[index]
-            return variant.rawValue
+    private var toolIconName: String {
+        if tool == .star, let variantIndex = variantIndex {
+            return "star.fill"
         }
-        return tool.rawValue.capitalized
+        return tool.iconName
     }
 }
 
@@ -442,4 +369,4 @@ struct StarToolHUDContainer: View {
                 .allowsHitTesting(true)
         }
     }
-}
+} 
