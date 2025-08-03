@@ -37,41 +37,29 @@ class DocumentIconGenerator {
     private func createDocumentIcon(context: CGContext, size: CGSize, document: VectorDocument) {
         let rect = CGRect(origin: .zero, size: size)
         
-        // Background - white paper with shadow
-        context.setFillColor(NSColor.white.cgColor)
-        context.fill(rect)
+        // FIXED: Remove white background and padding - use full rect for content
+        // Add a preview of the document content using full space
+        createDocumentPreview(context: context, rect: rect, document: document)
+     
         
-        // Add subtle shadow
-        context.setShadow(offset: CGSize(width: 2, height: -2), blur: 4, color: NSColor.black.withAlphaComponent(0.2).cgColor)
-        context.fill(rect.insetBy(dx: 4, dy: 4))
-        context.setShadow(offset: .zero, blur: 0, color: nil)
-        
-        // Document border
-        context.setStrokeColor(NSColor.systemGray.cgColor)
-        context.setLineWidth(1.0)
-        context.stroke(rect.insetBy(dx: 4, dy: 4))
-        
-        // Add a small preview of the document content
-        let previewRect = rect.insetBy(dx: 20, dy: 40)
-        createDocumentPreview(context: context, rect: previewRect, document: document)
-        
-        // Add "Ink Pen" text at the bottom
-        let text = "Ink Pen"
-        let font = NSFont.systemFont(ofSize: 14, weight: .medium)
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: NSColor.systemBlue
+        // FIXED: Add ghost "Ink Pen" text using Marker Felt font near the bottom
+        let brush = "🖋️" //🖊️ 🖌️
+        // Use Marker Felt font which is available on macOS
+        let emojiFont = NSFont(name: "Apple Color Emoji", size: 130) ?? NSFont.systemFont(ofSize: 130, weight: .regular)
+        let emojiAttributes: [NSAttributedString.Key: Any] = [
+            .font: emojiFont
         ]
         
-        let textSize = text.size(withAttributes: textAttributes)
-        let textRect = CGRect(
-            x: (size.width - textSize.width) / 2,
-            y: 10,
-            width: textSize.width,
-            height: textSize.height
+        let emojiSize = brush.size(withAttributes: emojiAttributes)
+        let emojiRect = CGRect(
+            x: size.width - 132,
+            y: -24, // Near the bottom
+            width: emojiSize.width,
+            height: emojiSize.height
         )
         
-        text.draw(in: textRect, withAttributes: textAttributes)
+        brush.draw(in: emojiRect, withAttributes: emojiAttributes)
+
     }
     
     private func createDocumentPreview(context: CGContext, rect: CGRect, document: VectorDocument) {
@@ -138,9 +126,10 @@ class DocumentIconGenerator {
         let x = rect.midX - scaledWidth / 2
         let y = rect.midY - scaledHeight / 2
         
-        // Apply transform to center and scale the SVG
-        context.translateBy(x: x, y: y)
-        context.scaleBy(x: scale, y: scale)
+        // FIXED: Apply transform to center and scale the SVG without Y-inversion
+        // The regular renderToVectorContext inverts Y, so we pre-compensate
+        context.translateBy(x: x, y: y + scaledHeight)
+        context.scaleBy(x: scale, y: -scale)
         
         // Render the SVG to the context
         svg.renderToVectorContext(context, targetSize: svgSize)
@@ -211,113 +200,13 @@ class DocumentIconGenerator {
     // MARK: - SVG Preview Generation
     
     func generateSVGPreview(for document: VectorDocument) -> String {
-        // Use the existing SVG export code from FileOperations but with custom modifications
+        // Use the existing SVG export code from FileOperations
         do {
-            let baseSVG = try FileOperations.generateSVGContent(from: document)
-            return modifySVGForPreview(baseSVG, document: document)
+            return try FileOperations.generateSVGContent(from: document)
         } catch {
             // Fallback to simple preview if SVG generation fails
             return generateSimpleSVGPreview(for: document)
         }
-    }
-    
-    private func modifySVGForPreview(_ baseSVG: String, document: VectorDocument) -> String {
-        // Parse the base SVG to modify it for preview
-        var modifiedSVG = baseSVG
-        
-        // Remove background/canvas elements
-        modifiedSVG = removeBackgroundElements(from: modifiedSVG)
-        
-        // Fix Y-axis inversion by applying a transform
-        modifiedSVG = fixYAxisInversion(in: modifiedSVG, document: document)
-        
-        // Remove padding by adjusting viewBox to content bounds
-        modifiedSVG = removePadding(from: modifiedSVG, document: document)
-        
-        // Add "Ink Pen" text
-        modifiedSVG = addInkPenText(to: modifiedSVG, document: document)
-        
-        return modifiedSVG
-    }
-    
-    private func removeBackgroundElements(from svg: String) -> String {
-        // Remove background rectangles and canvas elements
-        var modifiedSVG = svg
-        
-        // Remove background rect elements
-        let backgroundPatterns = [
-            #"<rect[^>]*fill="[^"]*white[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*#FFFFFF[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*#ffffff[^"]*"[^>]*/>"#,
-            #"<rect[^>]*fill="[^"]*rgb\(255,255,255\)[^"]*"[^>]*/>"#,
-            #"<rect[^>]*class="[^"]*background[^"]*"[^>]*/>"#,
-            #"<rect[^>]*id="[^"]*background[^"]*"[^>]*/>"#
-        ]
-        
-        for pattern in backgroundPatterns {
-            modifiedSVG = modifiedSVG.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
-        }
-        
-        return modifiedSVG
-    }
-    
-    private func fixYAxisInversion(in svg: String, document: VectorDocument) -> String {
-        // Apply Y-axis flip to fix mirror image issue
-        let documentSize = document.settings.sizeInPoints
-        let height = documentSize.height
-        
-        // Add a transform to flip the Y-axis
-        // Find the opening svg tag and add transform attribute
-        if let range = svg.range(of: #"<svg[^>]*>"#, options: .regularExpression) {
-            let svgTag = String(svg[range])
-            let transformAttribute = " transform=\"scale(1,-1) translate(0,-\(height))\""
-            
-            // Insert transform attribute before the closing >
-            if let closingBracketRange = svgTag.range(of: ">") {
-                let newSvgTag = svgTag.replacingCharacters(in: closingBracketRange, with: transformAttribute + ">")
-                return svg.replacingCharacters(in: range, with: newSvgTag)
-            }
-        }
-        
-        return svg
-    }
-    
-    private func removePadding(from svg: String, document: VectorDocument) -> String {
-        // Calculate content bounds and adjust viewBox to remove padding
-        let contentBounds = document.getDocumentBounds()
-        let minX = contentBounds.minX
-        let minY = contentBounds.minY
-        let width = contentBounds.width
-        let height = contentBounds.height
-        
-        // Update viewBox to match content bounds
-        if let range = svg.range(of: #"viewBox="[^"]*""#, options: .regularExpression) {
-            let newViewBox = "viewBox=\"\(minX) \(minY) \(width) \(height)\""
-            return svg.replacingCharacters(in: range, with: newViewBox)
-        }
-        
-        return svg
-    }
-    
-    private func addInkPenText(to svg: String, document: VectorDocument) -> String {
-        // Add "Ink Pen" text near the bottom using a marker font
-        let contentBounds = document.getDocumentBounds()
-        let textX = contentBounds.midX
-        let textY = contentBounds.maxY - 20 // 20 points from bottom
-        
-        let inkPenText = """
-        
-        <!-- Ink Pen Text -->
-        <text x="\(textX)" y="\(textY)" 
-              font-family="Marker Felt, Arial, sans-serif" 
-              font-size="16" 
-              fill="#666666" 
-              text-anchor="middle" 
-              opacity="0.7">Ink Pen</text>
-        """
-        
-        // Insert before closing </svg> tag
-        return svg.replacingOccurrences(of: "</svg>", with: "\(inkPenText)\n</svg>")
     }
     
     private func generateSimpleSVGPreview(for document: VectorDocument) -> String {
@@ -336,11 +225,17 @@ class DocumentIconGenerator {
         
         svgContent += """
         </defs>
-        <rect width="\(width)" height="\(height)" fill="\(document.settings.backgroundColor.svgColor)"/>
         """
         
-        // Render all visible layers and shapes
+        // Background rectangle removed to make SVG preview transparent
+        
+        // Render all visible layers and shapes (excluding Canvas and Pasteboard layers)
         for layer in document.layers where layer.isVisible {
+            // Skip Canvas and Pasteboard layers for SVG preview (they're UI-only layers)
+            if layer.name == "Canvas" || layer.name == "Pasteboard" {
+                continue
+            }
+            
             for shape in layer.shapes where shape.isVisible {
                 svgContent += generateShapeSVG(shape)
             }
@@ -485,8 +380,7 @@ class DocumentIconGenerator {
                 </style>
             </defs>
             
-            <!-- Background -->
-            <rect width="\(width)" height="\(height)" fill="\(document.settings.backgroundColor.svgColor)"/>
+            <!-- Background rectangle removed to make SVG preview transparent -->
             
             <!-- Empty document icon -->
             <g transform="translate(\(width/2 - 50), \(height/2 - 60))">
@@ -514,9 +408,9 @@ extension VectorColor {
         case .white:
             return "#FFFFFF"
         case .rgb(let rgbColor):
-            return String(format: "#%02X%02X%02X", 
-                         Int(rgbColor.red * 255), 
-                         Int(rgbColor.green * 255), 
+            return String(format: "#%02X%02X%02X",
+                         Int(rgbColor.red * 255),
+                         Int(rgbColor.green * 255),
                          Int(rgbColor.blue * 255))
         case .cmyk(let cmykColor):
             // Convert CMYK to RGB for SVG
@@ -529,19 +423,19 @@ extension VectorColor {
             let rgb = hsbToRgb(h: hsbColor.hue, s: hsbColor.saturation, b: hsbColor.brightness)
             return String(format: "#%02X%02X%02X", Int(rgb.r * 255), Int(rgb.g * 255), Int(rgb.b * 255))
         case .pantone(let pantoneColor):
-            return String(format: "#%02X%02X%02X", 
-                         Int(pantoneColor.rgbEquivalent.red * 255), 
-                         Int(pantoneColor.rgbEquivalent.green * 255), 
+            return String(format: "#%02X%02X%02X",
+                         Int(pantoneColor.rgbEquivalent.red * 255),
+                         Int(pantoneColor.rgbEquivalent.green * 255),
                          Int(pantoneColor.rgbEquivalent.blue * 255))
         case .spot(let spotColor):
-            return String(format: "#%02X%02X%02X", 
-                         Int(spotColor.rgbEquivalent.red * 255), 
-                         Int(spotColor.rgbEquivalent.green * 255), 
+            return String(format: "#%02X%02X%02X",
+                         Int(spotColor.rgbEquivalent.red * 255),
+                         Int(spotColor.rgbEquivalent.green * 255),
                          Int(spotColor.rgbEquivalent.blue * 255))
         case .appleSystem(let systemColor):
-            return String(format: "#%02X%02X%02X", 
-                         Int(systemColor.rgbEquivalent.red * 255), 
-                         Int(systemColor.rgbEquivalent.green * 255), 
+            return String(format: "#%02X%02X%02X",
+                         Int(systemColor.rgbEquivalent.red * 255),
+                         Int(systemColor.rgbEquivalent.green * 255),
                          Int(systemColor.rgbEquivalent.blue * 255))
         case .gradient(let gradient):
             // For gradients, return the first stop color as a fallback
@@ -579,4 +473,4 @@ extension VectorColor {
         
         return (r + m, g + m, b + m)
     }
-} 
+}

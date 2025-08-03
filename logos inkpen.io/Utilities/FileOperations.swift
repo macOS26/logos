@@ -5620,9 +5620,14 @@ class FileOperations {
         </defs>
         """
         
-        // Export each layer
+        // Export each layer (excluding Canvas and Pasteboard layers)
         for (layerIndex, layer) in document.layers.enumerated() {
             if !layer.isVisible { continue }
+            
+            // Skip Canvas and Pasteboard layers for SVG export (they're UI-only layers)
+            if layer.name == "Canvas" || layer.name == "Pasteboard" {
+                continue
+            }
             
             svg += "<g id=\"layer-\(layerIndex)\">\n"
             
