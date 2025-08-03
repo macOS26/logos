@@ -94,7 +94,7 @@ struct CornerRadiusPanel: View {
                         applyCornerRadius(index: index, value: newValue)
                     }
             } else {
-                Text(String(format: "%.1f", cornerValues[index]))
+                Text(String(format: "%.2f", cornerValues[index]))
                     .font(.system(.body, design: .monospaced))
                     .foregroundColor(.primary)
                     .frame(width: 60, alignment: .center)
