@@ -319,6 +319,21 @@ extension DrawingCanvas {
     /// Finish corner radius drag operation
     private func finishCornerRadiusDrag() {
         if isDraggingCorner {
+            // ROUND CORNER RADIUS: Round to nearest integer when user releases handle
+            if let selectedShape = getSelectedRectangleShape() {
+                let currentRadius = selectedShape.cornerRadii[safe: draggedCornerIndex] ?? 0.0
+                let roundedRadius = round(currentRadius)
+                
+                // Only update if the value actually changed (avoid unnecessary updates)
+                if abs(currentRadius - roundedRadius) > 0.01 {
+                    updateCornerRadiusToValue(
+                        shapeID: selectedShape.id,
+                        cornerIndex: draggedCornerIndex,
+                        newRadius: roundedRadius
+                    )
+                }
+            }
+            
             // Save to undo stack when drag ends
             document.saveToUndoStack()
             
