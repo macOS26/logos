@@ -125,21 +125,31 @@ class PersistentGradientHUDManager {
     var isVisible = false
     var isDragging = false
     
-    // 🔥 REMEMBERS LAST POSITION - Persistent across app sessions
+    // 🔥 FAST DRAGGABLE POSITION - No computed property interference
+    private var _windowPosition: CGPoint?
     var windowPosition: CGPoint {
         get {
-            let x = UserDefaults.standard.double(forKey: "GradientHUD_WindowX")
-            let y = UserDefaults.standard.double(forKey: "GradientHUD_WindowY")
-            
-            // If no saved position, use center of screen as default
-            if x == 0 && y == 0 {
-                return CGPoint(x: 683, y: 384) // Center of 1366x768 screen
+            // Lazy load from UserDefaults only once
+            if _windowPosition == nil {
+                let x = UserDefaults.standard.double(forKey: "GradientHUD_WindowX")
+                let y = UserDefaults.standard.double(forKey: "GradientHUD_WindowY")
+                
+                // If no saved position, use center of screen as default
+                if x == 0 && y == 0 {
+                    _windowPosition = CGPoint(x: 683, y: 384) // Center of 1366x768 screen
+                } else {
+                    _windowPosition = CGPoint(x: x, y: y)
+                }
             }
-            return CGPoint(x: x, y: y)
+            return _windowPosition!
         }
         set {
-            UserDefaults.standard.set(newValue.x, forKey: "GradientHUD_WindowX")
-            UserDefaults.standard.set(newValue.y, forKey: "GradientHUD_WindowY")
+            _windowPosition = newValue
+            // Save to UserDefaults asynchronously to avoid blocking dragging
+            DispatchQueue.global(qos: .utility).async {
+                UserDefaults.standard.set(newValue.x, forKey: "GradientHUD_WindowX")
+                UserDefaults.standard.set(newValue.y, forKey: "GradientHUD_WindowY")
+            }
         }
     }
     
@@ -186,8 +196,8 @@ class PersistentGradientHUDManager {
     
     func hide() {
         isVisible = false
-        // DON'T call onClose - it creates infinite loop
-        // onClose?()
+        // Call the close callback to turn off gradient editing state
+        onClose?()
     }
     
     func updateStopColor(_ stopId: UUID, _ color: VectorColor) {

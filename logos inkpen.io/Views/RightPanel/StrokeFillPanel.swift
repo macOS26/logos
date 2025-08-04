@@ -924,6 +924,8 @@ struct GradientFillSection: View {
     
     private func turnOffEditingState() {
         editingGradientStopId = nil
+        // 🔥 CRITICAL: Clear gradient editing state to return to normal fill/stroke mode
+        appState.gradientEditingState = nil
         // DON'T call hide() - it creates infinite loop. Just set visibility directly.
         appState.persistentGradientHUD.isVisible = false
     }
