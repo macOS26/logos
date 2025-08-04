@@ -378,7 +378,6 @@ struct RGBInputSection: View {
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
                 var updatedStops = gradient.stops
-                let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
                 
                 // Removed logging spam

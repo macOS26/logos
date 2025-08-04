@@ -123,8 +123,25 @@ class AppState {
 class PersistentGradientHUDManager {
     // 🔥 PERSISTENT STATE - Never recreated
     var isVisible = false
-    var windowPosition = CGPoint(x: 400, y: 300)
     var isDragging = false
+    
+    // 🔥 REMEMBERS LAST POSITION - Persistent across app sessions
+    var windowPosition: CGPoint {
+        get {
+            let x = UserDefaults.standard.double(forKey: "GradientHUD_WindowX")
+            let y = UserDefaults.standard.double(forKey: "GradientHUD_WindowY")
+            
+            // If no saved position, use center of screen as default
+            if x == 0 && y == 0 {
+                return CGPoint(x: 683, y: 384) // Center of 1366x768 screen
+            }
+            return CGPoint(x: x, y: y)
+        }
+        set {
+            UserDefaults.standard.set(newValue.x, forKey: "GradientHUD_WindowX")
+            UserDefaults.standard.set(newValue.y, forKey: "GradientHUD_WindowY")
+        }
+    }
     
     // 🔥 PROFESSIONAL MOUSE TRACKING (Based on hand tool implementation)
     var initialWindowPosition = CGPoint.zero  // Reference window position when drag started
@@ -142,14 +159,11 @@ class PersistentGradientHUDManager {
     private var stableColorDocument = VectorDocument()
     
     init() {
-        print("🔥 PERSISTENT HUD MANAGER: Created - This should happen ONCE")
         stableColorDocument.defaultFillColor = .black
     }
     
     func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?, 
               onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
-        print("🔥 PERSISTENT HUD: Showing with stop \(stopId), color \(color)")
-        
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
         self.editingStopColor = color
@@ -163,22 +177,20 @@ class PersistentGradientHUDManager {
         
         // 🔥 CRITICAL: Force the ColorPanel to refresh when switching gradient stops
         stableColorDocument.objectWillChange.send()
-        print("🔥 PERSISTENT HUD: Set color to \(color) and forced ColorPanel refresh")
         
-        // Show the HUD
+        // 🔥 windowPosition is now a computed property that remembers last position
+        // No manual positioning needed - it automatically centers on first use
+        
         isVisible = true
     }
     
     func hide() {
-        print("🔥 PERSISTENT HUD: Hiding")
         isVisible = false
         // DON'T call onClose - it creates infinite loop
         // onClose?()
     }
     
     func updateStopColor(_ stopId: UUID, _ color: VectorColor) {
-        print("🔥 PERSISTENT HUD: Updating stop \(stopId) to color \(color)")
-        
         // Update our tracking
         if stopId == editingStopId {
             editingStopColor = color
@@ -186,7 +198,6 @@ class PersistentGradientHUDManager {
             
             // 🔥 CRITICAL: Force the ColorPanel to refresh with the new color
             stableColorDocument.objectWillChange.send()
-            print("🔥 PERSISTENT HUD: Updated stableColorDocument and forced refresh")
         }
         
         // Call the callback to update the actual gradient

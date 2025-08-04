@@ -872,11 +872,8 @@ struct GradientFillSection: View {
             // updateSelectedGradient()
         }
         .onChange(of: editingGradientStopId) { oldStopId, newStopId in
-            print("🎨 STOP ID CHANGE: oldStopId = \(oldStopId), newStopId = \(newStopId)")
-            
             if let stopId = newStopId {
                 let actualColor = findGradientStopColor(stopId: stopId)
-                print("🎨 STOP ID CHANGE: Found actual color = \(actualColor) for stopId = \(stopId)")
                 
                 // 🔥 CRITICAL: Set gradient editing state for HUD only
                 if let gradient = currentGradient {
@@ -920,7 +917,6 @@ struct GradientFillSection: View {
 
         .onDisappear {
             // DON'T clean up gradient editing state to prevent SwiftUI crashes
-            print("🎨 GRADIENT SHEET: View disappearing, keeping state intact")
         }
     }
     
@@ -1250,34 +1246,19 @@ struct GradientFillSection: View {
     }
     
     func updateStopColor(stopId: UUID, color: VectorColor) {
-        print("🚨 STROKE FILL: updateStopColor called - stopId: \(stopId), color: \(color)")
-        print("🚨 STROKE FILL: Gradient editing state: \(appState.gradientEditingState != nil)")
-        
-        guard let gradient = currentGradient else { 
-            print("🚨 STROKE FILL: No current gradient!")
-            return 
-        }
-        
-        // Validate that we're updating the correct stop
-        if let editingId = editingGradientStopId, editingId != stopId {
-            // Warning: Attempting to update wrong stop
-        }
+        guard let gradient = currentGradient else { return }
         
         switch gradient {
         case .linear(var linear):
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
-                let oldColor = linear.stops[index].color
                 linear.stops[index].color = color
-                print("🚨 STROKE FILL: LINEAR GRADIENT STOP UPDATED: Stop \(index), \(oldColor) → \(color)")
                 currentGradient = .linear(linear)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
-                let oldColor = radial.stops[index].color
                 radial.stops[index].color = color
-                print("🚨 STROKE FILL: RADIAL GRADIENT STOP UPDATED: Stop \(index), \(oldColor) → \(color)")
                 currentGradient = .radial(radial)
                 // Apply live to selected shapes
                 applyGradientToSelectedShapes()
@@ -2353,13 +2334,8 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
-                                print("🎨 GRADIENT STOP CLICKED: stop.id = \(stop.id), stop.color = \(stop.color)")
-                                print("🎨 GRADIENT STOP: Previous editingGradientStopId = \(editingGradientStopId), color = \(editingGradientStopColor)")
-                                
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
-                                
-                                print("🎨 GRADIENT STOP: New editingGradientStopId = \(editingGradientStopId), color = \(editingGradientStopColor)")
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
@@ -2483,6 +2459,40 @@ struct StableGradientHUDContent: View, Equatable {
                lhs.hudManager.isVisible == rhs.hudManager.isVisible
     }
     
+    // Professional drag gesture for entire HUD
+    private var hudDragGesture: some Gesture {
+        DragGesture(minimumDistance: 1, coordinateSpace: .global)
+            .onChanged { value in
+                // 🔥 PROFESSIONAL MOUSE TRACKING (Copied from hand tool)
+                // CRITICAL FIX: Only initialize state once per drag operation
+                if hudManager.initialWindowPosition == CGPoint.zero && hudManager.hudDragStart == CGPoint.zero {
+                    // Capture initial state - reference location
+                    hudManager.initialWindowPosition = hudManager.windowPosition
+                    hudManager.hudDragStart = value.startLocation
+                    hudManager.isDragging = true
+                }
+                
+                // Calculate cursor movement from reference location (perfect 1:1 tracking)
+                let cursorDelta = CGPoint(
+                    x: value.location.x - hudManager.hudDragStart.x,
+                    y: value.location.y - hudManager.hudDragStart.y
+                )
+                
+                // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-window mapping
+                // The point under the cursor at drag start stays exactly under the cursor
+                hudManager.windowPosition = CGPoint(
+                    x: hudManager.initialWindowPosition.x + cursorDelta.x,
+                    y: hudManager.initialWindowPosition.y + cursorDelta.y
+                )
+            }
+            .onEnded { value in
+                hudManager.isDragging = false
+                // Reset state for next drag operation
+                hudManager.initialWindowPosition = CGPoint.zero
+                hudManager.hudDragStart = CGPoint.zero
+            }
+    }
+    
     var body: some View {
         VStack(spacing: 0) {
             // Toolbar with drag handle and close button
@@ -2497,43 +2507,6 @@ struct StableGradientHUDContent: View, Equatable {
                         .foregroundColor(.primary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
-                        .onChanged { value in
-                            // 🔥 PROFESSIONAL MOUSE TRACKING (Copied from hand tool)
-                            // CRITICAL FIX: Only initialize state once per drag operation
-                            if hudManager.initialWindowPosition == CGPoint.zero && hudManager.hudDragStart == CGPoint.zero {
-                                // Capture initial state - reference location
-                                hudManager.initialWindowPosition = hudManager.windowPosition
-                                hudManager.hudDragStart = value.startLocation
-                                hudManager.isDragging = true
-                                print("🔥 HUD DRAG: Established reference location at \(value.startLocation)")
-                            }
-                            
-                            // Calculate cursor movement from reference location (perfect 1:1 tracking)
-                            let cursorDelta = CGPoint(
-                                x: value.location.x - hudManager.hudDragStart.x,
-                                y: value.location.y - hudManager.hudDragStart.y
-                            )
-                            
-                            // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-window mapping
-                            // The point under the cursor at drag start stays exactly under the cursor
-                            hudManager.windowPosition = CGPoint(
-                                x: hudManager.initialWindowPosition.x + cursorDelta.x,
-                                y: hudManager.initialWindowPosition.y + cursorDelta.y
-                            )
-                            
-                            print("🔥 HUD DRAG: Moving to \(hudManager.windowPosition)")
-                        }
-                        .onEnded { value in
-                            print("🔥 HUD DRAG: Ended at \(value.location)")
-                            hudManager.isDragging = false
-                            // Reset state for next drag operation
-                            hudManager.initialWindowPosition = CGPoint.zero
-                            hudManager.hudDragStart = CGPoint.zero
-                        }
-                )
                 
                 Spacer()
                 
@@ -2564,11 +2537,34 @@ struct StableGradientHUDContent: View, Equatable {
             // 🔥 STABLE COLOR PANEL - Only recreated when editingStopId changes
             StableColorPanelWrapper(hudManager: hudManager)
                 .frame(maxWidth: 350, maxHeight: 500)
+            
+            // 🔥 CLOSE BUTTON in lower right corner + DRAGGABLE AREA
+            HStack {
+                // Draggable dead area on the left
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 20)
+                    .contentShape(Rectangle())
+                
+                Spacer()
+                
+                // Close button in lower right
+                Button("Close") {
+                    hudManager.hide()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .padding(.trailing, 16)
+                .padding(.bottom, 12)
+            }
+            .background(Color(NSColor.windowBackgroundColor))
         }
         .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+        .contentShape(Rectangle()) // Make entire HUD draggable including dead areas
+        .gesture(hudDragGesture) // Apply drag gesture to entire HUD
     }
 }
 
@@ -2582,15 +2578,11 @@ struct StableColorPanelWrapper: View, Equatable {
     }
     
     var body: some View {
-        ColorPanel(
+                                ColorPanel(
             document: hudManager.getStableDocument(),
             onColorSelected: { newColor in
-                print("🔥 STABLE HUD: ColorPanel onColorSelected called with color \(newColor)")
                 if let stopId = hudManager.editingStopId {
-                    print("🔥 STABLE HUD: Calling updateStopColor for stop \(stopId)")
                     hudManager.updateStopColor(stopId, newColor)
-                } else {
-                    print("🔥 STABLE HUD: ERROR - No editingStopId found!")
                 }
             },
             showGradientEditing: true
