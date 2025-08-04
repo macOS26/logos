@@ -2443,7 +2443,7 @@ struct PersistentGradientHUDView: View {
         
         if hudManager.isVisible {
             StableGradientHUDContent(hudManager: hudManager)
-                .position(hudManager.windowPosition)
+                // 🔥 POSITION NOT NEEDED - NSWindow handles positioning
                 .animation(.none, value: hudManager.isDragging)
         }
     }
@@ -2461,39 +2461,7 @@ struct StableGradientHUDContent: View, Equatable {
                lhs.hudManager.isVisible == rhs.hudManager.isVisible
     }
     
-    // Professional drag gesture for entire HUD
-    private var hudDragGesture: some Gesture {
-        DragGesture(minimumDistance: 1, coordinateSpace: .global)
-            .onChanged { value in
-                // 🔥 PROFESSIONAL MOUSE TRACKING (Copied from hand tool)
-                // CRITICAL FIX: Only initialize state once per drag operation
-                if hudManager.initialWindowPosition == CGPoint.zero && hudManager.hudDragStart == CGPoint.zero {
-                    // Capture initial state - reference location
-                    hudManager.initialWindowPosition = hudManager.windowPosition
-                    hudManager.hudDragStart = value.startLocation
-                    hudManager.isDragging = true
-                }
-                
-                // Calculate cursor movement from reference location (perfect 1:1 tracking)
-                let cursorDelta = CGPoint(
-                    x: value.location.x - hudManager.hudDragStart.x,
-                    y: value.location.y - hudManager.hudDragStart.y
-                )
-                
-                // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-window mapping
-                // The point under the cursor at drag start stays exactly under the cursor
-                hudManager.windowPosition = CGPoint(
-                    x: hudManager.initialWindowPosition.x + cursorDelta.x,
-                    y: hudManager.initialWindowPosition.y + cursorDelta.y
-                )
-            }
-            .onEnded { value in
-                hudManager.isDragging = false
-                // Reset state for next drag operation
-                hudManager.initialWindowPosition = CGPoint.zero
-                hudManager.hudDragStart = CGPoint.zero
-            }
-    }
+    // 🔥 NO DRAG GESTURE NEEDED - Window is draggable from anywhere using NSWindow.isMovableByWindowBackground
     
     var body: some View {
         VStack(spacing: 0) {
@@ -2565,8 +2533,7 @@ struct StableGradientHUDContent: View, Equatable {
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-        .contentShape(Rectangle()) // Make entire HUD draggable including dead areas
-        .gesture(hudDragGesture) // Apply drag gesture to entire HUD
+        // 🔥 NO CONTENT SHAPE OR GESTURE NEEDED - Window handles all dragging
     }
 }
 

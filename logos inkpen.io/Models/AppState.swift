@@ -40,8 +40,23 @@ class AppState {
     var showingGradientHUD = false
     var gradientHUDData: GradientHUDData? = nil
     
-    // 🔥 PERSISTENT HUD MANAGER - Prevents recreation spam
-    let persistentGradientHUD = PersistentGradientHUDManager()
+    // 🔥 PERSISTENT HUD MANAGER - Prevents recreation spam  
+    private var _persistentGradientHUD: PersistentGradientHUDManager?
+    var persistentGradientHUD: PersistentGradientHUDManager {
+        if _persistentGradientHUD == nil {
+            _persistentGradientHUD = PersistentGradientHUDManager(appState: self)
+        }
+        return _persistentGradientHUD!
+    }
+    
+    // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
+    var openWindowAction: ((String) -> Void)?
+    var dismissWindowAction: ((String) -> Void)?
+    
+    func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
+        self.openWindowAction = openWindow
+        self.dismissWindowAction = dismissWindow
+    }
     
     // MARK: - Panel Actions
     func showLayersPanel() {
@@ -125,37 +140,10 @@ class PersistentGradientHUDManager {
     var isVisible = false
     var isDragging = false
     
-    // 🔥 FAST DRAGGABLE POSITION - No computed property interference
-    private var _windowPosition: CGPoint?
-    var windowPosition: CGPoint {
-        get {
-            // Lazy load from UserDefaults only once
-            if _windowPosition == nil {
-                let x = UserDefaults.standard.double(forKey: "GradientHUD_WindowX")
-                let y = UserDefaults.standard.double(forKey: "GradientHUD_WindowY")
-                
-                // If no saved position, use center of screen as default
-                if x == 0 && y == 0 {
-                    _windowPosition = CGPoint(x: 683, y: 384) // Center of 1366x768 screen
-                } else {
-                    _windowPosition = CGPoint(x: x, y: y)
-                }
-            }
-            return _windowPosition!
-        }
-        set {
-            _windowPosition = newValue
-            // Save to UserDefaults asynchronously to avoid blocking dragging
-            DispatchQueue.global(qos: .utility).async {
-                UserDefaults.standard.set(newValue.x, forKey: "GradientHUD_WindowX")
-                UserDefaults.standard.set(newValue.y, forKey: "GradientHUD_WindowY")
-            }
-        }
-    }
+    // Reference to AppState for window management
+    private weak var appState: AppState?
     
-    // 🔥 PROFESSIONAL MOUSE TRACKING (Based on hand tool implementation)
-    var initialWindowPosition = CGPoint.zero  // Reference window position when drag started
-    var hudDragStart = CGPoint.zero           // Reference cursor position when drag started
+    // 🔥 POSITION HANDLED BY NSWindow - No manual tracking needed
     
     // Current gradient stop data - updates WITHOUT recreating the HUD
     var editingStopId: UUID? = nil
@@ -168,7 +156,8 @@ class PersistentGradientHUDManager {
     // Single stable document for ColorPanel - NEVER recreated
     private var stableColorDocument = VectorDocument()
     
-    init() {
+    init(appState: AppState) {
+        self.appState = appState
         stableColorDocument.defaultFillColor = .black
     }
     
@@ -188,14 +177,14 @@ class PersistentGradientHUDManager {
         // 🔥 CRITICAL: Force the ColorPanel to refresh when switching gradient stops
         stableColorDocument.objectWillChange.send()
         
-        // 🔥 windowPosition is now a computed property that remembers last position
-        // No manual positioning needed - it automatically centers on first use
-        
+        // 🔥 Show the gradient HUD window
         isVisible = true
+        appState?.openWindowAction?("gradient-hud")
     }
     
     func hide() {
         isVisible = false
+        appState?.dismissWindowAction?("gradient-hud")
         // Call the close callback to turn off gradient editing state
         onClose?()
     }

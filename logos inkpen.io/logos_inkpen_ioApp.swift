@@ -10,6 +10,25 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 
+// MARK: - Window Accessor for macOS 15+ Floating Window Features
+struct WindowAccessor: NSViewRepresentable {
+    var callback: (NSWindow?) -> Void
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.callback(view.window)
+        }
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        // No update needed
+    }
+}
+
+// MARK: - WindowAccessor handles floating window level conditionally in code
+
 // MARK: - Cleanup Notifications
 extension Notification.Name {
     static let forceDocumentStateCleanup = Notification.Name("forceDocumentStateCleanup")
@@ -1477,24 +1496,55 @@ struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
     @State private var appState = AppState()
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
     
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            ZStack {
-                DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
-                    .environment(appState)
-                    .navigationTitle("")  // Clear default title - we'll use custom toolbar
-                
-                // 🔥 PERSISTENT GRADIENT HUD - Float over ENTIRE WINDOW (not just canvas)
-                PersistentGradientHUDView()
-                    .environment(appState)
-                    .allowsHitTesting(true)
-                    .zIndex(99999) // MAXIMUM Z-INDEX: Ensure it appears over everything
-            }
+            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
+                .environment(appState)
+                .navigationTitle("")  // Clear default title - we'll use custom toolbar
+                .onAppear {
+                    // Set up window management for gradient HUD
+                    appState.setWindowActions(
+                        openWindow: { id in openWindow(id: id) },
+                        dismissWindow: { id in dismissWindow(id: id) }
+                    )
+                }
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
+        
+        // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
+        WindowGroup("Gradient Color Picker", id: "gradient-hud") {
+            if appState.persistentGradientHUD.isVisible {
+                // EXACT SAME STYLING as the SwiftUI HUD - but make it draggable from anywhere
+                StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
+                    .environment(appState)
+                    .background(WindowAccessor { window in
+                        if let window = window {
+                            // 🔥 macOS 15+ FLOATING WINDOW FEATURES
+                            window.level = NSWindow.Level.floating // Float above all windows
+                            window.isMovableByWindowBackground = true // Drag from anywhere
+                            window.titlebarAppearsTransparent = true
+                            window.titleVisibility = .hidden
+                            window.standardWindowButton(.closeButton)?.isHidden = true
+                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                            window.standardWindowButton(.zoomButton)?.isHidden = true
+                            window.backgroundColor = NSColor.clear
+                            window.isOpaque = false
+                            window.hasShadow = true
+                        }
+                    })
+            } else {
+                EmptyView()
+            }
+        }
+        .windowResizability(.contentSize) // Size to content
+        .windowStyle(.hiddenTitleBar) // Hide title bar for custom look
+        .defaultPosition(.center) // Center initially
+        // 🔥 CONDITIONAL macOS 15+ windowLevel - handled in WindowAccessor
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
