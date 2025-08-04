@@ -9,15 +9,17 @@ import SwiftUI
 
 enum PanelTab: String, CaseIterable {
     case layers = "Layers"
-    case properties = "Stroke/Fill"
+    case properties = "Paint"
+    case gradient = "Gradient"
     case color = "Color"
-    case pathOps = "Path Ops"
+    case pathOps = "Path"
     case font = "Font"
     
     var iconName: String {
         switch self {
         case .layers: return "square.stack"
         case .properties: return "paintbrush"
+        case .gradient: return "circle.lefthalf.striped.horizontal"
         case .color: return "paintpalette"
         case .pathOps: return "square.grid.2x2"
         case .font: return "textformat"

@@ -26,6 +26,8 @@ struct RightPanel: View {
                     LayersPanel(document: document)
                 case .properties:
                     StrokeFillPanel(document: document)
+                case .gradient:
+                    GradientPanel(document: document)
                 case .color:
                     ColorPanel(document: document)
                 case .pathOps:
