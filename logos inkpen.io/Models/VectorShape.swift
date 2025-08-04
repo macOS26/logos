@@ -555,7 +555,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
         cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
         
-        print("📄 BACKWARD COMPATIBILITY: Loaded document successfully with corner radius defaults")
+        // Removed excessive logging for performance
     }
     
     private enum CodingKeys: String, CodingKey {

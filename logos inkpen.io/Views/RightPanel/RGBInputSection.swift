@@ -20,6 +20,7 @@ struct RGBInputSection: View {
     
     // Callback indicates we're in gradient editing mode
     let onColorSelected: ((VectorColor) -> Void)?
+    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
     
     @State private var redValue: String = "133"
     @State private var greenValue: String = "78" 
@@ -125,10 +126,10 @@ struct RGBInputSection: View {
                             .tint(Color.clear)
                             .onChange(of: redSlider) {
                                 guard !isProgrammaticallyUpdating else { 
-                                    print("🎨 RGB INPUT: redSlider onChange BLOCKED (programmatic)")
+                                    // Removed logging spam
                                     return 
                                 }
-                                print("🎨 RGB INPUT: redSlider onChange triggered: \(redSlider)")
+                                // Removed logging for performance
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
                                 updateSharedColor()
@@ -147,10 +148,10 @@ struct RGBInputSection: View {
                         .font(.system(size: 11))
                         .onChange(of: redValue) {
                             guard !isProgrammaticallyUpdating else { 
-                                print("🎨 RGB INPUT: redValue onChange BLOCKED (programmatic)")
+                                // Removed logging spam
                                 return 
                             }
-                            print("🎨 RGB INPUT: redValue onChange triggered: \(redValue)")
+                            // Removed logging for performance
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
@@ -354,16 +355,14 @@ struct RGBInputSection: View {
     
     private func updateSharedColor() {
         let vectorColor = VectorColor.rgb(currentColor)
-        print("🎨 RGB INPUT: updateSharedColor called with: \(vectorColor)")
-        print("🎨 RGB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
-        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        // Removed excessive logging for performance
         
         sharedColor = .rgb(currentColor)
         
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            print("🎨 RGB INPUT: BLOCKED gradient update - programmatic change")
+            // Removed logging spam
             return
         }
         
@@ -374,10 +373,7 @@ struct RGBInputSection: View {
            let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
            case .gradient(let gradient) = fillStyle.color {
             
-            print("🚨 RGB INPUT: ABOUT TO UPDATE GRADIENT STOP WITHOUT CONSENT!")
-            print("🚨 RGB INPUT: isProgrammaticallyUpdating = \(isProgrammaticallyUpdating)")
-            print("🚨 RGB INPUT: Gradient editing state = \(appState.gradientEditingState != nil)")
-            print("🚨 RGB INPUT: Current gradient has \(gradient.stops.count) stops")
+            // Removed logging spam
             
             // Update the first stop color of the gradient
             if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
@@ -385,11 +381,7 @@ struct RGBInputSection: View {
                 let oldColor = updatedStops[firstStopIndex].color
                 updatedStops[firstStopIndex].color = vectorColor
                 
-                print("🚨 RGB INPUT: GRADIENT STOP UPDATED WITHOUT CONSENT!")
-                print("🚨 RGB INPUT: Stop index: \(firstStopIndex)")
-                print("🚨 RGB INPUT: Old color: \(oldColor)")
-                print("🚨 RGB INPUT: New color: \(vectorColor)")
-                print("🚨 RGB INPUT: Call stack: \(Thread.callStackSymbols.prefix(5))")
+                // Removed logging spam
                 
                 // Create new gradient with updated stops
                 let updatedGradient: VectorGradient
@@ -404,8 +396,7 @@ struct RGBInputSection: View {
                 
                 // Apply the updated gradient to the shape
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🚨 RGB INPUT: GRADIENT APPLIED TO SHAPE WITHOUT CONSENT! Color: \(vectorColor)")
-                print("🚨 RGB INPUT: This should NOT happen during Color Panel browsing!")
+                // Removed logging spam
             }
             return
         }
@@ -468,8 +459,7 @@ struct RGBInputSection: View {
     }
     
     private func loadFromSharedColor() {
-        print("🎨 RGB INPUT: loadFromSharedColor called with: \(sharedColor)")
-        print("🎨 RGB INPUT: Current gradient editing state: \(appState.gradientEditingState != nil)")
+        // Removed excessive logging for performance
         
         switch sharedColor {
         case .rgb(let rgb):
@@ -548,8 +538,7 @@ struct RGBInputSection: View {
     }
     
     private func setRGBValues(red: Int, green: Int, blue: Int) {
-        print("🎨 RGB INPUT: setRGBValues called with R=\(red), G=\(green), B=\(blue)")
-        print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        // Removed excessive logging for performance
         
         isProgrammaticallyUpdating = true
         redValue = String(red)
@@ -561,25 +550,26 @@ struct RGBInputSection: View {
         updateHexFromRGB()
         isProgrammaticallyUpdating = false
         
-        print("🎨 RGB INPUT: setRGBValues completed")
+        // Removed excessive logging for performance
     }
     
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
         
         // print("🎨 RGB INPUT: applyColorToActiveSelection called")
+        // print("🎨 RGB INPUT: showGradientEditing = \(showGradientEditing)")
         // print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
-        // print("🎨 RGB INPUT: appState.gradientEditingState details: \(String(describing: appState.gradientEditingState))")
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            // print("🎨 RGB INPUT: Using gradient callback")
+        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
+        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
+        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            // print("🎨 RGB INPUT: Using gradient callback (gradient mode section)")
             gradientCallback(vectorColor)
             return
         }
         
         // Priority 2: Otherwise, apply to document's active selection
-        // print("🎨 RGB INPUT: Using document setActiveColor")
+        // print("🎨 RGB INPUT: Using document setActiveColor (fill/stroke mode)")
         document.setActiveColor(vectorColor)
     }
     
@@ -590,6 +580,6 @@ struct RGBInputSection: View {
 }
 
 #Preview {
-    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), onColorSelected: nil)
+    RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), onColorSelected: nil, showGradientEditing: false)
         .padding()
 }

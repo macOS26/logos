@@ -40,6 +40,9 @@ class AppState {
     var showingGradientHUD = false
     var gradientHUDData: GradientHUDData? = nil
     
+    // 🔥 PERSISTENT HUD MANAGER - Prevents recreation spam
+    let persistentGradientHUD = PersistentGradientHUDManager()
+    
     // MARK: - Panel Actions
     func showLayersPanel() {
         selectedPanelTab = .layers
@@ -111,5 +114,86 @@ class AppState {
         print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
         print("📊 Benchmark functionality to be implemented in utility class")
         print("✅ BENCHMARK PLACEHOLDER COMPLETE")
+    }
+}
+
+// MARK: - Persistent Gradient HUD Manager
+
+@Observable
+class PersistentGradientHUDManager {
+    // 🔥 PERSISTENT STATE - Never recreated
+    var isVisible = false
+    var windowPosition = CGPoint(x: 400, y: 300)
+    var isDragging = false
+    
+    // 🔥 PROFESSIONAL MOUSE TRACKING (Based on hand tool implementation)
+    var initialWindowPosition = CGPoint.zero  // Reference window position when drag started
+    var hudDragStart = CGPoint.zero           // Reference cursor position when drag started
+    
+    // Current gradient stop data - updates WITHOUT recreating the HUD
+    var editingStopId: UUID? = nil
+    var editingStopColor: VectorColor = .black
+    var currentDocument: VectorDocument? = nil
+    var currentGradient: VectorGradient? = nil
+    var onColorSelected: ((UUID, VectorColor) -> Void)? = nil
+    var onClose: (() -> Void)? = nil
+    
+    // Single stable document for ColorPanel - NEVER recreated
+    private var stableColorDocument = VectorDocument()
+    
+    init() {
+        print("🔥 PERSISTENT HUD MANAGER: Created - This should happen ONCE")
+        stableColorDocument.defaultFillColor = .black
+    }
+    
+    func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?, 
+              onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
+        print("🔥 PERSISTENT HUD: Showing with stop \(stopId), color \(color)")
+        
+        // Update state WITHOUT recreating anything
+        self.editingStopId = stopId
+        self.editingStopColor = color
+        self.currentDocument = document
+        self.currentGradient = gradient
+        self.onColorSelected = onColorSelected
+        self.onClose = onClose
+        
+        // Update the stable document color - this triggers ColorPanel refresh
+        stableColorDocument.defaultFillColor = color
+        
+        // 🔥 CRITICAL: Force the ColorPanel to refresh when switching gradient stops
+        stableColorDocument.objectWillChange.send()
+        print("🔥 PERSISTENT HUD: Set color to \(color) and forced ColorPanel refresh")
+        
+        // Show the HUD
+        isVisible = true
+    }
+    
+    func hide() {
+        print("🔥 PERSISTENT HUD: Hiding")
+        isVisible = false
+        // DON'T call onClose - it creates infinite loop
+        // onClose?()
+    }
+    
+    func updateStopColor(_ stopId: UUID, _ color: VectorColor) {
+        print("🔥 PERSISTENT HUD: Updating stop \(stopId) to color \(color)")
+        
+        // Update our tracking
+        if stopId == editingStopId {
+            editingStopColor = color
+            stableColorDocument.defaultFillColor = color
+            
+            // 🔥 CRITICAL: Force the ColorPanel to refresh with the new color
+            stableColorDocument.objectWillChange.send()
+            print("🔥 PERSISTENT HUD: Updated stableColorDocument and forced refresh")
+        }
+        
+        // Call the callback to update the actual gradient
+        onColorSelected?(stopId, color)
+    }
+    
+    func getStableDocument() -> VectorDocument {
+        return stableColorDocument
     }
 } 

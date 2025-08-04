@@ -16,6 +16,7 @@ struct HSBInputSection: View {
     
     // Callback indicates we're in gradient editing mode
     let onColorSelected: ((VectorColor) -> Void)?
+    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
     
     @State private var hueValue: String = "0"
     @State private var saturationValue: String = "100"
@@ -671,8 +672,9 @@ struct HSBInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.hsb(currentColor)
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
+        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
+        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
             return
         }
@@ -800,8 +802,9 @@ struct HSBInputSection: View {
         // First apply the color to active selection (including gradient editing)
         if let pantoneColor = livePreviewColor.pms {
             let pmsVectorColor = VectorColor.pantone(pantoneColor)
-            // Apply to gradient if in gradient editing mode
-            if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
+            // Apply to gradient if in gradient editing mode AND this section supports it
+            if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
                 gradientCallback(pmsVectorColor)
             } else {
                 document.setActiveColor(pmsVectorColor)

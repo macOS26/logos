@@ -664,27 +664,7 @@ struct DocumentBasedMainView: View {
             Group {
                 let _ = print("🎨 DOCUMENT-BASED MAIN VIEW: Evaluating HUD condition - showingGradientHUD: \(appState.showingGradientHUD), gradientHUDData: \(appState.gradientHUDData != nil)")
                 
-                if appState.showingGradientHUD && appState.gradientHUDData != nil {
-                    GradientColorPickerHUD(
-                        document: appState.gradientHUDData!.document,
-                        editingGradientStopId: appState.gradientHUDData!.editingGradientStopId,
-                        editingGradientStopColor: appState.gradientHUDData!.editingGradientStopColor,
-                        currentGradient: appState.gradientHUDData!.currentGradient,
-                        updateStopColor: appState.gradientHUDData!.updateStopColor,
-                        turnOffEditingState: appState.gradientHUDData!.turnOffEditingState,
-                        onClose: {
-                            appState.hideGradientHUD()
-                        }
-                    )
-                    .environment(appState)
-                    .allowsHitTesting(true)
-                    .zIndex(1000) // Ensure it appears above everything
-                    .onAppear {
-                        print("🎨 DOCUMENT-BASED MAIN VIEW: Gradient HUD appeared!")
-                    }
-                } else {
-                    EmptyView()
-                }
+                // Move HUD to WindowGroup level to avoid canvas interference
             },
             alignment: .center
         )
@@ -1501,9 +1481,17 @@ struct logos_inken_ioApp: App {
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
-            DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
-                .environment(appState)
-                .navigationTitle("")  // Clear default title - we'll use custom toolbar
+            ZStack {
+                DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
+                    .environment(appState)
+                    .navigationTitle("")  // Clear default title - we'll use custom toolbar
+                
+                // 🔥 PERSISTENT GRADIENT HUD - Float over ENTIRE WINDOW (not just canvas)
+                PersistentGradientHUDView()
+                    .environment(appState)
+                    .allowsHitTesting(true)
+                    .zIndex(99999) // MAXIMUM Z-INDEX: Ensure it appears over everything
+            }
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)

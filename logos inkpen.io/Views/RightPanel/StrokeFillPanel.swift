@@ -871,24 +871,50 @@ struct GradientFillSection: View {
             // DISABLED: This was causing unwanted gradient modifications when switching panels
             // updateSelectedGradient()
         }
-        .onChange(of: editingGradientStopId) { _, newStopId in
+        .onChange(of: editingGradientStopId) { oldStopId, newStopId in
+            print("🎨 STOP ID CHANGE: oldStopId = \(oldStopId), newStopId = \(newStopId)")
+            
             if let stopId = newStopId {
                 let actualColor = findGradientStopColor(stopId: stopId)
-                let hudData = GradientHUDData(
+                print("🎨 STOP ID CHANGE: Found actual color = \(actualColor) for stopId = \(stopId)")
+                
+                // 🔥 CRITICAL: Set gradient editing state for HUD only
+                if let gradient = currentGradient {
+                    let stops: [GradientStop]
+                    switch gradient {
+                    case .linear(let linear):
+                        stops = linear.stops
+                    case .radial(let radial):
+                        stops = radial.stops
+                    }
+                    let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
+                    
+                    appState.gradientEditingState = GradientEditingState(
+                        gradientId: stopId,
+                        stopIndex: stopIndex,
+                        onColorSelected: { [self] color in
+                            self.updateStopColor(stopId: stopId, color: color)
+                        }
+                    )
+                }
+                
+                // 🔥 USE PERSISTENT HUD MANAGER - No more recreation spam!
+                appState.persistentGradientHUD.show(
+                    stopId: stopId,
+                    color: actualColor,
                     document: document,
-                    editingGradientStopId: stopId,
-                    editingGradientStopColor: actualColor,
-                    currentGradient: currentGradient,
-                    updateStopColor: { [self] targetStopId, color in
+                    gradient: currentGradient,
+                    onColorSelected: { [self] targetStopId, color in
                         self.updateStopColor(stopId: targetStopId, color: color)
                     },
-                    turnOffEditingState: { [self] in
+                    onClose: { [self] in
                         self.turnOffEditingState()
                     }
                 )
-                appState.showGradientHUD(data: hudData)
             } else {
-                appState.hideGradientHUD()
+                // 🔥 CRITICAL: Clear gradient editing state when closing HUD
+                appState.gradientEditingState = nil
+                appState.persistentGradientHUD.hide()
             }
         }
 
@@ -902,7 +928,8 @@ struct GradientFillSection: View {
     
     private func turnOffEditingState() {
         editingGradientStopId = nil
-        appState.hideGradientHUD()
+        // DON'T call hide() - it creates infinite loop. Just set visibility directly.
+        appState.persistentGradientHUD.isVisible = false
     }
     
     // MARK: - Selection and Angle Management
@@ -2326,10 +2353,13 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
-                                print("🎨 GRADIENT STOP CLICKED: stop.id = \(stop.id)")
+                                print("🎨 GRADIENT STOP CLICKED: stop.id = \(stop.id), stop.color = \(stop.color)")
+                                print("🎨 GRADIENT STOP: Previous editingGradientStopId = \(editingGradientStopId), color = \(editingGradientStopColor)")
+                                
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
-                                print("🎨 GRADIENT STOP: Set editingGradientStopId = \(editingGradientStopId)")
+                                
+                                print("🎨 GRADIENT STOP: New editingGradientStopId = \(editingGradientStopId), color = \(editingGradientStopColor)")
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
@@ -2426,29 +2456,31 @@ struct GradientApplyButtonView: View {
 
 // MARK: - SwiftUI HUD Window for Gradient Color Picker
 
-struct GradientColorPickerHUD: View {
-    let document: VectorDocument
-    let editingGradientStopId: UUID?
-    let editingGradientStopColor: VectorColor
-    let currentGradient: VectorGradient?
-    let updateStopColor: (UUID, VectorColor) -> Void
-    let turnOffEditingState: () -> Void
-    let onClose: () -> Void
+// 🔥 PERSISTENT GRADIENT HUD VIEW: Never recreated, only state updates
+struct PersistentGradientHUDView: View {
     @Environment(AppState.self) private var appState
     
-    // State for window dragging
-    @State private var windowPosition = CGPoint(x: 400, y: 300)
-    @State private var isDragging = false
-    @State private var dragOffset = CGSize.zero
+    var body: some View {
+        let hudManager = appState.persistentGradientHUD
+        
+        if hudManager.isVisible {
+            StableGradientHUDContent(hudManager: hudManager)
+                .position(hudManager.windowPosition)
+                .animation(.none, value: hudManager.isDragging)
+        }
+    }
+}
+
+// 🔥 STABLE HUD CONTENT - Prevents recreation during dragging
+struct StableGradientHUDContent: View, Equatable {
+    let hudManager: PersistentGradientHUDManager
     
-    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, currentGradient: VectorGradient?, updateStopColor: @escaping (UUID, VectorColor) -> Void, turnOffEditingState: @escaping () -> Void, onClose: @escaping () -> Void) {
-        self.document = document
-        self.editingGradientStopId = editingGradientStopId
-        self.editingGradientStopColor = editingGradientStopColor
-        self.currentGradient = currentGradient
-        self.updateStopColor = updateStopColor
-        self.turnOffEditingState = turnOffEditingState
-        self.onClose = onClose
+    // Make this view stable by implementing Equatable
+    static func == (lhs: StableGradientHUDContent, rhs: StableGradientHUDContent) -> Bool {
+        // Only recreate if the essential content changes, not position/dragging
+        return lhs.hudManager.editingStopId == rhs.hudManager.editingStopId &&
+               lhs.hudManager.editingStopColor == rhs.hudManager.editingStopColor &&
+               lhs.hudManager.isVisible == rhs.hudManager.isVisible
     }
     
     var body: some View {
@@ -2467,16 +2499,39 @@ struct GradientColorPickerHUD: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .gesture(
-                    DragGesture(coordinateSpace: .global)
+                    DragGesture(minimumDistance: 1, coordinateSpace: .global)
                         .onChanged { value in
-                            isDragging = true
-                            dragOffset = value.translation
+                            // 🔥 PROFESSIONAL MOUSE TRACKING (Copied from hand tool)
+                            // CRITICAL FIX: Only initialize state once per drag operation
+                            if hudManager.initialWindowPosition == CGPoint.zero && hudManager.hudDragStart == CGPoint.zero {
+                                // Capture initial state - reference location
+                                hudManager.initialWindowPosition = hudManager.windowPosition
+                                hudManager.hudDragStart = value.startLocation
+                                hudManager.isDragging = true
+                                print("🔥 HUD DRAG: Established reference location at \(value.startLocation)")
+                            }
+                            
+                            // Calculate cursor movement from reference location (perfect 1:1 tracking)
+                            let cursorDelta = CGPoint(
+                                x: value.location.x - hudManager.hudDragStart.x,
+                                y: value.location.y - hudManager.hudDragStart.y
+                            )
+                            
+                            // PROFESSIONAL IMPLEMENTATION: Direct cursor-to-window mapping
+                            // The point under the cursor at drag start stays exactly under the cursor
+                            hudManager.windowPosition = CGPoint(
+                                x: hudManager.initialWindowPosition.x + cursorDelta.x,
+                                y: hudManager.initialWindowPosition.y + cursorDelta.y
+                            )
+                            
+                            print("🔥 HUD DRAG: Moving to \(hudManager.windowPosition)")
                         }
                         .onEnded { value in
-                            windowPosition.x += value.translation.width
-                            windowPosition.y += value.translation.height
-                            dragOffset = .zero
-                            isDragging = false
+                            print("🔥 HUD DRAG: Ended at \(value.location)")
+                            hudManager.isDragging = false
+                            // Reset state for next drag operation
+                            hudManager.initialWindowPosition = CGPoint.zero
+                            hudManager.hudDragStart = CGPoint.zero
                         }
                 )
                 
@@ -2484,8 +2539,7 @@ struct GradientColorPickerHUD: View {
                 
                 // Close button
                 Button(action: {
-                    turnOffEditingState()
-                    onClose()
+                    hudManager.hide()
                 }) {
                     Image(systemName: "xmark")
                         .foregroundColor(.secondary)
@@ -2507,57 +2561,45 @@ struct GradientColorPickerHUD: View {
                 alignment: .bottom
             )
             
-            // Color picker content - OPTIMIZED: Prevent excessive re-renders
-            ColorPanel(document: document, onColorSelected: { newColor in
-                // When a color is selected, update the stop but DON'T close the window
-                if let stopId = editingGradientStopId {
-                    updateStopColor(stopId, newColor)
-                }
-                // Window stays open - user controls when to close
-            }, showGradientEditing: true)
-            .fixedSize() // CRITICAL: Size to content
-            .frame(maxWidth: 350, maxHeight: 500) // Max constraints but let it size to content
+            // 🔥 STABLE COLOR PANEL - Only recreated when editingStopId changes
+            StableColorPanelWrapper(hudManager: hudManager)
+                .frame(maxWidth: 350, maxHeight: 500)
         }
-        .fixedSize() // CRITICAL: Allow the HUD to size to its content
+        .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-        .position(
-            x: windowPosition.x + dragOffset.width,
-            y: windowPosition.y + dragOffset.height
-        )
-        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isDragging ? dragOffset : .zero)
-        .task {
-            // Set up gradient editing state
-            if let stopId = editingGradientStopId, let gradient = currentGradient {
-                // Find the correct stop and its current color
-                let stops: [GradientStop]
-                switch gradient {
-                case .linear(let linear):
-                    stops = linear.stops
-                case .radial(let radial):
-                    stops = radial.stops
-                }
-                
-                let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-                
-                // CRITICAL: Use the captured stopId to avoid closure issues
-                let capturedStopId = stopId
-                appState.gradientEditingState = GradientEditingState(
-                    gradientId: capturedStopId,
-                    stopIndex: stopIndex,
-                    onColorSelected: { color in
-                        updateStopColor(capturedStopId, color)
-                        // Window stays open - user controls when to close
-                    }
-                )
-            }
-        }
-        .onDisappear {
-            // DON'T clean up gradient editing state to prevent SwiftUI crashes
-        }
     }
 }
+
+// 🔥 STABLE COLOR PANEL WRAPPER - Prevents ColorPanel recreation
+struct StableColorPanelWrapper: View, Equatable {
+    let hudManager: PersistentGradientHUDManager
+    
+    static func == (lhs: StableColorPanelWrapper, rhs: StableColorPanelWrapper) -> Bool {
+        // Only recreate ColorPanel when the editing stop changes
+        return lhs.hudManager.editingStopId == rhs.hudManager.editingStopId
+    }
+    
+    var body: some View {
+        ColorPanel(
+            document: hudManager.getStableDocument(),
+            onColorSelected: { newColor in
+                print("🔥 STABLE HUD: ColorPanel onColorSelected called with color \(newColor)")
+                if let stopId = hudManager.editingStopId {
+                    print("🔥 STABLE HUD: Calling updateStopColor for stop \(stopId)")
+                    hudManager.updateStopColor(stopId, newColor)
+                } else {
+                    print("🔥 STABLE HUD: ERROR - No editingStopId found!")
+                }
+            },
+            showGradientEditing: true
+        )
+        .fixedSize()
+    }
+}
+
+
 
 struct GradientColorPickerSheet: View {
     let document: VectorDocument

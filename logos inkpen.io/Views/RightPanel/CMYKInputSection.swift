@@ -16,6 +16,7 @@ struct CMYKInputSection: View {
     
     // Callback indicates we're in gradient editing mode
     let onColorSelected: ((VectorColor) -> Void)?
+    let showGradientEditing: Bool  // 🔥 NEW: Controls whether this section allows gradient editing
     
     @State private var cyanValue: String = "0"
     @State private var magentaValue: String = "0"
@@ -585,8 +586,9 @@ struct CMYKInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.cmyk(currentColor)
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
+        // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
+        // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
+        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
             gradientCallback(vectorColor)
             return
         }

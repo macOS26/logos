@@ -80,13 +80,13 @@ struct ColorPanel: View {
             
             // Mode-specific input sections
             if document.settings.colorMode == .pms {
-                HSBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
+                HSBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
                     .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
-                CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
+                CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
                         .padding(.horizontal, 12)
             } else if document.settings.colorMode == .rgb {
-                RGBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected)
+                RGBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
                         .padding(.horizontal, 12)
             }
                 
@@ -169,18 +169,20 @@ struct ColorPanel: View {
     
     private func selectColor(_ color: VectorColor) {
         print("🎨 COLOR PANEL: selectColor called with: \(color)")
+        print("🎨 COLOR PANEL: showGradientEditing = \(showGradientEditing)")
         print("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)")
         
-        // Priority 1: If we're in gradient editing mode, use that callback
-        if let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            print("🎨 COLOR PANEL: Using gradient callback")
+        // 🔥 CRITICAL FIX: Only use gradient callback if THIS panel allows gradient editing
+        // Priority 1: If we're in gradient editing mode AND this panel supports it, use gradient callback
+        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
+            print("🎨 COLOR PANEL: Using gradient callback (gradient mode panel)")
             gradientCallback(color)
             return
         }
         
         // Priority 2: If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
-            print("🎨 COLOR PANEL: Using onColorSelected callback")
+            print("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)")
             onColorSelected(color)
         } else {
             // DISABLED: Auto-application of colors when browsing
