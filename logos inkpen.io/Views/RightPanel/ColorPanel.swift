@@ -43,7 +43,6 @@ struct ColorPanel: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
                 .padding(.horizontal, 12)
             }
             

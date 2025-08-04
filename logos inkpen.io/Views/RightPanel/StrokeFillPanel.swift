@@ -2531,7 +2531,7 @@ struct StableGradientHUDContent: View, Equatable {
         }
         .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12)
+        //.cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
         // 🔥 NO CONTENT SHAPE OR GESTURE NEEDED - Window handles all dragging
     }
@@ -2632,8 +2632,11 @@ struct GradientColorPickerSheet: View {
             }
             .frame(height: 50)
         }
-        .background(Color(NSColor.windowBackgroundColor))
-        .cornerRadius(12) // Proper corner radius
+        .background(
+            Rectangle()
+                .fill(Color(NSColor.windowBackgroundColor))
+        )
+        .clipShape(Rectangle()) // Force sharp square corners
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5) // Professional shadow
         .task {
             // Set up gradient editing state

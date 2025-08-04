@@ -54,7 +54,18 @@ class AppState {
     var dismissWindowAction: ((String) -> Void)?
     
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
-        self.openWindowAction = openWindow
+        self.openWindowAction = { id in
+            // Prevent multiple gradient HUD windows
+            if id == "gradient-hud" {
+                // Close any existing gradient HUD windows first
+                NSApplication.shared.windows.forEach { window in
+                    if window.title.contains("Gradient Color Picker") {
+                        window.close()
+                    }
+                }
+            }
+            openWindow(id)
+        }
         self.dismissWindowAction = dismissWindow
     }
     
@@ -167,14 +178,14 @@ class PersistentGradientHUDManager {
         // 🔥 CRITICAL: Force the ColorPanel to refresh when switching gradient stops
         stableColorDocument.objectWillChange.send()
         
-        // 🔥 Only open window if it wasn't already visible
+        // 🔥 ALWAYS set visible, but only trigger window opening once
+        isVisible = true
+        
+        // Only open window if it wasn't already visible
         if !wasAlreadyVisible {
-            isVisible = true
             appState?.openWindowAction?("gradient-hud")
-        } else {
-            // Window is already open, just refresh the content
-            isVisible = true // Ensure it stays visible
         }
+        // If already visible, the WindowGroup will automatically update the content
     }
     
     func hide() {
