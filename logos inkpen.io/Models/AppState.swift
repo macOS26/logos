@@ -14,6 +14,15 @@ struct GradientEditingState {
     }
 }
 
+struct GradientHUDData {
+    let document: VectorDocument
+    let editingGradientStopId: UUID?
+    let editingGradientStopColor: VectorColor
+    let currentGradient: VectorGradient?
+    let updateStopColor: (UUID, VectorColor) -> Void
+    let turnOffEditingState: () -> Void
+}
+
 @Observable
 class AppState {
     var selectedPanelTab: PanelTab = .layers
@@ -26,6 +35,10 @@ class AppState {
     
     // MARK: - Gradient Editing State
     var gradientEditingState: GradientEditingState? = nil
+    
+    // MARK: - Gradient HUD State
+    var showingGradientHUD = false
+    var gradientHUDData: GradientHUDData? = nil
     
     // MARK: - Panel Actions
     func showLayersPanel() {
@@ -66,6 +79,21 @@ class AppState {
     
     func finishGradientStopEditing() {
         gradientEditingState = nil
+    }
+    
+    // MARK: - Gradient HUD Actions
+    
+    func showGradientHUD(data: GradientHUDData) {
+        gradientHUDData = data
+        showingGradientHUD = true
+        print("🎨 AppState: Showing gradient HUD - showingGradientHUD: \(showingGradientHUD), gradientHUDData: \(gradientHUDData != nil)")
+        print("🎨 AppState: editingGradientStopId: \(data.editingGradientStopId), currentGradient: \(data.currentGradient != nil)")
+    }
+    
+    func hideGradientHUD() {
+        showingGradientHUD = false
+        gradientHUDData = nil
+        print("🎨 AppState: Hiding gradient HUD")
     }
     
     // MARK: - Development Actions

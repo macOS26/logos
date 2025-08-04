@@ -770,7 +770,6 @@ struct GradientFillSection: View {
     @State private var showingGradientColorPicker = false
     @State private var editingGradientStopId: UUID?
     @State private var editingGradientStopColor: VectorColor = .black
-    @State private var gradientColorWindow: NSWindow?
     
     enum GradientType: String, CaseIterable {
         case linear = "Linear"
@@ -874,92 +873,36 @@ struct GradientFillSection: View {
         }
         .onChange(of: editingGradientStopId) { _, newStopId in
             if let stopId = newStopId {
-                showGradientColorWindow(stopId: stopId)
+                let actualColor = findGradientStopColor(stopId: stopId)
+                let hudData = GradientHUDData(
+                    document: document,
+                    editingGradientStopId: stopId,
+                    editingGradientStopColor: actualColor,
+                    currentGradient: currentGradient,
+                    updateStopColor: { [self] targetStopId, color in
+                        self.updateStopColor(stopId: targetStopId, color: color)
+                    },
+                    turnOffEditingState: { [self] in
+                        self.turnOffEditingState()
+                    }
+                )
+                appState.showGradientHUD(data: hudData)
             } else {
-                closeGradientColorWindow()
+                appState.hideGradientHUD()
             }
         }
+
         .onDisappear {
             // DON'T clean up gradient editing state to prevent SwiftUI crashes
             print("🎨 GRADIENT SHEET: View disappearing, keeping state intact")
         }
     }
     
-    private func showGradientColorWindow(stopId: UUID) {
-        // CRITICAL: Clear any existing gradient editing state first
-        appState.finishGradientStopEditing()
-        
-        // Close existing window if any
-        closeGradientColorWindow()
-        
-        // Find the actual color of this gradient stop
-        let actualColor = findGradientStopColor(stopId: stopId)
-        
-        // Create the content view with AppState environment
-        let contentView = GradientColorPickerSheet(
-            document: document,
-            editingGradientStopId: stopId,
-            editingGradientStopColor: actualColor,
-            currentGradient: currentGradient,
-            showingColorPicker: .constant(true),
-            updateStopColor: { [self] targetStopId, color in
-                self.updateStopColor(stopId: targetStopId, color: color)
-            },
-            turnOffEditingState: { [self] in
-                self.turnOffEditingState()
-            },
-            onClose: {
-                self.closeGradientColorWindowWithoutStateCleanup()
-            }
-        )
-        .environment(appState) // Pass the AppState environment object
-        
-        // Create HUD window (no title bar, no close/minimize buttons)
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 550),
-            styleMask: [.borderless],  // HUD style - no title bar or buttons
-            backing: .buffered,
-            defer: false
-        )
-        
-        window.title = "Select Gradient Color"  // Keep title for identification
-        window.toolbar = nil  // Explicitly remove any toolbar
-        window.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.95)  // HUD background
-        window.isOpaque = false  // Allow transparency
-        window.hasShadow = true  // Add shadow for HUD effect
-        window.contentView = NSHostingView(rootView: contentView)
-        window.center()
-        window.level = .floating
-        window.makeKeyAndOrderFront(nil)
-        
-        // Store reference
-        gradientColorWindow = window
-        
-        // Add window delegate to handle closing
-        let delegate = GradientWindowDelegate { [self] in
-            DispatchQueue.main.async {
-                self.turnOffEditingState()
-            }
-        }
-        window.delegate = delegate
-    }
-    
-    // Function to close window while keeping state intact
-    private func closeGradientColorWindowWithoutStateCleanup() {
-        gradientColorWindow?.close()
-        // CRITICAL: DO NOT set gradientColorWindow = nil - this causes the crash!
-        // Keep ALL state intact - don't clear editingGradientStopId or call finishGradientStopEditing()
-        // The window will be deallocated automatically when closed
-    }
-    
-    private func closeGradientColorWindow() {
-        gradientColorWindow?.close()
-        // Don't set gradientColorWindow = nil here to avoid crash
-        // The window will be deallocated automatically when closed
-    }
+
     
     private func turnOffEditingState() {
         editingGradientStopId = nil
+        appState.hideGradientHUD()
     }
     
     // MARK: - Selection and Angle Management
@@ -2383,8 +2326,10 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
+                                print("🎨 GRADIENT STOP CLICKED: stop.id = \(stop.id)")
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
+                                print("🎨 GRADIENT STOP: Set editingGradientStopId = \(editingGradientStopId)")
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
@@ -2475,6 +2420,141 @@ struct GradientApplyButtonView: View {
             Button("Apply Gradient", action: onApply)
                 .buttonStyle(.borderedProminent)
                 .disabled(currentGradient == nil)
+        }
+    }
+}
+
+// MARK: - SwiftUI HUD Window for Gradient Color Picker
+
+struct GradientColorPickerHUD: View {
+    let document: VectorDocument
+    let editingGradientStopId: UUID?
+    let editingGradientStopColor: VectorColor
+    let currentGradient: VectorGradient?
+    let updateStopColor: (UUID, VectorColor) -> Void
+    let turnOffEditingState: () -> Void
+    let onClose: () -> Void
+    @Environment(AppState.self) private var appState
+    
+    // State for window dragging
+    @State private var windowPosition = CGPoint(x: 400, y: 300)
+    @State private var isDragging = false
+    @State private var dragOffset = CGSize.zero
+    
+    init(document: VectorDocument, editingGradientStopId: UUID?, editingGradientStopColor: VectorColor, currentGradient: VectorGradient?, updateStopColor: @escaping (UUID, VectorColor) -> Void, turnOffEditingState: @escaping () -> Void, onClose: @escaping () -> Void) {
+        self.document = document
+        self.editingGradientStopId = editingGradientStopId
+        self.editingGradientStopColor = editingGradientStopColor
+        self.currentGradient = currentGradient
+        self.updateStopColor = updateStopColor
+        self.turnOffEditingState = turnOffEditingState
+        self.onClose = onClose
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Toolbar with drag handle and close button
+            HStack {
+                // Drag handle area
+                HStack {
+                    Image(systemName: "line.3.horizontal")
+                        .foregroundColor(.secondary)
+                        .font(.caption)
+                    Text("Select Gradient Color")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(coordinateSpace: .global)
+                        .onChanged { value in
+                            isDragging = true
+                            dragOffset = value.translation
+                        }
+                        .onEnded { value in
+                            windowPosition.x += value.translation.width
+                            windowPosition.y += value.translation.height
+                            dragOffset = .zero
+                            isDragging = false
+                        }
+                )
+                
+                Spacer()
+                
+                // Close button
+                Button(action: {
+                    turnOffEditingState()
+                    onClose()
+                }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(PlainButtonStyle())
+                .frame(width: 20, height: 20)
+                .background(Color.clear)
+                .cornerRadius(4)
+                .help("Close")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(NSColor.windowBackgroundColor))
+            .overlay(
+                Rectangle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(height: 1),
+                alignment: .bottom
+            )
+            
+            // Color picker content - OPTIMIZED: Prevent excessive re-renders
+            ColorPanel(document: document, onColorSelected: { newColor in
+                // When a color is selected, update the stop but DON'T close the window
+                if let stopId = editingGradientStopId {
+                    updateStopColor(stopId, newColor)
+                }
+                // Window stays open - user controls when to close
+            }, showGradientEditing: true)
+            .fixedSize() // CRITICAL: Size to content
+            .frame(maxWidth: 350, maxHeight: 500) // Max constraints but let it size to content
+        }
+        .fixedSize() // CRITICAL: Allow the HUD to size to its content
+        .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+        .position(
+            x: windowPosition.x + dragOffset.width,
+            y: windowPosition.y + dragOffset.height
+        )
+        .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isDragging ? dragOffset : .zero)
+        .task {
+            // Set up gradient editing state
+            if let stopId = editingGradientStopId, let gradient = currentGradient {
+                // Find the correct stop and its current color
+                let stops: [GradientStop]
+                switch gradient {
+                case .linear(let linear):
+                    stops = linear.stops
+                case .radial(let radial):
+                    stops = radial.stops
+                }
+                
+                let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
+                
+                // CRITICAL: Use the captured stopId to avoid closure issues
+                let capturedStopId = stopId
+                appState.gradientEditingState = GradientEditingState(
+                    gradientId: capturedStopId,
+                    stopIndex: stopIndex,
+                    onColorSelected: { color in
+                        updateStopColor(capturedStopId, color)
+                        // Window stays open - user controls when to close
+                    }
+                )
+            }
+        }
+        .onDisappear {
+            // DON'T clean up gradient editing state to prevent SwiftUI crashes
         }
     }
 }

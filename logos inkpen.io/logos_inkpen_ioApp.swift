@@ -659,6 +659,35 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
+        .overlay(
+            // Gradient HUD overlay - appears over entire window
+            Group {
+                let _ = print("🎨 DOCUMENT-BASED MAIN VIEW: Evaluating HUD condition - showingGradientHUD: \(appState.showingGradientHUD), gradientHUDData: \(appState.gradientHUDData != nil)")
+                
+                if appState.showingGradientHUD && appState.gradientHUDData != nil {
+                    GradientColorPickerHUD(
+                        document: appState.gradientHUDData!.document,
+                        editingGradientStopId: appState.gradientHUDData!.editingGradientStopId,
+                        editingGradientStopColor: appState.gradientHUDData!.editingGradientStopColor,
+                        currentGradient: appState.gradientHUDData!.currentGradient,
+                        updateStopColor: appState.gradientHUDData!.updateStopColor,
+                        turnOffEditingState: appState.gradientHUDData!.turnOffEditingState,
+                        onClose: {
+                            appState.hideGradientHUD()
+                        }
+                    )
+                    .environment(appState)
+                    .allowsHitTesting(true)
+                    .zIndex(1000) // Ensure it appears above everything
+                    .onAppear {
+                        print("🎨 DOCUMENT-BASED MAIN VIEW: Gradient HUD appeared!")
+                    }
+                } else {
+                    EmptyView()
+                }
+            },
+            alignment: .center
+        )
         .sheet(isPresented: $showingNewDocumentSetup) {
             NewDocumentSetupView(
                 isPresented: $showingNewDocumentSetup,
