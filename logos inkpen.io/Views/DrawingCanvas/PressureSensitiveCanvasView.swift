@@ -58,9 +58,57 @@ class PressureSensitiveCanvasView: NSView {
         print("🎨 PRESSURE: Will detect pressure support from actual events")
     }
     
+    // MARK: - Comprehensive Event Logging
+    
+    private func logEvent(_ event: NSEvent, context: String) {
+        let eventType = event.type.rawValue
+        let eventSubtype = event.subtype.rawValue
+        let pressure = event.pressure
+        let location = event.locationInWindow
+        let timestamp = event.timestamp
+        let modifierFlags = event.modifierFlags.rawValue
+        
+        print("🎨 EVENT LOG [\(context)]:")
+        print("   Type: \(eventType) (\(event.type))")
+        print("   Subtype: \(eventSubtype) (\(event.subtype))")
+        print("   Pressure: \(pressure)")
+        print("   Location: (\(location.x), \(location.y))")
+        print("   Timestamp: \(timestamp)")
+        print("   ModifierFlags: \(modifierFlags)")
+        
+        // Only access clickCount and buttonNumber for mouse events
+        if event.type == .leftMouseDown || event.type == .leftMouseUp || event.type == .leftMouseDragged ||
+           event.type == .rightMouseDown || event.type == .rightMouseUp || event.type == .rightMouseDragged ||
+           event.type == .otherMouseDown || event.type == .otherMouseUp || event.type == .otherMouseDragged {
+            let clickCount = event.clickCount
+            let buttonNumber = event.buttonNumber
+            print("   ClickCount: \(clickCount)")
+            print("   ButtonNumber: \(buttonNumber)")
+        } else {
+            print("   ClickCount: N/A (not a mouse event)")
+            print("   ButtonNumber: N/A (not a mouse event)")
+        }
+        
+        // Additional tablet-specific info
+        if event.type == .tabletPoint {
+            print("   🎨 TABLET SPECIFIC:")
+            print("      PointingDeviceID: \(event.pointingDeviceID)")
+            print("      Rotation: \(event.rotation)")
+            print("      TangentialPressure: \(event.tangentialPressure)")
+            print("      VendorDefined: \(event.vendorDefined)")
+            print("      VendorID: \(event.vendorID)")
+            print("      TabletID: \(event.tabletID)")
+            print("      CapabilityMask: \(event.capabilityMask)")
+        }
+        
+        print("   ---")
+    }
+    
     // MARK: - Mouse/Touch Event Handling
     
     override func mouseDown(with event: NSEvent) {
+        logEvent(event, context: "MOUSE_DOWN")
+        
         startLocation = convert(event.locationInWindow, from: nil)
         isDragging = true
         
@@ -75,6 +123,8 @@ class PressureSensitiveCanvasView: NSView {
     }
     
     override func mouseDragged(with event: NSEvent) {
+        logEvent(event, context: "MOUSE_DRAGGED")
+        
         guard isDragging else { return }
         
         let currentLocation = convert(event.locationInWindow, from: nil)
@@ -88,6 +138,8 @@ class PressureSensitiveCanvasView: NSView {
     }
     
     override func mouseUp(with event: NSEvent) {
+        logEvent(event, context: "MOUSE_UP")
+        
         guard isDragging else { return }
         
         let currentLocation = convert(event.locationInWindow, from: nil)
@@ -103,6 +155,8 @@ class PressureSensitiveCanvasView: NSView {
     }
     
     override func pressureChange(with event: NSEvent) {
+        logEvent(event, context: "PRESSURE_CHANGE")
+        
         guard isDragging else { return }
         
         let currentLocation = convert(event.locationInWindow, from: nil)
@@ -119,6 +173,8 @@ class PressureSensitiveCanvasView: NSView {
     // MARK: - Tablet Event Handling (Apple Pencil)
     
     override func tabletPoint(with event: NSEvent) {
+        logEvent(event, context: "TABLET_POINT")
+        
         let currentLocation = convert(event.locationInWindow, from: nil)
         let pressure = extractPressure(from: event)
         let canvasLocation = convertToCanvasCoordinates(currentLocation)
@@ -146,6 +202,8 @@ class PressureSensitiveCanvasView: NSView {
     }
     
     override func tabletProximity(with event: NSEvent) {
+        logEvent(event, context: "TABLET_PROXIMITY")
+        
         if event.isEnteringProximity {
             print("🎨 TABLET: Apple Pencil entering proximity")
         } else {
@@ -158,6 +216,73 @@ class PressureSensitiveCanvasView: NSView {
             }
         }
         super.tabletProximity(with: event)
+    }
+    
+    // MARK: - Additional Event Overrides for Comprehensive Logging
+    
+    override func rightMouseDown(with event: NSEvent) {
+        logEvent(event, context: "RIGHT_MOUSE_DOWN")
+        super.rightMouseDown(with: event)
+    }
+    
+    override func rightMouseDragged(with event: NSEvent) {
+        logEvent(event, context: "RIGHT_MOUSE_DRAGGED")
+        super.rightMouseDragged(with: event)
+    }
+    
+    override func rightMouseUp(with event: NSEvent) {
+        logEvent(event, context: "RIGHT_MOUSE_UP")
+        super.rightMouseUp(with: event)
+    }
+    
+    override func otherMouseDown(with event: NSEvent) {
+        logEvent(event, context: "OTHER_MOUSE_DOWN")
+        super.otherMouseDown(with: event)
+    }
+    
+    override func otherMouseDragged(with event: NSEvent) {
+        logEvent(event, context: "OTHER_MOUSE_DRAGGED")
+        super.otherMouseDragged(with: event)
+    }
+    
+    override func otherMouseUp(with event: NSEvent) {
+        logEvent(event, context: "OTHER_MOUSE_UP")
+        super.otherMouseUp(with: event)
+    }
+    
+    override func magnify(with event: NSEvent) {
+        logEvent(event, context: "MAGNIFY")
+        super.magnify(with: event)
+    }
+    
+    override func rotate(with event: NSEvent) {
+        logEvent(event, context: "ROTATE")
+        super.rotate(with: event)
+    }
+    
+    override func swipe(with event: NSEvent) {
+        logEvent(event, context: "SWIPE")
+        super.swipe(with: event)
+    }
+    
+    override func beginGesture(with event: NSEvent) {
+        logEvent(event, context: "BEGIN_GESTURE")
+        super.beginGesture(with: event)
+    }
+    
+    override func endGesture(with event: NSEvent) {
+        logEvent(event, context: "END_GESTURE")
+        super.endGesture(with: event)
+    }
+    
+    override func smartMagnify(with event: NSEvent) {
+        logEvent(event, context: "SMART_MAGNIFY")
+        super.smartMagnify(with: event)
+    }
+    
+    override func quickLook(with event: NSEvent) {
+        logEvent(event, context: "QUICK_LOOK")
+        super.quickLook(with: event)
     }
     
     // MARK: - Pressure Extraction

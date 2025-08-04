@@ -17,6 +17,10 @@ struct PressureCalibrationView: View {
     @State private var maxPressureBarWidth: CGFloat = 0
     @State private var tabletOnlyMode: Bool = true // Focus on Apple Pencil/stylus only
     
+    // Event logging for real-time display
+    @State private var eventLog: [String] = []
+    @State private var maxEventLogEntries: Int = 20
+    
     private let barMaxWidth: CGFloat = 300
     private let maxPressureValue: Double = 2.0
     
@@ -30,12 +34,12 @@ struct PressureCalibrationView: View {
                         .fontWeight(.semibold)
                     
                     VStack(spacing: 8) {
-                        Text("Connect your iPad via Sidecar and use your Apple Pencil on the main drawing canvas to test pressure range.")
+                        Text("Use the test canvas below to test pressure sensitivity with any device.")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                         
-                        Text("Apply varying pressure from lightest touch to heaviest press.")
+                        Text("Draw with Apple Pencil, trackpad, or mouse to test pressure range.")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -55,6 +59,9 @@ struct PressureCalibrationView: View {
                     .padding(.horizontal)
                 }
                 
+                // Pressure-sensitive test canvas
+                pressureTestCanvas
+                
                 // Device support status
                 statusSection
                 
@@ -66,6 +73,9 @@ struct PressureCalibrationView: View {
                 
                 // Pressure visualization bars
                 pressureVisualizationSection
+                
+                // Event log section
+                eventLogSection
                 
                 // Control buttons
                 controlButtonsSection
@@ -100,6 +110,85 @@ struct PressureCalibrationView: View {
         .onChange(of: pressureManager.calibrationMaxPressure) {
             updateVisualization()
         }
+        .onAppear {
+            // Start monitoring for all pressure events
+            addEventToLog("Calibration tool opened - monitoring ALL pressure events")
+            addEventToLog("Waiting for input from any device (trackpad, Apple Pencil, mouse)")
+        }
+    }
+    
+    // MARK: - Pressure Test Canvas
+    
+    private var pressureTestCanvas: some View {
+        VStack(spacing: 8) {
+            Text("Test Canvas - Draw here to test pressure")
+                .font(.headline)
+            
+            ZStack {
+                // Background
+                Rectangle()
+                    .fill(Color(NSColor.controlBackgroundColor))
+                    .border(Color.gray.opacity(0.3), width: 1)
+                
+                // Pressure-sensitive canvas with comprehensive event detection
+                PressureSensitiveCanvasRepresentable(
+                    onPressureEvent: { location, pressure, eventType, isTabletEvent in
+                        print("🎨 CALIBRATION CANVAS: Event received - type: \(eventType), pressure: \(pressure), tablet: \(isTabletEvent)")
+                        print("🎨 CALIBRATION CANVAS: Location: (\(location.x), \(location.y))")
+                        
+                        // Update pressure manager
+                        pressureManager.processRealPressure(pressure, at: location, isTabletEvent: isTabletEvent)
+                        
+                        // Update calibration if active
+                        if pressureManager.isCalibrating {
+                            print("🎨 CALIBRATION CANVAS: Updating calibration with pressure: \(pressure)")
+                        }
+                        
+                        // Log all pressure events regardless of calibration state
+                        print("🎨 CALIBRATION CANVAS: ALL PRESSURE EVENTS DETECTED:")
+                        print("   - Event Type: \(eventType)")
+                        print("   - Pressure Value: \(pressure)")
+                        print("   - Is Tablet Event: \(isTabletEvent)")
+                        print("   - Location: (\(location.x), \(location.y))")
+                        print("   - Calibration Active: \(pressureManager.isCalibrating)")
+                        print("   - Current Min: \(pressureManager.calibrationMinPressure)")
+                        print("   - Current Max: \(pressureManager.calibrationMaxPressure)")
+                        print("   - Sample Count: \(pressureManager.calibrationSampleCount)")
+                        print("   ---")
+                        
+                        // Add to event log for real-time display
+                        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+                        let logEntry = "[\(timestamp)] \(eventType) - Pressure: \(String(format: "%.3f", pressure)) - Tablet: \(isTabletEvent) - Loc: (\(Int(location.x)), \(Int(location.y)))"
+                        
+                        DispatchQueue.main.async {
+                            eventLog.insert(logEntry, at: 0)
+                            if eventLog.count > maxEventLogEntries {
+                                eventLog.removeLast()
+                            }
+                        }
+                    },
+                    hasPressureSupport: .constant(false) // We'll update this based on actual detection
+                )
+                .frame(height: 150)
+                
+                // Instructions overlay
+                VStack {
+                    Text("Draw here with your device")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("(Apple Pencil, trackpad, or mouse)")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(8)
+                .background(Color.black.opacity(0.1))
+                .cornerRadius(4)
+            }
+            .frame(height: 150)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
     }
     
     // MARK: - Status Section
@@ -263,6 +352,44 @@ struct PressureCalibrationView: View {
         .cornerRadius(8)
     }
     
+    // MARK: - Event Log Section
+    
+    private var eventLogSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Event Log")
+                    .font(.headline)
+                
+                Spacer()
+                
+                Button("Clear") {
+                    eventLog.removeAll()
+                }
+                .font(.caption)
+                .foregroundColor(.blue)
+            }
+            
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 2) {
+                    ForEach(eventLog, id: \.self) { logEntry in
+                        Text(logEntry)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+            .frame(height: 100)
+            .padding(8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .border(Color.gray.opacity(0.3), width: 1)
+            .cornerRadius(4)
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+    }
+    
     // MARK: - Control Buttons Section
     
     private var controlButtonsSection: some View {
@@ -319,6 +446,49 @@ struct PressureCalibrationView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!pressureManager.isCalibrating)
+                
+                Button(action: {
+                    closeCalibration()
+                }) {
+                    Text("Close")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.orange)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+    }
+    
+    // MARK: - Close Function
+    
+    private func closeCalibration() {
+        print("🎨 CALIBRATION: Closing calibration window")
+        
+        // Stop calibration if it's running
+        if pressureManager.isCalibrating {
+            pressureManager.stopCalibration()
+            print("🎨 CALIBRATION: Stopped calibration before closing")
+        }
+        
+        // Dismiss the view
+        presentationMode.wrappedValue.dismiss()
+        print("🎨 CALIBRATION: Calibration window dismissed")
+    }
+    
+    // MARK: - Event Detection Helper
+    
+    private func addEventToLog(_ message: String) {
+        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let logEntry = "[\(timestamp)] \(message)"
+        
+        DispatchQueue.main.async {
+            eventLog.insert(logEntry, at: 0)
+            if eventLog.count > maxEventLogEntries {
+                eventLog.removeLast()
             }
         }
     }
