@@ -61,27 +61,22 @@ class AppState {
     // MARK: - Panel Actions
     func showLayersPanel() {
         selectedPanelTab = .layers
-        print("🎨 AppState: Switched to layers panel")
     }
     
     func showColorPanel() {
         selectedPanelTab = .color
-        print("🎨 AppState: Switched to color panel")
     }
     
     func showStrokeFillPanel() {
         selectedPanelTab = .properties
-        print("🎨 AppState: Switched to stroke/fill panel")
     }
     
     func showPathOpsPanel() {
         selectedPanelTab = .pathOps
-        print("🎨 AppState: Switched to path ops panel")
     }
     
     func showFontPanel() {
         selectedPanelTab = .font
-        print("🎨 AppState: Switched to font panel")
     }
     
     // MARK: - Gradient Editing Actions
@@ -104,14 +99,11 @@ class AppState {
     func showGradientHUD(data: GradientHUDData) {
         gradientHUDData = data
         showingGradientHUD = true
-        print("🎨 AppState: Showing gradient HUD - showingGradientHUD: \(showingGradientHUD), gradientHUDData: \(gradientHUDData != nil)")
-        print("🎨 AppState: editingGradientStopId: \(data.editingGradientStopId), currentGradient: \(data.currentGradient != nil)")
     }
     
     func hideGradientHUD() {
         showingGradientHUD = false
         gradientHUDData = nil
-        print("🎨 AppState: Hiding gradient HUD")
     }
     
     // MARK: - Development Actions
@@ -119,16 +111,11 @@ class AppState {
     
     func showCoreGraphicsTest() {
         showingCoreGraphicsTest = true
-        print("🧪 AppState: Showing CoreGraphics test")
     }
     
     func runPathOperationsBenchmark() {
-        print("⚡ AppState: Running path operations benchmark")
         // TODO: Move benchmark logic to a utility class
-        // For now, just print a message
-        print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
-        print("📊 Benchmark functionality to be implemented in utility class")
-        print("✅ BENCHMARK PLACEHOLDER COMPLETE")
+        // For now, silent execution
     }
 }
 
@@ -163,6 +150,9 @@ class PersistentGradientHUDManager {
     
     func show(stopId: UUID, color: VectorColor, document: VectorDocument, gradient: VectorGradient?, 
               onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
+        // Remember if window was already visible to avoid reopening
+        let wasAlreadyVisible = isVisible
+        
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
         self.editingStopColor = color
@@ -177,9 +167,14 @@ class PersistentGradientHUDManager {
         // 🔥 CRITICAL: Force the ColorPanel to refresh when switching gradient stops
         stableColorDocument.objectWillChange.send()
         
-        // 🔥 Show the gradient HUD window
-        isVisible = true
-        appState?.openWindowAction?("gradient-hud")
+        // 🔥 Only open window if it wasn't already visible
+        if !wasAlreadyVisible {
+            isVisible = true
+            appState?.openWindowAction?("gradient-hud")
+        } else {
+            // Window is already open, just refresh the content
+            isVisible = true // Ensure it stays visible
+        }
     }
     
     func hide() {

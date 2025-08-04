@@ -1524,17 +1524,27 @@ struct logos_inken_ioApp: App {
                     .environment(appState)
                     .background(WindowAccessor { window in
                         if let window = window {
-                            // 🔥 macOS 15+ FLOATING WINDOW FEATURES
+                            // 🔥 CLEAN HUD WINDOW - Remove all system UI
                             window.level = NSWindow.Level.floating // Float above all windows
                             window.isMovableByWindowBackground = true // Drag from anywhere
+                            
+                            // 🔥 REMOVE ALL WINDOW CHROME
                             window.titlebarAppearsTransparent = true
                             window.titleVisibility = .hidden
                             window.standardWindowButton(.closeButton)?.isHidden = true
                             window.standardWindowButton(.miniaturizeButton)?.isHidden = true
                             window.standardWindowButton(.zoomButton)?.isHidden = true
+                            window.styleMask.remove(.titled)
+                            window.styleMask.remove(.resizable)
+                            window.styleMask.insert(.borderless)
+                            
+                            // 🔥 CLEAN TRANSPARENT BACKGROUND WITH SHADOW
                             window.backgroundColor = NSColor.clear
                             window.isOpaque = false
-                            window.hasShadow = true
+                            window.hasShadow = true // Enable proper window shadow
+                            
+                            // 🔥 DISABLE TABBING - No tabs for HUD
+                            window.tabbingMode = .disallowed
                         }
                     })
             } else {
@@ -1542,7 +1552,7 @@ struct logos_inken_ioApp: App {
             }
         }
         .windowResizability(.contentSize) // Size to content
-        .windowStyle(.hiddenTitleBar) // Hide title bar for custom look
+        .windowStyle(.hiddenTitleBar) // Hide title bar for HUD
         .defaultPosition(.center) // Center initially
         // 🔥 CONDITIONAL macOS 15+ windowLevel - handled in WindowAccessor
         

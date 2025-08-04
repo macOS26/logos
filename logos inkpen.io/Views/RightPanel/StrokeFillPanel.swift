@@ -2633,6 +2633,8 @@ struct GradientColorPickerSheet: View {
             .frame(height: 50)
         }
         .background(Color(NSColor.windowBackgroundColor))
+        .cornerRadius(12) // Proper corner radius
+        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5) // Professional shadow
         .task {
             // Set up gradient editing state
             if let stopId = editingGradientStopId, let gradient = currentGradient {
