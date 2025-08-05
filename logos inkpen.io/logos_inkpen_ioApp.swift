@@ -1520,6 +1520,69 @@ struct logos_inken_ioApp: App {
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
+        .commands {
+            // Application Menu commands (appears under the app name)
+            CommandGroup(replacing: .appSettings) {
+                Menu("Default Tool") {
+                    Button(appState.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
+                        appState.defaultTool = .selection
+                    }
+                    .help("Set selection tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .directSelection ? "✓ Direct Selection Tool" : "Direct Selection Tool") {
+                        appState.defaultTool = .directSelection
+                    }
+                    .help("Set direct selection tool as default for new documents")
+                    
+                    Divider()
+                    
+                    Button(appState.defaultTool == .bezierPen ? "✓ Bezier Pen Tool" : "Bezier Pen Tool") {
+                        appState.defaultTool = .bezierPen
+                    }
+                    .help("Set bezier pen tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .freehand ? "✓ Freehand Tool" : "Freehand Tool") {
+                        appState.defaultTool = .freehand
+                    }
+                    .help("Set freehand tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .brush ? "✓ Brush Tool" : "Brush Tool") {
+                        appState.defaultTool = .brush
+                    }
+                    .help("Set brush tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .marker ? "✓ Marker Tool" : "Marker Tool") {
+                        appState.defaultTool = .marker
+                    }
+                    .help("Set marker tool as default for new documents")
+                    
+                    Divider()
+                    
+                    Button(appState.defaultTool == .line ? "✓ Line Tool" : "Line Tool") {
+                        appState.defaultTool = .line
+                    }
+                    .help("Set line tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .rectangle ? "✓ Rectangle Tool" : "Rectangle Tool") {
+                        appState.defaultTool = .rectangle
+                    }
+                    .help("Set rectangle tool as default for new documents")
+                    
+                    Button(appState.defaultTool == .circle ? "✓ Circle Tool" : "Circle Tool") {
+                        appState.defaultTool = .circle
+                    }
+                    .help("Set circle tool as default for new documents")
+                }
+                
+                Divider()
+                
+                Button("Preferences...") {
+                    // TODO: Add preferences window
+                }
+                .keyboardShortcut(",", modifiers: [.command])
+                .help("Open application preferences")
+            }
+        }
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
         WindowGroup("Gradient Color Picker", id: "gradient-hud") {
