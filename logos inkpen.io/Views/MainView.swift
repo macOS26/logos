@@ -222,6 +222,7 @@ struct MainView: View {
         .toolbar {
             MainToolbarContent(
             document: document,
+            appState: appState,
             currentDocumentURL: $currentDocumentURL,
             showingDocumentSettings: $showingDocumentSettings,
             showingExportDialog: $showingExportDialog,
@@ -812,6 +813,7 @@ struct MainView: View {
 
 struct MainToolbarContent: ToolbarContent {
     @ObservedObject var document: VectorDocument
+    let appState: AppState
     @Binding var currentDocumentURL: URL?
     @Binding var showingDocumentSettings: Bool
     @Binding var showingExportDialog: Bool
@@ -1005,6 +1007,59 @@ struct MainToolbarContent: ToolbarContent {
                     Button("Export to Other Formats...") {
                         showingExportDialog = true
                     }
+                }
+                
+                Divider()
+                
+                Menu("Default Tool") {
+                    Button("Selection Tool (Arrow)") {
+                        appState.defaultTool = .selection
+                    }
+                    .help("Set selection tool as default for new documents")
+                    
+                    Button("Direct Selection Tool") {
+                        appState.defaultTool = .directSelection
+                    }
+                    .help("Set direct selection tool as default for new documents")
+                    
+                    Divider()
+                    
+                    Button("Bezier Pen Tool") {
+                        appState.defaultTool = .bezierPen
+                    }
+                    .help("Set bezier pen tool as default for new documents")
+                    
+                    Button("Freehand Tool") {
+                        appState.defaultTool = .freehand
+                    }
+                    .help("Set freehand tool as default for new documents")
+                    
+                    Button("Brush Tool") {
+                        appState.defaultTool = .brush
+                    }
+                    .help("Set brush tool as default for new documents")
+                    
+                    Button("Marker Tool") {
+                        appState.defaultTool = .marker
+                    }
+                    .help("Set marker tool as default for new documents")
+                    
+                    Divider()
+                    
+                    Button("Line Tool") {
+                        appState.defaultTool = .line
+                    }
+                    .help("Set line tool as default for new documents")
+                    
+                    Button("Rectangle Tool") {
+                        appState.defaultTool = .rectangle
+                    }
+                    .help("Set rectangle tool as default for new documents")
+                    
+                    Button("Circle Tool") {
+                        appState.defaultTool = .circle
+                    }
+                    .help("Set circle tool as default for new documents")
                 }
                 
                 Divider()

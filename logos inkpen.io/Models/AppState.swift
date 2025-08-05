@@ -27,6 +27,20 @@ struct GradientHUDData {
 class AppState {
     var selectedPanelTab: PanelTab = .layers
     
+    // MARK: - Default Tool Setting (Persistent across app launches)
+    var defaultTool: DrawingTool {
+        get {
+            if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
+               let tool = DrawingTool(rawValue: toolRawValue) {
+                return tool
+            }
+            return .selection // Default to arrow/selection tool
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "defaultTool")
+        }
+    }
+    
     // MARK: - Pressure Sensitivity Toggle
     var pressureSensitivityEnabled: Bool {
         get { PressureManager.shared.pressureSensitivityEnabled }

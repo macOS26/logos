@@ -660,6 +660,7 @@ struct DocumentBasedMainView: View {
             
             MainToolbarContent(
                 document: document,
+                appState: appState,
                 currentDocumentURL: $currentDocumentURL,
                 showingDocumentSettings: $showingDocumentSettings,
                 showingExportDialog: $showingExportDialog,
