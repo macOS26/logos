@@ -220,12 +220,33 @@ extension DrawingCanvas {
             return 
         }
         
-        // Step 1: Simplify the raw points using Douglas-Peucker algorithm (marker-specific)
+        let rawPointLocations = markerRawPoints.map { $0.location }
+        print("🖊️ ADVANCED SMOOTHING: Starting with \(rawPointLocations.count) raw marker points")
+        
+        var processedPoints = rawPointLocations
+        
+        // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
+        if document.settings.advancedSmoothingEnabled {
+            let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
+                points: processedPoints,
+                iterations: document.settings.chaikinSmoothingIterations,
+                ratio: 0.25
+            )
+            processedPoints = chaikinSmoothed
+            print("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
+        }
+        
+        // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
         let smoothingTolerance = document.currentMarkerSmoothingTolerance
-        markerSimplifiedPoints = douglasPeuckerSimplify(
-            points: markerRawPoints.map { $0.location },
-            tolerance: smoothingTolerance
-        )
+        markerSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+            CurveSmoothing.improvedDouglassPeucker(
+                points: processedPoints,
+                tolerance: smoothingTolerance,
+                preserveSharpCorners: document.settings.preserveSharpCorners
+            ) :
+            douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+        
+        print("🖊️ DOUGLAS-PEUCKER: Simplified to \(markerSimplifiedPoints.count) points (tolerance: \(String(format: "%.1f", smoothingTolerance)))")
         
         // Step 2: Generate smooth felt-tip marker stroke
         let markerStrokePath = createFinalMarkerStroke(
@@ -426,7 +447,7 @@ extension DrawingCanvas {
         return offsetPoints
     }
     
-    /// Create smooth bezier path from points (same algorithm as brush and freehand tools)
+    /// Create advanced smooth bezier path from points using professional algorithms
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
             return VectorPath(elements: [])
@@ -439,8 +460,12 @@ extension DrawingCanvas {
             // Simple line for two points
             elements.append(.line(to: VectorPoint(points[1])))
         } else {
-            // Create smooth curves through all points
-            let curveSegments = fitBezierCurves(through: points)
+            // Use advanced adaptive curve fitting with centripetal Catmull-Rom
+            let curveSegments = CurveSmoothing.adaptiveCurveFitting(
+                points: points,
+                adaptiveTension: true,
+                baseTension: 0.3
+            )
             elements.append(contentsOf: curveSegments)
         }
         

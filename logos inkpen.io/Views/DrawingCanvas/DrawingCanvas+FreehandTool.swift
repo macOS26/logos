@@ -16,6 +16,7 @@ extension DrawingCanvas {
         freehandPath = nil
         freehandRawPoints.removeAll()
         freehandSimplifiedPoints.removeAll()
+        freehandRealtimeSmoothingPoints.removeAll()
         isFreehandDrawing = false
         activeFreehandShape = nil
     }
@@ -60,11 +61,24 @@ extension DrawingCanvas {
     internal func handleFreehandDragUpdate(at location: CGPoint) {
         guard isFreehandDrawing else { return }
         
-        // Add point to raw path (for real-time preview)
-        freehandRawPoints.append(location)
+        // Apply real-time smoothing for immediate visual feedback (if enabled)
+        let smoothedLocation: CGPoint
+        if document.settings.advancedSmoothingEnabled && document.settings.realTimeSmoothingEnabled {
+            smoothedLocation = RealTimeSmoothing.applyRealTimeSmoothing(
+                newPoint: location,
+                recentPoints: &freehandRealtimeSmoothingPoints,
+                windowSize: 5,
+                strength: document.settings.realTimeSmoothingStrength
+            )
+        } else {
+            smoothedLocation = location
+        }
         
-        // Update real-time preview with simple line segments
-        updateFreehandPreview()
+        // Add both original and smoothed points (use smoothed for preview)
+        freehandRawPoints.append(location)  // Keep original for final processing
+        
+        // Update real-time preview with smoothed location
+        updateFreehandPreview(smoothedLocation: smoothedLocation)
         
         // Limit raw points array to prevent memory issues
         if freehandRawPoints.count > 1000 {
@@ -89,7 +103,7 @@ extension DrawingCanvas {
     
     // MARK: - Real-time Preview
     
-    private func updateFreehandPreview() {
+    private func updateFreehandPreview(smoothedLocation: CGPoint? = nil) {
         guard let activeFreehandShape = activeFreehandShape,
               freehandRawPoints.count >= 2,
               let layerIndex = document.selectedLayerIndex else { return }
@@ -117,7 +131,7 @@ extension DrawingCanvas {
         document.objectWillChange.send()
     }
     
-    // MARK: - Professional Curve Fitting
+    // MARK: - Professional Curve Fitting with Advanced Smoothing
     
     private func processFreehandPath() {
         guard freehandRawPoints.count >= 3 else {
@@ -125,16 +139,42 @@ extension DrawingCanvas {
             return
         }
         
-        // STEP 1: Apply Douglas-Peucker simplification to reduce point count
+        print("🖊️ ADVANCED SMOOTHING: Starting with \(freehandRawPoints.count) raw points")
+        
+        var processedPoints = freehandRawPoints
+        
+        // STEP 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
+        if document.settings.advancedSmoothingEnabled {
+            let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
+                points: processedPoints,
+                iterations: document.settings.chaikinSmoothingIterations,
+                ratio: 0.25
+            )
+            processedPoints = chaikinSmoothed
+            print("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
+        }
+        
+        // STEP 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
         let tolerance = document.settings.freehandSmoothingTolerance
-        let simplifiedPoints = douglasPeuckerSimplify(points: freehandRawPoints, tolerance: tolerance)
-        print("🖊️ CURVE FITTING: Simplified \(freehandRawPoints.count) points to \(simplifiedPoints.count) (tolerance: \(String(format: "%.1f", tolerance)))")
+        let simplifiedPoints = document.settings.advancedSmoothingEnabled ? 
+            CurveSmoothing.improvedDouglassPeucker(
+                points: processedPoints,
+                tolerance: tolerance,
+                preserveSharpCorners: document.settings.preserveSharpCorners
+            ) :
+            douglasPeuckerSimplify(points: processedPoints, tolerance: tolerance)
         
-        // STEP 2: Convert simplified points to smooth bezier curves
-        let smoothPath = createSmoothBezierPath(from: simplifiedPoints)
+        print("🖊️ DOUGLAS-PEUCKER: Simplified to \(simplifiedPoints.count) points (tolerance: \(String(format: "%.1f", tolerance)))")
         
-        // STEP 3: Update the final shape with smooth curves
+        // STEP 3: Convert to smooth bezier curves with adaptive tension
+        let smoothPath = document.settings.advancedSmoothingEnabled ? 
+            createAdvancedSmoothBezierPath(from: simplifiedPoints) :
+            createSmoothBezierPath(from: simplifiedPoints)
+        
+        // STEP 4: Update the final shape with professionally smooth curves
         updateFinalFreehandShape(with: smoothPath)
+        
+        print("✅ FREEHAND: Advanced smoothing completed - much smoother curves!")
     }
     
     // MARK: - Douglas-Peucker Line Simplification Algorithm
@@ -188,8 +228,34 @@ extension DrawingCanvas {
         return distance
     }
     
-    // MARK: - Bezier Curve Fitting
+    // MARK: - Advanced Bezier Curve Fitting
     
+    /// Creates professionally smooth bezier curves using advanced algorithms
+    private func createAdvancedSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
+        guard points.count >= 2 else {
+            return VectorPath(elements: [])
+        }
+        
+        var elements: [PathElement] = []
+        elements.append(.move(to: VectorPoint(points[0])))
+        
+        if points.count == 2 {
+            // Simple line for two points
+            elements.append(.line(to: VectorPoint(points[1])))
+        } else {
+            // Use advanced adaptive curve fitting with centripetal Catmull-Rom
+            let curveSegments = CurveSmoothing.adaptiveCurveFitting(
+                points: points,
+                adaptiveTension: true,
+                baseTension: 0.3
+            )
+            elements.append(contentsOf: curveSegments)
+        }
+        
+        return VectorPath(elements: elements)
+    }
+    
+    /// Legacy smooth bezier path creation (kept for compatibility)
     private func createSmoothBezierPath(from points: [CGPoint]) -> VectorPath {
         guard points.count >= 2 else {
             return VectorPath(elements: [])

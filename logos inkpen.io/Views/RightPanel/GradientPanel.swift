@@ -1452,68 +1452,68 @@ struct StableGradientHUDContent: View, Equatable {
     var body: some View {
         VStack(spacing: 0) {
             // Toolbar with drag handle and close button
-            HStack {
-                // Drag handle area
-                HStack {
-                    Image(systemName: "line.3.horizontal")
-                        .foregroundColor(.secondary)
-                        .font(.caption)
-                    Text("Select Gradient Color")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Spacer()
-                
-                // Close button
-                Button(action: {
-                    hudManager.hide()
-                }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .buttonStyle(PlainButtonStyle())
-                .frame(width: 20, height: 20)
-                .background(Color.clear)
-                .cornerRadius(4)
-                .help("Close")
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(NSColor.windowBackgroundColor))
-            .overlay(
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 1),
-                alignment: .bottom
-            )
+//            HStack {
+//                // Drag handle area
+//                HStack {
+//                    Image(systemName: "line.3.horizontal")
+//                        .foregroundColor(.secondary)
+//                        .font(.caption)
+//                    Text("Select Gradient Color")
+//                        .font(.headline)
+//                        .foregroundColor(.primary)
+//                }
+//                .frame(maxWidth: .infinity, alignment: .leading)
+//                
+//                Spacer()
+//                
+//                // Close button
+//                Button(action: {
+//                    hudManager.hide()
+//                }) {
+//                    Image(systemName: "xmark")
+//                        .foregroundColor(.secondary)
+//                        .font(.system(size: 12, weight: .medium))
+//                }
+//                .buttonStyle(PlainButtonStyle())
+//                .frame(width: 20, height: 20)
+//                .background(Color.clear)
+//                .cornerRadius(4)
+//                .help("Close")
+//            }
+//            .padding(.horizontal, 16)
+//            .padding(.vertical, 12)
+//            .background(Color(NSColor.windowBackgroundColor))
+//            .overlay(
+//                Rectangle()
+//                    .fill(Color.gray.opacity(0.2))
+//                    .frame(height: 1),
+//                alignment: .bottom
+//            )
             
             // 🔥 STABLE COLOR PANEL - Only recreated when editingStopId changes
             StableColorPanelWrapper(hudManager: hudManager)
                 .frame(maxWidth: 350, maxHeight: 500)
             
             // 🔥 CLOSE BUTTON in lower right corner + DRAGGABLE AREA
-            HStack {
-                // Draggable dead area on the left
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 20)
-                    .contentShape(Rectangle())
-                
-                Spacer()
-                
-                // Close button in lower right
-                Button("Close") {
-                    hudManager.hide()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .padding(.trailing, 16)
-                .padding(.bottom, 12)
-            }
-            .background(Color(NSColor.windowBackgroundColor))
+//            HStack {
+//                // Draggable dead area on the left
+//                Rectangle()
+//                    .fill(Color.clear)
+//                    .frame(height: 20)
+//                    .contentShape(Rectangle())
+//                
+//                Spacer()
+//                
+//                // Close button in lower right
+//                Button("Close") {
+//                    hudManager.hide()
+//                }
+//                .buttonStyle(.borderedProminent)
+//                .controlSize(.small)
+//                .padding(.trailing, 16)
+//                .padding(.bottom, 12)
+//            }
+//            .background(Color(NSColor.windowBackgroundColor))
         }
         .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))

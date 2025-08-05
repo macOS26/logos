@@ -1524,43 +1524,30 @@ struct logos_inken_ioApp: App {
                     .environment(appState)
                     .background(WindowAccessor { window in
                         if let window = window {
-                            // 🔥 CLEAN HUD WINDOW - Remove all system UI
-                            window.level = NSWindow.Level.modalPanel // Float above all windows
-                            window.isMovableByWindowBackground = true // Drag from anywhere
+                            // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
+                            window.styleMask = [.hudWindow, .titled, .closable]
                             
-                            // 🔥 REMOVE ALL WINDOW CHROME
+                            // 🔥 HUD APPEARANCE
+                            window.appearance = NSAppearance(named: .darkAqua)
                             window.titlebarAppearsTransparent = true
-                            window.titleVisibility = .hidden
-                            window.title = ""
-                            window.standardWindowButton(.closeButton)?.isHidden = true
-                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-                            window.standardWindowButton(.zoomButton)?.isHidden = true
-                            // fullScreenButton is deprecated - already handled by borderless
+                            window.titleVisibility = .visible // Keep this visible for dragging
+                            window.title = "Select Gradient Color" // Set your window title
                             
-                            // 🔥 PROPER BORDERLESS SETUP - Removes corner artifacts
-                          //  window.styleMask = .borderless
-                           // window.isOpaque = false
+                            // 🔥 TRANSPARENCY & BACKGROUND
+                            window.isOpaque = true
+                            window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+                            window.hasShadow = true
                             
-                            // 🔥 CLEAN TRANSPARENT BACKGROUND WITH SHADOW
-                          //  window.backgroundColor = NSColor.clear
-                           // window.hasShadow = true // Enable proper window shadow
-                            
-                     //       window.styleMask.remove(.titled)
-                           
-                           // window.titlebarAppearsTransparent = true
-                            // Optionally hide the title text as well
-                            // 🔥 DISABLE TABBING - No tabs for HUD
+                            // 🔥 WINDOW BEHAVIOR
+                            window.level = .modalPanel
+                            window.isMovableByWindowBackground = false // FALSE so sliders work
                             window.tabbingMode = .disallowed
                             
-                            window.styleMask = [.borderless, .resizable]
-                            window.isOpaque = false
-                            window.backgroundColor = NSColor.clear
-
-                            // Add corner radius to the content view
-                            window.contentView?.wantsLayer = true
-                            window.contentView?.layer?.cornerRadius = 10.0
-                            window.contentView?.layer?.masksToBounds = true
-                            window.contentView?.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+                            // 🔥 OPTIONAL: Style the window buttons
+                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                            window.standardWindowButton(.zoomButton)?.isHidden = true
+                            window.styleMask.insert(.utilityWindow)
+                            // Keep close button visible
                         }
                     })
             } else {

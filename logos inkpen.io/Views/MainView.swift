@@ -1488,6 +1488,9 @@ struct DocumentSettingsView: View {
                     
                     // Drawing Tools Section
                     drawingToolsSection
+                    
+                    // Advanced Smoothing Section
+                    advancedSmoothingSection
                 }
                 .padding(24)
             }
@@ -1781,6 +1784,172 @@ struct DocumentSettingsView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Advanced Smoothing Section
+    private var advancedSmoothingSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "waveform.path")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.purple)
+                
+                Text("Advanced Smoothing")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Toggle("", isOn: $document.settings.advancedSmoothingEnabled)
+                    .toggleStyle(SwitchToggleStyle(tint: .purple))
+                    .onChange(of: document.settings.advancedSmoothingEnabled) {
+                        document.onSettingsChanged()
+                    }
+            }
+            
+            if document.settings.advancedSmoothingEnabled {
+                VStack(alignment: .leading, spacing: 12) {
+                    // Real-time smoothing
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Real-time Smoothing")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $document.settings.realTimeSmoothingEnabled)
+                                .toggleStyle(SwitchToggleStyle(tint: .purple))
+                                .onChange(of: document.settings.realTimeSmoothingEnabled) {
+                                    document.onSettingsChanged()
+                                }
+                        }
+                        
+                        if document.settings.realTimeSmoothingEnabled {
+                            HStack {
+                                Text("Strength")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                
+                                Spacer()
+                                
+                                Text(String(format: "%.1f", document.settings.realTimeSmoothingStrength))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(.purple)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .fill(Color.purple.opacity(0.1))
+                                    )
+                            }
+                            
+                            Slider(
+                                value: $document.settings.realTimeSmoothingStrength,
+                                in: 0.0...1.0,
+                                step: 0.1
+                            ) {
+                                Text("Real-time Smoothing Strength")
+                            } minimumValueLabel: {
+                                Text("Light")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            } maximumValueLabel: {
+                                Text("Strong")
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            .onChange(of: document.settings.realTimeSmoothingStrength) {
+                                document.onSettingsChanged()
+                            }
+                        }
+                    }
+                    
+                    // Chaikin smoothing iterations
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Chaikin Iterations")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Text("\(document.settings.chaikinSmoothingIterations)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.purple)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.purple.opacity(0.1))
+                                )
+                        }
+                        
+                        Slider(
+                            value: Binding<Double>(
+                                get: { Double(document.settings.chaikinSmoothingIterations) },
+                                set: { document.settings.chaikinSmoothingIterations = Int($0) }
+                            ),
+                            in: 1...3,
+                            step: 1
+                        ) {
+                            Text("Chaikin Smoothing Iterations")
+                        } minimumValueLabel: {
+                            Text("1")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.secondary)
+                        } maximumValueLabel: {
+                            Text("3")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        .onChange(of: document.settings.chaikinSmoothingIterations) {
+                            document.onSettingsChanged()
+                        }
+                        
+                        Text("More iterations create smoother curves but may lose detail")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                    
+                    // Advanced options
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Adaptive Tension")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $document.settings.adaptiveTensionEnabled)
+                                .toggleStyle(SwitchToggleStyle(tint: .purple))
+                                .scaleEffect(0.8)
+                                .onChange(of: document.settings.adaptiveTensionEnabled) {
+                                    document.onSettingsChanged()
+                                }
+                        }
+                        
+                        HStack {
+                            Text("Preserve Sharp Corners")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $document.settings.preserveSharpCorners)
+                                .toggleStyle(SwitchToggleStyle(tint: .purple))
+                                .scaleEffect(0.8)
+                                .onChange(of: document.settings.preserveSharpCorners) {
+                                    document.onSettingsChanged()
+                                }
+                        }
+                    }
+                }
+                .padding(.leading, 12)
+            }
+        }
+        .padding(.top, 8)
     }
     
     // MARK: - Professional Footer

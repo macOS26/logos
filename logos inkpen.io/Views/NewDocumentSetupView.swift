@@ -25,6 +25,14 @@ struct DocumentSetupData {
     var brushPressureSensitivity: Double = 0.5
     var brushTaper: Double = 0.3
     
+    // Advanced Smoothing Settings
+    var advancedSmoothingEnabled: Bool = true
+    var chaikinSmoothingIterations: Int = 1
+    var realTimeSmoothingEnabled: Bool = true
+    var realTimeSmoothingStrength: Double = 0.3
+    var adaptiveTensionEnabled: Bool = true
+    var preserveSharpCorners: Bool = true
+    
     var documentSettings: DocumentSettings {
         DocumentSettings(
             width: width,
@@ -40,7 +48,13 @@ struct DocumentSetupData {
             freehandSmoothingTolerance: freehandSmoothingTolerance,
             brushThickness: brushThickness,
             brushPressureSensitivity: brushPressureSensitivity,
-            brushTaper: brushTaper
+            brushTaper: brushTaper,
+            advancedSmoothingEnabled: advancedSmoothingEnabled,
+            chaikinSmoothingIterations: chaikinSmoothingIterations,
+            realTimeSmoothingEnabled: realTimeSmoothingEnabled,
+            realTimeSmoothingStrength: realTimeSmoothingStrength,
+            adaptiveTensionEnabled: adaptiveTensionEnabled,
+            preserveSharpCorners: preserveSharpCorners
         )
     }
 }

@@ -308,12 +308,33 @@ extension DrawingCanvas {
             return 
         }
         
-        // Step 1: Simplify the raw points using Douglas-Peucker algorithm (same as freehand)
+        let rawPointLocations = brushRawPoints.map { $0.location }
+        print("🖌️ ADVANCED SMOOTHING: Starting with \(rawPointLocations.count) raw brush points")
+        
+        var processedPoints = rawPointLocations
+        
+        // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
+        if document.settings.advancedSmoothingEnabled {
+            let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
+                points: processedPoints,
+                iterations: document.settings.chaikinSmoothingIterations,
+                ratio: 0.25
+            )
+            processedPoints = chaikinSmoothed
+            print("🖌️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
+        }
+        
+        // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
         let smoothingTolerance = document.currentBrushSmoothingTolerance  // Use brush-specific smoothing tolerance
-        brushSimplifiedPoints = douglasPeuckerSimplify(
-            points: brushRawPoints.map { $0.location },
-            tolerance: smoothingTolerance
-        )
+        brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+            CurveSmoothing.improvedDouglassPeucker(
+                points: processedPoints,
+                tolerance: smoothingTolerance,
+                preserveSharpCorners: document.settings.preserveSharpCorners
+            ) :
+            douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+        
+        print("🖌️ DOUGLAS-PEUCKER: Simplified to \(brushSimplifiedPoints.count) points (tolerance: \(String(format: "%.1f", smoothingTolerance)))")
         
         // Step 2: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling

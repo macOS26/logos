@@ -110,6 +110,7 @@ struct DrawingCanvas: View {
     @State internal var freehandPath: VectorPath?
     @State internal var freehandRawPoints: [CGPoint] = [] // Raw mouse tracking points
     @State internal var freehandSimplifiedPoints: [VectorPoint] = [] // Douglas-Peucker simplified points
+    @State internal var freehandRealtimeSmoothingPoints: [CGPoint] = [] // For real-time smoothing
     @State internal var isFreehandDrawing = false
     @State internal var activeFreehandShape: VectorShape? = nil // Real-time freehand shape preview
 
