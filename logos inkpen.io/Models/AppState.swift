@@ -25,19 +25,16 @@ struct GradientHUDData {
 
 @Observable
 class AppState {
+    // MARK: - Shared Instance
+    static let shared = AppState()
+    
     var selectedPanelTab: PanelTab = .layers
     
     // MARK: - Default Tool Setting (Persistent across app launches)
-    var defaultTool: DrawingTool {
-        get {
-            if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
-               let tool = DrawingTool(rawValue: toolRawValue) {
-                return tool
-            }
-            return .selection // Default to arrow/selection tool
-        }
-        set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: "defaultTool")
+    var defaultTool: DrawingTool = .selection {
+        didSet {
+            UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
+            print("🛠️ Default tool changed to: \(defaultTool.rawValue)")
         }
     }
     
@@ -66,6 +63,18 @@ class AppState {
     // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
+    
+    // MARK: - Initializer
+    private init() {
+        // Load saved default tool from UserDefaults
+        if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
+           let tool = DrawingTool(rawValue: toolRawValue) {
+            self.defaultTool = tool
+            print("🛠️ Loaded saved default tool: \(tool.rawValue)")
+        } else {
+            print("🛠️ Using default tool: selection")
+        }
+    }
     
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
         self.openWindowAction = { id in

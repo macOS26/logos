@@ -1500,7 +1500,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct logos_inken_ioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @FocusedObject var documentState: DocumentState?
-    @State private var appState = AppState()
+    private var appState = AppState.shared
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
     
@@ -1524,52 +1524,52 @@ struct logos_inken_ioApp: App {
             // Application Menu commands (appears under the app name)
             CommandGroup(replacing: .appSettings) {
                 Menu("Default Tool") {
-                    Button(appState.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
-                        appState.defaultTool = .selection
+                    Button(AppState.shared.defaultTool == .selection ? "✓ Selection Tool (Arrow)" : "Selection Tool (Arrow)") {
+                        AppState.shared.defaultTool = .selection
                     }
                     .help("Set selection tool as default for new documents")
                     
-                    Button(appState.defaultTool == .directSelection ? "✓ Direct Selection Tool" : "Direct Selection Tool") {
-                        appState.defaultTool = .directSelection
+                    Button(AppState.shared.defaultTool == .directSelection ? "✓ Direct Selection Tool" : "Direct Selection Tool") {
+                        AppState.shared.defaultTool = .directSelection
                     }
                     .help("Set direct selection tool as default for new documents")
                     
                     Divider()
                     
-                    Button(appState.defaultTool == .bezierPen ? "✓ Bezier Pen Tool" : "Bezier Pen Tool") {
-                        appState.defaultTool = .bezierPen
+                    Button(AppState.shared.defaultTool == .bezierPen ? "✓ Bezier Pen Tool" : "Bezier Pen Tool") {
+                        AppState.shared.defaultTool = .bezierPen
                     }
                     .help("Set bezier pen tool as default for new documents")
                     
-                    Button(appState.defaultTool == .freehand ? "✓ Freehand Tool" : "Freehand Tool") {
-                        appState.defaultTool = .freehand
+                    Button(AppState.shared.defaultTool == .freehand ? "✓ Freehand Tool" : "Freehand Tool") {
+                        AppState.shared.defaultTool = .freehand
                     }
                     .help("Set freehand tool as default for new documents")
                     
-                    Button(appState.defaultTool == .brush ? "✓ Brush Tool" : "Brush Tool") {
-                        appState.defaultTool = .brush
+                    Button(AppState.shared.defaultTool == .brush ? "✓ Brush Tool" : "Brush Tool") {
+                        AppState.shared.defaultTool = .brush
                     }
                     .help("Set brush tool as default for new documents")
                     
-                    Button(appState.defaultTool == .marker ? "✓ Marker Tool" : "Marker Tool") {
-                        appState.defaultTool = .marker
+                    Button(AppState.shared.defaultTool == .marker ? "✓ Marker Tool" : "Marker Tool") {
+                        AppState.shared.defaultTool = .marker
                     }
                     .help("Set marker tool as default for new documents")
                     
                     Divider()
                     
-                    Button(appState.defaultTool == .line ? "✓ Line Tool" : "Line Tool") {
-                        appState.defaultTool = .line
+                    Button(AppState.shared.defaultTool == .line ? "✓ Line Tool" : "Line Tool") {
+                        AppState.shared.defaultTool = .line
                     }
                     .help("Set line tool as default for new documents")
                     
-                    Button(appState.defaultTool == .rectangle ? "✓ Rectangle Tool" : "Rectangle Tool") {
-                        appState.defaultTool = .rectangle
+                    Button(AppState.shared.defaultTool == .rectangle ? "✓ Rectangle Tool" : "Rectangle Tool") {
+                        AppState.shared.defaultTool = .rectangle
                     }
                     .help("Set rectangle tool as default for new documents")
                     
-                    Button(appState.defaultTool == .circle ? "✓ Circle Tool" : "Circle Tool") {
-                        appState.defaultTool = .circle
+                    Button(AppState.shared.defaultTool == .circle ? "✓ Circle Tool" : "Circle Tool") {
+                        AppState.shared.defaultTool = .circle
                     }
                     .help("Set circle tool as default for new documents")
                 }
