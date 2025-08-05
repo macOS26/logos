@@ -69,6 +69,7 @@ struct NewDocumentSetupView: View {
     @State private var showingTemplatePicker = false
     @State private var documentPreview: NSImage?
     @State private var isGeneratingPreview = false
+    @Environment(AppState.self) private var appState
     
     private let templateManager = TemplateManager.shared
     
@@ -610,6 +611,10 @@ struct NewDocumentSetupView: View {
     
     private func createDocument() {
         let document = VectorDocument(settings: setupData.documentSettings)
+        
+        // Apply the user's default tool setting
+        document.currentTool = appState.defaultTool
+        print("🛠️ Applied default tool \(appState.defaultTool.rawValue) to new document from setup")
         
         // Create a suggested URL for the document
         let filename = setupData.filename.trimmingCharacters(in: .whitespacesAndNewlines)

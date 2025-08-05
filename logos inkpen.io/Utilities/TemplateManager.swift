@@ -493,12 +493,12 @@ class TemplateManager {
     }
     
     /// Create a new document from template
-    func createDocumentFromTemplate(_ type: TemplateType) -> VectorDocument {
+    func createDocumentFromTemplate(_ type: TemplateType, with defaultTool: DrawingTool = .selection) -> VectorDocument {
         print("📄 Creating document from template: \(type.displayName)")
         
         guard let template = availableTemplates[type] else {
             print("⚠️ Template not found, using blank template")
-            return createBlankDocument()
+            return createBlankDocument(with: defaultTool)
         }
         
         let document = VectorDocument(settings: template.settings)
@@ -531,6 +531,10 @@ class TemplateManager {
         // Select the first layer
         document.selectedLayerIndex = 0
         
+        // Apply the default tool setting
+        document.currentTool = defaultTool
+        print("🛠️ Set default tool to: \(defaultTool.rawValue)")
+        
         print("✅ Created document from template: \(type.displayName)")
         print("📊 Document: \(document.layers.count) layers, \(document.getTotalShapeCount()) shapes")
         
@@ -538,7 +542,7 @@ class TemplateManager {
     }
     
     /// Create a truly blank document (no content whatsoever)
-    func createBlankDocument() -> VectorDocument {
+    func createBlankDocument(with defaultTool: DrawingTool = .selection) -> VectorDocument {
         print("📄 Creating truly blank document...")
         
         // Create document immediately without waiting for template initialization
@@ -563,6 +567,10 @@ class TemplateManager {
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         document.textObjects.removeAll()
+        
+        // Apply the default tool setting
+        document.currentTool = defaultTool
+        print("🛠️ Set default tool to: \(defaultTool.rawValue)")
         
         print("✅ Created truly blank document - single layer!")
         return document

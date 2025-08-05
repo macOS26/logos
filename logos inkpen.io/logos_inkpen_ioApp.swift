@@ -775,6 +775,10 @@ struct DocumentBasedMainView: View {
             PressureCalibrationView()
         }
         .onAppear {
+            // Apply the user's default tool setting to the document
+            document.currentTool = appState.defaultTool
+            print("🛠️ Applied default tool \(appState.defaultTool.rawValue) to DocumentGroup document")
+            
             // Connect document to menu system
             documentState.setDocument(document)
             
