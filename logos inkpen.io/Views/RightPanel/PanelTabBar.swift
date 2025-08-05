@@ -16,17 +16,15 @@ struct PanelTabBar: View {
                 Button {
                     selectedTab = tab
                 } label: {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 4) {
                         Image(systemName: tab.iconName)
-                            .font(.system(size: 12))
+                            .font(.system(size: 14))
                         Text(tab.rawValue)
-                            .font(.system(size: 8))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-                            .padding(.horizontal, 2)
+                            .font(.caption2)
                     }
                     .foregroundColor(selectedTab == tab ? .blue : .secondary)
-                    .frame(width: 45, height: 40)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
                     .background(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
                     .contentShape(Rectangle()) // Extend hit area to match entire highlight area
                 }

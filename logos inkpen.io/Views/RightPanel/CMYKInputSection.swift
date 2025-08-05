@@ -127,7 +127,7 @@ struct CMYKInputSection: View {
             // CMYK Sliders with Native Apple Sliders and Gradients
             VStack(spacing: 8) {
                 // Cyan Slider
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Circle()
                         .fill(Color.cyan)
                         .frame(width: 12, height: 12)
@@ -161,11 +161,10 @@ struct CMYKInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: 120)
                     
                     TextField("", text: $cyanValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 35)
+                        .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: cyanValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -177,7 +176,7 @@ struct CMYKInputSection: View {
                 }
                 
                 // Magenta Slider
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Circle()
                         .fill(Color.pink)
                         .frame(width: 12, height: 12)
@@ -211,11 +210,10 @@ struct CMYKInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: 120)
                     
                     TextField("", text: $magentaValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 35)
+                        .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: magentaValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -227,7 +225,7 @@ struct CMYKInputSection: View {
                 }
                 
                 // Yellow Slider
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Circle()
                         .fill(Color.yellow)
                         .frame(width: 12, height: 12)
@@ -261,11 +259,10 @@ struct CMYKInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: 120)
                     
                     TextField("", text: $yellowValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 35)
+                        .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: yellowValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -277,7 +274,7 @@ struct CMYKInputSection: View {
                 }
                 
                 // Black Slider
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Circle()
                         .fill(Color.black)
                         .frame(width: 12, height: 12)
@@ -311,11 +308,10 @@ struct CMYKInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: 120)
                     
                     TextField("", text: $blackValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 35)
+                        .frame(width: 45)
                         .font(.system(size: 11))
                         .onChange(of: blackValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -328,7 +324,7 @@ struct CMYKInputSection: View {
             }
             
             // Compact Color Preview and Add Button (similar to RGB)
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 // Square Color Swatch Preview (30x30 like RGB section)
                 Button(action: {
                     applyColorToActiveSelection()

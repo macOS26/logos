@@ -24,7 +24,7 @@ struct ColorPanel: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             // GRADIENT EDITING INDICATOR - Only show when explicitly enabled
             if showGradientEditing, let gradientState = appState.gradientEditingState {
                 HStack {
@@ -40,9 +40,10 @@ struct ColorPanel: View {
                         .foregroundColor(.secondary)
                         .fontDesign(.monospaced)
                 }
-                .padding()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(Color.blue.opacity(0.1))
-                .padding(.horizontal)
+                .padding(.horizontal, 12)
             }
             
             // Color Mode Picker
@@ -69,16 +70,19 @@ struct ColorPanel: View {
                 }
                 .pickerStyle(MenuPickerStyle())
                 .font(.caption)
-                .frame(maxWidth: 160)
             }
+            .padding(.horizontal, 12)
             
             // Mode-specific input sections
             if document.settings.colorMode == .pms {
                 HSBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
+                    .padding(.horizontal, 12)
             } else if document.settings.colorMode == .cmyk {
                 CMYKInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
+                        .padding(.horizontal, 12)
             } else if document.settings.colorMode == .rgb {
                 RGBInputSection(document: document, sharedColor: $currentPreviewColor, onColorSelected: onColorSelected, showGradientEditing: showGradientEditing)
+                        .padding(.horizontal, 12)
             }
                 
             // Color Mode Specific Information
@@ -88,10 +92,11 @@ struct ColorPanel: View {
                     .foregroundColor(.secondary)
                 Spacer()
             }
+            .padding(.horizontal, 12)
             
             // Color Swatches
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(26), spacing: 3), count: 7), spacing: 3) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8), spacing: 4) {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         selectColor(color)
@@ -99,7 +104,7 @@ struct ColorPanel: View {
                         currentPreviewColor = color
                     } label: {
                         ZStack {
-                            renderColorSwatchRightPanel(color, width: 28, height: 28, cornerRadius: 0, borderWidth: 1)
+                            renderColorSwatchRightPanel(color, width: 32, height: 32, cornerRadius: 0, borderWidth: 1)
                             
                             // Show Pantone number for Pantone colors (if not clear)
                             if case .pantone = color {
@@ -116,11 +121,13 @@ struct ColorPanel: View {
                     }
                     }
                 }
+                .padding(.horizontal, 12)
             }
+            
+
             
             Spacer()
         }
-        .padding()
         .sheet(isPresented: $showingPantoneSearch) {
             PantoneColorPickerSheet(document: document)
         }
@@ -218,7 +225,7 @@ struct ColorPanel: View {
                 .lineLimit(3)
                 .minimumScaleFactor(0.5)
                 .multilineTextAlignment(.center)
-                .frame(width: 28, height: 28)
+                .frame(width: 30, height: 30)
                 .allowsTightening(true)
         }
     }
