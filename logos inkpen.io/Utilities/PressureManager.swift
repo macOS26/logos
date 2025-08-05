@@ -16,7 +16,7 @@ class PressureManager: ObservableObject {
     /// Whether real pressure input is available and detected
     @Published var hasRealPressureInput = false
     
-    /// Current pressure value (0.1 to 2.0)
+    /// Current pressure value (raw from input device)
     @Published var currentPressure: Double = 1.0
     
     /// Whether pressure sensitivity is enabled by user

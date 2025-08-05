@@ -26,9 +26,10 @@ struct PressureCalibrationView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                // Header section
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 16) {
+                // Header section
+                VStack(spacing: 12) {
                     Text("Apple Pencil Pressure Calibration")
                         .font(.title2)
                         .fontWeight(.semibold)
@@ -51,7 +52,7 @@ struct PressureCalibrationView: View {
                                 .multilineTextAlignment(.center)
                         }
                         
-                        Text("Expected: Apple Pencil generates NSTabletPoint events or mouse events with NSTabletPointEventSubtype")
+                        Text("Raw pressure values from input devices (varies by device and OS)")
                             .font(.caption2)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
@@ -79,10 +80,9 @@ struct PressureCalibrationView: View {
                 
                 // Control buttons
                 controlButtonsSection
-                
-                Spacer()
+                }
+                .padding()
             }
-            .padding()
             .navigationTitle("Pressure Calibration")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -95,7 +95,10 @@ struct PressureCalibrationView: View {
                 }
             }
         }
-        .frame(width: 450, height: 600)
+        .frame(
+            minWidth: 550, idealWidth: 650, maxWidth: 800,
+            minHeight: 900, idealHeight: 1100, maxHeight: 1400
+        )
         .onAppear {
             updateVisualization()
             // Sync the UI toggle with the pressure manager
@@ -169,7 +172,7 @@ struct PressureCalibrationView: View {
                     },
                     hasPressureSupport: .constant(false) // We'll update this based on actual detection
                 )
-                .frame(height: 150)
+                .frame(height: 280)
                 
                 // Instructions overlay
                 VStack {
@@ -184,7 +187,7 @@ struct PressureCalibrationView: View {
                 .background(Color.black.opacity(0.1))
                 .cornerRadius(4)
             }
-            .frame(height: 150)
+            .frame(height: 280)
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
@@ -379,7 +382,7 @@ struct PressureCalibrationView: View {
                     }
                 }
             }
-            .frame(height: 100)
+            .frame(height: 120)
             .padding(8)
             .background(Color(NSColor.controlBackgroundColor))
             .border(Color.gray.opacity(0.3), width: 1)

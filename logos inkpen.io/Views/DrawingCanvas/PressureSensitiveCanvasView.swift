@@ -316,10 +316,10 @@ class PressureSensitiveCanvasView: NSView {
             }
             
         case .pressure:
-            // Trackpad pressure change events (relative to baseline pressure)
-            pressure = 1.0 + Double(event.pressure)
+            // Trackpad pressure change events - use raw pressure directly
+            pressure = Double(event.pressure)
             foundRealPressure = true
-            print("🎨 PRESSURE: Pressure change event: 1.0 + \(event.pressure) = \(pressure)")
+            print("🎨 PRESSURE: Trackpad pressure: \(pressure)")
             
         default:
             pressure = 1.0
