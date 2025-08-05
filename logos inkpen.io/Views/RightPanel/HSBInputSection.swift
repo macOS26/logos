@@ -197,10 +197,11 @@ struct HSBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 120)
                     
                                             TextField("", text: $hueValue)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
+                            .frame(width: 35)
                             .font(.system(size: 11))
                             .onChange(of: hueValue) { _, _ in
                                 if let intValue = Double(hueValue) {
@@ -255,10 +256,11 @@ struct HSBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 120)
                     
                                             TextField("", text: $saturationValue)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
+                            .frame(width: 35)
                             .font(.system(size: 11))
                             .onChange(of: saturationValue) { _, _ in
                                 if let intValue = Double(saturationValue) {
@@ -313,10 +315,11 @@ struct HSBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 120)
                     
                                             TextField("", text: $brightnessValue)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .frame(width: 45)
+                            .frame(width: 35)
                             .font(.system(size: 11))
                             .onChange(of: brightnessValue) { _, _ in
                                 if let intValue = Double(brightnessValue) {

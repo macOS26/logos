@@ -101,7 +101,7 @@ struct RGBInputSection: View {
             // RGB Sliders with Native Apple Sliders and Gradients
             VStack(spacing: 8) {
                 // Red Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Circle()
                         .fill(Color.red)
                         .frame(width: 12, height: 12)
@@ -141,10 +141,11 @@ struct RGBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 85)
                     
                     TextField("", text: $redValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
+                        .frame(width: 35)
                         .font(.system(size: 11))
                         .onChange(of: redValue) {
                             guard !isProgrammaticallyUpdating else { 
@@ -161,7 +162,7 @@ struct RGBInputSection: View {
                 }
                 
                 // Green Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Circle()
                         .fill(Color.green)
                         .frame(width: 12, height: 12)
@@ -199,10 +200,11 @@ struct RGBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 85)
                     
                     TextField("", text: $greenValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
+                        .frame(width: 35)
                         .font(.system(size: 11))
                         .onChange(of: greenValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -215,7 +217,7 @@ struct RGBInputSection: View {
                 }
                 
                 // Blue Slider
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Circle()
                         .fill(Color.blue)
                         .frame(width: 12, height: 12)
@@ -251,10 +253,11 @@ struct RGBInputSection: View {
                             .frame(height: 6)
                             .allowsHitTesting(false)
                     }
+                    .frame(maxWidth: 85)
                     
                     TextField("", text: $blueValue)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .frame(width: 45)
+                        .frame(width: 35)
                         .font(.system(size: 11))
                         .onChange(of: blueValue) {
                             guard !isProgrammaticallyUpdating else { return }
@@ -268,7 +271,7 @@ struct RGBInputSection: View {
             }
             
             // Compact Hex Input and Swatch Preview
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 // Square Color Swatch Preview (30x30 like other swatches)
                 Button(action: {
                     applyColorToActiveSelection()
@@ -308,7 +311,7 @@ struct RGBInputSection: View {
                 TextField("854e44", text: $hexValue)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .font(.system(size: 11))
-                    .frame(width: 70)
+                    .frame(width: 60)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
                         updateSharedColor()
