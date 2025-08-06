@@ -13,7 +13,18 @@ extension DrawingCanvas {
     internal func setupKeyEventMonitoring() {
         // IMPROVED: Local monitor that prevents beeping but allows modifier key commands
         // ENHANCED: Now also tracks flagsChanged for shift key constraints in transform tools
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
+            // Handle key up events for temporary tool deactivation
+            if event.type == .keyUp {
+                // Handle spacebar release for temporary hand tool deactivation
+                if let characters = event.charactersIgnoringModifiers,
+                   characters == " " {
+                    self.deactivateTemporaryHandTool()
+                    return nil // Consume the event
+                }
+                return event // Let other keyUp events pass through
+            }
+            
             // Handle modifier key changes for transform tools
             if event.type == .flagsChanged {
                 // FIXED: Remove async dispatch to prevent race conditions during rapid key events
@@ -52,6 +63,14 @@ extension DrawingCanvas {
                 return event
             }
             
+            // HANDLE SPACEBAR FOR TEMPORARY HAND TOOL
+            if let characters = event.charactersIgnoringModifiers,
+               characters == " " {
+                // Handle spacebar for temporary hand tool activation
+                activateTemporaryHandTool()
+                return nil // Consume the event to prevent system handling
+            }
+            
             // ALLOW TOOL SWITCHING SHORTCUTS to pass through
             // These are single key presses that should trigger tool switching
             let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
@@ -84,5 +103,35 @@ extension DrawingCanvas {
     internal func updateModifierKeyStates(with event: NSEvent) {
         // REMOVED: This method is no longer used since NSEvent monitoring was disabled
         // to fix text input conflicts with NSTextView
+    }
+    
+    // MARK: - Temporary Hand Tool (Spacebar)
+    
+    /// Temporarily activate hand tool when spacebar is pressed
+    internal func activateTemporaryHandTool() {
+        // Only activate if not already using hand tool and not in temporary mode
+        guard document.currentTool != .hand && !isTemporaryHandToolActive else { return }
+        
+        // Store the current tool to restore later
+        temporaryToolPreviousTool = document.currentTool
+        isTemporaryHandToolActive = true
+        
+        // Switch to hand tool
+        document.currentTool = .hand
+        
+        print("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")")
+    }
+    
+    /// Deactivate temporary hand tool when spacebar is released
+    internal func deactivateTemporaryHandTool() {
+        // Only deactivate if in temporary mode
+        guard isTemporaryHandToolActive, let previousTool = temporaryToolPreviousTool else { return }
+        
+        // Restore the previous tool
+        document.currentTool = previousTool
+        isTemporaryHandToolActive = false
+        temporaryToolPreviousTool = nil
+        
+        print("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)")
     }
 } 

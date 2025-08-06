@@ -82,9 +82,16 @@ extension DrawingCanvas {
             print("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)")
             
         case .zoomIn, .zoomOut:
-            // Zoom in/out: Maintain current focal point
-            handleSimplifiedZoom(newZoomLevel: request.targetZoom, geometry: geometry)
-            print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))%")
+            // Zoom in/out: Use mouse position as focal point for professional behavior
+            if currentMousePosition != .zero {
+                handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: currentMousePosition, geometry: geometry)
+                print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)")
+            } else {
+                // Fallback to view center if no mouse position tracked
+                let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+                handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: viewCenter, geometry: geometry)
+                print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)")
+            }
             
         case .custom(let focalPoint):
             // Custom zoom with specific focal point

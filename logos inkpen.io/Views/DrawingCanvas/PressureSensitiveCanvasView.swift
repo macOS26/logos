@@ -63,15 +63,26 @@ class PressureSensitiveCanvasView: NSView {
     private func logEvent(_ event: NSEvent, context: String) {
         let eventType = event.type.rawValue
         let eventSubtype = event.subtype.rawValue
-        let pressure = event.pressure
         let location = event.locationInWindow
         let timestamp = event.timestamp
         let modifierFlags = event.modifierFlags.rawValue
         
+        // Only access pressure for events that support it
+        let pressureValue: Float
+        switch event.type {
+        case .leftMouseDown, .leftMouseUp, .leftMouseDragged,
+             .rightMouseDown, .rightMouseUp, .rightMouseDragged,
+             .otherMouseDown, .otherMouseUp, .otherMouseDragged,
+             .tabletPoint, .tabletProximity:
+            pressureValue = event.pressure
+        default:
+            pressureValue = 0.0 // Not applicable for this event type
+        }
+        
         print("🎨 EVENT LOG [\(context)]:")
         print("   Type: \(eventType) (\(event.type))")
         print("   Subtype: \(eventSubtype) (\(event.subtype))")
-        print("   Pressure: \(pressure)")
+        print("   Pressure: \(pressureValue)")
         print("   Location: (\(location.x), \(location.y))")
         print("   Timestamp: \(timestamp)")
         print("   ModifierFlags: \(modifierFlags)")

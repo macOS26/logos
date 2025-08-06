@@ -133,6 +133,10 @@ struct DrawingCanvas: View {
     // Track previous tool to detect changes
     @State internal var previousTool: DrawingTool = .selection
     
+    // TEMPORARY HAND TOOL STATE (Spacebar activation)
+    @State internal var isTemporaryHandToolActive = false
+    @State internal var temporaryToolPreviousTool: DrawingTool? = nil
+    
     // Zoom gesture state
     @State internal var initialZoomLevel: CGFloat = 1.0
     

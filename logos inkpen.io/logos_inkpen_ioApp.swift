@@ -422,7 +422,7 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         let oldZoom = document.zoomLevel
         let newZoom = min(document.zoomLevel * 1.25, 50.0)
-        document.zoomLevel = newZoom
+        document.requestZoom(to: newZoom, mode: .zoomIn)
         print("🔍 MENU: Zoom In from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
     }
     
@@ -430,7 +430,7 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         let oldZoom = document.zoomLevel
         let newZoom = max(document.zoomLevel / 1.25, 0.01)
-        document.zoomLevel = newZoom
+        document.requestZoom(to: newZoom, mode: .zoomOut)
         print("🔍 MENU: Zoom Out from \(String(format: "%.1f", oldZoom * 100))% to \(String(format: "%.1f", newZoom * 100))%")
     }
     
