@@ -1858,13 +1858,13 @@ struct logos_inken_ioApp: App {
                 Button("Selection Tool") {
                     documentState?.switchToTool(.selection)
                 }
-                .keyboardShortcut("v", modifiers: [])
+                .keyboardShortcut("a", modifiers: [])
                 .help("Switch to selection tool")
                 
                 Button("Direct Selection Tool") {
                     documentState?.switchToTool(.directSelection)
                 }
-                .keyboardShortcut("a", modifiers: [])
+                .keyboardShortcut("d", modifiers: [])
                 .help("Switch to direct selection tool")
                 
                 Button("Convert Anchor Point Tool") {

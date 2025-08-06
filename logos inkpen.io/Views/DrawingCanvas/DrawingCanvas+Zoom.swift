@@ -24,7 +24,16 @@ extension DrawingCanvas {
         }
         
         let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
-        handleSimplifiedZoom(newZoomLevel: newZoomLevel, geometry: geometry)
+        
+        // PROFESSIONAL ZOOM AT MOUSE POSITION: Use current mouse position as focal point
+        // If no mouse position available, fall back to center of view
+        if currentMousePosition != .zero {
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
+        } else {
+            // Fallback to view center if no mouse position tracked
+            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+            handleZoomAtPoint(newZoomLevel: newZoomLevel, focalPoint: viewCenter, geometry: geometry)
+        }
     }
     
     /// Handle zoom gesture end - finalize zoom level
@@ -42,9 +51,20 @@ extension DrawingCanvas {
         }
         
         let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
-        document.zoomLevel = finalZoomLevel
+        
+        // PROFESSIONAL ZOOM AT MOUSE POSITION: Final zoom also uses focal point
+        // If no mouse position available, fall back to center of view
+        if currentMousePosition != .zero {
+            handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: currentMousePosition, geometry: geometry)
+        } else {
+            // Fallback to view center if no mouse position tracked
+            let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
+            handleZoomAtPoint(newZoomLevel: finalZoomLevel, focalPoint: viewCenter, geometry: geometry)
+        }
+        
+        // Update the initial zoom level for next gesture
         initialZoomLevel = finalZoomLevel
-        print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, UI responsive")
+        print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, focal point: \(currentMousePosition), UI responsive")
     }
     
     /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)

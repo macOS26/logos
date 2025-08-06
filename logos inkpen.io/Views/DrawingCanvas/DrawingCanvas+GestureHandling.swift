@@ -15,6 +15,8 @@ extension DrawingCanvas {
     internal func handleHover(phase: HoverPhase, geometry: GeometryProxy) {
         if case .active(let location) = phase {
             currentMouseLocation = location
+            // Also update mouse position for zoom focal point
+            currentMousePosition = location
             
             // PROFESSIONAL REAL-TIME PATH UPDATES (Adobe Illustrator/FreeHand/CorelDraw Style)
             if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {

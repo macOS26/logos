@@ -54,7 +54,7 @@ extension DrawingCanvas {
             
             // ALLOW TOOL SWITCHING SHORTCUTS to pass through
             // These are single key presses that should trigger tool switching
-            let toolSwitchingKeys = Set(["v", "a", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
+            let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
             
             if let characters = event.charactersIgnoringModifiers?.lowercased(),
                toolSwitchingKeys.contains(characters) {

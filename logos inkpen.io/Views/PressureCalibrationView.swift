@@ -37,7 +37,7 @@ struct PressureCalibrationView: View {
     @State private var selectedControlPoint: Int?
     
     // Constants
-    private let barMaxWidth: CGFloat = 200 // Narrower pressure bars
+    private let barMaxWidth: CGFloat = 280 // Match right column width
     private let maxPressureValue: Double = 1.0
     
     var body: some View {
@@ -90,6 +90,7 @@ struct PressureCalibrationView: View {
                             currentPressureSection
                             pressureRangeSection
                         }
+                        .frame(width: 280) // Consistent width
                         
                         // Pressure visualization
                         pressureVisualizationSection
@@ -112,7 +113,7 @@ struct PressureCalibrationView: View {
             // Don't start calibration automatically - let user start it manually
             addEventToLog("Pressure calibration tool opened - ready to start")
         }
-        .onChange(of: pressureManager.currentPressure) { _ in
+        .onChange(of: pressureManager.currentPressure) {
             updateVisualization()
         }
     }
@@ -135,15 +136,15 @@ struct PressureCalibrationView: View {
                 Path { path in
                     // Vertical lines
                     for i in 0...10 {
-                        let x = CGFloat(i) * 25
+                        let x = CGFloat(i) * 28
                         path.move(to: CGPoint(x: x, y: 0))
-                        path.addLine(to: CGPoint(x: x, y: 250))
+                        path.addLine(to: CGPoint(x: x, y: 280))
                     }
                     // Horizontal lines
                     for i in 0...10 {
-                        let y = CGFloat(i) * 25
+                        let y = CGFloat(i) * 28
                         path.move(to: CGPoint(x: 0, y: y))
-                        path.addLine(to: CGPoint(x: 250, y: y))
+                        path.addLine(to: CGPoint(x: 280, y: y))
                     }
                 }
                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
@@ -153,11 +154,11 @@ struct PressureCalibrationView: View {
                     guard pressureCurve.count >= 2 else { return }
                     
                     let firstPoint = pressureCurve[0]
-                    path.move(to: CGPoint(x: firstPoint.x * 250, y: 250 - firstPoint.y * 250))
+                    path.move(to: CGPoint(x: firstPoint.x * 280, y: 280 - firstPoint.y * 280))
                     
                     for i in 1..<pressureCurve.count {
                         let point = pressureCurve[i]
-                        path.addLine(to: CGPoint(x: point.x * 250, y: 250 - point.y * 250))
+                        path.addLine(to: CGPoint(x: point.x * 280, y: 280 - point.y * 280))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
@@ -168,7 +169,7 @@ struct PressureCalibrationView: View {
                     Circle()
                         .fill(selectedControlPoint == index ? Color.red : Color.blue)
                         .frame(width: 12, height: 12)
-                        .position(x: point.x * 250, y: 250 - point.y * 250)
+                        .position(x: point.x * 280, y: 280 - point.y * 280)
                         .onTapGesture {
                             selectedControlPoint = index
                         }
@@ -176,15 +177,15 @@ struct PressureCalibrationView: View {
                             DragGesture()
                                 .onChanged { value in
                                     if selectedControlPoint == index {
-                                        let newX = max(0, min(1, value.location.x / 250))
-                                        let newY = max(0, min(1, (250 - value.location.y) / 250))
+                                        let newX = max(0, min(1, value.location.x / 280))
+                                        let newY = max(0, min(1, (280 - value.location.y) / 280))
                                         pressureCurve[index] = CGPoint(x: newX, y: newY)
                                         
                                         // Sort points by x value to maintain order
                                         pressureCurve.sort { $0.x < $1.x }
                                         
                                         // Update selected index after sorting
-                                        if let selectedIndex = selectedControlPoint {
+                                        if selectedControlPoint != nil {
                                             selectedControlPoint = pressureCurve.firstIndex { abs($0.x - newX) < 0.01 && abs($0.y - newY) < 0.01 }
                                         }
                                     }
@@ -192,7 +193,7 @@ struct PressureCalibrationView: View {
                         )
                 }
             }
-            .frame(width: 250, height: 250) // Make it square and taller
+            .frame(width: 280, height: 280) // Make it consistent with right column width
             
             // Curve info
             HStack {
@@ -207,6 +208,7 @@ struct PressureCalibrationView: View {
                     .foregroundColor(.secondary)
             }
         }
+        .frame(width: 280) // Consistent width
         .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
@@ -385,7 +387,7 @@ struct PressureCalibrationView: View {
         isDrawing = true
         // Use pressure curve to get thickness: 0.0 pressure = 0.0 thickness, 1.0 pressure = 10.0 thickness
         let curveThickness = getThicknessFromCurve(pressure: pressure)
-        let lineWidth = CGFloat(curveThickness * 10.0) // Scale to line width (0.0-10.0)
+        _ = CGFloat(curveThickness * 10.0) // Scale to line width (0.0-10.0)
         currentPath = VariableStrokePath(points: [PressurePoint(location: location, pressure: pressure)])
         
         // Start calibration if not already started
@@ -399,7 +401,7 @@ struct PressureCalibrationView: View {
         
         // Use pressure curve to get thickness: 0.0 pressure = 0.0 thickness, 1.0 pressure = 10.0 thickness
         let curveThickness = getThicknessFromCurve(pressure: pressure)
-        let lineWidth = CGFloat(curveThickness * 10.0) // Scale to line width (0.0-10.0)
+        _ = CGFloat(curveThickness * 10.0) // Scale to line width (0.0-10.0)
         path.points.append(PressurePoint(location: location, pressure: pressure))
         currentPath = path
         
@@ -686,6 +688,7 @@ struct PressureCalibrationView: View {
                 }
             }
         }
+        .frame(width: 280) // Consistent width
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
@@ -724,6 +727,7 @@ struct PressureCalibrationView: View {
             .border(Color.gray.opacity(0.3), width: 1)
             .cornerRadius(4)
         }
+        .frame(width: 280) // Consistent width
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
