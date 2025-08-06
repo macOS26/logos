@@ -171,23 +171,28 @@ extension DrawingCanvas {
     }
     
     internal func handleBrushDragUpdate(at location: CGPoint) {
-        guard isBrushDrawing else { return }
+        guard isBrushDrawing else { 
+            print("🖌️ BRUSH DEBUG: handleBrushDragUpdate called but isBrushDrawing is false")
+            return 
+        }
+        
+        print("🖌️ BRUSH DEBUG: handleBrushDragUpdate called at (\(location.x), \(location.y))")
         
         // Get pressure using smart detection (real or simulated)
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
         
-        // Add point to raw path with pressure data
-        let brushPoint = BrushPoint(location: location, pressure: pressure, timestamp: Date())
-        brushRawPoints.append(brushPoint)
+        print("🖌️ BRUSH DEBUG: Got pressure: \(pressure)")
+        print("🖌️ BRUSH DEBUG: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)")
+        print("🖌️ BRUSH DEBUG: Current pressure: \(PressureManager.shared.currentPressure)")
         
-        // Update real-time preview
+        // Add point to raw path with pressure data
+        let newPoint = BrushPoint(location: location, pressure: pressure, timestamp: Date())
+        brushRawPoints.append(newPoint)
+        
+        // Update preview with new point
         updateBrushPreview()
         
-        // Limit raw points array to prevent memory issues
-        if brushRawPoints.count > 1000 {
-            // Keep last 800 points
-            brushRawPoints = Array(brushRawPoints.suffix(800))
-        }
+        print("🖌️ BRUSH DEBUG: Added point, total points: \(brushRawPoints.count)")
     }
     
 

@@ -288,50 +288,87 @@ extension DrawingCanvas {
         isTabletEvent: Bool,
         geometry: GeometryProxy
     ) {
+        print("🎨 PRESSURE EVENT: Received event type: \(eventType)")
+        print("🎨 PRESSURE EVENT: Pressure: \(pressure)")
+        print("🎨 PRESSURE EVENT: Is tablet event: \(isTabletEvent)")
+        print("🎨 PRESSURE EVENT: Current tool: \(document.currentTool)")
+        
         // Convert to canvas coordinates
         let canvasLocation = screenToCanvas(location, geometry: geometry)
+        
+        print("🎨 PRESSURE EVENT: Screen location: (\(location.x), \(location.y))")
+        print("🎨 PRESSURE EVENT: Canvas location: (\(canvasLocation.x), \(canvasLocation.y))")
         
         // Update pressure manager with real pressure data
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
         PressureManager.shared.updatePressureSupport(true)
         
+        print("🎨 PRESSURE EVENT: Updated PressureManager")
+        print("🎨 PRESSURE EVENT: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)")
+        print("🎨 PRESSURE EVENT: Current pressure: \(PressureManager.shared.currentPressure)")
+        
         // Route to appropriate tool based on event type and current tool
         switch eventType {
         case .began:
+            print("🎨 PRESSURE EVENT: Routing to handlePressureDrawingStart")
             handlePressureDrawingStart(at: canvasLocation)
         case .changed:
+            print("🎨 PRESSURE EVENT: Routing to handlePressureDrawingUpdate")
             handlePressureDrawingUpdate(at: canvasLocation)
         case .ended:
+            print("🎨 PRESSURE EVENT: Routing to handlePressureDrawingEnd")
             handlePressureDrawingEnd(at: canvasLocation)
         }
     }
     
     private func handlePressureDrawingStart(at location: CGPoint) {
+        print("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)")
+        print("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)")
+        print("🎨 PRESSURE DRAWING START: Is marker drawing: \(isMarkerDrawing)")
+        
         switch document.currentTool {
         case .brush:
             if !isBrushDrawing {
+                print("🎨 PRESSURE DRAWING START: Starting brush drawing")
                 handleBrushDragStart(at: location)
+            } else {
+                print("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start")
             }
         case .marker:
             if !isMarkerDrawing {
+                print("🎨 PRESSURE DRAWING START: Starting marker drawing")
                 handleMarkerDragStart(at: location)
+            } else {
+                print("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start")
             }
         default:
+            print("🎨 PRESSURE DRAWING START: Unknown tool, skipping")
             break
         }
     }
     
     private func handlePressureDrawingUpdate(at location: CGPoint) {
+        print("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)")
+        print("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)")
+        print("🎨 PRESSURE DRAWING UPDATE: Is marker drawing: \(isMarkerDrawing)")
+        
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
+                print("🎨 PRESSURE DRAWING UPDATE: Calling handleBrushDragUpdate")
                 handleBrushDragUpdate(at: location)
+            } else {
+                print("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update")
             }
         case .marker:
             if isMarkerDrawing {
+                print("🎨 PRESSURE DRAWING UPDATE: Calling handleMarkerDragUpdate")
                 handleMarkerDragUpdate(at: location)
+            } else {
+                print("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update")
             }
         default:
+            print("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping")
             break
         }
     }

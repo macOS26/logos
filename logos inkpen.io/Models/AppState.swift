@@ -39,9 +39,11 @@ class AppState {
     }
     
     // MARK: - Pressure Sensitivity Toggle
-    var pressureSensitivityEnabled: Bool {
-        get { PressureManager.shared.pressureSensitivityEnabled }
-        set { PressureManager.shared.pressureSensitivityEnabled = newValue }
+    var pressureSensitivityEnabled: Bool = true {
+        didSet {
+            UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
+            print("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)")
+        }
     }
     
     // MARK: - Gradient Editing State
@@ -74,6 +76,10 @@ class AppState {
         } else {
             print("🛠️ Using default tool: selection")
         }
+        
+        // Load saved pressure sensitivity setting
+        self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
+        print("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)")
     }
     
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {

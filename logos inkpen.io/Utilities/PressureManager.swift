@@ -7,6 +7,7 @@
 
 import Foundation
 import AppKit
+import SwiftUI
 
 /// Manages pressure detection with smart fallback to simulation
 class PressureManager: ObservableObject {
@@ -19,17 +20,14 @@ class PressureManager: ObservableObject {
     /// Current pressure value (raw from input device)
     @Published var currentPressure: Double = 1.0
     
-    /// Whether pressure sensitivity is enabled by user
-    @Published var pressureSensitivityEnabled = true
-    
     /// Calibration tracking - whether calibration is active
     @Published var isCalibrating = false
     
     /// Minimum pressure recorded during calibration
-    @Published var calibrationMinPressure: Double = 1.0
+    @Published var calibrationMinPressure: Double = 0.0
     
     /// Maximum pressure recorded during calibration  
-    @Published var calibrationMaxPressure: Double = 1.0
+    @Published var calibrationMaxPressure: Double = 0.0
     
     /// Number of pressure samples recorded during calibration
     @Published var calibrationSampleCount: Int = 0
@@ -77,10 +75,16 @@ class PressureManager: ObservableObject {
     
     /// Processes pressure from real input events
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
-        guard pressureSensitivityEnabled else {
+        print("🎨 PRESSURE MANAGER: processRealPressure called with pressure: \(pressure)")
+        print("🎨 PRESSURE MANAGER: AppState pressure sensitivity enabled: \(AppState.shared.pressureSensitivityEnabled)")
+        
+        guard AppState.shared.pressureSensitivityEnabled else {
+            print("🎨 PRESSURE MANAGER: Pressure sensitivity disabled, setting to 1.0")
             currentPressure = 1.0
             return
         }
+        
+        print("🎨 PRESSURE MANAGER: Pressure sensitivity enabled, processing pressure")
         
         // If in tablet-only calibration mode, ignore non-tablet events during calibration
         if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
@@ -99,6 +103,7 @@ class PressureManager: ObservableObject {
         
         DispatchQueue.main.async {
             self.currentPressure = clampedPressure
+            print("🎨 PRESSURE MANAGER: Updated currentPressure to: \(clampedPressure)")
         }
         
         // Update tracking for hybrid scenarios
@@ -124,7 +129,7 @@ class PressureManager: ObservableObject {
     
     /// Simulates pressure based on drawing speed when real pressure unavailable
     func processSimulatedPressure(at location: CGPoint, sensitivity: Double = 0.5, timestamp: Date = Date()) -> Double {
-        guard pressureSensitivityEnabled else {
+        guard AppState.shared.pressureSensitivityEnabled else {
             return 1.0
         }
         
@@ -199,8 +204,8 @@ class PressureManager: ObservableObject {
     func startCalibration() {
         DispatchQueue.main.async {
             self.isCalibrating = true
-            self.calibrationMinPressure = self.currentPressure
-            self.calibrationMaxPressure = self.currentPressure
+            self.calibrationMinPressure = 0.0
+            self.calibrationMaxPressure = 0.0
             self.calibrationSampleCount = 0
             print("🎨 CALIBRATION: Started pressure calibration")
         }
@@ -219,10 +224,10 @@ class PressureManager: ObservableObject {
     /// Resets calibration data
     func resetCalibration() {
         DispatchQueue.main.async {
-            self.calibrationMinPressure = self.currentPressure
-            self.calibrationMaxPressure = self.currentPressure
+            self.calibrationMinPressure = 0.0
+            self.calibrationMaxPressure = 0.0
             self.calibrationSampleCount = 0
-            print("🎨 CALIBRATION: Reset calibration data")
+            print("🎨 CALIBRATION: Reset calibration data to 0.0")
         }
     }
     
