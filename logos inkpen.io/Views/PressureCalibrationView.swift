@@ -26,62 +26,67 @@ struct PressureCalibrationView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView(.vertical, showsIndicators: true) {
-                VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Header section
-                VStack(spacing: 12) {
-                    Text("Apple Pencil Pressure Calibration")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    VStack(spacing: 8) {
-                        Text("Use the test canvas below to test pressure sensitivity with any device.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("Draw with Apple Pencil, trackpad, or mouse to test pressure range.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Pressure Calibration")
+                            .font(.title2)
+                            .fontWeight(.semibold)
                         
                         if tabletOnlyMode {
-                            Text("🎯 Tablet/Stylus Mode: Only detecting Apple Pencil and stylus events (via NSTabletPoint)")
+                            Text("🎯 Tablet/Stylus Mode Active")
                                 .font(.caption)
                                 .foregroundColor(.blue)
-                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Device support status inline
+                    HStack(spacing: 8) {
+                        Image(systemName: pressureManager.hasRealPressureInput ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(pressureManager.hasRealPressureInput ? .green : .orange)
+                            .font(.title3)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(pressureManager.hasRealPressureInput ? "Pressure Detected" : "No Pressure")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(pressureManager.hasRealPressureInput ? .green : .orange)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+                // Main content in horizontal layout
+                HStack(spacing: 16) {
+                    // Left side - Test canvas
+                    VStack(spacing: 8) {
+                        pressureTestCanvas
+                        
+                        // Control buttons below canvas
+                        controlButtonsSection
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    // Right side - Data and visualization
+                    VStack(spacing: 12) {
+                        // Current pressure and range in horizontal layout
+                        HStack(spacing: 16) {
+                            currentPressureSection
+                            pressureRangeSection
                         }
                         
-                        Text("Raw pressure values from input devices (varies by device and OS)")
-                            .font(.caption2)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
+                        // Pressure visualization
+                        pressureVisualizationSection
+                        
+                        // Event log
+                        eventLogSection
                     }
-                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
                 }
-                
-                // Pressure-sensitive test canvas
-                pressureTestCanvas
-                
-                // Device support status
-                statusSection
-                
-                // Current pressure display
-                currentPressureSection
-                
-                // Min/Max pressure tracking
-                pressureRangeSection
-                
-                // Pressure visualization bars
-                pressureVisualizationSection
-                
-                // Event log section
-                eventLogSection
-                
-                // Control buttons
-                controlButtonsSection
-                }
-                .padding()
+                .padding(.horizontal)
             }
             .navigationTitle("Pressure Calibration")
             .toolbar {
@@ -96,8 +101,8 @@ struct PressureCalibrationView: View {
             }
         }
         .frame(
-            minWidth: 550, idealWidth: 650, maxWidth: 800,
-            minHeight: 900, idealHeight: 1100, maxHeight: 1400
+            minWidth: 900, idealWidth: 1000, maxWidth: .infinity,
+            minHeight: 450, idealHeight: 500, maxHeight: 700
         )
         .onAppear {
             updateVisualization()
@@ -123,9 +128,10 @@ struct PressureCalibrationView: View {
     // MARK: - Pressure Test Canvas
     
     private var pressureTestCanvas: some View {
-        VStack(spacing: 8) {
-            Text("Test Canvas - Draw here to test pressure")
-                .font(.headline)
+        VStack(spacing: 6) {
+            Text("Test Canvas")
+                .font(.subheadline)
+                .fontWeight(.medium)
             
             ZStack {
                 // Background
@@ -172,69 +178,32 @@ struct PressureCalibrationView: View {
                     },
                     hasPressureSupport: .constant(false) // We'll update this based on actual detection
                 )
-                .frame(height: 280)
-                
-                // Instructions overlay
-                VStack {
-                    Text("Draw here with your device")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text("(Apple Pencil, trackpad, or mouse)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .padding(8)
-                .background(Color.black.opacity(0.1))
-                .cornerRadius(4)
+                .frame(height: 200)
             }
-            .frame(height: 280)
+            .frame(height: 200)
         }
-        .padding()
+        .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
     
-    // MARK: - Status Section
-    
-    private var statusSection: some View {
-        HStack(spacing: 12) {
-            Image(systemName: pressureManager.hasRealPressureInput ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundColor(pressureManager.hasRealPressureInput ? .green : .orange)
-                .font(.title3)
-            
-            VStack(alignment: .leading) {
-                Text(pressureManager.hasRealPressureInput ? "Pressure Input Detected" : "No Pressure Input")
-                    .font(.headline)
-                    .foregroundColor(pressureManager.hasRealPressureInput ? .green : .orange)
-                
-                Text(pressureManager.hasRealPressureInput ? 
-                     "Your device supports real pressure sensitivity" :
-                     "Draw on the canvas to detect pressure support")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-        }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
-    }
+
     
     // MARK: - Current Pressure Section
     
     private var currentPressureSection: some View {
-        VStack(spacing: 8) {
-            Text("Current Pressure")
-                .font(.headline)
+        VStack(spacing: 6) {
+            Text("Current")
+                .font(.caption)
+                .foregroundColor(.secondary)
             
             Text(String(format: "%.3f", pressureManager.currentPressure))
-                .font(.largeTitle)
+                .font(.title)
                 .fontWeight(.bold)
                 .foregroundColor(.blue)
                 .monospaced()
         }
-        .padding()
+        .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
@@ -242,46 +211,47 @@ struct PressureCalibrationView: View {
     // MARK: - Pressure Range Section
     
     private var pressureRangeSection: some View {
-        VStack(spacing: 16) {
-            Text("Recorded Range")
-                .font(.headline)
+        VStack(spacing: 8) {
+            Text("Range")
+                .font(.caption)
+                .foregroundColor(.secondary)
             
-            HStack(spacing: 40) {
-                VStack {
-                    Text("Minimum")
-                        .font(.caption)
+            HStack(spacing: 16) {
+                VStack(spacing: 2) {
+                    Text("Min")
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                     Text(String(format: "%.3f", pressureManager.calibrationMinPressure))
-                        .font(.title2)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.green)
                         .monospaced()
                 }
                 
-                VStack {
-                    Text("Maximum")
-                        .font(.caption)
+                VStack(spacing: 2) {
+                    Text("Max")
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                     Text(String(format: "%.3f", pressureManager.calibrationMaxPressure))
-                        .font(.title2)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.red)
                         .monospaced()
                 }
                 
-                VStack {
+                VStack(spacing: 2) {
                     Text("Samples")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
                     Text("\(pressureManager.calibrationSampleCount)")
-                        .font(.title2)
+                        .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(.blue)
                         .monospaced()
                 }
             }
         }
-        .padding()
+        .padding(12)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(8)
     }
@@ -382,7 +352,7 @@ struct PressureCalibrationView: View {
                     }
                 }
             }
-            .frame(height: 120)
+            .frame(height: 60)
             .padding(8)
             .background(Color(NSColor.controlBackgroundColor))
             .border(Color.gray.opacity(0.3), width: 1)
@@ -396,9 +366,9 @@ struct PressureCalibrationView: View {
     // MARK: - Control Buttons Section
     
     private var controlButtonsSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             // Mode toggle
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Image(systemName: tabletOnlyMode ? "checkmark.square.fill" : "square")
                     .foregroundColor(tabletOnlyMode ? .blue : .gray)
                     .onTapGesture {
@@ -406,19 +376,16 @@ struct PressureCalibrationView: View {
                         pressureManager.tabletOnlyCalibration = tabletOnlyMode
                     }
                 
-                Text("Tablet/Stylus Only Mode")
-                    .font(.body)
+                Text("Tablet Only")
+                    .font(.caption)
                     .onTapGesture {
                         tabletOnlyMode.toggle()
                         pressureManager.tabletOnlyCalibration = tabletOnlyMode
                     }
-                
-                Spacer()
             }
-            .padding(.horizontal)
             
             // Control buttons
-            HStack(spacing: 16) {
+            HStack(spacing: 8) {
                 Button(action: {
                     if pressureManager.isCalibrating {
                         pressureManager.stopCalibration()
@@ -426,13 +393,13 @@ struct PressureCalibrationView: View {
                         pressureManager.startCalibration()
                     }
                 }) {
-                    Text(pressureManager.isCalibrating ? "Stop Calibration" : "Start Calibration")
-                        .font(.headline)
+                    Text(pressureManager.isCalibrating ? "Stop" : "Start")
+                        .font(.caption)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(pressureManager.isCalibrating ? Color.red : Color.blue)
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -440,28 +407,15 @@ struct PressureCalibrationView: View {
                     pressureManager.resetCalibration()
                 }) {
                     Text("Reset")
-                        .font(.headline)
+                        .font(.caption)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(Color.gray)
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                 }
                 .buttonStyle(PlainButtonStyle())
                 .disabled(!pressureManager.isCalibrating)
-                
-                Button(action: {
-                    closeCalibration()
-                }) {
-                    Text("Close")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.orange)
-                        .cornerRadius(8)
-                }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }

@@ -147,6 +147,9 @@ extension DrawingCanvas {
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(), // Use whatever stroke color user has set
             width: getCurrentStrokeWidth(), // Use whatever stroke width user has set
+            lineCap: document.defaultStrokeLineCap, // Use user's default line cap
+            lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+            miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
             opacity: getCurrentStrokeOpacity() // Use whatever stroke opacity user has set
         )
         let fillStyle = FillStyle(

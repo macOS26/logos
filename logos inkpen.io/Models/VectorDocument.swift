@@ -260,6 +260,11 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeWidth: Double = 1.0  // Default stroke width for new shapes
     
+    // DEFAULT STROKE STYLE PROPERTIES FOR NEW SHAPES
+    @Published var defaultStrokeLineJoin: CGLineJoin = .miter  // Default line join for new shapes
+    @Published var defaultStrokeLineCap: CGLineCap = .butt  // Default line cap for new shapes
+    @Published var defaultStrokeMiterLimit: Double = 10.0  // Default miter limit for new shapes
+    
     // ACTIVE COLOR STATE
     @Published var activeColorTarget: ColorTarget = .fill // Which color is currently active for editing
     
@@ -647,7 +652,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit
     }
     
     required init(from decoder: Decoder) throws {
@@ -679,6 +684,10 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeColor = try container.decodeIfPresent(VectorColor.self, forKey: .defaultStrokeColor) ?? .black // Professional default
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
+        defaultStrokeWidth = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeWidth) ?? 1.0
+        defaultStrokeLineJoin = try container.decodeIfPresent(CGLineJoin.self, forKey: .defaultStrokeLineJoin) ?? .miter
+        defaultStrokeLineCap = try container.decodeIfPresent(CGLineCap.self, forKey: .defaultStrokeLineCap) ?? .butt
+        defaultStrokeMiterLimit = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeMiterLimit) ?? 10.0
         
     }
     
@@ -708,6 +717,10 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(defaultStrokeColor, forKey: .defaultStrokeColor)
         try container.encode(defaultFillOpacity, forKey: .defaultFillOpacity)
         try container.encode(defaultStrokeOpacity, forKey: .defaultStrokeOpacity)
+        try container.encode(defaultStrokeWidth, forKey: .defaultStrokeWidth)
+        try container.encode(defaultStrokeLineJoin, forKey: .defaultStrokeLineJoin)
+        try container.encode(defaultStrokeLineCap, forKey: .defaultStrokeLineCap)
+        try container.encode(defaultStrokeMiterLimit, forKey: .defaultStrokeMiterLimit)
     }
     
     // MARK: - Layer Management

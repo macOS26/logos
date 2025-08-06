@@ -464,7 +464,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainer?.lineFragmentPadding = 0
         
                 // CRITICAL: Configure for FIXED WIDTH, VERTICAL EXPANSION ONLY
-        let fixedWidth = viewModel.textBoxFrame.width
+        let fixedWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width for visibility
+        let fixedHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height for visibility
         
         textView.textContainer?.widthTracksTextView = false  
         textView.textContainer?.heightTracksTextView = false 
@@ -482,7 +483,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.frame = CGRect(
             x: 0, y: 0,
             width: fixedWidth,
-            height: viewModel.textBoxFrame.height
+            height: fixedHeight
         )
         
         // CRITICAL: Force word wrapping at fixed width
@@ -503,9 +504,20 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // CRITICAL FIX: Set initial text and appearance directly on NSTextView
         textView.string = viewModel.text
-        textView.insertionPointColor = NSColor(viewModel.textObject.typography.fillColor.color)
         textView.font = viewModel.selectedFont
-        textView.textColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        
+        // FIXED: Use proper color conversion
+        let textColor = NSColor(viewModel.textObject.typography.fillColor.color)
+        textView.textColor = textColor
+        textView.insertionPointColor = textColor
+        
+        // Set initial paragraph style for line height and spacing
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = viewModel.textAlignment
+        paragraphStyle.lineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
+        paragraphStyle.minimumLineHeight = viewModel.textObject.typography.lineHeight
+        paragraphStyle.maximumLineHeight = viewModel.textObject.typography.lineHeight
+        textView.defaultParagraphStyle = paragraphStyle
         
         // First responder will be set in updateNSView when needed
         
@@ -544,7 +556,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // PERFORMANCE: Only update font/color if they actually changed (avoid expensive operations during typing)
         let newFont = viewModel.selectedFont
-        let newTextColor = NSColor(viewModel.textObject.typography.fillColor.color)
         
         var needsFormatUpdate = false
         
@@ -554,44 +565,42 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             print("🔤 FONT CHANGED: \(newFont.fontName) \(newFont.pointSize)pt")
         }
         
-        // IMPROVED COLOR COMPARISON: Compare color components instead of object equality
+        // FIXED: Proper color handling
+        let newTextColor = NSColor(viewModel.textObject.typography.fillColor.color)
         let currentColor = nsView.textColor ?? NSColor.black
-        if !colorsAreEqual(currentColor, newTextColor) {
+        
+        // Simple color comparison - check if colors are different
+        if currentColor != newTextColor {
             nsView.textColor = newTextColor
             nsView.insertionPointColor = newTextColor
             needsFormatUpdate = true
             print("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor)")
         }
         
-        // PERFORMANCE: Only update paragraph style if alignment or spacing actually changed
-        let currentAlignment = nsView.defaultParagraphStyle?.alignment ?? .left
+        // FIXED: Always update paragraph style to ensure line height and spacing are preserved
         let newAlignment = viewModel.textAlignment
         let newLineSpacing = max(0, viewModel.textObject.typography.lineSpacing)
         let newLineHeight = viewModel.textObject.typography.lineHeight
         
-        if currentAlignment != newAlignment || 
-           abs((nsView.defaultParagraphStyle?.lineSpacing ?? 0) - newLineSpacing) > 0.1 ||
-           abs((nsView.defaultParagraphStyle?.minimumLineHeight ?? 0) - newLineHeight) > 0.1 {
-            
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = newAlignment
-            paragraphStyle.lineSpacing = newLineSpacing
-            paragraphStyle.minimumLineHeight = newLineHeight
-            paragraphStyle.maximumLineHeight = newLineHeight
-            
-            // Only apply to existing text if there is any and we're not actively typing
-            if nsView.string.count > 0 && !isUpdatingFromTyping {
-                let range = NSRange(location: 0, length: nsView.string.count)
-                nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
-            }
-            
-            nsView.defaultParagraphStyle = paragraphStyle
-            needsFormatUpdate = true
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = newAlignment
+        paragraphStyle.lineSpacing = newLineSpacing
+        paragraphStyle.minimumLineHeight = newLineHeight
+        paragraphStyle.maximumLineHeight = newLineHeight
+        
+        // Apply paragraph style to all text
+        if nsView.string.count > 0 {
+            let range = NSRange(location: 0, length: nsView.string.count)
+            nsView.textStorage?.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
         }
+        
+        nsView.defaultParagraphStyle = paragraphStyle
+        needsFormatUpdate = true
         
         // CRITICAL FIX: Update text container width when text box is resized
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
-        let newWidth = viewModel.textBoxFrame.width
+        let newWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width
+        let newHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height
         
         if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
             print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
@@ -606,7 +615,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.frame = CGRect(
                 x: 0, y: 0,
                 width: newWidth,
-                height: viewModel.textBoxFrame.height
+                height: newHeight
             )
             
             // Update max/min sizes
@@ -619,8 +628,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             print("📏 TEXT REFLOW: Container updated, text should now wrap to new width")
         }
         
-        // ONE-WAY CURSOR RESTORATION: Only after format changes, not during typing
-        if needsFormatUpdate && !isUpdatingFromTyping && viewModel.isEditing {
+        // FIXED: Always restore cursor position when editing is active
+        if viewModel.isEditing && isEditingAllowed {
             // Use the trusted source of truth from the view model
             let savedCursorPosition = viewModel.userInitiatedCursorPosition
             let savedSelectionLength = viewModel.userInitiatedSelectionLength
@@ -631,11 +640,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             let safeLength = min(savedSelectionLength, textLength - safePosition)
             let newRange = NSRange(location: safePosition, length: safeLength)
             
-            // The lock is already active, so we can safely restore the selection.
-            nsView.setSelectedRange(newRange)
-
-            print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength) (was \(savedCursorPosition), \(savedSelectionLength))")
-            nsView.scrollRangeToVisible(newRange)
+            // Only update if the range is different to avoid cursor jumping
+            if nsView.selectedRange() != newRange {
+                nsView.setSelectedRange(newRange)
+                print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength)")
+                nsView.scrollRangeToVisible(newRange)
+            }
         }
         
         // PERFORMANCE: Only update editing properties if they actually changed
@@ -662,13 +672,16 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         // PERFORMANCE: Only update frame constraints if size actually changed
+        let safeWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width
+        let safeHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height
+        
         let newFrame = CGRect(
             x: 0, y: 0,
-            width: viewModel.textBoxFrame.width,
-            height: max(viewModel.textBoxFrame.height, 100)
+            width: safeWidth,
+            height: safeHeight
         )
-        let newMaxSize = NSSize(width: viewModel.textBoxFrame.width, height: CGFloat.greatestFiniteMagnitude)
-        let newMinSize = NSSize(width: viewModel.textBoxFrame.width, height: 30)
+        let newMaxSize = NSSize(width: safeWidth, height: CGFloat.greatestFiniteMagnitude)
+        let newMinSize = NSSize(width: safeWidth, height: 30)
         
         if nsView.frame != newFrame {
             nsView.frame = newFrame
@@ -682,13 +695,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.minSize = newMinSize
         }
         
-        // PERFORMANCE: Only manage first responder if editing state actually changed
+        // FIXED: Ensure text view gets focus when editing is active
         let shouldBeFirstResponder = viewModel.isEditing && isEditingAllowed
         let isCurrentlyFirstResponder = nsView.window?.firstResponder == nsView
         
         if shouldBeFirstResponder && !isCurrentlyFirstResponder {
+            print("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
             nsView.window?.makeFirstResponder(nsView)
         } else if !shouldBeFirstResponder && isCurrentlyFirstResponder {
+            print("🎯 REMOVING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
             nsView.window?.makeFirstResponder(nil)
         }
         
@@ -903,8 +918,22 @@ class ProfessionalTextViewModel: ObservableObject {
         
         print("🔧 INIT ProfessionalTextViewModel for text: '\(textObject.content)' - autoExpandVertically: \(autoExpandVertically)")
         
-        // Sync from VectorText
-        syncFromVectorText()
+        // Direct initialization from VectorText
+        self.text = textObject.content
+        self.fontSize = CGFloat(textObject.typography.fontSize)
+        self.selectedFont = textObject.typography.nsFont
+        self.isEditing = textObject.isEditing
+        self.textAlignment = textObject.typography.alignment.nsTextAlignment
+        
+        // Initialize text box frame with proper bounds
+        self.textBoxFrame = CGRect(
+            x: textObject.position.x,
+            y: textObject.position.y,
+            width: max(textObject.bounds.width, 200),   // Ensure minimum width
+            height: max(textObject.bounds.height, 50)   // Ensure minimum height
+        )
+        
+        print("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)")
         
         // No longer using notifications - font panel updates via document.textObjects changes
     }

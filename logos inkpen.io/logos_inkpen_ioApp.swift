@@ -679,15 +679,6 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
-        .overlay(
-            // Gradient HUD overlay - appears over entire window
-            Group {
-                let _ = print("🎨 DOCUMENT-BASED MAIN VIEW: Evaluating HUD condition - showingGradientHUD: \(appState.showingGradientHUD), gradientHUDData: \(appState.gradientHUDData != nil)")
-                
-                // Move HUD to WindowGroup level to avoid canvas interference
-            },
-            alignment: .center
-        )
         .sheet(isPresented: $showingNewDocumentSetup) {
             NewDocumentSetupView(
                 isPresented: $showingNewDocumentSetup,

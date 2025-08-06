@@ -38,6 +38,9 @@ extension DrawingCanvas {
         let strokeStyle = StrokeStyle(
             color: document.defaultStrokeColor,
             width: document.defaultStrokeWidth, // Use user's default stroke width setting
+            lineCap: document.defaultStrokeLineCap, // Use user's default line cap
+            lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+            miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
             opacity: document.defaultStrokeOpacity
         )
         let fillStyle = FillStyle(

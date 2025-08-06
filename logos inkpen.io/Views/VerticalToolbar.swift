@@ -1300,7 +1300,7 @@ struct ColorSwatchGrid: View {
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, opacity: 1.0)
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                     } else {
                         document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
                     }

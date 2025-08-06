@@ -89,7 +89,19 @@ class AppState {
             }
             openWindow(id)
         }
-        self.dismissWindowAction = dismissWindow
+        self.dismissWindowAction = { id in
+            if id == "gradient-hud" {
+                print("🎨 GRADIENT HUD: dismissWindowAction called - closing window")
+                // Close the gradient HUD window
+                NSApplication.shared.windows.forEach { window in
+                    if window.title.contains("Gradient Color Picker") {
+                        print("🎨 GRADIENT HUD: Closing window: \(window.title)")
+                        window.close()
+                    }
+                }
+            }
+            dismissWindow(id)
+        }
     }
     
     // MARK: - Panel Actions
@@ -186,6 +198,7 @@ class PersistentGradientHUDManager {
               onColorSelected: @escaping (UUID, VectorColor) -> Void, onClose: @escaping () -> Void) {
         // Remember if window was already visible to avoid reopening
         let wasAlreadyVisible = isVisible
+        print("🎨 GRADIENT HUD: show() called - wasAlreadyVisible: \(wasAlreadyVisible)")
         
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
@@ -206,12 +219,16 @@ class PersistentGradientHUDManager {
         
         // Only open window if it wasn't already visible
         if !wasAlreadyVisible {
+            print("🎨 GRADIENT HUD: Opening window")
             appState?.openWindowAction?("gradient-hud")
+        } else {
+            print("🎨 GRADIENT HUD: Window already visible, updating content")
         }
         // If already visible, the WindowGroup will automatically update the content
     }
     
     func hide() {
+        print("🎨 GRADIENT HUD: hide() called")
         isVisible = false
         appState?.dismissWindowAction?("gradient-hud")
         // Call the close callback to turn off gradient editing state

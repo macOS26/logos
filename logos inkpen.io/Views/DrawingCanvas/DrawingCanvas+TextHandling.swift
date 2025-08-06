@@ -17,20 +17,6 @@ extension DrawingCanvas {
         print("🎯 FONT TOOL TAP at: \(location)")
         lastTapLocation = location
         
-        // CRITICAL: Prevent new text box creation when any text box is in active states
-        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
-        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
-        
-        if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED: A text box is in BLUE (edit) mode")
-            return
-        }
-        
-        if isAnyTextSelected {
-            print("🚫 NEW TEXT BLOCKED: Text boxes are in GREEN (selected) mode")
-            return
-        }
-        
         // Check if tapping on existing text to edit it
         if let existingTextID = findTextAt(location: location) {
             startEditingText(textID: existingTextID, at: location)
@@ -293,41 +279,16 @@ extension DrawingCanvas {
     
     // Create new text at canvas position using our new professional text system
     func createNewTextAt(location: CGPoint) {
-        // CRITICAL: Comprehensive check - no text box creation in active states
-        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
-        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
-        
-        if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED (createNewTextAt): A text box is in BLUE (edit) mode")
-            return
-        }
-        
-        if isAnyTextSelected {
-            print("🚫 NEW TEXT BLOCKED (createNewTextAt): Text boxes are in GREEN (selected) mode")
-            return
-        }
-        
         // Default size for click creation
         createNewTextWithSize(at: location, width: 300, height: 100)
     }
     
     // Create new text with user-defined size (like rectangle tool)
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
-        // CRITICAL: Comprehensive check - no text box creation in active states
-        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
-        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
-        
-        if isAnyTextEditing {
-            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): A text box is in BLUE (edit) mode")
-            return
-        }
-        
-        if isAnyTextSelected {
-            print("🚫 NEW TEXT BLOCKED (createNewTextWithSize): Text boxes are in GREEN (selected) mode")
-            return
-        }
-        
         print("✨ Creating new text box at: \(location) with user size: \(width) × \(height)")
+        print("🔍 DEBUG: document.selectedLayerIndex = \(document.selectedLayerIndex ?? -1)")
+        print("🔍 DEBUG: document.textObjects.count = \(document.textObjects.count)")
+        print("🔍 DEBUG: document.selectedTextIDs.count = \(document.selectedTextIDs.count)")
         
         // Save state before creating new text
         document.saveToUndoStack()
@@ -338,15 +299,24 @@ extension DrawingCanvas {
             fontWeight: document.fontManager.selectedFontWeight,
             fontStyle: document.fontManager.selectedFontStyle,
             fontSize: document.fontManager.selectedFontSize,
-            lineHeight: document.fontManager.selectedFontSize, // Default line height = fontSize
+            lineHeight: document.fontManager.selectedLineHeight, // FIXED: Use font manager's line height
+            lineSpacing: document.fontManager.selectedLineSpacing, // FIXED: Use font manager's line spacing
             letterSpacing: 0.0,
-            alignment: .left, // Default to left alignment
+            alignment: document.fontManager.selectedTextAlignment, // FIXED: Use font manager's alignment
             hasStroke: false, // NO STROKES - only fill colors
             strokeColor: document.defaultStrokeColor,
             strokeOpacity: document.defaultStrokeOpacity,
             fillColor: document.defaultFillColor, // Use current fill color
             fillOpacity: document.defaultFillOpacity
         )
+        
+        print("🔤 TYPOGRAPHY CREATION:")
+        print("  - Font Manager Line Spacing: \(document.fontManager.selectedLineSpacing)")
+        print("  - Typography Line Spacing: \(typography.lineSpacing)")
+        print("  - Font Manager Line Height: \(document.fontManager.selectedLineHeight)")
+        print("  - Typography Line Height: \(typography.lineHeight)")
+        print("  - Font Manager Alignment: \(document.fontManager.selectedTextAlignment)")
+        print("  - Typography Alignment: \(typography.alignment)")
         
         // Create new text object with USER-DEFINED bounds
         var newText = VectorText(
@@ -370,8 +340,13 @@ extension DrawingCanvas {
         isEditingText = true
         editingTextID = newText.id
         
+        // Initialize cursor position
+        currentCursorPosition = 0
+        currentSelectionRange = NSRange(location: 0, length: 0)
+        
         print("✅ Created text box with USER-DEFINED size: \(width) × \(height)")
         print("🎯 Text ready for editing - size will NOT change unless user manually resizes")
+        print("🎯 Cursor initialized at position 0")
     }
     
     // MARK: - Professional Text Input Handling
@@ -742,20 +717,6 @@ extension DrawingCanvas {
     
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
-        // CRITICAL: Comprehensive protection - no text creation in active states
-        let isAnyTextEditing = document.textObjects.contains { $0.isEditing }
-        let isAnyTextSelected = !document.selectedTextIDs.isEmpty
-        
-        if isAnyTextEditing {
-            print("🚫 TEXT BOX DRAWING BLOCKED: A text box is in BLUE (edit) mode")
-            return
-        }
-        
-        if isAnyTextSelected {
-            print("🚫 TEXT BOX DRAWING BLOCKED: Text boxes are in GREEN (selected) mode")
-            return
-        }
-        
         // CRITICAL FIX: Don't create new text boxes while existing ones are being resized
         // Check if drag started on a text box resize handle
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)

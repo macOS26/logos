@@ -198,8 +198,8 @@ struct GradientFillSection: View {
         editingGradientStopId = nil
         // 🔥 CRITICAL: Clear gradient editing state to return to normal fill/stroke mode
         appState.gradientEditingState = nil
-        // DON'T call hide() - it creates infinite loop. Just set visibility directly.
-        appState.persistentGradientHUD.isVisible = false
+        // 🔥 PROPERLY HIDE THE HUD - This will close the window and reset state
+        appState.persistentGradientHUD.hide()
     }
     
     // MARK: - Selection and Angle Management
@@ -1494,26 +1494,20 @@ struct StableGradientHUDContent: View, Equatable {
             StableColorPanelWrapper(hudManager: hudManager)
                 .frame(maxWidth: 350, maxHeight: 500)
             
-            // 🔥 CLOSE BUTTON in lower right corner + DRAGGABLE AREA
-//            HStack {
-//                // Draggable dead area on the left
-//                Rectangle()
-//                    .fill(Color.clear)
-//                    .frame(height: 20)
-//                    .contentShape(Rectangle())
-//                
-//                Spacer()
-//                
-//                // Close button in lower right
-//                Button("Close") {
-//                    hudManager.hide()
-//                }
-//                .buttonStyle(.borderedProminent)
-//                .controlSize(.small)
-//                .padding(.trailing, 16)
-//                .padding(.bottom, 12)
-//            }
-//            .background(Color(NSColor.windowBackgroundColor))
+            // 🔥 CLOSE BUTTON in lower right corner
+            HStack {
+                Spacer()
+                
+                // Close button in lower right
+                Button("Close") {
+                    hudManager.hide()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .padding(.trailing, 16)
+                .padding(.bottom, 12)
+            }
+            .background(Color(NSColor.windowBackgroundColor))
         }
         .fixedSize()
         .background(Color(NSColor.windowBackgroundColor))

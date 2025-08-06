@@ -12,7 +12,13 @@ struct FontPanel: View {
     // REMOVED: Separate color pickers - use main color system instead
     
     private var selectedText: VectorText? {
-        document.textObjects.first { document.selectedTextIDs.contains($0.id) }
+        let selected = document.textObjects.first { document.selectedTextIDs.contains($0.id) }
+        if let selected = selected {
+            print("🎯 FONT PANEL: Found selected text - UUID: \(selected.id.uuidString.prefix(8)), Line Spacing: \(selected.typography.lineSpacing)")
+        } else {
+            print("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)")
+        }
+        return selected
     }
     
     // TRACK CURRENTLY EDITING TEXT BOX UUID
@@ -32,8 +38,13 @@ struct FontPanel: View {
     }
     
     private var currentFontFamily: String {
-        guard let selectedText = selectedText else { return document.fontManager.selectedFontFamily }
-        return selectedText.typography.fontFamily
+        guard let selectedText = selectedText else { 
+            print("🎯 FONT PANEL: No selected text, returning font manager font family: \(document.fontManager.selectedFontFamily)")
+            return document.fontManager.selectedFontFamily 
+        }
+        let family = selectedText.typography.fontFamily
+        print("🎯 FONT PANEL: Selected text font family: \(family) (UUID: \(selectedText.id.uuidString.prefix(8)))")
+        return family
     }
     
     private var availableFontWeights: [FontWeight] {
@@ -497,19 +508,35 @@ struct FontPanel: View {
     }
     
     private var currentLineSpacing: CGFloat {
-        guard let selectedText = selectedText else { return 0.0 }
+        guard let selectedText = selectedText else { 
+            print("🎯 FONT PANEL: No selected text, returning 0.0 for line spacing")
+            return 0.0 
+        }
         // RAW LINE SPACING VALUE (0 to fontSize/2) - SINGLE SOURCE OF TRUTH
-        return selectedText.typography.lineSpacing
+        let spacing = selectedText.typography.lineSpacing
+        print("🎯 FONT PANEL: Returning line spacing: \(spacing) for text UUID: \(selectedText.id.uuidString.prefix(8))")
+        return spacing
     }
     
     private var currentLineHeight: CGFloat {
-        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
+        guard let selectedText = selectedText else { 
+            print("🎯 FONT PANEL: No selected text, returning font manager line height: \(document.fontManager.selectedLineHeight)")
+            return document.fontManager.selectedLineHeight 
+        }
         // RAW LINE HEIGHT VALUE (fontSize/2 to fontSize*2) - SINGLE SOURCE OF TRUTH
-        return selectedText.typography.lineHeight
+        let height = selectedText.typography.lineHeight
+        print("🎯 FONT PANEL: Selected text line height: \(height) (UUID: \(selectedText.id.uuidString.prefix(8)))")
+        return height
     }
     
     private var currentFontSize: CGFloat {
-        return selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
+        guard let selectedText = selectedText else { 
+            print("🎯 FONT PANEL: No selected text, returning font manager font size: \(document.fontManager.selectedFontSize)")
+            return document.fontManager.selectedFontSize 
+        }
+        let size = selectedText.typography.fontSize
+        print("🎯 FONT PANEL: Selected text font size: \(size) (UUID: \(selectedText.id.uuidString.prefix(8)))")
+        return size
     }
     
     // CONSOLIDATED: Generic text property updater with UUID validation

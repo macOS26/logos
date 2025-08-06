@@ -115,9 +115,9 @@ struct StrokeFillPanel: View {
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return .miter
+            return document.defaultStrokeLineJoin
         }
-        return shape.strokeStyle?.lineJoin ?? .miter
+        return shape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
     }
     
     // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
@@ -125,9 +125,9 @@ struct StrokeFillPanel: View {
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return .butt
+            return document.defaultStrokeLineCap
         }
-        return shape.strokeStyle?.lineCap ?? .butt
+        return shape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
     }
     
     // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
@@ -135,9 +135,9 @@ struct StrokeFillPanel: View {
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
               let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return 10.0
+            return document.defaultStrokeMiterLimit
         }
-        return shape.strokeStyle?.miterLimit ?? 10.0
+        return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
     }
     
     var body: some View {
@@ -324,7 +324,7 @@ struct StrokeFillPanel: View {
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: 1.0, opacity: 1.0)
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                     } else {
                         document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
                     }
@@ -347,7 +347,7 @@ struct StrokeFillPanel: View {
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, opacity: document.defaultStrokeOpacity)
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                     } else {
                         document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
                     }
@@ -363,7 +363,7 @@ struct StrokeFillPanel: View {
         for shapeID in document.selectedShapeIDs {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, placement: placement, opacity: document.defaultStrokeOpacity)
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: placement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                 } else {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.placement = placement
                 }
@@ -384,7 +384,7 @@ struct StrokeFillPanel: View {
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, opacity: opacity)
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
                     } else {
                         document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
                     }
@@ -399,15 +399,21 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default line join for new shapes
+        document.defaultStrokeLineJoin = lineJoin
+        print("🎨 Set default stroke line join: \(lineJoin.displayName)")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
+                    }
                 }
             }
         }
@@ -415,15 +421,21 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default line cap for new shapes
+        document.defaultStrokeLineCap = lineCap
+        print("🎨 Set default stroke line cap: \(lineCap.displayName)")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
+                    }
                 }
             }
         }
@@ -431,15 +443,21 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        document.saveToUndoStack()
+        // ALWAYS update the default miter limit for new shapes
+        document.defaultStrokeMiterLimit = miterLimit
+        print("🎨 Set default stroke miter limit: \(String(format: "%.1f", miterLimit))")
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: 1.0, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
+        // If there are selected shapes, update them too
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
+                    }
                 }
             }
         }
@@ -469,6 +487,9 @@ struct StrokeFillPanel: View {
                     color: selectedStrokeColor,
                     width: strokeWidth,
                     placement: strokePlacement,
+                    lineCap: document.defaultStrokeLineCap,
+                    lineJoin: document.defaultStrokeLineJoin,
+                    miterLimit: document.defaultStrokeMiterLimit,
                     opacity: strokeOpacity // PROFESSIONAL STROKE TRANSPARENCY
                 )
             }

@@ -359,15 +359,6 @@ struct MainView: View {
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
         }
-        .overlay(
-            // Gradient HUD overlay - appears over entire window
-            Group {
-                let _ = print("🎨 MAIN VIEW: Evaluating HUD condition - showingGradientHUD: \(appState.showingGradientHUD), gradientHUDData: \(appState.gradientHUDData != nil)")
-                
-                // HUD moved to DocumentGroup level to avoid canvas interference
-            },
-            alignment: .center
-        )
         .frame(minWidth: 1400, minHeight: 900)
         // Note: No longer using focusedValue - using focusedSceneObject instead
         .onAppear {
