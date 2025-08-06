@@ -511,56 +511,6 @@ class DocumentState: ObservableObject {
     }
 }
 
-// MARK: - DocumentTitleToolbar (Clean toolbar with icon and filename only)
-//struct DocumentTitleToolbarX: View {
-//    let fileURL: URL?
-//    
-//    private var documentName: String {
-//        if let fileURL = fileURL {
-//            return fileURL.lastPathComponent
-//        } else {
-//            return "Untitled"
-//        }
-//    }
-//    
-//    private var documentIcon: NSImage {
-//        if let fileURL = fileURL {
-//            return NSWorkspace.shared.icon(forFile: fileURL.path)
-//        } else {
-//            // Create a generic document icon for untitled documents
-//            return NSWorkspace.shared.icon(for: .inkpen)
-//        }
-//    }
-//    
-//    var body: some View {
-//        Button(action: {
-//            // Navigate to document in Finder
-//            if let fileURL = fileURL {
-//                NSWorkspace.shared.selectFile(fileURL.path, inFileViewerRootedAtPath: fileURL.deletingLastPathComponent().path)
-//                print("📁 Navigating to document in Finder: \(fileURL.path)")
-//            } else {
-//                print("📁 No file URL available for navigation")
-//            }
-//        }) {
-//            HStack(spacing: 6) {
-//                // Document Icon - ALWAYS showing on the left
-//                Image(nsImage: documentIcon)
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-//                    .frame(width: 30, height: 30)
-//                
-//                // Document Name ONLY (no path, no zoom)
-//                Text(documentName)
-//                    .font(.system(size: 20, weight: .medium))
-//                    .foregroundColor(.primary)
-//                    .lineLimit(1)
-//            }
-//        }
-//        .buttonStyle(PlainButtonStyle())
-//        .help(fileURL != nil ? "Click to show in Finder" : "Untitled Document")
-//    }
-//}
-
 // MARK: - DocumentBasedContentView (integrates DocumentGroup with MainView)
 struct DocumentBasedContentView: View {
     @Binding var inkpenDocument: InkpenDocument

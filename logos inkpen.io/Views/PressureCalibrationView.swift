@@ -99,11 +99,11 @@ struct PressureCalibrationView: View {
                     }
                     .layoutPriority(1) // Lower priority
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            //    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .padding(20)
         }
-        .frame(width: 1200, height: 700)
+      //  .frame(width: 1200, height: 700)
         .onAppear {
             updateVisualization()
             // Sync the UI toggle with the pressure manager
