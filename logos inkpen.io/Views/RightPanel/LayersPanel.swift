@@ -25,7 +25,7 @@ struct LayersPanel: View {
     
     private var layersHeader: some View {
         HStack {
-            Text("Layers")
+            Text("Layer")
                 .font(.headline)
                 .foregroundColor(.primary)
             Spacer()
@@ -40,6 +40,7 @@ struct LayersPanel: View {
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
+        .padding(.bottom, 8)
     }
     
     private var layersScrollContent: some View {

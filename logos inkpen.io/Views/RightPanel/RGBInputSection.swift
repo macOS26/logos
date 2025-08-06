@@ -180,10 +180,8 @@ struct RGBInputSection: View {
                                 Capsule()
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
                             )
-                        
-                   
-                        
-                        // Native Apple Slider
+        
+                        // Natve Apple Slider
                         Slider(value: $greenSlider, in: 0...255)
                             .tint(Color.clear)
                             .onChange(of: greenSlider) {
@@ -288,10 +286,6 @@ struct RGBInputSection: View {
                 .help("Click to apply color to active fill or stroke")
                 
                 VStack(alignment: .leading, spacing: 2) {
-//                    Text("RGB(\(Int(currentColor.red * 255)), \(Int(currentColor.green * 255)), \(Int(currentColor.blue * 255)))")
-//                        .font(.system(size: 10, weight: .medium))
-//                        .foregroundColor(.primary)
-                    
                     Button("Add to Swatches") {
                         addColorToSwatches()
                     }
@@ -581,4 +575,5 @@ struct RGBInputSection: View {
 #Preview {
     RGBInputSection(document: VectorDocument(), sharedColor: .constant(.black), onColorSelected: nil, showGradientEditing: false)
         .padding()
+        .environment(AppState.shared)
 }

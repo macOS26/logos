@@ -25,6 +25,9 @@ struct ColorPanel: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Top padding for the color view
+            Spacer()
+                .frame(height: 8)
             // GRADIENT EDITING INDICATOR - Only show when explicitly enabled
             if showGradientEditing, let gradientState = appState.gradientEditingState {
                 HStack {
@@ -96,7 +99,7 @@ struct ColorPanel: View {
             
             // Color Swatches
             ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8), spacing: 4) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 8), spacing: 4) {
                                     ForEach(Array(filteredColors.enumerated()), id: \.offset) { index, color in
                     Button {
                         selectColor(color)
@@ -104,7 +107,7 @@ struct ColorPanel: View {
                         currentPreviewColor = color
                     } label: {
                         ZStack {
-                            renderColorSwatchRightPanel(color, width: 32, height: 32, cornerRadius: 0, borderWidth: 1)
+                            renderColorSwatchRightPanel(color, width: 30, height: 30, cornerRadius: 0, borderWidth: 1)
                             
                             // Show Pantone number for Pantone colors (if not clear)
                             if case .pantone = color {

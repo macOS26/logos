@@ -23,8 +23,7 @@ struct PanelTabBar: View {
                             .font(.caption2)
                     }
                     .foregroundColor(selectedTab == tab ? .blue : .secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .frame(width: 46.5, height: 45)
                     .background(selectedTab == tab ? Color.blue.opacity(0.1) : Color.clear)
                     .contentShape(Rectangle()) // Extend hit area to match entire highlight area
                 }
