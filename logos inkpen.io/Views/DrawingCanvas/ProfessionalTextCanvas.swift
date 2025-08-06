@@ -628,8 +628,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             print("📏 TEXT REFLOW: Container updated, text should now wrap to new width")
         }
         
-        // FIXED: Always restore cursor position when editing is active
-        if viewModel.isEditing && isEditingAllowed {
+        // CRITICAL FIX: Only restore cursor position when text content changes, not font changes
+        // This prevents the I-beam from falling behind when switching fonts
+        let textContentChanged = !isUpdatingFromTyping && nsView.string != viewModel.text
+        let needsCursorRestore = textContentChanged && viewModel.isEditing && isEditingAllowed
+        
+        if needsCursorRestore {
             // Use the trusted source of truth from the view model
             let savedCursorPosition = viewModel.userInitiatedCursorPosition
             let savedSelectionLength = viewModel.userInitiatedSelectionLength
@@ -645,6 +649,23 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 nsView.setSelectedRange(newRange)
                 print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength)")
                 nsView.scrollRangeToVisible(newRange)
+            }
+        } else if viewModel.isEditing && isEditingAllowed && needsFormatUpdate {
+            // When only font/formatting changes, preserve current cursor position
+            // but ensure it's still valid within the text bounds
+            let currentRange = nsView.selectedRange()
+            let textLength = nsView.string.count
+            
+            if currentRange.location > textLength {
+                // Cursor is beyond text bounds, move it to end
+                let newRange = NSRange(location: textLength, length: 0)
+                nsView.setSelectedRange(newRange)
+                print("🎯 ADJUSTED CURSOR: Moved from \(currentRange.location) to end (\(textLength)) due to font change")
+            } else if currentRange.location + currentRange.length > textLength {
+                // Selection extends beyond text bounds, adjust it
+                let newRange = NSRange(location: currentRange.location, length: textLength - currentRange.location)
+                nsView.setSelectedRange(newRange)
+                print("🎯 ADJUSTED SELECTION: Adjusted length from \(currentRange.length) to \(newRange.length) due to font change")
             }
         }
         
