@@ -37,12 +37,11 @@ struct PressureCalibrationView: View {
     @State private var selectedControlPoint: Int?
     
     // Constants
-    private let barMaxWidth: CGFloat = 300
+    private let barMaxWidth: CGFloat = 200 // Narrower pressure bars
     private let maxPressureValue: Double = 1.0
     
     var body: some View {
-        NavigationView {
-            VStack(spacing: 12) {
+        VStack(spacing: 12) {
                 // Header section
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -78,6 +77,7 @@ struct PressureCalibrationView: View {
                         // Control buttons below canvas
                         controlButtonsSection
                     }
+                    .frame(minWidth: 800, maxWidth: .infinity) // Much larger minimum width for canvas
                     .layoutPriority(2) // Give canvas area higher priority
                     
                     // Right side - Data, visualization, and curve editor (fixed width)
@@ -97,13 +97,13 @@ struct PressureCalibrationView: View {
                         // Event log
                         eventLogSection
                     }
+                    .frame(width: 320) // Narrower fixed width for right panel
                     .layoutPriority(1) // Lower priority
                 }
-            //    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .padding(20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-      //  .frame(width: 1200, height: 700)
+        .padding(20)
+        .frame(width: 1200, height: 800)
         .onAppear {
             updateVisualization()
             // Sync the UI toggle with the pressure manager
@@ -135,15 +135,15 @@ struct PressureCalibrationView: View {
                 Path { path in
                     // Vertical lines
                     for i in 0...10 {
-                        let x = CGFloat(i) * 30
+                        let x = CGFloat(i) * 25
                         path.move(to: CGPoint(x: x, y: 0))
-                        path.addLine(to: CGPoint(x: x, y: 150))
+                        path.addLine(to: CGPoint(x: x, y: 250))
                     }
                     // Horizontal lines
                     for i in 0...10 {
-                        let y = CGFloat(i) * 15
+                        let y = CGFloat(i) * 25
                         path.move(to: CGPoint(x: 0, y: y))
-                        path.addLine(to: CGPoint(x: 300, y: y))
+                        path.addLine(to: CGPoint(x: 250, y: y))
                     }
                 }
                 .stroke(Color.gray.opacity(0.2), lineWidth: 0.5)
@@ -153,11 +153,11 @@ struct PressureCalibrationView: View {
                     guard pressureCurve.count >= 2 else { return }
                     
                     let firstPoint = pressureCurve[0]
-                    path.move(to: CGPoint(x: firstPoint.x * 300, y: 150 - firstPoint.y * 150))
+                    path.move(to: CGPoint(x: firstPoint.x * 250, y: 250 - firstPoint.y * 250))
                     
                     for i in 1..<pressureCurve.count {
                         let point = pressureCurve[i]
-                        path.addLine(to: CGPoint(x: point.x * 300, y: 150 - point.y * 150))
+                        path.addLine(to: CGPoint(x: point.x * 250, y: 250 - point.y * 250))
                     }
                 }
                 .stroke(Color.blue, lineWidth: 2)
@@ -168,7 +168,7 @@ struct PressureCalibrationView: View {
                     Circle()
                         .fill(selectedControlPoint == index ? Color.red : Color.blue)
                         .frame(width: 12, height: 12)
-                        .position(x: point.x * 300, y: 150 - point.y * 150)
+                        .position(x: point.x * 250, y: 250 - point.y * 250)
                         .onTapGesture {
                             selectedControlPoint = index
                         }
@@ -176,8 +176,8 @@ struct PressureCalibrationView: View {
                             DragGesture()
                                 .onChanged { value in
                                     if selectedControlPoint == index {
-                                        let newX = max(0, min(1, value.location.x / 300))
-                                        let newY = max(0, min(1, (150 - value.location.y) / 150))
+                                        let newX = max(0, min(1, value.location.x / 250))
+                                        let newY = max(0, min(1, (250 - value.location.y) / 250))
                                         pressureCurve[index] = CGPoint(x: newX, y: newY)
                                         
                                         // Sort points by x value to maintain order
@@ -192,7 +192,7 @@ struct PressureCalibrationView: View {
                         )
                 }
             }
-            .frame(width: 300, height: 150)
+            .frame(width: 250, height: 250) // Make it square and taller
             
             // Curve info
             HStack {
@@ -302,6 +302,7 @@ struct PressureCalibrationView: View {
                             finishDrawing()
                         }
                 )
+                .frame(minHeight: 500) // Larger minimum height for canvas
                 
                 // Pressure-sensitive canvas with comprehensive event detection
                 PressureSensitiveCanvasRepresentable(
@@ -717,7 +718,7 @@ struct PressureCalibrationView: View {
                     }
                 }
             }
-            .frame(height: 60)
+            .frame(height: 80)
             .padding(8)
             .background(Color(NSColor.controlBackgroundColor))
             .border(Color.gray.opacity(0.3), width: 1)
@@ -731,9 +732,9 @@ struct PressureCalibrationView: View {
     // MARK: - Control Buttons Section
     
     private var controlButtonsSection: some View {
-        VStack(spacing: 8) {
-            // Mode toggle
-            HStack(spacing: 8) {
+        HStack(spacing: 12) {
+            // Tablet Only toggle
+            HStack(spacing: 6) {
                 Image(systemName: tabletOnlyMode ? "checkmark.square.fill" : "square")
                     .foregroundColor(tabletOnlyMode ? .blue : .gray)
                     .onTapGesture {
@@ -749,58 +750,54 @@ struct PressureCalibrationView: View {
                     }
             }
             
-            // Control buttons
-            HStack(spacing: 8) {
-                Button(action: {
-                    if pressureManager.isCalibrating {
-                        pressureManager.stopCalibration()
-                    } else {
-                        pressureManager.startCalibration()
-                    }
-                }) {
-                    Text(pressureManager.isCalibrating ? "Stop" : "Start")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(pressureManager.isCalibrating ? Color.red : Color.blue)
-                        .cornerRadius(6)
+            // Start/Stop button
+            Button(action: {
+                if pressureManager.isCalibrating {
+                    pressureManager.stopCalibration()
+                } else {
+                    pressureManager.startCalibration()
                 }
-                .buttonStyle(PlainButtonStyle())
-                
-                Button(action: {
-                    pressureManager.resetCalibration()
-                    // Set min and max to 0.0 as requested
-                    pressureManager.calibrationMinPressure = 0.0
-                    pressureManager.calibrationMaxPressure = 0.0
-                    addEventToLog("Reset calibration data - Min and Max set to 0.0")
-                }) {
-                    Text("Reset")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.gray)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
+            }) {
+                Text(pressureManager.isCalibrating ? "Stop" : "Start")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(pressureManager.isCalibrating ? Color.red : Color.blue)
+                    .cornerRadius(6)
             }
+            .buttonStyle(PlainButtonStyle())
             
-            // Canvas control buttons
-            HStack(spacing: 8) {
-                Button(action: {
-                    clearCanvas()
-                }) {
-                    Text("Clear Canvas")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.orange)
-                        .cornerRadius(6)
-                }
-                .buttonStyle(PlainButtonStyle())
+            // Reset button
+            Button(action: {
+                pressureManager.resetCalibration()
+                pressureManager.calibrationMinPressure = 0.0
+                pressureManager.calibrationMaxPressure = 0.0
+                addEventToLog("Reset calibration data - Min and Max set to 0.0")
+            }) {
+                Text("Reset")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray)
+                    .cornerRadius(6)
             }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Clear Canvas button
+            Button(action: {
+                clearCanvas()
+            }) {
+                Text("Clear Canvas")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange)
+                    .cornerRadius(6)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
     }
     

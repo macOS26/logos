@@ -602,7 +602,7 @@ struct ToolItem {
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
     @StateObject private var starHUDManager = StarToolHUDManager()
-    @StateObject private var toolGroupManager = ToolGroupManager()
+    @StateObject private var toolGroupManager = ToolGroupManager.shared
 
     // MARK: - Tool Group Functions
     
@@ -901,49 +901,49 @@ struct VerticalToolbar: View {
         case .brush:
             return "Brush Tool (B) - Draw variable width brush strokes"
         case .marker:
-            return "Marker Tool - Draw with circular felt-tip marker strokes"
+            return "Marker Tool (M) - Draw with circular felt-tip marker strokes"
         case .font:
             return "Font Tool (T) - Add and edit text"
         case .line:
             return "Line Tool (L) - Draw straight lines"
         case .rectangle:
-            return "Rectangle Tool (R) - Draw rectangles"
+            return "Rectangle Tool (⌥R) - Draw rectangles"
         case .square:
-            return "Square Tool - Draw perfect squares"
+            return "Square Tool (⌥S) - Draw perfect squares"
         case .roundedRectangle:
-            return "Rounded Rectangle Tool - Draw rectangles with rounded corners"
+            return "Rounded Rectangle Tool (⇧⌥R) - Draw rectangles with rounded corners"
         case .pill:
-            return "Pill Tool - Draw capsule/pill shapes"
+            return "Pill Tool (⇧⌥P) - Draw capsule/pill shapes"
         case .circle:
-            return "Circle Tool (C) - Draw perfect circles"
+            return "Circle Tool (⌥C) - Draw perfect circles"
         case .ellipse:
-            return "Ellipse Tool - Draw ellipses and ovals"
+            return "Ellipse Tool (E) - Draw ellipses and ovals"
         case .oval:
-            return "Oval Tool - Draw oval shapes"
+            return "Oval Tool (O) - Draw oval shapes"
         case .egg:
-            return "Egg Tool - Draw egg shapes"
+            return "Egg Tool (⇧E) - Draw egg shapes"
         case .cone:
-            return "Cone Tool - Draw triangle/cone shapes"
+            return "Cone Tool (⇧⌥C) - Draw triangle/cone shapes"
         case .equilateralTriangle:
-            return "Equilateral Triangle Tool - Draw triangles with equal sides"
+            return "Equilateral Triangle Tool (⇧T) - Draw triangles with equal sides"
         case .isoscelesTriangle:
-            return "Isosceles Triangle Tool - Draw triangles with two equal sides"
+            return "Isosceles Triangle Tool (I) - Draw triangles with two equal sides"
         case .rightTriangle:
-            return "Right Triangle Tool - Draw 90-degree triangles"
+            return "Right Triangle Tool (⇧⌥R) - Draw 90-degree triangles"
         case .acuteTriangle:
-            return "Acute Triangle Tool - Draw triangles with all angles less than 90°"
+            return "Acute Triangle Tool (⇧A) - Draw triangles with all angles less than 90°"
         case .star:
-            return "Star Tool - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
+            return "Star Tool (⇧S) - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
         case .polygon:
-            return "Polygon Tool - Draw polygon shapes"
+            return "Polygon Tool (⌥P) - Draw polygon shapes"
         case .pentagon:
-            return "Pentagon Tool - Draw 5-sided polygons"
+            return "Pentagon Tool (5) - Draw 5-sided polygons"
         case .hexagon:
-            return "Hexagon Tool - Draw 6-sided polygons"
+            return "Hexagon Tool (6) - Draw 6-sided polygons"
         case .heptagon:
-            return "Heptagon Tool - Draw 7-sided polygons"
+            return "Heptagon Tool (7) - Draw 7-sided polygons"
         case .octagon:
-            return "Octagon Tool - Draw 8-sided polygons"
+            return "Octagon Tool (8) - Draw 8-sided polygons"
         case .eyedropper:
             return "Eyedropper Tool (I) - Sample colors"
         case .hand:
@@ -951,10 +951,9 @@ struct VerticalToolbar: View {
         case .zoom:
             return "Zoom Tool (Z) - Zoom in and out"
         case .warp:
-            return "Warp Tool"
+            return "Warp Tool (W) - Warp and distort objects"
         case .gradient:
             return "Gradient Tool (G) - Edit gradient origin and focal points"
-
         }
     }
 }

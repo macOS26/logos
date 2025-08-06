@@ -358,6 +358,7 @@ struct MainView: View {
         }
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
+                .frame(width: 1200, height: 800)
         }
         .frame(minWidth: 1400, minHeight: 900)
         // Note: No longer using focusedValue - using focusedSceneObject instead

@@ -507,6 +507,14 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         let previousTool = document.currentTool
         document.currentTool = tool
+        
+        // PROPER TOOL GROUP HANDLING: When switching to a tool via keyboard shortcut,
+        // make it the active tool in its group and expand the group if needed
+        let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
+        
+        // Update the shared ToolGroupManager to reflect the new tool selection
+        ToolGroupManager.shared.handleKeyboardToolSwitch(tool: tool, toolGroup: toolGroup)
+        
         print("🛠️ MENU: Switched from \(previousTool.rawValue) to \(tool.rawValue)")
     }
 }
@@ -714,6 +722,7 @@ struct DocumentBasedMainView: View {
         }
         .sheet(isPresented: $showingPressureCalibration) {
             PressureCalibrationView()
+                .frame(width: 1200, height: 800)
         }
         .onAppear {
             // Apply the user's default tool setting to the document
@@ -1523,61 +1532,7 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut(",", modifiers: [.command])
                 .help("Open application preferences")
             }
-        }
-        
-        // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
-        WindowGroup("Gradient Color Picker", id: "gradient-hud") {
-            if appState.persistentGradientHUD.isVisible {
-                // EXACT SAME STYLING as the SwiftUI HUD - but make it draggable from anywhere
-                StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
-                    .environment(appState)
-                    .background(WindowAccessor { window in
-                        if let window = window {
-                            // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
-                            window.styleMask = [.hudWindow, .titled, .closable]
-                            
-                            // 🔥 HUD APPEARANCE
-                            window.appearance = NSAppearance(named: .darkAqua)
-                            window.titlebarAppearsTransparent = true
-                            window.titleVisibility = .visible // Keep this visible for dragging
-                            window.title = "Select Gradient Color" // Set your window title
-                            
-                            // 🔥 TRANSPARENCY & BACKGROUND
-                            window.isOpaque = true
-                            window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
-                            window.hasShadow = true
-                            
-                            // 🔥 WINDOW BEHAVIOR
-                            window.level = .modalPanel
-                            window.isMovableByWindowBackground = false // FALSE so sliders work
-                            window.tabbingMode = .disallowed
-                            
-                            // 🔥 OPTIONAL: Style the window buttons
-                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-                            window.standardWindowButton(.zoomButton)?.isHidden = true
-                            window.styleMask.insert(.utilityWindow)
-                            // Keep close button visible
-                        }
-                    })
-            } else {
-                EmptyView()
-            }
-        }
-        .windowResizability(.contentSize) // Size to content
-        .windowStyle(.hiddenTitleBar) // Hide title bar for HUD
-        .defaultPosition(.center) // Center initially
-        // 🔥 CONDITIONAL macOS 15+ windowLevel - handled in WindowAccessor
-        
-        // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
-        // Re-enabled but configured to not interfere with document tabbing
-        WindowGroup("New Document Setup") {
-            ContentView()
-                .environment(appState)
-        }
-        // Make this window group non-default so it doesn't interfere with DocumentGroup
-        .defaultSize(width: 1200, height: 800)
-        .windowResizability(.contentSize)
-        .commands {
+            
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
                 Button("Undo") {
@@ -1585,16 +1540,6 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("z", modifiers: [.command])
                 .disabled(documentState?.canUndo != true)
-                .onAppear {
-                    if let menu = NSApplication.shared.mainMenu {
-                        // Remove Apple's default Edit menu (grayed out and useless)
-                        if let edit = menu.items.first(where: { $0.title == "Edit"}) {
-                            menu.removeItem(edit)
-                            
-                            
-                        }
-                    }
-                }
                 
                 Button("Redo") {
                     documentState?.redo()
@@ -1647,7 +1592,6 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("a", modifiers: [.command, .shift])
                 .disabled(documentState?.hasSelection != true)
             }
-            
             
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
@@ -1923,6 +1867,40 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("a", modifiers: [])
                 .help("Switch to direct selection tool")
                 
+                Button("Convert Anchor Point Tool") {
+                    documentState?.switchToTool(.convertAnchorPoint)
+                }
+                .keyboardShortcut("c", modifiers: [])
+                .help("Switch to convert anchor point tool")
+                
+                Divider()
+                
+                Button("Scale Tool") {
+                    documentState?.switchToTool(.scale)
+                }
+                .keyboardShortcut("s", modifiers: [])
+                .help("Switch to scale tool")
+                
+                Button("Rotate Tool") {
+                    documentState?.switchToTool(.rotate)
+                }
+                .keyboardShortcut("r", modifiers: [])
+                .help("Switch to rotate tool")
+                
+                Button("Shear Tool") {
+                    documentState?.switchToTool(.shear)
+                }
+                .keyboardShortcut("x", modifiers: [])
+                .help("Switch to shear tool")
+                
+                Button("Warp Tool") {
+                    documentState?.switchToTool(.warp)
+                }
+                .keyboardShortcut("w", modifiers: [])
+                .help("Switch to warp tool")
+                
+                Divider()
+                
                 Button("Bezier Pen Tool") {
                     documentState?.switchToTool(.bezierPen)
                 }
@@ -1964,14 +1942,146 @@ struct logos_inken_ioApp: App {
                 Button("Rectangle Tool") {
                     documentState?.switchToTool(.rectangle)
                 }
-                .keyboardShortcut("r", modifiers: [])
+                .keyboardShortcut("r", modifiers: [.option])
                 .help("Switch to rectangle tool")
+                
+                Button("Square Tool") {
+                    documentState?.switchToTool(.square)
+                }
+                .keyboardShortcut("s", modifiers: [.option])
+                .help("Switch to square tool")
+                
+                Button("Rounded Rectangle Tool") {
+                    documentState?.switchToTool(.roundedRectangle)
+                }
+                .keyboardShortcut("r", modifiers: [.shift, .option])
+                .help("Switch to rounded rectangle tool")
+                
+                Button("Pill Tool") {
+                    documentState?.switchToTool(.pill)
+                }
+                .keyboardShortcut("p", modifiers: [.shift, .option])
+                .help("Switch to pill tool")
                 
                 Button("Circle Tool") {
                     documentState?.switchToTool(.circle)
                 }
-                .keyboardShortcut("c", modifiers: [])
+                .keyboardShortcut("c", modifiers: [.option])
                 .help("Switch to circle tool")
+                
+                Button("Ellipse Tool") {
+                    documentState?.switchToTool(.ellipse)
+                }
+                .keyboardShortcut("e", modifiers: [])
+                .help("Switch to ellipse tool")
+                
+                Button("Oval Tool") {
+                    documentState?.switchToTool(.oval)
+                }
+                .keyboardShortcut("o", modifiers: [])
+                .help("Switch to oval tool")
+                
+                Button("Egg Tool") {
+                    documentState?.switchToTool(.egg)
+                }
+                .keyboardShortcut("e", modifiers: [.shift])
+                .help("Switch to egg tool")
+                
+                Button("Cone Tool") {
+                    documentState?.switchToTool(.cone)
+                }
+                .keyboardShortcut("c", modifiers: [.shift, .option])
+                .help("Switch to cone tool")
+                
+                Divider()
+                
+                Button("Equilateral Triangle Tool") {
+                    documentState?.switchToTool(.equilateralTriangle)
+                }
+                .keyboardShortcut("t", modifiers: [.shift])
+                .help("Switch to equilateral triangle tool")
+                
+                Button("Isosceles Triangle Tool") {
+                    documentState?.switchToTool(.isoscelesTriangle)
+                }
+                .keyboardShortcut("i", modifiers: [])
+                .help("Switch to isosceles triangle tool")
+                
+                Button("Right Triangle Tool") {
+                    documentState?.switchToTool(.rightTriangle)
+                }
+                .keyboardShortcut("r", modifiers: [.shift, .option])
+                .help("Switch to right triangle tool")
+                
+                Button("Acute Triangle Tool") {
+                    documentState?.switchToTool(.acuteTriangle)
+                }
+                .keyboardShortcut("a", modifiers: [.shift])
+                .help("Switch to acute triangle tool")
+                
+                Divider()
+                
+                Button("Star Tool") {
+                    documentState?.switchToTool(.star)
+                }
+                .keyboardShortcut("s", modifiers: [.shift])
+                .help("Switch to star tool")
+                
+                Button("Polygon Tool") {
+                    documentState?.switchToTool(.polygon)
+                }
+                .keyboardShortcut("p", modifiers: [.option])
+                .help("Switch to polygon tool")
+                
+                Button("Pentagon Tool") {
+                    documentState?.switchToTool(.pentagon)
+                }
+                .keyboardShortcut("5", modifiers: [])
+                .help("Switch to pentagon tool")
+                
+                Button("Hexagon Tool") {
+                    documentState?.switchToTool(.hexagon)
+                }
+                .keyboardShortcut("6", modifiers: [])
+                .help("Switch to hexagon tool")
+                
+                Button("Heptagon Tool") {
+                    documentState?.switchToTool(.heptagon)
+                }
+                .keyboardShortcut("7", modifiers: [])
+                .help("Switch to heptagon tool")
+                
+                Button("Octagon Tool") {
+                    documentState?.switchToTool(.octagon)
+                }
+                .keyboardShortcut("8", modifiers: [])
+                .help("Switch to octagon tool")
+                
+                Divider()
+                
+                Button("Eyedropper Tool") {
+                    documentState?.switchToTool(.eyedropper)
+                }
+                .keyboardShortcut("i", modifiers: [])
+                .help("Switch to eyedropper tool")
+                
+                Button("Hand Tool") {
+                    documentState?.switchToTool(.hand)
+                }
+                .keyboardShortcut("h", modifiers: [])
+                .help("Switch to hand tool")
+                
+                Button("Zoom Tool") {
+                    documentState?.switchToTool(.zoom)
+                }
+                .keyboardShortcut("z", modifiers: [])
+                .help("Switch to zoom tool")
+                
+                Button("Gradient Tool") {
+                    documentState?.switchToTool(.gradient)
+                }
+                .keyboardShortcut("g", modifiers: [])
+                .help("Switch to gradient tool")
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState (no more notifications!)
@@ -1990,6 +2100,59 @@ struct logos_inken_ioApp: App {
                 .help("Benchmark ClipperPath vs CoreGraphics performance")
             }
         }
+        
+        // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
+        WindowGroup("Gradient Color Picker", id: "gradient-hud") {
+            if appState.persistentGradientHUD.isVisible {
+                // EXACT SAME STYLING as the SwiftUI HUD - but make it draggable from anywhere
+                StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
+                    .environment(appState)
+                    .background(WindowAccessor { window in
+                        if let window = window {
+                            // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
+                            window.styleMask = [.hudWindow, .titled, .closable]
+                            
+                            // 🔥 HUD APPEARANCE
+                            window.appearance = NSAppearance(named: .darkAqua)
+                            window.titlebarAppearsTransparent = true
+                            window.titleVisibility = .visible // Keep this visible for dragging
+                            window.title = "Select Gradient Color" // Set your window title
+                            
+                            // 🔥 TRANSPARENCY & BACKGROUND
+                            window.isOpaque = true
+                            window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+                            window.hasShadow = true
+                            
+                            // 🔥 WINDOW BEHAVIOR
+                            window.level = .modalPanel
+                            window.isMovableByWindowBackground = false // FALSE so sliders work
+                            window.tabbingMode = .disallowed
+                            
+                            // 🔥 OPTIONAL: Style the window buttons
+                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                            window.standardWindowButton(.zoomButton)?.isHidden = true
+                            window.styleMask.insert(.utilityWindow)
+                            // Keep close button visible
+                        }
+                    })
+            } else {
+                EmptyView()
+            }
+        }
+        .windowResizability(.contentSize) // Size to content
+        .windowStyle(.hiddenTitleBar) // Hide title bar for HUD
+        .defaultPosition(.center) // Center initially
+        // 🔥 CONDITIONAL macOS 15+ windowLevel - handled in WindowAccessor
+        
+        // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
+        // Re-enabled but configured to not interfere with document tabbing
+        WindowGroup("New Document Setup") {
+            ContentView()
+                .environment(appState)
+        }
+        // Make this window group non-default so it doesn't interfere with DocumentGroup
+        .defaultSize(width: 1200, height: 800)
+        .windowResizability(.contentSize)
     }
 }
 

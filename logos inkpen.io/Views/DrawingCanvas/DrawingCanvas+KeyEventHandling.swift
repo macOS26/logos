@@ -13,7 +13,7 @@ extension DrawingCanvas {
     internal func setupKeyEventMonitoring() {
         // IMPROVED: Local monitor that prevents beeping but allows modifier key commands
         // ENHANCED: Now also tracks flagsChanged for shift key constraints in transform tools
-        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+        keyEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { (event: NSEvent) -> NSEvent? in
             // Handle modifier key changes for transform tools
             if event.type == .flagsChanged {
                 // FIXED: Remove async dispatch to prevent race conditions during rapid key events
@@ -52,7 +52,17 @@ extension DrawingCanvas {
                 return event
             }
             
-            // FOR SINGLE KEY PRESSES: Consume the event to prevent beeping
+            // ALLOW TOOL SWITCHING SHORTCUTS to pass through
+            // These are single key presses that should trigger tool switching
+            let toolSwitchingKeys = Set(["v", "a", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
+            
+            if let characters = event.charactersIgnoringModifiers?.lowercased(),
+               toolSwitchingKeys.contains(characters) {
+                // Let tool switching shortcuts pass through to the menu system
+                return event
+            }
+            
+            // FOR OTHER SINGLE KEY PRESSES: Consume the event to prevent beeping
             // This tells macOS "we handled this event, don't make error sound"
             return nil
         }

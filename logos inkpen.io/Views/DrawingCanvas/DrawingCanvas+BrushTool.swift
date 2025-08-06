@@ -17,7 +17,6 @@ extension DrawingCanvas {
         return rect.origin.x.isFinite && rect.origin.y.isFinite && 
                rect.size.width.isFinite && rect.size.height.isFinite
     }
-    
     // MARK: - Current Color Helpers (Same as other tools)
     
     /// Get the current fill color that the user has set (same logic as StrokeFillPanel)

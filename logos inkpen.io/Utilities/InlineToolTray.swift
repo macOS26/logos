@@ -9,6 +9,8 @@ import SwiftUI
 
 // MARK: - Tool Group Manager
 class ToolGroupManager: ObservableObject {
+    static let shared = ToolGroupManager()
+    
     @Published var currentToolInGroup: DrawingTool? = nil
     @Published var selectedVariant: StarVariant = .fivePoint
     @Published var selectedVariantIndex: Int? = nil // For star variants
@@ -16,6 +18,41 @@ class ToolGroupManager: ObservableObject {
     @Published var expansionAnchorTool: DrawingTool? = nil // Tool that triggered expansion
     @Published var expansionAnchorVariant: StarVariant? = nil // Star variant that triggered expansion
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
+    
+    private init() {
+        // Shared instance for global access
+    }
+    
+    // Handle tool switching via keyboard shortcuts
+    func handleKeyboardToolSwitch(tool: DrawingTool, toolGroup: [DrawingTool]) {
+        // If this tool is in a group with multiple tools, make it the active one
+        if toolGroup.count > 1 {
+            // Check if we're currently showing a different tool from the same group
+            if let current = currentToolInGroup, 
+               ToolGroupConfiguration.getToolGroup(for: current) == toolGroup {
+                // We're in the same group - switch to the new tool
+                currentToolInGroup = tool
+                showingAllItems = false // Hide the group expansion
+                expansionAnchorTool = nil
+                expansionAnchorVariant = nil
+                print("🔧 KEYBOARD: Switched to \(tool.rawValue) in same group")
+            } else {
+                // We're switching to a new group - make this tool active
+                currentToolInGroup = tool
+                showingAllItems = false // Don't expand by default for keyboard shortcuts
+                expansionAnchorTool = nil
+                expansionAnchorVariant = nil
+                print("🔧 KEYBOARD: Switched to \(tool.rawValue) in new group")
+            }
+        } else {
+            // Single tool - just switch to it
+            currentToolInGroup = tool
+            showingAllItems = false
+            expansionAnchorTool = nil
+            expansionAnchorVariant = nil
+            print("🔧 KEYBOARD: Switched to single tool \(tool.rawValue)")
+        }
+    }
     
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
         let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
