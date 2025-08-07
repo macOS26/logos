@@ -285,7 +285,9 @@ extension DrawingCanvas {
         )
         
         // Project onto 45-degree line for radius calculation only
-        let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / sqrt(2.0)
+        // 🚀 PHASE 11: GPU-accelerated square root calculation
+        let sqrt2 = MetalComputeEngine.shared!.calculateSquareRootGPU(2.0)
+        let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / CGFloat(sqrt2)
         
         // Calculate radius change from the projected distance (in canvas coordinates)
         // FIXED: 1:1 mouse tracking - no scale factor needed

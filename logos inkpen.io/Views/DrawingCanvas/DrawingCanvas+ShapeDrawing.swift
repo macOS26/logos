@@ -15,14 +15,18 @@ extension DrawingCanvas {
         
         // CRITICAL FIX: Shape tools should only work on DRAG, not click
         // Calculate actual drag distance to distinguish click vs drag
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        // 🚀 PHASE 11: GPU-accelerated distance calculation
+        let dragDistance = MetalComputeEngine.shared!.calculatePointDistanceGPU(
+            from: value.startLocation,
+            to: value.location
+        )
         
         // EQUILATERAL TRIANGLE: Allow truly free drawing from 0,0 (no minimum threshold)
         // OTHER SHAPES: Must drag at least 12 pixels to start drawing shapes
         let minimumDragThreshold: Double = (document.currentTool == .equilateralTriangle) ? 0.0 : 12.0
         
         // Only proceed with shape creation if user has dragged significantly
-        if dragDistance < minimumDragThreshold {
+        if Double(dragDistance) < minimumDragThreshold {
             print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)")
             return
         }
@@ -220,7 +224,9 @@ extension DrawingCanvas {
             // Create equilateral triangle that grows from startPoint in direction of cursor
             // For equilateral triangle: height = side * sqrt(3)/2, so side = height * 2/sqrt(3)
             let triangleHeight = dragDeltaY >= 0 ? size : -size
-            let triangleWidth = abs(triangleHeight) * 2.0 / sqrt(3.0) // Convert height to equilateral base width
+            // 🚀 PHASE 11: GPU-accelerated square root calculation
+            let sqrt3 = MetalComputeEngine.shared!.calculateSquareRootGPU(3.0)
+            let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3)) // Convert height to equilateral base width
             
             // Pin triangle from start point (upper left corner of bounding box)
             let triangleRect = CGRect(
