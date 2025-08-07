@@ -380,11 +380,17 @@ class MetalComputeEngine {
     
     // MARK: - Phase 5: GPU Path Rendering
     
-    func renderPathGPU(pathPoints: [CGPoint], strokeWidth: Float, resolution: Int) -> [CGPoint] {
-        guard let pipeline = pathRenderingPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return renderPathCPU(pathPoints: pathPoints, strokeWidth: strokeWidth, resolution: resolution)
+    func renderPathGPU(pathPoints: [CGPoint], strokeWidth: Float, resolution: Int) -> Result<[CGPoint], MetalError> {
+        guard let pipeline = pathRenderingPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let inputPointCount = pathPoints.count
@@ -394,8 +400,10 @@ class MetalComputeEngine {
         let metalPathPoints = pathPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let inputBuffer = device.makeBuffer(bytes: metalPathPoints, length: inputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: outputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        guard let inputBuffer = device.makeBuffer(bytes: metalPathPoints, length: inputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: outputPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         var pathStrokeWidth = strokeWidth
         var pathResolution = UInt32(resolution)
         var pathInputCount = UInt32(inputPointCount)
@@ -419,9 +427,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: outputPointCount) else {
-            return renderPathCPU(pathPoints: pathPoints, strokeWidth: strokeWidth, resolution: resolution)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: outputPointCount)
         
         var result: [CGPoint] = []
         for i in 0..<outputPointCount {
@@ -432,7 +438,7 @@ class MetalComputeEngine {
             }
         }
         
-        return result
+        return .success(result)
     }
     
     // MARK: - Phase 6: GPU Vector Operations
