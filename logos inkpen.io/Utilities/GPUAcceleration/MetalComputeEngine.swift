@@ -425,12 +425,21 @@ class MetalComputeEngine {
     
     // MARK: - Phase 6: GPU Vector Operations
     
-    func calculateDistancesGPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> [Float] {
-        guard sourcePoints.count == targetPoints.count,
-              let pipeline = vectorDistancePipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculateDistancesCPU(from: sourcePoints, to: targetPoints)
+    func calculateDistancesGPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> Result<[Float], MetalError> {
+        guard sourcePoints.count == targetPoints.count else {
+            return .failure(.operationFailed("Source and target point counts must match"))
+        }
+        
+        guard let pipeline = vectorDistancePipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = sourcePoints.count
@@ -438,9 +447,11 @@ class MetalComputeEngine {
         let metalTargetPoints = targetPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let sourceBuffer = device.makeBuffer(bytes: metalSourcePoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let targetBuffer = device.makeBuffer(bytes: metalTargetPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let distanceBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        guard let sourceBuffer = device.makeBuffer(bytes: metalSourcePoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let targetBuffer = device.makeBuffer(bytes: metalTargetPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let distanceBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute
         computeEncoder.setComputePipelineState(pipeline)
@@ -459,16 +470,14 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = distanceBuffer?.contents().bindMemory(to: Float.self, capacity: pointCount) else {
-            return calculateDistancesCPU(from: sourcePoints, to: targetPoints)
-        }
+        let resultPointer = distanceBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
         
         var results: [Float] = []
         for i in 0..<pointCount {
             results.append(resultPointer[i])
         }
         
-        return results
+        return .success(results)
     }
     
     func normalizeVectorsGPU(_ vectors: [CGPoint]) -> [CGPoint] {
@@ -721,9 +730,14 @@ class MetalComputeEngine {
     // MARK: - Phase 11: GPU Mathematical Operations
     
     /// Calculate single point-to-point distance (optimized for shape drawing)
-    func calculatePointDistanceGPU(from point1: CGPoint, to point2: CGPoint) -> Float {
+    func calculatePointDistanceGPU(from point1: CGPoint, to point2: CGPoint) -> Result<Float, MetalError> {
         let results = calculateDistancesGPU(from: [point1], to: [point2])
-        return results.first ?? 0.0
+        switch results {
+        case .success(let distances):
+            return .success(distances.first ?? 0.0)
+        case .failure(let error):
+            return .failure(error)
+        }
     }
     
     /// Calculate square root of a single value
@@ -1377,14 +1391,20 @@ class MetalComputeEngine {
         let testPoint1 = CGPoint(x: 0, y: 0)
         let testPoint2 = CGPoint(x: 3, y: 4)
         
-        let distance = engine.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
+        let distanceResult = engine.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
         let expectedDistance: Float = 5.0 // sqrt(3² + 4²) = 5
         
-        if abs(distance - expectedDistance) < 0.1 {
-            print("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))")
-            return true
-        } else {
-            print("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))")
+        switch distanceResult {
+        case .success(let distance):
+            if abs(distance - expectedDistance) < 0.1 {
+                print("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))")
+                return true
+            } else {
+                print("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))")
+                return false
+            }
+        case .failure(let error):
+            print("❌ Metal Engine Test: Distance calculation failed with error: \(error)")
             return false
         }
     }

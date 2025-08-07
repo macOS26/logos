@@ -8,6 +8,27 @@
 import SwiftUI
 
 extension DrawingCanvas {
+    // Helper function to handle GPU distance calculation with fallback
+    private func calculateDistanceWithFallback(from point1: CGPoint, to point2: CGPoint) -> Float {
+        if let metalEngine = MetalComputeEngine.shared {
+            let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
+            switch distanceResult {
+            case .success(let distance):
+                return distance
+            case .failure(_):
+                // CPU fallback
+                let dx = point2.x - point1.x
+                let dy = point2.y - point1.y
+                return Float(sqrt(dx * dx + dy * dy))
+            }
+        } else {
+            // CPU fallback
+            let dx = point2.x - point1.x
+            let dy = point2.y - point1.y
+            return Float(sqrt(dx * dx + dy * dy))
+        }
+    }
+    
     internal func handleShapeDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL SHAPE DRAWING: Perfect cursor-to-shape synchronization
         // Uses the same precision approach as hand tool and object dragging
@@ -16,18 +37,7 @@ extension DrawingCanvas {
         // CRITICAL FIX: Shape tools should only work on DRAG, not click
         // Calculate actual drag distance to distinguish click vs drag
         // 🚀 PHASE 11: GPU-accelerated distance calculation
-        let dragDistance: Float
-        if let metalEngine = MetalComputeEngine.shared {
-            dragDistance = metalEngine.calculatePointDistanceGPU(
-                from: value.startLocation,
-                to: value.location
-            )
-        } else {
-            // CPU fallback
-            let dx = value.location.x - value.startLocation.x
-            let dy = value.location.y - value.startLocation.y
-            dragDistance = Float(sqrt(dx * dx + dy * dy))
-        }
+        let dragDistance = calculateDistanceWithFallback(from: value.startLocation, to: value.location)
         
         // EQUILATERAL TRIANGLE: Allow truly free drawing from 0,0 (no minimum threshold)
         // OTHER SHAPES: Must drag at least 12 pixels to start drawing shapes
@@ -348,18 +358,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let outerRadius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                outerRadius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                outerRadius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let outerRadius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             let innerRadius = Double(outerRadius) * 0.4 // Inner radius is 40% of outer radius
             currentPath = createStarPath(center: center, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: 5)
         case .polygon:
@@ -368,18 +367,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                radius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                radius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 6) // Default hexagon
         case .pentagon:
             let center = CGPoint(
@@ -387,18 +375,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                radius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                radius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 5)
         case .hexagon:
             let center = CGPoint(
@@ -406,18 +383,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                radius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                radius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 6)
         case .heptagon:
             let center = CGPoint(
@@ -425,18 +391,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                radius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                radius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 7)
         case .octagon:
             let center = CGPoint(
@@ -444,18 +399,7 @@ extension DrawingCanvas {
                 y: (startPoint.y + currentLocation.y) / 2
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                radius = metalEngine.calculatePointDistanceGPU(
-                    from: startPoint,
-                    to: currentLocation
-                ) / 2.0
-            } else {
-                // CPU fallback
-                let dx = currentLocation.x - startPoint.x
-                let dy = currentLocation.y - startPoint.y
-                radius = Float(sqrt(dx * dx + dy * dy)) / 2.0
-            }
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 8)
         default:
             break

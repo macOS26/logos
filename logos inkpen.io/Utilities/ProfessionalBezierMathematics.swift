@@ -515,7 +515,15 @@ extension VectorPoint {
         // 🚀 GPU-ONLY: Use Metal for all distance calculations
         if let metalEngine = MetalComputeEngine.shared {
             let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
-            return results.map { Double($0) }
+            switch results {
+            case .success(let distances):
+                return distances.map { Double($0) }
+            case .failure(_):
+                // Fallback to CPU calculation
+                return zip(sourcePoints, targetPoints).map { source, target in
+                    source.distance(to: target)
+                }
+            }
         } else {
             // CPU fallback for small batches
             return zip(sourcePoints, targetPoints).map { source, target in
