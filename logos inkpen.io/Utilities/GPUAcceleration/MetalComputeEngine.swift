@@ -712,12 +712,21 @@ class MetalComputeEngine {
         return .success(results)
     }
     
-    func chaikinSmoothingGPU(points: [CGPoint], ratio: Float = 0.25) -> [CGPoint] {
-        guard points.count >= 3,
-              let pipeline = chaikinSmoothingPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return chaikinSmoothingCPU(points: points, ratio: ratio)
+    func chaikinSmoothingGPU(points: [CGPoint], ratio: Float = 0.25) -> Result<[CGPoint], MetalError> {
+        guard points.count >= 3 else {
+            return .failure(.operationFailed("Need at least 3 points for Chaikin smoothing"))
+        }
+        
+        guard let pipeline = chaikinSmoothingPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let inputCount = points.count
@@ -726,8 +735,10 @@ class MetalComputeEngine {
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let inputBuffer = device.makeBuffer(bytes: metalPoints, length: inputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        guard let inputBuffer = device.makeBuffer(bytes: metalPoints, length: inputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         var inputCountInt = UInt32(inputCount)
         var smoothingRatio = ratio
         
@@ -750,9 +761,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: outputCount) else {
-            return chaikinSmoothingCPU(points: points, ratio: ratio)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: outputCount)
         
         var results: [CGPoint] = []
         for i in 0..<outputCount {
@@ -763,7 +772,7 @@ class MetalComputeEngine {
             }
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 11: GPU Mathematical Operations
