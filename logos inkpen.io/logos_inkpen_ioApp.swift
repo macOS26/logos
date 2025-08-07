@@ -1454,6 +1454,13 @@ struct logos_inken_ioApp: App {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
     
+    init() {
+        // Test Metal Compute Engine on app startup
+        print("🔧 Testing Metal Compute Engine...")
+        let metalWorking = MetalComputeEngine.testMetalEngine()
+        print("🔧 Metal Engine Status: \(metalWorking ? "✅ Working" : "❌ Failed")")
+    }
+    
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in

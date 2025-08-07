@@ -485,9 +485,15 @@ extension VectorPoint {
         let endCGPoints = endPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all interpolation
-        let metalEngine = MetalComputeEngine.shared!
-        let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
-        return results.map { VectorPoint($0) }
+        if let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
+            return results.map { VectorPoint($0) }
+        } else {
+            // CPU fallback for small batches
+            return zip(startPoints, endPoints).map { start, end in
+                VectorPoint.lerp(start, end, t)
+            }
+        }
     }
     
     /// Distance between two points
@@ -507,9 +513,15 @@ extension VectorPoint {
         let targetCGPoints = targetPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all distance calculations
-        let metalEngine = MetalComputeEngine.shared!
-        let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
-        return results.map { Double($0) }
+        if let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
+            return results.map { Double($0) }
+        } else {
+            // CPU fallback for small batches
+            return zip(sourcePoints, targetPoints).map { source, target in
+                source.distance(to: target)
+            }
+        }
     }
     
     /// Angle from this point to another point
@@ -531,9 +543,13 @@ extension VectorPoint {
         let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all vector normalization
-        let metalEngine = MetalComputeEngine.shared!
-        let results = metalEngine.normalizeVectorsGPU(cgVectors)
-        return results.map { VectorPoint($0) }
+        if let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.normalizeVectorsGPU(cgVectors)
+            return results.map { VectorPoint($0) }
+        } else {
+            // CPU fallback for small batches
+            return vectors.map { $0.normalized }
+        }
     }
     
     /// Vector length/magnitude

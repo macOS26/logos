@@ -22,20 +22,40 @@ extension DrawingCanvas {
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        let metalEngine = MetalComputeEngine.shared!
-        
-        // Create inverse transformation matrix for screen-to-canvas
+        if let metalEngine = MetalComputeEngine.shared {
+            // Create inverse transformation matrix for screen-to-canvas
+            let preciseOffsetX = Double(document.canvasOffset.x)
+            let preciseOffsetY = Double(document.canvasOffset.y)
+            let preciseZoom = Double(document.zoomLevel)
+            
+            let inverseTransform = CGAffineTransform(
+                a: 1.0 / preciseZoom, b: 0,
+                c: 0, d: 1.0 / preciseZoom,
+                tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
+            )
+            
+            return metalEngine.transformPointsGPU(points, transform: inverseTransform)
+        } else {
+            // CPU fallback
+            return screenToCanvasCPU(points, geometry: geometry)
+        }
+    }
+    
+    private func screenToCanvasCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
+        // Use high precision to prevent floating-point drift
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
         let preciseZoom = Double(document.zoomLevel)
         
-        let inverseTransform = CGAffineTransform(
-            a: 1.0 / preciseZoom, b: 0,
-            c: 0, d: 1.0 / preciseZoom,
-            tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
-        )
-        
-        return metalEngine.transformPointsGPU(points, transform: inverseTransform)
+        return points.map { point in
+            let preciseScreenX = Double(point.x)
+            let preciseScreenY = Double(point.y)
+            
+            let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
+            let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
+            
+            return CGPoint(x: canvasX, y: canvasY)
+        }
     }
     
 
@@ -52,20 +72,40 @@ extension DrawingCanvas {
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        let metalEngine = MetalComputeEngine.shared!
-        
-        // Create transformation matrix for canvas-to-screen
+        if let metalEngine = MetalComputeEngine.shared {
+            // Create transformation matrix for canvas-to-screen
+            let preciseOffsetX = Double(document.canvasOffset.x)
+            let preciseOffsetY = Double(document.canvasOffset.y)
+            let preciseZoom = Double(document.zoomLevel)
+            
+            let transform = CGAffineTransform(
+                a: preciseZoom, b: 0,
+                c: 0, d: preciseZoom,
+                tx: preciseOffsetX, ty: preciseOffsetY
+            )
+            
+            return metalEngine.transformPointsGPU(points, transform: transform)
+        } else {
+            // CPU fallback
+            return canvasToScreenCPU(points, geometry: geometry)
+        }
+    }
+    
+    private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
+        // Use high precision to prevent floating-point drift
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
         let preciseZoom = Double(document.zoomLevel)
         
-        let transform = CGAffineTransform(
-            a: preciseZoom, b: 0,
-            c: 0, d: preciseZoom,
-            tx: preciseOffsetX, ty: preciseOffsetY
-        )
-        
-        return metalEngine.transformPointsGPU(points, transform: transform)
+        return points.map { point in
+            let preciseCanvasX = Double(point.x)
+            let preciseCanvasY = Double(point.y)
+            
+            let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
+            let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
+            
+            return CGPoint(x: screenX, y: screenY)
+        }
     }
     
 

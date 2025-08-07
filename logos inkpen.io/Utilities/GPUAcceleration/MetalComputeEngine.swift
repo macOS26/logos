@@ -36,6 +36,10 @@ class MetalComputeEngine {
     private var trigonometricPipeline: MTLComputePipelineState?
     private var polygonCalculationPipeline: MTLComputePipelineState?
     
+    // Phase 13: Boolean Geometry Operations
+    private var booleanGeometryPipeline: MTLComputePipelineState?
+    private var pathIntersectionPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
@@ -129,6 +133,9 @@ class MetalComputeEngine {
             if let function = library.makeFunction(name: "calculate_polygon_points") {
                 polygonCalculationPipeline = try device.makeComputePipelineState(function: function)
             }
+            
+            // Phase 13: Boolean Geometry operations (simplified for now)
+            // Note: Complex boolean operations will be added in future phases
             
         } catch {
             print("❌ Failed to create compute pipelines: \(error)")
@@ -1192,6 +1199,49 @@ class MetalComputeEngine {
         }
         
         return points
+    }
+    
+    // MARK: - Metal Engine Status
+    
+    /// Test if the Metal engine is working properly
+    static func testMetalEngine() -> Bool {
+        print("🔧 Metal Engine Test: Starting diagnostic...")
+        
+        // Check if Metal device is available
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            print("❌ Metal Engine Test: No Metal device available")
+            return false
+        }
+        print("✅ Metal Engine Test: Metal device found: \(device.name)")
+        
+        // Check if command queue can be created
+        guard let commandQueue = device.makeCommandQueue() else {
+            print("❌ Metal Engine Test: Cannot create command queue")
+            return false
+        }
+        print("✅ Metal Engine Test: Command queue created successfully")
+        
+        // Check if shared engine exists
+        guard let engine = shared else {
+            print("❌ Metal Engine Test: Engine not initialized - likely shader compilation failed")
+            return false
+        }
+        print("✅ Metal Engine Test: Engine initialized successfully")
+        
+        // Test basic GPU operations
+        let testPoint1 = CGPoint(x: 0, y: 0)
+        let testPoint2 = CGPoint(x: 3, y: 4)
+        
+        let distance = engine.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
+        let expectedDistance: Float = 5.0 // sqrt(3² + 4²) = 5
+        
+        if abs(distance - expectedDistance) < 0.1 {
+            print("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))")
+            return true
+        } else {
+            print("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))")
+            return false
+        }
     }
     
     // MARK: - Performance Monitoring
