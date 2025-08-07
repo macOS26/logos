@@ -64,7 +64,7 @@ class TestCPUMonitor {
         
         // Force update
         if activityCounter > 0 {
-            let activityLevel = min(100.0, Double(activityCounter) * 5.0)
+            let activityLevel = min(100.0, Double(activityCounter))
             cpuUsage = activityLevel
             print("📊 Heavy activity: CPU \(Int(cpuUsage))%")
         }
@@ -77,6 +77,6 @@ monitor.testCPUDetection()
 print("\n✅ CPU Monitor Test Complete!")
 print("Expected Results:")
 print("  • Baseline: ~10% CPU")
-print("  • Light activity: ~25% CPU") 
-print("  • Heavy activity: ~100% CPU")
+print("  • Light activity: ~5% CPU") 
+print("  • Heavy activity: ~20% CPU")
 print("\nIf you see 0% in the toolbar, the activity tracking system will update it when you draw.")
