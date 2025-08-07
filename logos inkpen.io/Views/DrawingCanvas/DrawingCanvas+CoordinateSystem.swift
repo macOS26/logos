@@ -19,50 +19,26 @@ extension DrawingCanvas {
     }
     
     /// Convert multiple screen coordinates to canvas coordinates efficiently
-    /// 🚀 PHASE 8: GPU-accelerated coordinate transformations
+    /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // For single points or small batches, use CPU for lower latency
-        if points.count < 10 {
-            return screenToCanvasCPU(points, geometry: geometry)
-        }
+        // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
+        let metalEngine = MetalComputeEngine.shared!
         
-        // 🚀 PHASE 8: Use GPU for large batches
-        if let metalEngine = MetalComputeEngine.shared {
-            // Create inverse transformation matrix for screen-to-canvas
-            let preciseOffsetX = Double(document.canvasOffset.x)
-            let preciseOffsetY = Double(document.canvasOffset.y)
-            let preciseZoom = Double(document.zoomLevel)
-            
-            let inverseTransform = CGAffineTransform(
-                a: 1.0 / preciseZoom, b: 0,
-                c: 0, d: 1.0 / preciseZoom,
-                tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
-            )
-            
-            let transformedPoints = metalEngine.transformPointsGPU(points, transform: inverseTransform)
-            return transformedPoints
-        }
-        
-        // CPU fallback
-        return screenToCanvasCPU(points, geometry: geometry)
-    }
-    
-    private func screenToCanvasCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // Use high precision to prevent floating-point drift
+        // Create inverse transformation matrix for screen-to-canvas
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
         let preciseZoom = Double(document.zoomLevel)
         
-        return points.map { point in
-            let preciseScreenX = Double(point.x)
-            let preciseScreenY = Double(point.y)
-            
-            let canvasX = (preciseScreenX - preciseOffsetX) / preciseZoom
-            let canvasY = (preciseScreenY - preciseOffsetY) / preciseZoom
-            
-            return CGPoint(x: canvasX, y: canvasY)
-        }
+        let inverseTransform = CGAffineTransform(
+            a: 1.0 / preciseZoom, b: 0,
+            c: 0, d: 1.0 / preciseZoom,
+            tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
+        )
+        
+        return metalEngine.transformPointsGPU(points, transform: inverseTransform)
     }
+    
+
     
     /// Convert canvas coordinates to screen coordinates
     /// PERFECT COORDINATE SYSTEM: Match exactly with .scaleEffect(zoomLevel, anchor: .topLeading).offset(canvasOffset)
@@ -73,50 +49,26 @@ extension DrawingCanvas {
     }
     
     /// Convert multiple canvas coordinates to screen coordinates efficiently
-    /// 🚀 PHASE 8: GPU-accelerated coordinate transformations
+    /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // For single points or small batches, use CPU for lower latency
-        if points.count < 10 {
-            return canvasToScreenCPU(points, geometry: geometry)
-        }
+        // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
+        let metalEngine = MetalComputeEngine.shared!
         
-        // 🚀 PHASE 8: Use GPU for large batches
-        if let metalEngine = MetalComputeEngine.shared {
-            // Create transformation matrix for canvas-to-screen
-            let preciseOffsetX = Double(document.canvasOffset.x)
-            let preciseOffsetY = Double(document.canvasOffset.y)
-            let preciseZoom = Double(document.zoomLevel)
-            
-            let transform = CGAffineTransform(
-                a: preciseZoom, b: 0,
-                c: 0, d: preciseZoom,
-                tx: preciseOffsetX, ty: preciseOffsetY
-            )
-            
-            let transformedPoints = metalEngine.transformPointsGPU(points, transform: transform)
-            return transformedPoints
-        }
-        
-        // CPU fallback
-        return canvasToScreenCPU(points, geometry: geometry)
-    }
-    
-    private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // Use high precision to prevent floating-point drift
+        // Create transformation matrix for canvas-to-screen
         let preciseOffsetX = Double(document.canvasOffset.x)
         let preciseOffsetY = Double(document.canvasOffset.y)
         let preciseZoom = Double(document.zoomLevel)
         
-        return points.map { point in
-            let preciseCanvasX = Double(point.x)
-            let preciseCanvasY = Double(point.y)
-            
-            let screenX = (preciseCanvasX * preciseZoom) + preciseOffsetX
-            let screenY = (preciseCanvasY * preciseZoom) + preciseOffsetY
-            
-            return CGPoint(x: screenX, y: screenY)
-        }
+        let transform = CGAffineTransform(
+            a: preciseZoom, b: 0,
+            c: 0, d: preciseZoom,
+            tx: preciseOffsetX, ty: preciseOffsetY
+        )
+        
+        return metalEngine.transformPointsGPU(points, transform: transform)
     }
+    
+
     
     /// Set up default view with deterministic positioning
     internal func setupDefaultView(geometry: GeometryProxy) {

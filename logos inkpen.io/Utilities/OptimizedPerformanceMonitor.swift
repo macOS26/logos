@@ -203,6 +203,17 @@ class OptimizedPerformanceMonitor: ObservableObject {
         default: return .red
         }
     }
+    
+    /// Color specifically for performance grade text
+    var performanceGradeColor: Color {
+        switch performanceGrade {
+        case "Efficient": return .green
+        case "Moderate CPU": return .yellow
+        case "High CPU": return .orange
+        case "CPU Overload": return .red
+        default: return .green // Default to green for any other cases
+        }
+    }
 }
 
 // MARK: - Lightweight Performance Overlay
@@ -250,7 +261,7 @@ struct LightweightPerformanceOverlay: View {
                     
                     Text("Grade: \(monitor.performanceGrade)")
                         .font(.system(.caption2, design: .monospaced))
-                        .foregroundColor(monitor.cpuStatusColor)
+                        .foregroundColor(monitor.performanceGradeColor)
                 }
             }
         }

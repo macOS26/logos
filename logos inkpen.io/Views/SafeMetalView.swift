@@ -10,21 +10,14 @@ struct SafeMetalView: NSViewRepresentable {
     let renderContent: (CGContext, CGSize) -> Void
     
     func makeNSView(context: Context) -> NSView {
-        if metalManager.isMetalAvailable {
-            // Use Metal-based rendering when available
-            return makeMetalView(context: context)
-        } else {
-            // Use Core Graphics fallback
-            return makeCoreGraphicsView(context: context)
-        }
+        // GPU-ONLY: Always use Metal (no fallbacks)
+        return makeMetalView(context: context)
     }
     
     func updateNSView(_ nsView: NSView, context: Context) {
-        // Update the view based on current Metal availability
+        // GPU-ONLY: Always Metal
         if let metalView = nsView as? MTKView {
             metalView.setNeedsDisplay(metalView.bounds)
-        } else if let cgView = nsView as? CoreGraphicsRenderView {
-            cgView.needsDisplay = true
         }
     }
     
@@ -42,12 +35,7 @@ struct SafeMetalView: NSViewRepresentable {
         return metalView
     }
     
-    private func makeCoreGraphicsView(context: Context) -> CoreGraphicsRenderView {
-        let cgView = CoreGraphicsRenderView()
-        cgView.renderContent = renderContent
-        cgView.performanceMonitor = performanceMonitor
-        return cgView
-    }
+
 }
 
 /// Metal renderer that doesn't trigger library loading errors
@@ -111,31 +99,7 @@ class MetalRenderer: NSObject, MTKViewDelegate {
     }
 }
 
-/// Core Graphics fallback view for when Metal is unavailable
-class CoreGraphicsRenderView: NSView {
-    var renderContent: ((CGContext, CGSize) -> Void)?
-    weak var performanceMonitor: PerformanceMonitor?
-    
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-        
-        // Start performance tracking
-        performanceMonitor?.frameDidStart()
-        
-        guard let context = NSGraphicsContext.current?.cgContext else { 
-            performanceMonitor?.frameDidEnd()
-            return 
-        }
-        
-        // Track draw call
-        performanceMonitor?.recordDrawCall()
-        
-        renderContent?(context, bounds.size)
-        
-        // End performance tracking
-        performanceMonitor?.frameDidEnd()
-    }
-}
+
 
 /// Extension to make the SafeMetalView easy to use
 extension SafeMetalView {

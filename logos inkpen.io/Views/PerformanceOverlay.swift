@@ -83,7 +83,7 @@ struct PerformanceOverlay: View {
             }
             
             // Performance grade
-            statRow(label: "Grade", value: performanceMonitor.performanceGrade)
+            statRowWithColor(label: "Grade", value: performanceMonitor.performanceGrade, color: performanceMonitor.performanceGradeColor)
         }
         .font(.system(.caption2, design: .monospaced))
     }
@@ -94,6 +94,15 @@ struct PerformanceOverlay: View {
                 .foregroundColor(.secondary)
             Text(value)
                 .foregroundColor(.primary)
+        }
+    }
+    
+    private func statRowWithColor(label: String, value: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Text(label + ":")
+                .foregroundColor(.secondary)
+            Text(value)
+                .foregroundColor(color)
         }
     }
     

@@ -484,16 +484,10 @@ extension VectorPoint {
         let startCGPoints = startPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let endCGPoints = endPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
-        // 🚀 Try GPU acceleration for large batches
-        if startPoints.count >= 20, let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
-            return results.map { VectorPoint($0) }
-        }
-        
-        // CPU fallback for small batches
-        return zip(startPoints, endPoints).map { start, end in
-            VectorPoint.lerp(start, end, t)
-        }
+        // 🚀 GPU-ONLY: Use Metal for all interpolation
+        let metalEngine = MetalComputeEngine.shared!
+        let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
+        return results.map { VectorPoint($0) }
     }
     
     /// Distance between two points
@@ -512,16 +506,10 @@ extension VectorPoint {
         let sourceCGPoints = sourcePoints.map { CGPoint(x: $0.x, y: $0.y) }
         let targetCGPoints = targetPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
-        // 🚀 Try GPU acceleration for large batches
-        if sourcePoints.count >= 20, let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
-            return results.map { Double($0) }
-        }
-        
-        // CPU fallback for small batches
-        return zip(sourcePoints, targetPoints).map { source, target in
-            source.distance(to: target)
-        }
+        // 🚀 GPU-ONLY: Use Metal for all distance calculations
+        let metalEngine = MetalComputeEngine.shared!
+        let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
+        return results.map { Double($0) }
     }
     
     /// Angle from this point to another point
@@ -542,14 +530,10 @@ extension VectorPoint {
         // Convert to CGPoint for GPU processing
         let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
         
-        // 🚀 Try GPU acceleration for large batches
-        if vectors.count >= 20, let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.normalizeVectorsGPU(cgVectors)
-            return results.map { VectorPoint($0) }
-        }
-        
-        // CPU fallback for small batches
-        return vectors.map { $0.normalized }
+        // 🚀 GPU-ONLY: Use Metal for all vector normalization
+        let metalEngine = MetalComputeEngine.shared!
+        let results = metalEngine.normalizeVectorsGPU(cgVectors)
+        return results.map { VectorPoint($0) }
     }
     
     /// Vector length/magnitude

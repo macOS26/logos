@@ -154,6 +154,17 @@ class PerformanceMonitor: ObservableObject {
         default: return "Poor"
         }
     }
+    
+    /// Color for performance grade text
+    var performanceGradeColor: Color {
+        switch performanceGrade {
+        case "Excellent": return .green
+        case "Good": return .green
+        case "Fair": return .orange
+        case "Poor": return .red
+        default: return .green
+        }
+    }
 }
 
 // MARK: - mach_task_basic_info Structure

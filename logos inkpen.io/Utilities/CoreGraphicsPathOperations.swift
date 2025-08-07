@@ -110,7 +110,6 @@ public class CoreGraphicsPathOperations {
                 if processedIndices.contains(i) { continue }
                 
                 var combinedPath = currentPaths[i]
-                var unionedWithAny = false
                 
                 // Try to union this path with every other unprocessed path
                 for j in (i+1)..<currentPaths.count {
@@ -123,7 +122,6 @@ public class CoreGraphicsPathOperations {
                         if let unionResult = union(combinedPath, otherPath, using: fillRule) {
                             combinedPath = unionResult
                             processedIndices.insert(j)
-                            unionedWithAny = true
                             changed = true
                             print("        ✅ Pass \(passNumber): Unioned path \(i) with path \(j)")
                         }
