@@ -21,7 +21,7 @@ enum PathfinderOperation: String, CaseIterable, Codable {
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
     case mosaic = "Mosaic"                  // CoreGraphics "Mosaic" - True stained glass: preserve ALL visible areas, no subtraction
     case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
-    case merge = "Merge"                    // Adobe Illustrator "Merge" - Cut + group by color (no joining)
+    case merge = "Merge"                    // Adobe Illustrator "Merge" - Cut + union same colors
     case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
     case kick = "Kick"                      // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front

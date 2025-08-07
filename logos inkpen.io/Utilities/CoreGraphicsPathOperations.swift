@@ -59,6 +59,202 @@ public class CoreGraphicsPathOperations {
         return result.isEmpty ? nil : result
     }
     
+    /// Performs a union operation on multiple paths using CoreGraphics
+    /// - Parameters:
+    ///   - paths: Array of paths to union together
+    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
+    /// - Returns: Combined path representing the union of all inputs
+    private static func unionMultiplePaths(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> CGPath? {
+        let validPaths = paths.filter { !$0.isEmpty }
+        guard !validPaths.isEmpty else { return nil }
+        guard validPaths.count > 1 else { return validPaths.first }
+        
+        // Iteratively union all paths together
+        var result = validPaths[0]
+        for i in 1..<validPaths.count {
+            guard let unionResult = union(result, validPaths[i], using: fillRule) else {
+                print("⚠️ CoreGraphics: Union failed at path \(i), falling back to partial result")
+                return result
+            }
+            result = unionResult
+        }
+        
+        return result
+    }
+    
+    /// Performs multi-pass union operations on an array of paths until no more connections possible
+    /// This ensures that all touching/overlapping shapes of the same color get properly merged
+    /// - Parameters:
+    ///   - paths: Array of paths to union together  
+    ///   - fillRule: Fill rule to use (.winding or .evenOdd)
+    /// - Returns: Array of final unioned paths (may be multiple disconnected components)
+    private static func multiPassUnion(_ paths: [CGPath], using fillRule: CGPathFillRule = .winding) -> [CGPath] {
+        let validPaths = paths.filter { !$0.isEmpty }
+        guard !validPaths.isEmpty else { return [] }
+        guard validPaths.count > 1 else { return validPaths }
+        
+        var currentPaths = validPaths
+        var passNumber = 1
+        let maxPasses = 10 // Safety limit to prevent infinite loops
+        
+        print("      🔄 Multi-pass union starting with \(currentPaths.count) paths...")
+        
+        while passNumber <= maxPasses {
+            var newPaths: [CGPath] = []
+            var changed = false
+            var processedIndices: Set<Int> = []
+            
+            print("      🔄 Pass \(passNumber): Processing \(currentPaths.count) paths...")
+            
+            for i in 0..<currentPaths.count {
+                if processedIndices.contains(i) { continue }
+                
+                var combinedPath = currentPaths[i]
+                var unionedWithAny = false
+                
+                // Try to union this path with every other unprocessed path
+                for j in (i+1)..<currentPaths.count {
+                    if processedIndices.contains(j) { continue }
+                    
+                    let otherPath = currentPaths[j]
+                    
+                    // Check if paths are close enough or overlapping to potentially union
+                    if pathsCanPotentiallyUnion(combinedPath, otherPath) {
+                        if let unionResult = union(combinedPath, otherPath, using: fillRule) {
+                            combinedPath = unionResult
+                            processedIndices.insert(j)
+                            unionedWithAny = true
+                            changed = true
+                            print("        ✅ Pass \(passNumber): Unioned path \(i) with path \(j)")
+                        }
+                    }
+                }
+                
+                newPaths.append(combinedPath)
+                processedIndices.insert(i)
+            }
+            
+            print("      ✅ Pass \(passNumber): \(currentPaths.count) → \(newPaths.count) paths")
+            
+            // If no changes occurred in this pass, we're done
+            if !changed || newPaths.count == 1 {
+                print("      🏁 Multi-pass union complete after \(passNumber) passes: \(newPaths.count) final shapes")
+                return newPaths
+            }
+            
+            currentPaths = newPaths
+            passNumber += 1
+        }
+        
+        print("      ⚠️ Multi-pass union reached maximum passes (\(maxPasses)): \(currentPaths.count) final shapes")
+        return currentPaths
+    }
+    
+    /// Helper function to check if two paths could potentially be unioned
+    /// (i.e., they're close enough that a union operation might connect them)
+    private static func pathsCanPotentiallyUnion(_ pathA: CGPath, _ pathB: CGPath) -> Bool {
+        let boundsA = pathA.boundingBox
+        let boundsB = pathB.boundingBox
+        
+        // Check if bounding boxes are valid
+        guard !boundsA.isNull && !boundsB.isNull && 
+              !boundsA.isInfinite && !boundsB.isInfinite else {
+            return false
+        }
+        
+        // Check if bounding boxes overlap or are very close (within 1 point)
+        let tolerance: CGFloat = 1.0
+        let expandedBoundsA = boundsA.insetBy(dx: -tolerance, dy: -tolerance)
+        
+        return expandedBoundsA.intersects(boundsB)
+    }
+    
+    /// Find connected components of paths, respecting stacking order
+    /// Paths that touch/overlap AND are adjacent in stacking order get grouped together
+    /// - Parameters:
+    ///   - pathsWithIndices: Array of (path, originalIndex) tuples in stacking order
+    ///   - fillRule: Fill rule to use for intersection testing
+    /// - Returns: Array of connected groups, each group contains paths that should be unioned
+    private static func findConnectedComponents(_ pathsWithIndices: [(CGPath, Int)], using fillRule: CGPathFillRule = .winding) -> [[(CGPath, Int)]] {
+        guard pathsWithIndices.count > 1 else {
+            return [pathsWithIndices]
+        }
+        
+        print("      🔗 Finding connected components with stacking order respect...")
+        
+        var groups: [[(CGPath, Int)]] = []
+        var processed: Set<Int> = []
+        
+        for i in 0..<pathsWithIndices.count {
+            if processed.contains(i) { continue }
+            
+            // Start a new connected component group
+            var currentGroup: [(CGPath, Int)] = [pathsWithIndices[i]]
+            var groupIndices: Set<Int> = [i]
+            processed.insert(i)
+            
+            // Use a queue to find all transitively connected paths
+            var queue: [Int] = [i]
+            
+            while !queue.isEmpty {
+                let currentIndex = queue.removeFirst()
+                let currentPath = pathsWithIndices[currentIndex].0
+                
+                // Check all unprocessed paths to see if they're connected to current path
+                for j in 0..<pathsWithIndices.count {
+                    if processed.contains(j) || groupIndices.contains(j) { continue }
+                    
+                    let otherPath = pathsWithIndices[j].0
+                    
+                    // Check if paths are actually connected (overlapping or touching)
+                    if pathsAreConnected(currentPath, otherPath, using: fillRule) {
+                        currentGroup.append(pathsWithIndices[j])
+                        groupIndices.insert(j)
+                        processed.insert(j)
+                        queue.append(j) // Add to queue to check its connections
+                        print("        🔗 Connected: path \(currentIndex) ↔ path \(j)")
+                    }
+                }
+            }
+            
+            groups.append(currentGroup)
+            print("      ✅ Group \(groups.count): \(currentGroup.count) connected paths")
+        }
+        
+        print("      🔗 Final result: \(groups.count) connected groups")
+        return groups
+    }
+    
+    /// Check if two paths are actually connected (not just close bounding boxes)
+    /// Uses intersection testing to determine if paths overlap or touch
+    private static func pathsAreConnected(_ pathA: CGPath, _ pathB: CGPath, using fillRule: CGPathFillRule = .winding) -> Bool {
+        // First check if bounding boxes are close enough
+        if !pathsCanPotentiallyUnion(pathA, pathB) {
+            return false
+        }
+        
+        // Try actual intersection to see if paths overlap
+        let intersection = pathA.intersection(pathB, using: fillRule)
+        if !intersection.isEmpty {
+            return true // Paths overlap
+        }
+        
+        // Check if paths are touching by testing union
+        let union = pathA.union(pathB, using: fillRule)
+        if !union.isEmpty {
+            // If union area is less than sum of individual areas, they're touching/overlapping
+            let areaA = pathA.boundingBox.width * pathA.boundingBox.height
+            let areaB = pathB.boundingBox.width * pathB.boundingBox.height
+            let unionArea = union.boundingBox.width * union.boundingBox.height
+            
+            // If union is significantly smaller than sum, paths are connected
+            let tolerance: CGFloat = 0.1
+            return unionArea < (areaA + areaB) * (1.0 - tolerance)
+        }
+        
+        return false
+    }
+    
     /// Performs an intersection operation on two paths using CoreGraphics
     /// - Parameters:
     ///   - pathA: First path
@@ -539,7 +735,7 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with CUT - no joining")
+        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with CUT then union same colors")
         
         // STEP 1: Apply Cut logic to ALL shapes to remove hidden overlaps and maintain visual appearance
         print("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...")
@@ -547,8 +743,8 @@ public class CoreGraphicsPathOperations {
         
         print("   ✅ Cut produced \(cutResults.count) pieces from \(paths.count) original shapes")
         
-        // STEP 2: Group cut results by color but keep all pieces separate
-        print("   🎨 STEP 2: Grouping cut results by color (keeping all pieces separate)...")
+        // STEP 2: Group cut results by color (same colors only)
+        print("   🎨 STEP 2: Grouping cut results by same colors...")
         
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
         
@@ -567,16 +763,47 @@ public class CoreGraphicsPathOperations {
         
         var resultPaths: [(CGPath, Int)] = []
         
-        // STEP 3: Keep all pieces separate - DO NOT join elements together
+        // STEP 3: For each color group, find connected components and union them
+        print("   🔄 STEP 3: Union connected same-color pieces only...")
+        
         for (color, group) in colorGroups {
-            // Add each piece separately - never merge/union them
-            for (path, originalIndex) in group {
+            if group.count == 1 {
+                // Single piece of this color, no union needed
+                let (path, originalIndex) = group[0]
                 resultPaths.append((path, originalIndex))
+                print("   ✅ Color \(color): Single piece, no union needed")
+            } else {
+                // Multiple pieces of same color - find which ones are connected
+                let connectedSameColorGroups = Self.findConnectedComponents(group, using: fillRule)
+                
+                for (groupIndex, connectedGroup) in connectedSameColorGroups.enumerated() {
+                    if connectedGroup.count == 1 {
+                        // Single disconnected piece of this color
+                        let (path, originalIndex) = connectedGroup[0]
+                        resultPaths.append((path, originalIndex))
+                    } else {
+                        // Multiple connected pieces of same color - union them
+                        let pathsToUnion = connectedGroup.map { $0.0 }
+                        let firstOriginalIndex = connectedGroup[0].1
+                        
+                        if let unionedPath = Self.unionMultiplePaths(pathsToUnion, using: fillRule) {
+                            resultPaths.append((unionedPath, firstOriginalIndex))
+                            print("   ✅ Color \(color) Group \(groupIndex + 1): Unioned \(connectedGroup.count) connected pieces → 1 shape")
+                        } else {
+                            // Union failed, keep pieces separate as fallback
+                            for (path, originalIndex) in connectedGroup {
+                                resultPaths.append((path, originalIndex))
+                            }
+                            print("   ⚠️ Color \(color) Group \(groupIndex + 1): Union failed, kept \(connectedGroup.count) pieces separate")
+                        }
+                    }
+                }
+                
+                print("   ✅ Color \(color): \(group.count) pieces → \(connectedSameColorGroups.count) connected groups")
             }
-            print("   ✅ Color \(color): Kept \(group.count) pieces separate (no joining)")
         }
         
-        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) separate pieces with maintained appearance (no joining)")
+        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) shapes from connected same-color components (stacking order respected)")
         return resultPaths
     }
     
