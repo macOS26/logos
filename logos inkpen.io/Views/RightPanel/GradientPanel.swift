@@ -165,8 +165,8 @@ struct GradientFillSection: View {
         .onChange(of: document.selectedShapeIDs) { _, _ in updateSelectedGradient() }
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
-            // DISABLED: This was causing unwanted gradient modifications when switching panels
-            // updateSelectedGradient()
+            // FIXED: Only update UI display, don't modify gradients
+            updateSelectedGradientDisplay()
         }
         .onChange(of: editingGradientStopId) { oldStopId, newStopId in
             print("🎨 GRADIENT PANEL: onChange(editingGradientStopId) triggered")
@@ -274,6 +274,27 @@ struct GradientFillSection: View {
             print("🚨 GRADIENT PANEL: Updated currentGradient and gradientId")
         } else {
             print("🚨 GRADIENT PANEL: No selected gradient found")
+        }
+    }
+    
+    // NEW: Only update display, don't generate new IDs or modify state
+    private func updateSelectedGradientDisplay() {
+        print("🔄 GRADIENT PANEL: updateSelectedGradientDisplay called (display only)")
+        
+        if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
+            print("🔄 GRADIENT PANEL: Found selected gradient for display update")
+            // Only update the display values, don't change gradientId or other state
+            currentGradient = selectedGradient
+            switch selectedGradient {
+            case .linear(_):
+                gradientType = .linear
+            case .radial(_):
+                gradientType = .radial
+            }
+            // DON'T generate new gradientId - preserve existing state
+            print("🔄 GRADIENT PANEL: Updated display without modifying state")
+        } else {
+            print("🔄 GRADIENT PANEL: No selected gradient found for display")
         }
     }
     
