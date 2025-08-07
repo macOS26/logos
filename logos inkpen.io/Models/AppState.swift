@@ -81,39 +81,24 @@ class AppState {
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
         print("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)")
     }
+
+
     
     func setWindowActions(openWindow: @escaping (String) -> Void, dismissWindow: @escaping (String) -> Void) {
         self.openWindowAction = { id in
-            print("🎨 GRADIENT HUD: openWindowAction called for id: \(id)")
-            // Prevent multiple gradient HUD windows
-            if id == "gradient-hud" {
-                // 🔥 FIXED: Force close and destroy any existing gradient HUD windows
-                NSApplication.shared.windows.forEach { window in
-                    if window.title.contains("Gradient Color Picker") {
-                        print("🎨 GRADIENT HUD: Force closing existing window: \(window.title)")
-                        window.delegate = nil // Remove delegate to prevent callbacks
-                        window.close()
-                        // Force the window to be destroyed
-                        window.orderOut(nil)
-                    }
-                }
-                
-                // 🔥 CRITICAL: Wait a moment for windows to be destroyed before creating new one
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    print("🎨 GRADIENT HUD: Calling openWindow for id: \(id)")
-                    openWindow(id)
-                }
-            } else {
-                print("🎨 GRADIENT HUD: Calling openWindow for id: \(id)")
-                openWindow(id)
-            }
+            openWindow(id)
         }
+        
         self.dismissWindowAction = { id in
-            if id == "gradient-hud" {
+            if id.contains("gradient-hud") {
                 print("🎨 GRADIENT HUD: dismissWindowAction called - closing window")
+                
+                // 🔥 NEW: Stop editing state when window is closed
+                self.persistentGradientHUD.stopEditing()
+                
                 // 🔥 FIXED: Force close and destroy the gradient HUD window
                 NSApplication.shared.windows.forEach { window in
-                    if window.title.contains("Gradient Color Picker") && window.isVisible {
+                    if window.title.contains("Select Gradient Color") && window.isVisible {
                         print("🎨 GRADIENT HUD: Force closing window: \(window.title)")
                         window.delegate = nil // Remove delegate to prevent callbacks
                         window.close()
@@ -266,84 +251,58 @@ class PersistentGradientHUDManager {
         // 🔥 ALWAYS set visible, but only trigger window opening once
         isVisible = true
         
-        // Only open window if it wasn't already visible
-        if !wasAlreadyVisible {
-            print("🎨 GRADIENT HUD: Opening window")
-            // 🔥 DEBUG: Count windows before opening
-            let windowCountBefore = countGradientWindows()
-            
-            // 🔥 SAFETY: If there are already multiple windows, force close them first
-            if windowCountBefore > 1 {
-                print("🎨 GRADIENT HUD: WARNING - Multiple windows detected before opening! Count: \(windowCountBefore)")
-                NSApplication.shared.windows.forEach { window in
-                    if window.title.contains("Gradient Color Picker") {
-                        print("🎨 GRADIENT HUD: Force closing duplicate window: \(window.title)")
-                        window.delegate = nil
-                        window.close()
-                        window.orderOut(nil)
-                    }
+        var foundExistingWindow = false
+        
+        for window in NSApplication.shared.windows {
+            if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
+                print("🎨 GRADIENT HUD: Found existing window: \(identifier)")
+                
+                if !window.isVisible {
+                    window.tabbingMode = .disallowed
+                    window.makeKeyAndOrderFront(nil) // Show the window
                 }
+                foundExistingWindow = true
+                break // Exit the loop once we find the gradient window
             }
-            
-            appState?.openWindowAction?("gradient-hud")
-            // 🔥 DEBUG: Count windows after opening
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                let windowCountAfter = self.countGradientWindows()
-                if windowCountAfter > 1 {
-                    print("🎨 GRADIENT HUD: WARNING - Multiple windows detected! Before: \(windowCountBefore), After: \(windowCountAfter)")
-                }
-            }
-        } else {
-            print("🎨 GRADIENT HUD: Window already visible, updating content")
         }
+        
+        // Only open a new window if we didn't find an existing one
+        if !foundExistingWindow {
+            print("🎨 GRADIENT HUD: No existing window found, opening new one")
+            appState?.openWindowAction?("gradient-hud")
+        }
+        
         print("🎨 GRADIENT HUD: show() completed - isVisible = \(isVisible)")
         // If already visible, the WindowGroup will automatically update the content
     }
     
     func hide() {
-        // 🔥 FIXED: Prevent multiple hide calls
-        guard !isHiding else {
-            print("🎨 GRADIENT HUD: hide() already in progress, ignoring")
-            return
-        }
-        
-        isHiding = true
-        print("🎨 GRADIENT HUD: hide() called")
-        isVisible = false
-        
-        // 🔥 FIXED: Only call dismissWindowAction if the window is actually visible
-        // This prevents circular calls when the window is already being closed
-        let hasVisibleWindow = NSApplication.shared.windows.contains { window in
-            window.title.contains("Gradient Color Picker") && window.isVisible
-        }
-        
-        if hasVisibleWindow {
-            print("🎨 GRADIENT HUD: Window is visible, calling dismissWindowAction")
-            appState?.dismissWindowAction?("gradient-hud")
-        } else {
-            print("🎨 GRADIENT HUD: Window not visible, skipping dismissWindowAction")
-        }
-        
-        // 🔥 ADDITIONAL SAFETY: Force close any remaining gradient windows
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            NSApplication.shared.windows.forEach { window in
-                if window.title.contains("Gradient Color Picker") {
-                    print("🎨 GRADIENT HUD: Safety cleanup - closing remaining window: \(window.title)")
-                    window.delegate = nil
-                    window.close()
-                    window.orderOut(nil)
-                }
+        NSApplication.shared.windows.forEach { window in
+            if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud"), window.isVisible {
+                window.hidesOnDeactivate = true
             }
         }
+    }
+    
+    // 🔥 NEW: Stop editing when window is closed with X button
+    func stopEditing() {
+        print("🎨 GRADIENT HUD: Stopping editing state")
+        isVisible = false
+        editingStopId = nil
+        editingStopColor = .black
+        currentDocument = nil
+        currentGradient = nil
+        onColorSelected = nil
+        onClose = nil
         
-        // Call the close callback to turn off gradient editing state
+        // Clear the stable document color
+        stableColorDocument.defaultFillColor = .black
+        stableColorDocument.objectWillChange.send()
+        
+        // Call the onClose callback if it exists
         onClose?()
-        print("🎨 GRADIENT HUD: hide() completed - onClose callback called")
         
-        // Reset the hiding flag after a brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.isHiding = false
-        }
+        print("🎨 GRADIENT HUD: Editing state cleared")
     }
     
     // 🔥 EMERGENCY RESET: Force reset hiding flag

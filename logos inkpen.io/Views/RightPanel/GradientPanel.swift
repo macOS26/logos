@@ -126,7 +126,8 @@ struct GradientFillSection: View {
                 updateStopPosition: updateStopPosition,
                 updateStopOpacity: updateStopOpacity,
                 removeColorStop: removeColorStop,
-                applyGradientToSelectedShapes: applyGradientToSelectedShapes
+                applyGradientToSelectedShapes: applyGradientToSelectedShapes,
+                activateGradientStop: activateGradientStop
             )
             
             GradientApplyButtonView(
@@ -171,45 +172,8 @@ struct GradientFillSection: View {
             print("🎨 GRADIENT PANEL: onChange(editingGradientStopId) triggered")
             print("🎨 GRADIENT PANEL: oldStopId = \(oldStopId?.uuidString.prefix(8) ?? "nil")")
             print("🎨 GRADIENT PANEL: newStopId = \(newStopId?.uuidString.prefix(8) ?? "nil")")
-            if let stopId = newStopId {
-                let actualColor = findGradientStopColor(stopId: stopId)
-                
-                // 🔥 CRITICAL: Set gradient editing state for HUD only
-                if let gradient = currentGradient {
-                    let stops: [GradientStop]
-                    switch gradient {
-                    case .linear(let linear):
-                        stops = linear.stops
-                    case .radial(let radial):
-                        stops = radial.stops
-                    }
-                    let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
-                    
-                    appState.gradientEditingState = GradientEditingState(
-                        gradientId: stopId,
-                        stopIndex: stopIndex,
-                        onColorSelected: { [self] color in
-                            self.updateStopColor(stopId: stopId, color: color)
-                        }
-                    )
-                }
-                
-                // 🔥 USE PERSISTENT HUD MANAGER - No more recreation spam!
-                appState.persistentGradientHUD.show(
-                    stopId: stopId,
-                    color: actualColor,
-                    document: document,
-                    gradient: currentGradient,
-                    onColorSelected: { [self] targetStopId, color in
-                        self.updateStopColor(stopId: targetStopId, color: color)
-                    },
-                    onClose: { [self] in
-                        self.turnOffEditingState()
-                    }
-                )
-            }
-            // 🔥 FIXED: Remove the else block that was causing circular calls
-            // The turnOffEditingState() function already handles cleanup properly
+            // The activation logic is now handled directly in activateGradientStop()
+            // This onChange is kept for debugging and any additional side effects
         }
 
         .onDisappear {
@@ -242,6 +206,53 @@ struct GradientFillSection: View {
                 appState.gradientEditingState = nil
             }
         }
+    }
+    
+    // MARK: - Gradient Stop Activation
+    
+    private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
+        print("🎨 GRADIENT PANEL: activateGradientStop called for stop \(stopId.uuidString.prefix(8))")
+        
+        // Set the editing state
+        editingGradientStopId = stopId
+        editingGradientStopColor = color
+        
+        // Get the actual color from the gradient
+        let actualColor = findGradientStopColor(stopId: stopId)
+        
+        // Set gradient editing state for HUD
+        if let gradient = currentGradient {
+            let stops: [GradientStop]
+            switch gradient {
+            case .linear(let linear):
+                stops = linear.stops
+            case .radial(let radial):
+                stops = radial.stops
+            }
+            let stopIndex = stops.firstIndex { $0.id == stopId } ?? 0
+            
+            appState.gradientEditingState = GradientEditingState(
+                gradientId: stopId,
+                stopIndex: stopIndex,
+                onColorSelected: { [self] color in
+                    self.updateStopColor(stopId: stopId, color: color)
+                }
+            )
+        }
+        
+        // Show the persistent HUD
+        appState.persistentGradientHUD.show(
+            stopId: stopId,
+            color: actualColor,
+            document: document,
+            gradient: currentGradient,
+            onColorSelected: { [self] targetStopId, color in
+                self.updateStopColor(stopId: targetStopId, color: color)
+            },
+            onClose: { [self] in
+                self.turnOffEditingState()
+            }
+        )
     }
     
     // MARK: - Selection and Angle Management
@@ -1145,6 +1156,7 @@ struct GradientPreviewAndStopsView: View {
     let updateStopOpacity: (UUID, Double) -> Void
     let removeColorStop: (UUID) -> Void
     let applyGradientToSelectedShapes: () -> Void
+    let activateGradientStop: (UUID, VectorColor) -> Void
     
     private func calculateDotPosition(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> CGPoint {
         guard let gradient = currentGradient else { return CGPoint(x: centerX, y: centerY) }
@@ -1369,31 +1381,29 @@ struct GradientPreviewAndStopsView: View {
                         HStack(spacing: 8) {
                             Button(action: {
                                 print("🎨 GRADIENT STOP: Clicked on stop \(stop.id.uuidString.prefix(8))")
-                                print("🎨 GRADIENT STOP: Current editingGradientStopId = \(editingGradientStopId?.uuidString.prefix(8) ?? "nil")")
-                                editingGradientStopId = stop.id
-                                editingGradientStopColor = stop.color
-                                print("🎨 GRADIENT STOP: Set editingGradientStopId = \(stop.id.uuidString.prefix(8))")
+                                // Always activate the clicked gradient stop, even if it was already set
+                                activateGradientStop(stop.id, stop.color)
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .overlay(
-                                // Visual indicator for currently editing stop
-                                RoundedRectangle(cornerRadius: 2)
-                                    .stroke(Color.blue, lineWidth: editingGradientStopId == stop.id ? 3 : 0)
-                            )
+                            // .overlay(
+                            //     // Visual indicator for currently editing stop
+                            //     RoundedRectangle(cornerRadius: 0)
+                            //         .stroke(Color.blue, lineWidth: editingGradientStopId == stop.id ? 3 : 0)
+                            // )
                             
                             VStack(alignment: .leading, spacing: 2) {
-                                HStack {
-                                    // Show "EDITING" indicator for the selected stop
-                                    if editingGradientStopId == stop.id {
-                                        Text("EDITING")
-                                            .font(.caption2)
-                                            .foregroundColor(Color.ui.primaryBlue)
-                                            .fontWeight(.bold)
-                                    }
-                                    Spacer()
-                                }
+                                // HStack {
+                                //     // Show "EDITING" indicator for the selected stop
+                                //     if editingGradientStopId == stop.id {
+                                //         Text("EDITING")
+                                //             .font(.caption2)
+                                //             .foregroundColor(Color.ui.primaryBlue)
+                                //             .fontWeight(.bold)
+                                //     }
+                                //     Spacer()
+                                // }
                                 
                                 // Position and Opacity on same line
                                 HStack(spacing: 8) {
@@ -1441,11 +1451,11 @@ struct GradientPreviewAndStopsView: View {
                             }
                         }
                         .padding(.vertical, 4)
-                        .background(
-                            // Background highlight for currently editing stop
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(editingGradientStopId == stop.id ? Color.blue.opacity(0.1) : Color.clear)
-                        )
+                        // .background(
+                        //     // Background highlight for currently editing stop
+                        //     RoundedRectangle(cornerRadius: 6)
+                        //         .fill(editingGradientStopId == stop.id ? Color.blue.opacity(0.1) : Color.clear)
+                        // )
                     }
                 }
             }
@@ -1496,49 +1506,8 @@ struct StableGradientHUDContent: View, Equatable {
                lhs.hudManager.isVisible == rhs.hudManager.isVisible
     }
     
-    // 🔥 NO DRAG GESTURE NEEDED - Window is draggable from anywhere using NSWindow.isMovableByWindowBackground
-    
     var body: some View {
         VStack(spacing: 0) {
-            // Toolbar with drag handle and close button
-//            HStack {
-//                // Drag handle area
-//                HStack {
-//                    Image(systemName: "line.3.horizontal")
-//                        .foregroundColor(.secondary)
-//                        .font(.caption)
-//                    Text("Select Gradient Color")
-//                        .font(.headline)
-//                        .foregroundColor(.primary)
-//                }
-//                .frame(maxWidth: .infinity, alignment: .leading)
-//                
-//                Spacer()
-//                
-//                // Close button
-//                Button(action: {
-//                    hudManager.hide()
-//                }) {
-//                    Image(systemName: "xmark")
-//                        .foregroundColor(.secondary)
-//                        .font(.system(size: 12, weight: .medium))
-//                }
-//                .buttonStyle(PlainButtonStyle())
-//                .frame(width: 20, height: 20)
-//                .background(Color.clear)
-//                .cornerRadius(4)
-//                .help("Close")
-//            }
-//            .padding(.horizontal, 16)
-//            .padding(.vertical, 12)
-//            .background(Color(NSColor.windowBackgroundColor))
-//            .overlay(
-//                Rectangle()
-//                    .fill(Color.gray.opacity(0.2))
-//                    .frame(height: 1),
-//                alignment: .bottom
-//            )
-            
             // 🔥 STABLE COLOR PANEL - Only recreated when editingStopId changes
             StableColorPanelWrapper(hudManager: hudManager)
                 .frame(maxWidth: 350, maxHeight: 500)
@@ -1562,7 +1531,6 @@ struct StableGradientHUDContent: View, Equatable {
         .background(Color(NSColor.windowBackgroundColor))
         //.cornerRadius(12)
         .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
-        // 🔥 NO CONTENT SHAPE OR GESTURE NEEDED - Window handles all dragging
     }
 }
 
@@ -1647,7 +1615,7 @@ struct GradientColorPickerSheet: View {
             // Close button in lower right corner
             HStack {
                 Spacer()
-                Button("Close") {
+                Button("Close!") {
                     // Turn off editing state
                     turnOffEditingState()
                     // Hide the window

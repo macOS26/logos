@@ -2110,29 +2110,23 @@ struct logos_inken_ioApp: App {
         }
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
-        WindowGroup("Gradient Color Picker", id: "gradient-hud") {
-            let isVisible = appState.persistentGradientHUD.isVisible
-            if isVisible {
-                // EXACT SAME STYLING as the SwiftUI HUD - but make it draggable from anywhere
+        WindowGroup("Select Gradient Color", id: "gradient-hud") {
                 StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
                     .environment(appState)
                     .background(WindowAccessor { window in
-                        if let window = window {
+                        if let window {
                             // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
                             window.styleMask = [.hudWindow, .titled, .closable]
-                            
+                            window.hidesOnDeactivate = true
                             // 🔥 HUD APPEARANCE
                             window.appearance = NSAppearance(named: .darkAqua)
                             window.titlebarAppearsTransparent = true
                             window.titleVisibility = .visible // Keep this visible for dragging
                             window.title = "Select Gradient Color" // Set your window title
-                            
                             // 🔥 TRANSPARENCY & BACKGROUND
                             window.isOpaque = true
                             window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
                             window.hasShadow = true
-                            
-                            // 🔥 WINDOW BEHAVIOR
                             window.level = .modalPanel
                             window.isMovableByWindowBackground = false // FALSE so sliders work
                             window.tabbingMode = .disallowed
@@ -2142,31 +2136,10 @@ struct logos_inken_ioApp: App {
                             window.standardWindowButton(.zoomButton)?.isHidden = true
                             window.styleMask.insert(.utilityWindow)
                             // Keep close button visible
-                            
-                            // 🔥 FIXED: Set up window delegate to handle close button (X) clicks
-                            // Store a strong reference to prevent immediate deallocation
-                            let delegate = GradientWindowDelegate(onWindowClose: {
-                                print("🎨 GRADIENT HUD: Window close button (X) clicked")
-                                // 🔥 SAFETY: Check if window is still visible before hiding
-                                if window.isVisible {
-                                    appState.persistentGradientHUD.hide()
-                                } else {
-                                    print("🎨 GRADIENT HUD: Window already closed, skipping hide()")
-                                }
-                            })
-                            window.delegate = delegate
-                            // Store the delegate in the window's associated object to keep it alive
-                            objc_setAssociatedObject(window, "gradientWindowDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                         }
                     })
-            } else {
-                EmptyView()
-            }
         }
         .windowResizability(.contentSize) // Size to content
-        .windowStyle(.hiddenTitleBar) // Hide title bar for HUD
-        .defaultPosition(.center) // Center initially
-        // 🔥 CONDITIONAL macOS 15+ windowLevel - handled in WindowAccessor
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
@@ -2174,7 +2147,6 @@ struct logos_inken_ioApp: App {
             ContentView()
                 .environment(appState)
         }
-        // Make this window group non-default so it doesn't interfere with DocumentGroup
         .defaultSize(width: 1200, height: 800)
         .windowResizability(.contentSize)
     }
