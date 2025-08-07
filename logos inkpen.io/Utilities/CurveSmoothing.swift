@@ -251,7 +251,13 @@ struct CurveSmoothing {
         // 🚀 Use GPU for large point sets
         if points.count >= 100, let metalEngine = MetalComputeEngine.shared {
             let results = metalEngine.calculateCurvatureGPU(points: points)
-            return results.map { Double($0) }
+            switch results {
+            case .success(let curvatures):
+                return curvatures.map { Double($0) }
+            case .failure(_):
+                // Fallback to CPU calculation
+                break
+            }
         }
         
         // CPU fallback for small point sets

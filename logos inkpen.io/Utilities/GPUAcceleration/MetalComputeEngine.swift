@@ -657,20 +657,31 @@ class MetalComputeEngine {
     
     // MARK: - Phase 10: GPU Curve Smoothing and Curvature
     
-    func calculateCurvatureGPU(points: [CGPoint]) -> [Float] {
-        guard points.count >= 3,
-              let pipeline = curvatureCalculationPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculateCurvatureCPU(points: points)
+    func calculateCurvatureGPU(points: [CGPoint]) -> Result<[Float], MetalError> {
+        guard points.count >= 3 else {
+            return .failure(.operationFailed("Need at least 3 points for curvature calculation"))
+        }
+        
+        guard let pipeline = curvatureCalculationPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = points.count
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let curvatureBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let curvatureBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         var pointCountInt = UInt32(pointCount)
         
         // Setup compute
@@ -691,16 +702,14 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = curvatureBuffer?.contents().bindMemory(to: Float.self, capacity: pointCount) else {
-            return calculateCurvatureCPU(points: points)
-        }
+        let resultPointer = curvatureBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
         
         var results: [Float] = []
         for i in 0..<pointCount {
             results.append(resultPointer[i])
         }
         
-        return results
+        return .success(results)
     }
     
     func chaikinSmoothingGPU(points: [CGPoint], ratio: Float = 0.25) -> [CGPoint] {
