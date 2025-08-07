@@ -28,6 +28,10 @@ class MetalComputeEngine {
     private var curvatureCalculationPipeline: MTLComputePipelineState?
     private var chaikinSmoothingPipeline: MTLComputePipelineState?
     
+    // Phase 11: Mathematical Operations
+    private var distanceCalculationPipeline: MTLComputePipelineState?
+    private var squareRootPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
@@ -104,6 +108,14 @@ class MetalComputeEngine {
             }
             if let function = library.makeFunction(name: "chaikin_smoothing") {
                 chaikinSmoothingPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 11: Mathematical operations
+            if let function = library.makeFunction(name: "calculate_point_distance") {
+                distanceCalculationPipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "calculate_square_roots") {
+                squareRootPipeline = try device.makeComputePipelineState(function: function)
             }
             
         } catch {
@@ -661,6 +673,63 @@ class MetalComputeEngine {
             if point.x != 0 || point.y != 0 || i == 0 { // Always include first point even if zero
                 results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
             }
+        }
+        
+        return results
+    }
+    
+    // MARK: - Phase 11: GPU Mathematical Operations
+    
+    /// Calculate single point-to-point distance (optimized for shape drawing)
+    func calculatePointDistanceGPU(from point1: CGPoint, to point2: CGPoint) -> Float {
+        let results = calculateDistancesGPU(from: [point1], to: [point2])
+        return results.first ?? 0.0
+    }
+    
+    /// Calculate square root of a single value
+    func calculateSquareRootGPU(_ value: Float) -> Float {
+        let results = calculateSquareRootsGPU([value])
+        return results.first ?? 0.0
+    }
+    
+    /// Calculate square roots of multiple values efficiently
+    func calculateSquareRootsGPU(_ values: [Float]) -> [Float] {
+        guard !values.isEmpty,
+              let pipeline = squareRootPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return values.map { sqrt($0) }
+        }
+        
+        let valueCount = values.count
+        
+        // Create buffers
+        let inputBuffer = device.makeBuffer(bytes: values, length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 1)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(valueCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (valueCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Float.self, capacity: valueCount) else {
+            return values.map { sqrt($0) }
+        }
+        
+        var results: [Float] = []
+        for i in 0..<valueCount {
+            results.append(resultPointer[i])
         }
         
         return results
@@ -1362,6 +1431,31 @@ extension MetalComputeEngine {
             if (index == inputCount - 2) {
                 outputPoints[(inputCount - 1) * 2] = inputPoints[inputCount - 1]; // Last point
             }
+        }
+        
+        // Phase 11: Mathematical Operations for Shape Drawing
+        kernel void calculate_point_distance(
+            device const Point2D* point1 [[buffer(0)]],
+            device const Point2D* point2 [[buffer(1)]],
+            device float* distances [[buffer(2)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            Point2D p1 = point1[index];
+            Point2D p2 = point2[index];
+            
+            float dx = p1.x - p2.x;
+            float dy = p1.y - p2.y;
+            
+            distances[index] = sqrt(dx * dx + dy * dy);
+        }
+        
+        kernel void calculate_square_roots(
+            device const float* inputValues [[buffer(0)]],
+            device float* outputValues [[buffer(1)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            float value = inputValues[index];
+            outputValues[index] = sqrt(max(0.0, value)); // Ensure non-negative input
         }
         """
     }
