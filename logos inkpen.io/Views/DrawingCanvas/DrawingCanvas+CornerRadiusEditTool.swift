@@ -288,7 +288,13 @@ extension DrawingCanvas {
         // 🚀 PHASE 11: GPU-accelerated square root calculation
         let sqrt2: Float
         if let metalEngine = MetalComputeEngine.shared {
-            sqrt2 = metalEngine.calculateSquareRootGPU(2.0)
+            let sqrtResult = metalEngine.calculateSquareRootGPU(2.0)
+            switch sqrtResult {
+            case .success(let value):
+                sqrt2 = value
+            case .failure(_):
+                sqrt2 = Float(sqrt(2.0))
+            }
         } else {
             sqrt2 = Float(sqrt(2.0))
         }

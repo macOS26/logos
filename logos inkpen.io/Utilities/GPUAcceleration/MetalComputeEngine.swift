@@ -741,25 +741,41 @@ class MetalComputeEngine {
     }
     
     /// Calculate square root of a single value
-    func calculateSquareRootGPU(_ value: Float) -> Float {
+    func calculateSquareRootGPU(_ value: Float) -> Result<Float, MetalError> {
         let results = calculateSquareRootsGPU([value])
-        return results.first ?? 0.0
+        switch results {
+        case .success(let squareRoots):
+            return .success(squareRoots.first ?? 0.0)
+        case .failure(let error):
+            return .failure(error)
+        }
     }
     
     /// Calculate square roots of multiple values efficiently
-    func calculateSquareRootsGPU(_ values: [Float]) -> [Float] {
-        guard !values.isEmpty,
-              let pipeline = squareRootPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return values.map { sqrt($0) }
+    func calculateSquareRootsGPU(_ values: [Float]) -> Result<[Float], MetalError> {
+        guard !values.isEmpty else {
+            return .failure(.operationFailed("Values array cannot be empty"))
+        }
+        
+        guard let pipeline = squareRootPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let valueCount = values.count
         
         // Create buffers
-        let inputBuffer = device.makeBuffer(bytes: values, length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        guard let inputBuffer = device.makeBuffer(bytes: values, length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: valueCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute
         computeEncoder.setComputePipelineState(pipeline)
@@ -777,16 +793,14 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Float.self, capacity: valueCount) else {
-            return values.map { sqrt($0) }
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Float.self, capacity: valueCount)
         
         var results: [Float] = []
         for i in 0..<valueCount {
             results.append(resultPointer[i])
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 13: Boolean Geometry Operations
