@@ -17,6 +17,7 @@ struct CurveSmoothing {
     
     /// Applies Chaikin's corner cutting algorithm for smooth curve generation
     /// This creates smooth curves by iteratively cutting corners between line segments
+    /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders for large point sets
     /// - Parameters:
     ///   - points: Input polyline points
     ///   - iterations: Number of smoothing iterations (1-3 recommended)
@@ -28,7 +29,12 @@ struct CurveSmoothing {
         var smoothedPoints = points
         
         for _ in 0..<iterations {
-            smoothedPoints = applySingleChaikinIteration(points: smoothedPoints, ratio: ratio)
+            // 🚀 PHASE 10: Use GPU for large point sets
+            if smoothedPoints.count >= 50, let metalEngine = MetalComputeEngine.shared {
+                smoothedPoints = metalEngine.chaikinSmoothingGPU(points: smoothedPoints, ratio: Float(ratio))
+            } else {
+                smoothedPoints = applySingleChaikinIteration(points: smoothedPoints, ratio: ratio)
+            }
             
             // Prevent over-smoothing by limiting point reduction
             if smoothedPoints.count < 3 {
@@ -212,6 +218,7 @@ struct CurveSmoothing {
     }
     
     /// Calculate curvature at a point given three consecutive points
+    /// 🚀 GPU-ACCELERATED: Can use batch GPU calculations for large point sets
     private static func calculateCurvature(p0: CGPoint, p1: CGPoint, p2: CGPoint) -> Double {
         // Calculate vectors
         let v1 = CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
@@ -234,6 +241,35 @@ struct CurveSmoothing {
         
         // Convert to curvature measure (0 = straight line, 1 = sharp corner)
         return 1.0 - abs(dotProduct)
+    }
+    
+    /// Calculate curvature for multiple points efficiently
+    /// 🚀 PHASE 10: GPU-accelerated batch curvature calculations
+    static func calculateCurvatureBatch(points: [CGPoint]) -> [Double] {
+        guard points.count >= 3 else { return [] }
+        
+        // 🚀 Use GPU for large point sets
+        if points.count >= 100, let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.calculateCurvatureGPU(points: points)
+            return results.map { Double($0) }
+        }
+        
+        // CPU fallback for small point sets
+        var curvatures: [Double] = []
+        
+        // First point has no curvature
+        curvatures.append(0.0)
+        
+        // Calculate curvature for interior points
+        for i in 1..<(points.count - 1) {
+            let curvature = calculateCurvature(p0: points[i-1], p1: points[i], p2: points[i+1])
+            curvatures.append(curvature)
+        }
+        
+        // Last point has no curvature
+        curvatures.append(0.0)
+        
+        return curvatures
     }
     
     /// Calculate centripetal Catmull-Rom control points for smooth curves

@@ -24,6 +24,10 @@ class MetalComputeEngine {
     // Phase 7: Handle Calculations
     private var handleCalculationPipeline: MTLComputePipelineState?
     
+    // Phase 10: Curve Smoothing and Curvature
+    private var curvatureCalculationPipeline: MTLComputePipelineState?
+    private var chaikinSmoothingPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
@@ -92,6 +96,14 @@ class MetalComputeEngine {
             // Phase 7: Handle calculations
             if let function = library.makeFunction(name: "calculate_linked_handles") {
                 handleCalculationPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 10: Curve smoothing and curvature
+            if let function = library.makeFunction(name: "calculate_curvature") {
+                curvatureCalculationPipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "chaikin_smoothing") {
+                chaikinSmoothingPipeline = try device.makeComputePipelineState(function: function)
             }
             
         } catch {
@@ -552,6 +564,108 @@ class MetalComputeEngine {
         return results
     }
     
+    // MARK: - Phase 10: GPU Curve Smoothing and Curvature
+    
+    func calculateCurvatureGPU(points: [CGPoint]) -> [Float] {
+        guard points.count >= 3,
+              let pipeline = curvatureCalculationPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return calculateCurvatureCPU(points: points)
+        }
+        
+        let pointCount = points.count
+        let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let curvatureBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        var pointCountInt = UInt32(pointCount)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(pointsBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(curvatureBuffer, offset: 0, index: 1)
+        computeEncoder.setBytes(&pointCountInt, length: MemoryLayout<UInt32>.stride, index: 2)
+        
+        // Dispatch (process pointCount-2 curvature values for interior points)
+        let processCount = max(1, pointCount - 2)
+        let threadsPerGroup = MTLSize(width: min(processCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (processCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = curvatureBuffer?.contents().bindMemory(to: Float.self, capacity: pointCount) else {
+            return calculateCurvatureCPU(points: points)
+        }
+        
+        var results: [Float] = []
+        for i in 0..<pointCount {
+            results.append(resultPointer[i])
+        }
+        
+        return results
+    }
+    
+    func chaikinSmoothingGPU(points: [CGPoint], ratio: Float = 0.25) -> [CGPoint] {
+        guard points.count >= 3,
+              let pipeline = chaikinSmoothingPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return chaikinSmoothingCPU(points: points, ratio: ratio)
+        }
+        
+        let inputCount = points.count
+        let outputCount = (inputCount - 1) * 2 + 1 // Chaikin doubles segments
+        
+        let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let inputBuffer = device.makeBuffer(bytes: metalPoints, length: inputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: outputCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        var inputCountInt = UInt32(inputCount)
+        var smoothingRatio = ratio
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 1)
+        computeEncoder.setBytes(&inputCountInt, length: MemoryLayout<UInt32>.stride, index: 2)
+        computeEncoder.setBytes(&smoothingRatio, length: MemoryLayout<Float>.stride, index: 3)
+        
+        // Dispatch
+        let processCount = inputCount - 1 // Process each segment
+        let threadsPerGroup = MTLSize(width: min(processCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (processCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: outputCount) else {
+            return chaikinSmoothingCPU(points: points, ratio: ratio)
+        }
+        
+        var results: [CGPoint] = []
+        for i in 0..<outputCount {
+            let point = resultPointer[i]
+            // Skip invalid points (Metal shader may output zeros for unused indices)
+            if point.x != 0 || point.y != 0 || i == 0 { // Always include first point even if zero
+                results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            }
+        }
+        
+        return results
+    }
+    
     // MARK: - Phase 2: GPU Bezier Curve Calculations
     
     func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> [CGPoint] {
@@ -797,6 +911,85 @@ class MetalComputeEngine {
         }
         
         return results
+    }
+    
+    private func calculateCurvatureCPU(points: [CGPoint]) -> [Float] {
+        guard points.count >= 3 else { return [] }
+        
+        var curvatures: [Float] = []
+        
+        // First point has no curvature (need 3 points)
+        curvatures.append(0.0)
+        
+        // Calculate curvature for interior points
+        for i in 1..<(points.count - 1) {
+            let p0 = points[i - 1]
+            let p1 = points[i]
+            let p2 = points[i + 1]
+            
+            // Calculate vectors
+            let v1 = CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
+            let v2 = CGPoint(x: p2.x - p1.x, y: p2.y - p1.y)
+            
+            // Calculate lengths
+            let len1 = sqrt(v1.x * v1.x + v1.y * v1.y)
+            let len2 = sqrt(v2.x * v2.x + v2.y * v2.y)
+            
+            if len1 == 0 || len2 == 0 {
+                curvatures.append(0.0)
+                continue
+            }
+            
+            // Normalize vectors
+            let n1 = CGPoint(x: v1.x / len1, y: v1.y / len1)
+            let n2 = CGPoint(x: v2.x / len2, y: v2.y / len2)
+            
+            // Calculate dot product (cosine of angle)
+            let dotProduct = n1.x * n2.x + n1.y * n2.y
+            
+            // Convert to curvature measure (0 = straight line, 1 = sharp corner)
+            let curvature = 1.0 - abs(dotProduct)
+            curvatures.append(Float(curvature))
+        }
+        
+        // Last point has no curvature (need 3 points)
+        curvatures.append(0.0)
+        
+        return curvatures
+    }
+    
+    private func chaikinSmoothingCPU(points: [CGPoint], ratio: Float) -> [CGPoint] {
+        guard points.count >= 3 else { return points }
+        
+        var smoothedPoints: [CGPoint] = []
+        let r = CGFloat(ratio)
+        
+        // First point stays the same
+        smoothedPoints.append(points[0])
+        
+        // Apply Chaikin smoothing to each segment
+        for i in 0..<(points.count - 1) {
+            let p1 = points[i]
+            let p2 = points[i + 1]
+            
+            // Create two new points on the segment
+            let q1 = CGPoint(
+                x: p1.x + r * (p2.x - p1.x),
+                y: p1.y + r * (p2.y - p1.y)
+            )
+            let q2 = CGPoint(
+                x: p1.x + (1.0 - r) * (p2.x - p1.x),
+                y: p1.y + (1.0 - r) * (p2.y - p1.y)
+            )
+            
+            smoothedPoints.append(q1)
+            smoothedPoints.append(q2)
+        }
+        
+        // Last point stays the same
+        smoothedPoints.append(points.last!)
+        
+        return smoothedPoints
     }
     
     // MARK: - Performance Monitoring
@@ -1092,6 +1285,83 @@ extension MetalComputeEngine {
             linkedHandle.y = anchor.y - normalizedDragged.y * originalLength;
             
             linkedHandles[index] = linkedHandle;
+        }
+        
+        // Phase 10: Curve Smoothing and Curvature Analysis
+        kernel void calculate_curvature(
+            device const Point2D* points [[buffer(0)]],
+            device float* curvatures [[buffer(1)]],
+            constant uint& pointCount [[buffer(2)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            // Calculate curvature for interior points only (index + 1 to avoid boundary issues)
+            uint actualIndex = index + 1;
+            if (actualIndex >= pointCount - 1) return;
+            
+            Point2D p0 = points[actualIndex - 1];
+            Point2D p1 = points[actualIndex];
+            Point2D p2 = points[actualIndex + 1];
+            
+            // Calculate vectors
+            Point2D v1 = {p1.x - p0.x, p1.y - p0.y};
+            Point2D v2 = {p2.x - p1.x, p2.y - p1.y};
+            
+            // Calculate lengths
+            float len1 = sqrt(v1.x * v1.x + v1.y * v1.y);
+            float len2 = sqrt(v2.x * v2.x + v2.y * v2.y);
+            
+            if (len1 == 0.0 || len2 == 0.0) {
+                curvatures[actualIndex] = 0.0;
+                return;
+            }
+            
+            // Normalize vectors
+            Point2D n1 = {v1.x / len1, v1.y / len1};
+            Point2D n2 = {v2.x / len2, v2.y / len2};
+            
+            // Calculate dot product (cosine of angle)
+            float dotProduct = n1.x * n2.x + n1.y * n2.y;
+            
+            // Convert to curvature measure (0 = straight line, 1 = sharp corner)
+            curvatures[actualIndex] = 1.0 - abs(dotProduct);
+        }
+        
+        kernel void chaikin_smoothing(
+            device const Point2D* inputPoints [[buffer(0)]],
+            device Point2D* outputPoints [[buffer(1)]],
+            constant uint& inputCount [[buffer(2)]],
+            constant float& ratio [[buffer(3)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            if (index >= inputCount - 1) return;
+            
+            Point2D p1 = inputPoints[index];
+            Point2D p2 = inputPoints[index + 1];
+            
+            // Create two new points on the segment using Chaikin's algorithm
+            Point2D q1, q2;
+            q1.x = p1.x + ratio * (p2.x - p1.x);
+            q1.y = p1.y + ratio * (p2.y - p1.y);
+            
+            q2.x = p1.x + (1.0 - ratio) * (p2.x - p1.x);
+            q2.y = p1.y + (1.0 - ratio) * (p2.y - p1.y);
+            
+            // Store the results (each segment produces 2 points)
+            uint outputBase = index * 2 + 1; // +1 to skip first point
+            if (outputBase < (inputCount - 1) * 2 + 1) {
+                outputPoints[outputBase] = q1;
+                if (outputBase + 1 < (inputCount - 1) * 2 + 1) {
+                    outputPoints[outputBase + 1] = q2;
+                }
+            }
+            
+            // First and last points are handled separately in CPU
+            if (index == 0) {
+                outputPoints[0] = inputPoints[0]; // First point stays the same
+            }
+            if (index == inputCount - 2) {
+                outputPoints[(inputCount - 1) * 2] = inputPoints[inputCount - 1]; // Last point
+            }
         }
         """
     }
