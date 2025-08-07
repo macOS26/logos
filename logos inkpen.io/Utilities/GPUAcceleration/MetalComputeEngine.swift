@@ -5,7 +5,7 @@ import Foundation
 /// Phase 2: Metal Compute Shaders for GPU-accelerated Core Graphics math
 class MetalComputeEngine {
     
-    private let device: MTLDevice
+    let device: MTLDevice
     private let commandQueue: MTLCommandQueue
     private let library: MTLLibrary
     
@@ -79,7 +79,7 @@ class MetalComputeEngine {
     
     func douglasPeuckerGPU(_ points: [CGPoint], tolerance: Float) -> [CGPoint] {
         guard points.count > 2,
-              let pipeline = douglasPeuckerPipeline else {
+              douglasPeuckerPipeline != nil else {
             return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: CGFloat(tolerance))
         }
         
