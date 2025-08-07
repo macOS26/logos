@@ -37,7 +37,14 @@ extension DrawingCanvas {
             )
             
             if let metalEngine = MetalComputeEngine.shared {
-                return metalEngine.transformPointsGPU(points, transform: inverseTransform)
+                let transformResult = metalEngine.transformPointsGPU(points, transform: inverseTransform)
+                switch transformResult {
+                case .success(let transformedPoints):
+                    return transformedPoints
+                case .failure(_):
+                    // Fallback to CPU calculation
+                    return screenToCanvasCPU(points, geometry: geometry)
+                }
             }
         }
         // CPU fallback
@@ -90,7 +97,14 @@ extension DrawingCanvas {
             )
             
             if let metalEngine = MetalComputeEngine.shared {
-                return metalEngine.transformPointsGPU(points, transform: transform)
+                let transformResult = metalEngine.transformPointsGPU(points, transform: transform)
+                switch transformResult {
+                case .success(let transformedPoints):
+                    return transformedPoints
+                case .failure(_):
+                    // Fallback to CPU calculation
+                    return canvasToScreenCPU(points, geometry: geometry)
+                }
             }
         }
         // CPU fallback

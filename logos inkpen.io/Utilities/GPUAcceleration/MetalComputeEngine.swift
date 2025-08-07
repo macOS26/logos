@@ -262,11 +262,17 @@ class MetalComputeEngine {
     
     // MARK: - Phase 3: GPU Matrix Transformations
     
-    func transformPointsGPU(_ points: [CGPoint], transform: CGAffineTransform) -> [CGPoint] {
-        guard let pipeline = matrixTransformPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return transformPointsCPU(points, transform: transform)
+    func transformPointsGPU(_ points: [CGPoint], transform: CGAffineTransform) -> Result<[CGPoint], MetalError> {
+        guard let pipeline = matrixTransformPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = points.count
@@ -280,9 +286,11 @@ class MetalComputeEngine {
         ]
         
         // Create buffers
-        let inputBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let transformBuffer = device.makeBuffer(bytes: transformMatrix, length: 9 * MemoryLayout<Float>.stride, options: .storageModeShared)
+        guard let inputBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let transformBuffer = device.makeBuffer(bytes: transformMatrix, length: 9 * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute
         computeEncoder.setComputePipelineState(pipeline)
@@ -301,9 +309,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: pointCount) else {
-            return transformPointsCPU(points, transform: transform)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
         
         var result: [CGPoint] = []
         for i in 0..<pointCount {
@@ -311,7 +317,7 @@ class MetalComputeEngine {
             result.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return result
+        return .success(result)
     }
     
     // MARK: - Phase 4: GPU Collision Detection
