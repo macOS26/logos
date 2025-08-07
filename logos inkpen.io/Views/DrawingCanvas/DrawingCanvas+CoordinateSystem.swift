@@ -36,11 +36,12 @@ extension DrawingCanvas {
                 tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
             )
             
-            return MetalComputeEngine.shared!.transformPointsGPU(points, transform: inverseTransform)
-        } else {
-            // CPU fallback
-            return screenToCanvasCPU(points, geometry: geometry)
+            if let metalEngine = MetalComputeEngine.shared {
+                return metalEngine.transformPointsGPU(points, transform: inverseTransform)
+            }
         }
+        // CPU fallback
+        return screenToCanvasCPU(points, geometry: geometry)
     }
     
     private func screenToCanvasCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
@@ -88,11 +89,12 @@ extension DrawingCanvas {
                 tx: preciseOffsetX, ty: preciseOffsetY
             )
             
-            return MetalComputeEngine.shared!.transformPointsGPU(points, transform: transform)
-        } else {
-            // CPU fallback
-            return canvasToScreenCPU(points, geometry: geometry)
+            if let metalEngine = MetalComputeEngine.shared {
+                return metalEngine.transformPointsGPU(points, transform: transform)
+            }
         }
+        // CPU fallback
+        return canvasToScreenCPU(points, geometry: geometry)
     }
     
     private func canvasToScreenCPU(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {

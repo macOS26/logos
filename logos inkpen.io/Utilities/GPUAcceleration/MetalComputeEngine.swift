@@ -2,6 +2,11 @@ import Metal
 import MetalKit
 import Foundation
 
+enum MetalError: Error {
+    case libraryCreationFailed
+    case pipelineCreationFailed
+}
+
 /// Phase 2: Metal Compute Shaders for GPU-accelerated Core Graphics math
 class MetalComputeEngine {
     
@@ -52,11 +57,12 @@ class MetalComputeEngine {
         self.device = device
         self.commandQueue = commandQueue
         
-        // Create Metal library from source
-        let shaderSource = Self.createMetalShaderSource()
-        
+        // Create Metal library from .metal file
         do {
-            self.library = try device.makeLibrary(source: shaderSource, options: nil)
+            guard let library = device.makeDefaultLibrary() else {
+                throw MetalError.libraryCreationFailed
+            }
+            self.library = library
             setupComputePipelines()
             print("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))")
         } catch {
@@ -132,6 +138,14 @@ class MetalComputeEngine {
             }
             if let function = library.makeFunction(name: "calculate_polygon_points") {
                 polygonCalculationPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 13: Boolean Geometry operations
+            if let function = library.makeFunction(name: "boolean_geometry_union") {
+                booleanGeometryPipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "path_intersection_calculation") {
+                pathIntersectionPipeline = try device.makeComputePipelineState(function: function)
             }
             
             // Phase 13: Boolean Geometry operations (simplified for now)
@@ -754,6 +768,105 @@ class MetalComputeEngine {
         return results
     }
     
+    // MARK: - Phase 13: Boolean Geometry Operations
+    
+    fileprivate func booleanGeometryUnionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D]? {
+        guard let metalEngine = MetalComputeEngine.shared,
+              let pipeline = metalEngine.booleanGeometryPipeline else {
+            print("⚠️ Metal Phase 13: Boolean Geometry Union - GPU not available, using CPU")
+            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        
+        let resultCount = path1Points.count + path2Points.count
+        var resultPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: resultCount)
+        
+        guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            print("❌ Metal Phase 13: Boolean Geometry Union - Failed to create command buffer")
+            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        
+        let path1Buffer = metalEngine.device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: [])
+        let path2Buffer = metalEngine.device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: [])
+        let resultBuffer = metalEngine.device.makeBuffer(bytes: resultPoints, length: resultCount * MemoryLayout<Point2D>.size, options: [])
+        let path1CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        let path2CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(path1Buffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(path2Buffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(resultBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(path1CountBuffer, offset: 0, index: 3)
+        computeEncoder.setBuffer(path2CountBuffer, offset: 0, index: 4)
+        
+        let threadGroupSize = MTLSize(width: 64, height: 1, depth: 1)
+        let threadGroups = MTLSize(width: (resultCount + 63) / 64, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupSize)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        guard let resultPointer = resultBuffer?.contents().assumingMemoryBound(to: Point2D.self) else {
+            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: resultCount))
+        
+        print("✅ Metal Phase 13: Boolean Geometry Union - GPU acceleration working")
+        return resultArray
+    }
+    
+    fileprivate func pathIntersectionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D]? {
+        guard let metalEngine = MetalComputeEngine.shared,
+              let pipeline = metalEngine.pathIntersectionPipeline else {
+            print("⚠️ Metal Phase 13: Path Intersection - GPU not available, using CPU")
+            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        
+        let maxIntersections = 1000
+        var intersectionPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: maxIntersections)
+        var intersectionCount: UInt32 = 0
+        
+        guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            print("❌ Metal Phase 13: Path Intersection - Failed to create command buffer")
+            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        
+        let path1Buffer = metalEngine.device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: [])
+        let path2Buffer = metalEngine.device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: [])
+        let resultBuffer = metalEngine.device.makeBuffer(bytes: intersectionPoints, length: maxIntersections * MemoryLayout<Point2D>.size, options: [])
+        let countBuffer = metalEngine.device.makeBuffer(bytes: &intersectionCount, length: MemoryLayout<UInt32>.size, options: [])
+        let path1CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        let path2CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(path1Buffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(path2Buffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(resultBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(countBuffer, offset: 0, index: 3)
+        computeEncoder.setBuffer(path1CountBuffer, offset: 0, index: 4)
+        computeEncoder.setBuffer(path2CountBuffer, offset: 0, index: 5)
+        
+        let threadGroupSize = MTLSize(width: 64, height: 1, depth: 1)
+        let threadGroups = MTLSize(width: (path1Points.count * path2Points.count + 63) / 64, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(threadGroups, threadsPerThreadgroup: threadGroupSize)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        guard let resultPointer = resultBuffer?.contents().assumingMemoryBound(to: Point2D.self) else {
+            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
+        }
+        let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: Int(intersectionCount)))
+        
+        print("✅ Metal Phase 13: Path Intersection - GPU acceleration working")
+        return resultArray
+    }
+    
     // MARK: - Phase 12: GPU Trigonometric Operations
     
     /// Calculate trigonometric functions (sin, cos, atan2) for multiple angles
@@ -894,6 +1007,29 @@ class MetalComputeEngine {
     }
     
     // MARK: - CPU Fallbacks
+    
+    private func booleanGeometryUnionCPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D] {
+        print("🔄 Metal Phase 13: Boolean Geometry Union - Using CPU fallback")
+        var result = path1Points
+        result.append(contentsOf: path2Points)
+        return result
+    }
+    
+    private func pathIntersectionCPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D] {
+        print("🔄 Metal Phase 13: Path Intersection - Using CPU fallback")
+        var intersections: [Point2D] = []
+        
+        for p1 in path1Points {
+            for p2 in path2Points {
+                let distance = sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
+                if distance < 0.001 {
+                    intersections.append(p1)
+                }
+            }
+        }
+        
+        return intersections
+    }
     
     private func findMaxDistanceCPU(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> (distance: Float, index: Int) {
         var maxDistance: Float = 0
@@ -1307,404 +1443,5 @@ private struct PolygonParams {
     let startAngle: Float
 }
 
-// MARK: - Metal Shader Source (Phase 2)
-
-extension MetalComputeEngine {
-    
-    static func createMetalShaderSource() -> String {
-        return """
-        #include <metal_stdlib>
-        using namespace metal;
-        
-        struct Point2D {
-            float x;
-            float y;
-        };
-        
-        struct PolygonParams {
-            float radius;
-            uint sides;
-            float startAngle;
-        };
-        
-        // Phase 2: Douglas-Peucker distance calculation
-        kernel void calculate_distances(
-            device const Point2D* points [[buffer(0)]],
-            device float* distances [[buffer(1)]],
-            constant Point2D& lineStart [[buffer(2)]],
-            constant Point2D& lineEnd [[buffer(3)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D point = points[index];
-            
-            float A = lineEnd.y - lineStart.y;
-            float B = lineStart.x - lineEnd.x;
-            float C = lineEnd.x * lineStart.y - lineStart.x * lineEnd.y;
-            
-            float numerator = abs(A * point.x + B * point.y + C);
-            float denominator = sqrt(A * A + B * B);
-            
-            distances[index] = numerator / denominator;
-        }
-        
-        // Phase 2: Bezier curve calculation
-        kernel void calculate_bezier_curves(
-            device const Point2D* controlPoints [[buffer(0)]],
-            device Point2D* results [[buffer(1)]],
-            constant int& steps [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            if (index >= uint(steps)) return;
-            
-            float t = float(index) / float(steps - 1);
-            float u = 1.0 - t;
-            float tt = t * t;
-            float uu = u * u;
-            float uuu = uu * u;
-            float ttt = tt * t;
-            
-            Point2D p0 = controlPoints[0];
-            Point2D p1 = controlPoints[1];
-            Point2D p2 = controlPoints[2];
-            Point2D p3 = controlPoints[3];
-            
-            Point2D result;
-            result.x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x;
-            result.y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y;
-            
-            results[index] = result;
-        }
-        
-        // Phase 3: Matrix transformations
-        kernel void transform_points(
-            device const Point2D* inputPoints [[buffer(0)]],
-            device Point2D* outputPoints [[buffer(1)]],
-            constant float* transform [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D input = inputPoints[index];
-            
-            // Apply 2D transformation matrix (3x3 in column-major order)
-            float x = transform[0] * input.x + transform[3] * input.y + transform[6];
-            float y = transform[1] * input.x + transform[4] * input.y + transform[7];
-            
-            outputPoints[index] = {x, y};
-        }
-        
-        // Phase 4: Point-in-polygon collision detection
-        kernel void point_in_polygon(
-            device const Point2D* testPoints [[buffer(0)]],
-            device const Point2D* polygonVertices [[buffer(1)]],
-            device bool* results [[buffer(2)]],
-            constant uint& vertexCount [[buffer(3)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D testPoint = testPoints[index];
-            bool inside = false;
-            
-            // Ray casting algorithm optimized for GPU
-            for (uint i = 0, j = vertexCount - 1; i < vertexCount; j = i++) {
-                Point2D vi = polygonVertices[i];
-                Point2D vj = polygonVertices[j];
-                
-                if (((vi.y > testPoint.y) != (vj.y > testPoint.y)) &&
-                    (testPoint.x < (vj.x - vi.x) * (testPoint.y - vi.y) / (vj.y - vi.y) + vi.x)) {
-                    inside = !inside;
-                }
-            }
-            
-            results[index] = inside;
-        }
-        
-        // Phase 5: GPU Path Rendering with interpolation
-        kernel void render_path_points(
-            device const Point2D* inputPoints [[buffer(0)]],
-            device Point2D* outputPoints [[buffer(1)]],
-            constant float& strokeWidth [[buffer(2)]],
-            constant uint& resolution [[buffer(3)]],
-            constant uint& inputCount [[buffer(4)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            uint totalOutputPoints = (inputCount - 1) * resolution + 1;
-            if (index >= totalOutputPoints) return;
-            
-            // Find which segment this output point belongs to
-            uint segmentIndex = index / resolution;
-            uint localIndex = index % resolution;
-            
-            if (segmentIndex >= inputCount - 1) {
-                // Last point case
-                outputPoints[index] = inputPoints[inputCount - 1];
-                return;
-            }
-            
-            Point2D startPoint = inputPoints[segmentIndex];
-            Point2D endPoint = inputPoints[segmentIndex + 1];
-            
-            // Interpolate between start and end points
-            float t = float(localIndex) / float(resolution);
-            
-            Point2D result;
-            result.x = startPoint.x + t * (endPoint.x - startPoint.x);
-            result.y = startPoint.y + t * (endPoint.y - startPoint.y);
-            
-            // Apply stroke width offset (simple perpendicular offset)
-            if (strokeWidth > 0.0) {
-                Point2D direction = {endPoint.x - startPoint.x, endPoint.y - startPoint.y};
-                float length = sqrt(direction.x * direction.x + direction.y * direction.y);
-                
-                if (length > 0.0) {
-                    Point2D normal = {-direction.y / length, direction.x / length};
-                    float offset = strokeWidth * 0.5;
-                    
-                    // Alternate between positive and negative offset for stroke outline
-                    if (index % 2 == 0) {
-                        result.x += normal.x * offset;
-                        result.y += normal.y * offset;
-                    } else {
-                        result.x -= normal.x * offset;
-                        result.y -= normal.y * offset;
-                    }
-                }
-            }
-            
-            outputPoints[index] = result;
-        }
-        
-        // Phase 6: Vector Operations
-        kernel void calculate_vector_distances(
-            device const Point2D* sourcePoints [[buffer(0)]],
-            device const Point2D* targetPoints [[buffer(1)]],
-            device float* distances [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D source = sourcePoints[index];
-            Point2D target = targetPoints[index];
-            
-            float dx = source.x - target.x;
-            float dy = source.y - target.y;
-            
-            distances[index] = sqrt(dx * dx + dy * dy);
-        }
-        
-        kernel void normalize_vectors(
-            device const Point2D* inputVectors [[buffer(0)]],
-            device Point2D* outputVectors [[buffer(1)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D vector = inputVectors[index];
-            
-            float length = sqrt(vector.x * vector.x + vector.y * vector.y);
-            
-            if (length > 1e-10) {
-                outputVectors[index] = {vector.x / length, vector.y / length};
-            } else {
-                outputVectors[index] = {0.0, 0.0};
-            }
-        }
-        
-        kernel void lerp_vectors(
-            device const Point2D* startPoints [[buffer(0)]],
-            device const Point2D* endPoints [[buffer(1)]],
-            device Point2D* outputPoints [[buffer(2)]],
-            constant float& t [[buffer(3)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D start = startPoints[index];
-            Point2D end = endPoints[index];
-            
-            Point2D result;
-            result.x = start.x + t * (end.x - start.x);
-            result.y = start.y + t * (end.y - start.y);
-            
-            outputPoints[index] = result;
-        }
-        
-        // Phase 7: Handle Calculations for Bezier curve editing
-        kernel void calculate_linked_handles(
-            device const Point2D* anchorPoints [[buffer(0)]],
-            device const Point2D* draggedHandles [[buffer(1)]],
-            device const Point2D* originalOppositeHandles [[buffer(2)]],
-            device Point2D* linkedHandles [[buffer(3)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D anchor = anchorPoints[index];
-            Point2D dragged = draggedHandles[index];
-            Point2D originalOpposite = originalOppositeHandles[index];
-            
-            // Vector from anchor to dragged handle
-            Point2D draggedVector = {dragged.x - anchor.x, dragged.y - anchor.y};
-            
-            // Keep the original opposite handle length
-            Point2D originalVector = {originalOpposite.x - anchor.x, originalOpposite.y - anchor.y};
-            float originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y);
-            
-            // Create opposite vector (180° from dragged handle) with original length
-            float draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y);
-            
-            if (draggedLength <= 0.1) {
-                // Avoid division by zero - return original handle
-                linkedHandles[index] = originalOpposite;
-                return;
-            }
-            
-            Point2D normalizedDragged = {draggedVector.x / draggedLength, draggedVector.y / draggedLength};
-            
-            // Opposite direction with original length
-            Point2D linkedHandle;
-            linkedHandle.x = anchor.x - normalizedDragged.x * originalLength;
-            linkedHandle.y = anchor.y - normalizedDragged.y * originalLength;
-            
-            linkedHandles[index] = linkedHandle;
-        }
-        
-        // Phase 10: Curve Smoothing and Curvature Analysis
-        kernel void calculate_curvature(
-            device const Point2D* points [[buffer(0)]],
-            device float* curvatures [[buffer(1)]],
-            constant uint& pointCount [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            // Calculate curvature for interior points only (index + 1 to avoid boundary issues)
-            uint actualIndex = index + 1;
-            if (actualIndex >= pointCount - 1) return;
-            
-            Point2D p0 = points[actualIndex - 1];
-            Point2D p1 = points[actualIndex];
-            Point2D p2 = points[actualIndex + 1];
-            
-            // Calculate vectors
-            Point2D v1 = {p1.x - p0.x, p1.y - p0.y};
-            Point2D v2 = {p2.x - p1.x, p2.y - p1.y};
-            
-            // Calculate lengths
-            float len1 = sqrt(v1.x * v1.x + v1.y * v1.y);
-            float len2 = sqrt(v2.x * v2.x + v2.y * v2.y);
-            
-            if (len1 == 0.0 || len2 == 0.0) {
-                curvatures[actualIndex] = 0.0;
-                return;
-            }
-            
-            // Normalize vectors
-            Point2D n1 = {v1.x / len1, v1.y / len1};
-            Point2D n2 = {v2.x / len2, v2.y / len2};
-            
-            // Calculate dot product (cosine of angle)
-            float dotProduct = n1.x * n2.x + n1.y * n2.y;
-            
-            // Convert to curvature measure (0 = straight line, 1 = sharp corner)
-            curvatures[actualIndex] = 1.0 - abs(dotProduct);
-        }
-        
-        kernel void chaikin_smoothing(
-            device const Point2D* inputPoints [[buffer(0)]],
-            device Point2D* outputPoints [[buffer(1)]],
-            constant uint& inputCount [[buffer(2)]],
-            constant float& ratio [[buffer(3)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            if (index >= inputCount - 1) return;
-            
-            Point2D p1 = inputPoints[index];
-            Point2D p2 = inputPoints[index + 1];
-            
-            // Create two new points on the segment using Chaikin's algorithm
-            Point2D q1, q2;
-            q1.x = p1.x + ratio * (p2.x - p1.x);
-            q1.y = p1.y + ratio * (p2.y - p1.y);
-            
-            q2.x = p1.x + (1.0 - ratio) * (p2.x - p1.x);
-            q2.y = p1.y + (1.0 - ratio) * (p2.y - p1.y);
-            
-            // Store the results (each segment produces 2 points)
-            uint outputBase = index * 2 + 1; // +1 to skip first point
-            if (outputBase < (inputCount - 1) * 2 + 1) {
-                outputPoints[outputBase] = q1;
-                if (outputBase + 1 < (inputCount - 1) * 2 + 1) {
-                    outputPoints[outputBase + 1] = q2;
-                }
-            }
-            
-            // First and last points are handled separately in CPU
-            if (index == 0) {
-                outputPoints[0] = inputPoints[0]; // First point stays the same
-            }
-            if (index == inputCount - 2) {
-                outputPoints[(inputCount - 1) * 2] = inputPoints[inputCount - 1]; // Last point
-            }
-        }
-        
-        // Phase 11: Mathematical Operations for Shape Drawing
-        kernel void calculate_point_distance(
-            device const Point2D* point1 [[buffer(0)]],
-            device const Point2D* point2 [[buffer(1)]],
-            device float* distances [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            Point2D p1 = point1[index];
-            Point2D p2 = point2[index];
-            
-            float dx = p1.x - p2.x;
-            float dy = p1.y - p2.y;
-            
-            distances[index] = sqrt(dx * dx + dy * dy);
-        }
-        
-        kernel void calculate_square_roots(
-            device const float* inputValues [[buffer(0)]],
-            device float* outputValues [[buffer(1)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            float value = inputValues[index];
-            outputValues[index] = sqrt(max(0.0, value)); // Ensure non-negative input
-        }
-        
-        // Phase 12: Trigonometric Operations for Polygon and Star Creation
-        kernel void calculate_trigonometric(
-            device const float* angles [[buffer(0)]],
-            device float* results [[buffer(1)]],
-            constant uint& function [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            float angle = angles[index];
-            
-            switch (function) {
-                case 0: // sine
-                    results[index] = sin(angle);
-                    break;
-                case 1: // cosine
-                    results[index] = cos(angle);
-                    break;
-                case 2: // tangent
-                    results[index] = tan(angle);
-                    break;
-                case 3: // atan2 (using angle as y, 1.0 as x)
-                    results[index] = atan2(angle, 1.0);
-                    break;
-                default:
-                    results[index] = 0.0;
-                    break;
-            }
-        }
-        
-        kernel void calculate_polygon_points(
-            device Point2D* outputPoints [[buffer(0)]],
-            constant Point2D& center [[buffer(1)]],
-            constant PolygonParams& params [[buffer(2)]],
-            uint index [[thread_position_in_grid]]
-        ) {
-            if (index >= params.sides) return;
-            
-            float angleStep = 2.0 * M_PI_F / float(params.sides);
-            float angle = float(index) * angleStep + params.startAngle;
-            
-            Point2D point;
-            point.x = center.x + cos(angle) * params.radius;
-            point.y = center.y + sin(angle) * params.radius;
-            
-            outputPoints[index] = point;
-        }
-        """
-    }
-}
+// Note: Shaders are now in MetalComputeShaders.metal file
+// This provides better syntax highlighting and IDE support
