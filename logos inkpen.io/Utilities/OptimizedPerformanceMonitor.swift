@@ -65,7 +65,7 @@ class OptimizedPerformanceMonitor: ObservableObject {
         
         // Initialize with baseline CPU
         DispatchQueue.main.async {
-            self.cpuUsage = 10.0 // Start with 10% baseline
+            self.cpuUsage = 0.0 // Start with 0% baseline
         }
     }
     
@@ -84,18 +84,13 @@ class OptimizedPerformanceMonitor: ObservableObject {
         frameCount += 1
         drawCallCount = elementCount
         
-        // Track activity for CPU estimation
+        // Only track activity, don't update CPU here
+        // Let the timer-based system handle CPU updates
         activityCounter += 1
         let currentTime = CACurrentMediaTime()
         
-        // Update CPU based on activity
+        // Reset activity counter periodically but don't update CPU
         if currentTime - lastActivityTime >= 1.0 {
-            let activityLevel = min(100.0, Double(activityCounter)) // Direct activity to CPU %
-            
-            DispatchQueue.main.async {
-                self.cpuUsage = activityLevel
-            }
-            
             activityCounter = 0
             lastActivityTime = currentTime
         }
@@ -127,8 +122,19 @@ class OptimizedPerformanceMonitor: ObservableObject {
     // MARK: - System Metrics (Low Frequency)
     
     private func updateSystemMetrics() {
-        // CPU usage
+        // CPU usage - try system metrics first, fallback to activity
         updateCPUUsage()
+        
+        // If system metrics failed, use activity-based estimation
+        if cpuUsage == 0.0 && activityCounter > 0 {
+            let activityLevel = min(100.0, Double(activityCounter))
+            let scaledActivity = activityLevel * 0.3
+            if scaledActivity >= 5.0 {
+                DispatchQueue.main.async {
+                    self.cpuUsage = min(100.0, max(0.0, scaledActivity))
+                }
+            }
+        }
         
         // Memory usage (already low frequency)
         updateMemoryUsage()
@@ -159,7 +165,13 @@ class OptimizedPerformanceMonitor: ObservableObject {
                     DispatchQueue.main.async {
                         // Scale down CPU usage to be more realistic for idle state
                         let scaledCPU = cpuUsagePercent * 0.3 // Scale factor to get closer to 0% when idle
-                        self.cpuUsage = min(100.0, max(0.0, scaledCPU))
+                        
+                        // Consider very low CPU usage as effectively 0%
+                        if scaledCPU < 5.0 {
+                            self.cpuUsage = 0.0
+                        } else {
+                            self.cpuUsage = min(100.0, max(0.0, scaledCPU))
+                        }
                     }
                 }
             }
@@ -181,7 +193,12 @@ class OptimizedPerformanceMonitor: ObservableObject {
             let cpuLoad = min(100.0, loadAvg[0] * 100.0 / Double(processInfo.processorCount))
             
             DispatchQueue.main.async {
-                self.cpuUsage = cpuLoad
+                // Consider very low CPU usage as effectively 0%
+                if cpuLoad < 5.0 {
+                    self.cpuUsage = 0.0
+                } else {
+                    self.cpuUsage = cpuLoad
+                }
             }
         } else {
             // Final fallback: Use activity monitor approach
@@ -199,7 +216,13 @@ class OptimizedPerformanceMonitor: ObservableObject {
             let estimatedCPU = min(100.0, Double(activityFrameCount) * 2.0) // Scale by 2 for more realistic values
             
             DispatchQueue.main.async {
-                self.cpuUsage = estimatedCPU
+                // Scale down activity-based CPU and apply threshold
+                let scaledCPU = estimatedCPU * 0.3
+                if scaledCPU < 5.0 {
+                    self.cpuUsage = 0.0
+                } else {
+                    self.cpuUsage = min(100.0, max(0.0, scaledCPU))
+                }
             }
             
             activityFrameCount = 0
