@@ -485,19 +485,13 @@ extension VectorPoint {
         let endCGPoints = endPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all interpolation
-        if let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
-            switch results {
-            case .success(let interpolatedVectors):
-                return interpolatedVectors.map { VectorPoint($0) }
-            case .failure(_):
-                // Fallback to CPU calculation
-                return zip(startPoints, endPoints).map { start, end in
-                    VectorPoint.lerp(start, end, t)
-                }
-            }
-        } else {
-            // CPU fallback for small batches
+        let metalEngine = MetalComputeEngine.shared
+        let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
+        switch results {
+        case .success(let interpolatedVectors):
+            return interpolatedVectors.map { VectorPoint($0) }
+        case .failure(_):
+            // Fallback to CPU calculation
             return zip(startPoints, endPoints).map { start, end in
                 VectorPoint.lerp(start, end, t)
             }
@@ -521,19 +515,13 @@ extension VectorPoint {
         let targetCGPoints = targetPoints.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all distance calculations
-        if let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
-            switch results {
-            case .success(let distances):
-                return distances.map { Double($0) }
-            case .failure(_):
-                // Fallback to CPU calculation
-                return zip(sourcePoints, targetPoints).map { source, target in
-                    source.distance(to: target)
-                }
-            }
-        } else {
-            // CPU fallback for small batches
+        let metalEngine = MetalComputeEngine.shared
+        let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
+        switch results {
+        case .success(let distances):
+            return distances.map { Double($0) }
+        case .failure(_):
+            // Fallback to CPU calculation
             return zip(sourcePoints, targetPoints).map { source, target in
                 source.distance(to: target)
             }
@@ -559,17 +547,13 @@ extension VectorPoint {
         let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
         
         // 🚀 GPU-ONLY: Use Metal for all vector normalization
-        if let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.normalizeVectorsGPU(cgVectors)
-            switch results {
-            case .success(let normalizedVectors):
-                return normalizedVectors.map { VectorPoint($0) }
-            case .failure(_):
-                // Fallback to CPU calculation
-                return vectors.map { $0.normalized }
-            }
-        } else {
-            // CPU fallback for small batches
+        let metalEngine = MetalComputeEngine.shared
+        let results = metalEngine.normalizeVectorsGPU(cgVectors)
+        switch results {
+        case .success(let normalizedVectors):
+            return normalizedVectors.map { VectorPoint($0) }
+        case .failure(_):
+            // Fallback to CPU calculation
             return vectors.map { $0.normalized }
         }
     }

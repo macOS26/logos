@@ -14,21 +14,20 @@ extension DrawingCanvas {
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders when available
     internal func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
         // 🚀 PHASE 7: Try GPU acceleration first
-        if let metalEngine = MetalComputeEngine.shared {
-            let results = metalEngine.calculateLinkedHandlesGPU(
-                anchorPoints: [anchorPoint], 
-                draggedHandles: [draggedHandle], 
-                originalOppositeHandles: [originalOppositeHandle]
-            )
-            switch results {
-            case .success(let linkedHandles):
-                if let result = linkedHandles.first {
-                    return result
-                }
-            case .failure(_):
-                // Fallback to CPU calculation
-                break
+        let metalEngine = MetalComputeEngine.shared
+        let results = metalEngine.calculateLinkedHandlesGPU(
+            anchorPoints: [anchorPoint], 
+            draggedHandles: [draggedHandle], 
+            originalOppositeHandles: [originalOppositeHandle]
+        )
+        switch results {
+        case .success(let linkedHandles):
+            if let result = linkedHandles.first {
+                return result
             }
+        case .failure(_):
+            // Fallback to CPU calculation
+            break
         }
         
         // CPU fallback

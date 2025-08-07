@@ -46,13 +46,9 @@ class OptimizedPerformanceMonitor: ObservableObject {
     // MARK: - Optimized Tracking Setup
     
     private func setupOptimizedTracking() {
-        if let metalEngine = MetalComputeEngine.shared {
-            self.metalDeviceName = metalEngine.device.name
-            self.renderingMode = metalEngine.getPerformanceMode()
-        } else if let device = MTLCreateSystemDefaultDevice() {
-            self.metalDeviceName = device.name
-            self.renderingMode = "Metal GPU Available"
-        }
+        let metalEngine = MetalComputeEngine.shared
+        self.metalDeviceName = metalEngine.device.name
+        self.renderingMode = metalEngine.getPerformanceMode()
         
         // Use low-frequency CPU monitoring (every 2 seconds instead of 60 FPS)
         cpuTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in

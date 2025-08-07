@@ -236,9 +236,19 @@ struct ProfessionalOffsetPathSection: View {
         // Save to undo stack
         document.saveToUndoStack()
         
-        // Get selected shapes
+        // Get selected shapes and their indices for proper stacking order
         let selectedShapes = document.getSelectedShapes()
         var newOffsetShapeIDs: Set<UUID> = []
+        
+        // Store original shape indices for proper insertion
+        var originalShapeIndices: [UUID: Int] = [:]
+        if let layerIndex = document.selectedLayerIndex {
+            for (index, shape) in document.layers[layerIndex].shapes.enumerated() {
+                if document.selectedShapeIDs.contains(shape.id) {
+                    originalShapeIndices[shape.id] = index
+                }
+            }
+        }
         
         for shape in selectedShapes {
             
@@ -288,8 +298,24 @@ struct ProfessionalOffsetPathSection: View {
                         opacity: shape.opacity
                     )
                     
-                    // Add to document
-                    document.addShape(offsetShape)
+                    // Insert offset shape in proper position relative to original shape
+                    if let layerIndex = document.selectedLayerIndex,
+                       let originalIndex = originalShapeIndices[shape.id] {
+                        
+                        if offsetDistance >= 0 && keepOriginalPath {
+                            // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
+                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
+                            print("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)")
+                        } else {
+                            // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
+                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
+                            print("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)")
+                        }
+                    } else {
+                        // Fallback: Add to document normally
+                        document.addShape(offsetShape)
+                    }
+                    
                     newOffsetShapeIDs.insert(offsetShape.id)
                     
                 } else {
@@ -303,7 +329,25 @@ struct ProfessionalOffsetPathSection: View {
                         transform: shape.transform,
                         opacity: shape.opacity
                     )
-                    document.addShape(offsetShape)
+                    
+                    // Insert offset shape in proper position relative to original shape
+                    if let layerIndex = document.selectedLayerIndex,
+                       let originalIndex = originalShapeIndices[shape.id] {
+                        
+                        if offsetDistance >= 0 && keepOriginalPath {
+                            // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
+                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
+                            print("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)")
+                        } else {
+                            // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
+                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
+                            print("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)")
+                        }
+                    } else {
+                        // Fallback: Add to document normally
+                        document.addShape(offsetShape)
+                    }
+                    
                     newOffsetShapeIDs.insert(offsetShape.id)
                 }
             } else {
@@ -315,12 +359,11 @@ struct ProfessionalOffsetPathSection: View {
         // Handle stacking order based on offset direction
         if keepOriginalPath {
             if offsetDistance >= 0 {
-                // POSITIVE OFFSET: Send offset shapes to back so they appear behind the originals
-                document.sendSelectedToBack()
-                print("🔧 POSITIVE OFFSET: Moved offset shapes to back")
+                // POSITIVE OFFSET: Offset shapes are already inserted behind originals
+                print("🔧 POSITIVE OFFSET: Offset shapes already positioned behind originals")
             } else {
-                // NEGATIVE OFFSET: Keep offset shapes in front of originals (do nothing)
-                print("🔧 NEGATIVE OFFSET: Keeping offset shapes in front")
+                // NEGATIVE OFFSET: Offset shapes are already positioned after originals
+                print("🔧 NEGATIVE OFFSET: Offset shapes already positioned after originals")
             }
         } else {
             // Remove original shapes if not keeping them

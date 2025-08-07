@@ -287,15 +287,12 @@ extension DrawingCanvas {
         // Project onto 45-degree line for radius calculation only
         // 🚀 PHASE 11: GPU-accelerated square root calculation
         let sqrt2: Float
-        if let metalEngine = MetalComputeEngine.shared {
-            let sqrtResult = metalEngine.calculateSquareRootGPU(2.0)
-            switch sqrtResult {
-            case .success(let value):
-                sqrt2 = value
-            case .failure(_):
-                sqrt2 = Float(sqrt(2.0))
-            }
-        } else {
+        let metalEngine = MetalComputeEngine.shared
+        let sqrtResult = metalEngine.calculateSquareRootGPU(2.0)
+        switch sqrtResult {
+        case .success(let value):
+            sqrt2 = value
+        case .failure(_):
             sqrt2 = Float(sqrt(2.0))
         }
         let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / CGFloat(sqrt2)

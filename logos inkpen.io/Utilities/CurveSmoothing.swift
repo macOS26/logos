@@ -30,7 +30,8 @@ struct CurveSmoothing {
         
         for _ in 0..<iterations {
             // 🚀 PHASE 10: Use GPU for large point sets
-            if smoothedPoints.count >= 50, let metalEngine = MetalComputeEngine.shared {
+            if smoothedPoints.count >= 50 {
+                let metalEngine = MetalComputeEngine.shared
                 let smoothingResult = metalEngine.chaikinSmoothingGPU(points: smoothedPoints, ratio: Float(ratio))
                 switch smoothingResult {
                 case .success(let smoothed):
@@ -256,7 +257,8 @@ struct CurveSmoothing {
         guard points.count >= 3 else { return [] }
         
         // 🚀 Use GPU for large point sets
-        if points.count >= 100, let metalEngine = MetalComputeEngine.shared {
+        if points.count >= 100 {
+            let metalEngine = MetalComputeEngine.shared
             let results = metalEngine.calculateCurvatureGPU(points: points)
             switch results {
             case .success(let curvatures):

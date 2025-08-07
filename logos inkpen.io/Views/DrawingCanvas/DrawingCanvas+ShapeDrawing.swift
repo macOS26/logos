@@ -10,18 +10,12 @@ import SwiftUI
 extension DrawingCanvas {
     // Helper function to handle GPU distance calculation with fallback
     private func calculateDistanceWithFallback(from point1: CGPoint, to point2: CGPoint) -> Float {
-        if let metalEngine = MetalComputeEngine.shared {
-            let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
-            switch distanceResult {
-            case .success(let distance):
-                return distance
-            case .failure(_):
-                // CPU fallback
-                let dx = point2.x - point1.x
-                let dy = point2.y - point1.y
-                return Float(sqrt(dx * dx + dy * dy))
-            }
-        } else {
+        let metalEngine = MetalComputeEngine.shared
+        let distanceResult = metalEngine.calculatePointDistanceGPU(from: point1, to: point2)
+        switch distanceResult {
+        case .success(let distance):
+            return distance
+        case .failure(_):
             // CPU fallback
             let dx = point2.x - point1.x
             let dy = point2.y - point1.y
@@ -244,15 +238,12 @@ extension DrawingCanvas {
             let triangleHeight = dragDeltaY >= 0 ? size : -size
             // 🚀 PHASE 11: GPU-accelerated square root calculation
             let sqrt3: Float
-            if let metalEngine = MetalComputeEngine.shared {
-                let sqrtResult = metalEngine.calculateSquareRootGPU(3.0)
-                switch sqrtResult {
-                case .success(let value):
-                    sqrt3 = value
-                case .failure(_):
-                    sqrt3 = Float(sqrt(3.0))
-                }
-            } else {
+            let metalEngine = MetalComputeEngine.shared
+            let sqrtResult = metalEngine.calculateSquareRootGPU(3.0)
+            switch sqrtResult {
+            case .success(let value):
+                sqrt3 = value
+            case .failure(_):
                 sqrt3 = Float(sqrt(3.0))
             }
             let triangleWidth = CGFloat(abs(triangleHeight) * 2.0 / Double(sqrt3)) // Convert height to equilateral base width

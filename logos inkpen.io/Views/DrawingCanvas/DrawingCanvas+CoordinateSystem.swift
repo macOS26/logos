@@ -24,7 +24,7 @@ extension DrawingCanvas {
         // TEMPORARILY DISABLED: Metal acceleration causing zoom/position issues
         // TODO: Re-enable when Metal coordinate transformations are fixed
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        if false && MetalComputeEngine.shared != nil {
+        if false {
             // Create inverse transformation matrix for screen-to-canvas
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
@@ -36,15 +36,14 @@ extension DrawingCanvas {
                 tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
             )
             
-            if let metalEngine = MetalComputeEngine.shared {
-                let transformResult = metalEngine.transformPointsGPU(points, transform: inverseTransform)
-                switch transformResult {
-                case .success(let transformedPoints):
-                    return transformedPoints
-                case .failure(_):
-                    // Fallback to CPU calculation
-                    return screenToCanvasCPU(points, geometry: geometry)
-                }
+            let metalEngine = MetalComputeEngine.shared
+            let transformResult = metalEngine.transformPointsGPU(points, transform: inverseTransform)
+            switch transformResult {
+            case .success(let transformedPoints):
+                return transformedPoints
+            case .failure(_):
+                // Fallback to CPU calculation
+                return screenToCanvasCPU(points, geometry: geometry)
             }
         }
         // CPU fallback
@@ -84,7 +83,7 @@ extension DrawingCanvas {
         // TEMPORARILY DISABLED: Metal acceleration causing zoom/position issues
         // TODO: Re-enable when Metal coordinate transformations are fixed
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        if false && MetalComputeEngine.shared != nil {
+        if false {
             // Create transformation matrix for canvas-to-screen
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
@@ -96,15 +95,14 @@ extension DrawingCanvas {
                 tx: preciseOffsetX, ty: preciseOffsetY
             )
             
-            if let metalEngine = MetalComputeEngine.shared {
-                let transformResult = metalEngine.transformPointsGPU(points, transform: transform)
-                switch transformResult {
-                case .success(let transformedPoints):
-                    return transformedPoints
-                case .failure(_):
-                    // Fallback to CPU calculation
-                    return canvasToScreenCPU(points, geometry: geometry)
-                }
+            let metalEngine = MetalComputeEngine.shared
+            let transformResult = metalEngine.transformPointsGPU(points, transform: transform)
+            switch transformResult {
+            case .success(let transformedPoints):
+                return transformedPoints
+            case .failure(_):
+                // Fallback to CPU calculation
+                return canvasToScreenCPU(points, geometry: geometry)
             }
         }
         // CPU fallback

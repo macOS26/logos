@@ -67,118 +67,109 @@ class MetalComputeEngine {
     private var memoryOptimizationPipeline: MTLComputePipelineState?
     private var cacheOptimizationPipeline: MTLComputePipelineState?
     
-    static let shared: MetalComputeEngine? = MetalComputeEngine()
+    static let shared: MetalComputeEngine = {
+        do {
+            return try MetalComputeEngine()
+        } catch {
+            fatalError("Failed to initialize Metal Compute Engine: \(error)")
+        }
+    }()
     
-    private init?() {
+    private init() throws {
         guard let device = MTLCreateSystemDefaultDevice() else {
-            print("⚠️ Metal Compute Engine: GPU not available")
-            return nil
+            throw MetalError.deviceNotAvailable
         }
         
         self.device = device
         
         guard let commandQueue = device.makeCommandQueue() else {
-            print("⚠️ Metal Compute Engine: Cannot create command queue")
-            return nil
+            throw MetalError.commandBufferCreationFailed
         }
         self.commandQueue = commandQueue
         
         // Create Metal library from .metal file
-        do {
-            guard let library = device.makeDefaultLibrary() else {
-                throw MetalError.libraryCreationFailed
-            }
-            self.library = library
-            setupComputePipelines()
-            print("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))")
-        } catch {
-            print("❌ Metal Compute Engine: Failed to compile shaders: \(error)")
-            return nil
+        guard let library = device.makeDefaultLibrary() else {
+            throw MetalError.libraryCreationFailed
         }
+        self.library = library
+        try setupComputePipelines()
+        print("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))")
     }
     
     // MARK: - Setup
     
-    private func setupComputePipelines() {
-        do {
-            // Douglas-Peucker distance calculation
-            if let function = library.makeFunction(name: "calculate_distances") {
-                douglasPeuckerPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Bezier curve calculation
-            if let function = library.makeFunction(name: "calculate_bezier_curves") {
-                bezierCalculationPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Matrix transformations
-            if let function = library.makeFunction(name: "transform_points") {
-                matrixTransformPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Collision detection
-            if let function = library.makeFunction(name: "point_in_polygon") {
-                collisionDetectionPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Path rendering
-            if let function = library.makeFunction(name: "render_path_points") {
-                pathRenderingPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 6: Vector operations
-            if let function = library.makeFunction(name: "calculate_vector_distances") {
-                vectorDistancePipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "normalize_vectors") {
-                vectorNormalizePipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "lerp_vectors") {
-                vectorLerpPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 7: Handle calculations
-            if let function = library.makeFunction(name: "calculate_linked_handles") {
-                handleCalculationPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 10: Curve smoothing and curvature
-            if let function = library.makeFunction(name: "calculate_curvature") {
-                curvatureCalculationPipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "chaikin_smoothing") {
-                chaikinSmoothingPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 11: Mathematical operations
-            if let function = library.makeFunction(name: "calculate_point_distance") {
-                distanceCalculationPipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "calculate_square_roots") {
-                squareRootPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 12: Trigonometric operations
-            if let function = library.makeFunction(name: "calculate_trigonometric") {
-                trigonometricPipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "calculate_polygon_points") {
-                polygonCalculationPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 13: Boolean Geometry operations
-            if let function = library.makeFunction(name: "boolean_geometry_union") {
-                booleanGeometryPipeline = try device.makeComputePipelineState(function: function)
-            }
-            if let function = library.makeFunction(name: "path_intersection_calculation") {
-                pathIntersectionPipeline = try device.makeComputePipelineState(function: function)
-            }
-            
-            // Phase 13: Boolean Geometry operations (simplified for now)
-            // Note: Complex boolean operations will be added in future phases
-            
-        } catch {
-            print("❌ Failed to create compute pipelines: \(error)")
+    private func setupComputePipelines() throws {
+        // Douglas-Peucker distance calculation
+        if let function = library.makeFunction(name: "calculate_distances") {
+            douglasPeuckerPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Bezier curve calculation
+        if let function = library.makeFunction(name: "calculate_bezier_curves") {
+            bezierCalculationPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Matrix transformations
+        if let function = library.makeFunction(name: "transform_points") {
+            matrixTransformPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Collision detection
+        if let function = library.makeFunction(name: "point_in_polygon") {
+            collisionDetectionPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Path rendering
+        if let function = library.makeFunction(name: "render_path_points") {
+            pathRenderingPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 6: Vector operations
+        if let function = library.makeFunction(name: "calculate_vector_distances") {
+            vectorDistancePipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "normalize_vectors") {
+            vectorNormalizePipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "lerp_vectors") {
+            vectorLerpPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 7: Handle calculations
+        if let function = library.makeFunction(name: "calculate_linked_handles") {
+            handleCalculationPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 10: Curve smoothing and curvature
+        if let function = library.makeFunction(name: "calculate_curvature") {
+            curvatureCalculationPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "chaikin_smoothing") {
+            chaikinSmoothingPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 11: Mathematical operations
+        if let function = library.makeFunction(name: "calculate_point_distance") {
+            distanceCalculationPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "calculate_square_roots") {
+            squareRootPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 12: Trigonometric operations
+        if let function = library.makeFunction(name: "calculate_trigonometric") {
+            trigonometricPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "calculate_polygon_points") {
+            polygonCalculationPipeline = try device.makeComputePipelineState(function: function)
+        }
+        
+        // Phase 13: Boolean Geometry operations
+        if let function = library.makeFunction(name: "boolean_geometry_union") {
+            booleanGeometryPipeline = try device.makeComputePipelineState(function: function)
+        }
+        if let function = library.makeFunction(name: "path_intersection_calculation") {
+            pathIntersectionPipeline = try device.makeComputePipelineState(function: function)
         }
     }
     
@@ -229,7 +220,7 @@ class MetalComputeEngine {
                 return [points[startIndex], points[endIndex]]
             }
         case .failure(_):
-            // Fallback to CPU calculation
+            // Return minimal result instead of CPU fallback
             return [points[startIndex], points[endIndex]]
         }
     }
@@ -900,27 +891,29 @@ class MetalComputeEngine {
     
     // MARK: - Phase 13: Boolean Geometry Operations
     
-    fileprivate func booleanGeometryUnionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D]? {
-        guard let metalEngine = MetalComputeEngine.shared,
-              let pipeline = metalEngine.booleanGeometryPipeline else {
-            print("⚠️ Metal Phase 13: Boolean Geometry Union - GPU not available, using CPU")
-            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
+    func booleanGeometryUnionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> Result<[Point2D], MetalError> {
+        guard let pipeline = booleanGeometryPipeline else {
+            return .failure(.pipelineNotAvailable)
         }
         
         let resultCount = path1Points.count + path2Points.count
         let resultPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: resultCount)
         
-        guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            print("❌ Metal Phase 13: Boolean Geometry Union - Failed to create command buffer")
-            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
         }
         
-        let path1Buffer = metalEngine.device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: [])
-        let path2Buffer = metalEngine.device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: [])
-        let resultBuffer = metalEngine.device.makeBuffer(bytes: resultPoints, length: resultCount * MemoryLayout<Point2D>.size, options: [])
-        let path1CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: [])
-        let path2CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
+        }
+        
+        guard let path1Buffer = device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let path2Buffer = device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let resultBuffer = device.makeBuffer(bytes: resultPoints, length: resultCount * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let path1CountBuffer = device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared),
+              let path2CountBuffer = device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         computeEncoder.setComputePipelineState(pipeline)
         computeEncoder.setBuffer(path1Buffer, offset: 0, index: 0)
@@ -938,38 +931,37 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         
-        guard let resultPointer = resultBuffer?.contents().assumingMemoryBound(to: Point2D.self) else {
-            return booleanGeometryUnionCPU(path1Points: path1Points, path2Points: path2Points)
-        }
+        let resultPointer = resultBuffer.contents().assumingMemoryBound(to: Point2D.self)
         let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: resultCount))
         
-        print("✅ Metal Phase 13: Boolean Geometry Union - GPU acceleration working")
-        return resultArray
+        return .success(resultArray)
     }
     
-    fileprivate func pathIntersectionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D]? {
-        guard let metalEngine = MetalComputeEngine.shared,
-              let pipeline = metalEngine.pathIntersectionPipeline else {
-            print("⚠️ Metal Phase 13: Path Intersection - GPU not available, using CPU")
-            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
+    func pathIntersectionGPU(path1Points: [Point2D], path2Points: [Point2D]) -> Result<[Point2D], MetalError> {
+        guard let pipeline = pathIntersectionPipeline else {
+            return .failure(.pipelineNotAvailable)
         }
         
         let maxIntersections = 1000
         let intersectionPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: maxIntersections)
         var intersectionCount: UInt32 = 0
         
-        guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            print("❌ Metal Phase 13: Path Intersection - Failed to create command buffer")
-            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
         }
         
-        let path1Buffer = metalEngine.device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: [])
-        let path2Buffer = metalEngine.device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: [])
-        let resultBuffer = metalEngine.device.makeBuffer(bytes: intersectionPoints, length: maxIntersections * MemoryLayout<Point2D>.size, options: [])
-        let countBuffer = metalEngine.device.makeBuffer(bytes: &intersectionCount, length: MemoryLayout<UInt32>.size, options: [])
-        let path1CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: [])
-        let path2CountBuffer = metalEngine.device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: [])
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
+        }
+        
+        guard let path1Buffer = device.makeBuffer(bytes: path1Points, length: path1Points.count * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let path2Buffer = device.makeBuffer(bytes: path2Points, length: path2Points.count * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let resultBuffer = device.makeBuffer(bytes: intersectionPoints, length: maxIntersections * MemoryLayout<Point2D>.size, options: .storageModeShared),
+              let countBuffer = device.makeBuffer(bytes: &intersectionCount, length: MemoryLayout<UInt32>.size, options: .storageModeShared),
+              let path1CountBuffer = device.makeBuffer(bytes: [UInt32(path1Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared),
+              let path2CountBuffer = device.makeBuffer(bytes: [UInt32(path2Points.count)], length: MemoryLayout<UInt32>.size, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         computeEncoder.setComputePipelineState(pipeline)
         computeEncoder.setBuffer(path1Buffer, offset: 0, index: 0)
@@ -988,24 +980,30 @@ class MetalComputeEngine {
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
         
-        guard let resultPointer = resultBuffer?.contents().assumingMemoryBound(to: Point2D.self) else {
-            return pathIntersectionCPU(path1Points: path1Points, path2Points: path2Points)
-        }
+        let resultPointer = resultBuffer.contents().assumingMemoryBound(to: Point2D.self)
         let resultArray = Array<Point2D>(UnsafeBufferPointer(start: resultPointer, count: Int(intersectionCount)))
         
-        print("✅ Metal Phase 13: Path Intersection - GPU acceleration working")
-        return resultArray
+        return .success(resultArray)
     }
     
     // MARK: - Phase 12: GPU Trigonometric Operations
     
     /// Calculate trigonometric functions (sin, cos, atan2) for multiple angles
-    func calculateTrigonometricGPU(angles: [Float], function: TrigonometricFunction) -> [Float] {
-        guard !angles.isEmpty,
-              let pipeline = trigonometricPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculateTrigonometricCPU(angles: angles, function: function)
+    func calculateTrigonometricGPU(angles: [Float], function: TrigonometricFunction) -> Result<[Float], MetalError> {
+        guard !angles.isEmpty else {
+            return .failure(.operationFailed("Angles array cannot be empty"))
+        }
+        
+        guard let pipeline = trigonometricPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let angleCount = angles.count
@@ -1033,7 +1031,7 @@ class MetalComputeEngine {
         
         // Read back results
         guard let resultPointer = outputBuffer?.contents().bindMemory(to: Float.self, capacity: angleCount) else {
-            return calculateTrigonometricCPU(angles: angles, function: function)
+            return .failure(.bufferCreationFailed)
         }
         
         var results: [Float] = []
@@ -1041,16 +1039,25 @@ class MetalComputeEngine {
             results.append(resultPointer[i])
         }
         
-        return results
+        return .success(results)
     }
     
     /// Calculate polygon points for shape creation
-    func calculatePolygonPointsGPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float = -Float.pi/2) -> [CGPoint] {
-        guard sides > 2,
-              let pipeline = polygonCalculationPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculatePolygonPointsCPU(center: center, radius: radius, sides: sides, startAngle: startAngle)
+    func calculatePolygonPointsGPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float = -Float.pi/2) -> Result<[CGPoint], MetalError> {
+        guard sides > 2 else {
+            return .failure(.operationFailed("Polygon must have at least 3 sides"))
+        }
+        
+        guard let pipeline = polygonCalculationPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         // Create buffers
@@ -1076,7 +1083,7 @@ class MetalComputeEngine {
         
         // Read back results
         guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: sides) else {
-            return calculatePolygonPointsCPU(center: center, radius: radius, sides: sides, startAngle: startAngle)
+            return .failure(.bufferCreationFailed)
         }
         
         var results: [CGPoint] = []
@@ -1085,17 +1092,26 @@ class MetalComputeEngine {
             results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 2: GPU Bezier Curve Calculations
     
-    func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> [CGPoint] {
-        guard controlPoints.count == 4,
-              let pipeline = bezierCalculationPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculateBezierCurveCPU(controlPoints: controlPoints, steps: steps)
+    func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> Result<[CGPoint], MetalError> {
+        guard controlPoints.count == 4 else {
+            return .failure(.operationFailed("Bezier curve requires exactly 4 control points"))
+        }
+        
+        guard let pipeline = bezierCalculationPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         // Convert control points to Metal format
@@ -1124,7 +1140,7 @@ class MetalComputeEngine {
         
         // Read back results
         guard let resultPointer = resultBuffer?.contents().bindMemory(to: Point2D.self, capacity: steps) else {
-            return calculateBezierCurveCPU(controlPoints: controlPoints, steps: steps)
+            return .failure(.bufferCreationFailed)
         }
         
         var result: [CGPoint] = []
@@ -1133,341 +1149,10 @@ class MetalComputeEngine {
             result.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return result
+        return .success(result)
     }
     
-    // MARK: - CPU Fallbacks
-    
-    private func booleanGeometryUnionCPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D] {
-        print("🔄 Metal Phase 13: Boolean Geometry Union - Using CPU fallback")
-        var result = path1Points
-        result.append(contentsOf: path2Points)
-        return result
-    }
-    
-    private func pathIntersectionCPU(path1Points: [Point2D], path2Points: [Point2D]) -> [Point2D] {
-        print("🔄 Metal Phase 13: Path Intersection - Using CPU fallback")
-        var intersections: [Point2D] = []
-        
-        for p1 in path1Points {
-            for p2 in path2Points {
-                let distance = sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
-                if distance < 0.001 {
-                    intersections.append(p1)
-                }
-            }
-        }
-        
-        return intersections
-    }
-    
-    private func findMaxDistanceCPU(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> (distance: Float, index: Int) {
-        var maxDistance: Float = 0
-        var maxIndex = 0
-        
-        for i in 1..<(points.count - 1) {
-            let distance = perpendicularDistanceCPU(point: points[i], lineStart: lineStart, lineEnd: lineEnd)
-            if distance > maxDistance {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-        
-        return (distance: maxDistance, index: maxIndex)
-    }
-    
-    private func perpendicularDistanceCPU(point: CGPoint, lineStart: CGPoint, lineEnd: CGPoint) -> Float {
-        let A = Float(lineEnd.y - lineStart.y)
-        let B = Float(lineStart.x - lineEnd.x)
-        let C = Float(lineEnd.x * lineStart.y - lineStart.x * lineEnd.y)
-        
-        let numerator = abs(A * Float(point.x) + B * Float(point.y) + C)
-        let denominator = sqrt(A * A + B * B)
-        
-        return numerator / denominator
-    }
-    
-    private func calculateBezierCurveCPU(controlPoints: [CGPoint], steps: Int) -> [CGPoint] {
-        guard controlPoints.count == 4 else { return [] }
-        
-        var result: [CGPoint] = []
-        let p0 = controlPoints[0]
-        let p1 = controlPoints[1]
-        let p2 = controlPoints[2]
-        let p3 = controlPoints[3]
-        
-        for i in 0..<steps {
-            let t = CGFloat(i) / CGFloat(steps - 1)
-            let u = 1.0 - t
-            let tt = t * t
-            let uu = u * u
-            let uuu = uu * u
-            let ttt = tt * t
-            
-            let x = uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x
-            let y = uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
-            
-            result.append(CGPoint(x: x, y: y))
-        }
-        
-        return result
-    }
-    
-    private func transformPointsCPU(_ points: [CGPoint], transform: CGAffineTransform) -> [CGPoint] {
-        return points.map { point in
-            point.applying(transform)
-        }
-    }
-    
-    private func pointsInPolygonCPU(_ testPoints: [CGPoint], polygon: [CGPoint]) -> [Bool] {
-        return testPoints.map { testPoint in
-            pointInPolygonCPU(testPoint, polygon: polygon)
-        }
-    }
-    
-    private func pointInPolygonCPU(_ testPoint: CGPoint, polygon: [CGPoint]) -> Bool {
-        guard polygon.count >= 3 else { return false }
-        
-        var inside = false
-        var j = polygon.count - 1
-        
-        for i in 0..<polygon.count {
-            let vi = polygon[i]
-            let vj = polygon[j]
-            
-            if ((vi.y > testPoint.y) != (vj.y > testPoint.y)) &&
-               (testPoint.x < (vj.x - vi.x) * (testPoint.y - vi.y) / (vj.y - vi.y) + vi.x) {
-                inside = !inside
-            }
-            j = i
-        }
-        
-        return inside
-    }
-    
-    private func renderPathCPU(pathPoints: [CGPoint], strokeWidth: Float, resolution: Int) -> [CGPoint] {
-        guard pathPoints.count > 1 else { return pathPoints }
-        
-        var renderedPoints: [CGPoint] = []
-        
-        // Simple path interpolation for CPU fallback
-        for i in 0..<(pathPoints.count - 1) {
-            let startPoint = pathPoints[i]
-            let endPoint = pathPoints[i + 1]
-            
-            // Interpolate between points based on resolution
-            for j in 0..<resolution {
-                let t = CGFloat(j) / CGFloat(resolution)
-                let interpolatedX = startPoint.x + t * (endPoint.x - startPoint.x)
-                let interpolatedY = startPoint.y + t * (endPoint.y - startPoint.y)
-                
-                renderedPoints.append(CGPoint(x: interpolatedX, y: interpolatedY))
-            }
-        }
-        
-        // Add the final point
-        if let lastPoint = pathPoints.last {
-            renderedPoints.append(lastPoint)
-        }
-        
-        return renderedPoints
-    }
-    
-    private func calculateDistancesCPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> [Float] {
-        guard sourcePoints.count == targetPoints.count else { return [] }
-        
-        var distances: [Float] = []
-        for i in 0..<sourcePoints.count {
-            let dx = Float(sourcePoints[i].x - targetPoints[i].x)
-            let dy = Float(sourcePoints[i].y - targetPoints[i].y)
-            distances.append(sqrt(dx * dx + dy * dy))
-        }
-        return distances
-    }
-    
-    private func normalizeVectorsCPU(_ vectors: [CGPoint]) -> [CGPoint] {
-        return vectors.map { vector in
-            let length = sqrt(vector.x * vector.x + vector.y * vector.y)
-            guard length > 1e-10 else { return CGPoint.zero }
-            return CGPoint(x: vector.x / length, y: vector.y / length)
-        }
-    }
-    
-    private func lerpVectorsCPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> [CGPoint] {
-        guard startPoints.count == endPoints.count else { return [] }
-        
-        var results: [CGPoint] = []
-        let tCG = CGFloat(t)
-        for i in 0..<startPoints.count {
-            let start = startPoints[i]
-            let end = endPoints[i]
-            let lerped = CGPoint(
-                x: start.x + tCG * (end.x - start.x),
-                y: start.y + tCG * (end.y - start.y)
-            )
-            results.append(lerped)
-        }
-        return results
-    }
-    
-    private func calculateLinkedHandlesCPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> [CGPoint] {
-        guard anchorPoints.count == draggedHandles.count && 
-              draggedHandles.count == originalOppositeHandles.count else { return [] }
-        
-        var results: [CGPoint] = []
-        
-        for i in 0..<anchorPoints.count {
-            let anchorPoint = anchorPoints[i]
-            let draggedHandle = draggedHandles[i]
-            let originalOppositeHandle = originalOppositeHandles[i]
-            
-            // Vector from anchor to dragged handle
-            let draggedVector = CGPoint(
-                x: draggedHandle.x - anchorPoint.x,
-                y: draggedHandle.y - anchorPoint.y
-            )
-            
-            // Keep the original opposite handle length
-            let originalVector = CGPoint(
-                x: originalOppositeHandle.x - anchorPoint.x,
-                y: originalOppositeHandle.y - anchorPoint.y
-            )
-            let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
-            
-            // Create opposite vector (180° from dragged handle) with original length
-            let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
-            guard draggedLength > 0.1 else { 
-                results.append(originalOppositeHandle)
-                continue
-            }
-            
-            let normalizedDragged = CGPoint(
-                x: draggedVector.x / draggedLength,
-                y: draggedVector.y / draggedLength
-            )
-            
-            // Opposite direction with original length
-            let linkedHandle = CGPoint(
-                x: anchorPoint.x - normalizedDragged.x * originalLength,
-                y: anchorPoint.y - normalizedDragged.y * originalLength
-            )
-            
-            results.append(linkedHandle)
-        }
-        
-        return results
-    }
-    
-    private func calculateCurvatureCPU(points: [CGPoint]) -> [Float] {
-        guard points.count >= 3 else { return [] }
-        
-        var curvatures: [Float] = []
-        
-        // First point has no curvature (need 3 points)
-        curvatures.append(0.0)
-        
-        // Calculate curvature for interior points
-        for i in 1..<(points.count - 1) {
-            let p0 = points[i - 1]
-            let p1 = points[i]
-            let p2 = points[i + 1]
-            
-            // Calculate vectors
-            let v1 = CGPoint(x: p1.x - p0.x, y: p1.y - p0.y)
-            let v2 = CGPoint(x: p2.x - p1.x, y: p2.y - p1.y)
-            
-            // Calculate lengths
-            let len1 = sqrt(v1.x * v1.x + v1.y * v1.y)
-            let len2 = sqrt(v2.x * v2.x + v2.y * v2.y)
-            
-            if len1 == 0 || len2 == 0 {
-                curvatures.append(0.0)
-                continue
-            }
-            
-            // Normalize vectors
-            let n1 = CGPoint(x: v1.x / len1, y: v1.y / len1)
-            let n2 = CGPoint(x: v2.x / len2, y: v2.y / len2)
-            
-            // Calculate dot product (cosine of angle)
-            let dotProduct = n1.x * n2.x + n1.y * n2.y
-            
-            // Convert to curvature measure (0 = straight line, 1 = sharp corner)
-            let curvature = 1.0 - abs(dotProduct)
-            curvatures.append(Float(curvature))
-        }
-        
-        // Last point has no curvature (need 3 points)
-        curvatures.append(0.0)
-        
-        return curvatures
-    }
-    
-    private func chaikinSmoothingCPU(points: [CGPoint], ratio: Float) -> [CGPoint] {
-        guard points.count >= 3 else { return points }
-        
-        var smoothedPoints: [CGPoint] = []
-        let r = CGFloat(ratio)
-        
-        // First point stays the same
-        smoothedPoints.append(points[0])
-        
-        // Apply Chaikin smoothing to each segment
-        for i in 0..<(points.count - 1) {
-            let p1 = points[i]
-            let p2 = points[i + 1]
-            
-            // Create two new points on the segment
-            let q1 = CGPoint(
-                x: p1.x + r * (p2.x - p1.x),
-                y: p1.y + r * (p2.y - p1.y)
-            )
-            let q2 = CGPoint(
-                x: p1.x + (1.0 - r) * (p2.x - p1.x),
-                y: p1.y + (1.0 - r) * (p2.y - p1.y)
-            )
-            
-            smoothedPoints.append(q1)
-            smoothedPoints.append(q2)
-        }
-        
-        // Last point stays the same - safely access the last element
-        if let lastPoint = points.last {
-            smoothedPoints.append(lastPoint)
-        }
-        
-        return smoothedPoints
-    }
-    
-    private func calculateTrigonometricCPU(angles: [Float], function: TrigonometricFunction) -> [Float] {
-        return angles.map { angle in
-            switch function {
-            case .sine:
-                return sin(angle)
-            case .cosine:
-                return cos(angle)
-            case .tangent:
-                return tan(angle)
-            case .atan2:
-                // For atan2, we need two values - use angle as y and 1.0 as x
-                return atan2(angle, 1.0)
-            }
-        }
-    }
-    
-    private func calculatePolygonPointsCPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float) -> [CGPoint] {
-        var points: [CGPoint] = []
-        let angleStep = 2 * Float.pi / Float(sides)
-        
-        for i in 0..<sides {
-            let angle = Float(i) * angleStep + startAngle
-            let x = center.x + CGFloat(cos(angle) * radius)
-            let y = center.y + CGFloat(sin(angle) * radius)
-            points.append(CGPoint(x: x, y: y))
-        }
-        
-        return points
-    }
+
     
     // MARK: - Metal Engine Status
     
@@ -1490,8 +1175,11 @@ class MetalComputeEngine {
         print("✅ Metal Engine Test: Command queue created successfully")
         
         // Check if shared engine exists
-        guard let engine = shared else {
-            print("❌ Metal Engine Test: Engine not initialized - likely shader compilation failed")
+        do {
+            _ = try MetalComputeEngine()
+            print("✅ Metal Engine Test: Engine initialized successfully")
+        } catch {
+            print("❌ Metal Engine Test: Engine not initialized - \(error)")
             return false
         }
         print("✅ Metal Engine Test: Engine initialized successfully")
@@ -1500,7 +1188,7 @@ class MetalComputeEngine {
         let testPoint1 = CGPoint(x: 0, y: 0)
         let testPoint2 = CGPoint(x: 3, y: 4)
         
-        let distanceResult = engine.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
+        let distanceResult = shared.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
         let expectedDistance: Float = 5.0 // sqrt(3² + 4²) = 5
         
         switch distanceResult {
@@ -1563,7 +1251,7 @@ class MetalComputeEngine {
 
 // MARK: - Metal Data Structures
 
-private struct Point2D {
+struct Point2D {
     let x: Float
     let y: Float
 }
