@@ -1968,29 +1968,6 @@ struct CartesianGrid: View {
 
 // MARK: - Gradient Window Delegate
 
-class GradientWindowDelegate: NSObject, NSWindowDelegate {
-    let onWindowClose: () -> Void
-    private var hasClosed = false
-    
-    init(onWindowClose: @escaping () -> Void) {
-        self.onWindowClose = onWindowClose
-        super.init()
-    }
-    
-    func windowWillClose(_ notification: Notification) {
-        // 🔥 FIXED: Prevent multiple calls to onWindowClose
-        guard !hasClosed else {
-            print("🎨 GRADIENT WINDOW DELEGATE: windowWillClose already called, ignoring")
-            return
-        }
-        
-        hasClosed = true
-        print("🎨 GRADIENT WINDOW DELEGATE: windowWillClose called")
-        onWindowClose()
-        print("🎨 GRADIENT WINDOW DELEGATE: onWindowClose callback executed")
-    }
-}
-
 // Preview
 struct GradientPanel_Previews: PreviewProvider {
     static var previews: some View {

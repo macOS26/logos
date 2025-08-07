@@ -169,6 +169,7 @@ struct ColorPanel: View {
         print("🎨 COLOR PANEL: selectColor called with: \(color)")
         print("🎨 COLOR PANEL: showGradientEditing = \(showGradientEditing)")
         print("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)")
+        print("🎨 COLOR PANEL: activeColorTarget = \(document.activeColorTarget)")
         
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS panel allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this panel supports it, use gradient callback
@@ -183,11 +184,26 @@ struct ColorPanel: View {
             print("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)")
             onColorSelected(color)
         } else {
-            // DISABLED: Auto-application of colors when browsing
-            // Just update the preview color but don't apply to objects
-            // Colors should only be applied through explicit actions (Apply buttons, etc.)
-            // No automatic application when just browsing colors in the Color tab
-            print("🎨 COLOR PANEL: Color selected for preview only: \(color)")
+            // 🔥 FIXED: Apply color to active target when browsing colors in the Color tab
+            // This makes the Color Panel behave consistently with the VerticalToolbar
+            print("🎨 COLOR PANEL: Applying color to active target: \(document.activeColorTarget)")
+            
+            // Apply color to the currently active target (fill or stroke)
+            if document.activeColorTarget == .stroke {
+                // Set default stroke color for new shapes
+                document.defaultStrokeColor = color
+                print("🎨 COLOR PANEL: Set stroke color: \(color) (active target)")
+                
+                // Apply to selected shapes
+                applyStrokeColorToSelected(color)
+            } else {
+                // Set default fill color for new shapes  
+                document.defaultFillColor = color
+                print("🎨 COLOR PANEL: Set fill color: \(color) (active target)")
+                
+                // Apply to selected shapes
+                applyFillColorToSelected(color)
+            }
         }
     }
     
@@ -215,6 +231,79 @@ struct ColorPanel: View {
             case .linear(_): return "Linear Gradient"
             case .radial(_): return "Radial Gradient"
             }
+        }
+    }
+    
+    // MARK: - Helper Functions for Color Application
+    
+    private func applyFillColorToSelected(_ color: VectorColor) {
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    }
+                }
+            }
+        }
+        
+        // Also apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            if !document.selectedShapeIDs.isEmpty {
+                // Don't save to undo stack twice
+            } else {
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.fillColor = color
+                    document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+            document.objectWillChange.send()
+        }
+    }
+    
+    private func applyStrokeColorToSelected(_ color: VectorColor) {
+        // Apply to selected shapes
+        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+            document.saveToUndoStack()
+            
+            for shapeID in document.selectedShapeIDs {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    }
+                }
+            }
+        }
+        
+        // Also apply to selected text objects
+        if !document.selectedTextIDs.isEmpty {
+            if !document.selectedShapeIDs.isEmpty {
+                // Don't save to undo stack twice
+            } else {
+                document.saveToUndoStack()
+            }
+            
+            for textID in document.selectedTextIDs {
+                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                    document.textObjects[textIndex].typography.hasStroke = true
+                    document.textObjects[textIndex].typography.strokeColor = color
+                    document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity
+                    document.textObjects[textIndex].updateBounds()
+                }
+            }
+            document.objectWillChange.send()
         }
     }
     
