@@ -15,6 +15,9 @@ struct FontPanel: View {
     @State private var lastLoggedSelection: UUID?
     @State private var lastLoggedEditing: UUID?
     
+    // NEW: Force UI refresh when font family changes
+    @State private var fontFamilyUpdateTrigger: Bool = false
+    
     // FIXED: Simple computed property that doesn't modify state during view update
     private var selectedText: VectorText? {
         document.textObjects.first { document.selectedTextIDs.contains($0.id) }
@@ -178,10 +181,20 @@ struct FontPanel: View {
                                         Text(fontFamily)
                                             .font(.custom(fontFamily, size: 12)) // Show font name in actual font
                                             .tag(fontFamily)
+                                            .onAppear {
+                                                // Ensure font is loaded
+                                                _ = NSFont(name: fontFamily, size: 12)
+                                            }
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                // REMOVED: onChange handler that was causing property sync when switching tools
+                                .onChange(of: currentFontFamily) { oldFamily, newFamily in
+                                    // When font family changes, validate and update weight/style for the new family
+                                    print("🎯 FONT PANEL: Font family changed from \(oldFamily) to \(newFamily)")
+                                    validateAndUpdateWeightAndStyle()
+                                    // Force UI refresh to update weight and style pickers
+                                    fontFamilyUpdateTrigger.toggle()
+                                }
                             }
                             
                             // Font Weight
@@ -212,12 +225,12 @@ struct FontPanel: View {
                                 )) {
                                     ForEach(availableFontWeights, id: \.self) { weight in
                                         Text(weight.rawValue)
-                                            .font(createPreviewFont(weight: weight, style: document.fontManager.selectedFontStyle))
+                                            .font(createPreviewFont(family: currentFontFamily, weight: weight, style: selectedText?.typography.fontStyle ?? document.fontManager.selectedFontStyle))
                                             .tag(weight)
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                // REMOVED: onChange handler that was causing property sync when switching tools
+                                .id(fontFamilyUpdateTrigger) // Force refresh when font family changes
                             }
                             
                             // Font Style  
@@ -248,12 +261,12 @@ struct FontPanel: View {
                                 )) {
                                     ForEach(availableFontStyles, id: \.self) { style in
                                         Text(style.rawValue)
-                                            .font(createPreviewFont(weight: document.fontManager.selectedFontWeight, style: style))
+                                            .font(createPreviewFont(family: currentFontFamily, weight: selectedText?.typography.fontWeight ?? document.fontManager.selectedFontWeight, style: style))
                                             .tag(style)
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                // REMOVED: onChange handler that was causing property sync when switching tools
+                                .id(fontFamilyUpdateTrigger) // Force refresh when font family changes
                             }
                             
                             // Font Size - Slider from 1pt to 288pt
@@ -641,8 +654,33 @@ struct FontPanel: View {
     // REMOVED: updateSelectedTextFont() - now using targeted updates for single source of truth
     
     // Create preview font for picker display
-    private func createPreviewFont(weight: FontWeight, style: FontStyle) -> Font {
-        let descriptor = NSFontDescriptor(name: currentFontFamily, size: 12)
+    private func createPreviewFont(family: String, weight: FontWeight, style: FontStyle) -> Font {
+        // First try to get the exact font name from the font manager
+        let fontManager = NSFontManager.shared
+        let members = fontManager.availableMembers(ofFontFamily: family) ?? []
+        
+        // Find the best matching font member for the weight and style
+        for member in members {
+            if let fontName = member[1] as? String,
+               let weightNumber = member[2] as? NSNumber,
+               let traits = member[3] as? NSNumber {
+                
+                let memberWeight = mapNSWeightToFontWeight(weightNumber.intValue)
+                let traitMask = NSFontDescriptor.SymbolicTraits(rawValue: UInt32(traits.intValue))
+                let memberStyle: FontStyle = traitMask.contains(.italic) ? .italic : .normal
+                
+                // Check if this member matches our desired weight and style
+                if memberWeight == weight && memberStyle == style {
+                    if NSFont(name: fontName, size: 12) != nil {
+                        print("🎯 FONT PREVIEW: Using exact match - \(fontName) for \(family) \(weight.rawValue) \(style.rawValue)")
+                        return Font.custom(fontName, size: 12)
+                    }
+                }
+            }
+        }
+        
+        // Fallback: try to create font with descriptor
+        let descriptor = NSFontDescriptor(name: family, size: 12)
         let traits: NSFontDescriptor.SymbolicTraits = style == .italic ? .italic : []
         let weightedDescriptor = descriptor.addingAttributes([
             .traits: [
@@ -652,9 +690,27 @@ struct FontPanel: View {
         ])
         
         if let nsFont = NSFont(descriptor: weightedDescriptor, size: 12) {
+            print("🎯 FONT PREVIEW: Using descriptor fallback - \(nsFont.fontName) for \(family) \(weight.rawValue) \(style.rawValue)")
             return Font.custom(nsFont.fontName, size: 12)
         } else {
-            return Font.custom(currentFontFamily, size: 12)
+            // Final fallback: use system font with weight
+            print("🎯 FONT PREVIEW: Using system font fallback for \(family) \(weight.rawValue) \(style.rawValue)")
+            return Font.system(size: 12, weight: weight.systemWeight, design: .default)
+        }
+    }
+    
+    // Helper function to map NS weight to FontWeight
+    private func mapNSWeightToFontWeight(_ nsWeight: Int) -> FontWeight {
+        switch nsWeight {
+        case 0...2: return .thin
+        case 3: return .ultraLight
+        case 4: return .light
+        case 5: return .regular
+        case 6: return .medium
+        case 7...8: return .semibold
+        case 9: return .bold
+        case 10...11: return .heavy
+        default: return .black
         }
     }
     
@@ -663,22 +719,30 @@ struct FontPanel: View {
         let weights = availableFontWeights
         let styles = availableFontStyles
         
+        print("🎯 FONT PANEL: Validating font options for family: \(currentFontFamily)")
+        print("  - Available weights: \(weights.map { $0.rawValue })")
+        print("  - Available styles: \(styles.map { $0.rawValue })")
+        
         if let _ = selectedText {
             // Update selected text's weight/style if invalid - NO document.fontManager changes
             updateSelectedTextProperties(action: "Validated font weight/style") { text in
                 if !weights.contains(text.typography.fontWeight) {
+                    print("🎯 FONT PANEL: Updating weight from \(text.typography.fontWeight.rawValue) to \(weights.first?.rawValue ?? "regular")")
                     text.typography.fontWeight = weights.first ?? .regular
                 }
                 if !styles.contains(text.typography.fontStyle) {
+                    print("🎯 FONT PANEL: Updating style from \(text.typography.fontStyle.rawValue) to \(styles.first?.rawValue ?? "normal")")
                     text.typography.fontStyle = styles.first ?? .normal
                 }
             }
         } else {
             // Update document font manager for new text creation only
             if !weights.contains(document.fontManager.selectedFontWeight) {
+                print("🎯 FONT PANEL: Updating document weight from \(document.fontManager.selectedFontWeight.rawValue) to \(weights.first?.rawValue ?? "regular")")
                 document.fontManager.selectedFontWeight = weights.first ?? .regular
             }
             if !styles.contains(document.fontManager.selectedFontStyle) {
+                print("🎯 FONT PANEL: Updating document style from \(document.fontManager.selectedFontStyle.rawValue) to \(styles.first?.rawValue ?? "normal")")
                 document.fontManager.selectedFontStyle = styles.first ?? .normal
             }
         }
