@@ -157,7 +157,14 @@ extension MetalDrawingOptimizer {
         // Phase 2: Try Metal compute shaders first, fallback to Phase 1
         if points.count > 20 {
             if let metalEngine = MetalComputeEngine.shared {
-                return metalEngine.douglasPeuckerGPU(points, tolerance: Float(tolerance))
+                let result = metalEngine.douglasPeuckerGPU(points, tolerance: Float(tolerance))
+                switch result {
+                case .success(let simplifiedPoints):
+                    return simplifiedPoints
+                case .failure(_):
+                    // Fallback to CPU calculation
+                    return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: tolerance)
+                }
             } else {
                 return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: tolerance)
             }

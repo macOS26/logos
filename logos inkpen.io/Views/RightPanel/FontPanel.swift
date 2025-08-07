@@ -43,42 +43,27 @@ struct FontPanel: View {
     @State private var cachedFontWeights: [FontWeight] = []
     @State private var cachedFontStyles: [FontStyle] = []
     
+    // FIXED: Simple computed property without state modifications
     private var currentFontFamily: String {
-        let currentTextID = selectedText?.id ?? editingText?.id
-        
-        // Only update cache when text selection actually changes
-        if currentTextID != lastSelectedTextID {
-            lastSelectedTextID = currentTextID
-            
-            if let selectedText = selectedText {
-                cachedFontFamily = selectedText.typography.fontFamily
-                print("🎯 FONT PANEL: Selected text font family: \(cachedFontFamily) (UUID: \(selectedText.id.uuidString.prefix(8)))")
-            } else if let editingText = editingText {
-                cachedFontFamily = editingText.typography.fontFamily
-                print("🎯 FONT PANEL: Editing text font family: \(cachedFontFamily) (UUID: \(editingText.id.uuidString.prefix(8)))")
-            } else {
-                cachedFontFamily = document.fontManager.selectedFontFamily
-                print("🎯 FONT PANEL: No selected text, returning font manager font family: \(cachedFontFamily)")
-            }
+        if let selectedText = selectedText {
+            return selectedText.typography.fontFamily
+        } else if let editingText = editingText {
+            return editingText.typography.fontFamily
+        } else {
+            return document.fontManager.selectedFontFamily
         }
-        
-        return cachedFontFamily
     }
     
+    // FIXED: Simple computed property without state modifications
     private var availableFontWeights: [FontWeight] {
         let family = currentFontFamily
-        if cachedFontWeights.isEmpty || cachedFontFamily != family {
-            cachedFontWeights = document.fontManager.getAvailableWeights(for: family)
-        }
-        return cachedFontWeights
+        return document.fontManager.getAvailableWeights(for: family)
     }
     
+    // FIXED: Simple computed property without state modifications
     private var availableFontStyles: [FontStyle] {
         let family = currentFontFamily
-        if cachedFontStyles.isEmpty || cachedFontFamily != family {
-            cachedFontStyles = document.fontManager.getAvailableStyles(for: family)
-        }
-        return cachedFontStyles
+        return document.fontManager.getAvailableStyles(for: family)
     }
     
     // Clear cache when font family changes
@@ -556,26 +541,15 @@ struct FontPanel: View {
         selectedText?.typography.alignment.nsTextAlignment ?? .left
     }
     
+    // FIXED: Simple computed property without state modifications
     private var currentLineSpacing: CGFloat {
-        let currentTextID = selectedText?.id ?? editingText?.id
-        
-        // Only update cache when text selection actually changes
-        if currentTextID != lastTextIDForProperties {
-            lastTextIDForProperties = currentTextID
-            
-            if let selectedText = selectedText {
-                lastLineSpacing = selectedText.typography.lineSpacing
-                print("🎯 FONT PANEL: Selected text line spacing: \(lastLineSpacing) (UUID: \(selectedText.id.uuidString.prefix(8)))")
-            } else if let editingText = editingText {
-                lastLineSpacing = editingText.typography.lineSpacing
-                print("🎯 FONT PANEL: Editing text line spacing: \(lastLineSpacing) (UUID: \(editingText.id.uuidString.prefix(8)))")
-            } else {
-                lastLineSpacing = 0.0
-                print("🎯 FONT PANEL: No selected text, returning 0.0 for line spacing")
-            }
+        if let selectedText = selectedText {
+            return selectedText.typography.lineSpacing
+        } else if let editingText = editingText {
+            return editingText.typography.lineSpacing
+        } else {
+            return 0.0
         }
-        
-        return lastLineSpacing
     }
     
     private var currentLineHeight: CGFloat {

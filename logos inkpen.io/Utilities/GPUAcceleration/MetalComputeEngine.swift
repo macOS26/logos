@@ -165,13 +165,17 @@ class MetalComputeEngine {
     
     // MARK: - Phase 2: GPU Douglas-Peucker with Metal Shaders
     
-    func douglasPeuckerGPU(_ points: [CGPoint], tolerance: Float) -> [CGPoint] {
-        guard points.count > 2,
-              douglasPeuckerPipeline != nil else {
-            return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: CGFloat(tolerance))
+    func douglasPeuckerGPU(_ points: [CGPoint], tolerance: Float) -> Result<[CGPoint], MetalError> {
+        guard points.count > 2 else {
+            return .failure(.operationFailed("Need at least 3 points for Douglas-Peucker simplification"))
         }
         
-        return douglasPeuckerRecursiveGPU(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
+        guard douglasPeuckerPipeline != nil else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        let result = douglasPeuckerRecursiveGPU(points: points, tolerance: tolerance, startIndex: 0, endIndex: points.count - 1)
+        return .success(result)
     }
     
     private func douglasPeuckerRecursiveGPU(points: [CGPoint], tolerance: Float, startIndex: Int, endIndex: Int) -> [CGPoint] {
@@ -186,8 +190,10 @@ class MetalComputeEngine {
         // Use GPU to find maximum distance point
         let maxResult = findMaxDistanceGPU(points: segmentPoints, lineStart: lineStart, lineEnd: lineEnd)
         
-        if maxResult.distance > tolerance {
-            let maxIndex = startIndex + maxResult.index
+        switch maxResult {
+        case .success(let result):
+            if result.distance > tolerance {
+                let maxIndex = startIndex + result.index
             
             // Recursively simplify segments
             let leftSegment = douglasPeuckerRecursiveGPU(
@@ -199,17 +205,27 @@ class MetalComputeEngine {
                 startIndex: maxIndex, endIndex: endIndex
             )
             
-            return leftSegment + Array(rightSegment.dropFirst())
-        } else {
+                            return leftSegment + Array(rightSegment.dropFirst())
+            } else {
+                return [points[startIndex], points[endIndex]]
+            }
+        case .failure(_):
+            // Fallback to CPU calculation
             return [points[startIndex], points[endIndex]]
         }
     }
     
-    private func findMaxDistanceGPU(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> (distance: Float, index: Int) {
-        guard let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder(),
-              let pipeline = douglasPeuckerPipeline else {
-            return findMaxDistanceCPU(points: points, lineStart: lineStart, lineEnd: lineEnd)
+    private func findMaxDistanceGPU(points: [CGPoint], lineStart: CGPoint, lineEnd: CGPoint) -> Result<(distance: Float, index: Int), MetalError> {
+        guard let pipeline = douglasPeuckerPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = points.count
@@ -218,8 +234,10 @@ class MetalComputeEngine {
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        guard let pointsBuffer = device.makeBuffer(bytes: metalPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let distancesBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         var lineStartMetal = Point2D(x: Float(lineStart.x), y: Float(lineStart.y))
         var lineEndMetal = Point2D(x: Float(lineEnd.x), y: Float(lineEnd.y))
@@ -242,9 +260,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let distancesPointer = distancesBuffer?.contents().bindMemory(to: Float.self, capacity: pointCount) else {
-            return findMaxDistanceCPU(points: points, lineStart: lineStart, lineEnd: lineEnd)
-        }
+        let distancesPointer = distancesBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
         
         var maxDistance: Float = 0
         var maxIndex = 0
@@ -257,7 +273,7 @@ class MetalComputeEngine {
             }
         }
         
-        return (distance: maxDistance, index: maxIndex)
+        return .success((distance: maxDistance, index: maxIndex))
     }
     
     // MARK: - Phase 3: GPU Matrix Transformations
