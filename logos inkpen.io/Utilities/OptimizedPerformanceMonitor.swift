@@ -41,7 +41,10 @@ class OptimizedPerformanceMonitor: ObservableObject {
     // MARK: - Optimized Tracking Setup
     
     private func setupOptimizedTracking() {
-        if let device = MTLCreateSystemDefaultDevice() {
+        if let metalEngine = MetalComputeEngine.shared {
+            self.metalDeviceName = metalEngine.device.name
+            self.renderingMode = metalEngine.getPerformanceMode()
+        } else if let device = MTLCreateSystemDefaultDevice() {
             self.metalDeviceName = device.name
             self.renderingMode = "Metal GPU Available"
         }

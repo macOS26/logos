@@ -23,7 +23,7 @@ extension DrawingCanvas {
             drawingDimensionsOverlay(for: currentPath)
         }
         
-        // DEBUG: Bounding box visualization for triangle drift verification
+        // Bounding box visualization for triangle drift verification
         if let boundingBoxPath = tempBoundingBoxPath {
             Path { path in
                 addPathElements(boundingBoxPath.elements, to: &path)

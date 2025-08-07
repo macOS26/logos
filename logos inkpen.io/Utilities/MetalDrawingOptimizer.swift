@@ -150,14 +150,17 @@ class MetalDrawingOptimizer {
 
 extension MetalDrawingOptimizer {
     
-    /// Optimize freehand drawing performance (Phase 1: GPU acceleration)
+    /// Optimize freehand drawing performance (Phase 2: Full GPU acceleration)
     func optimizeFreehandDrawing(points: [CGPoint], tolerance: CGFloat = 2.0) -> [CGPoint] {
         trackDrawingStart()
         
-        // Phase 1: Try GPU acceleration first, fallback to CPU
-        if points.count > 20 { // Lower threshold for Phase 1 testing
-            print("🚀 Phase 1: Using GPU-ready optimization for \(points.count) points")
-            return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: tolerance)
+        // Phase 2: Try Metal compute shaders first, fallback to Phase 1
+        if points.count > 20 {
+            if let metalEngine = MetalComputeEngine.shared {
+                return metalEngine.douglasPeuckerGPU(points, tolerance: Float(tolerance))
+            } else {
+                return GPUMathAcceleratorSimple.shared.optimizeDrawingPath(points, tolerance: tolerance)
+            }
         }
         return points
     }
