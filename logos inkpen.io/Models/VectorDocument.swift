@@ -3065,7 +3065,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .eyedropper: return "eyedropper"
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
-        case .gradient: return "circle.lefthalf.filled"
+        case .gradient: return "circle.lefthalf.striped.horizontal"
         }
     }
     

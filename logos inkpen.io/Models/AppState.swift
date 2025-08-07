@@ -280,6 +280,7 @@ class PersistentGradientHUDManager {
         NSApplication.shared.windows.forEach { window in
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud"), window.isVisible {
                 window.hidesOnDeactivate = true
+                window.close()
             }
         }
     }
