@@ -11,17 +11,16 @@ struct FontPanel: View {
     @ObservedObject var document: VectorDocument
     // REMOVED: Separate color pickers - use main color system instead
     
+    // FIXED: Track last logged values to prevent repeated logging
+    @State private var lastLoggedSelection: UUID?
+    @State private var lastLoggedEditing: UUID?
+    
+    // FIXED: Simple computed property that doesn't modify state during view update
     private var selectedText: VectorText? {
-        let selected = document.textObjects.first { document.selectedTextIDs.contains($0.id) }
-        if let selected = selected {
-            print("🎯 FONT PANEL: Found selected text - UUID: \(selected.id.uuidString.prefix(8)), Line Spacing: \(selected.typography.lineSpacing)")
-        } else {
-            print("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)")
-        }
-        return selected
+        document.textObjects.first { document.selectedTextIDs.contains($0.id) }
     }
     
-    // TRACK CURRENTLY EDITING TEXT BOX UUID
+    // FIXED: Simple computed property that doesn't modify state during view update
     private var editingText: VectorText? {
         document.textObjects.first { $0.isEditing }
     }
@@ -37,11 +36,7 @@ struct FontPanel: View {
         }
     }
     
-    // CACHE: Reduce repeated font panel queries
-    @State private var lastSelectedTextID: UUID?
-    @State private var cachedFontFamily: String = ""
-    @State private var cachedFontWeights: [FontWeight] = []
-    @State private var cachedFontStyles: [FontStyle] = []
+    // REMOVED: Caching mechanism that was causing infinite loops
     
     // FIXED: Simple computed property without state modifications
     private var currentFontFamily: String {
@@ -66,13 +61,7 @@ struct FontPanel: View {
         return document.fontManager.getAvailableStyles(for: family)
     }
     
-    // Clear cache when font family changes
-    private func clearFontCache() {
-        cachedFontWeights = []
-        cachedFontStyles = []
-        // Also clear property cache to force refresh
-        lastTextIDForProperties = nil
-    }
+    // REMOVED: clearFontCache function - no longer needed without caching
     
     var body: some View {
         ScrollView {
@@ -173,9 +162,6 @@ struct FontPanel: View {
                                         return selectedText.typography.fontFamily
                                     },
                                     set: { newFamily in
-                                        // Clear font cache when family changes
-                                        clearFontCache()
-                                        
                                         if let _ = selectedText {
                                             // Update selected text only - NO document.fontManager changes
                                             updateSelectedTextProperties(action: "Changed font family") { text in
@@ -195,7 +181,6 @@ struct FontPanel: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .frame(maxWidth: .infinity)
                                 // REMOVED: onChange handler that was causing property sync when switching tools
                             }
                             
@@ -510,8 +495,7 @@ struct FontPanel: View {
                 print("🎯 NO TEXT SELECTED - showing document defaults for new text creation")
             }
             
-            // Clear property cache when tool changes
-            lastTextIDForProperties = nil
+            // REMOVED: Property cache clearing - no longer needed
         }
         .onChange(of: document.selectedTextIDs) { oldIDs, newIDs in
             // CRITICAL PROTECTION: Log text selection changes to ensure UUID tracking works
@@ -525,16 +509,36 @@ struct FontPanel: View {
                 print("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique font settings")
             }
             
-            // Clear property cache when text selection changes
-            lastTextIDForProperties = nil
+            // Update last logged selection state safely
+            if let newSelectedText = selectedText {
+                if newSelectedText.id != lastLoggedSelection {
+                    lastLoggedSelection = newSelectedText.id
+                    print("🎯 FONT PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)")
+                }
+            } else {
+                if lastLoggedSelection != nil {
+                    lastLoggedSelection = nil
+                    print("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)")
+                }
+            }
+        }
+        .onChange(of: document.textObjects) { oldTextObjects, newTextObjects in
+            // Update last logged editing state safely
+            if let newEditingText = editingText {
+                if newEditingText.id != lastLoggedEditing {
+                    lastLoggedEditing = newEditingText.id
+                    print("🎯 FONT PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))")
+                }
+            } else {
+                if lastLoggedEditing != nil {
+                    lastLoggedEditing = nil
+                    print("🎯 FONT PANEL: No editing text found")
+                }
+            }
         }
     }
     
-    // CACHE: Reduce repeated font panel queries for line spacing, height, and size
-    @State private var lastLineSpacing: CGFloat = 0.0
-    @State private var lastLineHeight: CGFloat = 24.0
-    @State private var lastFontSize: CGFloat = 24.0
-    @State private var lastTextIDForProperties: UUID?
+    // REMOVED: Property caching state variables that were causing infinite loops
     
     // NEW: Helper properties for text alignment and line spacing
     private var currentTextAlignment: NSTextAlignment {
@@ -552,48 +556,26 @@ struct FontPanel: View {
         }
     }
     
+    // FIXED: Simple computed property without state modifications
     private var currentLineHeight: CGFloat {
-        let currentTextID = selectedText?.id ?? editingText?.id
-        
-        // Only update cache when text selection actually changes
-        if currentTextID != lastTextIDForProperties {
-            lastTextIDForProperties = currentTextID
-            
-            if let selectedText = selectedText {
-                lastLineHeight = selectedText.typography.lineHeight
-                print("🎯 FONT PANEL: Selected text line height: \(lastLineHeight) (UUID: \(selectedText.id.uuidString.prefix(8)))")
-            } else if let editingText = editingText {
-                lastLineHeight = editingText.typography.lineHeight
-                print("🎯 FONT PANEL: Editing text line height: \(lastLineHeight) (UUID: \(editingText.id.uuidString.prefix(8)))")
-            } else {
-                lastLineHeight = document.fontManager.selectedLineHeight
-                print("🎯 FONT PANEL: No selected text, returning font manager line height: \(lastLineHeight)")
-            }
+        if let selectedText = selectedText {
+            return selectedText.typography.lineHeight
+        } else if let editingText = editingText {
+            return editingText.typography.lineHeight
+        } else {
+            return document.fontManager.selectedLineHeight
         }
-        
-        return lastLineHeight
     }
     
+    // FIXED: Simple computed property without state modifications
     private var currentFontSize: CGFloat {
-        let currentTextID = selectedText?.id ?? editingText?.id
-        
-        // Only update cache when text selection actually changes
-        if currentTextID != lastTextIDForProperties {
-            lastTextIDForProperties = currentTextID
-            
-            if let selectedText = selectedText {
-                lastFontSize = selectedText.typography.fontSize
-                print("🎯 FONT PANEL: Selected text font size: \(lastFontSize)pt (UUID: \(selectedText.id.uuidString.prefix(8)))")
-            } else if let editingText = editingText {
-                lastFontSize = editingText.typography.fontSize
-                print("🎯 FONT PANEL: Editing text font size: \(lastFontSize)pt (UUID: \(editingText.id.uuidString.prefix(8)))")
-            } else {
-                lastFontSize = document.fontManager.selectedFontSize
-                print("🎯 FONT PANEL: No selected text, returning font manager font size: \(lastFontSize)")
-            }
+        if let selectedText = selectedText {
+            return selectedText.typography.fontSize
+        } else if let editingText = editingText {
+            return editingText.typography.fontSize
+        } else {
+            return document.fontManager.selectedFontSize
         }
-        
-        return lastFontSize
     }
     
     // CONSOLIDATED: Generic text property updater with UUID validation
