@@ -52,16 +52,35 @@ class MetalComputeEngine {
     private var booleanGeometryPipeline: MTLComputePipelineState?
     private var pathIntersectionPipeline: MTLComputePipelineState?
     
+    // Phase 14: Advanced Shape Operations
+    private var bezierTessellationPipeline: MTLComputePipelineState?
+    private var shapeOptimizationPipeline: MTLComputePipelineState?
+    private var pathSimplificationPipeline: MTLComputePipelineState?
+    
+    // Phase 15: Color Processing
+    private var colorInterpolationPipeline: MTLComputePipelineState?
+    private var colorSpaceConversionPipeline: MTLComputePipelineState?
+    private var gradientCalculationPipeline: MTLComputePipelineState?
+    
+    // Phase 16: Performance Optimizations
+    private var batchOperationPipeline: MTLComputePipelineState?
+    private var memoryOptimizationPipeline: MTLComputePipelineState?
+    private var cacheOptimizationPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
-        guard let device = MTLCreateSystemDefaultDevice(),
-              let commandQueue = device.makeCommandQueue() else {
+        guard let device = MTLCreateSystemDefaultDevice() else {
             print("⚠️ Metal Compute Engine: GPU not available")
             return nil
         }
         
         self.device = device
+        
+        guard let commandQueue = device.makeCommandQueue() else {
+            print("⚠️ Metal Compute Engine: Cannot create command queue")
+            return nil
+        }
         self.commandQueue = commandQueue
         
         // Create Metal library from .metal file
@@ -889,7 +908,7 @@ class MetalComputeEngine {
         }
         
         let resultCount = path1Points.count + path2Points.count
-        var resultPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: resultCount)
+        let resultPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: resultCount)
         
         guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
               let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
@@ -936,7 +955,7 @@ class MetalComputeEngine {
         }
         
         let maxIntersections = 1000
-        var intersectionPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: maxIntersections)
+        let intersectionPoints = [Point2D](repeating: Point2D(x: 0, y: 0), count: maxIntersections)
         var intersectionCount: UInt32 = 0
         
         guard let commandBuffer = metalEngine.commandQueue.makeCommandBuffer(),
@@ -1464,7 +1483,7 @@ class MetalComputeEngine {
         print("✅ Metal Engine Test: Metal device found: \(device.name)")
         
         // Check if command queue can be created
-        guard let commandQueue = device.makeCommandQueue() else {
+        guard device.makeCommandQueue() != nil else {
             print("❌ Metal Engine Test: Cannot create command queue")
             return false
         }

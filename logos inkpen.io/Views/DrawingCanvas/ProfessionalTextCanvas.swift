@@ -779,7 +779,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 return
             }
             
-            print("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')")
+            // print("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')")
             
             // CRITICAL FIX: Update both view model and document, but prevent NSTextView reset
             parent.isUpdatingFromTyping = true
@@ -873,7 +873,7 @@ class ProfessionalTextViewModel: ObservableObject {
         didSet {
             // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
             // Text content changes don't affect size - only user drag resizing
-            print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - no auto-resize")
+            // print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - no auto-resize")
         }
     }
     @Published var fontSize: CGFloat = 24 {
