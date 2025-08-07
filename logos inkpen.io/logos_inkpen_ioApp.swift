@@ -2147,7 +2147,12 @@ struct logos_inken_ioApp: App {
                             // Store a strong reference to prevent immediate deallocation
                             let delegate = GradientWindowDelegate(onWindowClose: {
                                 print("🎨 GRADIENT HUD: Window close button (X) clicked")
-                                appState.persistentGradientHUD.hide()
+                                // 🔥 SAFETY: Check if window is still visible before hiding
+                                if window.isVisible {
+                                    appState.persistentGradientHUD.hide()
+                                } else {
+                                    print("🎨 GRADIENT HUD: Window already closed, skipping hide()")
+                                }
                             })
                             window.delegate = delegate
                             // Store the delegate in the window's associated object to keep it alive

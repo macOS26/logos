@@ -146,6 +146,14 @@ struct GradientFillSection: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .foregroundColor(.red)
+                
+                Button("Count Windows (\(appState.persistentGradientHUD.countGradientWindows()))") {
+                    let count = appState.persistentGradientHUD.countGradientWindows()
+                    print("🎨 GRADIENT PANEL: Current window count: \(count)")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .foregroundColor(.blue)
             }
             .padding(.top, 8)
             #endif
@@ -1994,6 +2002,7 @@ struct CartesianGrid: View {
 
 class GradientWindowDelegate: NSObject, NSWindowDelegate {
     let onWindowClose: () -> Void
+    private var hasClosed = false
     
     init(onWindowClose: @escaping () -> Void) {
         self.onWindowClose = onWindowClose
@@ -2001,6 +2010,13 @@ class GradientWindowDelegate: NSObject, NSWindowDelegate {
     }
     
     func windowWillClose(_ notification: Notification) {
+        // 🔥 FIXED: Prevent multiple calls to onWindowClose
+        guard !hasClosed else {
+            print("🎨 GRADIENT WINDOW DELEGATE: windowWillClose already called, ignoring")
+            return
+        }
+        
+        hasClosed = true
         print("🎨 GRADIENT WINDOW DELEGATE: windowWillClose called")
         onWindowClose()
         print("🎨 GRADIENT WINDOW DELEGATE: onWindowClose callback executed")
