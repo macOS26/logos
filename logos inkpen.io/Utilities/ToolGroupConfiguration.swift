@@ -23,11 +23,12 @@ struct ToolGroupConfiguration {
     
     // MARK: - Single Source of Truth for Tool Groups
     static let toolGroupConfig: [String: [DrawingTool]] = [
+        "selection": [.selection, .directSelection, .convertAnchorPoint],
         "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
         "circles": [.ellipse, .oval, .circle, .egg],
         "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone],
         "polygons": [.polygon, .pentagon, .hexagon, .heptagon, .octagon],
-        "lines": [.line, .bezierPen],
+        "lines": [.bezierPen, .line],
         "brushes": [.brush, .marker, .freehand],
         "transforms": [.scale, .rotate, .shear, .warp],
         "stars": [.star] // Star has variants handled separately
@@ -61,21 +62,43 @@ struct ToolGroupConfiguration {
     }
     
     static func getAllToolGroupsAsArrays() -> [[DrawingTool]] {
-        return [
-            [.selection, .directSelection],
-            [.scale, .rotate, .shear, .warp],
-            [.bezierPen, .convertAnchorPoint, .line],
-            [.brush, .marker, .freehand],
-            [.font],
-            [.rectangle, .square, .roundedRectangle, .pill], // Rectangle group
-            [.ellipse, .oval, .circle, .egg], // Circle group  
-            [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone], // Triangle group
-            [.polygon, .pentagon, .hexagon, .heptagon, .octagon], // Multi-sided polygon group
-            [.star], // Star variants (handled separately)
-            [.eyedropper],
-            [.hand],
-            [.zoom],
-            [.gradient]
+        // Define the specific order for tool groups to appear in the toolbar
+        let orderedGroupNames = [
+            "selection",      // Selection tools first
+            "transforms",     // Transform tools second
+            "lines",          // Drawing tools third
+            "brushes",        // Paint tools fourth
+            "font",           // Font tool (individual)
+            "rectangles",     // Shape tools
+            "circles",        // Circle tools
+            "triangles",      // Triangle tools
+            "polygons",       // Polygon tools
+            "stars",          // Star tool (individual)
+            "eyedropper",     // Utility tools
+            "hand",           // Navigation tools
+            "zoom",           // Navigation tools
+            "gradient"        // Special tools
         ]
+        
+        var allGroups: [[DrawingTool]] = []
+        
+        // Add groups in the specified order
+        for groupName in orderedGroupNames {
+            if let group = toolGroupConfig[groupName] {
+                allGroups.append(group)
+            } else if groupName == "font" {
+                allGroups.append([.font])
+            } else if groupName == "eyedropper" {
+                allGroups.append([.eyedropper])
+            } else if groupName == "hand" {
+                allGroups.append([.hand])
+            } else if groupName == "zoom" {
+                allGroups.append([.zoom])
+            } else if groupName == "gradient" {
+                allGroups.append([.gradient])
+            }
+        }
+        
+        return allGroups
     }
 } 

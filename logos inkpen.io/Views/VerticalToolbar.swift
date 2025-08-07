@@ -775,9 +775,13 @@ struct VerticalToolbar: View {
                                     toolGroupManager.selectStarVariant(starVariant)
                                     starHUDManager.selectedVariant = starVariant
                                     document.currentTool = .star
+                                    // Update tool group manager state
+                                    toolGroupManager.currentToolInGroup = .star
                                     print("⭐ Selected star variant: \(starVariant.rawValue)")
                                 } else {
                                     document.currentTool = toolItem.tool
+                                    // Update tool group manager state
+                                    toolGroupManager.currentToolInGroup = toolItem.tool
                                     print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
                                 }
                                 
@@ -829,9 +833,13 @@ struct VerticalToolbar: View {
                                             toolGroupManager.selectStarVariant(starVariant)
                                             starHUDManager.selectedVariant = starVariant
                                             document.currentTool = .star
+                                            // Update tool group manager state
+                                            toolGroupManager.currentToolInGroup = .star
                                             print("🔧 Tool tap detected: \(starVariant.rawValue)")
                                         } else {
                                             document.currentTool = toolItem.tool
+                                            // Update tool group manager state
+                                            toolGroupManager.currentToolInGroup = toolItem.tool
                                             print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
                                         }
                                         

@@ -133,6 +133,22 @@ struct GradientFillSection: View {
                 currentGradient: currentGradient,
                 onApply: applyGradientToSelectedShapes
             )
+            
+            // 🔥 DEBUG: Force reset button (remove in production)
+            #if DEBUG
+            HStack {
+                Spacer()
+                Button("Force Reset Gradient State") {
+                    print("🎨 GRADIENT PANEL: Force reset button clicked")
+                    appState.forceResetGradientEditingState()
+                    editingGradientStopId = nil
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .foregroundColor(.red)
+            }
+            .padding(.top, 8)
+            #endif
         }
         .padding()
         .background(Color.ui.semiTransparentControlBackground)
@@ -144,6 +160,9 @@ struct GradientFillSection: View {
             // updateSelectedGradient()
         }
         .onChange(of: editingGradientStopId) { oldStopId, newStopId in
+            print("🎨 GRADIENT PANEL: onChange(editingGradientStopId) triggered")
+            print("🎨 GRADIENT PANEL: oldStopId = \(oldStopId?.uuidString.prefix(8) ?? "nil")")
+            print("🎨 GRADIENT PANEL: newStopId = \(newStopId?.uuidString.prefix(8) ?? "nil")")
             if let stopId = newStopId {
                 let actualColor = findGradientStopColor(stopId: stopId)
                 
@@ -180,11 +199,9 @@ struct GradientFillSection: View {
                         self.turnOffEditingState()
                     }
                 )
-            } else {
-                // 🔥 CRITICAL: Clear gradient editing state when closing HUD
-                appState.gradientEditingState = nil
-                appState.persistentGradientHUD.hide()
             }
+            // 🔥 FIXED: Remove the else block that was causing circular calls
+            // The turnOffEditingState() function already handles cleanup properly
         }
 
         .onDisappear {
@@ -195,11 +212,28 @@ struct GradientFillSection: View {
 
     
     private func turnOffEditingState() {
-        editingGradientStopId = nil
-        // 🔥 CRITICAL: Clear gradient editing state to return to normal fill/stroke mode
+        print("🎨 GRADIENT PANEL: turnOffEditingState() called")
+        // 🔥 FIXED: Clear gradient editing state first to prevent circular calls
         appState.gradientEditingState = nil
+        print("🎨 GRADIENT PANEL: Cleared gradientEditingState")
         // 🔥 PROPERLY HIDE THE HUD - This will close the window and reset state
         appState.persistentGradientHUD.hide()
+        print("🎨 GRADIENT PANEL: Called persistentGradientHUD.hide()")
+        // 🔥 CRITICAL: Clear the editing stop ID last to prevent onChange trigger
+        editingGradientStopId = nil
+        print("🎨 GRADIENT PANEL: Cleared editingGradientStopId")
+        
+        // 🔥 ADDITIONAL SAFETY: Force reset any stuck state
+        DispatchQueue.main.async {
+            if self.editingGradientStopId != nil {
+                print("🎨 GRADIENT PANEL: WARNING - editingGradientStopId still not nil, forcing reset")
+                self.editingGradientStopId = nil
+            }
+            if appState.gradientEditingState != nil {
+                print("🎨 GRADIENT PANEL: WARNING - gradientEditingState still not nil, forcing reset")
+                appState.gradientEditingState = nil
+            }
+        }
     }
     
     // MARK: - Selection and Angle Management
@@ -1326,8 +1360,11 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
+                                print("🎨 GRADIENT STOP: Clicked on stop \(stop.id.uuidString.prefix(8))")
+                                print("🎨 GRADIENT STOP: Current editingGradientStopId = \(editingGradientStopId?.uuidString.prefix(8) ?? "nil")")
                                 editingGradientStopId = stop.id
                                 editingGradientStopColor = stop.color
+                                print("🎨 GRADIENT STOP: Set editingGradientStopId = \(stop.id.uuidString.prefix(8))")
                             }) {
                                 renderColorSwatchRightPanel(stop.color, width: 20, height: 20, cornerRadius: 0, borderWidth: 1, opacity: stop.opacity)
                             }
@@ -1964,7 +2001,9 @@ class GradientWindowDelegate: NSObject, NSWindowDelegate {
     }
     
     func windowWillClose(_ notification: Notification) {
+        print("🎨 GRADIENT WINDOW DELEGATE: windowWillClose called")
         onWindowClose()
+        print("🎨 GRADIENT WINDOW DELEGATE: onWindowClose callback executed")
     }
 }
 

@@ -179,11 +179,10 @@ struct VerticalRuler: View {
         let zoomLevel = document.zoomLevel
         let canvasOffset = document.canvasOffset
         
-        // PRECISE FIX: Vertical ruler alignment correction
+        // FIXED: Vertical ruler alignment - coordinate system now properly aligned
         // Canvas now fills the full view with no padding offset
         
         // Calculate what canvas coordinates are visible in the ruler
-        let verticalAlignmentCorrection = 12.0  // Correction for vertical ruler positioning
         let startY = (-canvasOffset.y) / zoomLevel
         let endY = (size.height - canvasOffset.y) / zoomLevel
         
@@ -194,8 +193,8 @@ struct VerticalRuler: View {
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
         while y <= endY {
-            // PRECISE FIX: Apply 12-pixel upward correction to align with canvas objects
-            let rulerY = y * zoomLevel + canvasOffset.y - verticalAlignmentCorrection
+            // FIXED: No correction needed - coordinate system now properly aligned
+            let rulerY = y * zoomLevel + canvasOffset.y
             
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001

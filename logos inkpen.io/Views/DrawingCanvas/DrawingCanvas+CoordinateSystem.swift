@@ -21,13 +21,6 @@ extension DrawingCanvas {
     /// Convert multiple screen coordinates to canvas coordinates efficiently
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
-        // CRITICAL FIX: Disable Metal during pan gestures for performance
-        // Metal GPU operations cause slowdown during pan due to context switching overhead
-        if isPanGestureActive {
-            // Use CPU during pan for maximum responsiveness
-            return screenToCanvasCPU(points, geometry: geometry)
-        }
-        
         // TEMPORARILY DISABLED: Metal acceleration causing zoom/position issues
         // TODO: Re-enable when Metal coordinate transformations are fixed
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
@@ -160,10 +153,10 @@ extension DrawingCanvas {
         document.zoomLevel = defaultZoom
         
         // Center canvas in view using the calculated uniform scale
-        // RULER ADJUSTMENT: Offset center point when rulers are visible
+        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
         let viewCenter = CGPoint(
-            x: (viewSize.width + rulerOffset) / 2.0,
-            y: (viewSize.height + rulerOffset) / 2.0
+            x: viewSize.width / 2.0,
+            y: viewSize.height / 2.0
         )
         
         let documentCenter = CGPoint(
@@ -216,10 +209,10 @@ extension DrawingCanvas {
         document.zoomLevel = max(0.1, min(10.0, fitZoom))
         
         // Center canvas in view at the fit zoom
-        // RULER ADJUSTMENT: Offset center point when rulers are visible
+        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
         let viewCenter = CGPoint(
-            x: (viewSize.width + rulerOffset) / 2.0,
-            y: (viewSize.height + rulerOffset) / 2.0
+            x: viewSize.width / 2.0,
+            y: viewSize.height / 2.0
         )
         
         let documentCenter = CGPoint(
@@ -253,10 +246,10 @@ extension DrawingCanvas {
         let rulerOffset = document.showRulers ? rulerThickness : 0
         
         // Calculate what canvas point is currently at the view center
-        // RULER ADJUSTMENT: Offset center point when rulers are visible
+        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
         let viewCenter = CGPoint(
-            x: (geometry.size.width + rulerOffset) / 2.0,
-            y: (geometry.size.height + rulerOffset) / 2.0
+            x: geometry.size.width / 2.0,
+            y: geometry.size.height / 2.0
         )
         
         // For actual size, we want to center the document center in the view

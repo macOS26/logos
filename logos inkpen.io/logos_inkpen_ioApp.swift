@@ -9,6 +9,7 @@ import SwiftUI
 import AppKit
 import Combine
 import UniformTypeIdentifiers
+import ObjectiveC
 
 // MARK: - Window Accessor for macOS 15+ Floating Window Features
 struct WindowAccessor: NSViewRepresentable {
@@ -2110,7 +2111,8 @@ struct logos_inken_ioApp: App {
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
         WindowGroup("Gradient Color Picker", id: "gradient-hud") {
-            if appState.persistentGradientHUD.isVisible {
+            let isVisible = appState.persistentGradientHUD.isVisible
+            if isVisible {
                 // EXACT SAME STYLING as the SwiftUI HUD - but make it draggable from anywhere
                 StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
                     .environment(appState)
@@ -2140,6 +2142,16 @@ struct logos_inken_ioApp: App {
                             window.standardWindowButton(.zoomButton)?.isHidden = true
                             window.styleMask.insert(.utilityWindow)
                             // Keep close button visible
+                            
+                            // 🔥 FIXED: Set up window delegate to handle close button (X) clicks
+                            // Store a strong reference to prevent immediate deallocation
+                            let delegate = GradientWindowDelegate(onWindowClose: {
+                                print("🎨 GRADIENT HUD: Window close button (X) clicked")
+                                appState.persistentGradientHUD.hide()
+                            })
+                            window.delegate = delegate
+                            // Store the delegate in the window's associated object to keep it alive
+                            objc_setAssociatedObject(window, "gradientWindowDelegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                         }
                     })
             } else {

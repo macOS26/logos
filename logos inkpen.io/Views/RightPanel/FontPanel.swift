@@ -672,7 +672,6 @@ struct FontPanel: View {
                 // Check if this member matches our desired weight and style
                 if memberWeight == weight && memberStyle == style {
                     if NSFont(name: fontName, size: 12) != nil {
-                        print("🎯 FONT PREVIEW: Using exact match - \(fontName) for \(family) \(weight.rawValue) \(style.rawValue)")
                         return Font.custom(fontName, size: 12)
                     }
                 }
@@ -690,11 +689,9 @@ struct FontPanel: View {
         ])
         
         if let nsFont = NSFont(descriptor: weightedDescriptor, size: 12) {
-            print("🎯 FONT PREVIEW: Using descriptor fallback - \(nsFont.fontName) for \(family) \(weight.rawValue) \(style.rawValue)")
             return Font.custom(nsFont.fontName, size: 12)
         } else {
             // Final fallback: use system font with weight
-            print("🎯 FONT PREVIEW: Using system font fallback for \(family) \(weight.rawValue) \(style.rawValue)")
             return Font.system(size: 12, weight: weight.systemWeight, design: .default)
         }
     }

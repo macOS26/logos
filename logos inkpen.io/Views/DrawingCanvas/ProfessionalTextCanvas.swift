@@ -499,6 +499,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         
+        // Disable system contextual menu for this NSTextView
+        textView.menu = nil
+        
         textView.delegate = context.coordinator  // CRITICAL: Set delegate to capture text changes
         textView.layoutManager?.ensureLayout(for: textView.textContainer!)
         
@@ -791,8 +794,8 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             parent.viewModel.updateDocumentTextBounds(parent.viewModel.textBoxFrame)
             
             // Reset flag after a brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
-                parent.isUpdatingFromTyping = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                self?.parent.isUpdatingFromTyping = false
             }
         }
 
@@ -818,7 +821,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         func textDidEndEditing(_ notification: Notification) {
             print("✅ TEXT EDITING ENDED")
             // Text editing ended - reset any flags
-            parent.isUpdatingFromTyping = false
+            // Use async to avoid modifying state during view update
+            DispatchQueue.main.async { [weak self] in
+                self?.parent.isUpdatingFromTyping = false
+            }
         }
     }
 }
