@@ -487,7 +487,15 @@ extension VectorPoint {
         // 🚀 GPU-ONLY: Use Metal for all interpolation
         if let metalEngine = MetalComputeEngine.shared {
             let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
-            return results.map { VectorPoint($0) }
+            switch results {
+            case .success(let interpolatedVectors):
+                return interpolatedVectors.map { VectorPoint($0) }
+            case .failure(_):
+                // Fallback to CPU calculation
+                return zip(startPoints, endPoints).map { start, end in
+                    VectorPoint.lerp(start, end, t)
+                }
+            }
         } else {
             // CPU fallback for small batches
             return zip(startPoints, endPoints).map { start, end in
@@ -553,7 +561,13 @@ extension VectorPoint {
         // 🚀 GPU-ONLY: Use Metal for all vector normalization
         if let metalEngine = MetalComputeEngine.shared {
             let results = metalEngine.normalizeVectorsGPU(cgVectors)
-            return results.map { VectorPoint($0) }
+            switch results {
+            case .success(let normalizedVectors):
+                return normalizedVectors.map { VectorPoint($0) }
+            case .failure(_):
+                // Fallback to CPU calculation
+                return vectors.map { $0.normalized }
+            }
         } else {
             // CPU fallback for small batches
             return vectors.map { $0.normalized }

@@ -486,19 +486,27 @@ class MetalComputeEngine {
         return .success(results)
     }
     
-    func normalizeVectorsGPU(_ vectors: [CGPoint]) -> [CGPoint] {
-        guard let pipeline = vectorNormalizePipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return normalizeVectorsCPU(vectors)
+    func normalizeVectorsGPU(_ vectors: [CGPoint]) -> Result<[CGPoint], MetalError> {
+        guard let pipeline = vectorNormalizePipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let vectorCount = vectors.count
         let metalVectors = vectors.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let inputBuffer = device.makeBuffer(bytes: metalVectors, length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        guard let inputBuffer = device.makeBuffer(bytes: metalVectors, length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute
         computeEncoder.setComputePipelineState(pipeline)
@@ -516,9 +524,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: vectorCount) else {
-            return normalizeVectorsCPU(vectors)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: vectorCount)
         
         var results: [CGPoint] = []
         for i in 0..<vectorCount {
@@ -526,15 +532,24 @@ class MetalComputeEngine {
             results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return results
+        return .success(results)
     }
     
-    func lerpVectorsGPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> [CGPoint] {
-        guard startPoints.count == endPoints.count,
-              let pipeline = vectorLerpPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return lerpVectorsCPU(from: startPoints, to: endPoints, t: t)
+    func lerpVectorsGPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> Result<[CGPoint], MetalError> {
+        guard startPoints.count == endPoints.count else {
+            return .failure(.operationFailed("Start and end point counts must match"))
+        }
+        
+        guard let pipeline = vectorLerpPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = startPoints.count
@@ -542,9 +557,11 @@ class MetalComputeEngine {
         let metalEndPoints = endPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let startBuffer = device.makeBuffer(bytes: metalStartPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let endBuffer = device.makeBuffer(bytes: metalEndPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        guard let startBuffer = device.makeBuffer(bytes: metalStartPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let endBuffer = device.makeBuffer(bytes: metalEndPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         var lerpFactor = t
         
         // Setup compute
@@ -565,9 +582,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: pointCount) else {
-            return lerpVectorsCPU(from: startPoints, to: endPoints, t: t)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
         
         var results: [CGPoint] = []
         for i in 0..<pointCount {
@@ -575,7 +590,7 @@ class MetalComputeEngine {
             results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 7: GPU Handle Calculations
