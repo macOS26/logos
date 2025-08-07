@@ -286,9 +286,7 @@ extension DrawingCanvas {
     // Create new text with user-defined size (like rectangle tool)
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
         print("✨ Creating new text box at: \(location) with user size: \(width) × \(height)")
-        print("🔍 DEBUG: document.selectedLayerIndex = \(document.selectedLayerIndex ?? -1)")
-        print("🔍 DEBUG: document.textObjects.count = \(document.textObjects.count)")
-        print("🔍 DEBUG: document.selectedTextIDs.count = \(document.selectedTextIDs.count)")
+
         
         // Save state before creating new text
         document.saveToUndoStack()

@@ -100,17 +100,13 @@ extension DrawingCanvas {
                let previousHandles = bezierHandles[previousPointIndex],
                let previousControl2 = previousHandles.control2 {
                 // CURVE: Previous point has outgoing handle, create curve like rubber band preview
-                print("🔧 DEBUG STEP 2: Creating CURVE (matches rubber band preview)")
-                print("   Previous point \(previousPointIndex) has outgoing handle at: (\(previousControl2.x), \(previousControl2.y))")
                 
                 // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
                 // Step 3 uses: control1: previousControl2, control2: targetPoint
                 // This creates natural curves without hooks
                 bezierPath?.addElement(.curve(to: newPoint, control1: previousControl2, control2: newPoint))
-                print("   ✅ Added CURVE element (matches rubber band preview)")
             } else {
                 // STRAIGHT LINE: Previous point has no handles or is first point
-                print("🔧 DEBUG STEP 2: Creating straight line - previous point has no handles")
                 bezierPath?.addElement(.line(to: newPoint))
             }
             

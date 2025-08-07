@@ -11,7 +11,25 @@ import SwiftUI
 extension DrawingCanvas {
     
     /// Calculates the linked handle position for smooth curve behavior
+    /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders when available
     internal func calculateLinkedHandle(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
+        // 🚀 PHASE 7: Try GPU acceleration first
+        if let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.calculateLinkedHandlesGPU(
+                anchorPoints: [anchorPoint], 
+                draggedHandles: [draggedHandle], 
+                originalOppositeHandles: [originalOppositeHandle]
+            )
+            if let result = results.first {
+                return result
+            }
+        }
+        
+        // CPU fallback
+        return calculateLinkedHandleCPU(anchorPoint: anchorPoint, draggedHandle: draggedHandle, originalOppositeHandle: originalOppositeHandle)
+    }
+    
+    private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {
         // Vector from anchor to dragged handle
         let draggedVector = CGPoint(
             x: draggedHandle.x - anchorPoint.x,

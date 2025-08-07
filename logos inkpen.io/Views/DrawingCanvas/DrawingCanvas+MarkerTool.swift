@@ -285,14 +285,7 @@ extension DrawingCanvas {
             
             // Apply self-union operation if remove overlap is enabled
             if document.markerRemoveOverlap {
-                print("🔍 MARKER DEBUG: === MARKER REMOVE OVERLAP ENABLED ===")
-                print("🔍 MARKER DEBUG: About to call applySelfUnionToMarkerStroke with shapeIndex: \(shapeIndex)")
-                print("🔍 MARKER DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes BEFORE remove overlap")
-                
                 applySelfUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
-                
-                print("🔍 MARKER DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes AFTER remove overlap")
-                print("🔍 MARKER DEBUG: === MARKER REMOVE OVERLAP COMPLETED ===")
             }
         } else {
             print("🚨 MARKER ERROR: Could not find activeMarkerShape in layer! ID: \(activeMarkerShape.id)")
@@ -682,12 +675,6 @@ extension DrawingCanvas {
     
     /// Apply self-union operation to remove overlapping areas within the single marker stroke
     private func applySelfUnionToMarkerStroke(shapeIndex: Int, layerIndex: Int) {
-        print("🔍 MARKER OVERLAP DEBUG: === STARTING SELF-UNION OPERATION ===")
-        print("🔍 MARKER OVERLAP DEBUG: Target shapeIndex: \(shapeIndex), layerIndex: \(layerIndex)")
-        print("🔍 MARKER OVERLAP DEBUG: BEFORE operation - Layer has \(document.layers[layerIndex].shapes.count) shapes:")
-        for (i, shape) in document.layers[layerIndex].shapes.enumerated() {
-            print("🔍 MARKER OVERLAP DEBUG:   Shape \(i): '\(shape.name)' ID: \(shape.id)")
-        }
         
         guard shapeIndex < document.layers[layerIndex].shapes.count else { 
             print("🚨 MARKER ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes")
@@ -703,7 +690,7 @@ extension DrawingCanvas {
             return
         }
         
-        print("🔍 MARKER OVERLAP DEBUG: ✅ Verified correct shape - proceeding with self-union")
+
         
         // Handle different behaviors based on stroke/fill color matching
         let hasStroke = markerStroke.strokeStyle != nil
@@ -715,16 +702,13 @@ extension DrawingCanvas {
             
             if strokeColor == fillColor {
                 // Same color: expand stroke and combine with fill as one shape
-                print("🔍 MARKER OVERLAP DEBUG: Stroke and fill are same color - expanding stroke and combining")
                 applyExpandedStrokeUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
             } else {
                 // Different colors: union stroke separately, union fill separately
-                print("🔍 MARKER OVERLAP DEBUG: Stroke and fill are different colors - processing separately")
                 applyDualUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
             }
         } else {
             // Only stroke or only fill: simple union
-            print("🔍 MARKER OVERLAP DEBUG: Single color mode - applying simple union")
             applySingleUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
         }
     }
@@ -759,13 +743,8 @@ extension DrawingCanvas {
             
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
             
-            print("🔍 MARKER OVERLAP DEBUG: About to update shape at index \(shapeIndex)")
-            print("🔍 MARKER OVERLAP DEBUG: Current shapes count: \(document.layers[layerIndex].shapes.count)")
-            
             // Update the marker stroke with the cleaned path
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
-            
-            print("🔍 MARKER OVERLAP DEBUG: ✅ Updated shape at index \(shapeIndex)")
             print("🖊️ MARKER: Applied self-union to remove overlapping areas within marker stroke")
         } else {
             print("🖊️ MARKER: Self-union operation failed, keeping original path")
@@ -810,9 +789,6 @@ extension DrawingCanvas {
                     
                     let finalVectorPath = VectorPath(cgPath: finalPath)
                     
-                    print("🔍 MARKER OVERLAP DEBUG: About to update shape at index \(shapeIndex)")
-                    print("🔍 MARKER OVERLAP DEBUG: Current shapes count: \(document.layers[layerIndex].shapes.count)")
-                    
                     // Update the marker stroke with the combined path and remove the stroke style
                     var updatedShape = markerStroke
                     updatedShape.path = finalVectorPath
@@ -823,8 +799,6 @@ extension DrawingCanvas {
                     )
                     
                     document.layers[layerIndex].shapes[shapeIndex] = updatedShape
-                    
-                    print("🔍 MARKER OVERLAP DEBUG: ✅ Updated shape at index \(shapeIndex) with expanded stroke combined")
                     print("🖊️ MARKER: Applied expanded stroke union - stroke and fill combined as single shape")
                 } else {
                     print("🖊️ MARKER: Final union operation failed, keeping original path")

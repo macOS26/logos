@@ -179,9 +179,6 @@ extension DrawingCanvas {
                         // Show curve tangent to the existing outgoing handle (like Adobe Illustrator)
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         
-                        print("🔧 DEBUG STEP 1: Rubber band preview - CURVE")
-                        print("   Last point \(lastPointIndex) has outgoing handle at: (\(lastControl2.x), \(lastControl2.y))")
-                        
                         // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
                         // Step 3 uses: control1: lastControl2, control2: targetPoint
                         // This creates natural curves without hooks
@@ -190,7 +187,6 @@ extension DrawingCanvas {
                             control1: lastControl2Location,
                             control2: canvasMouseLocation
                         )
-                        print("   ✅ Rubber band curve uses SAME math as step 2")
                         
                     } else {
                         // STRAIGHT RUBBER BAND: Previous point is corner point (no outgoing handle)

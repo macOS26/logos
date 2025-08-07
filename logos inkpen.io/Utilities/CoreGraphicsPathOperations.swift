@@ -32,27 +32,18 @@ public class CoreGraphicsPathOperations {
         
         // CRASH FIX: Special handling for self-union (same path with itself)
         if pathA === pathB {
-            print("🔍 UNION DEBUG: === SELF-UNION OPERATION (pathA === pathB) ===")
             // For self-union, we can often just return the original path if it's already well-formed
             // or use a different approach that's more stable
             let pathBounds = pathA.boundingBox
             guard isFinite(pathBounds) && !pathBounds.isNull else {
-                print("⚠️ CoreGraphics: Invalid path bounds for self-union, returning nil")
-                print("🔍 UNION DEBUG: === SELF-UNION ABORTED (invalid bounds) ===")
                 return nil
             }
-            
-            print("🔍 UNION DEBUG: Path bounds are valid, proceeding with self-union")
             
             // Try the union operation with safety checks
             let result = pathA.union(pathA, using: fillRule)
             guard !result.isEmpty && isFinite(result.boundingBox) else {
-                print("⚠️ CoreGraphics: Self-union produced invalid result, returning original")
-                print("🔍 UNION DEBUG: === SELF-UNION RETURNING ORIGINAL (invalid result) ===")
                 return pathA
             }
-            print("🔍 UNION DEBUG: ✅ Self-union successful, returning result")
-            print("🔍 UNION DEBUG: === SELF-UNION COMPLETED ===")
             return result
         }
         

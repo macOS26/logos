@@ -467,6 +467,7 @@ struct ProfessionalBezierMathematics {
 
 extension VectorPoint {
     /// Linear interpolation between two points
+    /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders for batch operations
     static func lerp(_ a: VectorPoint, _ b: VectorPoint, _ t: Double) -> VectorPoint {
         return VectorPoint(
             a.x + t * (b.x - a.x),
@@ -474,11 +475,53 @@ extension VectorPoint {
         )
     }
     
+    /// Batch linear interpolation between multiple point pairs
+    /// 🚀 PHASE 6: GPU-accelerated vector operations
+    static func lerpBatch(_ startPoints: [VectorPoint], _ endPoints: [VectorPoint], _ t: Double) -> [VectorPoint] {
+        guard startPoints.count == endPoints.count else { return [] }
+        
+        // Convert to CGPoint for GPU processing
+        let startCGPoints = startPoints.map { CGPoint(x: $0.x, y: $0.y) }
+        let endCGPoints = endPoints.map { CGPoint(x: $0.x, y: $0.y) }
+        
+        // 🚀 Try GPU acceleration for large batches
+        if startPoints.count >= 20, let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.lerpVectorsGPU(from: startCGPoints, to: endCGPoints, t: Float(t))
+            return results.map { VectorPoint($0) }
+        }
+        
+        // CPU fallback for small batches
+        return zip(startPoints, endPoints).map { start, end in
+            VectorPoint.lerp(start, end, t)
+        }
+    }
+    
     /// Distance between two points
     func distance(to other: VectorPoint) -> Double {
         let dx = self.x - other.x
         let dy = self.y - other.y
         return sqrt(dx * dx + dy * dy)
+    }
+    
+    /// Batch distance calculations
+    /// 🚀 PHASE 6: GPU-accelerated distance calculations
+    static func distancesBatch(from sourcePoints: [VectorPoint], to targetPoints: [VectorPoint]) -> [Double] {
+        guard sourcePoints.count == targetPoints.count else { return [] }
+        
+        // Convert to CGPoint for GPU processing
+        let sourceCGPoints = sourcePoints.map { CGPoint(x: $0.x, y: $0.y) }
+        let targetCGPoints = targetPoints.map { CGPoint(x: $0.x, y: $0.y) }
+        
+        // 🚀 Try GPU acceleration for large batches
+        if sourcePoints.count >= 20, let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.calculateDistancesGPU(from: sourceCGPoints, to: targetCGPoints)
+            return results.map { Double($0) }
+        }
+        
+        // CPU fallback for small batches
+        return zip(sourcePoints, targetPoints).map { source, target in
+            source.distance(to: target)
+        }
     }
     
     /// Angle from this point to another point
@@ -491,6 +534,22 @@ extension VectorPoint {
         let length = sqrt(x * x + y * y)
         guard length > 1e-10 else { return VectorPoint(0, 0) }
         return VectorPoint(x / length, y / length)
+    }
+    
+    /// Batch normalize multiple vectors
+    /// 🚀 PHASE 6: GPU-accelerated vector normalization
+    static func normalizeBatch(_ vectors: [VectorPoint]) -> [VectorPoint] {
+        // Convert to CGPoint for GPU processing
+        let cgVectors = vectors.map { CGPoint(x: $0.x, y: $0.y) }
+        
+        // 🚀 Try GPU acceleration for large batches
+        if vectors.count >= 20, let metalEngine = MetalComputeEngine.shared {
+            let results = metalEngine.normalizeVectorsGPU(cgVectors)
+            return results.map { VectorPoint($0) }
+        }
+        
+        // CPU fallback for small batches
+        return vectors.map { $0.normalized }
     }
     
     /// Vector length/magnitude

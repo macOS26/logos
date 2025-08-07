@@ -123,7 +123,7 @@ extension DrawingCanvas {
             }
         }
         
-        print("🔧 DEBUG STEP 3: Path CLOSED - final curve creation")
+
         print("✅ SUCCESSFULLY CLOSED BEZIER PATH with \(bezierPoints.count) points using document defaults")
         print("Path elements: \(closedPath.elements.count) (including close)")
         print("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves")

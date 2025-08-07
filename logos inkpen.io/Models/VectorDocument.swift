@@ -462,7 +462,7 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Debug function to print current document state
     func debugCurrentState() {
-        print("🔍 DOCUMENT DEBUG STATE:")
+
         print("   Total layers: \(layers.count)")
         print("   Selected layer index: \(selectedLayerIndex ?? -1)")
         for (index, layer) in layers.enumerated() {

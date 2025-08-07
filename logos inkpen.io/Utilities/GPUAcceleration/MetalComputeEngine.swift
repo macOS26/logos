@@ -16,6 +16,14 @@ class MetalComputeEngine {
     private var collisionDetectionPipeline: MTLComputePipelineState?
     private var pathRenderingPipeline: MTLComputePipelineState?
     
+    // Phase 6: Vector Operations
+    private var vectorDistancePipeline: MTLComputePipelineState?
+    private var vectorNormalizePipeline: MTLComputePipelineState?
+    private var vectorLerpPipeline: MTLComputePipelineState?
+    
+    // Phase 7: Handle Calculations
+    private var handleCalculationPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
@@ -68,6 +76,22 @@ class MetalComputeEngine {
             // Path rendering
             if let function = library.makeFunction(name: "render_path_points") {
                 pathRenderingPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 6: Vector operations
+            if let function = library.makeFunction(name: "calculate_vector_distances") {
+                vectorDistancePipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "normalize_vectors") {
+                vectorNormalizePipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "lerp_vectors") {
+                vectorLerpPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 7: Handle calculations
+            if let function = library.makeFunction(name: "calculate_linked_handles") {
+                handleCalculationPipeline = try device.makeComputePipelineState(function: function)
             }
             
         } catch {
@@ -335,6 +359,199 @@ class MetalComputeEngine {
         return result
     }
     
+    // MARK: - Phase 6: GPU Vector Operations
+    
+    func calculateDistancesGPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> [Float] {
+        guard sourcePoints.count == targetPoints.count,
+              let pipeline = vectorDistancePipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return calculateDistancesCPU(from: sourcePoints, to: targetPoints)
+        }
+        
+        let pointCount = sourcePoints.count
+        let metalSourcePoints = sourcePoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        let metalTargetPoints = targetPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let sourceBuffer = device.makeBuffer(bytes: metalSourcePoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let targetBuffer = device.makeBuffer(bytes: metalTargetPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let distanceBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(sourceBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(targetBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(distanceBuffer, offset: 0, index: 2)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = distanceBuffer?.contents().bindMemory(to: Float.self, capacity: pointCount) else {
+            return calculateDistancesCPU(from: sourcePoints, to: targetPoints)
+        }
+        
+        var results: [Float] = []
+        for i in 0..<pointCount {
+            results.append(resultPointer[i])
+        }
+        
+        return results
+    }
+    
+    func normalizeVectorsGPU(_ vectors: [CGPoint]) -> [CGPoint] {
+        guard let pipeline = vectorNormalizePipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return normalizeVectorsCPU(vectors)
+        }
+        
+        let vectorCount = vectors.count
+        let metalVectors = vectors.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let inputBuffer = device.makeBuffer(bytes: metalVectors, length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: vectorCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 1)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(vectorCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (vectorCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: vectorCount) else {
+            return normalizeVectorsCPU(vectors)
+        }
+        
+        var results: [CGPoint] = []
+        for i in 0..<vectorCount {
+            let point = resultPointer[i]
+            results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+        }
+        
+        return results
+    }
+    
+    func lerpVectorsGPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> [CGPoint] {
+        guard startPoints.count == endPoints.count,
+              let pipeline = vectorLerpPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return lerpVectorsCPU(from: startPoints, to: endPoints, t: t)
+        }
+        
+        let pointCount = startPoints.count
+        let metalStartPoints = startPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        let metalEndPoints = endPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let startBuffer = device.makeBuffer(bytes: metalStartPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let endBuffer = device.makeBuffer(bytes: metalEndPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        var lerpFactor = t
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(startBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(endBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 2)
+        computeEncoder.setBytes(&lerpFactor, length: MemoryLayout<Float>.stride, index: 3)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: pointCount) else {
+            return lerpVectorsCPU(from: startPoints, to: endPoints, t: t)
+        }
+        
+        var results: [CGPoint] = []
+        for i in 0..<pointCount {
+            let point = resultPointer[i]
+            results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+        }
+        
+        return results
+    }
+    
+    // MARK: - Phase 7: GPU Handle Calculations
+    
+    func calculateLinkedHandlesGPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> [CGPoint] {
+        guard anchorPoints.count == draggedHandles.count && 
+              draggedHandles.count == originalOppositeHandles.count,
+              let pipeline = handleCalculationPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return calculateLinkedHandlesCPU(anchorPoints: anchorPoints, draggedHandles: draggedHandles, originalOppositeHandles: originalOppositeHandles)
+        }
+        
+        let pointCount = anchorPoints.count
+        let metalAnchorPoints = anchorPoints.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        let metalDraggedHandles = draggedHandles.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        let metalOriginalHandles = originalOppositeHandles.map { Point2D(x: Float($0.x), y: Float($0.y)) }
+        
+        // Create buffers
+        let anchorBuffer = device.makeBuffer(bytes: metalAnchorPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let draggedBuffer = device.makeBuffer(bytes: metalDraggedHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let originalBuffer = device.makeBuffer(bytes: metalOriginalHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(anchorBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(draggedBuffer, offset: 0, index: 1)
+        computeEncoder.setBuffer(originalBuffer, offset: 0, index: 2)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 3)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: pointCount) else {
+            return calculateLinkedHandlesCPU(anchorPoints: anchorPoints, draggedHandles: draggedHandles, originalOppositeHandles: originalOppositeHandles)
+        }
+        
+        var results: [CGPoint] = []
+        for i in 0..<pointCount {
+            let point = resultPointer[i]
+            results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+        }
+        
+        return results
+    }
+    
     // MARK: - Phase 2: GPU Bezier Curve Calculations
     
     func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> [CGPoint] {
@@ -495,6 +712,91 @@ class MetalComputeEngine {
         }
         
         return renderedPoints
+    }
+    
+    private func calculateDistancesCPU(from sourcePoints: [CGPoint], to targetPoints: [CGPoint]) -> [Float] {
+        guard sourcePoints.count == targetPoints.count else { return [] }
+        
+        var distances: [Float] = []
+        for i in 0..<sourcePoints.count {
+            let dx = Float(sourcePoints[i].x - targetPoints[i].x)
+            let dy = Float(sourcePoints[i].y - targetPoints[i].y)
+            distances.append(sqrt(dx * dx + dy * dy))
+        }
+        return distances
+    }
+    
+    private func normalizeVectorsCPU(_ vectors: [CGPoint]) -> [CGPoint] {
+        return vectors.map { vector in
+            let length = sqrt(vector.x * vector.x + vector.y * vector.y)
+            guard length > 1e-10 else { return CGPoint.zero }
+            return CGPoint(x: vector.x / length, y: vector.y / length)
+        }
+    }
+    
+    private func lerpVectorsCPU(from startPoints: [CGPoint], to endPoints: [CGPoint], t: Float) -> [CGPoint] {
+        guard startPoints.count == endPoints.count else { return [] }
+        
+        var results: [CGPoint] = []
+        let tCG = CGFloat(t)
+        for i in 0..<startPoints.count {
+            let start = startPoints[i]
+            let end = endPoints[i]
+            let lerped = CGPoint(
+                x: start.x + tCG * (end.x - start.x),
+                y: start.y + tCG * (end.y - start.y)
+            )
+            results.append(lerped)
+        }
+        return results
+    }
+    
+    private func calculateLinkedHandlesCPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> [CGPoint] {
+        guard anchorPoints.count == draggedHandles.count && 
+              draggedHandles.count == originalOppositeHandles.count else { return [] }
+        
+        var results: [CGPoint] = []
+        
+        for i in 0..<anchorPoints.count {
+            let anchorPoint = anchorPoints[i]
+            let draggedHandle = draggedHandles[i]
+            let originalOppositeHandle = originalOppositeHandles[i]
+            
+            // Vector from anchor to dragged handle
+            let draggedVector = CGPoint(
+                x: draggedHandle.x - anchorPoint.x,
+                y: draggedHandle.y - anchorPoint.y
+            )
+            
+            // Keep the original opposite handle length
+            let originalVector = CGPoint(
+                x: originalOppositeHandle.x - anchorPoint.x,
+                y: originalOppositeHandle.y - anchorPoint.y
+            )
+            let originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y)
+            
+            // Create opposite vector (180° from dragged handle) with original length
+            let draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y)
+            guard draggedLength > 0.1 else { 
+                results.append(originalOppositeHandle)
+                continue
+            }
+            
+            let normalizedDragged = CGPoint(
+                x: draggedVector.x / draggedLength,
+                y: draggedVector.y / draggedLength
+            )
+            
+            // Opposite direction with original length
+            let linkedHandle = CGPoint(
+                x: anchorPoint.x - normalizedDragged.x * originalLength,
+                y: anchorPoint.y - normalizedDragged.y * originalLength
+            )
+            
+            results.append(linkedHandle)
+        }
+        
+        return results
     }
     
     // MARK: - Performance Monitoring
@@ -703,6 +1005,93 @@ extension MetalComputeEngine {
             }
             
             outputPoints[index] = result;
+        }
+        
+        // Phase 6: Vector Operations
+        kernel void calculate_vector_distances(
+            device const Point2D* sourcePoints [[buffer(0)]],
+            device const Point2D* targetPoints [[buffer(1)]],
+            device float* distances [[buffer(2)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            Point2D source = sourcePoints[index];
+            Point2D target = targetPoints[index];
+            
+            float dx = source.x - target.x;
+            float dy = source.y - target.y;
+            
+            distances[index] = sqrt(dx * dx + dy * dy);
+        }
+        
+        kernel void normalize_vectors(
+            device const Point2D* inputVectors [[buffer(0)]],
+            device Point2D* outputVectors [[buffer(1)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            Point2D vector = inputVectors[index];
+            
+            float length = sqrt(vector.x * vector.x + vector.y * vector.y);
+            
+            if (length > 1e-10) {
+                outputVectors[index] = {vector.x / length, vector.y / length};
+            } else {
+                outputVectors[index] = {0.0, 0.0};
+            }
+        }
+        
+        kernel void lerp_vectors(
+            device const Point2D* startPoints [[buffer(0)]],
+            device const Point2D* endPoints [[buffer(1)]],
+            device Point2D* outputPoints [[buffer(2)]],
+            constant float& t [[buffer(3)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            Point2D start = startPoints[index];
+            Point2D end = endPoints[index];
+            
+            Point2D result;
+            result.x = start.x + t * (end.x - start.x);
+            result.y = start.y + t * (end.y - start.y);
+            
+            outputPoints[index] = result;
+        }
+        
+        // Phase 7: Handle Calculations for Bezier curve editing
+        kernel void calculate_linked_handles(
+            device const Point2D* anchorPoints [[buffer(0)]],
+            device const Point2D* draggedHandles [[buffer(1)]],
+            device const Point2D* originalOppositeHandles [[buffer(2)]],
+            device Point2D* linkedHandles [[buffer(3)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            Point2D anchor = anchorPoints[index];
+            Point2D dragged = draggedHandles[index];
+            Point2D originalOpposite = originalOppositeHandles[index];
+            
+            // Vector from anchor to dragged handle
+            Point2D draggedVector = {dragged.x - anchor.x, dragged.y - anchor.y};
+            
+            // Keep the original opposite handle length
+            Point2D originalVector = {originalOpposite.x - anchor.x, originalOpposite.y - anchor.y};
+            float originalLength = sqrt(originalVector.x * originalVector.x + originalVector.y * originalVector.y);
+            
+            // Create opposite vector (180° from dragged handle) with original length
+            float draggedLength = sqrt(draggedVector.x * draggedVector.x + draggedVector.y * draggedVector.y);
+            
+            if (draggedLength <= 0.1) {
+                // Avoid division by zero - return original handle
+                linkedHandles[index] = originalOpposite;
+                return;
+            }
+            
+            Point2D normalizedDragged = {draggedVector.x / draggedLength, draggedVector.y / draggedLength};
+            
+            // Opposite direction with original length
+            Point2D linkedHandle;
+            linkedHandle.x = anchor.x - normalizedDragged.x * originalLength;
+            linkedHandle.y = anchor.y - normalizedDragged.y * originalLength;
+            
+            linkedHandles[index] = linkedHandle;
         }
         """
     }

@@ -170,19 +170,10 @@ extension DrawingCanvas {
     }
     
     internal func handleBrushDragUpdate(at location: CGPoint) {
-        guard isBrushDrawing else { 
-            print("🖌️ BRUSH DEBUG: handleBrushDragUpdate called but isBrushDrawing is false")
-            return 
-        }
-        
-        print("🖌️ BRUSH DEBUG: handleBrushDragUpdate called at (\(location.x), \(location.y))")
+        guard isBrushDrawing else { return }
         
         // Get pressure using smart detection (real or simulated)
         let pressure = PressureManager.shared.getPressure(for: location, sensitivity: document.currentBrushPressureSensitivity)
-        
-        print("🖌️ BRUSH DEBUG: Got pressure: \(pressure)")
-        print("🖌️ BRUSH DEBUG: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)")
-        print("🖌️ BRUSH DEBUG: Current pressure: \(PressureManager.shared.currentPressure)")
         
         // Add point to raw path with pressure data
         let newPoint = BrushPoint(location: location, pressure: pressure, timestamp: Date())
@@ -190,8 +181,6 @@ extension DrawingCanvas {
         
         // Update preview with new point
         updateBrushPreview()
-        
-        print("🖌️ BRUSH DEBUG: Added point, total points: \(brushRawPoints.count)")
     }
     
 
@@ -372,14 +361,7 @@ extension DrawingCanvas {
             
             // Apply self-union operation if remove overlap is enabled
             if document.brushRemoveOverlap {
-                print("🔍 MAIN DEBUG: === BRUSH REMOVE OVERLAP ENABLED ===")
-                print("🔍 MAIN DEBUG: About to call applySelfUnionToBrushStroke with shapeIndex: \(shapeIndex)")
-                print("🔍 MAIN DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes BEFORE remove overlap")
-                
                 applySelfUnionToBrushStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
-                
-                print("🔍 MAIN DEBUG: Layer \(layerIndex) has \(document.layers[layerIndex].shapes.count) shapes AFTER remove overlap")
-                print("🔍 MAIN DEBUG: === BRUSH REMOVE OVERLAP COMPLETED ===")
             }
         } else {
             print("🚨 BRUSH ERROR: Could not find activeBrushShape in layer! ID: \(activeBrushShape.id)")
@@ -392,12 +374,6 @@ extension DrawingCanvas {
     
     /// Apply self-union operation to remove overlapping areas within the single brush stroke
     private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
-        print("🔍 REMOVE OVERLAP DEBUG: === STARTING SELF-UNION OPERATION ===")
-        print("🔍 REMOVE OVERLAP DEBUG: Target shapeIndex: \(shapeIndex), layerIndex: \(layerIndex)")
-        print("🔍 REMOVE OVERLAP DEBUG: BEFORE operation - Layer has \(document.layers[layerIndex].shapes.count) shapes:")
-        for (i, shape) in document.layers[layerIndex].shapes.enumerated() {
-            print("🔍 REMOVE OVERLAP DEBUG:   Shape \(i): '\(shape.name)' ID: \(shape.id)")
-        }
         
         guard shapeIndex < document.layers[layerIndex].shapes.count else { 
             print("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes")
@@ -413,7 +389,7 @@ extension DrawingCanvas {
             return
         }
         
-        print("🔍 REMOVE OVERLAP DEBUG: ✅ Verified correct shape - proceeding with self-union")
+
         
         // Convert VectorPath to CGPath for boolean operations
         let originalPath = brushStroke.path.cgPath
@@ -442,23 +418,13 @@ extension DrawingCanvas {
             
             let cleanedVectorPath = VectorPath(cgPath: cleanedPath)
             
-            print("🔍 REMOVE OVERLAP DEBUG: About to update shape at index \(shapeIndex)")
-            print("🔍 REMOVE OVERLAP DEBUG: Current shapes count: \(document.layers[layerIndex].shapes.count)")
-            
             // Update the brush stroke with the cleaned path
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
-            
-            print("🔍 REMOVE OVERLAP DEBUG: ✅ Updated path for shape at index \(shapeIndex)")
-            print("🔍 REMOVE OVERLAP DEBUG: AFTER operation - Layer has \(document.layers[layerIndex].shapes.count) shapes:")
-            for (i, shape) in document.layers[layerIndex].shapes.enumerated() {
-                print("🔍 REMOVE OVERLAP DEBUG:   Shape \(i): '\(shape.name)' ID: \(shape.id)")
-            }
-            print("🔍 REMOVE OVERLAP DEBUG: === COMPLETED SELF-UNION OPERATION ===")
             
             print("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke")
         } else {
             print("🖌️ BRUSH: Self-union operation failed, keeping original path")
-            print("🔍 REMOVE OVERLAP DEBUG: === ABORTED SELF-UNION OPERATION (union failed) ===")
+
         }
     }
 

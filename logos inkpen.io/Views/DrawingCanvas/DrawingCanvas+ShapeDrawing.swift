@@ -267,13 +267,6 @@ extension DrawingCanvas {
             let dragY = currentLocation.y >= startPoint.y ? "DOWN" : "UP"
             let dragDirection = "\(dragX)_\(dragY)"
             
-            print("🔺 RIGHT TRIANGLE DEBUG:")
-            print("  startPoint: (\(startPoint.x), \(startPoint.y))")
-            print("  currentLocation: (\(currentLocation.x), \(currentLocation.y))")
-            print("  rect: \(rect)")
-            print("  dragX: \(dragX), dragY: \(dragY)")
-            print("  dragDirection: \(dragDirection)")
-            
             currentPath = createRightTrianglePath(rect: rect, dragDirection: dragDirection)
         case .acuteTriangle:
             // FIXED: Pin triangle from start point like rectangle tool

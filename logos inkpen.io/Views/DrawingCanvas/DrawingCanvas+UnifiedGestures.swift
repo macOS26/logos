@@ -17,51 +17,7 @@ extension DrawingCanvas {
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
-        // PERFORMANCE OPTIMIZATION: Wrap extensive debug logging in conditional compilation
-        #if DEBUG_GESTURES
-        print("🎯 UNIFIED TAP at screen: \(location) canvas: \(canvasLocation)")
-        print("🎯 UNIFIED: This is a SINGLE CLICK, not a drag")
-        print("🎯 UNIFIED: Current tool: \(document.currentTool.rawValue)")
-        
-        // DEBUGGING: Test text hit detection immediately
-        let textHitResult = findTextAt(location: canvasLocation)
-        print("🔍 DEBUG: Text hit test result: \(textHitResult?.uuidString.prefix(8) ?? "nil")")
-        
-        // DEBUGGING: Show all text boxes and their hit areas
-        print("📝 DEBUG: Document has \(document.textObjects.count) text boxes:")
-        for (index, textObj) in document.textObjects.enumerated() {
-            print("  [\(index)] UUID: \(textObj.id.uuidString.prefix(8))")
-            print("      Content: '\(textObj.content.prefix(30))'")
-            print("      Position: \(textObj.position)")
-            print("      Bounds: \(textObj.bounds)")
-            print("      Visible: \(textObj.isVisible), Locked: \(textObj.isLocked)")
-            
-            // Calculate hit areas (same logic as findTextAt)
-            let textContentArea = CGRect(
-                x: textObj.position.x,
-                y: textObj.position.y,
-                width: max(textObj.bounds.width, 200.0),
-                height: max(textObj.bounds.height, 60.0)
-            )
-            let exactBounds = CGRect(
-                x: textObj.position.x + textObj.bounds.minX,
-                y: textObj.position.y + textObj.bounds.minY,
-                width: textObj.bounds.width,
-                height: textObj.bounds.height
-            )
-            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
-            
-            print("      Hit Areas:")
-            print("        Content: \(textContentArea)")
-            print("        Exact: \(exactBounds)")
-            print("        Expanded: \(expandedBounds)")
-            
-            let hits = textContentArea.contains(canvasLocation) || 
-                      exactBounds.contains(canvasLocation) || 
-                      expandedBounds.contains(canvasLocation)
-            print("        SHOULD HIT: \(hits)")
-        }
-        #endif
+
         
         // Cancel bezier drawing for all tools except bezier pen
         if document.currentTool != .bezierPen && isBezierDrawing {
