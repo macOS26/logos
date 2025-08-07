@@ -21,8 +21,10 @@ extension DrawingCanvas {
     /// Convert multiple screen coordinates to canvas coordinates efficiently
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func screenToCanvas(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
+        // TEMPORARILY DISABLED: Metal acceleration causing zoom/position issues
+        // TODO: Re-enable when Metal coordinate transformations are fixed
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        if let metalEngine = MetalComputeEngine.shared {
+        if false && MetalComputeEngine.shared != nil {
             // Create inverse transformation matrix for screen-to-canvas
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
@@ -34,7 +36,7 @@ extension DrawingCanvas {
                 tx: -preciseOffsetX / preciseZoom, ty: -preciseOffsetY / preciseZoom
             )
             
-            return metalEngine.transformPointsGPU(points, transform: inverseTransform)
+            return MetalComputeEngine.shared!.transformPointsGPU(points, transform: inverseTransform)
         } else {
             // CPU fallback
             return screenToCanvasCPU(points, geometry: geometry)
@@ -71,8 +73,10 @@ extension DrawingCanvas {
     /// Convert multiple canvas coordinates to screen coordinates efficiently
     /// 🚀 GPU-ACCELERATED: Uses Metal compute shaders (GPU required)
     internal func canvasToScreen(_ points: [CGPoint], geometry: GeometryProxy) -> [CGPoint] {
+        // TEMPORARILY DISABLED: Metal acceleration causing zoom/position issues
+        // TODO: Re-enable when Metal coordinate transformations are fixed
         // 🚀 GPU-ONLY: Use Metal for all coordinate transformations
-        if let metalEngine = MetalComputeEngine.shared {
+        if false && MetalComputeEngine.shared != nil {
             // Create transformation matrix for canvas-to-screen
             let preciseOffsetX = Double(document.canvasOffset.x)
             let preciseOffsetY = Double(document.canvasOffset.y)
@@ -84,7 +88,7 @@ extension DrawingCanvas {
                 tx: preciseOffsetX, ty: preciseOffsetY
             )
             
-            return metalEngine.transformPointsGPU(points, transform: transform)
+            return MetalComputeEngine.shared!.transformPointsGPU(points, transform: transform)
         } else {
             // CPU fallback
             return canvasToScreenCPU(points, geometry: geometry)

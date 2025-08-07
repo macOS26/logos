@@ -223,6 +223,23 @@ extension DrawingCanvas {
                     handleUnifiedDragEnded(value: value, geometry: geometry)
                 }
         )
-        // ... rest of your existing gesture modifiers
+        .simultaneousGesture(
+            // PROFESSIONAL ZOOM GESTURE - Separate from drag to avoid conflicts
+            MagnificationGesture()
+                .onChanged { value in
+                    handleZoomGestureChanged(value: value, geometry: geometry)
+                }
+                .onEnded { value in
+                    handleZoomGestureEnded(value: value, geometry: geometry)
+                }
+        )
+        .onChange(of: document.zoomRequest) {
+            if let request = document.zoomRequest {
+                handleZoomRequest(request, geometry: geometry)
+            }
+        }
+        .contextMenu {
+            directSelectionContextMenu
+        }
     }
 }
