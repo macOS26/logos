@@ -5,6 +5,13 @@ import Foundation
 enum MetalError: Error {
     case libraryCreationFailed
     case pipelineCreationFailed
+    case deviceNotAvailable
+    case commandBufferCreationFailed
+    case computeEncoderCreationFailed
+    case bufferCreationFailed
+    case pipelineNotAvailable
+    case shaderCompilationFailed
+    case operationFailed(String)
 }
 
 /// Phase 2: Metal Compute Shaders for GPU-accelerated Core Graphics math
@@ -1301,8 +1308,10 @@ class MetalComputeEngine {
             smoothedPoints.append(q2)
         }
         
-        // Last point stays the same
-        smoothedPoints.append(points.last!)
+        // Last point stays the same - safely access the last element
+        if let lastPoint = points.last {
+            smoothedPoints.append(lastPoint)
+        }
         
         return smoothedPoints
     }
