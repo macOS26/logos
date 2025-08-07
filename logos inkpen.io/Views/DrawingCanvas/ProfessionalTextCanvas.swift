@@ -454,7 +454,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     }
     
     func makeNSView(context: Context) -> NSTextView {
-        let textView = NSTextView()
+        let textView = DisabledContextMenuTextView()
         
         // CRITICAL: Configure NSTextView to NEVER grow horizontally, only wrap text
         textView.isEditable = viewModel.isEditing && isEditingAllowed
@@ -1486,4 +1486,17 @@ class ProfessionalTextViewModel: ObservableObject {
         
         return VectorPath(elements: elements, isClosed: false)
     }
-} 
+}
+
+// MARK: - Custom NSTextView with Disabled Context Menu
+class DisabledContextMenuTextView: NSTextView {
+    override func menu(for event: NSEvent) -> NSMenu? {
+        // Return nil to completely disable the context menu
+        return nil
+    }
+    
+    override func rightMouseDown(with event: NSEvent) {
+        // Consume right mouse events to prevent context menu
+        // Don't call super to prevent the default context menu
+    }
+}
