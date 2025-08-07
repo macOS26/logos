@@ -1321,6 +1321,12 @@ extension MetalComputeEngine {
             float y;
         };
         
+        struct PolygonParams {
+            float radius;
+            uint sides;
+            float startAngle;
+        };
+        
         // Phase 2: Douglas-Peucker distance calculation
         kernel void calculate_distances(
             device const Point2D* points [[buffer(0)]],

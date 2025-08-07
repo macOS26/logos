@@ -1,6 +1,7 @@
 import SwiftUI
 import Metal
 import Foundation
+import Darwin
 
 /// Optimized performance monitor that doesn't add CPU overhead
 class OptimizedPerformanceMonitor: ObservableObject {
@@ -29,6 +30,10 @@ class OptimizedPerformanceMonitor: ObservableObject {
     // Activity monitor fallback
     private var activityFrameCount: Int = 0
     private var activityLastFrameTime: CFTimeInterval = 0
+    
+    // CPU tick tracking for accurate CPU usage
+    private var previousTotalTicks: UInt32?
+    private var previousIdleTicks: UInt32 = 0
     
     init() {
         setupOptimizedTracking()
@@ -130,22 +135,54 @@ class OptimizedPerformanceMonitor: ObservableObject {
     }
     
     private func updateCPUUsage() {
-        // Use a simpler, more reliable CPU monitoring approach
-        let processInfo = ProcessInfo.processInfo
+        // Use host_statistics for accurate CPU usage
+        var cpuLoad = host_cpu_load_info()
+        var count = mach_msg_type_number_t(MemoryLayout<host_cpu_load_info>.size) / 4
         
-        // Get current system load (simple approximation)
+        let result = withUnsafeMutablePointer(to: &cpuLoad) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                host_statistics(mach_host_self(), HOST_CPU_LOAD_INFO, $0, &count)
+            }
+        }
+        
+        if result == KERN_SUCCESS {
+            // Calculate CPU usage from ticks
+            let totalTicks = cpuLoad.cpu_ticks.0 + cpuLoad.cpu_ticks.1 + cpuLoad.cpu_ticks.2 + cpuLoad.cpu_ticks.3
+            
+            if let previousTotalTicks = previousTotalTicks {
+                let totalDelta = Int(totalTicks) - Int(previousTotalTicks)
+                let idleDelta = Int(cpuLoad.cpu_ticks.3) - Int(previousIdleTicks)
+                
+                if totalDelta > 0 {
+                    let cpuUsagePercent = Double(totalDelta - idleDelta) / Double(totalDelta) * 100.0
+                    
+                    DispatchQueue.main.async {
+                        self.cpuUsage = min(100.0, max(0.0, cpuUsagePercent))
+                    }
+                }
+            }
+            
+            previousTotalTicks = totalTicks
+            previousIdleTicks = cpuLoad.cpu_ticks.3
+        } else {
+            // Fallback: Use system load average
+            updateCPUUsingLoadAverage()
+        }
+    }
+    
+    private func updateCPUUsingLoadAverage() {
         var loadAvg = [Double](repeating: 0, count: 3)
         let result = getloadavg(&loadAvg, 3)
         
         if result > 0 {
-            // Use 1-minute load average as CPU indicator
+            let processInfo = ProcessInfo.processInfo
             let cpuLoad = min(100.0, loadAvg[0] * 100.0 / Double(processInfo.processorCount))
             
             DispatchQueue.main.async {
                 self.cpuUsage = cpuLoad
             }
         } else {
-            // Fallback: Use activity monitor approach
+            // Final fallback: Use activity monitor approach
             updateCPUUsingActivityMonitor()
         }
     }
@@ -157,7 +194,7 @@ class OptimizedPerformanceMonitor: ObservableObject {
         activityFrameCount += 1
         
         if now - activityLastFrameTime >= 2.0 { // Update every 2 seconds
-            let estimatedCPU = min(100.0, Double(activityFrameCount)) // Direct frame count to CPU %
+            let estimatedCPU = min(100.0, Double(activityFrameCount) * 2.0) // Scale by 2 for more realistic values
             
             DispatchQueue.main.async {
                 self.cpuUsage = estimatedCPU
