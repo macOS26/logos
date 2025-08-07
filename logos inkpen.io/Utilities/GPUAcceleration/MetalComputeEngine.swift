@@ -322,11 +322,17 @@ class MetalComputeEngine {
     
     // MARK: - Phase 4: GPU Collision Detection
     
-    func pointsInPolygonGPU(_ testPoints: [CGPoint], polygon: [CGPoint]) -> [Bool] {
-        guard let pipeline = collisionDetectionPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return pointsInPolygonCPU(testPoints, polygon: polygon)
+    func pointsInPolygonGPU(_ testPoints: [CGPoint], polygon: [CGPoint]) -> Result<[Bool], MetalError> {
+        guard let pipeline = collisionDetectionPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let testPointCount = testPoints.count
@@ -337,9 +343,11 @@ class MetalComputeEngine {
         let metalPolygonVertices = polygon.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let testPointsBuffer = device.makeBuffer(bytes: metalTestPoints, length: testPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let polygonBuffer = device.makeBuffer(bytes: metalPolygonVertices, length: polygonVertexCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let resultsBuffer = device.makeBuffer(length: testPointCount * MemoryLayout<Bool>.stride, options: .storageModeShared)
+        guard let testPointsBuffer = device.makeBuffer(bytes: metalTestPoints, length: testPointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let polygonBuffer = device.makeBuffer(bytes: metalPolygonVertices, length: polygonVertexCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let resultsBuffer = device.makeBuffer(length: testPointCount * MemoryLayout<Bool>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         var vertexCount = UInt32(polygonVertexCount)
         
         // Setup compute
@@ -360,16 +368,14 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = resultsBuffer?.contents().bindMemory(to: Bool.self, capacity: testPointCount) else {
-            return pointsInPolygonCPU(testPoints, polygon: polygon)
-        }
+        let resultPointer = resultsBuffer.contents().bindMemory(to: Bool.self, capacity: testPointCount)
         
         var results: [Bool] = []
         for i in 0..<testPointCount {
             results.append(resultPointer[i])
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 5: GPU Path Rendering
