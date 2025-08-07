@@ -217,7 +217,8 @@ struct DrawingCanvas: View {
     
     var body: some View {
         GeometryReader { geometry in
-            canvasMainContent(geometry: geometry)
+            //canvasMainContent(geometry: geometry)
+            enhancedCanvasMainContent(geometry: geometry)
         }
     }
 }

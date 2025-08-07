@@ -64,6 +64,9 @@ extension DrawingCanvas {
     internal func handleFreehandDragUpdate(at location: CGPoint) {
         guard isFreehandDrawing else { return }
         
+        // 🚀 OPTIMIZED: Track drawing performance
+        MetalDrawingOptimizer.shared.trackDrawingStart()
+        
         // Apply real-time smoothing for immediate visual feedback (if enabled)
         let smoothedLocation: CGPoint
         if document.settings.advancedSmoothingEnabled && document.settings.realTimeSmoothingEnabled {
@@ -80,14 +83,11 @@ extension DrawingCanvas {
         // Add both original and smoothed points (use smoothed for preview)
         freehandRawPoints.append(location)  // Keep original for final processing
         
+        // 🚀 OPTIMIZED: Prevent memory bloat and CPU overload
+        MetalDrawingOptimizer.shared.optimizePointCollection(&freehandRawPoints, maxPoints: 500)
+        
         // Update real-time preview with smoothed location
         updateFreehandPreview(smoothedLocation: smoothedLocation)
-        
-        // Limit raw points array to prevent memory issues
-        if freehandRawPoints.count > 1000 {
-            // Keep last 800 points
-            freehandRawPoints = Array(freehandRawPoints.suffix(800))
-        }
     }
     
     internal func handleFreehandDragEnd() {
@@ -157,22 +157,19 @@ extension DrawingCanvas {
             print("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
         }
         
-        // STEP 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
+        // STEP 2: 🚀 OPTIMIZED Douglas-Peucker simplification (Metal-accelerated when possible)
         let tolerance = document.settings.freehandSmoothingTolerance
-        let simplifiedPoints = document.settings.advancedSmoothingEnabled ? 
-            CurveSmoothing.improvedDouglassPeucker(
-                points: processedPoints,
-                tolerance: tolerance,
-                preserveSharpCorners: document.settings.preserveSharpCorners
-            ) :
-            douglasPeuckerSimplify(points: processedPoints, tolerance: tolerance)
+        let cgPoints = processedPoints.map { CGPoint(x: $0.x, y: $0.y) }
+        let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
+        let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
         
         print("🖊️ DOUGLAS-PEUCKER: Simplified to \(simplifiedPoints.count) points (tolerance: \(String(format: "%.1f", tolerance)))")
         
         // STEP 3: Convert to smooth bezier curves with adaptive tension
+        let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
         let smoothPath = document.settings.advancedSmoothingEnabled ? 
-            createAdvancedSmoothBezierPath(from: simplifiedPoints) :
-            createSmoothBezierPath(from: simplifiedPoints)
+            createAdvancedSmoothBezierPath(from: finalCGPoints) :
+            createSmoothBezierPath(from: finalCGPoints)
         
         // STEP 4: Update the final shape with professionally smooth curves
         updateFinalFreehandShape(with: smoothPath)

@@ -1133,13 +1133,44 @@ struct MainToolbarContent: ToolbarContent {
                     .progressViewStyle(CircularProgressViewStyle(tint: .blue))
                     .scaleEffect(0.8)
             }
+            
+            // 🎯 OPTIMIZED PERFORMANCE MONITOR (Low CPU Overhead)
+            LightweightPerformanceOverlay(monitor: OptimizedPerformanceMonitor.shared)
+                .onReceive(document.objectWillChange) { _ in
+                    // Only track when document actually changes (not continuously)
+                    OptimizedPerformanceMonitor.shared.trackDrawingEvent(
+                        elementCount: countActiveDrawElements(document: document)
+                    )
+                }
         }
         
-//        ToolbarItem(placement: .status) {
-//            Text("Zoom: \(Int(document.zoomLevel * 100))%")
-//                .font(.caption)
-//                .foregroundColor(.secondary)
-//        }
+        // Optional: Status bar item for zoom level
+        ToolbarItem(placement: .status) {
+            Text("Zoom: \(Int(document.zoomLevel * 100))%")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    // MARK: - Performance Tracking Helper
+    
+    private func countActiveDrawElements(document: VectorDocument) -> Int {
+        var count = 0
+        
+        // Count visible shapes in all layers
+        for layer in document.layers where layer.isVisible {
+            count += layer.shapes.count
+        }
+        
+        // Count text objects
+        count += document.textObjects.filter { $0.isVisible }.count
+        
+        // Count selection handles if any shapes are selected
+        if !document.selectedShapeIDs.isEmpty {
+            count += document.selectedShapeIDs.count * 8 // Each shape has ~8 selection handles
+        }
+        
+        return count
     }
     
     // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
