@@ -590,15 +590,20 @@ struct GradientFillSection: View {
     }
     
     func applyGradientToSelectedShapes() {
-        guard let gradient = currentGradient,
-              let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
+        guard let gradient = currentGradient else { return }
+        
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
         
         // Note: Undo stack saving is now handled by individual controls on mouse up/editing end
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+        for shapeID in activeShapeIDs {
+            // Find the shape across all layers
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                    break // Found the shape, no need to check other layers
+                }
             }
         }
     }
@@ -606,10 +611,9 @@ struct GradientFillSection: View {
     // MARK: - Static Helper Functions
     
     static func getSelectedShapeGradient(document: VectorDocument) -> VectorGradient? {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-              let fillStyle = shape.fillStyle,
+        let activeShapes = document.getActiveShapes()
+        guard let firstShape = activeShapes.first,
+              let fillStyle = firstShape.fillStyle,
               case .gradient(let gradient) = fillStyle.color else {
             return nil
         }

@@ -403,25 +403,30 @@ struct RGBInputSection: View {
             document.defaultStrokeColor = vectorColor
         }
         
-        // Apply to selected shapes
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // Apply to active shapes (regular or direct selection)
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    switch document.activeColorTarget {
-                    case .fill:
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        switch document.activeColorTarget {
+                        case .fill:
+                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+                            }
+                        case .stroke:
+                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
+                            }
                         }
-                    case .stroke:
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
-                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -429,7 +434,7 @@ struct RGBInputSection: View {
         
         // Apply to selected text objects
         if !document.selectedTextIDs.isEmpty {
-            if document.selectedShapeIDs.isEmpty {
+            if activeShapeIDs.isEmpty {
                 // Only save to undo stack if we didn't already save for shapes
                 document.saveToUndoStack()
             }

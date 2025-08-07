@@ -23,15 +23,19 @@ extension DrawingCanvas {
         switch results {
         case .success(let linkedHandles):
             if let result = linkedHandles.first {
+                print("🔧 GPU CALC: Anchor(\(String(format: "%.1f", anchorPoint.x)), \(String(format: "%.1f", anchorPoint.y))) Dragged(\(String(format: "%.1f", draggedHandle.x)), \(String(format: "%.1f", draggedHandle.y))) Original(\(String(format: "%.1f", originalOppositeHandle.x)), \(String(format: "%.1f", originalOppositeHandle.y))) → Result(\(String(format: "%.1f", result.x)), \(String(format: "%.1f", result.y)))")
                 return result
             }
-        case .failure(_):
+        case .failure(let error):
+            print("⚠️ GPU CALC FAILED: \(error) - falling back to CPU")
             // Fallback to CPU calculation
             break
         }
         
         // CPU fallback
-        return calculateLinkedHandleCPU(anchorPoint: anchorPoint, draggedHandle: draggedHandle, originalOppositeHandle: originalOppositeHandle)
+        let cpuResult = calculateLinkedHandleCPU(anchorPoint: anchorPoint, draggedHandle: draggedHandle, originalOppositeHandle: originalOppositeHandle)
+        print("🔧 CPU CALC: Anchor(\(String(format: "%.1f", anchorPoint.x)), \(String(format: "%.1f", anchorPoint.y))) Dragged(\(String(format: "%.1f", draggedHandle.x)), \(String(format: "%.1f", draggedHandle.y))) Original(\(String(format: "%.1f", originalOppositeHandle.x)), \(String(format: "%.1f", originalOppositeHandle.y))) → Result(\(String(format: "%.1f", cpuResult.x)), \(String(format: "%.1f", cpuResult.y)))")
+        return cpuResult
     }
     
     private func calculateLinkedHandleCPU(anchorPoint: CGPoint, draggedHandle: CGPoint, originalOppositeHandle: CGPoint) -> CGPoint {

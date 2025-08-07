@@ -216,6 +216,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var selectedShapeIDs: Set<UUID> = []
     @Published var selectedTextIDs: Set<UUID> = [] // PROFESSIONAL TEXT SUPPORT
     
+    // Direct selection state (managed by DrawingCanvas, used by panels)
+    @Published var directSelectedShapeIDs: Set<UUID> = []
+    
     // SIMPLIFIED SWATCH SYSTEM - Three separate modifiable arrays
     @Published var rgbSwatches: [VectorColor] = []
     @Published var cmykSwatches: [VectorColor] = []
@@ -903,6 +906,41 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         return selectedShapes
+    }
+    
+    /// Gets shapes by their IDs across all layers
+    func getShapesByIds(_ shapeIDs: Set<UUID>) -> [VectorShape] {
+        var shapes: [VectorShape] = []
+        
+        for layer in layers {
+            for shape in layer.shapes {
+                if shapeIDs.contains(shape.id) {
+                    shapes.append(shape)
+                }
+            }
+        }
+        
+        return shapes
+    }
+    
+    /// Gets the currently active shape IDs based on tool state
+    /// This considers both regular selection and direct selection
+    func getActiveShapeIDs() -> Set<UUID> {
+        // If direct selection tool is active and we have direct selected shapes, use those
+        if currentTool == .directSelection || currentTool == .convertAnchorPoint,
+           !directSelectedShapeIDs.isEmpty {
+            return directSelectedShapeIDs
+        }
+        
+        // Otherwise use regular selection
+        return selectedShapeIDs
+    }
+    
+    /// Gets the currently active shapes based on tool state
+    /// This considers both regular selection and direct selection
+    func getActiveShapes() -> [VectorShape] {
+        let activeShapeIDs = getActiveShapeIDs()
+        return getShapesByIds(activeShapeIDs)
     }
     
     /// Gets all currently selected shapes in correct STACKING ORDER (bottom→top)

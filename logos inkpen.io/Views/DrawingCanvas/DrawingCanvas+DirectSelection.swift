@@ -26,6 +26,7 @@ extension DrawingCanvas {
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
+                        syncDirectSelectionWithDocument()
                         document.objectWillChange.send()
                         return true
                     }
@@ -295,6 +296,7 @@ extension DrawingCanvas {
                         directSelectedShapeIDs.removeAll()
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
+                        syncDirectSelectionWithDocument()
                         document.objectWillChange.send()
                         return true
                     }
@@ -304,6 +306,7 @@ extension DrawingCanvas {
                     directSelectedShapeIDs.insert(shape.id)
                     selectedPoints.removeAll() // Clear individual selections
                     selectedHandles.removeAll()
+                    syncDirectSelectionWithDocument()
                     
                     print("✅ DIRECT-SELECTED SHAPE: \(shape.name)")
                     print("  Shape will now show ALL anchor points and handles (Adobe Illustrator behavior)")
@@ -347,6 +350,7 @@ extension DrawingCanvas {
             selectedPoints.removeAll()
             selectedHandles.removeAll()
             directSelectedShapeIDs.removeAll()
+            syncDirectSelectionWithDocument()
         }
         
         print("🎯 DIRECT SELECTION RESULT:")

@@ -209,22 +209,39 @@ kernel void lerp_vectors(
 // MARK: - Phase 7: Handle Calculations for Bezier curve editing
 kernel void calculate_linked_handles(
     device const Point2D* anchorPoints [[buffer(0)]],
-    device const Point2D* controlPoints [[buffer(1)]],
-    device Point2D* linkedHandles [[buffer(2)]],
-    constant uint& pointCount [[buffer(3)]],
+    device const Point2D* draggedHandles [[buffer(1)]],
+    device const Point2D* originalOppositeHandles [[buffer(2)]],
+    device Point2D* linkedHandles [[buffer(3)]],
     uint index [[thread_position_in_grid]]
 ) {
-    if (index >= pointCount) return;
-    
     Point2D anchor = anchorPoints[index];
-    Point2D control = controlPoints[index];
+    Point2D draggedHandle = draggedHandles[index];
+    Point2D originalOppositeHandle = originalOppositeHandles[index];
     
-    // Calculate linked handle: reflect control point across anchor
-    Point2D linkedHandle;
-    linkedHandle.x = anchor.x + (anchor.x - control.x);
-    linkedHandle.y = anchor.y + (anchor.y - control.y);
+    // Vector from anchor to dragged handle
+    float draggedVectorX = draggedHandle.x - anchor.x;
+    float draggedVectorY = draggedHandle.y - anchor.y;
     
-    linkedHandles[index] = linkedHandle;
+    // Keep the original opposite handle length
+    float originalVectorX = originalOppositeHandle.x - anchor.x;
+    float originalVectorY = originalOppositeHandle.y - anchor.y;
+    float originalLength = sqrt(originalVectorX * originalVectorX + originalVectorY * originalVectorY);
+    
+    // Create opposite vector (180° from dragged handle) with original length
+    float draggedLength = sqrt(draggedVectorX * draggedVectorX + draggedVectorY * draggedVectorY);
+    
+    if (draggedLength > 0.1) {
+        // Normalize dragged vector
+        float normalizedDraggedX = draggedVectorX / draggedLength;
+        float normalizedDraggedY = draggedVectorY / draggedLength;
+        
+        // Opposite direction with original length
+        linkedHandles[index].x = anchor.x - normalizedDraggedX * originalLength;
+        linkedHandles[index].y = anchor.y - normalizedDraggedY * originalLength;
+    } else {
+        // Fallback to original position if dragged length is too small
+        linkedHandles[index] = originalOppositeHandle;
+    }
 }
 
 // MARK: - Phase 10: Curve Smoothing and Curvature Analysis

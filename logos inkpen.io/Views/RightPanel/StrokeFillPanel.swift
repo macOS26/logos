@@ -38,11 +38,10 @@ struct StrokeFillPanel: View {
             return textObject.typography.strokeColor
         }
         
-        // If shapes are selected, show their color, otherwise show default
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let strokeColor = shape.strokeStyle?.color {
+        // If shapes are selected (regular or direct), show their color, otherwise show default
+        let activeShapes = document.getActiveShapes()
+        if let firstShape = activeShapes.first,
+           let strokeColor = firstShape.strokeStyle?.color {
             return strokeColor
         }
         return document.defaultStrokeColor  // Show default color for new shapes
@@ -56,41 +55,37 @@ struct StrokeFillPanel: View {
             return textObject.typography.fillColor
         }
         
-        // If shapes are selected, show their color, otherwise show default
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let fillColor = shape.fillStyle?.color {
+        // If shapes are selected (regular or direct), show their color, otherwise show default
+        let activeShapes = document.getActiveShapes()
+        if let firstShape = activeShapes.first,
+           let fillColor = firstShape.fillStyle?.color {
             return fillColor
         }
         return document.defaultFillColor  // Show default color for new shapes
     }
     
     private var strokeWidth: Double {
-        // If shapes are selected, show their stroke width, otherwise show default for new shapes
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+        // If shapes are selected (regular or direct), show their stroke width, otherwise show default for new shapes
+        let activeShapes = document.getActiveShapes()
+        guard let firstShape = activeShapes.first else {
             return document.defaultStrokeWidth // Show default width for new shapes
         }
-        return shape.strokeStyle?.width ?? document.defaultStrokeWidth
+        return firstShape.strokeStyle?.width ?? document.defaultStrokeWidth
     }
     
     private var strokePlacement: StrokePlacement {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+        let activeShapes = document.getActiveShapes()
+        guard let firstShape = activeShapes.first else {
             return .center
         }
-        return shape.strokeStyle?.placement ?? .center
+        return firstShape.strokeStyle?.placement ?? .center
     }
     
     private var fillOpacity: Double {
-        // If shapes are selected, show their opacity, otherwise show default
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.fillStyle?.opacity {
+        // If shapes are selected (regular or direct), show their opacity, otherwise show default
+        let activeShapes = document.getActiveShapes()
+        if let firstShape = activeShapes.first,
+           let opacity = firstShape.fillStyle?.opacity {
             return opacity
         }
         return document.defaultFillOpacity  // Show default opacity for new shapes
@@ -98,11 +93,10 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
     private var strokeOpacity: Double {
-        // If shapes are selected, show their opacity, otherwise show default
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.strokeStyle?.opacity {
+        // If shapes are selected (regular or direct), show their opacity, otherwise show default
+        let activeShapes = document.getActiveShapes()
+        if let firstShape = activeShapes.first,
+           let opacity = firstShape.strokeStyle?.opacity {
             return opacity
         }
         return document.defaultStrokeOpacity  // Show default opacity for new shapes
@@ -112,22 +106,20 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
     private var strokeLineJoin: CGLineJoin {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+        let activeShapes = document.getActiveShapes()
+        guard let firstShape = activeShapes.first else {
             return document.defaultStrokeLineJoin
         }
-        return shape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
+        return firstShape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
     }
     
     // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
     private var strokeLineCap: CGLineCap {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
+        let activeShapes = document.getActiveShapes()
+        guard let firstShape = activeShapes.first else {
             return document.defaultStrokeLineCap
         }
-        return shape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
+        return firstShape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
     }
     
     // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
@@ -314,19 +306,24 @@ struct StrokeFillPanel: View {
             }
         }
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             if document.selectedTextIDs.isEmpty {
                 // Only save to undo stack if we didn't already save for text
                 document.saveToUndoStack()
             }
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -340,16 +337,21 @@ struct StrokeFillPanel: View {
         document.defaultStrokeWidth = width
         print("🎨 Set default stroke width: \(width)pt")
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -357,15 +359,21 @@ struct StrokeFillPanel: View {
     }
     
     private func updateStrokePlacement(_ placement: StrokePlacement) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
+        
         document.saveToUndoStack()
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: placement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.placement = placement
+        for shapeID in activeShapeIDs {
+            // Find the shape across all layers
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: placement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                    } else {
+                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.placement = placement
+                    }
+                    break // Found the shape, no need to check other layers
                 }
             }
         }
@@ -377,16 +385,21 @@ struct StrokeFillPanel: View {
         document.defaultStrokeOpacity = opacity
         print("🎨 Set default stroke opacity: \(Int(opacity * 100))%")
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -403,16 +416,21 @@ struct StrokeFillPanel: View {
         document.defaultStrokeLineJoin = lineJoin
         print("🎨 Set default stroke line join: \(lineJoin.displayName)")
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -425,16 +443,21 @@ struct StrokeFillPanel: View {
         document.defaultStrokeLineCap = lineCap
         print("🎨 Set default stroke line cap: \(lineCap.displayName)")
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -447,16 +470,21 @@ struct StrokeFillPanel: View {
         document.defaultStrokeMiterLimit = miterLimit
         print("🎨 Set default stroke miter limit: \(String(format: "%.1f", miterLimit))")
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
+        // If there are active shapes (regular or direct selection), update them too
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if !activeShapeIDs.isEmpty {
             document.saveToUndoStack()
             
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
+            for shapeID in activeShapeIDs {
+                // Find the shape across all layers
+                for layerIndex in document.layers.indices {
+                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
+                        }
+                        break // Found the shape, no need to check other layers
                     }
                 }
             }
@@ -464,34 +492,46 @@ struct StrokeFillPanel: View {
     }
     
     private func applyFillToSelectedShapes() {
-        guard let layerIndex = document.selectedLayerIndex else { return }
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
+        
         document.saveToUndoStack()
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                    color: selectedFillColor,
-                    opacity: fillOpacity
-                )
+        for shapeID in activeShapeIDs {
+            // Find the shape across all layers
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                        color: selectedFillColor,
+                        opacity: fillOpacity
+                    )
+                    break // Found the shape, no need to check other layers
+                }
             }
         }
     }
     
     private func applyStrokeToSelectedShapes() {
-        guard let layerIndex = document.selectedLayerIndex else { return }
+        let activeShapeIDs = document.getActiveShapeIDs()
+        if activeShapeIDs.isEmpty { return }
+        
         document.saveToUndoStack()
         
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
-                    color: selectedStrokeColor,
-                    width: strokeWidth,
-                    placement: strokePlacement,
-                    lineCap: document.defaultStrokeLineCap,
-                    lineJoin: document.defaultStrokeLineJoin,
-                    miterLimit: document.defaultStrokeMiterLimit,
-                    opacity: strokeOpacity // PROFESSIONAL STROKE TRANSPARENCY
-                )
+        for shapeID in activeShapeIDs {
+            // Find the shape across all layers
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                        color: selectedStrokeColor,
+                        width: strokeWidth,
+                        placement: strokePlacement,
+                        lineCap: document.defaultStrokeLineCap,
+                        lineJoin: document.defaultStrokeLineJoin,
+                        miterLimit: document.defaultStrokeMiterLimit,
+                        opacity: strokeOpacity // PROFESSIONAL STROKE TRANSPARENCY
+                    )
+                    break // Found the shape, no need to check other layers
+                }
             }
         }
     }

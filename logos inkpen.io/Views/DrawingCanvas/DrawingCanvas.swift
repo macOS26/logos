@@ -152,6 +152,11 @@ struct DrawingCanvas: View {
     @State internal var isDraggingPoint = false
     @State internal var isDraggingHandle = false
     @State internal var dragStartLocation: CGPoint = .zero
+    
+    // Sync direct selection state with document
+    internal func syncDirectSelectionWithDocument() {
+        document.directSelectedShapeIDs = directSelectedShapeIDs
+    }
     @State internal var originalPointPositions: [PointID: VectorPoint] = [:]
     @State internal var originalHandlePositions: [HandleID: VectorPoint] = [:]
     

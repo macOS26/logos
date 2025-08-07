@@ -165,6 +165,7 @@ extension DrawingCanvas {
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
+                        syncDirectSelectionWithDocument()
                         document.objectWillChange.send()
                         return
                     }
@@ -178,6 +179,7 @@ extension DrawingCanvas {
                     
                     // Direct-select the shape to show all anchor points and handles
                     directSelectedShapeIDs.insert(shape.id)
+                    syncDirectSelectionWithDocument()
                     
                     // Force UI update
                     document.objectWillChange.send()
@@ -192,6 +194,7 @@ extension DrawingCanvas {
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
+        syncDirectSelectionWithDocument()
         document.objectWillChange.send()
     }
     
@@ -209,6 +212,7 @@ extension DrawingCanvas {
         
         // Direct-select the shape that was modified (for UI display)
         directSelectedShapeIDs.insert(shapeID)
+        syncDirectSelectionWithDocument()
         
         // Select the specific point that was converted for immediate feedback
         let pointID = PointID(

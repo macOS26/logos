@@ -87,6 +87,7 @@ extension DrawingCanvas {
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
+        syncDirectSelectionWithDocument()
         isCornerRadiusEditMode = false // Exit corner radius mode when doing regular selection
         
         // Only handle selection for selection and transform tools
@@ -332,6 +333,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
             isCornerRadiusEditMode = false // Exit corner radius mode when clicking empty space
+            syncDirectSelectionWithDocument()
             
             if wasSelected {
                 print("🎯 DESELECTED: Cleared selection due to empty area tap")

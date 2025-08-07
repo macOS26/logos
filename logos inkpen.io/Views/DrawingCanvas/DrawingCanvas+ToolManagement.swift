@@ -92,6 +92,7 @@ extension DrawingCanvas {
                 directSelectedShapeIDs.removeAll()
                 selectedPoints.removeAll()
                 selectedHandles.removeAll()
+                syncDirectSelectionWithDocument()
             }
         }
         
@@ -138,6 +139,7 @@ extension DrawingCanvas {
             directSelectedShapeIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
+            syncDirectSelectionWithDocument()
         }
         
         // Force UI update to show new selection state
