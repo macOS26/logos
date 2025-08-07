@@ -32,6 +32,10 @@ class MetalComputeEngine {
     private var distanceCalculationPipeline: MTLComputePipelineState?
     private var squareRootPipeline: MTLComputePipelineState?
     
+    // Phase 12: Trigonometric Operations
+    private var trigonometricPipeline: MTLComputePipelineState?
+    private var polygonCalculationPipeline: MTLComputePipelineState?
+    
     static let shared: MetalComputeEngine? = MetalComputeEngine()
     
     private init?() {
@@ -116,6 +120,14 @@ class MetalComputeEngine {
             }
             if let function = library.makeFunction(name: "calculate_square_roots") {
                 squareRootPipeline = try device.makeComputePipelineState(function: function)
+            }
+            
+            // Phase 12: Trigonometric operations
+            if let function = library.makeFunction(name: "calculate_trigonometric") {
+                trigonometricPipeline = try device.makeComputePipelineState(function: function)
+            }
+            if let function = library.makeFunction(name: "calculate_polygon_points") {
+                polygonCalculationPipeline = try device.makeComputePipelineState(function: function)
             }
             
         } catch {
@@ -735,6 +747,97 @@ class MetalComputeEngine {
         return results
     }
     
+    // MARK: - Phase 12: GPU Trigonometric Operations
+    
+    /// Calculate trigonometric functions (sin, cos, atan2) for multiple angles
+    func calculateTrigonometricGPU(angles: [Float], function: TrigonometricFunction) -> [Float] {
+        guard !angles.isEmpty,
+              let pipeline = trigonometricPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return calculateTrigonometricCPU(angles: angles, function: function)
+        }
+        
+        let angleCount = angles.count
+        
+        // Create buffers
+        let inputBuffer = device.makeBuffer(bytes: angles, length: angleCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        let outputBuffer = device.makeBuffer(length: angleCount * MemoryLayout<Float>.stride, options: .storageModeShared)
+        var trigFunction = UInt32(function.rawValue)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(inputBuffer, offset: 0, index: 0)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 1)
+        computeEncoder.setBytes(&trigFunction, length: MemoryLayout<UInt32>.stride, index: 2)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(angleCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (angleCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Float.self, capacity: angleCount) else {
+            return calculateTrigonometricCPU(angles: angles, function: function)
+        }
+        
+        var results: [Float] = []
+        for i in 0..<angleCount {
+            results.append(resultPointer[i])
+        }
+        
+        return results
+    }
+    
+    /// Calculate polygon points for shape creation
+    func calculatePolygonPointsGPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float = -Float.pi/2) -> [CGPoint] {
+        guard sides > 2,
+              let pipeline = polygonCalculationPipeline,
+              let commandBuffer = commandQueue.makeCommandBuffer(),
+              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return calculatePolygonPointsCPU(center: center, radius: radius, sides: sides, startAngle: startAngle)
+        }
+        
+        // Create buffers
+        var centerPoint = Point2D(x: Float(center.x), y: Float(center.y))
+        let outputBuffer = device.makeBuffer(length: sides * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        var params = PolygonParams(radius: radius, sides: UInt32(sides), startAngle: startAngle)
+        
+        // Setup compute
+        computeEncoder.setComputePipelineState(pipeline)
+        computeEncoder.setBuffer(outputBuffer, offset: 0, index: 0)
+        computeEncoder.setBytes(&centerPoint, length: MemoryLayout<Point2D>.stride, index: 1)
+        computeEncoder.setBytes(&params, length: MemoryLayout<PolygonParams>.stride, index: 2)
+        
+        // Dispatch
+        let threadsPerGroup = MTLSize(width: min(sides, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (sides + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        
+        computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
+        computeEncoder.endEncoding()
+        
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
+        
+        // Read back results
+        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: sides) else {
+            return calculatePolygonPointsCPU(center: center, radius: radius, sides: sides, startAngle: startAngle)
+        }
+        
+        var results: [CGPoint] = []
+        for i in 0..<sides {
+            let point = resultPointer[i]
+            results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+        }
+        
+        return results
+    }
+    
     // MARK: - Phase 2: GPU Bezier Curve Calculations
     
     func calculateBezierCurveGPU(controlPoints: [CGPoint], steps: Int = 100) -> [CGPoint] {
@@ -1061,6 +1164,36 @@ class MetalComputeEngine {
         return smoothedPoints
     }
     
+    private func calculateTrigonometricCPU(angles: [Float], function: TrigonometricFunction) -> [Float] {
+        return angles.map { angle in
+            switch function {
+            case .sine:
+                return sin(angle)
+            case .cosine:
+                return cos(angle)
+            case .tangent:
+                return tan(angle)
+            case .atan2:
+                // For atan2, we need two values - use angle as y and 1.0 as x
+                return atan2(angle, 1.0)
+            }
+        }
+    }
+    
+    private func calculatePolygonPointsCPU(center: CGPoint, radius: Float, sides: Int, startAngle: Float) -> [CGPoint] {
+        var points: [CGPoint] = []
+        let angleStep = 2 * Float.pi / Float(sides)
+        
+        for i in 0..<sides {
+            let angle = Float(i) * angleStep + startAngle
+            let x = center.x + CGFloat(cos(angle) * radius)
+            let y = center.y + CGFloat(sin(angle) * radius)
+            points.append(CGPoint(x: x, y: y))
+        }
+        
+        return points
+    }
+    
     // MARK: - Performance Monitoring
     
     var isFullGPUAccelerationAvailable: Bool {
@@ -1109,6 +1242,19 @@ class MetalComputeEngine {
 private struct Point2D {
     let x: Float
     let y: Float
+}
+
+enum TrigonometricFunction: Int {
+    case sine = 0
+    case cosine = 1
+    case tangent = 2
+    case atan2 = 3
+}
+
+private struct PolygonParams {
+    let radius: Float
+    let sides: UInt32
+    let startAngle: Float
 }
 
 // MARK: - Metal Shader Source (Phase 2)
@@ -1456,6 +1602,52 @@ extension MetalComputeEngine {
         ) {
             float value = inputValues[index];
             outputValues[index] = sqrt(max(0.0, value)); // Ensure non-negative input
+        }
+        
+        // Phase 12: Trigonometric Operations for Polygon and Star Creation
+        kernel void calculate_trigonometric(
+            device const float* angles [[buffer(0)]],
+            device float* results [[buffer(1)]],
+            constant uint& function [[buffer(2)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            float angle = angles[index];
+            
+            switch (function) {
+                case 0: // sine
+                    results[index] = sin(angle);
+                    break;
+                case 1: // cosine
+                    results[index] = cos(angle);
+                    break;
+                case 2: // tangent
+                    results[index] = tan(angle);
+                    break;
+                case 3: // atan2 (using angle as y, 1.0 as x)
+                    results[index] = atan2(angle, 1.0);
+                    break;
+                default:
+                    results[index] = 0.0;
+                    break;
+            }
+        }
+        
+        kernel void calculate_polygon_points(
+            device Point2D* outputPoints [[buffer(0)]],
+            constant Point2D& center [[buffer(1)]],
+            constant PolygonParams& params [[buffer(2)]],
+            uint index [[thread_position_in_grid]]
+        ) {
+            if (index >= params.sides) return;
+            
+            float angleStep = 2.0 * M_PI_F / float(params.sides);
+            float angle = float(index) * angleStep + params.startAngle;
+            
+            Point2D point;
+            point.x = center.x + cos(angle) * params.radius;
+            point.y = center.y + sin(angle) * params.radius;
+            
+            outputPoints[index] = point;
         }
         """
     }
