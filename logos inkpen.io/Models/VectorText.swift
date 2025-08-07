@@ -549,14 +549,6 @@ class FontManager: ObservableObject {
     @Published var selectedLineHeight: Double = 24.0 // Default to font size
     @Published var selectedTextAlignment: TextAlignment = .left
     
-    // Common professional fonts (Adobe/FreeHand standard)
-    // static let professionalFonts = [
-    //     "Helvetica", "Helvetica Neue", "Arial", "Times", "Times New Roman",
-    //     "Futura", "Avenir", "Garamond", "Minion Pro", "Myriad Pro",
-    //     "Proxima Nova", "Gotham", "Interstate", "Franklin Gothic",
-    //     "Optima", "Gill Sans", "Frutiger", "Universe", "Trade Gothic"
-    // ]
-    
     init() {
         loadAvailableFonts()
     }

@@ -595,13 +595,22 @@ class MetalComputeEngine {
     
     // MARK: - Phase 7: GPU Handle Calculations
     
-    func calculateLinkedHandlesGPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> [CGPoint] {
+    func calculateLinkedHandlesGPU(anchorPoints: [CGPoint], draggedHandles: [CGPoint], originalOppositeHandles: [CGPoint]) -> Result<[CGPoint], MetalError> {
         guard anchorPoints.count == draggedHandles.count && 
-              draggedHandles.count == originalOppositeHandles.count,
-              let pipeline = handleCalculationPipeline,
-              let commandBuffer = commandQueue.makeCommandBuffer(),
-              let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
-            return calculateLinkedHandlesCPU(anchorPoints: anchorPoints, draggedHandles: draggedHandles, originalOppositeHandles: originalOppositeHandles)
+              draggedHandles.count == originalOppositeHandles.count else {
+            return .failure(.operationFailed("All point arrays must have the same count"))
+        }
+        
+        guard let pipeline = handleCalculationPipeline else {
+            return .failure(.pipelineNotAvailable)
+        }
+        
+        guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            return .failure(.commandBufferCreationFailed)
+        }
+        
+        guard let computeEncoder = commandBuffer.makeComputeCommandEncoder() else {
+            return .failure(.computeEncoderCreationFailed)
         }
         
         let pointCount = anchorPoints.count
@@ -610,10 +619,12 @@ class MetalComputeEngine {
         let metalOriginalHandles = originalOppositeHandles.map { Point2D(x: Float($0.x), y: Float($0.y)) }
         
         // Create buffers
-        let anchorBuffer = device.makeBuffer(bytes: metalAnchorPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let draggedBuffer = device.makeBuffer(bytes: metalDraggedHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let originalBuffer = device.makeBuffer(bytes: metalOriginalHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
-        let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared)
+        guard let anchorBuffer = device.makeBuffer(bytes: metalAnchorPoints, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let draggedBuffer = device.makeBuffer(bytes: metalDraggedHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let originalBuffer = device.makeBuffer(bytes: metalOriginalHandles, length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared),
+              let outputBuffer = device.makeBuffer(length: pointCount * MemoryLayout<Point2D>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute
         computeEncoder.setComputePipelineState(pipeline)
@@ -633,9 +644,7 @@ class MetalComputeEngine {
         commandBuffer.waitUntilCompleted()
         
         // Read back results
-        guard let resultPointer = outputBuffer?.contents().bindMemory(to: Point2D.self, capacity: pointCount) else {
-            return calculateLinkedHandlesCPU(anchorPoints: anchorPoints, draggedHandles: draggedHandles, originalOppositeHandles: originalOppositeHandles)
-        }
+        let resultPointer = outputBuffer.contents().bindMemory(to: Point2D.self, capacity: pointCount)
         
         var results: [CGPoint] = []
         for i in 0..<pointCount {
@@ -643,7 +652,7 @@ class MetalComputeEngine {
             results.append(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
         }
         
-        return results
+        return .success(results)
     }
     
     // MARK: - Phase 10: GPU Curve Smoothing and Curvature

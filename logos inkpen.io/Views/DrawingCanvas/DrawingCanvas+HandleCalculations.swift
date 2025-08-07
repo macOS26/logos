@@ -20,8 +20,14 @@ extension DrawingCanvas {
                 draggedHandles: [draggedHandle], 
                 originalOppositeHandles: [originalOppositeHandle]
             )
-            if let result = results.first {
-                return result
+            switch results {
+            case .success(let linkedHandles):
+                if let result = linkedHandles.first {
+                    return result
+                }
+            case .failure(_):
+                // Fallback to CPU calculation
+                break
             }
         }
         
