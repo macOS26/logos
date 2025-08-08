@@ -65,8 +65,9 @@ extension DrawingCanvas {
                     print("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins")
                 }
                 
-                // Select the shape (corner radius editing now uses dedicated tool)
+                // Select the shape and enter corner radius mode
                 document.selectedShapeIDs = [shape.id]
+                isCornerRadiusEditMode = true
                 
                 // Clear other selection modes
                 selectedPoints.removeAll()
@@ -81,12 +82,13 @@ extension DrawingCanvas {
             }
         }
         
-        // CRITICAL: Regular Selection tool must clear direct selection
+        // CRITICAL: Regular Selection tool must clear direct selection and corner radius mode
         // Professional tools have mutually exclusive selection modes
         selectedPoints.removeAll()
         selectedHandles.removeAll()
         directSelectedShapeIDs.removeAll()
         syncDirectSelectionWithDocument()
+        isCornerRadiusEditMode = false // Exit corner radius mode when doing regular selection
         
         // Only handle selection for selection and transform tools
         guard document.currentTool == .selection || 
@@ -330,6 +332,7 @@ extension DrawingCanvas {
             let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
+            isCornerRadiusEditMode = false // Exit corner radius mode when clicking empty space
             syncDirectSelectionWithDocument()
             
             if wasSelected {

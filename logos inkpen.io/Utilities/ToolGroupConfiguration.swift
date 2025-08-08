@@ -77,8 +77,7 @@ struct ToolGroupConfiguration {
             "eyedropper",     // Utility tools
             "hand",           // Navigation tools
             "zoom",           // Navigation tools
-            "gradient",       // Special tools
-            "cornerRadius"    // Corner radius tool
+            "gradient"        // Special tools
         ]
         
         var allGroups: [[DrawingTool]] = []
@@ -97,8 +96,6 @@ struct ToolGroupConfiguration {
                 allGroups.append([.zoom])
             } else if groupName == "gradient" {
                 allGroups.append([.gradient])
-            } else if groupName == "cornerRadius" {
-                allGroups.append([.cornerRadius])
             }
         }
         

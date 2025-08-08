@@ -45,8 +45,10 @@ extension DrawingCanvas {
         
         // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
         // PROFESSIONAL UX: Hide selection dots during movement (Adobe Illustrator standard)
+        // CORNER TOOL FIX: Hide bounding box and selection handles when in corner radius edit mode
         if !(document.currentTool == .bezierPen && isBezierDrawing) && 
-           !(document.currentTool == .selection && isDrawing) {
+           !(document.currentTool == .selection && isDrawing) &&
+           !isCornerRadiusEditMode {
             SelectionHandlesView(
                 document: document,
                 geometry: geometry,
@@ -77,9 +79,9 @@ extension DrawingCanvas {
             gradientCenterPointOverlay(geometry: geometry)
         }
         
-        // Corner radius tool - show shape-based corner radius handles when tool is selected
-        if document.currentTool == .cornerRadius {
-            cornerRadiusToolOverlay(geometry: geometry)
+        // Corner radius editing - ONLY when in corner radius mode (Control-Click to activate)
+        if document.currentTool == .selection && isCornerRadiusEditMode {
+            cornerRadiusEditTool(geometry: geometry)
         }
     }
     
@@ -258,14 +260,6 @@ extension DrawingCanvas {
     internal func gradientCenterPointOverlay(geometry: GeometryProxy) -> some View {
         // Use the new isolated gradient edit tool
         gradientEditTool(geometry: geometry)
-    }
-    
-    // MARK: - Corner Radius Tool Overlay
-    
-    @ViewBuilder
-    internal func cornerRadiusToolOverlay(geometry: GeometryProxy) -> some View {
-        // Use the shape-based corner radius tool
-        shapeBasedCornerRadiusTool(geometry: geometry)
     }
     
     // MARK: - Pressure-Sensitive Overlay

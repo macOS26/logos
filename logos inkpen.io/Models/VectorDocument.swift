@@ -3027,7 +3027,6 @@ enum DrawingTool: String, CaseIterable, Codable {
     case hand = "Hand"
     case zoom = "Zoom"
     case gradient = "Gradient"
-    case cornerRadius = "Corner Radius"
     
     var iconName: String {
         switch self {
@@ -3067,7 +3066,6 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
         case .gradient: return "circle.lefthalf.striped.horizontal"
-        case .cornerRadius: return "rectangle.roundedtop"
         }
     }
     
@@ -3089,7 +3087,6 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .rectangle: return .crosshair
         case .square: return .crosshair
         case .roundedRectangle: return .crosshair
-        case .cornerRadius: return .crosshair
         case .pill: return .crosshair
         case .circle: return .crosshair
         case .ellipse: return .crosshair

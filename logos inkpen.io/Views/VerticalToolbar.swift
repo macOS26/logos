@@ -962,8 +962,6 @@ struct VerticalToolbar: View {
             return "Warp Tool (W) - Warp and distort objects"
         case .gradient:
             return "Gradient Tool (G) - Edit gradient origin and focal points"
-        case .cornerRadius:
-            return "Corner Radius Tool (R) - Edit corner radius of shapes"
         }
     }
 }
