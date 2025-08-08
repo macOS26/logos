@@ -14,7 +14,7 @@ struct CornerRadiusToolbar: View {
     
     var body: some View {
         Group {
-            if cornerCount == 3 || cornerCount == 4 {
+            if let shape = getSelectedShape(), isRectangleShape(shape) && cornerCount == 4 {
                 cornerRadiusDisplay
             }
         }
@@ -52,7 +52,7 @@ struct CornerRadiusToolbar: View {
     @ViewBuilder
     private var cornerFieldsView: some View {
         // Only show for 3 or 4 sided shapes, single line format
-        if cornerCount == 3 || cornerCount == 4 {
+        if cornerCount == 4 {
             HStack(spacing: 4) {
                 ForEach(0..<cornerCount, id: \.self) { index in
                     cornerField(index: index, label: "\(index + 1)")
