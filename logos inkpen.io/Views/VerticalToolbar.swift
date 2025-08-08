@@ -1140,6 +1140,11 @@ struct ColorSwatchGrid: View {
                             .stroke(Color.red, lineWidth: 1.5)
                             .frame(width: 22, height: 22)
                         }
+                    } else if case .gradient(let gradient) = currentStrokeColor {
+                        // Handle gradient colors with NSView-based rendering
+                        GradientSwatchNSView(gradient: gradient, size: 22)
+                            .frame(width: 22, height: 22)
+                            .border(document.activeColorTarget == .stroke ? Color.blue : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
                     } else {
                         Rectangle()
                             .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
@@ -1180,6 +1185,11 @@ struct ColorSwatchGrid: View {
                             .stroke(Color.red, lineWidth: 1.5)
                             .frame(width: 22, height: 22)
                         }
+                    } else if case .gradient(let gradient) = currentFillColor {
+                        // Handle gradient colors with NSView-based rendering
+                        GradientSwatchNSView(gradient: gradient, size: 22)
+                            .frame(width: 22, height: 22)
+                            .border(document.activeColorTarget == .fill ? Color.blue : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
                     } else {
                         Rectangle()
                             .fill(currentFillColor.color.opacity(currentFillOpacity))
@@ -1247,6 +1257,11 @@ struct ColorSwatchGrid: View {
                                     .stroke(Color.red, lineWidth: 1)
                                     .frame(width: 10, height: 10)
                                 }
+                            } else if case .gradient(let gradient) = color {
+                                // Handle gradient colors with NSView-based rendering
+                                GradientSwatchNSView(gradient: gradient, size: 10)
+                                    .frame(width: 10, height: 10)
+                                    .border(Color.gray, width: 0.5)
                             } else {
                                 Rectangle()
                                     .fill(color.color)
