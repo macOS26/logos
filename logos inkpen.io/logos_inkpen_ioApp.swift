@@ -635,8 +635,8 @@ struct DocumentBasedMainView: View {
             
             // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
             StatusBar(document: document)
-                .frame(height: 24) // EXACT MainView height
-                .frame(minHeight: 24) // ENSURE: Status bar height is always preserved
+                .frame(height: 21) // EXACT MainView height
+                .frame(minHeight: 21) // ENSURE: Status bar height is always preserved
                 .frame(maxWidth: .infinity) // ENSURE: Status bar spans full width
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
