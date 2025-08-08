@@ -9,11 +9,11 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func handleToolChange(oldTool: DrawingTool, newTool: DrawingTool) {
-        // EXIT CORNER RADIUS MODE when switching tools (any tool change clears this mode)
-        if isCornerRadiusEditMode {
-            print("🔧 TOOL SWITCH: Exiting corner radius edit mode")
-            isCornerRadiusEditMode = false
-        }
+        // EXIT CORNER RADIUS MODE when switching tools (REMOVED - use dedicated corner radius tool)
+        // if isCornerRadiusEditMode {
+        //     print("🔧 TOOL SWITCH: Exiting corner radius edit mode")
+        //     isCornerRadiusEditMode = false
+        // }
         // ✅ EXPLICIT USER ACTION: Auto-finish bezier path when user switches away from pen tool
         // This is standard Adobe Illustrator behavior and represents explicit user intent to stop drawing
         if previousTool == .bezierPen && newTool != .bezierPen && isBezierDrawing {
