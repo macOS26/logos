@@ -3893,15 +3893,15 @@ class GradientNSView: NSView {
         case .radial(let radial):
             // FIXED: Radial gradient coordinate system - centerPoint is already in 0-1 range
             
-            // SIMPLE FIX: Scale origin point by scale factor
-            let scaledOriginX = radial.originPoint.x * radial.scaleX
-            let scaledOriginY = radial.originPoint.y * radial.scaleY
+            // FIXED: Origin point should NOT be scaled - it defines the center position
+            let originX = radial.originPoint.x
+            let originY = radial.originPoint.y
             
-            // FIXED: centerPoint is already normalized to 0-1, so just apply to path bounds
-            let center = CGPoint(x: pathBounds.minX + pathBounds.width * scaledOriginX,
-                                 y: pathBounds.minY + pathBounds.height * scaledOriginY)
+            // Calculate the center position in path coordinates (no scaling applied to position)
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * originX,
+                                 y: pathBounds.minY + pathBounds.height * originY)
             
-            // NEW: Apply transforms for angle and aspect ratio support
+            // Apply transforms for angle and aspect ratio support
             context.saveGState()
             
             // Translate to gradient center for transformation
@@ -3911,18 +3911,16 @@ class GradientNSView: NSView {
             let angleRadians = CGFloat(radial.angle * .pi / 180.0)
             context.rotate(by: angleRadians)
             
-            // Apply independent X/Y scaling (elliptical gradient) - EXACTLY like aspect ratio but independent
+            // Apply independent X/Y scaling (elliptical gradient) - this affects the shape, not the position
             let scaleX = CGFloat(radial.scaleX)
             let scaleY = CGFloat(radial.scaleY)
             context.scaleBy(x: scaleX, y: scaleY)
             
-            // SIMPLE FIX: Scale focal point by scale factor
+            // FIXED: Focal point should NOT be scaled - it's already in the correct coordinate space
             let focalPoint: CGPoint
             if let focal = radial.focalPoint {
-                // Scale the focal point by the scale factors
-                let scaledFocalX = focal.x * scaleX
-                let scaledFocalY = focal.y * scaleY
-                focalPoint = CGPoint(x: scaledFocalX, y: scaledFocalY)
+                // Focal point is already in the correct coordinate space relative to center
+                focalPoint = CGPoint(x: focal.x, y: focal.y)
             } else {
                 // No focal point specified, use center
                 focalPoint = CGPoint.zero
@@ -3931,7 +3929,7 @@ class GradientNSView: NSView {
             // Calculate radius - use the original calculation that was working before
             let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
             
-            // Draw gradient with scaled focal point
+            // Draw gradient with focal point in original coordinate space
             context.drawRadialGradient(cgGradient, startCenter: focalPoint, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
             
             context.restoreGState()
