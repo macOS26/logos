@@ -95,27 +95,37 @@ struct HorizontalRuler: View {
             if rulerX >= 0 && rulerX <= size.width {
                 let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 
-                // PROFESSIONAL TICK HIERARCHY: Longer ticks for all units (based on inches model)
+                // PROFESSIONAL TICK HIERARCHY
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
-                
-                // Apply unified longer tick hierarchy to ALL units for consistent professional appearance
-                if isMajorTick {
-                    tickHeight = 16 // Major ticks - full height (LONGER - inches model)
-                    lineWidth = 1.0
-                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
-                    tickHeight = 12  // Half-unit ticks - three-quarter height (LONGER - inches model)
-                    lineWidth = 0.75
-                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
-                    tickHeight = 8  // Quarter-unit ticks - half height (LONGER - inches model)
-                    lineWidth = 0.6
-                } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
-                    tickHeight = 4  // Eighth-unit ticks - quarter height (LONGER - inches model)
-                    lineWidth = 0.5
+                if unit == .pixels {
+                    // Pixel ruler: 50 px major ticks with 10 px minors
+                    if isMajorTick {
+                        tickHeight = 16
+                        lineWidth = 1.0
+                    } else {
+                        tickHeight = 6
+                        lineWidth = 0.5
+                    }
                 } else {
-                    // Skip ticks that aren't at proper intervals
-                    x += tickSpacing
-                    continue
+                    // Other units keep the professional inches-style hierarchy
+                    if isMajorTick {
+                        tickHeight = 16
+                        lineWidth = 1.0
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
+                        tickHeight = 12
+                        lineWidth = 0.75
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
+                        tickHeight = 8
+                        lineWidth = 0.6
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
+                        tickHeight = 4
+                        lineWidth = 0.5
+                    } else {
+                        // Skip ticks that aren't at proper intervals
+                        x += tickSpacing
+                        continue
+                    }
                 }
                 
                 // Draw tick with professional styling
@@ -203,27 +213,36 @@ struct VerticalRuler: View {
             if rulerY >= 0 && rulerY <= size.height {
                 let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
                 
-                // PROFESSIONAL TICK HIERARCHY: Longer ticks for all units (based on inches model)
+                // PROFESSIONAL TICK HIERARCHY
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
-                
-                // Apply unified longer tick hierarchy to ALL units for consistent professional appearance
-                if isMajorTick {
-                    tickWidth = 16 // Major ticks - full width (LONGER - inches model)
-                    lineWidth = 1.0
-                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
-                    tickWidth = 12  // Half-unit ticks - three-quarter width (LONGER - inches model)
-                    lineWidth = 0.75
-                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
-                    tickWidth = 8  // Quarter-unit ticks - half width (LONGER - inches model)
-                    lineWidth = 0.6
-                } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
-                    tickWidth = 4  // Eighth-unit ticks - quarter width (LONGER - inches model)
-                    lineWidth = 0.5
+                if unit == .pixels {
+                    // Pixel ruler: 50 px major ticks with 10 px minors
+                    if isMajorTick {
+                        tickWidth = 16
+                        lineWidth = 1.0
+                    } else {
+                        tickWidth = 6
+                        lineWidth = 0.5
+                    }
                 } else {
-                    // Skip ticks that aren't at proper intervals
-                    y += tickSpacing
-                    continue
+                    if isMajorTick {
+                        tickWidth = 16
+                        lineWidth = 1.0
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 {
+                        tickWidth = 12
+                        lineWidth = 0.75
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 4)) < 0.001 {
+                        tickWidth = 8
+                        lineWidth = 0.6
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
+                        tickWidth = 4
+                        lineWidth = 0.5
+                    } else {
+                        // Skip ticks that aren't at proper intervals
+                        y += tickSpacing
+                        continue
+                    }
                 }
                 
                 // Draw tick with professional styling
@@ -263,7 +282,7 @@ private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
     
     switch unit {
     case .pixels:
-        return 60.0 // Major ticks every 60 pixels - clean, moderate spacing
+        return 50.0 // Major ticks every 50 pixels
     case .points:
         return 72.0 // Major ticks every 72 points (1 inch) - professional standard
     case .inches:
@@ -286,8 +305,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     
     switch unit {
     case .pixels:
-        // FIXED: Use PICA model - moderate density like 1 pica intervals
-        baseSpacing = 12.0 // 12-pixel intervals - matches pica density perfectly
+        // Pixels: fixed 10 px minor spacing to yield 5 subdivisions between 50 px majors
+        return 10.0
     case .points:
         // FIXED: Use PICA model - same 12-point intervals (1 pica worth)
         baseSpacing = 12.0 // 12-point intervals - exactly matches pica spacing

@@ -319,7 +319,7 @@ struct NewDocumentSetupView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                         ForEach(quickSizes, id: \.name) { size in
                             ProfessionalQuickSizeButton(size: size) {
                                 applyQuickSize(size)
@@ -504,7 +504,7 @@ struct NewDocumentSetupView: View {
             ("Business Card", 3.5, 2.0, .inches),
             ("Web HD", 1920, 1080, .pixels),
             ("Mobile", 375, 812, .pixels),
-            ("Square", 1000, 1000, .pixels),
+            ("Square", 1024, 1024, .pixels),
             ("Wide", 1920, 1080, .pixels)
         ]
     }
@@ -644,7 +644,7 @@ struct ProfessionalQuickSizeButton: View {
                         .lineLimit(1)
                         .foregroundColor(.primary)
                     
-                    Text("\(Int(size.width))×\(Int(size.height))")
+                    Text(formattedSizeLabel)
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
                 }
@@ -662,7 +662,7 @@ struct ProfessionalQuickSizeButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
-        .help("\(Int(size.width)) × \(Int(size.height)) \(size.unit.rawValue)")
+        .help("\(formattedSizeLabel) \(size.unit.rawValue)")
     }
     
     private var iconName: String {
@@ -679,6 +679,19 @@ struct ProfessionalQuickSizeButton: View {
             return "square"
         default:
             return "doc"
+        }
+    }
+
+    private var formattedSizeLabel: String {
+        if size.unit == .pixels {
+            return "\(Int(size.width))×\(Int(size.height))"
+        } else {
+            let numberFormatter = NumberFormatter()
+            numberFormatter.minimumFractionDigits = 0
+            numberFormatter.maximumFractionDigits = 2
+            let widthString = numberFormatter.string(from: NSNumber(value: size.width)) ?? String(format: "%.2f", size.width)
+            let heightString = numberFormatter.string(from: NSNumber(value: size.height)) ?? String(format: "%.2f", size.height)
+            return "\(widthString)×\(heightString)"
         }
     }
 }
