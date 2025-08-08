@@ -11,8 +11,26 @@ import AppKit
 // MARK: - Helper Functions
 // Note: formatNumberForDisplay function is imported from StrokeFillPanel.swift
 
-/// Creates a natural number input binding that preserves user input while they're typing
-/// and only formats the display when the field loses focus
+struct NumberTextField: View {
+    let value: Double
+    let onValueChange: (Double) -> Void
+    let range: ClosedRange<Double>
+    
+    var body: some View {
+        TextField("", text: createNaturalNumberBinding(
+            getValue: { value },
+            setValue: { newValue in
+                let clampedValue = min(max(newValue, range.lowerBound), range.upperBound)
+                onValueChange(clampedValue)
+            }
+        ))
+        .textFieldStyle(RoundedBorderTextFieldStyle())
+        .frame(width: 60)
+        .font(.system(size: 11))
+    }
+}
+
+/// Creates a number input binding that shows exactly what user types
 func createNaturalNumberBinding(
     getValue: @escaping () -> Double,
     setValue: @escaping (Double) -> Void,
@@ -21,14 +39,14 @@ func createNaturalNumberBinding(
     return Binding<String>(
         get: {
             let value = getValue()
-            return formatter(value)
+            return String(value)
         },
         set: { newStringValue in
-            // Allow natural number input - don't force formatting while typing
+            // Show exactly what user typed - no filtering!
+            // Only clamp the actual value if it's out of bounds
             if let doubleValue = Double(newStringValue) {
                 setValue(doubleValue)
             }
-            // If it's not a valid number, don't update (preserves current value)
         }
     )
 }
@@ -59,6 +77,7 @@ struct GradientFillSection: View {
     @State private var gradientType: GradientType = .linear
     @State private var currentGradient: VectorGradient? = nil
     @State private var gradientId: UUID = UUID() // Unique ID for this gradient editing session
+    @State private var isEditingAngle: Bool = false // Track when actively editing angle
     
     // NEW: State for gradient color stop popup
     @State private var showingGradientColorPicker = false
@@ -164,7 +183,10 @@ struct GradientFillSection: View {
         .onChange(of: document.selectedLayerIndex) { _, _ in updateSelectedGradient() }
         .onReceive(document.objectWillChange) { _ in
             // FIXED: Only update UI display, don't modify gradients
-            updateSelectedGradientDisplay()
+            // BUT: Don't overwrite currentGradient if we're actively editing
+            if editingGradientStopId == nil && !isEditingAngle {
+                updateSelectedGradientDisplay()
+            }
         }
     }
     
@@ -286,17 +308,34 @@ struct GradientFillSection: View {
     private func updateGradientAngle(_ newAngle: Double) {
         guard let gradient = currentGradient else { return }
         
+        // Normalize angle to -180 to +180 range
+        var normalizedAngle = newAngle
+        while normalizedAngle > 180 {
+            normalizedAngle -= 360
+        }
+        while normalizedAngle < -180 {
+            normalizedAngle += 360
+        }
+        
+        // Set flag to prevent display update from overwriting our changes
+        isEditingAngle = true
+        
         switch gradient {
         case .linear(var linear):
-            linear.angle = newAngle
+            linear.angle = normalizedAngle
             currentGradient = .linear(linear)
             // Apply live to selected shapes
             applyGradientToSelectedShapes()
         case .radial(var radial):
-            radial.angle = newAngle
+            radial.angle = normalizedAngle
             currentGradient = .radial(radial)
             // Apply live to selected shapes
             applyGradientToSelectedShapes()
+        }
+        
+        // Reset flag after a short delay to allow UI to update
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.isEditingAngle = false
         }
     }
     
@@ -873,8 +912,7 @@ struct GradientAngleControlView: View {
                     
                     TextField("", text: createNaturalNumberBinding(
                         getValue: { angle },
-                        setValue: onAngleChange,
-                        formatter: { formatNumberForDisplay($0, maxDecimals: 1) }
+                        setValue: onAngleChange
                     ))
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)

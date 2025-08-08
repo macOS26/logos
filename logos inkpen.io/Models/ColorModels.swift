@@ -1087,23 +1087,28 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     var scaleX: Double = 1.0  // Scale X factor (1% to 800% = 0.01 to 8.0)
     var scaleY: Double = 1.0  // Scale Y factor (1% to 800% = 0.01 to 8.0)
     
+    // NEW: Store angle as a separate property to avoid recalculation issues
+    var storedAngle: Double = 0.0
+    
     init(startPoint: CGPoint, endPoint: CGPoint, stops: [GradientStop], spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {
         self.startPoint = startPoint
         self.endPoint = endPoint
         self.stops = stops.sorted { $0.position < $1.position } // Auto-sort stops by position for proper gradient rendering
         self.spreadMethod = spreadMethod
         self.units = units
+        
+        // Calculate and store the initial angle from the provided coordinates
+        let deltaX = endPoint.x - startPoint.x
+        let deltaY = endPoint.y - startPoint.y
+        let radians = atan2(deltaY, deltaX)
+        self.storedAngle = radians * 180.0 / .pi
     }
     
     /// Professional angle support (like Adobe Illustrator) - -180° to +180° range
     var angle: Double {
         get {
-            let deltaX = endPoint.x - startPoint.x
-            let deltaY = endPoint.y - startPoint.y
-            let radians = atan2(deltaY, deltaX)
-            let degrees = radians * 180.0 / .pi
-            // Return raw angle in -180° to +180° range (natural atan2 output)
-            return degrees
+            // Return the stored angle, not calculated from coordinates
+            return storedAngle
         }
         set {
             setAngle(newValue)
@@ -1112,6 +1117,9 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     
     /// Set gradient angle while preserving gradient center
     mutating func setAngle(_ degrees: Double) {
+        // Store the exact angle the user wants
+        storedAngle = degrees
+        
         let radians = degrees * .pi / 180.0
         let centerX = (startPoint.x + endPoint.x) / 2.0
         let centerY = (startPoint.y + endPoint.y) / 2.0

@@ -59,12 +59,8 @@ struct StrokeFillPanel: View {
         let activeShapes = document.getActiveShapes()
         if let firstShape = activeShapes.first,
            let fillStyle = firstShape.fillStyle {
-            // FIXED: Don't extract colors from gradients - show default color instead
-            if fillStyle.isGradient {
-                return document.defaultFillColor
-            } else {
-                return fillStyle.color
-            }
+            // FIXED: Show the actual gradient, not default color
+            return fillStyle.color
         }
         return document.defaultFillColor  // Show default color for new shapes
     }
