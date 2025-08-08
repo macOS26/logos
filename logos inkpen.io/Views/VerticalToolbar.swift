@@ -1036,8 +1036,13 @@ struct ColorSwatchGrid: View {
         if let layerIndex = document.selectedLayerIndex,
            let firstSelectedID = document.selectedShapeIDs.first,
            let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let fillColor = shape.fillStyle?.color {
-            return fillColor
+           let fillStyle = shape.fillStyle {
+            // FIXED: Don't extract colors from gradients - show default color instead
+            if fillStyle.isGradient {
+                return document.defaultFillColor
+            } else {
+                return fillStyle.color
+            }
         }
         
         // PRIORITY 3: Show default color for new shapes

@@ -153,32 +153,9 @@ struct GradientFillSection: View {
             
             GradientApplyButtonView(
                 currentGradient: currentGradient,
-                onApply: applyGradientToSelectedShapes
+                onApply: applyGradientToSelectedShapes,
+                onAddSwatch: addGradientToSwatches
             )
-            
-            // 🔥 DEBUG: Force reset button (remove in production)
-            #if DEBUG
-            HStack {
-                Spacer()
-                Button("Force Reset Gradient State") {
-                    print("🎨 GRADIENT PANEL: Force reset button clicked")
-                    appState.forceResetGradientEditingState()
-                    editingGradientStopId = nil
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .foregroundColor(.red)
-                
-                Button("Count Windows (\(appState.persistentGradientHUD.countGradientWindows()))") {
-                    let count = appState.persistentGradientHUD.countGradientWindows()
-                    print("🎨 GRADIENT PANEL: Current window count: \(count)")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .foregroundColor(.blue)
-            }
-            .padding(.top, 8)
-            #endif
         }
         .padding()
         .background(Color.ui.semiTransparentControlBackground)
@@ -189,20 +166,7 @@ struct GradientFillSection: View {
             // FIXED: Only update UI display, don't modify gradients
             updateSelectedGradientDisplay()
         }
-        .onChange(of: editingGradientStopId) { oldStopId, newStopId in
-            print("🎨 GRADIENT PANEL: onChange(editingGradientStopId) triggered")
-            print("🎨 GRADIENT PANEL: oldStopId = \(oldStopId?.uuidString.prefix(8) ?? "nil")")
-            print("🎨 GRADIENT PANEL: newStopId = \(newStopId?.uuidString.prefix(8) ?? "nil")")
-            // The activation logic is now handled directly in activateGradientStop()
-            // This onChange is kept for debugging and any additional side effects
-        }
-
-        .onDisappear {
-            // DON'T clean up gradient editing state to prevent SwiftUI crashes
-        }
     }
-    
-
     
     private func turnOffEditingState() {
         print("🎨 GRADIENT PANEL: turnOffEditingState() called")
@@ -634,6 +598,18 @@ struct GradientFillSection: View {
                 }
             }
         }
+    }
+    
+    func addGradientToSwatches() {
+        guard let gradient = currentGradient else { return }
+        
+        // Create a gradient color from the current gradient
+        let gradientColor = VectorColor.gradient(gradient)
+        
+        // Add the gradient to the document's swatches
+        document.addColorToSwatches(gradientColor)
+        
+        print("🎨 GRADIENT PANEL: Added gradient to swatches")
     }
     
     // MARK: - Static Helper Functions
@@ -1334,10 +1310,14 @@ struct GradientPreviewAndStopsView: View {
 struct GradientApplyButtonView: View {
     let currentGradient: VectorGradient?
     let onApply: () -> Void
+    let onAddSwatch: () -> Void
     
     var body: some View {
         HStack {
             Spacer()
+            Button("Add Swatch", action: onAddSwatch)
+                .buttonStyle(.bordered)
+                .disabled(currentGradient == nil)
             Button("Apply Gradient", action: onApply)
                 .buttonStyle(.borderedProminent)
                 .disabled(currentGradient == nil)
