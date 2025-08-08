@@ -4013,25 +4013,33 @@ class GradientStrokeNSView: NSView {
         // Draw gradient stroke using native CoreGraphics support
         switch gradient {
         case .linear(let linear):
-            // For linear gradients on strokes, use the path bounds
-            let startPoint = CGPoint(x: pathBounds.minX, y: pathBounds.minY + pathBounds.height * CGFloat(linear.originPoint.y))
-            let endPoint = CGPoint(x: pathBounds.maxX, y: pathBounds.minY + pathBounds.height * CGFloat(linear.originPoint.y))
-            
             // Use CoreGraphics native gradient stroke
             context.addPath(path)
             context.replacePathWithStrokedPath()
+            
+            // Get the actual stroke outline bounds for proper gradient positioning
+            let strokeBounds = context.boundingBoxOfPath
+            
+            // Calculate gradient coordinates based on the actual stroke outline bounds
+            let startPoint = CGPoint(x: strokeBounds.minX, y: strokeBounds.minY + strokeBounds.height * CGFloat(linear.originPoint.y))
+            let endPoint = CGPoint(x: strokeBounds.maxX, y: strokeBounds.minY + strokeBounds.height * CGFloat(linear.originPoint.y))
+            
             context.clip()
             context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
             
         case .radial(let radial):
-            // For radial gradients on strokes, use the path center
-            let center = CGPoint(x: pathBounds.minX + pathBounds.width * CGFloat(radial.originPoint.x),
-                                y: pathBounds.minY + pathBounds.height * CGFloat(radial.originPoint.y))
-            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
-            
             // Use CoreGraphics native gradient stroke
             context.addPath(path)
             context.replacePathWithStrokedPath()
+            
+            // Get the actual stroke outline bounds for proper gradient positioning
+            let strokeBounds = context.boundingBoxOfPath
+            
+            // Calculate gradient coordinates based on the actual stroke outline bounds
+            let center = CGPoint(x: strokeBounds.minX + strokeBounds.width * CGFloat(radial.originPoint.x),
+                                y: strokeBounds.minY + strokeBounds.height * CGFloat(radial.originPoint.y))
+            let radius = max(strokeBounds.width, strokeBounds.height) * CGFloat(radial.radius)
+            
             context.clip()
             context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
         }
