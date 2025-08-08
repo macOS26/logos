@@ -1199,11 +1199,25 @@ struct ColorSwatchGrid: View {
                             document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
                             print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
+                            
+                            // 🔥 UPDATE INK PANEL: Send notification to update INK panel with stroke color
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("UpdateInkPanelColor"),
+                                object: nil,
+                                userInfo: ["color": color, "target": "stroke"]
+                            )
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
                             print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
+                            
+                            // 🔥 UPDATE INK PANEL: Send notification to update INK panel with fill color
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("UpdateInkPanelColor"),
+                                object: nil,
+                                userInfo: ["color": color, "target": "fill"]
+                            )
                         }
                     } label: {
                         ZStack {
