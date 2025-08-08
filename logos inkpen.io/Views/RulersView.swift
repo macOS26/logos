@@ -156,7 +156,7 @@ struct VerticalRuler: View {
     var body: some View {
         GeometryReader { rulerGeometry in
             ZStack {
-                // Background
+                // Background (snap 1px down to avoid sharing the same pixel row as canvas)
                 Rectangle()
                     .fill(Color.ui.controlBackground)
                     .overlay(
@@ -164,10 +164,14 @@ struct VerticalRuler: View {
                             .stroke(Color.ui.lightGrayBorder, lineWidth: 0.5),
                         alignment: .trailing
                     )
+                    .offset(y: 0.5) // pixel-snap to ensure the hairline is rendered fully above the canvas
                 
                 // Ruler marks and labels
                 Canvas { context, size in
-                    drawVerticalRuler(context: context, size: size)
+                    // Shift drawing context by 1px to align ticks with the snapped background
+                    var ctx = context
+                    ctx.translateBy(x: 0, y: 0.5)
+                    drawVerticalRuler(context: ctx, size: size)
                 }
             }
         }

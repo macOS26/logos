@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+// Toggle to enable/disable verbose logging for the Hand Tool (pan gesture)
+fileprivate let enableHandToolLogging = false
+
 extension DrawingCanvas {
     internal func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL HAND TOOL: Perfect cursor-to-canvas synchronization
@@ -21,9 +24,11 @@ extension DrawingCanvas {
             handToolDragStart = value.startLocation
             isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
-            print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
-            print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
-            print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
+            if enableHandToolLogging {
+                print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
+                print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
+                print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
+            }
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -41,7 +46,7 @@ extension DrawingCanvas {
         )
         
         // Professional verification logging (only for significant movements)
-        if abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10 {
+        if enableHandToolLogging && (abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10) {
             print("✋ HAND TOOL: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y))), UI responsive")
         }
     }

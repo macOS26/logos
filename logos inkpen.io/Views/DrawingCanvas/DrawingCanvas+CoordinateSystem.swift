@@ -154,9 +154,11 @@ extension DrawingCanvas {
         
         // Center canvas in the VISIBLE area (accounting for rulers occupying top/left)
         // Visible rect starts at (rulerOffset, rulerOffset) and spans the remaining area
+        // Add 1px compensation for the top ruler hairline so content doesn't sit under it
+        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
             x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
-            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
         )
         
         let documentCenter = CGPoint(
@@ -210,9 +212,11 @@ extension DrawingCanvas {
         document.zoomLevel = max(0.1, min(10.0, fitZoom))
         
         // Center canvas in the VISIBLE area at the fit zoom (account for rulers)
+        // Add 1px compensation for the top ruler hairline so content doesn't sit under it
+        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
             x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
-            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
         )
         
         let documentCenter = CGPoint(
@@ -247,9 +251,11 @@ extension DrawingCanvas {
         
         // Calculate visible center accounting for rulers occupying top/left
         let viewSize = geometry.size
+        // Add 1px compensation for the top ruler hairline so content doesn't sit under it
+        let rulerBorderCompensationY: CGFloat = document.showRulers ? 0.5 : 0.0
         let visibleCenter = CGPoint(
             x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
-            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset + rulerBorderCompensationY
         )
         
         // For actual size, we want to center the document center in the view
