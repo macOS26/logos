@@ -152,11 +152,11 @@ extension DrawingCanvas {
         let defaultZoom = max(0.25, min(1.5, uniformScale))
         document.zoomLevel = defaultZoom
         
-        // Center canvas in view using the calculated uniform scale
-        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
-        let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
+        // Center canvas in the VISIBLE area (accounting for rulers occupying top/left)
+        // Visible rect starts at (rulerOffset, rulerOffset) and spans the remaining area
+        let visibleCenter = CGPoint(
+            x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
         )
         
         let documentCenter = CGPoint(
@@ -166,8 +166,8 @@ extension DrawingCanvas {
         
         // Calculate offset to center document: screen = (document * zoom) + offset
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
-            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
+            x: visibleCenter.x - (documentCenter.x * document.zoomLevel),
+            y: visibleCenter.y - (documentCenter.y * document.zoomLevel)
         )
         
         // Update initial zoom level for gesture handling
@@ -183,6 +183,7 @@ extension DrawingCanvas {
         print("   Scale Y: \(String(format: "%.3f", scaleY)) (height fit)")
         print("   Uniform Scale: \(String(format: "%.3f", uniformScale)) (min of above - maintains aspect ratio)")
         print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
+        print("   Visible Center: (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
         print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
         print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
     }
@@ -208,11 +209,10 @@ extension DrawingCanvas {
         // Set zoom level to fit canvas in view
         document.zoomLevel = max(0.1, min(10.0, fitZoom))
         
-        // Center canvas in view at the fit zoom
-        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
-        let viewCenter = CGPoint(
-            x: viewSize.width / 2.0,
-            y: viewSize.height / 2.0
+        // Center canvas in the VISIBLE area at the fit zoom (account for rulers)
+        let visibleCenter = CGPoint(
+            x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
         )
         
         let documentCenter = CGPoint(
@@ -220,10 +220,10 @@ extension DrawingCanvas {
             y: documentBounds.midY
         )
         
-        // Calculate offset to center document
+        // Calculate offset to center document in the visible area
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * document.zoomLevel),
-            y: viewCenter.y - (documentCenter.y * document.zoomLevel)
+            x: visibleCenter.x - (documentCenter.x * document.zoomLevel),
+            y: visibleCenter.y - (documentCenter.y * document.zoomLevel)
         )
         
         // Update initial zoom level for gesture handling
@@ -234,7 +234,7 @@ extension DrawingCanvas {
         print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
         print("   Available space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
-        print("   View center adjusted for rulers: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
     }
     
     /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
@@ -245,11 +245,11 @@ extension DrawingCanvas {
         let rulerThickness: CGFloat = 20
         let rulerOffset = document.showRulers ? rulerThickness : 0
         
-        // Calculate what canvas point is currently at the view center
-        // FIXED: Rulers are positioned at view edges, not offset by ruler thickness
-        let viewCenter = CGPoint(
-            x: geometry.size.width / 2.0,
-            y: geometry.size.height / 2.0
+        // Calculate visible center accounting for rulers occupying top/left
+        let viewSize = geometry.size
+        let visibleCenter = CGPoint(
+            x: (viewSize.width - rulerOffset) / 2.0 + rulerOffset,
+            y: (viewSize.height - rulerOffset) / 2.0 + rulerOffset
         )
         
         // For actual size, we want to center the document center in the view
@@ -262,10 +262,10 @@ extension DrawingCanvas {
         // Update zoom level
         document.zoomLevel = newZoomLevel
         
-        // Calculate offset to center the document
+        // Calculate offset to center the document in the visible area
         document.canvasOffset = CGPoint(
-            x: viewCenter.x - (documentCenter.x * CGFloat(newZoomLevel)),
-            y: viewCenter.y - (documentCenter.y * CGFloat(newZoomLevel))
+            x: visibleCenter.x - (documentCenter.x * CGFloat(newZoomLevel)),
+            y: visibleCenter.y - (documentCenter.y * CGFloat(newZoomLevel))
         )
         
         // Update initial zoom level for gesture handling
@@ -273,7 +273,7 @@ extension DrawingCanvas {
         
         print("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness")
         print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
-        print("   View center adjusted for rulers: (\(String(format: "%.1f", viewCenter.x)), \(String(format: "%.1f", viewCenter.y)))")
+        print("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
         print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
