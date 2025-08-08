@@ -1151,7 +1151,7 @@ struct MainToolbarContent: ToolbarContent {
     
     private func onZoomIn() {
         // Zoom in by 25% (Adobe Illustrator standard)
-        let newZoom = min(10.0, document.zoomLevel * 1.25)
+        let newZoom = min(16.0, document.zoomLevel * 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
         print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
     }

@@ -8,6 +8,40 @@
 import SwiftUI
 
 extension DrawingCanvas {
+    // MARK: - Zoom Quantization Helpers (Custom scale)
+    // Allowed zoom steps (25%, 50%, 75%, 100%, 200%, 300%, 400%, 600%, 800%, 1200%, 1600%)
+    internal var allowedZoomSteps: [CGFloat] { [0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 12.0, 16.0] }
+
+    internal func quantizeZoomToNearestAllowed(_ zoom: CGFloat) -> CGFloat {
+        let clamped = max(allowedZoomSteps.first ?? 0.25, min(allowedZoomSteps.last ?? 16.0, zoom))
+        var best = allowedZoomSteps.first ?? 0.25
+        var bestDiff = abs(clamped - best)
+        for step in allowedZoomSteps {
+            let d = abs(clamped - step)
+            if d < bestDiff {
+                bestDiff = d
+                best = step
+            }
+        }
+        return best
+    }
+
+    internal func nextAllowedStepUp(from zoom: CGFloat) -> CGFloat {
+        let epsilon: CGFloat = 1e-6
+        for step in allowedZoomSteps {
+            if step > zoom + epsilon { return step }
+        }
+        return allowedZoomSteps.last ?? 16.0
+    }
+
+    internal func nextAllowedStepDown(from zoom: CGFloat) -> CGFloat {
+        let epsilon: CGFloat = 1e-6
+        for step in allowedZoomSteps.reversed() {
+            if step < zoom - epsilon { return step }
+        }
+        return allowedZoomSteps.first ?? 0.25
+    }
+
     /// PROFESSIONAL ZOOM GESTURE HANDLING (Adobe Illustrator Standards)
     /// Always available but conditionally processed to prevent UI lockups
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
@@ -23,7 +57,7 @@ extension DrawingCanvas {
             print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
         }
         
-        let newZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+        let newZoomLevel = max(0.1, min(16.0, initialZoomLevel * value))
         
         // PROFESSIONAL ZOOM AT MOUSE POSITION: Use current mouse position as focal point
         // If no mouse position available, fall back to center of view
@@ -36,7 +70,7 @@ extension DrawingCanvas {
         }
     }
     
-    /// Handle zoom gesture end - finalize zoom level
+    /// Handle zoom gesture end - finalize zoom level (snap to nearest allowed step)
     internal func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
         // Always reset gesture state to ensure UI responsiveness
         defer {
@@ -50,7 +84,8 @@ extension DrawingCanvas {
             return
         }
         
-        let finalZoomLevel = max(0.1, min(10.0, initialZoomLevel * value))
+        let continuousZoom = max(0.1, min(16.0, initialZoomLevel * value))
+        let finalZoomLevel = quantizeZoomToNearestAllowed(continuousZoom)
         
         // PROFESSIONAL ZOOM AT MOUSE POSITION: Final zoom also uses focal point
         // If no mouse position available, fall back to center of view

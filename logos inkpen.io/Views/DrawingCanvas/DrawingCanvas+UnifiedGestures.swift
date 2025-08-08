@@ -55,6 +55,20 @@ extension DrawingCanvas {
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             // Shape tools are drag-only - ignore taps
             print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
+        
+        case .zoom:
+            // Click to zoom at cursor position. Option-click to zoom out.
+            let focalPoint = location
+            let currentZoom = CGFloat(document.zoomLevel)
+            let targetZoom: CGFloat
+            if isOptionPressed {
+                // Step down to the next lower allowed step
+                targetZoom = nextAllowedStepDown(from: currentZoom)
+            } else {
+                // Step up to the next higher allowed step
+                targetZoom = nextAllowedStepUp(from: currentZoom)
+            }
+            handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
             
         default:
             break
@@ -68,6 +82,21 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .hand:
             handlePanGesture(value: value, geometry: geometry)
+        
+        case .zoom:
+            // Scrubby zoom from the drag start point. Up = zoom in, Down = zoom out (or invert with Option).
+            if zoomToolDragStartPoint == .zero {
+                zoomToolDragStartPoint = value.startLocation
+                zoomToolInitialZoomLevel = document.zoomLevel
+            }
+            let deltaY = value.location.y - zoomToolDragStartPoint.y
+            let sensitivity: CGFloat = 300.0
+            var scaleChange = exp(-deltaY / sensitivity) // drag up (negative deltaY) -> zoom in
+            if isOptionPressed { scaleChange = 1.0 / scaleChange }
+            let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
+            // Snap continuously to nearest allowed step for consistent feel
+            let snappedZoom = quantizeZoomToNearestAllowed(continuousZoom)
+            handleZoomAtPoint(newZoomLevel: snappedZoom, focalPoint: value.startLocation, geometry: geometry)
             
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
@@ -129,6 +158,11 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .hand:
             finishPanGesture()
+        
+        case .zoom:
+            // Reset zoom tool state
+            zoomToolDragStartPoint = .zero
+            zoomToolInitialZoomLevel = document.zoomLevel
             
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)

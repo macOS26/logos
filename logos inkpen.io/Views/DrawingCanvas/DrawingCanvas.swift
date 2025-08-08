@@ -144,6 +144,10 @@ struct DrawingCanvas: View {
     @State internal var isZoomGestureActive = false
     @State internal var isPanGestureActive = false
     
+    // ZOOM TOOL DRAG STATE (Scrubby zoom-style)
+    @State internal var zoomToolDragStartPoint: CGPoint = .zero
+    @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0
+    
     // Direct selection state
     @State internal var selectedPoints: Set<PointID> = []
     @State internal var selectedHandles: Set<HandleID> = []

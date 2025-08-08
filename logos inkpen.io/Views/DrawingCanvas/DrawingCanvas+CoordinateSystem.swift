@@ -209,7 +209,7 @@ extension DrawingCanvas {
         let fitZoom = min(scaleX, scaleY)
         
         // Set zoom level to fit canvas in view
-        document.zoomLevel = max(0.1, min(10.0, fitZoom))
+        document.zoomLevel = max(0.1, min(16.0, fitZoom))
         
         // Center canvas in the VISIBLE area at the fit zoom (account for rulers)
         // Add 1px compensation for the top ruler hairline so content doesn't sit under it
