@@ -185,10 +185,8 @@ struct HSBInputSection: View {
                             .onChange(of: hueSlider) { _, _ in
                                 hueValue = String(Int(hueSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
-                                // NO updateSharedColor() - HSB sliders are isolated
                             }
                         
                         // Gradient overlay
@@ -244,7 +242,6 @@ struct HSBInputSection: View {
                             .onChange(of: saturationSlider) { _, _ in
                                 saturationValue = String(Int(saturationSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -264,7 +261,6 @@ struct HSBInputSection: View {
                                 if let intValue = Double(saturationValue) {
                                     saturationSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -302,7 +298,6 @@ struct HSBInputSection: View {
                             .onChange(of: brightnessSlider) { _, _ in
                                 brightnessValue = String(Int(brightnessSlider))
                                 updateHexFromHSB()
-                                updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                 // Clear live PMS preview when manually adjusting HSB
                                 livePMSPreview = nil
                             }
@@ -322,7 +317,6 @@ struct HSBInputSection: View {
                                 if let intValue = Double(brightnessValue) {
                                     brightnessSlider = min(100, max(0, intValue))
                                     updateHexFromHSB()
-                                    updateSharedColor() // Live updates (gradient updates now only on explicit apply)
                                     // Clear live PMS preview when manually adjusting HSB
                                     livePMSPreview = nil
                                 }
@@ -335,8 +329,6 @@ struct HSBInputSection: View {
                 HStack(spacing: 6) {
                     // HSB Color Swatch Preview (shows live preview approximation)
                     Button(action: {
-                        // Update shared color (this triggers live gradient updates automatically)
-                        updateSharedColor()
                         // Add to swatches
                         addColorToSwatches()
                     }) {
@@ -501,52 +493,62 @@ struct HSBInputSection: View {
             return
         }
         
-        // FIXED: Only allow gradient updates when we have an onColorSelected callback (gradient editing mode)
-        // This prevents unwanted gradient updates during casual Color Panel browsing
-        if onColorSelected == nil {
-            print("🎨 HSB INPUT: BLOCKED gradient update - not in gradient editing mode")
-            // Still update shared color for preview, but don't update actual gradients
-            return
-        }
-        
-        // Check if selected object has a gradient fill - update first stop color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
-           let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
-           case .gradient(let gradient) = fillStyle.color {
+        // 🔥 CRITICAL FIX: Don't automatically update gradient stops when in gradient editing mode
+        // This prevents unwanted gradient modifications when browsing Color Panel during gradient editing
+        if showGradientEditing {
+            // When in gradient editing mode, only update document defaults and active selection
+            // DO NOT automatically modify gradient stops
+            switch document.activeColorTarget {
+            case .fill:
+                document.defaultFillColor = vectorColor
+            case .stroke:
+                document.defaultStrokeColor = vectorColor
+            }
             
-            print("🎨 HSB INPUT: Updating gradient stop in editing mode")
-            print("🎨 HSB INPUT: Current gradient has \(gradient.stops.count) stops")
-            
-            // Update the first stop color of the gradient
-            if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
-                var updatedStops = gradient.stops
-                let oldColor = updatedStops[firstStopIndex].color
-                updatedStops[firstStopIndex].color = vectorColor
-                
-                print("🎨 HSB INPUT: Updated gradient stop \(firstStopIndex): \(oldColor) → \(vectorColor)")
-                
-                // Create new gradient with updated stops
-                let updatedGradient: VectorGradient
-                switch gradient {
-                case .linear(var linear):
-                    linear.stops = updatedStops
-                    updatedGradient = .linear(linear)
-                case .radial(var radial):
-                    radial.stops = updatedStops
-                    updatedGradient = .radial(radial)
+            // Apply to active shapes (regular or direct selection) - but NOT gradients
+            let activeShapeIDs = document.getActiveShapeIDs()
+            if !activeShapeIDs.isEmpty {
+                for shapeID in activeShapeIDs {
+                    // Find the shape across all layers
+                    for layerIndex in document.layers.indices {
+                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                            // Only update non-gradient fills/strokes
+                            switch document.activeColorTarget {
+                            case .fill:
+                                if let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
+                                   case .gradient = fillStyle.color {
+                                    // Skip gradient fills - they should only be updated via explicit gradient callbacks
+                                    continue
+                                } else {
+                                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
+                                    } else {
+                                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
+                                    }
+                                }
+                            case .stroke:
+                                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                                } else {
+                                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
+                                }
+                            }
+                            break // Found the shape, no need to check other layers
+                        }
+                    }
                 }
-                
-                // Apply the updated gradient to the shape
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                print("🎨 HSB INPUT: Applied gradient update to shape")
             }
             return
         }
         
-        // Priority 3: Apply color to selected objects and update document defaults
-        // Update document defaults based on active color target
+        // 🔥 CRITICAL FIX: COMMON CODE NEVER UPDATES GRADIENT STOPS OR FILL/STROKE AUTOMATICALLY
+        // The common RGB/CMYK/HSB input sections are used by BOTH:
+        // 1. INK PANEL (Fill/Stroke mode) - should only update fill/stroke when swatch clicked
+        // 2. GRADIENT SELECT COLOR PANEL (Gradient mode) - should only update via callbacks
+        // 
+        // NO automatic updates - only explicit user actions should update colors!
+        
+        // Update document defaults only (for preview purposes)
         switch document.activeColorTarget {
         case .fill:
             document.defaultFillColor = vectorColor
@@ -554,55 +556,9 @@ struct HSBInputSection: View {
             document.defaultStrokeColor = vectorColor
         }
         
-        // Apply to active shapes (regular or direct selection)
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for shapeID in activeShapeIDs {
-                // Find the shape across all layers
-                for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                        switch document.activeColorTarget {
-                        case .fill:
-                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
-                            }
-                        case .stroke:
-                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
-                            }
-                        }
-                        break // Found the shape, no need to check other layers
-                    }
-                }
-            }
-        }
+        // 🔥 NO AUTOMATIC FILL/STROKE UPDATES - only when swatches are clicked!
         
-        // Apply to selected text objects
-        if !document.selectedTextIDs.isEmpty {
-            if activeShapeIDs.isEmpty {
-                // Only save to undo stack if we didn't already save for shapes
-                document.saveToUndoStack()
-            }
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    switch document.activeColorTarget {
-                    case .fill:
-                        document.textObjects[textIndex].typography.fillColor = vectorColor
-                    case .stroke:
-                        document.textObjects[textIndex].typography.hasStroke = true
-                        document.textObjects[textIndex].typography.strokeColor = vectorColor
-                    }
-                }
-            }
-            document.objectWillChange.send()
-        }
+        // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
         print("🎨 HSB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
     }

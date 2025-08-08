@@ -11,6 +11,28 @@ import AppKit
 // MARK: - Helper Functions
 // Note: formatNumberForDisplay function is imported from StrokeFillPanel.swift
 
+/// Creates a natural number input binding that preserves user input while they're typing
+/// and only formats the display when the field loses focus
+func createNaturalNumberBinding(
+    getValue: @escaping () -> Double,
+    setValue: @escaping (Double) -> Void,
+    formatter: @escaping (Double) -> String = { formatNumberForDisplay($0) }
+) -> Binding<String> {
+    return Binding<String>(
+        get: {
+            let value = getValue()
+            return formatter(value)
+        },
+        set: { newStringValue in
+            // Allow natural number input - don't force formatting while typing
+            if let doubleValue = Double(newStringValue) {
+                setValue(doubleValue)
+            }
+            // If it's not a valid number, don't update (preserves current value)
+        }
+    )
+}
+
 // MARK: - Gradient Panel
 
 struct GradientPanel: View {
@@ -941,13 +963,10 @@ struct GradientAngleControlView: View {
                     })
                     .controlSize(.small)
                     
-                    TextField("", text: Binding(
-                        get: { formatNumberForDisplay(angle, maxDecimals: 1) },
-                        set: { newValue in
-                            if let doubleValue = Double(newValue) {
-                                onAngleChange(doubleValue)
-                            }
-                        }
+                    TextField("", text: createNaturalNumberBinding(
+                        getValue: { angle },
+                        setValue: onAngleChange,
+                        formatter: { formatNumberForDisplay($0, maxDecimals: 1) }
                     ))
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 60)
@@ -997,13 +1016,9 @@ struct GradientOriginControlView: View {
                             })
                             .controlSize(.small)
                             
-                            TextField("", text: Binding(
-                                get: { currentGradient != nil ? formatNumberForDisplay(getOriginX(currentGradient!)) : "0" },
-                                set: { newValue in
-                                    if let doubleValue = Double(newValue) {
-                                        updateOriginX(doubleValue)
-                                    }
-                                }
+                            TextField("", text: createNaturalNumberBinding(
+                                getValue: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
+                                setValue: updateOriginX
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 50)
@@ -1025,13 +1040,9 @@ struct GradientOriginControlView: View {
                             })
                             .controlSize(.small)
                             
-                            TextField("", text: Binding(
-                                get: { currentGradient != nil ? formatNumberForDisplay(getOriginY(currentGradient!)) : "0" },
-                                set: { newValue in
-                                    if let doubleValue = Double(newValue) {
-                                        updateOriginY(doubleValue)
-                                    }
-                                }
+                            TextField("", text: createNaturalNumberBinding(
+                                getValue: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
+                                setValue: updateOriginY
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 50)
@@ -1074,13 +1085,9 @@ struct GradientScaleControlView: View {
                         })
                         .controlSize(.small)
                         
-                        TextField("", text: Binding(
-                            get: { currentGradient != nil ? formatNumberForDisplay(getScale(currentGradient!)) : "1" },
-                            set: { newValue in
-                                if let doubleValue = Double(newValue) {
-                                    updateScale(doubleValue)
-                                }
-                            }
+                        TextField("", text: createNaturalNumberBinding(
+                            getValue: { currentGradient != nil ? getScale(currentGradient!) : 1.0 },
+                            setValue: updateScale
                         ))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .frame(width: 50)
@@ -1106,13 +1113,9 @@ struct GradientScaleControlView: View {
                             })
                             .controlSize(.small)
                             
-                            TextField("", text: Binding(
-                                get: { currentGradient != nil ? formatNumberForDisplay(getAspectRatio(currentGradient!)) : "1" },
-                                set: { newValue in
-                                    if let doubleValue = Double(newValue) {
-                                        updateAspectRatio(doubleValue)
-                                    }
-                                }
+                            TextField("", text: createNaturalNumberBinding(
+                                getValue: { currentGradient != nil ? getAspectRatio(currentGradient!) : 1.0 },
+                                setValue: updateAspectRatio
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 50)
@@ -1137,13 +1140,9 @@ struct GradientScaleControlView: View {
                             })
                             .controlSize(.small)
                             
-                            TextField("", text: Binding(
-                                get: { currentGradient != nil ? formatNumberForDisplay(getRadius(currentGradient!)) : "0.5" },
-                                set: { newValue in
-                                    if let doubleValue = Double(newValue) {
-                                        updateRadius(doubleValue)
-                                    }
-                                }
+                            TextField("", text: createNaturalNumberBinding(
+                                getValue: { currentGradient != nil ? getRadius(currentGradient!) : 0.5 },
+                                setValue: updateRadius
                             ))
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 50)
@@ -1437,7 +1436,13 @@ struct GradientPreviewAndStopsView: View {
                                     
                                     // Position text field
                                     TextField("", text: Binding(
-                                        get: { String(format: "%.0f", stop.position * 100) },
+                                        get: { 
+                                            let percentage = stop.position * 100
+                                            // Show clean numbers without decimals for whole percentages
+                                            return percentage.truncatingRemainder(dividingBy: 1) == 0 ? 
+                                                String(format: "%.0f", percentage) : 
+                                                String(format: "%.1f", percentage)
+                                        },
                                         set: { newValue in
                                             if let doubleValue = Double(newValue) {
                                                 updateStopPosition(stop.id, doubleValue / 100.0)
@@ -1450,7 +1455,13 @@ struct GradientPreviewAndStopsView: View {
                                     
                                     // Opacity text field
                                     TextField("", text: Binding(
-                                        get: { String(format: "%.0f", stop.opacity * 100) },
+                                        get: { 
+                                            let percentage = stop.opacity * 100
+                                            // Show clean numbers without decimals for whole percentages
+                                            return percentage.truncatingRemainder(dividingBy: 1) == 0 ? 
+                                                String(format: "%.0f", percentage) : 
+                                                String(format: "%.1f", percentage)
+                                        },
                                         set: { newValue in
                                             if let doubleValue = Double(newValue) {
                                                 updateStopOpacity(stop.id, doubleValue / 100.0)

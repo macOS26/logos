@@ -96,13 +96,11 @@ class AppState {
                 // 🔥 NEW: Stop editing state when window is closed
                 self.persistentGradientHUD.stopEditing()
                 
-                // 🔥 FIXED: Force close and destroy the gradient HUD window
+                // 🔥 PRESERVE WINDOW POSITION - Use orderOut instead of close
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Select Gradient Color") && window.isVisible {
-                        print("🎨 GRADIENT HUD: Force closing window: \(window.title)")
-                        window.delegate = nil // Remove delegate to prevent callbacks
-                        window.close()
-                        // Force the window to be destroyed
+                        print("🎨 GRADIENT HUD: Hiding window to preserve position: \(window.title)")
+                        // Use orderOut to hide without destroying, preserving position
                         window.orderOut(nil)
                     }
                 }
@@ -155,12 +153,11 @@ class AppState {
         persistentGradientHUD.forceResetHidingFlag()
         persistentGradientHUD.hide()
         
-        // 🔥 FORCE CLOSE ALL GRADIENT WINDOWS
+        // 🔥 HIDE ALL GRADIENT WINDOWS (preserve position)
         NSApplication.shared.windows.forEach { window in
             if window.title.contains("Gradient Color Picker") {
-                print("🎨 GRADIENT HUD: Force closing window in emergency reset: \(window.title)")
-                window.delegate = nil
-                window.close()
+                print("🎨 GRADIENT HUD: Hiding window in emergency reset: \(window.title)")
+                // Use orderOut to hide without destroying, preserving position
                 window.orderOut(nil)
             }
         }
@@ -279,8 +276,9 @@ class PersistentGradientHUDManager {
     func hide() {
         NSApplication.shared.windows.forEach { window in
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud"), window.isVisible {
-                window.hidesOnDeactivate = true
-                window.close()
+                // 🔥 USE orderOut INSTEAD OF close TO PRESERVE WINDOW POSITION
+                // This hides the window without destroying it, so position is maintained
+                window.orderOut(nil)
             }
         }
     }

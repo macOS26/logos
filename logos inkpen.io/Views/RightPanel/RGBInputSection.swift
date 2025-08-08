@@ -132,7 +132,6 @@ struct RGBInputSection: View {
                                 // Removed logging for performance
                                 redValue = String(Int(redSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -155,7 +154,6 @@ struct RGBInputSection: View {
                             if let intValue = Double(redValue) {
                                 redSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         }
                 }
@@ -188,7 +186,6 @@ struct RGBInputSection: View {
                                 guard !isProgrammaticallyUpdating else { return }
                                 greenValue = String(Int(greenSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -207,7 +204,6 @@ struct RGBInputSection: View {
                             if let intValue = Double(greenValue) {
                                 greenSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         }
                 }
@@ -240,7 +236,6 @@ struct RGBInputSection: View {
                                 guard !isProgrammaticallyUpdating else { return }
                                 blueValue = String(Int(blueSlider))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         
                         // Gradient overlay
@@ -259,7 +254,6 @@ struct RGBInputSection: View {
                             if let intValue = Double(blueValue) {
                                 blueSlider = min(255, max(0, intValue))
                                 updateHexFromRGB()
-                                updateSharedColor()
                             }
                         }
                 }
@@ -305,7 +299,6 @@ struct RGBInputSection: View {
                     .frame(width: 70)
                     .onChange(of: hexValue) {
                         updateRGBFromHex()
-                        updateSharedColor()
                     }
                 
             }
@@ -360,39 +353,22 @@ struct RGBInputSection: View {
             return
         }
         
-        // Check if selected object has a gradient fill - update first stop color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == firstSelectedID }),
-           let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
-           case .gradient(let gradient) = fillStyle.color {
-            
-            // Removed logging spam
-            
-            // Update the first stop color of the gradient
-            if let firstStopIndex = gradient.stops.firstIndex(where: { $0.position == gradient.stops.map({ $0.position }).min() }) {
-                var updatedStops = gradient.stops
-                updatedStops[firstStopIndex].color = vectorColor
-                
-                // Removed logging spam
-                
-                // Create new gradient with updated stops
-                let updatedGradient: VectorGradient
-                switch gradient {
-                case .linear(var linear):
-                    linear.stops = updatedStops
-                    updatedGradient = .linear(linear)
-                case .radial(var radial):
-                    radial.stops = updatedStops
-                    updatedGradient = .radial(radial)
-                }
-                
-                // Apply the updated gradient to the shape
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: updatedGradient, opacity: fillStyle.opacity)
-                // Removed logging spam
-            }
-            return
+        // 🔥 CRITICAL FIX: COMMON CODE NEVER UPDATES GRADIENT STOPS OR FILL/STROKE AUTOMATICALLY
+        // The common RGB/CMYK/HSB input sections are used by BOTH:
+        // 1. INK PANEL (Fill/Stroke mode) - should only update fill/stroke when swatch clicked
+        // 2. GRADIENT SELECT COLOR PANEL (Gradient mode) - should only update via callbacks
+        // 
+        // NO automatic updates - only explicit user actions should update colors!
+        
+        // Update document defaults only (for preview purposes)
+        switch document.activeColorTarget {
+        case .fill:
+            document.defaultFillColor = vectorColor
+        case .stroke:
+            document.defaultStrokeColor = vectorColor
         }
+        
+        // 🔥 NO AUTOMATIC FILL/STROKE UPDATES - only when swatches are clicked!
         
         // Priority 3: Apply color to selected objects and update document defaults
         // Update document defaults based on active color target
@@ -432,26 +408,7 @@ struct RGBInputSection: View {
             }
         }
         
-        // Apply to selected text objects
-        if !document.selectedTextIDs.isEmpty {
-            if activeShapeIDs.isEmpty {
-                // Only save to undo stack if we didn't already save for shapes
-                document.saveToUndoStack()
-            }
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    switch document.activeColorTarget {
-                    case .fill:
-                        document.textObjects[textIndex].typography.fillColor = vectorColor
-                    case .stroke:
-                        document.textObjects[textIndex].typography.hasStroke = true
-                        document.textObjects[textIndex].typography.strokeColor = vectorColor
-                    }
-                }
-            }
-            document.objectWillChange.send()
-        }
+        // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
         // print("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
     }

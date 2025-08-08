@@ -30,6 +30,35 @@ struct WindowAccessor: NSViewRepresentable {
 
 // MARK: - WindowAccessor handles floating window level conditionally in code
 
+// MARK: - Gradient HUD Window Delegate to Preserve Position
+class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {
+    static let shared = GradientHUDWindowDelegate()
+    
+    private override init() {
+        super.init()
+    }
+    
+    // 🔥 INTERCEPT CLOSE BUTTON TO PRESERVE WINDOW POSITION
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // Check if this is our gradient HUD window
+        if sender.title == "Select Gradient Color" {
+            print("🎨 GRADIENT HUD: Close button clicked - preserving position with orderOut")
+            
+            // Stop editing state
+            AppState.shared.persistentGradientHUD.stopEditing()
+            
+            // Use orderOut instead of close to preserve position
+            sender.orderOut(nil)
+            
+            // Return false to prevent the default close behavior
+            return false
+        }
+        
+        // Allow normal close behavior for other windows
+        return true
+    }
+}
+
 // MARK: - Cleanup Notifications
 extension Notification.Name {
     static let forceDocumentStateCleanup = Notification.Name("forceDocumentStateCleanup")
@@ -2136,10 +2165,18 @@ struct logos_inken_ioApp: App {
                             window.standardWindowButton(.zoomButton)?.isHidden = true
                             window.styleMask.insert(.utilityWindow)
                             // Keep close button visible
+                            
+                            // 🔥 INTERCEPT CLOSE BUTTON TO PRESERVE POSITION
+                            window.delegate = GradientHUDWindowDelegate.shared
+                            
+                            // 🔥 LET SYSTEM MANAGE POSITIONING - No manual positioning
+                            // The window will appear at a sensible default location
+                            // and remember its position when moved by the user
                         }
                     })
         }
         .windowResizability(.contentSize) // Size to content
+        // 🔥 NO MANUAL POSITIONING - Let macOS handle window positioning naturally
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
