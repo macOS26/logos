@@ -209,34 +209,88 @@ struct ShapeView: View {
             
         case .inside:
             // PROFESSIONAL INSIDE STROKE (Adobe Illustrator Standard)
-            // Draw a normal stroke but mask it to only show inside the shape
-            let doubleWidthStyle = SwiftUI.StrokeStyle(
-                lineWidth: strokeStyle.width * 2, // Double width since we're masking to inside
-                lineCap: swiftUIStrokeStyle.lineCap,
-                lineJoin: swiftUIStrokeStyle.lineJoin,
-                miterLimit: swiftUIStrokeStyle.miterLimit,
-                dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
-            )
-            renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
-            .mask(
-                // Mask to shape interior only
-                path.fill(Color.black) // Black reveals, transparent hides
-            )
+            if strokeStyle.isGradient {
+                // For gradient strokes, use a different approach that preserves gradient quality
+                // Create a stroke style with the original width but adjust the gradient coordinates
+                let adjustedStrokeStyle = StrokeStyle(
+                    color: strokeStyle.color,
+                    width: strokeStyle.width * 2, // Double width for inside placement
+                    placement: .center, // Use center placement for the gradient calculation
+                    dashPattern: strokeStyle.dashPattern.map { $0 * 2 }, // Scale dash pattern
+                    lineCap: strokeStyle.lineCap,
+                    lineJoin: strokeStyle.lineJoin,
+                    miterLimit: strokeStyle.miterLimit,
+                    opacity: strokeStyle.opacity,
+                    blendMode: strokeStyle.blendMode
+                )
+                let doubleWidthStyle = SwiftUI.StrokeStyle(
+                    lineWidth: strokeStyle.width * 2,
+                    lineCap: swiftUIStrokeStyle.lineCap,
+                    lineJoin: swiftUIStrokeStyle.lineJoin,
+                    miterLimit: swiftUIStrokeStyle.miterLimit,
+                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
+                )
+                renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
+                .mask(
+                    // Mask to shape interior only
+                    path.fill(Color.black) // Black reveals, transparent hides
+                )
+            } else {
+                // For solid color strokes, use the original approach
+                let doubleWidthStyle = SwiftUI.StrokeStyle(
+                    lineWidth: strokeStyle.width * 2, // Double width since we're masking to inside
+                    lineCap: swiftUIStrokeStyle.lineCap,
+                    lineJoin: swiftUIStrokeStyle.lineJoin,
+                    miterLimit: swiftUIStrokeStyle.miterLimit,
+                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
+                )
+                renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
+                .mask(
+                    // Mask to shape interior only
+                    path.fill(Color.black) // Black reveals, transparent hides
+                )
+            }
             
         case .outside:
             // OUTSIDE STROKE - CRITICAL FIX: Handle opacity internally to prevent bleed-through
             ZStack {
-                // 1. Draw stroke at double width with correct opacity (extends both inside and outside)
-                let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                    lineWidth: strokeStyle.width * 2, // Double width
-                    lineCap: swiftUIStrokeStyle.lineCap,
-                    lineJoin: swiftUIStrokeStyle.lineJoin,
-                    miterLimit: swiftUIStrokeStyle.miterLimit,
-                    dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
-                )
-                
-                renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
-                    .opacity(strokeStyle.opacity)
+                if strokeStyle.isGradient {
+                    // For gradient strokes, use a different approach that preserves gradient quality
+                    // Create a stroke style with the original width but adjust the gradient coordinates
+                    let adjustedStrokeStyle = StrokeStyle(
+                        color: strokeStyle.color,
+                        width: strokeStyle.width * 2, // Double width for outside placement
+                        placement: .center, // Use center placement for the gradient calculation
+                        dashPattern: strokeStyle.dashPattern.map { $0 * 2 }, // Scale dash pattern
+                        lineCap: strokeStyle.lineCap,
+                        lineJoin: strokeStyle.lineJoin,
+                        miterLimit: strokeStyle.miterLimit,
+                        opacity: strokeStyle.opacity,
+                        blendMode: strokeStyle.blendMode
+                    )
+                    let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
+                        lineWidth: strokeStyle.width * 2, // Double width
+                        lineCap: swiftUIStrokeStyle.lineCap,
+                        lineJoin: swiftUIStrokeStyle.lineJoin,
+                        miterLimit: swiftUIStrokeStyle.miterLimit,
+                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
+                    )
+                    
+                    renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                        .opacity(strokeStyle.opacity)
+                } else {
+                    // For solid color strokes, use the original approach
+                    let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
+                        lineWidth: strokeStyle.width * 2, // Double width
+                        lineCap: swiftUIStrokeStyle.lineCap,
+                        lineJoin: swiftUIStrokeStyle.lineJoin,
+                        miterLimit: swiftUIStrokeStyle.miterLimit,
+                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
+                    )
+                    
+                    renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                        .opacity(strokeStyle.opacity)
+                }
 
                 // 2. Cover the inside stroke completely with opaque background
                 // This ensures NO stroke color bleeds through, regardless of fill opacity
