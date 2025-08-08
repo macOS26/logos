@@ -139,6 +139,30 @@ struct ColorPanel: View {
             if appState.gradientEditingState != nil {
                 currentPreviewColor = document.defaultFillColor
             }
+            
+            // 🔥 LISTEN FOR INK PANEL UPDATES: Listen for notifications from vertical toolbar
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("UpdateInkPanelColor"),
+                object: nil,
+                queue: .main
+            ) { notification in
+                if let userInfo = notification.userInfo,
+                   let color = userInfo["color"] as? VectorColor,
+                   let target = userInfo["target"] as? String {
+                    
+                    // Update the preview color in the INK panel
+                    currentPreviewColor = color
+                    
+                    // Also update the document's active color target if needed
+                    if target == "fill" {
+                        document.activeColorTarget = .fill
+                    } else if target == "stroke" {
+                        document.activeColorTarget = .stroke
+                    }
+                    
+                    print("🎨 INK PANEL: Updated with \(target) color: \(color)")
+                }
+            }
         }
     }
     
@@ -187,6 +211,9 @@ struct ColorPanel: View {
             // 🔥 FIXED: Apply color to active target when browsing colors in the Color tab
             // This makes the Color Panel behave consistently with the VerticalToolbar
             print("🎨 COLOR PANEL: Applying color to active target: \(document.activeColorTarget)")
+            
+            // 🔥 CRITICAL FIX: Update the preview color in the INK panel
+            currentPreviewColor = color
             
             // Apply color to the currently active target (fill or stroke)
             if document.activeColorTarget == .stroke {

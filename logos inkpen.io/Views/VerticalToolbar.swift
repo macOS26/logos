@@ -1109,6 +1109,12 @@ struct ColorSwatchGrid: View {
                 // Stroke color (background, bottom-right)
                 Button {
                     document.activeColorTarget = .stroke
+                    // 🔥 UPDATE INK PANEL: Send action to update INK panel with current stroke color
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("UpdateInkPanelColor"),
+                        object: nil,
+                        userInfo: ["color": currentStrokeColor, "target": "stroke"]
+                    )
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
@@ -1143,6 +1149,12 @@ struct ColorSwatchGrid: View {
                 // Fill color (foreground, top-left)
                 Button {
                     document.activeColorTarget = .fill
+                    // 🔥 UPDATE INK PANEL: Send action to update INK panel with current fill color
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("UpdateInkPanelColor"),
+                        object: nil,
+                        userInfo: ["color": currentFillColor, "target": "fill"]
+                    )
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
