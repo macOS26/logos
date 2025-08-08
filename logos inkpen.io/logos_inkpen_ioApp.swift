@@ -2119,6 +2119,12 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("g", modifiers: [])
                 .help("Switch to gradient tool")
+                
+                Button("Corner Radius Tool") {
+                    documentState?.switchToTool(.cornerRadius)
+                }
+                .keyboardShortcut(.upArrow, modifiers: [.control])
+                .help("Switch to corner radius tool")
             }
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState (no more notifications!)

@@ -76,7 +76,7 @@ extension DrawingCanvas {
     // MARK: - Helper Functions
     
     /// Get the currently selected rectangle-based shape (can have corner radius support)
-    private func getSelectedRectangleShape() -> VectorShape? {
+    internal func getSelectedRectangleShape() -> VectorShape? {
         guard document.selectedShapeIDs.count == 1 else { return nil }
         
         for layer in document.layers {
@@ -97,7 +97,7 @@ extension DrawingCanvas {
     }
     
     /// Get proper bounds for a shape - ALWAYS uses current path bounds with transforms applied
-    private func getProperShapeBounds(for shape: VectorShape) -> CGRect {
+    internal func getProperShapeBounds(for shape: VectorShape) -> CGRect {
         // FIXED: Always use current path bounds AND apply any pending transforms (handles scaling!)
         // This ensures corner handles track the actual visual position/size of scaled objects
         var pathBounds = shape.path.cgPath.boundingBox
@@ -178,7 +178,7 @@ extension DrawingCanvas {
     }
     
     /// Get corner handle positions on the actual curves (not at rectangle corners)
-    private func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
+    func getCornerScreenPositions(bounds: CGRect, shape: VectorShape, geometry: GeometryProxy) -> [CGPoint] {
         // The bounds are already transformed by getProperShapeBounds(), so use them directly
         let transformedBounds = bounds
         
@@ -417,7 +417,7 @@ extension DrawingCanvas {
         if isDraggingCorner {
             // ROUND CORNER RADIUS: Round to nearest integer when user releases handle
             if let selectedShape = getSelectedRectangleShape() {
-                let currentRadius = selectedShape.cornerRadii[safe: draggedCornerIndex] ?? 0.0
+                let currentRadius = selectedShape.cornerRadii[safe: draggedCornerIndex ?? -1] ?? 0.0
                 let roundedRadius = round(currentRadius)
                 
                 // Only update if the value actually changed (avoid unnecessary updates)
@@ -431,7 +431,7 @@ extension DrawingCanvas {
                             allRadii.append(0.0)
                         }
                         
-                        let originalRadius = allRadii[draggedCornerIndex]
+                        let originalRadius = allRadii[draggedCornerIndex ?? 0]
                         
                         if originalRadius > 0 {
                             // RATIO MODE: When corners have existing radius, scale proportionally
@@ -461,7 +461,7 @@ extension DrawingCanvas {
                     } else {
                         updateCornerRadiusToValue(
                             shapeID: selectedShape.id,
-                            cornerIndex: draggedCornerIndex,
+                            cornerIndex: draggedCornerIndex ?? 0,
                             newRadius: roundedRadius
                         )
                     }
@@ -473,7 +473,7 @@ extension DrawingCanvas {
             
             // Reset drag state
             isDraggingCorner = false
-            draggedCornerIndex = -1
+            draggedCornerIndex = nil
             cornerDragStart = .zero
             initialCornerRadius = 0.0
             currentMousePosition = .zero
@@ -541,7 +541,7 @@ extension DrawingCanvas {
     }
     
     /// Update specific corner radius to an absolute value and regenerate path
-    private func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
+    func updateCornerRadiusToValue(shapeID: UUID, cornerIndex: Int, newRadius: Double) {
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 var shape = document.layers[layerIndex].shapes[shapeIndex]
@@ -582,7 +582,7 @@ extension DrawingCanvas {
     }
     
     /// Update all corner radii to absolute values and regenerate path (for proportional editing)
-    private func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
+    func updateAllCornerRadiiToValues(shapeID: UUID, cornerRadii: [Double]) {
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                 var shape = document.layers[layerIndex].shapes[shapeIndex]

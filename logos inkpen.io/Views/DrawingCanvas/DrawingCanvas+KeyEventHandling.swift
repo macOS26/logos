@@ -55,7 +55,18 @@ extension DrawingCanvas {
                 return event
             }
             
-            // ALLOW MODIFIER KEY COMBINATIONS (Cmd+Z, Cmd+C, etc.) to pass through
+            // HANDLE CONTROL+ARROW FOR CORNER RADIUS TOOL
+            if event.modifierFlags.contains(.control) && !event.modifierFlags.contains(.command) && !event.modifierFlags.contains(.option) {
+                if let characters = event.charactersIgnoringModifiers,
+                   ["\u{63235}", "\u{63234}", "\u{63233}", "\u{63232}"].contains(characters) { // Arrow keys
+                    // Activate corner radius tool
+                    document.currentTool = .cornerRadius
+                    print("🔧 CONTROL+ARROW: Activated corner radius tool")
+                    return nil // Consume the event
+                }
+            }
+            
+            // ALLOW OTHER MODIFIER KEY COMBINATIONS (Cmd+Z, Cmd+C, etc.) to pass through
             if event.modifierFlags.contains(.command) || 
                event.modifierFlags.contains(.option) || 
                event.modifierFlags.contains(.control) {

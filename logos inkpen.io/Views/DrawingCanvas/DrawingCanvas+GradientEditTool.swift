@@ -132,7 +132,7 @@ extension DrawingCanvas {
         let shapeBounds = shape.bounds
         
         switch gradient {
-        case .linear(let linear):
+        case .linear(_):
             // FIXED: Use the EXACT same coordinate system as LayerView linear gradient rendering
             // Convert canvas coordinates to relative coordinates within shape bounds (no scaling)
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
@@ -143,7 +143,7 @@ extension DrawingCanvas {
             updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
             updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
             
-        case .radial(let radial):
+        case .radial(_):
             // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
             // Convert canvas coordinates to relative coordinates within shape bounds (no scaling)
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width

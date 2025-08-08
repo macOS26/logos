@@ -74,10 +74,11 @@ struct ToolGroupConfiguration {
             "triangles",      // Triangle tools
             "polygons",       // Polygon tools
             "stars",          // Star tool (individual)
-            "eyedropper",     // Utility tools
-            "hand",           // Navigation tools
-            "zoom",           // Navigation tools
-            "gradient"        // Special tools
+                    "eyedropper",     // Utility tools
+        "hand",           // Navigation tools
+        "zoom",           // Navigation tools
+        "gradient",       // Special tools
+        "cornerRadius"    // Corner radius tool
         ]
         
         var allGroups: [[DrawingTool]] = []
@@ -96,6 +97,8 @@ struct ToolGroupConfiguration {
                 allGroups.append([.zoom])
             } else if groupName == "gradient" {
                 allGroups.append([.gradient])
+            } else if groupName == "cornerRadius" {
+                allGroups.append([.cornerRadius])
             }
         }
         

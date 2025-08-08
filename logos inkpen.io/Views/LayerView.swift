@@ -4036,7 +4036,7 @@ class GradientStrokeNSView: NSView {
         
         // The path we receive is already pre-transformed into the document's coordinate space.
         // SwiftUI will handle scaling/offsetting this NSView. We just draw the path as-is.
-        let pathBounds = path.boundingBoxOfPath
+        _ = path.boundingBoxOfPath
 
         // Create CGGradient with proper clear color handling
         let colors = gradient.stops.map { stop -> CGColor in
