@@ -338,11 +338,8 @@ extension ShapeView {
     private func renderStrokeColor(strokeStyle: StrokeStyle, path: Path, swiftUIStyle: SwiftUI.StrokeStyle, shape: VectorShape) -> some View {
         switch strokeStyle.color {
         case .gradient(let vectorGradient):
-            // Mask a black stroke with the gradient fill view
-            path.stroke(Color.black, style: swiftUIStyle)
-                .mask(
-                    GradientFillView(gradient: vectorGradient, path: path.cgPath)
-                )
+            // Use NSView-based gradient stroke rendering
+            GradientStrokeView(gradient: vectorGradient, path: path.cgPath, strokeStyle: strokeStyle)
             
         default:
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
@@ -3805,6 +3802,23 @@ struct GradientFillView: NSViewRepresentable {
     }
 }
 
+struct GradientStrokeView: NSViewRepresentable {
+    let gradient: VectorGradient
+    let path: CGPath
+    let strokeStyle: StrokeStyle
+
+    func makeNSView(context: Context) -> GradientStrokeNSView {
+        return GradientStrokeNSView(gradient: gradient, path: path, strokeStyle: strokeStyle)
+    }
+
+    func updateNSView(_ nsView: GradientStrokeNSView, context: Context) {
+        nsView.gradient = gradient
+        nsView.path = path
+        nsView.strokeStyle = strokeStyle
+        nsView.needsDisplay = true
+    }
+}
+
 class GradientNSView: NSView {
     var gradient: VectorGradient
     var path: CGPath
@@ -3933,6 +3947,93 @@ class GradientNSView: NSView {
             context.drawRadialGradient(cgGradient, startCenter: focalPoint, startRadius: 0, endCenter: CGPoint.zero, endRadius: radius, options: [.drawsAfterEndLocation])
             
             context.restoreGState()
+        }
+        
+        context.restoreGState()
+    }
+}
+
+class GradientStrokeNSView: NSView {
+    var gradient: VectorGradient
+    var path: CGPath
+    var strokeStyle: StrokeStyle
+
+    init(gradient: VectorGradient, path: CGPath, strokeStyle: StrokeStyle) {
+        self.gradient = gradient
+        self.path = path
+        self.strokeStyle = strokeStyle
+        super.init(frame: .zero)
+        self.wantsLayer = true
+        self.layer?.backgroundColor = NSColor.clear.cgColor
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var isFlipped: Bool {
+        return true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+
+        context.saveGState()
+        
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the path as-is.
+        let pathBounds = path.boundingBoxOfPath
+
+        // Create CGGradient with proper clear color handling
+        let colors = gradient.stops.map { stop -> CGColor in
+            if case .clear = stop.color {
+                // For clear colors, use the clear color's cgColor directly (don't apply opacity)
+                return stop.color.cgColor
+            } else {
+                // For non-clear colors, apply the stop opacity
+                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+            }
+        }
+        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+            context.restoreGState()
+            return
+        }
+        
+        // Set stroke properties
+        context.setLineWidth(strokeStyle.width)
+        context.setLineCap(strokeStyle.lineCap)
+        context.setLineJoin(strokeStyle.lineJoin)
+        context.setMiterLimit(strokeStyle.miterLimit)
+        
+        // Use CoreGraphics native gradient stroke support
+        // Set the gradient as the stroke color
+        context.setStrokeColorSpace(CGColorSpaceCreateDeviceRGB())
+        
+        // Draw gradient stroke using native CoreGraphics support
+        switch gradient {
+        case .linear(let linear):
+            // For linear gradients on strokes, use the path bounds
+            let startPoint = CGPoint(x: pathBounds.minX, y: pathBounds.minY + pathBounds.height * CGFloat(linear.originPoint.y))
+            let endPoint = CGPoint(x: pathBounds.maxX, y: pathBounds.minY + pathBounds.height * CGFloat(linear.originPoint.y))
+            
+            // Use CoreGraphics native gradient stroke
+            context.addPath(path)
+            context.replacePathWithStrokedPath()
+            context.clip()
+            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
+            
+        case .radial(let radial):
+            // For radial gradients on strokes, use the path center
+            let center = CGPoint(x: pathBounds.minX + pathBounds.width * CGFloat(radial.originPoint.x),
+                                y: pathBounds.minY + pathBounds.height * CGFloat(radial.originPoint.y))
+            let radius = max(pathBounds.width, pathBounds.height) * CGFloat(radial.radius)
+            
+            // Use CoreGraphics native gradient stroke
+            context.addPath(path)
+            context.replacePathWithStrokedPath()
+            context.clip()
+            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
         }
         
         context.restoreGState()
