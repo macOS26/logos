@@ -108,22 +108,51 @@ struct HorizontalRuler: View {
                         lineWidth = 0.5
                     }
                 } else if unit == .picas {
-                    // Picas ruler: major every 4 picas; half at 2 picas; then 1 pica; then 0.5 pica
-                    if isMajorTick {
-                        tickHeight = 16
-                        lineWidth = 1.0
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit * 2)) < 0.001 { // 2 picas
-                        tickHeight = 12
-                        lineWidth = 0.75
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit)) < 0.001 { // 1 pica
-                        tickHeight = 8
-                        lineWidth = 0.6
-                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 { // 0.5 pica
-                        tickHeight = 4
-                        lineWidth = 0.5
+                    // Picas ruler hierarchy with controlled density
+                    // For 100%–399%: show only major, half-major, and quarter-major ticks
+                    // For ≥400%: also show 3-pt and 1-pt hairlines
+                    let majorStep = getMajorTickInterval(for: .picas, zoomLevel: zoomLevel)
+                    let halfStep = majorStep / 2.0
+                    let quarterStep = majorStep / 4.0
+                    let epsilon = 0.001
+
+                    let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
+                    let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
+                    let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
+
+                    if zoomLevel < 4.0 {
+                        // 100%–399% pattern
+                        if isMajor {
+                            tickHeight = 16
+                            lineWidth = 1.0
+                        } else if isHalf {
+                            tickHeight = 12 // 2nd highest
+                            lineWidth = 0.75
+                        } else if isQuarter {
+                            tickHeight = 6 // half of half
+                            lineWidth = 0.5
+                        } else {
+                            x += tickSpacing
+                            continue
+                        }
                     } else {
-                        x += tickSpacing
-                        continue
+                        // ≥400%: allow denser 3pt/1pt structure on top of the above
+                        if isMajor {
+                            tickHeight = 16
+                            lineWidth = 1.0
+                        } else if abs(x.truncatingRemainder(dividingBy: 6.0)) < epsilon { // half pica
+                            tickHeight = 12
+                            lineWidth = 0.75
+                        } else if abs(x.truncatingRemainder(dividingBy: 3.0)) < epsilon { // 3 pt
+                            tickHeight = 8
+                            lineWidth = 0.6
+                        } else if abs(x.truncatingRemainder(dividingBy: 1.0)) < epsilon { // 1 pt
+                            tickHeight = 4
+                            lineWidth = 0.5
+                        } else {
+                            x += tickSpacing
+                            continue
+                        }
                     }
                 } else {
                     // Other units keep the professional inches-style hierarchy
@@ -245,22 +274,49 @@ struct VerticalRuler: View {
                         lineWidth = 0.5
                     }
                 } else if unit == .picas {
-                    // Picas ruler: major every 4 picas; half at 2 picas; then 1 pica; then 0.5 pica
-                    if isMajorTick {
-                        tickWidth = 16
-                        lineWidth = 1.0
-                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit * 2)) < 0.001 { // 2 picas
-                        tickWidth = 12
-                        lineWidth = 0.75
-                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit)) < 0.001 { // 1 pica
-                        tickWidth = 8
-                        lineWidth = 0.6
-                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 { // 0.5 pica
-                        tickWidth = 4
-                        lineWidth = 0.5
+                    // Picas ruler hierarchy with controlled density (vertical)
+                    let majorStep = getMajorTickInterval(for: .picas, zoomLevel: zoomLevel)
+                    let halfStep = majorStep / 2.0
+                    let quarterStep = majorStep / 4.0
+                    let epsilon = 0.001
+
+                    let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
+                    let isHalf = abs(y.truncatingRemainder(dividingBy: halfStep)) < epsilon
+                    let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
+
+                    if zoomLevel < 4.0 {
+                        // 100%–399% pattern
+                        if isMajor {
+                            tickWidth = 16
+                            lineWidth = 1.0
+                        } else if isHalf {
+                            tickWidth = 12 // 2nd highest
+                            lineWidth = 0.75
+                        } else if isQuarter {
+                            tickWidth = 6 // half of half
+                            lineWidth = 0.5
+                        } else {
+                            y += tickSpacing
+                            continue
+                        }
                     } else {
-                        y += tickSpacing
-                        continue
+                        // ≥400%: denser 3pt/1pt structure
+                        if isMajor {
+                            tickWidth = 16
+                            lineWidth = 1.0
+                        } else if abs(y.truncatingRemainder(dividingBy: 6.0)) < epsilon {
+                            tickWidth = 12
+                            lineWidth = 0.75
+                        } else if abs(y.truncatingRemainder(dividingBy: 3.0)) < epsilon {
+                            tickWidth = 8
+                            lineWidth = 0.6
+                        } else if abs(y.truncatingRemainder(dividingBy: 1.0)) < epsilon {
+                            tickWidth = 4
+                            lineWidth = 0.5
+                        } else {
+                            y += tickSpacing
+                            continue
+                        }
                     }
                 } else {
                     if isMajorTick {
@@ -339,7 +395,21 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
     case .millimeters:
         return pointsPerUnit * 10 // Major ticks every 10mm (1cm) - clean, readable
     case .picas:
-        return pointsPerUnit * 4 // Major ticks every 4 picas (labels: 0, 4, 8, ...)
+        // Illustrator-style labeling for picas
+        // 400% → 0,1,2,3 (every 1 pica)
+        // 200% → 0,2,4 (every 2 picas)
+        // 100% → 0,4,8 (every 4 picas)
+        if zoomLevel >= 4.0 {
+            return pointsPerUnit * 1
+        } else if zoomLevel >= 2.0 {
+            return pointsPerUnit * 2
+        } else if zoomLevel >= 1.0 {
+            return pointsPerUnit * 4
+        } else if zoomLevel >= 0.5 {
+            return pointsPerUnit * 8
+        } else {
+            return pointsPerUnit * 16
+        }
     }
 }
 
@@ -389,8 +459,18 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // MUCH REDUCED: Use 10mm intervals instead of 5mm (matches pica major tick spacing)
         baseSpacing = pointsPerUnit * 10 // 10mm intervals (28.35 points) - clean, readable
     case .picas:
-        // Use 0.5 pica minor spacing to mirror inches tiering (0.5, 1, 2, 4)
-        return pointsPerUnit / 2
+        // Minor spacing adapts to keep readable subdivisions under the major scheme above
+        if zoomLevel >= 4.0 {
+            return 1.0        // 1 point ticks at 400%+
+        } else if zoomLevel >= 2.0 {
+            return 1.0        // 1 point ticks at 200%
+        } else if zoomLevel >= 1.0 {
+            return 1.0        // 1 point ticks at 100%
+        } else if zoomLevel >= 0.5 {
+            return pointsPerUnit      // 1 pica at 50%
+        } else {
+            return pointsPerUnit * 2  // 2 picas when zoomed further out
+        }
     }
     
     // For non-inch units: Adjust spacing based on zoom level for professional readability
