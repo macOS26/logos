@@ -65,17 +65,18 @@ struct NewDocumentSetupView: View {
     let onDocumentCreated: (VectorDocument, URL?) -> Void
     
     @State private var setupData = DocumentSetupData()
-    @State private var selectedTemplate: TemplateManager.TemplateType = .blank
-    @State private var showingTemplatePicker = false
+    // Removed Template preset UI
     @State private var documentPreview: NSImage?
     @State private var isGeneratingPreview = false
+    // Skip the very next unit conversion triggered by a programmatic unit change (e.g., Quick Size)
+    @State private var skipNextUnitConversion = false
     @Environment(AppState.self) private var appState
     
-    private let templateManager = TemplateManager.shared
+    // Removed TemplateManager usage
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Professional Header
+            VStack(spacing: 0) {
+            // Professional Header (compact, clean)
             professionalHeader
             
             // Main Content
@@ -93,7 +94,7 @@ struct NewDocumentSetupView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            // Professional Footer
+            // Professional Footer (compact, clean)
             professionalFooter
         }
         .frame(width: 1000, height: 700)
@@ -159,15 +160,14 @@ struct NewDocumentSetupView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Document Name Section
                 documentNameSection
-                
-                // Document Size Section
+
+                // Document Size directly under name (requested)
                 documentSizeSection
-                
-                // Template Section
-                templateSection
-                
-                // Advanced Settings Section
-                advancedSettingsSection
+
+                // Quick Sizes Section
+                quickSizesSection
+
+                // Advanced Settings removed per request
             }
             .padding(24)
         }
@@ -251,25 +251,19 @@ struct NewDocumentSetupView: View {
                     }
                 }
                 
-                // Units
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Units")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Picker("Unit", selection: $setupData.unit) {
-                        ForEach(MeasurementUnit.allCases, id: \.self) { unit in
-                            Text(unit.rawValue.capitalized).tag(unit)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                }
+                // Units moved to the right column
             }
         }
         .onChange(of: setupData.width) { _, _ in generateDocumentPreview() }
         .onChange(of: setupData.height) { _, _ in generateDocumentPreview() }
         .onChange(of: setupData.unit) { oldUnit, newUnit in
-            // Convert existing numeric values when the unit changes
+            // If the unit change was triggered by a quick size, skip exactly one conversion
+            if skipNextUnitConversion {
+                skipNextUnitConversion = false
+                generateDocumentPreview()
+                return
+            }
+
             let convertedWidth = UnitsConverter.convert(value: setupData.width, from: oldUnit, to: newUnit)
             let convertedHeight = UnitsConverter.convert(value: setupData.height, from: oldUnit, to: newUnit)
             setupData.width = convertedWidth
@@ -278,134 +272,32 @@ struct NewDocumentSetupView: View {
         }
     }
     
-    // MARK: - Template Section
-    private var templateSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    // MARK: - Quick Sizes Section
+    private var quickSizesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: "doc.on.doc")
+                Image(systemName: "square.grid.2x2")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.blue)
-                
-                Text("Template")
+                Text("Quick Sizes")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
             }
-            
-            VStack(spacing: 16) {
-                // Template Picker
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Preset Template")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Picker("", selection: $selectedTemplate) {
-                        ForEach(TemplateManager.TemplateType.allCases, id: \.self) { template in
-                            Text(template.displayName).tag(template)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedTemplate) { _, newTemplate in
-                        applyTemplate(newTemplate)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.ui.textBackground)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
-                            )
-                    )
-                }
-                
-                // Quick Sizes
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Quick Sizes")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
-                        ForEach(quickSizes, id: \.name) { size in
-                            ProfessionalQuickSizeButton(size: size) {
-                                applyQuickSize(size)
-                            }
-                        }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                ForEach(quickSizes, id: \.self) { size in
+                    ProfessionalQuickSizeButton(size: size, displayUnit: setupData.unit) {
+                        applyQuickSize(size)
                     }
                 }
             }
         }
     }
     
-    // MARK: - Advanced Settings Section
-    private var advancedSettingsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.blue)
-                
-                Text("Advanced Settings")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-            }
-            
-            VStack(spacing: 16) {
-                // Color Mode and Resolution
-                HStack(spacing: 20) {
-                    // Color Mode
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Color Mode")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        Picker("Color Mode", selection: $setupData.colorMode) {
-                            ForEach(ColorMode.allCases, id: \.self) { mode in
-                                Text(mode.rawValue.uppercased()).tag(mode)
-                            }
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                    }
-                    
-                    // Resolution
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Resolution")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                        
-                        HStack(spacing: 6) {
-                            TextField("Resolution", value: $setupData.resolution, format: .number)
-                                .textFieldStyle(ProfessionalTextFieldStyle())
-                                .frame(width: 80)
-                            
-                            Text("DPI")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                // Display Options
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Display Options")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    VStack(spacing: 6) {
-                        ProfessionalToggle(title: "Show Rulers", isOn: $setupData.showRulers)
-                        ProfessionalToggle(title: "Show Grid", isOn: $setupData.showGrid)
-                        ProfessionalToggle(title: "Snap to Grid", isOn: $setupData.snapToGrid)
-                            .disabled(!setupData.showGrid)
-                    }
-                }
-            }
-        }
-    }
+    // Advanced settings section removed per request
     
     // MARK: - Preview Panel
     private var previewPanel: some View {
-        VStack(spacing: 24) {
+             VStack(spacing: 24) {
             // Document Preview
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
@@ -423,7 +315,7 @@ struct NewDocumentSetupView: View {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color(NSColor.controlBackgroundColor))
-                            .frame(width: 280, height: 280)
+                            .frame(width: 210, height: 210)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
@@ -433,7 +325,7 @@ struct NewDocumentSetupView: View {
                             Image(nsImage: preview)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(maxWidth: 260, maxHeight: 260)
+                                .frame(maxWidth: 195, maxHeight: 195)
                         } else if isGeneratingPreview {
                             VStack(spacing: 12) {
                                 ProgressView()
@@ -466,10 +358,57 @@ struct NewDocumentSetupView: View {
                     }
                 }
             }
-            
+
+            // Units + Color Mode + Resolution on the right (requested)
+            VStack(alignment: .leading, spacing: 16) {
+                // Units
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Units")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Picker("Unit", selection: $setupData.unit) {
+                        ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                            Text(unit.rawValue.capitalized).tag(unit)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+
+                // Color Mode and Resolution
+                HStack(spacing: 20) {
+                    // Color Mode
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Color Mode")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Picker("Color Mode", selection: $setupData.colorMode) {
+                            ForEach(ColorMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue.uppercased()).tag(mode)
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+
+                    // Resolution
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Resolution")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 6) {
+                            TextField("Resolution", value: $setupData.resolution, format: .number)
+                                .textFieldStyle(ProfessionalTextFieldStyle())
+                                .frame(width: 80)
+                            Text("DPI")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
             Spacer()
         }
-        .padding(24)
+        .padding(20)
         .frame(maxWidth: .infinity)
     }
     
@@ -503,47 +442,31 @@ struct NewDocumentSetupView: View {
         setupData.unit.rawValue
     }
     
-    private var quickSizes: [(name: String, width: Double, height: Double, unit: MeasurementUnit)] {
+    private var quickSizes: [QuickSize] {
         [
-            ("Letter", 8.5, 11.0, .inches),
-            ("Legal", 8.5, 14.0, .inches),
-            ("A4", 8.27, 11.69, .inches),
-            ("Business Card", 3.5, 2.0, .inches),
-            ("Web HD", 1920, 1080, .pixels),
-            ("Mobile", 375, 812, .pixels),
-            ("Square", 1000, 1000, .pixels),
-            ("Wide", 1920, 1080, .pixels)
+            QuickSize(name: "Letter", baseWidth: 8.5, baseHeight: 11.0, baseUnit: .inches),
+            QuickSize(name: "Legal", baseWidth: 8.5, baseHeight: 14.0, baseUnit: .inches),
+            // Requested: make A4 be Letter Wide (landscape letter)
+            QuickSize(name: "Letter Wide", baseWidth: 11.0, baseHeight: 8.5, baseUnit: .inches),
+            QuickSize(name: "Business Card", baseWidth: 3.5, baseHeight: 2.0, baseUnit: .inches),
+            QuickSize(name: "Web HD", baseWidth: 1920, baseHeight: 1080, baseUnit: .pixels),
+            QuickSize(name: "Mobile", baseWidth: 375, baseHeight: 812, baseUnit: .pixels),
+            QuickSize(name: "Square", baseWidth: 1000, baseHeight: 1000, baseUnit: .pixels),
+            QuickSize(name: "Wide", baseWidth: 1920, baseHeight: 1080, baseUnit: .pixels)
         ]
     }
     
     // MARK: - Helper Functions
-    private func applyTemplate(_ template: TemplateManager.TemplateType) {
-        let templateDoc = templateManager.createDocumentFromTemplate(template)
-        setupData.width = templateDoc.settings.width
-        setupData.height = templateDoc.settings.height
-        setupData.unit = templateDoc.settings.unit
-        setupData.colorMode = templateDoc.settings.colorMode
-        setupData.resolution = templateDoc.settings.resolution
-        setupData.showRulers = templateDoc.settings.showRulers
-        setupData.showGrid = templateDoc.settings.showGrid
-        setupData.snapToGrid = templateDoc.settings.snapToGrid
-        setupData.backgroundColor = templateDoc.settings.backgroundColor
-        
-        generateDocumentPreview()
-    }
+    // Removed template application function
     
-    private func applyQuickSize(_ size: (name: String, width: Double, height: Double, unit: MeasurementUnit)) {
-        setupData.width = size.width
-        setupData.height = size.height
-        setupData.unit = size.unit
+    private func applyQuickSize(_ size: QuickSize) {
+        // Apply dimensions in the CURRENTLY SELECTED unit to avoid any double conversions
+        let targetUnit = setupData.unit
+        setupData.width = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: targetUnit)
+        setupData.height = UnitsConverter.convert(value: size.baseHeight, from: size.baseUnit, to: targetUnit)
         
-        // Adjust resolution based on unit
-        if size.unit == .pixels {
-            setupData.resolution = 72.0
-        } else {
-            setupData.resolution = 300.0
-        }
-        
+        // Do not force a unit change; optionally set a sensible DPI default if the user is in Pixels
+        // Keep existing resolution unless the user explicitly changes it
         generateDocumentPreview()
     }
     
@@ -633,9 +556,18 @@ struct NewDocumentSetupView: View {
     }
 }
 
+// MARK: - Quick Size Model
+struct QuickSize: Hashable {
+    let name: String
+    let baseWidth: Double
+    let baseHeight: Double
+    let baseUnit: MeasurementUnit
+}
+
 // MARK: - Professional Quick Size Button Component
 struct ProfessionalQuickSizeButton: View {
-    let size: (name: String, width: Double, height: Double, unit: MeasurementUnit)
+    let size: QuickSize
+    let displayUnit: MeasurementUnit
     let action: () -> Void
     
     var body: some View {
@@ -651,7 +583,7 @@ struct ProfessionalQuickSizeButton: View {
                         .lineLimit(1)
                         .foregroundColor(.primary)
                     
-                    Text("\(Int(size.width))×\(Int(size.height))")
+                    Text(displayText)
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
                 }
@@ -669,12 +601,12 @@ struct ProfessionalQuickSizeButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
-        .help("\(Int(size.width)) × \(Int(size.height)) \(size.unit.rawValue)")
+        .help("\(displayText) \(displayUnit.rawValue)")
     }
     
     private var iconName: String {
         switch size.name {
-        case "Letter", "Legal", "A4":
+        case "Letter", "Legal", "Letter Wide":
             return "doc.text"
         case "Business Card":
             return "creditcard"
@@ -687,6 +619,12 @@ struct ProfessionalQuickSizeButton: View {
         default:
             return "doc"
         }
+    }
+
+    private var displayText: String {
+        let w = UnitsConverter.convert(value: size.baseWidth, from: size.baseUnit, to: displayUnit)
+        let h = UnitsConverter.convert(value: size.baseHeight, from: size.baseUnit, to: displayUnit)
+        return "\(Int(w))×\(Int(h))"
     }
 }
 

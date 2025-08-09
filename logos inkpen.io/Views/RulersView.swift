@@ -93,7 +93,9 @@ struct HorizontalRuler: View {
             let rulerX = x * zoomLevel + canvasOffset.x
             
             if rulerX >= 0 && rulerX <= size.width {
-                let isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                // Base major detection; may be overridden for certain units (e.g., centimeters)
+                var isMajorTick = abs(x.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                var labelUsesMajor = isMajorTick
                 
                 // PROFESSIONAL TICK HIERARCHY
                 let tickHeight: CGFloat
@@ -115,16 +117,15 @@ struct HorizontalRuler: View {
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
-                    let sixteenthStep = majorStep / 16.0
                     let epsilon = 0.001
 
                     let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(x.truncatingRemainder(dividingBy: eighthStep)) < epsilon
-                    let isSixteenth = abs(x.truncatingRemainder(dividingBy: sixteenthStep)) < epsilon
+                    let isThreePoint = abs(x.truncatingRemainder(dividingBy: 3.0)) < epsilon
 
-                    if zoomLevel < 4.0 {
+                    if zoomLevel < 3.0 {
                         // 100%–399% pattern
                         if isMajor {
                             tickHeight = 16
@@ -138,8 +139,8 @@ struct HorizontalRuler: View {
                         } else if isEighth {
                             tickHeight = 4 // shortest (0.5 pica)
                             lineWidth = 0.5
-                        } else if isSixteenth {
-                            // extra divider between current shortest ticks
+                        } else if isThreePoint {
+                            // Ensure smallest hairlines are at 3-point intervals (divisible by 3)
                             tickHeight = 3
                             lineWidth = 0.5
                         } else {
@@ -147,7 +148,7 @@ struct HorizontalRuler: View {
                             continue
                         }
                     } else {
-                        // ≥400%: allow denser 3pt/1pt structure on top of the above
+                        // ≥300%: allow denser 3pt/1pt structure on top of the above
                         if isMajor {
                             tickHeight = 16
                             lineWidth = 1.0
@@ -164,6 +165,31 @@ struct HorizontalRuler: View {
                             x += tickSpacing
                             continue
                         }
+                    }
+                } else if unit == .centimeters || unit == .millimeters {
+                    // Professional metric style: 1 cm majors, 5 mm mids, 1 mm minors
+                    // Use integer mm indexing to avoid floating point drift and skipped labels
+                    let mmPoints = MeasurementUnit.millimeters.pointsPerUnit
+                    let mmIndex = Int(round(x / mmPoints))
+
+                    let isCentimeter = (mmIndex % 10 == 0)
+                    let isHalfCentimeter = (mmIndex % 5 == 0)
+
+                    // Override base major detection and labeling logic for centimeters
+                    if unit == .centimeters {
+                        isMajorTick = isCentimeter
+                        labelUsesMajor = isCentimeter
+                    }
+
+                    if isCentimeter {
+                        tickHeight = 16
+                        lineWidth = 1.0
+                    } else if isHalfCentimeter {
+                        tickHeight = 10
+                        lineWidth = 0.7
+                    } else {
+                        tickHeight = 6
+                        lineWidth = 0.5
                     }
                 } else {
                     // Other units keep the professional inches-style hierarchy
@@ -201,7 +227,7 @@ struct HorizontalRuler: View {
                 )
                 
                 // Draw label for major ticks only
-                if isMajorTick {
+                if labelUsesMajor {
                     let value = x / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
 
@@ -274,7 +300,9 @@ struct VerticalRuler: View {
             let rulerY = y * zoomLevel + canvasOffset.y
             
             if rulerY >= 0 && rulerY <= size.height {
-                let isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                // Base major detection; may be overridden for certain units (e.g., centimeters)
+                var isMajorTick = abs(y.truncatingRemainder(dividingBy: majorTickInterval)) < 0.001
+                var labelUsesMajor = isMajorTick
                 
                 // PROFESSIONAL TICK HIERARCHY
                 let tickWidth: CGFloat
@@ -294,16 +322,15 @@ struct VerticalRuler: View {
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
-                    let sixteenthStep = majorStep / 16.0
                     let epsilon = 0.001
 
                     let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(y.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(y.truncatingRemainder(dividingBy: eighthStep)) < epsilon
-                    let isSixteenth = abs(y.truncatingRemainder(dividingBy: sixteenthStep)) < epsilon
+                    let isThreePoint = abs(y.truncatingRemainder(dividingBy: 3.0)) < epsilon
 
-                    if zoomLevel < 4.0 {
+                    if zoomLevel < 3.0 {
                         // 100%–399% pattern
                         if isMajor {
                             tickWidth = 16
@@ -317,15 +344,15 @@ struct VerticalRuler: View {
                         } else if isEighth {
                             tickWidth = 4 // shortest (0.5 pica)
                             lineWidth = 0.5
-                        } else if isSixteenth {
-                            tickWidth = 3 // extra divider between current shortest ticks
+                        } else if isThreePoint {
+                            tickWidth = 3 // ensure smallest ticks at 3pt multiples
                             lineWidth = 0.5
                         } else {
                             y += tickSpacing
                             continue
                         }
                     } else {
-                        // ≥400%: denser 3pt/1pt structure
+                        // ≥300%: denser 3pt/1pt structure
                         if isMajor {
                             tickWidth = 16
                             lineWidth = 1.0
@@ -342,6 +369,31 @@ struct VerticalRuler: View {
                             y += tickSpacing
                             continue
                         }
+                    }
+                } else if unit == .centimeters || unit == .millimeters {
+                    // Professional metric style: 1 cm majors, 5 mm mids, 1 mm minors
+                    // Use integer mm indexing to avoid floating point drift and skipped labels
+                    let mmPoints = MeasurementUnit.millimeters.pointsPerUnit
+                    let mmIndex = Int(round(y / mmPoints))
+
+                    let isCentimeter = (mmIndex % 10 == 0)
+                    let isHalfCentimeter = (mmIndex % 5 == 0)
+
+                    // Override base major detection and labeling logic for centimeters
+                    if unit == .centimeters {
+                        isMajorTick = isCentimeter
+                        labelUsesMajor = isCentimeter
+                    }
+
+                    if isCentimeter {
+                        tickWidth = 16
+                        lineWidth = 1.0
+                    } else if isHalfCentimeter {
+                        tickWidth = 10
+                        lineWidth = 0.7
+                    } else {
+                        tickWidth = 6
+                        lineWidth = 0.5
                     }
                 } else {
                     if isMajorTick {
@@ -378,7 +430,7 @@ struct VerticalRuler: View {
                 )
                 
                 // Draw label for major ticks only
-                if isMajorTick {
+                if labelUsesMajor {
                     let value = y / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
 
@@ -420,9 +472,19 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
     case .inches:
         return pointsPerUnit // Major ticks every inch - perfect
     case .centimeters:
-        return pointsPerUnit // Major ticks every centimeter - appropriate
+        // Centimeters: majors at every 1 cm regardless of zoom
+        return pointsPerUnit
     case .millimeters:
-        return pointsPerUnit * 10 // Major ticks every 10mm (1cm) - clean, readable
+        // Clone pixel scheme exactly: majors 50/100/200/400 units (here, millimeters)
+        if zoomLevel >= 1.0 {
+            return pointsPerUnit * 50
+        } else if zoomLevel >= 0.5 {
+            return pointsPerUnit * 100
+        } else if zoomLevel >= 0.25 {
+            return pointsPerUnit * 200
+        } else {
+            return pointsPerUnit * 400
+        }
     case .picas:
         // Illustrator-style labeling for picas
         // 400% → 0,1,2,3 (every 1 pica)
@@ -463,11 +525,11 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         }
     case .inches:
         // Adaptive tick spacing for inches based on zoom level
-        // Show all tick marks above 50%, then progressively drop ticks at lower zoom levels
-        let _ = (pointsPerUnit / 8) * zoomLevel // 1/8 inch intervals (9 points)
-        
-        if zoomLevel >= 0.5 {
-            // Above 50% zoom: Show all tick marks (1/8 inch intervals)
+        // 100%+: 1/16 inch intervals so 1/16 ticks can render
+        if zoomLevel >= 1.0 {
+            return pointsPerUnit / 16 // 4.5 points = 1/16 inch intervals
+        } else if zoomLevel >= 0.5 {
+            // 50%–99%: 1/8 inch intervals
             return pointsPerUnit / 8 // 9 points = 1/8 inch intervals
         } else if zoomLevel >= 0.33 {
             // At 33% zoom: Show 1/4 inch intervals
@@ -480,11 +542,27 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
             return pointsPerUnit * 2 // 144 points = 2 inch intervals
         }
     case .centimeters:
-        // FIXED: Use larger intervals - match pica density (was 2mm, now ~3mm)
-        baseSpacing = pointsPerUnit / 3 // ~3.33mm intervals (9.45 points) - matches pica density
+        // CM: consistent 1 mm minor spacing where practical; scale out conservatively
+        if zoomLevel >= 1.0 {
+            return pointsPerUnit / 10 // 1 mm
+        } else if zoomLevel >= 0.5 {
+            return pointsPerUnit / 5  // 2 mm
+        } else if zoomLevel >= 0.25 {
+            return pointsPerUnit / 2  // 5 mm
+        } else {
+            return pointsPerUnit      // 1 cm when zoomed far out
+        }
     case .millimeters:
-        // MUCH REDUCED: Use 10mm intervals instead of 5mm (matches pica major tick spacing)
-        baseSpacing = pointsPerUnit * 10 // 10mm intervals (28.35 points) - clean, readable
+        // Keep mm cloned to pixel scheme (minor = major/5)
+        if zoomLevel >= 1.0 {
+            return (pointsPerUnit * 50) / 5
+        } else if zoomLevel >= 0.5 {
+            return (pointsPerUnit * 100) / 5
+        } else if zoomLevel >= 0.25 {
+            return (pointsPerUnit * 200) / 5
+        } else {
+            return (pointsPerUnit * 400) / 5
+        }
     case .picas:
         // Minor spacing adapts to keep readable subdivisions under the major scheme above
         if zoomLevel >= 4.0 {
