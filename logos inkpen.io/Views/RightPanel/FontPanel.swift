@@ -284,22 +284,27 @@ struct FontPanel: View {
                                 
                                 Slider(value: Binding(
                                     get: { 
-                                        guard let selectedText = selectedText else { return document.fontManager.selectedFontSize }
-                                        return selectedText.typography.fontSize
+                                        if let selectedText = selectedText {
+                                            return selectedText.typography.fontSize
+                                        } else if let editingText = editingText {
+                                            return editingText.typography.fontSize
+                                        } else {
+                                            return document.fontManager.selectedFontSize
+                                        }
                                     },
                                     set: { newSize in
                                         if let _ = selectedText {
-                                            // Update selected text only - NO document.fontManager changes
                                             updateSelectedTextProperties(action: "Changed font size") { text in
                                                 text.typography.fontSize = newSize
-                                                // Update line height to maintain proportion when font size changes
                                                 if text.typography.lineHeight > 0 {
                                                     text.typography.lineHeight = newSize
                                                 }
                                             }
                                         } else {
-                                            // Update document font manager for new text creation only
                                             document.fontManager.selectedFontSize = newSize
+                                            // keep default line height synced
+                                            document.fontManager.selectedLineHeight = newSize
+                                            document.objectWillChange.send()
                                         }
                                     }
                                 ), in: 1...288)
@@ -316,7 +321,12 @@ struct FontPanel: View {
                                 HStack(spacing: 4) {
                                     // Left Align
                                     Button {
-                                        updateTextAlignment(.left)
+                                        if let _ = selectedText {
+                                            updateTextAlignment(.left)
+                                        } else {
+                                            document.fontManager.selectedTextAlignment = .left
+                                            document.objectWillChange.send()
+                                        }
                                     } label: {
                                         Image(systemName: "text.alignleft")
                                             .font(.system(size: 14))
@@ -330,7 +340,12 @@ struct FontPanel: View {
                                     
                                     // Center Align
                                     Button {
-                                        updateTextAlignment(.center)
+                                        if let _ = selectedText {
+                                            updateTextAlignment(.center)
+                                        } else {
+                                            document.fontManager.selectedTextAlignment = .center
+                                            document.objectWillChange.send()
+                                        }
                                     } label: {
                                         Image(systemName: "text.aligncenter")
                                             .font(.system(size: 14))
@@ -344,7 +359,12 @@ struct FontPanel: View {
                                     
                                     // Right Align
                                     Button {
-                                        updateTextAlignment(.right)
+                                        if let _ = selectedText {
+                                            updateTextAlignment(.right)
+                                        } else {
+                                            document.fontManager.selectedTextAlignment = .right
+                                            document.objectWillChange.send()
+                                        }
                                     } label: {
                                         Image(systemName: "text.alignright")
                                             .font(.system(size: 14))
@@ -358,7 +378,12 @@ struct FontPanel: View {
                                     
                                     // Justify
                                     Button {
-                                        updateTextAlignment(.justified)
+                                        if let _ = selectedText {
+                                            updateTextAlignment(.justified)
+                                        } else {
+                                            document.fontManager.selectedTextAlignment = .justified
+                                            document.objectWillChange.send()
+                                        }
                                     } label: {
                                         Image(systemName: "text.justify")
                                             .font(.system(size: 14))
@@ -390,7 +415,12 @@ struct FontPanel: View {
                                 Slider(value: Binding(
                                     get: { currentLineSpacing },
                                     set: { newSpacing in
-                                        updateLineSpacing(newSpacing)
+                                        if let _ = selectedText {
+                                            updateLineSpacing(newSpacing)
+                                        } else {
+                                            document.fontManager.selectedLineSpacing = Double(newSpacing)
+                                            document.objectWillChange.send()
+                                        }
                                     }
                                 ), in: {
                                     let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
@@ -415,7 +445,12 @@ struct FontPanel: View {
                                 Slider(value: Binding(
                                     get: { currentLineHeight },
                                     set: { newHeight in
-                                        updateLineHeight(newHeight)
+                                        if let _ = selectedText {
+                                            updateLineHeight(newHeight)
+                                        } else {
+                                            document.fontManager.selectedLineHeight = Double(newHeight)
+                                            document.objectWillChange.send()
+                                        }
                                     }
                                 ), in: {
                                     let fontSize = selectedText?.typography.fontSize ?? document.fontManager.selectedFontSize
@@ -555,7 +590,13 @@ struct FontPanel: View {
     
     // NEW: Helper properties for text alignment and line spacing
     private var currentTextAlignment: NSTextAlignment {
-        selectedText?.typography.alignment.nsTextAlignment ?? .left
+        if let selectedText = selectedText {
+            return selectedText.typography.alignment.nsTextAlignment
+        } else if let editingText = editingText {
+            return editingText.typography.alignment.nsTextAlignment
+        } else {
+            return document.fontManager.selectedTextAlignment.nsTextAlignment
+        }
     }
     
     // FIXED: Simple computed property without state modifications
@@ -565,7 +606,7 @@ struct FontPanel: View {
         } else if let editingText = editingText {
             return editingText.typography.lineSpacing
         } else {
-            return 0.0
+            return document.fontManager.selectedLineSpacing
         }
     }
     

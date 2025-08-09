@@ -1954,30 +1954,35 @@ struct logos_inken_ioApp: App {
                 .help("Run a test to verify the duplicate point merger works correctly")
             }
             
-            // WINDOW MENU - Panel Switching using AppState (no more notifications!)
-            CommandMenu("Window") {
-                Button("Show Layers Panel") {
-                    appState.showLayersPanel()
+            // PANEL MENU - replaces custom Window menu; keeps macOS default Window menu intact
+            CommandMenu("Panel") {
+                Button(action: { appState.selectedPanelTab = .layers }) {
+                    Label("Layer", systemImage: PanelTab.layers.iconName)
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
-                
-                Button("Show Color Panel") {
-                    appState.showColorPanel()
-                }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
-                
-                Button("Show Stroke/Fill Panel") {
-                    appState.showStrokeFillPanel()
+
+                Button(action: { appState.selectedPanelTab = .properties }) {
+                    Label("Paint", systemImage: PanelTab.properties.iconName)
                 }
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-                
-                Button("Show Path Ops Panel") {
-                    appState.showPathOpsPanel()
+
+                Button(action: { appState.selectedPanelTab = .gradient }) {
+                    Label("Grade", systemImage: PanelTab.gradient.iconName)
+                }
+                .keyboardShortcut("g", modifiers: [.command, .shift])
+
+                Button(action: { appState.selectedPanelTab = .color }) {
+                    Label("Ink", systemImage: PanelTab.color.iconName)
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+
+                Button(action: { appState.selectedPanelTab = .pathOps }) {
+                    Label("Path", systemImage: PanelTab.pathOps.iconName)
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
-                
-                Button("Show Font Panel") {
-                    appState.showFontPanel()
+
+                Button(action: { appState.selectedPanelTab = .font }) {
+                    Label("Font", systemImage: PanelTab.font.iconName)
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
             }
