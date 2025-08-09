@@ -70,7 +70,7 @@ extension DrawingCanvas {
         }
     }
     
-    /// Handle zoom gesture end - finalize zoom level (snap to nearest allowed step)
+    /// Handle zoom gesture end - finalize zoom level (continuous, no snapping)
     internal func handleZoomGestureEnded(value: CGFloat, geometry: GeometryProxy) {
         // Always reset gesture state to ensure UI responsiveness
         defer {
@@ -84,8 +84,8 @@ extension DrawingCanvas {
             return
         }
         
-        let continuousZoom = max(0.1, min(16.0, initialZoomLevel * value))
-        let finalZoomLevel = quantizeZoomToNearestAllowed(continuousZoom)
+        // Keep pinch zoom continuous (no rounding to steps)
+        let finalZoomLevel = max(0.1, min(16.0, initialZoomLevel * value))
         
         // PROFESSIONAL ZOOM AT MOUSE POSITION: Final zoom also uses focal point
         // If no mouse position available, fall back to center of view

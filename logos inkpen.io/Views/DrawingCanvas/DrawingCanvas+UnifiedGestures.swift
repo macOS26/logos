@@ -97,10 +97,9 @@ extension DrawingCanvas {
             let sensitivity: CGFloat = 300.0
             var scaleChange = exp(-deltaY / sensitivity) // drag up (negative deltaY) -> zoom in
             if isOptionPressed { scaleChange = 1.0 / scaleChange }
+            // Keep drag zoom continuous (no snapping)
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
-            // Snap continuously to nearest allowed step for consistent feel
-            let snappedZoom = quantizeZoomToNearestAllowed(continuousZoom)
-            handleZoomAtPoint(newZoomLevel: snappedZoom, focalPoint: value.startLocation, geometry: geometry)
+            handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry)
             
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)

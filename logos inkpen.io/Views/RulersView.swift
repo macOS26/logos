@@ -115,12 +115,14 @@ struct HorizontalRuler: View {
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
+                    let sixteenthStep = majorStep / 16.0
                     let epsilon = 0.001
 
                     let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(x.truncatingRemainder(dividingBy: eighthStep)) < epsilon
+                    let isSixteenth = abs(x.truncatingRemainder(dividingBy: sixteenthStep)) < epsilon
 
                     if zoomLevel < 4.0 {
                         // 100%–399% pattern
@@ -135,6 +137,10 @@ struct HorizontalRuler: View {
                             lineWidth = 0.6
                         } else if isEighth {
                             tickHeight = 4 // shortest (0.5 pica)
+                            lineWidth = 0.5
+                        } else if isSixteenth {
+                            // extra divider between current shortest ticks
+                            tickHeight = 3
                             lineWidth = 0.5
                         } else {
                             x += tickSpacing
@@ -172,6 +178,10 @@ struct HorizontalRuler: View {
                         lineWidth = 0.6
                     } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
                         tickHeight = 4
+                        lineWidth = 0.5
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 16)) < 0.001 {
+                        // New 1/16-inch hairline ticks (shorter than 1/8)
+                        tickHeight = 3
                         lineWidth = 0.5
                     } else {
                         // Skip ticks that aren't at proper intervals
@@ -284,12 +294,14 @@ struct VerticalRuler: View {
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
+                    let sixteenthStep = majorStep / 16.0
                     let epsilon = 0.001
 
                     let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(y.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
                     let isEighth = abs(y.truncatingRemainder(dividingBy: eighthStep)) < epsilon
+                    let isSixteenth = abs(y.truncatingRemainder(dividingBy: sixteenthStep)) < epsilon
 
                     if zoomLevel < 4.0 {
                         // 100%–399% pattern
@@ -304,6 +316,9 @@ struct VerticalRuler: View {
                             lineWidth = 0.6
                         } else if isEighth {
                             tickWidth = 4 // shortest (0.5 pica)
+                            lineWidth = 0.5
+                        } else if isSixteenth {
+                            tickWidth = 3 // extra divider between current shortest ticks
                             lineWidth = 0.5
                         } else {
                             y += tickSpacing
@@ -340,6 +355,10 @@ struct VerticalRuler: View {
                         lineWidth = 0.6
                     } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 8)) < 0.001 {
                         tickWidth = 4
+                        lineWidth = 0.5
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 16)) < 0.001 {
+                        // New 1/16-inch hairline ticks (shorter than 1/8)
+                        tickWidth = 3
                         lineWidth = 0.5
                     } else {
                         // Skip ticks that aren't at proper intervals
