@@ -1643,6 +1643,15 @@ struct logos_inken_ioApp: App {
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
         .commands {
+            // Replace default "New" menu to avoid extra entries from auxiliary WindowGroups
+            CommandGroup(replacing: .newItem) {
+                Button("New Document") {
+                    NSDocumentController.shared.newDocument(nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                .help("Create a new document")
+            }
+
             // Application Menu commands (appears under the app name)
             CommandGroup(replacing: .appSettings) {
                 Menu("Default Tool") {

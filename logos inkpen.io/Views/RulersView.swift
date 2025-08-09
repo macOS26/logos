@@ -20,11 +20,13 @@ struct RulersView: View {
                 HorizontalRuler(document: document, geometry: geometry)
                     .frame(height: rulerThickness)
                     .position(x: geometry.size.width / 2, y: rulerThickness / 2)
+                    .contextMenu { RulerUnitContextMenu(document: document) }
                 
                 // Vertical Ruler (Left)
                 VerticalRuler(document: document, geometry: geometry)
                     .frame(width: rulerThickness)
                     .position(x: rulerThickness / 2, y: geometry.size.height / 2)
+                    .contextMenu { RulerUnitContextMenu(document: document) }
                 
                 // Corner Square
                 Rectangle()
@@ -37,6 +39,7 @@ struct RulersView: View {
                             .frame(width: rulerThickness, height: rulerThickness)
                             .position(x: rulerThickness / 2, y: rulerThickness / 2)
                     )
+                    .contextMenu { RulerUnitContextMenu(document: document) }
             }
         }
     }
@@ -741,6 +744,32 @@ struct UnitsConverter {
         case .picas:
             return String(format: "%.2f pc", convertedValue)
         }
+    }
+}
+
+// MARK: - Context menu for ruler unit selection
+private struct RulerUnitContextMenu: View {
+    @ObservedObject var document: VectorDocument
+    
+    var body: some View {
+        ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+            Button(action: { setUnit(unit) }) {
+                HStack {
+                    if document.settings.unit == unit {
+                        Image(systemName: "checkmark")
+                    }
+                    Text(unit.rawValue)
+                }
+            }
+        }
+    }
+    
+    private func setUnit(_ newUnit: MeasurementUnit) {
+        guard newUnit != document.settings.unit else { return }
+        var settings = document.settings
+        settings.changeUnit(to: newUnit) // preserves size in points
+        document.settings = settings
+        document.onSettingsChanged()
     }
 }
 
