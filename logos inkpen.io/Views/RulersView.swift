@@ -37,6 +37,13 @@ struct RulersView: View {
                             .frame(width: rulerThickness, height: rulerThickness)
                             .position(x: rulerThickness / 2, y: rulerThickness / 2)
                     )
+                    .contentShape(Path { path in
+                        // Limit hit area strictly to the 20×20 corner square at origin
+                        path.addRect(CGRect(x: 0, y: 0, width: rulerThickness, height: rulerThickness))
+                    })
+                    .onTapGesture {
+                        print("✅ Corner square tapped")
+                    }
             }
         }
     }
@@ -65,7 +72,12 @@ struct HorizontalRuler: View {
                     drawHorizontalRuler(context: context, size: size)
                 }
             }
-            .contentShape(Rectangle())
+            .contentShape(Path { path in
+                let size = rulerGeometry.size
+                // Exclude the top-left corner square (leading rulerThickness width)
+                let hitRect = CGRect(x: rulerThickness, y: 0, width: max(0, size.width - rulerThickness), height: size.height)
+                path.addRect(hitRect)
+            })
             .onTapGesture {
                 print("✅ Horizontal ruler tapped")
             }
@@ -290,7 +302,12 @@ struct VerticalRuler: View {
                     drawVerticalRuler(context: ctx, size: size)
                 }
             }
-            .contentShape(Rectangle())
+            .contentShape(Path { path in
+                let size = rulerGeometry.size
+                // Exclude the top-left corner square (top rulerThickness height)
+                let hitRect = CGRect(x: 0, y: rulerThickness, width: size.width, height: max(0, size.height - rulerThickness))
+                path.addRect(hitRect)
+            })
             .onTapGesture {
                 print("✅ Vertical ruler tapped")
             }
