@@ -115,7 +115,6 @@ struct HorizontalRuler: View {
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
                     let eighthStep = majorStep / 8.0
-                    let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
 
                     let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
@@ -284,6 +283,7 @@ struct VerticalRuler: View {
                     let majorStep = getMajorTickInterval(for: .picas, zoomLevel: zoomLevel)
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
+                    let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
 
                     let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
@@ -442,8 +442,6 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         } else {
             return 80.0 // 400 major / 5
         }
-    case .points:
-        baseSpacing = 12.0 // dead code, never reached due to early return above
     case .inches:
         // Adaptive tick spacing for inches based on zoom level
         // Show all tick marks above 50%, then progressively drop ticks at lower zoom levels
