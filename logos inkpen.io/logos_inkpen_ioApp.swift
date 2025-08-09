@@ -10,6 +10,7 @@ import AppKit
 import Combine
 import UniformTypeIdentifiers
 import ObjectiveC
+import Darwin
 
 // MARK: - Window Accessor for macOS 15+ Floating Window Features
 struct WindowAccessor: NSViewRepresentable {
@@ -43,14 +44,16 @@ class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {
         // Check if this is our gradient HUD window
         if sender.title == "Select Gradient Color" {
             print("🎨 GRADIENT HUD: Close button clicked - preserving position with orderOut")
-            
-            // Stop editing state
             AppState.shared.persistentGradientHUD.stopEditing()
-            
-            // Use orderOut instead of close to preserve position
             sender.orderOut(nil)
-            
-            // Return false to prevent the default close behavior
+            return false
+        }
+        
+        // Check if this is our Ink Color Mixer HUD
+        if sender.title == "Ink Color Mixer" {
+            print("🖌️ INK HUD: Close button clicked - hiding window via orderOut")
+            AppState.shared.persistentInkHUD.hide()
+            sender.orderOut(nil)
             return false
         }
         
@@ -635,9 +638,6 @@ struct DocumentBasedMainView: View {
             
             // Status Bar at bottom - MOVED OUTSIDE canvas area to prevent overlap
             StatusBar(document: document)
-                .frame(height: 21) // EXACT MainView height
-                .frame(minHeight: 21) // ENSURE: Status bar height is always preserved
-                .frame(maxWidth: .infinity) // ENSURE: Status bar spans full width
         }
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
         .toolbar {
@@ -1303,9 +1303,144 @@ class SystemErrorHandler {
     }
 }
 
+// MARK: - Stderr Filter (Suppresses noisy system warnings)
+final class StderrFilter {
+    static let shared = StderrFilter()
+    
+    private var suppressPatterns: [String] = []
+    private var originalStderrFD: Int32 = -1
+    private var pipeReadFD: Int32 = -1
+    private var pipeWriteFD: Int32 = -1
+    private var readSource: DispatchSourceRead?
+    private var pendingBuffer = Data()
+    private let queue = DispatchQueue(label: "io.logos.stderr.filter", qos: .background)
+    private var isInstalled = false
+    
+    private init() {}
+    
+    func installFilter(suppressing patterns: [String]) {
+        guard !isInstalled else { return }
+        isInstalled = true
+        suppressPatterns = patterns.map { $0.lowercased() }
+        
+        var fds: [Int32] = [0, 0]
+        if pipe(&fds) != 0 {
+            return
+        }
+        pipeReadFD = fds[0]
+        pipeWriteFD = fds[1]
+        
+        // Duplicate current stderr so we can still write through to it
+        originalStderrFD = dup(STDERR_FILENO)
+        if originalStderrFD == -1 {
+            close(pipeReadFD)
+            close(pipeWriteFD)
+            return
+        }
+        
+        // Make stderr unbuffered to avoid delays
+        setvbuf(stderr, nil, _IONBF, 0)
+        
+        // Redirect stderr to our pipe
+        if dup2(pipeWriteFD, STDERR_FILENO) == -1 {
+            close(pipeReadFD)
+            close(pipeWriteFD)
+            close(originalStderrFD)
+            return
+        }
+        // We can close our copy of the write end; STDERR now refers to it
+        close(pipeWriteFD)
+        
+        let source = DispatchSource.makeReadSource(fileDescriptor: pipeReadFD, queue: queue)
+        readSource = source
+        
+        source.setEventHandler { [weak self] in
+            guard let self = self else { return }
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            let bytesRead = read(self.pipeReadFD, &buffer, buffer.count)
+            if bytesRead > 0 {
+                self.pendingBuffer.append(buffer, count: bytesRead)
+                self.processPendingBuffer()
+            } else if bytesRead == 0 {
+                // EOF
+                self.flushRemaining()
+                self.cleanup()
+            } else {
+                // Read error
+                self.cleanup()
+            }
+        }
+        
+        source.setCancelHandler { [weak self] in
+            guard let self = self else { return }
+            if self.pipeReadFD != -1 { close(self.pipeReadFD) }
+        }
+        
+        source.resume()
+    }
+    
+    private func processPendingBuffer() {
+        // Split by newline, keep last partial in pendingBuffer
+        while let range = pendingBuffer.firstRange(of: Data([0x0A])) { // '\n'
+            let lineData = pendingBuffer.subdata(in: 0..<range.lowerBound)
+            pendingBuffer.removeSubrange(0..<(range.upperBound)) // remove line + newline
+            forwardIfNotSuppressed(lineData: lineData)
+        }
+    }
+    
+    private func flushRemaining() {
+        if !pendingBuffer.isEmpty {
+            forwardIfNotSuppressed(lineData: pendingBuffer)
+            pendingBuffer.removeAll(keepingCapacity: false)
+        }
+    }
+    
+    private func forwardIfNotSuppressed(lineData: Data) {
+        guard let line = String(data: lineData, encoding: .utf8) else {
+            writeRaw(lineData)
+            writeRaw(Data([0x0A]))
+            return
+        }
+        let lower = line.lowercased()
+        let shouldSuppress = suppressPatterns.contains { lower.contains($0) }
+        if !shouldSuppress {
+            writeRaw(lineData)
+            writeRaw(Data([0x0A]))
+        }
+    }
+    
+    private func writeRaw(_ data: Data) {
+        data.withUnsafeBytes { ptr in
+            var remaining = ptr.count
+            var base = ptr.bindMemory(to: UInt8.self).baseAddress
+            while remaining > 0 {
+                let written = write(originalStderrFD, base, remaining)
+                if written <= 0 { break }
+                remaining -= written
+                base = base?.advanced(by: written)
+            }
+        }
+    }
+    
+    private func cleanup() {
+        readSource?.cancel()
+        readSource = nil
+        if originalStderrFD != -1 { close(originalStderrFD); originalStderrFD = -1 }
+        if pipeReadFD != -1 { close(pipeReadFD); pipeReadFD = -1 }
+        isInstalled = false
+    }
+}
+
 // MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Install stderr filter to suppress noisy system-level SQLite warning lines
+        StderrFilter.shared.installFilter(suppressing: [
+            "/private/var/db/DetachedSignatures",
+            "os_unix.c:49448",
+            "cannot open file at line 49448"
+        ])
+        
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
         
@@ -2183,6 +2318,33 @@ struct logos_inken_ioApp: App {
         }
         .windowResizability(.contentSize) // Size to content
         // 🔥 NO MANUAL POSITIONING - Let macOS handle window positioning naturally
+        
+        // 🔥 INK COLOR MIXER HUD WINDOW
+        WindowGroup("Ink Color Mixer", id: "ink-hud") {
+            StableInkHUDContent()
+                .environment(appState)
+                .background(WindowAccessor { window in
+                    if let window {
+                        window.styleMask = [.hudWindow, .titled, .closable]
+                        window.hidesOnDeactivate = true
+                        window.appearance = NSAppearance(named: .darkAqua)
+                        window.titlebarAppearsTransparent = true
+                        window.titleVisibility = .visible
+                        window.title = "Ink Color Mixer"
+                        window.isOpaque = true
+                        window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+                        window.hasShadow = true
+                        window.level = .modalPanel
+                        window.isMovableByWindowBackground = false
+                        window.tabbingMode = .disallowed
+                        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                        window.standardWindowButton(.zoomButton)?.isHidden = true
+                        window.styleMask.insert(.utilityWindow)
+                        window.delegate = GradientHUDWindowDelegate.shared
+                    }
+                })
+        }
+        .windowResizability(.contentSize)
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing

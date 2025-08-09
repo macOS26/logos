@@ -62,6 +62,15 @@ class AppState {
         return _persistentGradientHUD!
     }
     
+    // 🔥 PERSISTENT INK HUD MANAGER
+    private var _persistentInkHUD: PersistentInkHUDManager?
+    var persistentInkHUD: PersistentInkHUDManager {
+        if _persistentInkHUD == nil {
+            _persistentInkHUD = PersistentInkHUDManager(appState: self)
+        }
+        return _persistentInkHUD!
+    }
+    
     // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
@@ -105,6 +114,15 @@ class AppState {
                     }
                 }
                 print("🎨 GRADIENT HUD: dismissWindowAction completed")
+            } else if id.contains("ink-hud") {
+                print("🖌️ INK HUD: dismissWindowAction called - hiding window")
+                self.persistentInkHUD.hide()
+                NSApplication.shared.windows.forEach { window in
+                    if window.title.contains("Ink Color Mixer") && window.isVisible {
+                        window.orderOut(nil)
+                    }
+                }
+                print("🖌️ INK HUD: dismissWindowAction completed")
             }
             dismissWindow(id)
         }
@@ -337,3 +355,48 @@ class PersistentGradientHUDManager {
         return stableColorDocument
     }
 } 
+
+// MARK: - Persistent Ink HUD Manager (for Ink Color Mixer)
+
+@Observable
+class PersistentInkHUDManager {
+    var isVisible = false
+    private weak var appState: AppState?
+    
+    // The document whose colors are being edited
+    var currentDocument: VectorDocument? = nil
+    
+    init(appState: AppState) {
+        self.appState = appState
+    }
+    
+    func show(document: VectorDocument) {
+        currentDocument = document
+        isVisible = true
+        
+        var foundExistingWindow = false
+        for window in NSApplication.shared.windows {
+            if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
+                if !window.isVisible {
+                    window.tabbingMode = .disallowed
+                    window.makeKeyAndOrderFront(nil)
+                }
+                foundExistingWindow = true
+                break
+            }
+        }
+        
+        if !foundExistingWindow {
+            appState?.openWindowAction?("ink-hud")
+        }
+    }
+    
+    func hide() {
+        NSApplication.shared.windows.forEach { window in
+            if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud"), window.isVisible {
+                window.orderOut(nil)
+            }
+        }
+        isVisible = false
+    }
+}

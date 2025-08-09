@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 extension DrawingCanvas {
     
@@ -69,6 +70,9 @@ extension DrawingCanvas {
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
+            
+        case .eyedropper:
+            startEyedropperColorPick()
             
         default:
             break
@@ -248,5 +252,22 @@ extension DrawingCanvas {
         currentDrawingPoints.removeAll()
         shapeDragStart = CGPoint.zero
         shapeStartPoint = CGPoint.zero
+    }
+
+    // MARK: - Eyedropper
+    /// Launch the system color sampler and apply the picked color to the active target (fill/stroke)
+    private func startEyedropperColorPick() {
+        let sampler = NSColorSampler()
+        sampler.show { pickedColor in
+            guard let nsColor = pickedColor?.usingColorSpace(.sRGB) else { return }
+            var r: CGFloat = 0
+            var g: CGFloat = 0
+            var b: CGFloat = 0
+            var a: CGFloat = 0
+            nsColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+            let rgb = RGBColor(red: Double(r), green: Double(g), blue: Double(b), alpha: Double(a))
+            let vectorColor = VectorColor.rgb(rgb)
+            document.setActiveColor(vectorColor)
+        }
     }
 } 

@@ -1015,6 +1015,7 @@ struct ToolButton: View {
 
 struct ColorSwatchGrid: View {
     @ObservedObject var document: VectorDocument
+    @Environment(AppState.self) private var appState
     @State private var selectedFillColor: VectorColor = .white
     @State private var selectedStrokeColor: VectorColor = .black
     @State private var showingColorPicker = false
@@ -1277,7 +1278,8 @@ struct ColorSwatchGrid: View {
             
             // Add Color Button
             Button {
-                showingColorPicker = true
+                // Show persistent Ink HUD (Ink Color Mixer)
+                appState.persistentInkHUD.show(document: document)
             } label: {
                 Image(systemName: "plus.circle")
                     .font(.system(size: 14))
@@ -1285,24 +1287,7 @@ struct ColorSwatchGrid: View {
             }
             .buttonStyle(PlainButtonStyle())
             .help("Add Custom Color")
-            .sheet(isPresented: $showingColorPicker) {
-                ColorPickerModal(
-                    document: document,
-                    title: "Add Color", 
-                    onColorSelected: { color in
-                        // Apply to active target
-                        if document.activeColorTarget == .stroke {
-                            document.defaultStrokeColor = color
-                            applyStrokeColorToSelected(color)
-                        } else {
-                            document.defaultFillColor = color
-                            applyFillColorToSelected(color)
-                        }
-                        // ONLY add to swatches when explicitly adding via "Add Color" button
-                        document.addColorSwatch(color)
-                    }
-                )
-            }
+            // HUD handles color selection and swatch additions; no sheet here
         }
     }
     

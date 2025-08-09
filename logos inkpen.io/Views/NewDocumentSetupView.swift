@@ -268,7 +268,14 @@ struct NewDocumentSetupView: View {
         }
         .onChange(of: setupData.width) { _, _ in generateDocumentPreview() }
         .onChange(of: setupData.height) { _, _ in generateDocumentPreview() }
-        .onChange(of: setupData.unit) { _, _ in generateDocumentPreview() }
+        .onChange(of: setupData.unit) { oldUnit, newUnit in
+            // Convert existing numeric values when the unit changes
+            let convertedWidth = UnitsConverter.convert(value: setupData.width, from: oldUnit, to: newUnit)
+            let convertedHeight = UnitsConverter.convert(value: setupData.height, from: oldUnit, to: newUnit)
+            setupData.width = convertedWidth
+            setupData.height = convertedHeight
+            generateDocumentPreview()
+        }
     }
     
     // MARK: - Template Section
@@ -319,7 +326,7 @@ struct NewDocumentSetupView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
                         ForEach(quickSizes, id: \.name) { size in
                             ProfessionalQuickSizeButton(size: size) {
                                 applyQuickSize(size)
@@ -504,7 +511,7 @@ struct NewDocumentSetupView: View {
             ("Business Card", 3.5, 2.0, .inches),
             ("Web HD", 1920, 1080, .pixels),
             ("Mobile", 375, 812, .pixels),
-            ("Square", 1024, 1024, .pixels),
+            ("Square", 1000, 1000, .pixels),
             ("Wide", 1920, 1080, .pixels)
         ]
     }
@@ -644,7 +651,7 @@ struct ProfessionalQuickSizeButton: View {
                         .lineLimit(1)
                         .foregroundColor(.primary)
                     
-                    Text(formattedSizeLabel)
+                    Text("\(Int(size.width))×\(Int(size.height))")
                         .font(.system(size: 9))
                         .foregroundColor(.secondary)
                 }
@@ -662,7 +669,7 @@ struct ProfessionalQuickSizeButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
-        .help("\(formattedSizeLabel) \(size.unit.rawValue)")
+        .help("\(Int(size.width)) × \(Int(size.height)) \(size.unit.rawValue)")
     }
     
     private var iconName: String {
@@ -679,19 +686,6 @@ struct ProfessionalQuickSizeButton: View {
             return "square"
         default:
             return "doc"
-        }
-    }
-
-    private var formattedSizeLabel: String {
-        if size.unit == .pixels {
-            return "\(Int(size.width))×\(Int(size.height))"
-        } else {
-            let numberFormatter = NumberFormatter()
-            numberFormatter.minimumFractionDigits = 0
-            numberFormatter.maximumFractionDigits = 2
-            let widthString = numberFormatter.string(from: NSNumber(value: size.width)) ?? String(format: "%.2f", size.width)
-            let heightString = numberFormatter.string(from: NSNumber(value: size.height)) ?? String(format: "%.2f", size.height)
-            return "\(widthString)×\(heightString)"
         }
     }
 }

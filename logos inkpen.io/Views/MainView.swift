@@ -1104,13 +1104,7 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Document Settings")
             
-            // Color Picker
-            Button {
-                showingColorPicker = true
-            } label: {
-                Image(systemName: "paintpalette")
-            }
-            .help("Color Picker")
+            // Color Picker (removed)
             
             // Import Vector Graphics
             Button {

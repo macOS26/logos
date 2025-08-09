@@ -84,7 +84,7 @@ struct HorizontalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
-        let majorTickInterval = getMajorTickInterval(for: unit)
+        let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         
         // Draw ticks and labels
         var x = floor(startX / tickSpacing) * tickSpacing
@@ -98,7 +98,7 @@ struct HorizontalRuler: View {
                 // PROFESSIONAL TICK HIERARCHY
                 let tickHeight: CGFloat
                 let lineWidth: CGFloat
-                if unit == .pixels {
+                if unit == .pixels || unit == .points {
                     // Pixel ruler: 50 px major ticks with 10 px minors
                     if isMajorTick {
                         tickHeight = 16
@@ -106,6 +106,24 @@ struct HorizontalRuler: View {
                     } else {
                         tickHeight = 6
                         lineWidth = 0.5
+                    }
+                } else if unit == .picas {
+                    // Picas ruler: major every 4 picas; half at 2 picas; then 1 pica; then 0.5 pica
+                    if isMajorTick {
+                        tickHeight = 16
+                        lineWidth = 1.0
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit * 2)) < 0.001 { // 2 picas
+                        tickHeight = 12
+                        lineWidth = 0.75
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit)) < 0.001 { // 1 pica
+                        tickHeight = 8
+                        lineWidth = 0.6
+                    } else if abs(x.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 { // 0.5 pica
+                        tickHeight = 4
+                        lineWidth = 0.5
+                    } else {
+                        x += tickSpacing
+                        continue
                     }
                 } else {
                     // Other units keep the professional inches-style hierarchy
@@ -138,17 +156,18 @@ struct HorizontalRuler: View {
                     lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks only - BEFORE the tick, not after
+                // Draw label for major ticks only
                 if isMajorTick {
                     let value = x / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
-                    
+
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color.ui.primaryText)
-                    
-                    // Position RIGHT AFTER the tick mark
-                    context.draw(text, at: CGPoint(x: rulerX + 8, y: size.height - 14))
+
+                    // Place label to the RIGHT of the major tick (uniform 3px offset for all units)
+                    let offsetX: CGFloat = 3
+                    context.draw(text, at: CGPoint(x: rulerX + offsetX, y: size.height - 14), anchor: .leading)
                 }
             }
             
@@ -202,7 +221,7 @@ struct VerticalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
-        let majorTickInterval = getMajorTickInterval(for: unit)
+        let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         
         // Draw ticks and labels
         var y = floor(startY / tickSpacing) * tickSpacing
@@ -216,7 +235,7 @@ struct VerticalRuler: View {
                 // PROFESSIONAL TICK HIERARCHY
                 let tickWidth: CGFloat
                 let lineWidth: CGFloat
-                if unit == .pixels {
+                if unit == .pixels || unit == .points {
                     // Pixel ruler: 50 px major ticks with 10 px minors
                     if isMajorTick {
                         tickWidth = 16
@@ -224,6 +243,24 @@ struct VerticalRuler: View {
                     } else {
                         tickWidth = 6
                         lineWidth = 0.5
+                    }
+                } else if unit == .picas {
+                    // Picas ruler: major every 4 picas; half at 2 picas; then 1 pica; then 0.5 pica
+                    if isMajorTick {
+                        tickWidth = 16
+                        lineWidth = 1.0
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit * 2)) < 0.001 { // 2 picas
+                        tickWidth = 12
+                        lineWidth = 0.75
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit)) < 0.001 { // 1 pica
+                        tickWidth = 8
+                        lineWidth = 0.6
+                    } else if abs(y.truncatingRemainder(dividingBy: pointsPerUnit / 2)) < 0.001 { // 0.5 pica
+                        tickWidth = 4
+                        lineWidth = 0.5
+                    } else {
+                        y += tickSpacing
+                        continue
                     }
                 } else {
                     if isMajorTick {
@@ -255,19 +292,22 @@ struct VerticalRuler: View {
                     lineWidth: lineWidth
                 )
                 
-                // Draw label for major ticks only - BEFORE the tick, not AFTER
+                // Draw label for major ticks only
                 if isMajorTick {
                     let value = y / pointsPerUnit
                     let labelText = formatRulerValue(value, unit: unit)
-                    
+
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color.ui.primaryText)
-                    
-                    // Rotate text for vertical ruler - RIGHT AFTER the tick, matching horizontal logic
+
+                    // Rotate text for vertical ruler and place depending on unit
                     var rotatedContext = context
                     rotatedContext.rotate(by: .degrees(-90))
-                    rotatedContext.draw(text, at: CGPoint(x: -rulerY + 8, y: size.width - 14))
+
+                    // Place label to the RIGHT of the tick; uniform 3px offset for all units
+                    let offsetX: CGFloat = 3
+                    rotatedContext.draw(text, at: CGPoint(x: -rulerY + offsetX, y: size.width - 14), anchor: .leading)
                 }
             }
             
@@ -277,14 +317,21 @@ struct VerticalRuler: View {
 }
 
 // Helper functions
-private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
+private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) -> Double {
     let pointsPerUnit = unit.pointsPerUnit
     
     switch unit {
-    case .pixels:
-        return 50.0 // Major ticks every 50 pixels
-    case .points:
-        return 72.0 // Major ticks every 72 points (1 inch) - professional standard
+    case .pixels, .points:
+        // Adaptive major intervals for pixel rulers based on zoom
+        if zoomLevel >= 1.0 {
+            return 50.0
+        } else if zoomLevel >= 0.5 {
+            return 100.0
+        } else if zoomLevel >= 0.25 {
+            return 200.0
+        } else {
+            return 400.0
+        }
     case .inches:
         return pointsPerUnit // Major ticks every inch - perfect
     case .centimeters:
@@ -292,7 +339,7 @@ private func getMajorTickInterval(for unit: MeasurementUnit) -> Double {
     case .millimeters:
         return pointsPerUnit * 10 // Major ticks every 10mm (1cm) - clean, readable
     case .picas:
-        return pointsPerUnit // Major ticks every pica (12 points) - perfect model
+        return pointsPerUnit * 4 // Major ticks every 4 picas (labels: 0, 4, 8, ...)
     }
 }
 
@@ -304,12 +351,19 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     let baseSpacing: Double
     
     switch unit {
-    case .pixels:
-        // Pixels: fixed 10 px minor spacing to yield 5 subdivisions between 50 px majors
-        return 10.0
+    case .pixels, .points:
+        // Pixels/Points: adaptive minor spacing to keep 5 subdivisions per major
+        if zoomLevel >= 1.0 {
+            return 10.0 // 50 major / 5
+        } else if zoomLevel >= 0.5 {
+            return 20.0 // 100 major / 5
+        } else if zoomLevel >= 0.25 {
+            return 40.0 // 200 major / 5
+        } else {
+            return 80.0 // 400 major / 5
+        }
     case .points:
-        // FIXED: Use PICA model - same 12-point intervals (1 pica worth)
-        baseSpacing = 12.0 // 12-point intervals - exactly matches pica spacing
+        baseSpacing = 12.0 // dead code, never reached due to early return above
     case .inches:
         // Adaptive tick spacing for inches based on zoom level
         // Show all tick marks above 50%, then progressively drop ticks at lower zoom levels
@@ -335,8 +389,8 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
         // MUCH REDUCED: Use 10mm intervals instead of 5mm (matches pica major tick spacing)
         baseSpacing = pointsPerUnit * 10 // 10mm intervals (28.35 points) - clean, readable
     case .picas:
-        // PERFECT MODEL: Keep existing pica spacing - this is the reference
-        baseSpacing = pointsPerUnit / 12 // 1 point intervals - PERFECT frequency reference
+        // Use 0.5 pica minor spacing to mirror inches tiering (0.5, 1, 2, 4)
+        return pointsPerUnit / 2
     }
     
     // For non-inch units: Adjust spacing based on zoom level for professional readability
