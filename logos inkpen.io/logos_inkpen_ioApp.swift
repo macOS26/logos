@@ -617,7 +617,7 @@ struct DocumentBasedMainView: View {
                         // Rulers - CRITICAL: Above canvas but below panels 
                         RulersView(document: document, geometry: geometry)
                             .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
-                            .allowsHitTesting(false) // CRITICAL: Rulers don't capture gestures
+                            .allowsHitTesting(true) // Allow ruler interactions (taps, drags, right-clicks)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed

@@ -65,6 +65,10 @@ struct HorizontalRuler: View {
                     drawHorizontalRuler(context: context, size: size)
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                print("✅ Horizontal ruler tapped")
+            }
         }
     }
     
@@ -285,6 +289,10 @@ struct VerticalRuler: View {
                     ctx.translateBy(x: 0, y: 0.5)
                     drawVerticalRuler(context: ctx, size: size)
                 }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                print("✅ Vertical ruler tapped")
             }
         }
     }
@@ -594,23 +602,7 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
             return pointsPerUnit * 2  // 2 picas when zoomed further out
         }
     }
-    
-    // For non-inch units: Adjust spacing based on zoom level for professional readability
-    if unit != .inches {
-        let scaledSpacing = baseSpacing * zoomLevel
-        
-        // Choose appropriate spacing to avoid overcrowding while maintaining readability
-        if scaledSpacing < 8 {
-            return baseSpacing * 5 // Major ticks only when very zoomed out
-        } else if scaledSpacing < 15 {
-            return baseSpacing * 2 // Fewer minor ticks when zoomed out
-        } else {
-            return baseSpacing // Full detail when zoomed in
-        }
-    }
-    
-    // This should never be reached for inches due to early return above
-    return baseSpacing
+
 }
 
 private func formatRulerValue(_ value: Double, unit: MeasurementUnit) -> String {
