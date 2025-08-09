@@ -322,6 +322,16 @@ struct VerticalRuler: View {
                 let hitRect = CGRect(x: 0, y: rulerThickness, width: size.width, height: max(0, size.height - rulerThickness))
                 path.addRect(hitRect)
             })
+            .contextMenu {
+                // Units (applies to both document and rulers)
+                Text("Units").font(.caption).foregroundColor(.secondary)
+                ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                    Button(unit.rawValue) {
+                        document.settings.changeUnit(to: unit)
+                        document.onSettingsChanged()
+                    }
+                }
+            }
             .onTapGesture {
                 print("✅ Vertical ruler tapped")
             }
