@@ -78,11 +78,25 @@ struct HorizontalRuler: View {
                 let hitRect = CGRect(x: rulerThickness, y: 0, width: max(0, size.width - rulerThickness), height: size.height)
                 path.addRect(hitRect)
             })
+            .contextMenu {
+                // Units (applies to both document and rulers)
+                Text("Units").font(.caption).foregroundColor(.secondary)
+                ForEach(MeasurementUnit.allCases, id: \.self) { unit in
+                    Button(unit.rawValue) { setDocumentUnits(unit) }
+                }
+            }
             .onTapGesture {
                 print("✅ Horizontal ruler tapped")
             }
         }
     }
+
+    private func setDocumentUnits(_ unit: MeasurementUnit) {
+        document.settings.changeUnit(to: unit)
+        document.onSettingsChanged()
+    }
+
+    // Rulers follow document units; no separate setter needed
     
     private func drawHorizontalRuler(context: GraphicsContext, size: CGSize) {
         let unit = document.settings.unit
