@@ -1174,21 +1174,21 @@ class MetalComputeEngine {
         }
         print("✅ Metal Engine Test: Command queue created successfully")
         
-        // Check if shared engine exists
+        // Initialize a single engine instance for testing
+        let engine: MetalComputeEngine
         do {
-            _ = try MetalComputeEngine()
+            engine = try MetalComputeEngine()
             print("✅ Metal Engine Test: Engine initialized successfully")
         } catch {
             print("❌ Metal Engine Test: Engine not initialized - \(error)")
             return false
         }
-        print("✅ Metal Engine Test: Engine initialized successfully")
         
         // Test basic GPU operations
         let testPoint1 = CGPoint(x: 0, y: 0)
         let testPoint2 = CGPoint(x: 3, y: 4)
         
-        let distanceResult = shared.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
+        let distanceResult = engine.calculatePointDistanceGPU(from: testPoint1, to: testPoint2)
         let expectedDistance: Float = 5.0 // sqrt(3² + 4²) = 5
         
         switch distanceResult {

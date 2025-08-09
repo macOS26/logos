@@ -326,7 +326,7 @@ struct NewDocumentSetupView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.secondary)
                     
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                         ForEach(quickSizes, id: \.name) { size in
                             ProfessionalQuickSizeButton(size: size) {
                                 applyQuickSize(size)
