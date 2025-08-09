@@ -114,11 +114,14 @@ struct HorizontalRuler: View {
                     let majorStep = getMajorTickInterval(for: .picas, zoomLevel: zoomLevel)
                     let halfStep = majorStep / 2.0
                     let quarterStep = majorStep / 4.0
+                    let eighthStep = majorStep / 8.0
+                    let eighthStep = majorStep / 8.0
                     let epsilon = 0.001
 
                     let isMajor = abs(x.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(x.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(x.truncatingRemainder(dividingBy: quarterStep)) < epsilon
+                    let isEighth = abs(x.truncatingRemainder(dividingBy: eighthStep)) < epsilon
 
                     if zoomLevel < 4.0 {
                         // 100%–399% pattern
@@ -129,7 +132,10 @@ struct HorizontalRuler: View {
                             tickHeight = 12 // 2nd highest
                             lineWidth = 0.75
                         } else if isQuarter {
-                            tickHeight = 6 // half of half
+                            tickHeight = 8 // mid tick (1 pica)
+                            lineWidth = 0.6
+                        } else if isEighth {
+                            tickHeight = 4 // shortest (0.5 pica)
                             lineWidth = 0.5
                         } else {
                             x += tickSpacing
@@ -283,6 +289,7 @@ struct VerticalRuler: View {
                     let isMajor = abs(y.truncatingRemainder(dividingBy: majorStep)) < epsilon
                     let isHalf = abs(y.truncatingRemainder(dividingBy: halfStep)) < epsilon
                     let isQuarter = abs(y.truncatingRemainder(dividingBy: quarterStep)) < epsilon
+                    let isEighth = abs(y.truncatingRemainder(dividingBy: eighthStep)) < epsilon
 
                     if zoomLevel < 4.0 {
                         // 100%–399% pattern
@@ -293,7 +300,10 @@ struct VerticalRuler: View {
                             tickWidth = 12 // 2nd highest
                             lineWidth = 0.75
                         } else if isQuarter {
-                            tickWidth = 6 // half of half
+                            tickWidth = 8 // mid tick (1 pica)
+                            lineWidth = 0.6
+                        } else if isEighth {
+                            tickWidth = 4 // shortest (0.5 pica)
                             lineWidth = 0.5
                         } else {
                             y += tickSpacing
