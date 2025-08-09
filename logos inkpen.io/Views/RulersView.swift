@@ -175,8 +175,12 @@ struct HorizontalRuler: View {
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
 
-                    // Override base major detection and labeling logic for centimeters
+                    // Override base major detection and labeling logic for centimeters and millimeters
                     if unit == .centimeters {
+                        isMajorTick = isCentimeter
+                        labelUsesMajor = isCentimeter
+                    } else if unit == .millimeters {
+                        // In mm mode, majors are every 10 mm (1 cm). Labels are 10,20,30…
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
                     }
@@ -228,8 +232,17 @@ struct HorizontalRuler: View {
                 
                 // Draw label for major ticks only
                 if labelUsesMajor {
-                    let value = x / pointsPerUnit
-                    let labelText = formatRulerValue(value, unit: unit)
+                    var labelText: String
+                    if unit == .millimeters {
+                        // Show 10, 20, 30 ... where each major is 10 mm
+                        // Ensure we never render "-0" by converting to Int after rounding
+                        let mmValue = (x / MeasurementUnit.millimeters.pointsPerUnit).rounded()
+                        let mmInt = Int(mmValue)
+                        labelText = String(mmInt)
+                    } else {
+                        let value = x / pointsPerUnit
+                        labelText = formatRulerValue(value, unit: unit)
+                    }
 
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
@@ -379,8 +392,12 @@ struct VerticalRuler: View {
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
 
-                    // Override base major detection and labeling logic for centimeters
+                    // Override base major detection and labeling logic for centimeters and millimeters
                     if unit == .centimeters {
+                        isMajorTick = isCentimeter
+                        labelUsesMajor = isCentimeter
+                    } else if unit == .millimeters {
+                        // In mm mode, majors are every 10 mm (1 cm). Labels are 10,20,30…
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
                     }
@@ -431,8 +448,15 @@ struct VerticalRuler: View {
                 
                 // Draw label for major ticks only
                 if labelUsesMajor {
-                    let value = y / pointsPerUnit
-                    let labelText = formatRulerValue(value, unit: unit)
+                    var labelText: String
+                    if unit == .millimeters {
+                        let mmValue = (y / MeasurementUnit.millimeters.pointsPerUnit).rounded()
+                        let mmInt = Int(mmValue)
+                        labelText = String(mmInt)
+                    } else {
+                        let value = y / pointsPerUnit
+                        labelText = formatRulerValue(value, unit: unit)
+                    }
 
                     let text = Text(labelText)
                         .font(.system(size: 9, weight: .medium))
@@ -475,16 +499,8 @@ private func getMajorTickInterval(for unit: MeasurementUnit, zoomLevel: Double) 
         // Centimeters: majors at every 1 cm regardless of zoom
         return pointsPerUnit
     case .millimeters:
-        // Clone pixel scheme exactly: majors 50/100/200/400 units (here, millimeters)
-        if zoomLevel >= 1.0 {
-            return pointsPerUnit * 50
-        } else if zoomLevel >= 0.5 {
-            return pointsPerUnit * 100
-        } else if zoomLevel >= 0.25 {
-            return pointsPerUnit * 200
-        } else {
-            return pointsPerUnit * 400
-        }
+        // Millimeters: mirror centimeters exactly — majors every 10 mm (1 cm)
+        return pointsPerUnit * 10
     case .picas:
         // Illustrator-style labeling for picas
         // 400% → 0,1,2,3 (every 1 pica)
@@ -553,15 +569,16 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
             return pointsPerUnit      // 1 cm when zoomed far out
         }
     case .millimeters:
-        // Keep mm cloned to pixel scheme (minor = major/5)
+        // Millimeters: same layout as centimeters but in mm units
+        // Full detail at ≥100%: 1 mm minors; scale out to 2/5/10 mm
         if zoomLevel >= 1.0 {
-            return (pointsPerUnit * 50) / 5
+            return pointsPerUnit          // 1 mm
         } else if zoomLevel >= 0.5 {
-            return (pointsPerUnit * 100) / 5
+            return pointsPerUnit * 2      // 2 mm
         } else if zoomLevel >= 0.25 {
-            return (pointsPerUnit * 200) / 5
+            return pointsPerUnit * 5      // 5 mm
         } else {
-            return (pointsPerUnit * 400) / 5
+            return pointsPerUnit * 10     // 10 mm (1 cm)
         }
     case .picas:
         // Minor spacing adapts to keep readable subdivisions under the major scheme above
