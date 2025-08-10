@@ -659,7 +659,7 @@ struct ScaleHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Center point
     @State private var pointsRefreshTrigger: Int = 0
     
-    private let handleSize: CGFloat = 8
+    private let handleSize: CGFloat = 10
 
     var body: some View {
         // SCALE TOOL: Show all path points + center point with correct colors
@@ -741,14 +741,14 @@ struct ScaleHandles: View {
                     let cornerIndex = pathPoints.count + i // Offset to avoid conflicts with path points
                     let isLockedPin = lockedPinPointIndex == cornerIndex
                     
-                    Rectangle()
-                        .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
-                        .stroke(Color.white, lineWidth: 1.0)
-                        .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
-                        .position(CGPoint(
-                            x: cornerPos.x * zoomLevel + canvasOffset.x,
-                            y: cornerPos.y * zoomLevel + canvasOffset.y
-                        ))
+                    Circle()
+                        .fill(isLockedPin ? Color.red : Color.green)
+                        .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
+                        .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                        .offset(
+                            x: cornerPos.x * zoomLevel + canvasOffset.x - (handleSize / zoomLevel) / 2,
+                            y: cornerPos.y * zoomLevel + canvasOffset.y - (handleSize / zoomLevel) / 2
+                        )
                         .onTapGesture {
                             if !isScaling {
                                 // SINGLE CLICK: Set this as the locked pin point (RED)
@@ -1064,14 +1064,13 @@ struct ScaleHandles: View {
             let point = pathPoints[index]
             let isLockedPin = lockedPinPointIndex == index
             
-            Rectangle()
+            Circle()
                 .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
-                .stroke(Color.white, lineWidth: 1.0)
+                .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(CGPoint(x: point.x, y: point.y))
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
                 .onTapGesture {
                     if !isScaling {
                         // SINGLE CLICK: Set this as the locked pin point (RED)
@@ -2195,7 +2194,7 @@ struct ShearHandles: View {
     @State private var centerPoint: VectorPoint = VectorPoint(CGPoint.zero) // Center point
     @State private var pointsRefreshTrigger: Int = 0
     
-    private let handleSize: CGFloat = 8
+    private let handleSize: CGFloat = 10
     
     var body: some View {
         // SHEAR TOOL: Show all path points + center point with correct colors (same as scale tool)
@@ -2468,9 +2467,9 @@ struct ShearHandles: View {
             let point = pathPoints[index]
             let isLockedPin = lockedPinPointIndex == index
             
-            Rectangle()
+            Circle()
                 .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = shearable
-                .stroke(Color.white, lineWidth: 1.0)
+                .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
                 .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
                 .position(CGPoint(x: point.x, y: point.y))
                 .scaleEffect(zoomLevel, anchor: .topLeading)

@@ -771,45 +771,35 @@ struct VerticalToolbar: View {
         
         for toolGroup in allToolGroups {
             let primaryTool = toolGroup[0]
+            let groupName = ToolGroupConfiguration.getToolGroupName(for: primaryTool) ?? "single:\(primaryTool.rawValue)"
             
-            // Check if this tool group should show all items
-            if toolGroupManager.showingAllItems && 
-               ((toolGroupManager.currentToolInGroup != nil && toolGroup.contains(toolGroupManager.currentToolInGroup!)) ||
-                (toolGroupManager.expansionAnchorTool != nil && toolGroup.contains(toolGroupManager.expansionAnchorTool!))) {
-                
+            // Expanded state is now per-group
+            if toolGroupManager.expandedGroups.contains(groupName) {
                 if primaryTool == .star {
-                    // If we have an expansion anchor, put it first; otherwise natural order
-                    if let anchorTool = toolGroupManager.expansionAnchorTool, anchorTool == .star,
-                       let anchorVariant = toolGroupManager.expansionAnchorVariant {
-                        // Put the anchor variant first
+                    // If we have a per-group anchor variant, put it first; otherwise natural order
+                    if let anchorVariant = (toolGroupManager.anchorVariantByGroup[groupName] ?? nil) {
                         toolsToShow.append(ToolItem(tool: .star, starVariant: anchorVariant))
-                        
-                        // Add other variants below (sorted, excluding anchor)
-                        let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }.sorted { $0.rawValue < $1.rawValue }
+                        let otherVariants = StarVariant.allCases.filter { $0 != anchorVariant }
                         for variant in otherVariants {
                             toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
                         }
                     } else {
-                        // No expansion anchor, show in natural order
                         for variant in StarVariant.allCases {
                             toolsToShow.append(ToolItem(tool: .star, starVariant: variant))
                         }
                     }
                 } else {
-                    // Non-star groups: always show in configured order (5,6,7,8,9 for polygons)
                     for tool in toolGroup {
                         toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
                     }
                 }
             } else {
-                // Show only primary tool for this group
+                // Collapsed state shows the group's selected tool (falls back to primary)
                 if primaryTool == .star {
-                    // Show selected star variant or default
                     toolsToShow.append(ToolItem(tool: .star, starVariant: starHUDManager.selectedVariant))
                 } else {
-                    // Show primary tool or the current tool if it's in this group
-                    let toolToShow = toolGroupManager.currentToolInGroup != nil && toolGroup.contains(toolGroupManager.currentToolInGroup!) ? toolGroupManager.currentToolInGroup! : primaryTool
-                    toolsToShow.append(ToolItem(tool: toolToShow, starVariant: nil))
+                    let selectedTool = toolGroupManager.selectedToolByGroup[groupName] ?? primaryTool
+                    toolsToShow.append(ToolItem(tool: selectedTool, starVariant: nil))
                 }
             }
         }
@@ -862,11 +852,13 @@ struct VerticalToolbar: View {
                                     document.currentTool = .star
                                     // Update tool group manager state
                                     toolGroupManager.currentToolInGroup = .star
+                                    toolGroupManager.setSelectedToolInGroup(.star)
                                     print("⭐ Selected star variant: \(starVariant.rawValue)")
                                 } else {
                                     document.currentTool = toolItem.tool
                                     // Update tool group manager state
                                     toolGroupManager.currentToolInGroup = toolItem.tool
+                                    toolGroupManager.setSelectedToolInGroup(toolItem.tool)
                                     print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
                                 }
                                 
@@ -922,11 +914,13 @@ struct VerticalToolbar: View {
                                             document.currentTool = .star
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = .star
+                                            toolGroupManager.setSelectedToolInGroup(.star)
                                             print("🔧 Tool tap detected: \(starVariant.rawValue)")
                                         } else {
                                             document.currentTool = toolItem.tool
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = toolItem.tool
+                                            toolGroupManager.setSelectedToolInGroup(toolItem.tool)
                                             print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
                                         }
                                         

@@ -11,122 +11,77 @@ import SwiftUI
 class ToolGroupManager: ObservableObject {
     static let shared = ToolGroupManager()
     
+    // DEPRECATED single-group fields (kept for backward compatibility with any legacy views)
     @Published var currentToolInGroup: DrawingTool? = nil
     @Published var selectedVariant: StarVariant = .fivePoint
     @Published var selectedVariantIndex: Int? = nil // For star variants
     @Published var showingAllItems: Bool = false
     @Published var expansionAnchorTool: DrawingTool? = nil // Tool that triggered expansion
     @Published var expansionAnchorVariant: StarVariant? = nil // Star variant that triggered expansion
+
+    // New per-group state so tool groups act independently
+    @Published var expandedGroups: Set<String> = []
+    @Published var selectedToolByGroup: [String: DrawingTool] = [:]
+    @Published var anchorVariantByGroup: [String: StarVariant?] = [:]
     var toolButtonFrames: [DrawingTool: CGRect] = [:]
     
     private init() {
         // Shared instance for global access
     }
     
-    // Handle tool switching via keyboard shortcuts
+    // Handle tool switching via keyboard shortcuts (per-group, non-interfering)
     func handleKeyboardToolSwitch(tool: DrawingTool, toolGroup: [DrawingTool]) {
-        // If this tool is in a group with multiple tools, make it the active one
-        if toolGroup.count > 1 {
-            // Check if we're currently showing a different tool from the same group
-            if let current = currentToolInGroup, 
-               ToolGroupConfiguration.getToolGroup(for: current) == toolGroup {
-                // We're in the same group - switch to the new tool
-                currentToolInGroup = tool
-                showingAllItems = false // Hide the group expansion
-                expansionAnchorTool = nil
-                expansionAnchorVariant = nil
-                print("🔧 KEYBOARD: Switched to \(tool.rawValue) in same group")
-            } else {
-                // We're switching to a new group - make this tool active
-                currentToolInGroup = tool
-                showingAllItems = false // Don't expand by default for keyboard shortcuts
-                expansionAnchorTool = nil
-                expansionAnchorVariant = nil
-                print("🔧 KEYBOARD: Switched to \(tool.rawValue) in new group")
-            }
-        } else {
-            // Single tool - just switch to it
-            currentToolInGroup = tool
-            showingAllItems = false
-            expansionAnchorTool = nil
-            expansionAnchorVariant = nil
-            print("🔧 KEYBOARD: Switched to single tool \(tool.rawValue)")
-        }
+        let groupName = getGroupName(for: tool)
+        selectedToolByGroup[groupName] = tool
+        // Do not change expansion state of any group here to avoid side-effects
+        // Maintain deprecated fields for any legacy code paths
+        currentToolInGroup = tool
+        showingAllItems = expandedGroups.contains(groupName)
+        expansionAnchorTool = tool
+        expansionAnchorVariant = (tool == .star) ? selectedVariant : nil
+        print("🔧 KEYBOARD: Selected \(tool.rawValue) in group \(groupName)")
     }
     
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
-        let toolGroup = ToolGroupConfiguration.getToolGroup(for: tool)
-        
+        let groupName = getGroupName(for: tool)
         // Handle star variants separately
-        if tool == .star && variantIndex != nil {
-            handleStarVariantLongPress(variantIndex: variantIndex!)
+        if tool == .star, let variantIndex {
+            handleStarVariantLongPress(variantIndex: variantIndex)
+            anchorVariantByGroup[groupName] = selectedVariant
             return
         }
-        
-        // For non-star tools
-        if let current = currentToolInGroup, ToolGroupConfiguration.getToolGroup(for: current) == toolGroup && showingAllItems {
-            // Any tool in currently expanded group long-pressed - hide siblings
+        // Toggle only this group's expansion
+        if expandedGroups.contains(groupName) {
+            expandedGroups.remove(groupName)
             showingAllItems = false
             expansionAnchorTool = nil
             expansionAnchorVariant = nil
-            currentToolInGroup = tool // Update to the long-pressed tool
-            print("🔧 Hiding siblings for \(tool.rawValue)")
-        } else if currentToolInGroup == tool && toolGroup.count > 1 {
-            // Same tool long-pressed when not expanded - show siblings
-            showingAllItems = true
-            expansionAnchorTool = tool // Track which tool triggered expansion
-            expansionAnchorVariant = nil // Clear star variant anchor
-            print("🔧 Showing siblings for \(tool.rawValue)")
-        } else if let current = currentToolInGroup, ToolGroupConfiguration.getToolGroup(for: current) == toolGroup {
-            // Different tool in same group - hide others, show only this one
-            currentToolInGroup = tool
-            showingAllItems = false
-            expansionAnchorTool = nil
-            expansionAnchorVariant = nil
-            print("🔧 Switched to \(tool.rawValue) in same group, hiding others")
+            print("🔧 Collapsed group \(groupName)")
         } else {
-            // New tool group - show all items
-            currentToolInGroup = tool
+            expandedGroups.insert(groupName)
             showingAllItems = true
-            expansionAnchorTool = tool // Track which tool triggered expansion
-            expansionAnchorVariant = nil // Clear star variant anchor
-            print("🔧 New tool group \(tool.rawValue), showing all items")
+            expansionAnchorTool = tool
+            expansionAnchorVariant = nil
+            print("🔧 Expanded group \(groupName)")
         }
+        currentToolInGroup = tool
     }
     
     private func handleStarVariantLongPress(variantIndex: Int) {
-        if currentToolInGroup == .star && showingAllItems {
-            // Any star variant long-pressed when siblings showing - hide siblings
-            showingAllItems = false
-            expansionAnchorTool = nil
-            expansionAnchorVariant = nil
-            selectedVariantIndex = variantIndex
-            selectedVariant = StarVariant.allCases[variantIndex]
-            print("⭐ Hiding star siblings for variant \(variantIndex)")
-        } else if currentToolInGroup == .star && selectedVariantIndex == variantIndex {
-            // Same variant long-pressed when not expanded - show siblings
-            showingAllItems = true
-            expansionAnchorTool = .star // Track star as expansion anchor
-            expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
-            print("⭐ Showing star siblings for variant \(variantIndex)")
-        } else if currentToolInGroup == .star {
-            // Different variant in same group - hide others, show only this one
-            selectedVariantIndex = variantIndex
-            selectedVariant = StarVariant.allCases[variantIndex]
-            showingAllItems = false
-            expansionAnchorTool = nil
-            expansionAnchorVariant = nil
-            print("⭐ Switched to star variant \(variantIndex), hiding others")
+        let groupName = getGroupName(for: .star)
+        selectedVariantIndex = variantIndex
+        selectedVariant = StarVariant.allCases[variantIndex]
+        if expandedGroups.contains(groupName) {
+            // Collapse only the star group
+            expandedGroups.remove(groupName)
+            print("⭐ Collapsed star group on long-press of variant \(variantIndex)")
         } else {
-            // New star group - show all variants
-            currentToolInGroup = .star
-            selectedVariantIndex = variantIndex
-            selectedVariant = StarVariant.allCases[variantIndex]
-            showingAllItems = true
-            expansionAnchorTool = .star // Track star as expansion anchor
-            expansionAnchorVariant = StarVariant.allCases[variantIndex] // Track which variant triggered expansion
-            print("⭐ New star group, showing all variants")
+            expandedGroups.insert(groupName)
+            print("⭐ Expanded star group on long-press of variant \(variantIndex)")
         }
+        currentToolInGroup = .star
+        expansionAnchorTool = .star
+        expansionAnchorVariant = selectedVariant
     }
     
     func selectStarVariant(_ variant: StarVariant) {
@@ -136,6 +91,21 @@ class ToolGroupManager: ObservableObject {
     
     func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
         toolButtonFrames[tool] = frame
+    }
+
+    // MARK: - Helpers
+    func getGroupName(for tool: DrawingTool) -> String {
+        if let name = ToolGroupConfiguration.getToolGroupName(for: tool) {
+            return name
+        }
+        // Unique fallback for single-tool groups not listed in config
+        return "single:\(tool.rawValue)"
+    }
+    
+    func setSelectedToolInGroup(_ tool: DrawingTool) {
+        let groupName = getGroupName(for: tool)
+        selectedToolByGroup[groupName] = tool
+        currentToolInGroup = tool
     }
 }
 
