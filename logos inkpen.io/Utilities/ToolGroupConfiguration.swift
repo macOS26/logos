@@ -26,7 +26,8 @@ struct ToolGroupConfiguration {
         "selection": [.selection, .directSelection, .convertAnchorPoint],
         "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
         "circles": [.ellipse, .oval, .circle, .egg],
-        "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone],
+        // Triangles: show Equilateral as the primary triangle tool; remove the non-equilateral variant
+        "triangles": [.equilateralTriangle, .rightTriangle, .acuteTriangle, .cone],
         // Polygons: show 5–9 sides explicitly
         "polygons": [.pentagon, .hexagon, .heptagon, .octagon, .nonagon],
         "lines": [.bezierPen, .line],

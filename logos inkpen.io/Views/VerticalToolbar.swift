@@ -73,7 +73,6 @@ enum CircleVariant: String, CaseIterable {
 // Triangle Variants
 enum TriangleVariant: String, CaseIterable {
     case equilateral = "Equilateral Triangle"
-    case isosceles = "Isosceles Triangle"
     case right = "Right Triangle"
     case acute = "Acute Triangle"
     
@@ -82,9 +81,6 @@ enum TriangleVariant: String, CaseIterable {
         switch self {
         case .equilateral:
             EquilateralTriangleIcon(isSelected: isSelected)
-                .foregroundColor(color)
-        case .isosceles:
-            IsoscelesTriangleIcon(isSelected: isSelected)
                 .foregroundColor(color)
         case .right:
             RightTriangleIcon(isSelected: isSelected)
@@ -583,25 +579,7 @@ struct AcuteTriangleIcon: View {
     }
 }
 
-struct IsoscelesTriangleIcon: View {
-    let isSelected: Bool
-    
-    var body: some View {
-        Path { path in
-            // Isosceles triangle with two equal sides
-            let topPoint = CGPoint(x: 10, y: 5 - IconStrokeExpand)
-            let bottomLeft = CGPoint(x: 4 - IconStrokeExpand, y: 15 + IconStrokeExpand)
-            let bottomRight = CGPoint(x: 16 + IconStrokeExpand, y: 15 + IconStrokeExpand)
-            
-            path.move(to: topPoint)
-            path.addLine(to: bottomLeft)
-            path.addLine(to: bottomRight)
-            path.closeSubpath()
-        }
-        .stroke(Color.primary, lineWidth: IconStrokeWidth)
-        .frame(width: 20, height: 20)
-    }
-}
+// IsoscelesTriangleIcon removed – Equilateral is the primary triangle icon
 
 // MARK: - Custom Skewed Rectangle Icon
 struct SkewedRectangleIcon: View {
@@ -737,8 +715,6 @@ struct VerticalToolbar: View {
             ConeIcon(isSelected: document.currentTool == toolItem.tool)
         case .equilateralTriangle:
             EquilateralTriangleIcon(isSelected: document.currentTool == toolItem.tool)
-        case .isoscelesTriangle:
-            IsoscelesTriangleIcon(isSelected: document.currentTool == toolItem.tool)
         case .rightTriangle:
             RightTriangleIcon(isSelected: document.currentTool == toolItem.tool)
         case .acuteTriangle:

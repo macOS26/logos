@@ -33,9 +33,9 @@ extension DrawingCanvas {
         // 🚀 PHASE 11: GPU-accelerated distance calculation
         let dragDistance = calculateDistanceWithFallback(from: value.startLocation, to: value.location)
         
-        // EQUILATERAL TRIANGLE: Allow truly free drawing from 0,0 (no minimum threshold)
-        // OTHER SHAPES: Must drag at least 12 pixels to start drawing shapes
-        let minimumDragThreshold: Double = (document.currentTool == .equilateralTriangle) ? 0.0 : 12.0
+        // All geometric shapes: allow drawing from 0×0 without any minimum distance
+        // This controls how small the object can be at creation (not a drag threshold)
+        let minimumDragThreshold: Double = 0.0
         
         // Only proceed with shape creation if user has dragged significantly
         if Double(dragDistance) < minimumDragThreshold {
