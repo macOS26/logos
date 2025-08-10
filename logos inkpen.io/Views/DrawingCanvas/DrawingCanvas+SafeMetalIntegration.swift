@@ -245,6 +245,12 @@ extension DrawingCanvas {
         }
         .onContinuousHover { phase in
             handleHover(phase: phase, geometry: geometry)
+            #if os(macOS)
+            // During hover tracking, prevent system from flipping to arrow while zoom tool is active
+            if isCanvasHovering && document.currentTool == .zoom {
+                MagnifyingGlassCursor.set()
+            }
+            #endif
         }
         .onTapGesture { location in
             print("🎯 SINGLE CLICK DETECTED at: \(location)")

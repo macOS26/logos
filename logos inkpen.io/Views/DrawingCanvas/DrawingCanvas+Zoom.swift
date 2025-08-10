@@ -56,6 +56,12 @@ extension DrawingCanvas {
             isZoomGestureActive = true
             print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
         }
+        #if os(macOS)
+        // Keep magnifying glass visible during pinch
+        if isCanvasHovering { MagnifyingGlassCursor.set() }
+        // Also reassert next runloop to avoid arrow racing us
+        DispatchQueue.main.async { if isCanvasHovering { MagnifyingGlassCursor.set() } }
+        #endif
         
         let newZoomLevel = max(0.1, min(16.0, initialZoomLevel * value))
         
@@ -100,6 +106,14 @@ extension DrawingCanvas {
         // Update the initial zoom level for next gesture
         initialZoomLevel = finalZoomLevel
         print("🔍 PROFESSIONAL ZOOM COMPLETED: Final zoom level = \(String(format: "%.3f", finalZoomLevel))x, focal point: \(currentMousePosition), UI responsive")
+
+        #if os(macOS)
+        // After pinch ends, if still over canvas and zoom tool active, restore cursor now and next runloop
+        if isCanvasHovering && document.currentTool == .zoom {
+            MagnifyingGlassCursor.set()
+            DispatchQueue.main.async { if isCanvasHovering && document.currentTool == .zoom { MagnifyingGlassCursor.set() } }
+        }
+        #endif
     }
     
     /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)
