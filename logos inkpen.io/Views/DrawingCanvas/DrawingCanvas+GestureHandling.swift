@@ -23,10 +23,9 @@ extension DrawingCanvas {
             #if os(macOS)
             // Maintain correct cursor while hovering over the canvas
             if document.currentTool == .hand {
-                if isPanGestureActive {
-                    NSCursor.closedHand.set()
-                } else {
-                    NSCursor.openHand.set()
+                switch isPanGestureActive {
+                case true: HandClosedCursor.set()
+                case false: HandOpenCursor.set()
                 }
             } else if document.currentTool == .eyedropper {
                 EyedropperCursor.set()

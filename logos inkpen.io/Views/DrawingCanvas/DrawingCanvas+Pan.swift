@@ -35,7 +35,7 @@ extension DrawingCanvas {
 
             #if os(macOS)
             // Show closed hand when panning begins
-            NSCursor.closedHand.set()
+            HandClosedCursor.set()
             #endif
         }
         
@@ -51,7 +51,7 @@ extension DrawingCanvas {
         #if os(macOS)
         // Keep closed hand while dragging with hand tool
         if document.currentTool == .hand {
-            NSCursor.closedHand.set()
+            HandClosedCursor.set()
         }
         #endif
         // This is the gold standard used by Adobe Illustrator, FreeHand, Inkscape, and CorelDRAW

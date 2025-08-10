@@ -195,6 +195,16 @@ extension DrawingCanvas {
             pressureSensitiveOverlay(geometry: geometry)
             
             // Performance monitoring moved to toolbar
+            #if os(macOS)
+            // AppKit-backed cursor overlay to eliminate flicker
+            CanvasCursorOverlayView(
+                isHovering: isCanvasHovering,
+                currentTool: document.currentTool,
+                isPanActive: isPanGestureActive,
+                zoomLevel: document.zoomLevel,
+                canvasOffset: document.canvasOffset
+            )
+            #endif
         }
         // All your existing modifiers (unchanged)
         .onAppear {
@@ -211,7 +221,7 @@ extension DrawingCanvas {
             #if os(macOS)
             if isCanvasHovering {
                 if newTool == .hand {
-                    NSCursor.openHand.set()
+                    HandOpenCursor.set()
                 } else if newTool == .eyedropper {
                     EyedropperCursor.set()
                 } else if newTool == .zoom {
@@ -229,7 +239,7 @@ extension DrawingCanvas {
                 print("🖱️ Canvas hover: entered")
                 #if os(macOS)
                 if document.currentTool == .hand {
-                    NSCursor.openHand.set()
+                    HandOpenCursor.set()
                 } else if document.currentTool == .eyedropper {
                     EyedropperCursor.set()
                 } else if document.currentTool == .zoom {
@@ -265,7 +275,7 @@ extension DrawingCanvas {
             if insideCanvas || isCanvasHovering {
                 switch document.currentTool {
                 case .hand:
-                    NSCursor.openHand.set()
+                    HandOpenCursor.set()
                 case .eyedropper:
                     EyedropperCursor.set()
                 case .zoom:
@@ -278,7 +288,7 @@ extension DrawingCanvas {
                     if (insideCanvas || isCanvasHovering) {
                         switch document.currentTool {
                         case .hand:
-                            NSCursor.openHand.set()
+                            HandOpenCursor.set()
                         case .eyedropper:
                             EyedropperCursor.set()
                         case .zoom:
@@ -321,7 +331,7 @@ extension DrawingCanvas {
             if isCanvasHovering {
                 switch document.currentTool {
                 case .hand:
-                    NSCursor.openHand.set()
+                    HandOpenCursor.set()
                 case .eyedropper:
                     EyedropperCursor.set()
                 case .zoom:
@@ -334,7 +344,7 @@ extension DrawingCanvas {
                     if isCanvasHovering {
                         switch document.currentTool {
                         case .hand:
-                            NSCursor.openHand.set()
+                            HandOpenCursor.set()
                         case .eyedropper:
                             EyedropperCursor.set()
                         case .zoom:
@@ -353,7 +363,7 @@ extension DrawingCanvas {
             if isCanvasHovering {
                 switch document.currentTool {
                 case .hand:
-                    NSCursor.openHand.set()
+                    HandOpenCursor.set()
                 case .eyedropper:
                     EyedropperCursor.set()
                 case .zoom:

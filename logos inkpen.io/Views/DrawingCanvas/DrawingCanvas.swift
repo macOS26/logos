@@ -9,25 +9,66 @@ import SwiftUI
 import AppKit
 
 #if os(macOS)
-// Shared eyedropper cursor for the whole canvas module
+// Build a haloed SF Symbol cursor with white glow for visibility on any background
+private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
+    guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
+    let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
+    let symbolImage = base.withSymbolConfiguration(config) ?? base
+
+    let padding: CGFloat = 4
+    let destRect = NSRect(x: padding, y: padding, width: symbolImage.size.width, height: symbolImage.size.height)
+    let newSize = NSSize(width: symbolImage.size.width + padding * 2, height: symbolImage.size.height + padding * 2)
+
+    let composed = NSImage(size: newSize)
+    composed.lockFocus()
+
+    // Draw halo via shadowed pass
+    NSGraphicsContext.current?.saveGraphicsState()
+    let shadow = NSShadow()
+    shadow.shadowBlurRadius = 4
+    shadow.shadowColor = NSColor.white
+    shadow.shadowOffset = .zero
+    shadow.set()
+    symbolImage.draw(in: destRect)
+    NSGraphicsContext.current?.restoreGraphicsState()
+
+    // Draw crisp symbol on top
+    symbolImage.draw(in: destRect)
+
+    composed.unlockFocus()
+
+    let hotspot = CGPoint(x: padding + originalHotspot.x, y: padding + originalHotspot.y)
+    return NSCursor(image: composed, hotSpot: hotspot)
+}
+
+// Shared eyedropper cursor for the whole canvas module (with halo)
 let EyedropperCursor: NSCursor = {
-    if let base = NSImage(systemSymbolName: "eyedropper", accessibilityDescription: nil) {
-        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
-        let img = base.withSymbolConfiguration(config) ?? base
-        return NSCursor(image: img, hotSpot: CGPoint(x: 4, y: img.size.height - 2))
-    }
-    return NSCursor.crosshair
+    // Hotspot tuned to tip location in original symbol space
+    let originalHotspot = CGPoint(x: 4, y: 16) // approx tip for 18pt symbol
+    return makeHaloCursor(symbolName: "eyedropper", pointSize: 18, originalHotspot: originalHotspot)
 }()
 
-// Shared magnifying glass cursor for zoom tool
+// Shared magnifying glass cursor for zoom tool (with halo)
 let MagnifyingGlassCursor: NSCursor = {
-    if let base = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil) {
-        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
-        let img = base.withSymbolConfiguration(config) ?? base
-        // Hotspot near lens center; tweak as needed
-        return NSCursor(image: img, hotSpot: CGPoint(x: img.size.width * 0.35, y: img.size.height * 0.35))
-    }
-    return NSCursor.crosshair
+    // Hotspot near lens center in original symbol space
+    guard let base = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil) else { return .crosshair }
+    let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+    let symbol = base.withSymbolConfiguration(config) ?? base
+    let center = CGPoint(x: symbol.size.width * 0.35, y: symbol.size.height * 0.35)
+    return makeHaloCursor(symbolName: "magnifyingglass", pointSize: 18, originalHotspot: center)
+}()
+
+// Shared hand cursors for pan tool (with halo)
+let HandOpenCursor: NSCursor = {
+    // Approximate hotspot at palm center for 18pt symbol
+    let originalHotspot = CGPoint(x: 9, y: 9)
+    return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
+}()
+
+let HandClosedCursor: NSCursor = {
+    // Use outline variant (non-solid) for closed/grab state
+    let originalHotspot = CGPoint(x: 9, y: 9)
+    return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
 #endif
 
