@@ -102,6 +102,7 @@ struct DrawingCanvas: View {
     @State internal var currentMouseLocation: CGPoint? = nil // For rubber band preview
     @State internal var showClosePathHint = false
     @State internal var closePathHintLocation: CGPoint = .zero
+    @State internal var isCanvasHovering: Bool = false // Track whether the mouse is over the drawing canvas
     
     // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
     @State internal var activeBezierShape: VectorShape? = nil // Real shape being built

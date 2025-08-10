@@ -870,7 +870,9 @@ struct VerticalToolbar: View {
                                     print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
                                 }
                                 
-                                toolItem.tool.cursor.push()
+                                // Do not force cursor here; let canvas hover control cursor visibility.
+                                // This avoids requiring long-press to see the cursor. The canvas will set
+                                // the correct cursor on hover/enter.
                             } label: {
                                 toolIconView(for: toolItem)
                                 .frame(width: 32, height: 32)
@@ -928,7 +930,7 @@ struct VerticalToolbar: View {
                                             print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
                                         }
                                         
-                                        toolItem.tool.cursor.push()
+                                        // Do not force cursor here; canvas hover logic will set it.
                                     }
                             )
                             .simultaneousGesture(

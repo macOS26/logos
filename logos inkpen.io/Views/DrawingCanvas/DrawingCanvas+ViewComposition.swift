@@ -208,15 +208,36 @@ extension DrawingCanvas {
             setupKeyEventMonitoring()
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
+            // If the mouse is currently over the canvas on appear, ensure the cursor matches the tool
+            if isCanvasHovering {
+                document.currentTool.cursor.set()
+            }
         }
             .onDisappear {
                 teardownKeyEventMonitoring()
+                // Reset cursor when canvas disappears
+                if NSCursor.current != .arrow {
+                    NSCursor.arrow.set()
+                }
             }
             .onChange(of: document.currentTool) { oldTool, newTool in
                 handleToolChange(oldTool: oldTool, newTool: newTool)
+                // If hovering over canvas, update cursor to reflect the new tool immediately
+                if isCanvasHovering {
+                    newTool.cursor.set()
+                }
             }
             .onHover { isHovering in
-                // Enable mouse tracking for rubber band preview
+                // Track enter/exit and update cursor only within the drawing area
+                isCanvasHovering = isHovering
+                if isHovering {
+                    document.currentTool.cursor.set()
+                } else {
+                    // Revert to default when leaving canvas area
+                    if NSCursor.current != .arrow {
+                        NSCursor.arrow.set()
+                    }
+                }
             }
             .onContinuousHover { phase in
                 handleHover(phase: phase, geometry: geometry)
