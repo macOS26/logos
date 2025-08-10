@@ -7,6 +7,9 @@
 //
 
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 extension DrawingCanvas {
     // NOTE: Main gesture handling (tap, drag) moved to DrawingCanvas+UnifiedGestures.swift
@@ -17,6 +20,16 @@ extension DrawingCanvas {
             currentMouseLocation = location
             // Also update mouse position for zoom focal point
             currentMousePosition = location
+            #if os(macOS)
+            // Maintain correct cursor while hovering over the canvas
+            if document.currentTool == .hand {
+                if isPanGestureActive {
+                    NSCursor.closedHand.set()
+                } else {
+                    NSCursor.openHand.set()
+                }
+            }
+            #endif
             
             // PROFESSIONAL REAL-TIME PATH UPDATES (Adobe Illustrator/FreeHand/CorelDraw Style)
             if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {
@@ -50,6 +63,10 @@ extension DrawingCanvas {
         } else {
             currentMouseLocation = nil
             showClosePathHint = false
+            #if os(macOS)
+            // On hover exit, restore arrow
+            NSCursor.arrow.set()
+            #endif
             
             // Note: Using rubber band preview overlay instead of live path updates
             // The actual path remains unchanged until a new point is added

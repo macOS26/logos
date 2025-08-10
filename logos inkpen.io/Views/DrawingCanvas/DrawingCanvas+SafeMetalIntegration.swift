@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 import MetalKit
 
 /// Safe Metal integration extension for DrawingCanvas
@@ -203,9 +206,32 @@ extension DrawingCanvas {
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             handleToolChange(oldTool: oldTool, newTool: newTool)
+            #if os(macOS)
+            if isCanvasHovering {
+                if newTool == .hand {
+                    NSCursor.openHand.set()
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
+            #endif
         }
         .onHover { isHovering in
-            // Enable mouse tracking for rubber band preview
+            // Track enter/exit over the drawing area
+            isCanvasHovering = isHovering
+            if isHovering {
+                print("🖱️ Canvas hover: entered")
+                #if os(macOS)
+                if document.currentTool == .hand {
+                    NSCursor.openHand.set()
+                }
+                #endif
+            } else {
+                print("🖱️ Canvas hover: exited")
+                #if os(macOS)
+                NSCursor.arrow.set()
+                #endif
+            }
         }
         .onContinuousHover { phase in
             handleHover(phase: phase, geometry: geometry)
