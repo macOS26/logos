@@ -3073,48 +3073,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         }
     }
     
-    var cursor: NSCursor {
-        switch self {
-        case .selection: return .arrow
-        case .scale: return .crosshair
-        case .rotate: return .crosshair
-        case .shear: return .crosshair
-        case .warp: return .crosshair
-        case .directSelection: return .crosshair
-        case .convertAnchorPoint: return .pointingHand
-        case .bezierPen: return .crosshair
-        case .freehand: return .crosshair
-        case .brush: return .crosshair
-        case .marker: return .crosshair
-        case .font: return .iBeam
-        case .line: return .crosshair
-        case .rectangle: return .crosshair
-        case .square: return .crosshair
-        case .roundedRectangle: return .crosshair
-        case .pill: return .crosshair
-        case .circle: return .crosshair
-        case .ellipse: return .crosshair
-        case .oval: return .crosshair
-        case .egg: return .crosshair
-        case .cone: return .crosshair
-        case .equilateralTriangle: return .crosshair
-        case .isoscelesTriangle: return .crosshair
-        case .rightTriangle: return .crosshair
-        case .acuteTriangle: return .crosshair
-        case .star: return .crosshair
-        case .polygon: return .crosshair
-        case .pentagon: return .crosshair
-        case .hexagon: return .crosshair
-        case .heptagon: return .crosshair
-        case .octagon: return .crosshair
-        case .nonagon: return .crosshair
-        case .eyedropper: return .crosshair
-        case .hand: return .openHand
-        case .zoom: return .crosshair
-        case .gradient: return .crosshair
-        case .cornerRadius: return .crosshair
-        }
-    }
+    // Removed NSCursor mapping; cursor management is disabled on macOS for now
 }
 
 // MARK: - Transformation Anchor Modes

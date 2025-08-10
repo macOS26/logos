@@ -833,18 +833,6 @@ struct VerticalToolbar: View {
                     ToolSection(title: "Drawing") {
                         ForEach(getToolsToDisplay(), id: \.toolIdentifier) { toolItem in
                             Button {
-                                // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                                var popCount = 0
-                                while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                                    NSCursor.pop()
-                                    popCount += 1
-                                }
-                                
-                                // If still not arrow cursor, force reset
-                                if NSCursor.current != NSCursor.arrow {
-                                    NSCursor.arrow.set()
-                                }
-                                
                                 // Handle tool selection
                                 if let starVariant = toolItem.starVariant {
                                     toolGroupManager.selectStarVariant(starVariant)
@@ -895,18 +883,6 @@ struct VerticalToolbar: View {
                             .highPriorityGesture(
                                 TapGesture()
                                     .onEnded { _ in
-                                        // SAFE CURSOR MANAGEMENT - Limited cursor pops to prevent infinite loops
-                                        var popCount = 0
-                                        while NSCursor.current != NSCursor.arrow && popCount < 10 {
-                                            NSCursor.pop()
-                                            popCount += 1
-                                        }
-                                        
-                                        // If still not arrow cursor, force reset
-                                        if NSCursor.current != NSCursor.arrow {
-                                            NSCursor.arrow.set()
-                                        }
-                                        
                                         // Handle tool selection
                                         if let starVariant = toolItem.starVariant {
                                             toolGroupManager.selectStarVariant(starVariant)
