@@ -18,6 +18,17 @@ let EyedropperCursor: NSCursor = {
     }
     return NSCursor.crosshair
 }()
+
+// Shared magnifying glass cursor for zoom tool
+let MagnifyingGlassCursor: NSCursor = {
+    if let base = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil) {
+        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        let img = base.withSymbolConfiguration(config) ?? base
+        // Hotspot near lens center; tweak as needed
+        return NSCursor(image: img, hotSpot: CGPoint(x: img.size.width * 0.35, y: img.size.height * 0.35))
+    }
+    return NSCursor.crosshair
+}()
 #endif
 
 // MARK: - Hashable CGPoint Wrapper for macOS < 15.0 Compatibility

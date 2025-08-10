@@ -30,6 +30,8 @@ extension DrawingCanvas {
                 }
             } else if document.currentTool == .eyedropper {
                 EyedropperCursor.set()
+            } else if document.currentTool == .zoom {
+                MagnifyingGlassCursor.set()
             }
             #endif
             
@@ -66,8 +68,10 @@ extension DrawingCanvas {
             currentMouseLocation = nil
             showClosePathHint = false
             #if os(macOS)
-            // On hover exit, restore arrow
-            NSCursor.arrow.set()
+            // SwiftUI may emit a transient hover exit during mouseDown; don't override zoom/hand cursors
+            if !isCanvasHovering {
+                NSCursor.arrow.set()
+            }
             #endif
             
             // Note: Using rubber band preview overlay instead of live path updates

@@ -58,6 +58,10 @@ extension DrawingCanvas {
             print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
         
         case .zoom:
+            #if os(macOS)
+            // Ensure zoom cursor stays during click
+            MagnifyingGlassCursor.set()
+            #endif
             // Click to zoom at cursor position. Option-click to zoom out.
             let focalPoint = location
             let currentZoom = CGFloat(document.zoomLevel)
@@ -70,6 +74,18 @@ extension DrawingCanvas {
                 targetZoom = nextAllowedStepUp(from: currentZoom)
             }
             handleZoomAtPoint(newZoomLevel: targetZoom, focalPoint: focalPoint, geometry: geometry)
+            #if os(macOS)
+            // Re-assert cursor post-zoom operation
+            if isCanvasHovering && document.currentTool == .zoom {
+                MagnifyingGlassCursor.set()
+            }
+            // Defensive: schedule one more set to override late system arrow resets
+            DispatchQueue.main.async {
+                if isCanvasHovering && document.currentTool == .zoom {
+                    MagnifyingGlassCursor.set()
+                }
+            }
+            #endif
             
         case .eyedropper:
             startEyedropperColorPick()
@@ -93,6 +109,10 @@ extension DrawingCanvas {
                 zoomToolDragStartPoint = value.startLocation
                 zoomToolInitialZoomLevel = document.zoomLevel
             }
+            #if os(macOS)
+            // Maintain magnifying glass while dragging in zoom tool
+            MagnifyingGlassCursor.set()
+            #endif
             let deltaY = value.location.y - zoomToolDragStartPoint.y
             let sensitivity: CGFloat = 300.0
             var scaleChange = exp(-deltaY / sensitivity) // drag up (negative deltaY) -> zoom in

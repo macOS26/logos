@@ -214,6 +214,8 @@ extension DrawingCanvas {
                     NSCursor.openHand.set()
                 } else if newTool == .eyedropper {
                     EyedropperCursor.set()
+                } else if newTool == .zoom {
+                    MagnifyingGlassCursor.set()
                 } else {
                     NSCursor.arrow.set()
                 }
@@ -230,6 +232,8 @@ extension DrawingCanvas {
                     NSCursor.openHand.set()
                 } else if document.currentTool == .eyedropper {
                     EyedropperCursor.set()
+                } else if document.currentTool == .zoom {
+                    MagnifyingGlassCursor.set()
                 }
                 #endif
             } else {
@@ -245,6 +249,41 @@ extension DrawingCanvas {
         .onTapGesture { location in
             print("🎯 SINGLE CLICK DETECTED at: \(location)")
             handleUnifiedTap(at: location, geometry: geometry)
+            #if os(macOS)
+            // After tap, restore appropriate cursor immediately
+            // Note: During mouseDown, SwiftUI may temporarily drop hover. Use hit test
+            // to verify the location is inside the canvas bounds to decide cursor.
+            let pointInView = location
+            let insideCanvas = pointInView.x >= 0 && pointInView.y >= 0 &&
+                pointInView.x <= geometry.size.width && pointInView.y <= geometry.size.height
+            if insideCanvas || isCanvasHovering {
+                switch document.currentTool {
+                case .hand:
+                    NSCursor.openHand.set()
+                case .eyedropper:
+                    EyedropperCursor.set()
+                case .zoom:
+                    MagnifyingGlassCursor.set()
+                default:
+                    NSCursor.arrow.set()
+                }
+                // Defensive: if system applies Arrow after layout updates, override on next runloop
+                DispatchQueue.main.async {
+                    if (insideCanvas || isCanvasHovering) {
+                        switch document.currentTool {
+                        case .hand:
+                            NSCursor.openHand.set()
+                        case .eyedropper:
+                            EyedropperCursor.set()
+                        case .zoom:
+                            MagnifyingGlassCursor.set()
+                        default:
+                            NSCursor.arrow.set()
+                        }
+                    }
+                }
+            }
+            #endif
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 3)
@@ -269,6 +308,55 @@ extension DrawingCanvas {
             if let request = document.zoomRequest {
                 handleZoomRequest(request, geometry: geometry)
             }
+        }
+        // Reassert correct tool cursor whenever zoom level changes (post-layout)
+        .onChange(of: document.zoomLevel) { _, _ in
+            #if os(macOS)
+            if isCanvasHovering {
+                switch document.currentTool {
+                case .hand:
+                    NSCursor.openHand.set()
+                case .eyedropper:
+                    EyedropperCursor.set()
+                case .zoom:
+                    MagnifyingGlassCursor.set()
+                default:
+                    break
+                }
+                // Also schedule on next runloop to win races with system arrow resets
+                DispatchQueue.main.async {
+                    if isCanvasHovering {
+                        switch document.currentTool {
+                        case .hand:
+                            NSCursor.openHand.set()
+                        case .eyedropper:
+                            EyedropperCursor.set()
+                        case .zoom:
+                            MagnifyingGlassCursor.set()
+                        default:
+                            break
+                        }
+                    }
+                }
+            }
+            #endif
+        }
+        // Reassert during offset changes as well (some zoom flows adjust offset last)
+        .onChange(of: document.canvasOffset) { _, _ in
+            #if os(macOS)
+            if isCanvasHovering {
+                switch document.currentTool {
+                case .hand:
+                    NSCursor.openHand.set()
+                case .eyedropper:
+                    EyedropperCursor.set()
+                case .zoom:
+                    MagnifyingGlassCursor.set()
+                default:
+                    break
+                }
+            }
+            #endif
         }
         .contextMenu {
             directSelectionContextMenu

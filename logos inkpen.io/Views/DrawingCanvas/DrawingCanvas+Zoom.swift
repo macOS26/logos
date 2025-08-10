@@ -136,5 +136,36 @@ extension DrawingCanvas {
         
         // Clear the request after processing
         document.clearZoomRequest()
+
+        #if os(macOS)
+        // After completing a programmatic zoom request, restore the active tool cursor
+        if isCanvasHovering {
+            switch document.currentTool {
+            case .hand:
+                NSCursor.openHand.set()
+            case .eyedropper:
+                EyedropperCursor.set()
+            case .zoom:
+                MagnifyingGlassCursor.set()
+            default:
+                break
+            }
+            // Also assert on next runloop to win races
+            DispatchQueue.main.async {
+                if isCanvasHovering {
+                    switch document.currentTool {
+                    case .hand:
+                        NSCursor.openHand.set()
+                    case .eyedropper:
+                        EyedropperCursor.set()
+                    case .zoom:
+                        MagnifyingGlassCursor.set()
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+        #endif
     }
 } 
