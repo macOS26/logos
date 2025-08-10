@@ -27,7 +27,8 @@ struct ToolGroupConfiguration {
         "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
         "circles": [.ellipse, .oval, .circle, .egg],
         "triangles": [.equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone],
-        "polygons": [.polygon, .pentagon, .hexagon, .heptagon, .octagon],
+        // Polygons: show 5–9 sides explicitly
+        "polygons": [.pentagon, .hexagon, .heptagon, .octagon, .nonagon],
         "lines": [.bezierPen, .line],
         "brushes": [.brush, .marker, .freehand],
         "transforms": [.scale, .rotate, .shear, .warp],

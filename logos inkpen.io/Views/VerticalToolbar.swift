@@ -8,6 +8,10 @@
 import SwiftUI
 import AppKit
 
+// Stroke settings for toolbar icons
+private let IconStrokeWidth: CGFloat = 1.0
+private let IconStrokeExpand: CGFloat = IconStrokeWidth / 2.0
+
 // MARK: - Shape Variants
 
 // Rectangle Variants
@@ -98,6 +102,7 @@ enum PolygonVariant: String, CaseIterable {
     case hexagon = "Hexagon (6 sides)"
     case heptagon = "Heptagon (7 sides)"
     case octagon = "Octagon (8 sides)"
+    case nonagon = "Nonagon (9 sides)"
 }
 
 // MARK: - Star Variants
@@ -106,7 +111,7 @@ enum StarVariant: String, CaseIterable {
     case fourPoint = "4-Point Star" 
     case fivePoint = "5-Point Star"
     case sixPoint = "6-Point Star"
-    case eightPoint = "8-Point Star"
+    case sevenPoint = "7-Point Star"
     
     @ViewBuilder
     func iconView(isSelected: Bool, color: Color = .primary) -> some View {
@@ -123,8 +128,8 @@ enum StarVariant: String, CaseIterable {
         case .sixPoint:
             SixPointStarIcon(isSelected: isSelected)
                 .foregroundColor(color)
-        case .eightPoint:
-            EightPointStarIcon(isSelected: isSelected)
+        case .sevenPoint:
+            SevenPointStarIcon(isSelected: isSelected)
                 .foregroundColor(color)
         }
     }
@@ -152,32 +157,27 @@ struct ThreePointStarIcon: View {
     
     var body: some View {
         Path { path in
-            // Create a 3-pointed curved star like the Mercedes logo in your image
+            // Draw using the exact star formula used by the canvas
             let center = CGPoint(x: 10, y: 10)
-            let radius: CGFloat = 7
-            
-            // Top point
-            path.move(to: CGPoint(x: center.x, y: center.y - radius))
-            
-            // Curve to bottom right
-            path.addQuadCurve(
-                to: CGPoint(x: center.x + radius * 0.866, y: center.y + radius * 0.5),
-                control: CGPoint(x: center.x + radius * 0.3, y: center.y - radius * 0.3)
-            )
-            
-            // Curve to bottom left
-            path.addQuadCurve(
-                to: CGPoint(x: center.x - radius * 0.866, y: center.y + radius * 0.5),
-                control: CGPoint(x: center.x, y: center.y + radius * 0.8)
-            )
-            
-            // Curve back to top
-            path.addQuadCurve(
-                to: CGPoint(x: center.x, y: center.y - radius),
-                control: CGPoint(x: center.x - radius * 0.3, y: center.y - radius * 0.3)
-            )
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.22 // matches DrawingCanvas+ShapeDrawing
+            let points: Int = 3
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
+                if i == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+            path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -188,30 +188,27 @@ struct FourPointStarIcon: View {
     
     var body: some View {
         Path { path in
-            // Create a 4-pointed star like the second image
+            // Draw using the exact star formula used by the canvas
             let center = CGPoint(x: 10, y: 10)
-            let outerRadius: CGFloat = 8
-            let innerRadius: CGFloat = 3
-            
-            // Start at top
-            path.move(to: CGPoint(x: center.x, y: center.y - outerRadius))
-            path.addLine(to: CGPoint(x: center.x + innerRadius, y: center.y - innerRadius))
-            
-            // Right point
-            path.addLine(to: CGPoint(x: center.x + outerRadius, y: center.y))
-            path.addLine(to: CGPoint(x: center.x + innerRadius, y: center.y + innerRadius))
-            
-            // Bottom point
-            path.addLine(to: CGPoint(x: center.x, y: center.y + outerRadius))
-            path.addLine(to: CGPoint(x: center.x - innerRadius, y: center.y + innerRadius))
-            
-            // Left point
-            path.addLine(to: CGPoint(x: center.x - outerRadius, y: center.y))
-            path.addLine(to: CGPoint(x: center.x - innerRadius, y: center.y - innerRadius))
-            
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.28 // matches DrawingCanvas+ShapeDrawing
+            let points: Int = 4
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
+                if i == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -221,11 +218,29 @@ struct FivePointStarIcon: View {
     let isSelected: Bool
     
     var body: some View {
-        // Use SF Symbol as fallback since custom path is complex
-        Image(systemName: "star")
-            .font(.system(size: 16))
-            .foregroundColor(.primary)
-            .frame(width: 20, height: 20)
+        Path { path in
+            // Draw using the exact star formula used by the canvas
+            let center = CGPoint(x: 10, y: 10)
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.40 // matches DrawingCanvas+ShapeDrawing
+            let points: Int = 5
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
+                if i == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
     }
 }
 
@@ -235,35 +250,58 @@ struct SixPointStarIcon: View {
     
     var body: some View {
         Path { path in
-            // Create a 6-pointed star like the third image
+            // Draw using the exact star formula used by the canvas
             let center = CGPoint(x: 10, y: 10)
-            let outerRadius: CGFloat = 8
-            let innerRadius: CGFloat = 4
-            
-            for i in 0..<6 {
-                let angle = Double(i) * .pi / 3 - .pi / 2 // Start from top
-                let nextAngle = Double(i + 1) * .pi / 3 - .pi / 2
-                
-                let outerPoint = CGPoint(
-                    x: center.x + outerRadius * cos(angle),
-                    y: center.y + outerRadius * sin(angle)
-                )
-                
-                let innerPoint = CGPoint(
-                    x: center.x + innerRadius * cos(nextAngle - .pi / 6),
-                    y: center.y + innerRadius * sin(nextAngle - .pi / 6)
-                )
-                
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.40 // matches DrawingCanvas+ShapeDrawing
+            let points: Int = 6
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
                 if i == 0 {
-                    path.move(to: outerPoint)
+                    path.move(to: CGPoint(x: x, y: y))
                 } else {
-                    path.addLine(to: outerPoint)
+                    path.addLine(to: CGPoint(x: x, y: y))
                 }
-                path.addLine(to: innerPoint)
             }
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+    }
+}
+
+// 7-Point Star
+struct SevenPointStarIcon: View {
+    let isSelected: Bool
+    
+    var body: some View {
+        Path { path in
+            // Draw using the exact star formula used by the canvas
+            let center = CGPoint(x: 10, y: 10)
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.40 // matches DrawingCanvas+ShapeDrawing
+            let points: Int = 7
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
+                if i == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+            path.closeSubpath()
+        }
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -274,35 +312,27 @@ struct EightPointStarIcon: View {
     
     var body: some View {
         Path { path in
-            // Create an 8-pointed star like the fourth image
+            // Draw using the exact star formula used by the canvas
             let center = CGPoint(x: 10, y: 10)
-            let outerRadius: CGFloat = 8
-            let innerRadius: CGFloat = 4
-            
-            for i in 0..<8 {
-                let angle = Double(i) * .pi / 4 - .pi / 2 // Start from top
-                let nextAngle = Double(i + 1) * .pi / 4 - .pi / 2
-                
-                let outerPoint = CGPoint(
-                    x: center.x + outerRadius * cos(angle),
-                    y: center.y + outerRadius * sin(angle)
-                )
-                
-                let innerPoint = CGPoint(
-                    x: center.x + innerRadius * cos(nextAngle - .pi / 8),
-                    y: center.y + innerRadius * sin(nextAngle - .pi / 8)
-                )
-                
+            let outerRadius: CGFloat = 8 + IconStrokeExpand
+            let innerRadius: CGFloat = outerRadius * 0.40
+            let points: Int = 8
+
+            let angleStep = .pi / Double(points)
+            for i in 0..<(points * 2) {
+                let angle = Double(i) * angleStep - .pi / 2
+                let r = (i % 2 == 0) ? outerRadius : innerRadius
+                let x = center.x + cos(angle) * r
+                let y = center.y + sin(angle) * r
                 if i == 0 {
-                    path.move(to: outerPoint)
+                    path.move(to: CGPoint(x: x, y: y))
                 } else {
-                    path.addLine(to: outerPoint)
+                    path.addLine(to: CGPoint(x: x, y: y))
                 }
-                path.addLine(to: innerPoint)
             }
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -314,10 +344,10 @@ struct RectangleIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 4, y: 6, width: 12, height: 8)
+            let rect = CGRect(x: 4 - IconStrokeExpand, y: 6 - IconStrokeExpand, width: 12 + IconStrokeWidth, height: 8 + IconStrokeWidth)
             path.addRect(rect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -327,10 +357,10 @@ struct SquareIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 5, y: 5, width: 10, height: 10)
+            let rect = CGRect(x: 5 - IconStrokeExpand, y: 5 - IconStrokeExpand, width: 10 + IconStrokeWidth, height: 10 + IconStrokeWidth)
             path.addRect(rect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -340,10 +370,10 @@ struct RoundedRectangleIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 4, y: 6, width: 12, height: 8)
+            let rect = CGRect(x: 4 - IconStrokeExpand, y: 6 - IconStrokeExpand, width: 12 + IconStrokeWidth, height: 8 + IconStrokeWidth)
             path.addRoundedRect(in: rect, cornerSize: CGSize(width: 2, height: 2))
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -353,10 +383,10 @@ struct PillIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 4, y: 7, width: 12, height: 6)
+            let rect = CGRect(x: 4 - IconStrokeExpand, y: 7 - IconStrokeExpand, width: 12 + IconStrokeWidth, height: 6 + IconStrokeWidth)
             path.addRoundedRect(in: rect, cornerSize: CGSize(width: 3, height: 3))
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -368,10 +398,10 @@ struct EllipseIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 3, y: 6, width: 14, height: 8)
+            let rect = CGRect(x: 3 - IconStrokeExpand, y: 6 - IconStrokeExpand, width: 14 + IconStrokeWidth, height: 8 + IconStrokeWidth)
             path.addEllipse(in: rect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -381,10 +411,10 @@ struct OvalIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 4, y: 5, width: 12, height: 10)
+            let rect = CGRect(x: 4 - IconStrokeExpand, y: 5 - IconStrokeExpand, width: 12 + IconStrokeWidth, height: 10 + IconStrokeWidth)
             path.addEllipse(in: rect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -394,10 +424,10 @@ struct CircleIcon: View {
     
     var body: some View {
         Path { path in
-            let rect = CGRect(x: 5, y: 5, width: 10, height: 10)
+            let rect = CGRect(x: 5 - IconStrokeExpand, y: 5 - IconStrokeExpand, width: 10 + IconStrokeWidth, height: 10 + IconStrokeWidth)
             path.addEllipse(in: rect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -409,8 +439,8 @@ struct EggIcon: View {
         Path { path in
             // Create a proper egg shape using simple 4-curve approach
             let center = CGPoint(x: 10, y: 10)
-            let radiusX: CGFloat = 4
-            let radiusY: CGFloat = 6
+            let radiusX: CGFloat = 4 + IconStrokeExpand
+            let radiusY: CGFloat = 6 + IconStrokeExpand
             
             // SIMPLE EGG FORMULA: Use standard ellipse with vertical offset
             // The narrow end should be rounded, not pointed
@@ -453,7 +483,7 @@ struct EggIcon: View {
             
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -464,9 +494,9 @@ struct ConeIcon: View {
     var body: some View {
         Path { path in
             // Triangle with oval base
-            let topPoint = CGPoint(x: 10, y: 4)
-            let bottomLeft = CGPoint(x: 5, y: 14)
-            let bottomRight = CGPoint(x: 15, y: 14)
+            let topPoint = CGPoint(x: 10, y: 4 - IconStrokeExpand)
+            let bottomLeft = CGPoint(x: 5 - IconStrokeExpand, y: 14 + IconStrokeExpand)
+            let bottomRight = CGPoint(x: 15 + IconStrokeExpand, y: 14 + IconStrokeExpand)
             
             path.move(to: topPoint)
             path.addLine(to: bottomLeft)
@@ -474,10 +504,10 @@ struct ConeIcon: View {
             path.closeSubpath()
             
             // Add oval base
-            let ovalRect = CGRect(x: 6, y: 13, width: 8, height: 3)
+            let ovalRect = CGRect(x: 6 - IconStrokeExpand, y: 13 - IconStrokeExpand, width: 8 + IconStrokeWidth, height: 3 + IconStrokeWidth)
             path.addEllipse(in: ovalRect)
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -494,16 +524,16 @@ struct EquilateralTriangleIcon: View {
             let height: CGFloat = 8
             let width: CGFloat = height * 2 / sqrt(3)
             
-            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.6)
-            let bottomLeft = CGPoint(x: center.x - width * 0.5, y: center.y + height * 0.4)
-            let bottomRight = CGPoint(x: center.x + width * 0.5, y: center.y + height * 0.4)
+            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.6 - IconStrokeExpand)
+            let bottomLeft = CGPoint(x: center.x - width * 0.5 - IconStrokeExpand, y: center.y + height * 0.4 + IconStrokeExpand)
+            let bottomRight = CGPoint(x: center.x + width * 0.5 + IconStrokeExpand, y: center.y + height * 0.4 + IconStrokeExpand)
             
             path.move(to: topPoint)
             path.addLine(to: bottomLeft)
             path.addLine(to: bottomRight)
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -514,16 +544,16 @@ struct RightTriangleIcon: View {
     var body: some View {
         Path { path in
             // Right triangle with 90-degree angle at bottom left
-            let topLeft = CGPoint(x: 5, y: 5)
-            let bottomLeft = CGPoint(x: 5, y: 15)
-            let bottomRight = CGPoint(x: 15, y: 15)
+            let topLeft = CGPoint(x: 5 - IconStrokeExpand, y: 5 - IconStrokeExpand)
+            let bottomLeft = CGPoint(x: 5 - IconStrokeExpand, y: 15 + IconStrokeExpand)
+            let bottomRight = CGPoint(x: 15 + IconStrokeExpand, y: 15 + IconStrokeExpand)
             
             path.move(to: topLeft)
             path.addLine(to: bottomLeft)
             path.addLine(to: bottomRight)
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -539,16 +569,16 @@ struct AcuteTriangleIcon: View {
             let height: CGFloat = 12
             
             let center = CGPoint(x: 10, y: 10)
-            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.5)
-            let bottomLeft = CGPoint(x: center.x - baseWidth * 0.5, y: center.y + height * 0.5)
-            let bottomRight = CGPoint(x: center.x + baseWidth * 0.5, y: center.y + height * 0.5)
+            let topPoint = CGPoint(x: center.x, y: center.y - height * 0.5 - IconStrokeExpand)
+            let bottomLeft = CGPoint(x: center.x - baseWidth * 0.5 - IconStrokeExpand, y: center.y + height * 0.5 + IconStrokeExpand)
+            let bottomRight = CGPoint(x: center.x + baseWidth * 0.5 + IconStrokeExpand, y: center.y + height * 0.5 + IconStrokeExpand)
             
             path.move(to: topPoint)
             path.addLine(to: bottomLeft)
             path.addLine(to: bottomRight)
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -559,16 +589,16 @@ struct IsoscelesTriangleIcon: View {
     var body: some View {
         Path { path in
             // Isosceles triangle with two equal sides
-            let topPoint = CGPoint(x: 10, y: 5)
-            let bottomLeft = CGPoint(x: 4, y: 15)
-            let bottomRight = CGPoint(x: 16, y: 15)
+            let topPoint = CGPoint(x: 10, y: 5 - IconStrokeExpand)
+            let bottomLeft = CGPoint(x: 4 - IconStrokeExpand, y: 15 + IconStrokeExpand)
+            let bottomRight = CGPoint(x: 16 + IconStrokeExpand, y: 15 + IconStrokeExpand)
             
             path.move(to: topPoint)
             path.addLine(to: bottomLeft)
             path.addLine(to: bottomRight)
             path.closeSubpath()
         }
-        .stroke(Color.primary, lineWidth: 1.5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
         .frame(width: 20, height: 20)
     }
 }
@@ -584,6 +614,57 @@ struct SkewedRectangleIcon: View {
             .transformEffect(CGAffineTransform(a: 1.0, b: 0.0, c: -0.3, d: 1.0, tx: 2, ty: 0))
     }
 }
+
+// MARK: - Custom Polygon Icons (5–9 sides) using the same math as canvas
+
+private func polygonIconPath(center: CGPoint, radius: CGFloat, sides: Int) -> Path {
+    var p = Path()
+    let adjustedRadius = radius + IconStrokeExpand
+    let angleStep = (2.0 * .pi) / Double(sides)
+    let startAngle = -Double.pi / 2 + ((sides % 2 == 0) ? angleStep / 2 : 0)
+    for i in 0..<sides {
+        let angle = Double(i) * angleStep + startAngle
+        let x = center.x + adjustedRadius * cos(CGFloat(angle))
+        let y = center.y + adjustedRadius * sin(CGFloat(angle))
+        if i == 0 {
+            p.move(to: CGPoint(x: x, y: y))
+        } else {
+            p.addLine(to: CGPoint(x: x, y: y))
+        }
+    }
+    p.closeSubpath()
+    return p
+}
+
+struct PentagonIcon: View { let isSelected: Bool; var body: some View {
+    polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 5)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+}}
+
+struct HexagonIcon: View { let isSelected: Bool; var body: some View {
+    polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 6)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+}}
+
+struct HeptagonIcon: View { let isSelected: Bool; var body: some View {
+    polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 7)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+}}
+
+struct OctagonIcon: View { let isSelected: Bool; var body: some View {
+    polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 8)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+}}
+
+struct NonagonIcon: View { let isSelected: Bool; var body: some View {
+    polygonIconPath(center: CGPoint(x: 10, y: 10), radius: 7, sides: 9)
+        .stroke(Color.primary, lineWidth: IconStrokeWidth)
+        .frame(width: 20, height: 20)
+}}
 
 // MARK: - Tool Item for flexible toolbar display
 struct ToolItem {
@@ -662,6 +743,16 @@ struct VerticalToolbar: View {
             RightTriangleIcon(isSelected: document.currentTool == toolItem.tool)
         case .acuteTriangle:
             AcuteTriangleIcon(isSelected: document.currentTool == toolItem.tool)
+        case .pentagon:
+            PentagonIcon(isSelected: document.currentTool == toolItem.tool)
+        case .hexagon:
+            HexagonIcon(isSelected: document.currentTool == toolItem.tool)
+        case .heptagon:
+            HeptagonIcon(isSelected: document.currentTool == toolItem.tool)
+        case .octagon:
+            OctagonIcon(isSelected: document.currentTool == toolItem.tool)
+        case .nonagon:
+            NonagonIcon(isSelected: document.currentTool == toolItem.tool)
         default:
             // Use SF Symbols for all other tools
             Image(systemName: toolItem.tool.iconName)
@@ -705,20 +796,9 @@ struct VerticalToolbar: View {
                         }
                     }
                 } else {
-                    // If we have an expansion anchor, put it first; otherwise natural order
-                    if let anchorTool = toolGroupManager.expansionAnchorTool, toolGroup.contains(anchorTool) {
-                        toolsToShow.append(ToolItem(tool: anchorTool, starVariant: nil))
-                        
-                        // Add other tools below (sorted, excluding anchor)
-                        let otherTools = toolGroup.filter { $0 != anchorTool }.sorted { $0.rawValue < $1.rawValue }
-                        for tool in otherTools {
-                            toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
-                        }
-                    } else {
-                        // No expansion anchor, show in natural order
-                        for tool in toolGroup {
-                            toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
-                        }
+                    // Non-star groups: always show in configured order (5,6,7,8,9 for polygons)
+                    for tool in toolGroup {
+                        toolsToShow.append(ToolItem(tool: tool, starVariant: nil))
                     }
                 }
             } else {
@@ -738,7 +818,12 @@ struct VerticalToolbar: View {
     }
     
     private func getAllToolGroups() -> [[DrawingTool]] {
-        return ToolGroupConfiguration.getAllToolGroupsAsArrays()
+        // Ensure polygon group appears as 5,6,7,8,9 specifically
+        var groups = ToolGroupConfiguration.getAllToolGroupsAsArrays()
+        if let idx = groups.firstIndex(where: { $0.contains(.pentagon) && $0.contains(.octagon) }) {
+            groups[idx] = [.pentagon, .hexagon, .heptagon, .octagon, .nonagon]
+        }
+        return groups
     }
     
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
@@ -952,6 +1037,8 @@ struct VerticalToolbar: View {
             return "Heptagon Tool (7) - Draw 7-sided polygons"
         case .octagon:
             return "Octagon Tool (8) - Draw 8-sided polygons"
+        case .nonagon:
+            return "Nonagon Tool (9) - Draw 9-sided polygons"
         case .eyedropper:
             return "Eyedropper Tool (I) - Sample colors"
         case .hand:

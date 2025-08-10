@@ -3023,6 +3023,7 @@ enum DrawingTool: String, CaseIterable, Codable {
     case hexagon = "Hexagon"
     case heptagon = "Heptagon"
     case octagon = "Octagon"
+    case nonagon = "Nonagon"
     case eyedropper = "Eyedropper"
     case hand = "Hand"
     case zoom = "Zoom"
@@ -3063,6 +3064,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .hexagon: return "hexagon"
         case .heptagon: return "heptagon"
         case .octagon: return "octagon"
+        case .nonagon: return "octagon" // no SF symbol for nonagon; custom icon provided elsewhere
         case .eyedropper: return "eyedropper"
         case .hand: return "hand.raised"
         case .zoom: return "magnifyingglass"
@@ -3105,6 +3107,7 @@ enum DrawingTool: String, CaseIterable, Codable {
         case .hexagon: return .crosshair
         case .heptagon: return .crosshair
         case .octagon: return .crosshair
+        case .nonagon: return .crosshair
         case .eyedropper: return .crosshair
         case .hand: return .openHand
         case .zoom: return .crosshair

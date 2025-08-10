@@ -53,7 +53,7 @@ extension DrawingCanvas {
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             // Shape tools are drag-only - ignore taps
             print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
         
@@ -101,7 +101,7 @@ extension DrawingCanvas {
             let continuousZoom = max(0.1, min(16.0, zoomToolInitialZoomLevel * scaleChange))
             handleZoomAtPoint(newZoomLevel: continuousZoom, focalPoint: value.startLocation, geometry: geometry)
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             handleShapeDrawing(value: value, geometry: geometry)
             
         case .font:
@@ -167,7 +167,7 @@ extension DrawingCanvas {
             zoomToolDragStartPoint = .zero
             zoomToolInitialZoomLevel = document.zoomLevel
             
-        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
+        case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             finishShapeDrawing(value: value, geometry: geometry)
             resetShapeDrawingState()
             

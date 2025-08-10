@@ -356,8 +356,29 @@ extension DrawingCanvas {
             )
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
             let outerRadius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            let innerRadius = Double(outerRadius) * 0.4 // Inner radius is 40% of outer radius
-            currentPath = createStarPath(center: center, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: 5)
+            // Determine star points and inner radius ratio based on selected variant in tool group
+            let selectedVariant = ToolGroupManager.shared.selectedVariant
+            let points: Int
+            let innerRatio: Double
+            switch selectedVariant {
+            case .threePoint:
+                points = 3
+                innerRatio = 0.22 // narrower inner points
+            case .fourPoint:
+                points = 4
+                innerRatio = 0.28 // narrower inner points
+            case .fivePoint:
+                points = 5
+                innerRatio = 0.40
+            case .sixPoint:
+                points = 6
+                innerRatio = 0.40
+            case .sevenPoint:
+                points = 7
+                innerRatio = 0.40
+            }
+            let innerRadius = Double(outerRadius) * innerRatio
+            currentPath = createStarPath(center: center, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: points)
         case .polygon:
             let center = CGPoint(
                 x: (startPoint.x + currentLocation.x) / 2,
@@ -398,6 +419,13 @@ extension DrawingCanvas {
             // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
             let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
             currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 8)
+        case .nonagon:
+            let center = CGPoint(
+                x: (startPoint.x + currentLocation.x) / 2,
+                y: (startPoint.y + currentLocation.y) / 2
+            )
+            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
+            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 9)
         default:
             break
         }

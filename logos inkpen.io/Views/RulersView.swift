@@ -574,7 +574,7 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
     
     // PROFESSIONAL TICK SPACING: Use PICAS frequency as model for ALL units
     // PICA model: 12 points per pica, with 1-point minor intervals = perfect frequency
-    let baseSpacing: Double
+    let _ : Double
     
     switch unit {
     case .pixels, .points:

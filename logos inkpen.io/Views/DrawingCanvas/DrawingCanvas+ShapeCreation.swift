@@ -279,12 +279,13 @@ extension DrawingCanvas {
     internal func createPolygonPath(center: CGPoint, radius: Double, sides: Int) -> VectorPath {
         var elements: [PathElement] = []
         let angleStep = 2 * .pi / Double(sides)
+        // For even-sided polygons, rotate by half a step so the top is flat (e.g., stop sign)
+        let startAngle = -Double.pi / 2 + ((sides % 2 == 0) ? angleStep / 2 : 0)
         
         for i in 0..<sides {
-            let angle = Double(i) * angleStep - .pi / 2 // Start at top
+            let angle = Double(i) * angleStep + startAngle
             let x = center.x + cos(angle) * radius
             let y = center.y + sin(angle) * radius
-            
             if i == 0 {
                 elements.append(.move(to: VectorPoint(x, y)))
             } else {
@@ -292,7 +293,6 @@ extension DrawingCanvas {
             }
         }
         elements.append(.close)
-        
         return VectorPath(elements: elements, isClosed: true)
     }
     
