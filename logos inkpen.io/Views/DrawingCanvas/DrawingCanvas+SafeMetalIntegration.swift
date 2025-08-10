@@ -2,6 +2,8 @@ import SwiftUI
 #if os(macOS)
 import AppKit
 #endif
+
+// EyedropperCursor now defined in DrawingCanvas.swift for shared access
 import MetalKit
 
 /// Safe Metal integration extension for DrawingCanvas
@@ -210,6 +212,8 @@ extension DrawingCanvas {
             if isCanvasHovering {
                 if newTool == .hand {
                     NSCursor.openHand.set()
+                } else if newTool == .eyedropper {
+                    EyedropperCursor.set()
                 } else {
                     NSCursor.arrow.set()
                 }
@@ -224,6 +228,8 @@ extension DrawingCanvas {
                 #if os(macOS)
                 if document.currentTool == .hand {
                     NSCursor.openHand.set()
+                } else if document.currentTool == .eyedropper {
+                    EyedropperCursor.set()
                 }
                 #endif
             } else {

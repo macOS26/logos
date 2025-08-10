@@ -28,6 +28,8 @@ extension DrawingCanvas {
                 } else {
                     NSCursor.openHand.set()
                 }
+            } else if document.currentTool == .eyedropper {
+                EyedropperCursor.set()
             }
             #endif
             

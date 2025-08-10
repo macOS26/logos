@@ -8,6 +8,18 @@
 import SwiftUI
 import AppKit
 
+#if os(macOS)
+// Shared eyedropper cursor for the whole canvas module
+let EyedropperCursor: NSCursor = {
+    if let base = NSImage(systemSymbolName: "eyedropper", accessibilityDescription: nil) {
+        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        let img = base.withSymbolConfiguration(config) ?? base
+        return NSCursor(image: img, hotSpot: CGPoint(x: 4, y: img.size.height - 2))
+    }
+    return NSCursor.crosshair
+}()
+#endif
+
 // MARK: - Hashable CGPoint Wrapper for macOS < 15.0 Compatibility
 struct HashableCGPoint: Hashable, Equatable {
     let point: CGPoint
