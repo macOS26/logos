@@ -1,0 +1,1364 @@
+{
+  "canvasOffset" : [
+    -68.13053398334557,
+    -326.4920104119551
+  ],
+  "cmykSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 1,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 1,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 1
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.5,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.75,
+          "cyan" : 0,
+          "magenta" : 0,
+          "yellow" : 0
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0.3,
+          "magenta" : 0.3,
+          "yellow" : 0.3
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 1,
+          "cyan" : 0.4,
+          "magenta" : 0.4,
+          "yellow" : 0.4
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0,
+          "cyan" : 0,
+          "magenta" : 0.3,
+          "yellow" : 0.45
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.1,
+          "cyan" : 0,
+          "magenta" : 0.4,
+          "yellow" : 0.6
+        }
+      }
+    },
+    {
+      "cmyk" : {
+        "_0" : {
+          "alpha" : 1,
+          "black" : 0.25,
+          "cyan" : 0,
+          "magenta" : 0.5,
+          "yellow" : 0.75
+        }
+      }
+    }
+  ],
+  "currentTool" : "Selection",
+  "defaultFillColor" : {
+    "clear" : {
+
+    }
+  },
+  "defaultFillOpacity" : 1,
+  "defaultStrokeColor" : {
+    "black" : {
+
+    }
+  },
+  "defaultStrokeLineCap" : 0,
+  "defaultStrokeLineJoin" : 0,
+  "defaultStrokeMiterLimit" : 10,
+  "defaultStrokeOpacity" : 1,
+  "defaultStrokeWidth" : 1,
+  "hsbSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 0,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 30,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 60,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 90,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 120,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 150,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 180,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 210,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 240,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 270,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 300,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 1,
+          "hue" : 330,
+          "saturation" : 1
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 0,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 60,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 120,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 180,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 240,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.8,
+          "hue" : 300,
+          "saturation" : 0.5
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 0,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 90,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 180,
+          "saturation" : 0.8
+        }
+      }
+    },
+    {
+      "hsb" : {
+        "_0" : {
+          "alpha" : 1,
+          "brightness" : 0.5,
+          "hue" : 270,
+          "saturation" : 0.8
+        }
+      }
+    }
+  ],
+  "layers" : [
+    {
+      "blendMode" : "Normal",
+      "id" : "0F05A535-42F0-446D-A667-42EC7719C749",
+      "isLocked" : true,
+      "isVisible" : true,
+      "name" : "Pasteboard",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              -3564,
+              -2754
+            ],
+            [
+              7920,
+              6120
+            ]
+          ],
+          "cornerRadii" : [
+
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "black" : {
+
+              }
+            },
+            "opacity" : 0.2
+          },
+          "geometricType" : "Rectangle",
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "3BA93E10-7B8D-41DB-B051-325A01B8C4DA",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isRoundedRectangle" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Pasteboard Background",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : -3564,
+                    "y" : -2754
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 4356,
+                    "y" : -2754
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 4356,
+                    "y" : 3366
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : -3564,
+                    "y" : 3366
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "2C408C91-79AF-4600-B350-A8C987487339",
+            "isClosed" : true
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "blendMode" : "Normal",
+      "id" : "482822AF-832D-4298-9E63-D33694F10EB8",
+      "isLocked" : true,
+      "isVisible" : true,
+      "name" : "Canvas",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              0,
+              0
+            ],
+            [
+              792,
+              612
+            ]
+          ],
+          "cornerRadii" : [
+
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "white" : {
+
+              }
+            },
+            "opacity" : 1
+          },
+          "geometricType" : "Rectangle",
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "C8C5A453-057D-495F-B79F-4FEFA7CF275F",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isRoundedRectangle" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Canvas Background",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 0,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 792,
+                    "y" : 0
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 792,
+                    "y" : 612
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 0,
+                    "y" : 612
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "2D370CC3-A6F1-4012-8F35-6BB86E02FF81",
+            "isClosed" : true
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    },
+    {
+      "blendMode" : "Normal",
+      "id" : "2FB306C9-D13C-46ED-8FD2-AEB0C9D0630D",
+      "isLocked" : false,
+      "isVisible" : true,
+      "name" : "Layer 1",
+      "opacity" : 1,
+      "shapes" : [
+        {
+          "blendMode" : "Normal",
+          "bounds" : [
+            [
+              223.97504239889093,
+              194.2789433568678
+            ],
+            [
+              143.85624799354838,
+              211.97386473042363
+            ]
+          ],
+          "cornerRadii" : [
+
+          ],
+          "fillStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "clear" : {
+
+              }
+            },
+            "opacity" : 1
+          },
+          "groupTransform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "groupedShapes" : [
+
+          ],
+          "id" : "A2D368D5-7C30-4EDA-A4ED-0AF81256EBDC",
+          "isCompoundPath" : false,
+          "isGroup" : false,
+          "isLocked" : false,
+          "isRoundedRectangle" : false,
+          "isVisible" : true,
+          "isWarpObject" : false,
+          "name" : "Union Shape",
+          "opacity" : 1,
+          "originalEnvelope" : [
+
+          ],
+          "path" : {
+            "elements" : [
+              {
+                "move" : {
+                  "to" : {
+                    "x" : 366.7582983632059,
+                    "y" : 377.4630370647949
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 367.4914371806761,
+                    "y" : 378.7902258820903
+                  },
+                  "control2" : {
+                    "x" : 367.8312903924393,
+                    "y" : 380.1628070762177
+                  },
+                  "to" : {
+                    "x" : 367.8312903924393,
+                    "y" : 381.56246991335047
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 367.8312903924393,
+                    "y" : 395.1915365853659
+                  },
+                  "control2" : {
+                    "x" : 335.60749084188444,
+                    "y" : 406.25280808729144
+                  },
+                  "to" : {
+                    "x" : 295.9031663956651,
+                    "y" : 406.25280808729144
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 256.19884194944575,
+                    "y" : 406.25280808729144
+                  },
+                  "control2" : {
+                    "x" : 223.97504239889093,
+                    "y" : 395.1915365853659
+                  },
+                  "to" : {
+                    "x" : 223.97504239889093,
+                    "y" : 381.56246991335047
+                  }
+                }
+              },
+              {
+                "curve" : {
+                  "control1" : {
+                    "x" : 223.97504239889093,
+                    "y" : 380.48048038865676
+                  },
+                  "control2" : {
+                    "x" : 224.1781333752762,
+                    "y" : 379.41467443124947
+                  },
+                  "to" : {
+                    "x" : 224.64131299983814,
+                    "y" : 378.37698605497906
+                  }
+                }
+              },
+              {
+                "line" : {
+                  "to" : {
+                    "x" : 295.87662844294243,
+                    "y" : 194.2789433568678
+                  }
+                }
+              },
+              {
+                "close" : {
+
+                }
+              }
+            ],
+            "fillRule" : 0,
+            "id" : "8F898D80-90F0-498D-A232-211118AE62D7",
+            "isClosed" : true
+          },
+          "strokeStyle" : {
+            "blendMode" : "Normal",
+            "color" : {
+              "black" : {
+
+              }
+            },
+            "dashPattern" : [
+
+            ],
+            "lineCap" : 0,
+            "lineJoin" : 0,
+            "miterLimit" : 10,
+            "opacity" : 1,
+            "placement" : "Center",
+            "width" : 1
+          },
+          "transform" : [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "warpEnvelope" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "rgbSwatches" : [
+    {
+      "black" : {
+
+      }
+    },
+    {
+      "white" : {
+
+      }
+    },
+    {
+      "clear" : {
+
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 1,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 0,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 1,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 0,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 1,
+          "green" : 1,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0.5,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 1
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0.5,
+          "green" : 0,
+          "red" : 0
+        }
+      }
+    },
+    {
+      "rgb" : {
+        "_0" : {
+          "alpha" : 1,
+          "blue" : 0,
+          "green" : 0.5,
+          "red" : 0.5
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.518,
+            "red" : 0.04
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.478,
+            "red" : 0
+          },
+          "name" : "systemBlue"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.227,
+            "green" : 0.271,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.188,
+            "green" : 0.231,
+            "red" : 1
+          },
+          "name" : "systemRed"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.345,
+            "green" : 0.82,
+            "red" : 0.188
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.349,
+            "green" : 0.78,
+            "red" : 0.204
+          },
+          "name" : "systemGreen"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.039,
+            "green" : 0.839,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0.8,
+            "red" : 1
+          },
+          "name" : "systemYellow"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.039,
+            "green" : 0.624,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0.584,
+            "red" : 1
+          },
+          "name" : "systemOrange"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.949,
+            "green" : 0.352,
+            "red" : 0.749
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.871,
+            "green" : 0.322,
+            "red" : 0.686
+          },
+          "name" : "systemPurple"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.373,
+            "green" : 0.216,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.333,
+            "green" : 0.176,
+            "red" : 1
+          },
+          "name" : "systemPink"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.878,
+            "red" : 0.251
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.98,
+            "green" : 0.784,
+            "red" : 0.353
+          },
+          "name" : "systemTeal"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.949,
+            "green" : 0.365,
+            "red" : 0.365
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.839,
+            "green" : 0.337,
+            "red" : 0.345
+          },
+          "name" : "systemIndigo"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.407,
+            "green" : 0.557,
+            "red" : 0.675
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.368,
+            "green" : 0.518,
+            "red" : 0.635
+          },
+          "name" : "systemBrown"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.576,
+            "green" : 0.557,
+            "red" : 0.557
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.576,
+            "green" : 0.557,
+            "red" : 0.557
+          },
+          "name" : "systemGray"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.4,
+            "green" : 0.388,
+            "red" : 0.388
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.698,
+            "green" : 0.682,
+            "red" : 0.682
+          },
+          "name" : "systemGray2"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 0.29,
+            "green" : 0.282,
+            "red" : 0.282
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0.8,
+            "green" : 0.78,
+            "red" : 0.78
+          },
+          "name" : "systemGray3"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 1,
+            "red" : 1
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 0,
+            "green" : 0,
+            "red" : 0
+          },
+          "name" : "label"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 0.6,
+            "blue" : 0.961,
+            "green" : 0.922,
+            "red" : 0.922
+          },
+          "lightMode" : {
+            "alpha" : 0.6,
+            "blue" : 0.263,
+            "green" : 0.235,
+            "red" : 0.235
+          },
+          "name" : "secondaryLabel"
+        }
+      }
+    },
+    {
+      "appleSystem" : {
+        "_0" : {
+          "darkMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.518,
+            "red" : 0.04
+          },
+          "lightMode" : {
+            "alpha" : 1,
+            "blue" : 1,
+            "green" : 0.478,
+            "red" : 0
+          },
+          "name" : "link"
+        }
+      }
+    }
+  ],
+  "selectedLayerIndex" : 2,
+  "selectedShapeIDs" : [
+
+  ],
+  "selectedTextIDs" : [
+
+  ],
+  "settings" : {
+    "adaptiveTensionEnabled" : true,
+    "advancedSmoothingEnabled" : true,
+    "backgroundColor" : {
+      "white" : {
+
+      }
+    },
+    "brushPressureSensitivity" : 0.5,
+    "brushTaper" : 0.3,
+    "brushThickness" : 10,
+    "chaikinSmoothingIterations" : 1,
+    "colorMode" : "RGB",
+    "freehandSmoothingTolerance" : 2,
+    "gridSpacing" : 0.125,
+    "height" : 8.5,
+    "preserveSharpCorners" : true,
+    "realTimeSmoothingEnabled" : true,
+    "realTimeSmoothingStrength" : 0.3,
+    "resolution" : 72,
+    "showGrid" : false,
+    "showRulers" : true,
+    "snapToGrid" : false,
+    "unit" : "Inches",
+    "width" : 11
+  },
+  "showRulers" : true,
+  "snapToGrid" : false,
+  "textObjects" : [
+
+  ],
+  "viewMode" : "Color View",
+  "zoomLevel" : 1.9208174330728434
+}
