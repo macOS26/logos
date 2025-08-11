@@ -13,13 +13,14 @@ import AppKit
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     // Prepare white and black variants of the symbol for layered rendering
-    let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
+    let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .medium)
+
     let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
     let blackConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.black])
     let whiteSymbol = (base.withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? base)
     let blackSymbol = (base.withSymbolConfiguration(baseConfig.applying(blackConfig)) ?? base)
 
-    let padding: CGFloat = 4
+    let padding: CGFloat = 10
     let symbolSize = blackSymbol.size
     let destRect = NSRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
     let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
@@ -30,7 +31,7 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
     NSGraphicsContext.current?.saveGraphicsState()
     // Optional subtle halo
     let halo = NSShadow()
-    halo.shadowBlurRadius = 4
+    halo.shadowBlurRadius = 2
     halo.shadowColor = NSColor.white
     halo.shadowOffset = .zero
     halo.set()

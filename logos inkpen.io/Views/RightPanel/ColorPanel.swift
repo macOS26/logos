@@ -135,33 +135,21 @@ struct ColorPanel: View {
             PantoneColorPickerSheet(document: document)
         }
         .onAppear {
-            // If we're in gradient editing mode, update the preview color to match the current gradient stop
-            if appState.gradientEditingState != nil {
-                currentPreviewColor = document.defaultFillColor
+            // Initialize preview to match the active target's current color
+            currentPreviewColor = (document.activeColorTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
+        }
+        // React to document color changes without any notifications
+        .onChange(of: document.activeColorTarget) { _, newTarget in
+            currentPreviewColor = (newTarget == .stroke) ? document.defaultStrokeColor : document.defaultFillColor
+        }
+        .onChange(of: document.defaultFillColor) { _, newFill in
+            if document.activeColorTarget == .fill {
+                currentPreviewColor = newFill
             }
-            
-            // 🔥 LISTEN FOR INK PANEL UPDATES: Listen for notifications from vertical toolbar
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("UpdateInkPanelColor"),
-                object: nil,
-                queue: .main
-            ) { notification in
-                if let userInfo = notification.userInfo,
-                   let color = userInfo["color"] as? VectorColor,
-                   let target = userInfo["target"] as? String {
-                    
-                    // Update the preview color in the INK panel
-                    currentPreviewColor = color
-                    
-                    // Also update the document's active color target if needed
-                    if target == "fill" {
-                        document.activeColorTarget = .fill
-                    } else if target == "stroke" {
-                        document.activeColorTarget = .stroke
-                    }
-                    
-                    print("🎨 INK PANEL: Updated with \(target) color: \(color)")
-                }
+        }
+        .onChange(of: document.defaultStrokeColor) { _, newStroke in
+            if document.activeColorTarget == .stroke {
+                currentPreviewColor = newStroke
             }
         }
     }
@@ -195,15 +183,7 @@ struct ColorPanel: View {
         print("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)")
         print("🎨 COLOR PANEL: activeColorTarget = \(document.activeColorTarget)")
         
-        // 🔥 CRITICAL FIX: Only use gradient callback if THIS panel allows gradient editing
-        // Priority 1: If we're in gradient editing mode AND this panel supports it, use gradient callback
-        if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            print("🎨 COLOR PANEL: Using gradient callback (gradient mode panel)")
-            gradientCallback(color)
-            return
-        }
-        
-        // Priority 2: If we have a specific callback, use it (we're in a modal for specific purpose)
+        // If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
             print("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)")
             onColorSelected(color)
