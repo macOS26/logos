@@ -75,6 +75,16 @@ class AppState {
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
     
+    // MARK: - Preferences: Brush Preview
+    enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
+    var brushPreviewStyle: BrushPreviewStyle = .outline {
+        didSet { UserDefaults.standard.set(brushPreviewStyle.rawValue, forKey: "brushPreviewStyle") }
+    }
+    /// If true, the live preview is treated as final; we bake exactly that path on mouse up
+    var brushPreviewIsFinal: Bool = false {
+        didSet { UserDefaults.standard.set(brushPreviewIsFinal, forKey: "brushPreviewIsFinal") }
+    }
+    
     // MARK: - Initializer
     private init() {
         // Load saved default tool from UserDefaults
@@ -89,6 +99,13 @@ class AppState {
         // Load saved pressure sensitivity setting
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
         print("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)")
+        
+        // Load brush preview preferences
+        if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
+           let style = BrushPreviewStyle(rawValue: styleRaw) {
+            self.brushPreviewStyle = style
+        }
+        self.brushPreviewIsFinal = UserDefaults.standard.object(forKey: "brushPreviewIsFinal") as? Bool ?? false
     }
 
 

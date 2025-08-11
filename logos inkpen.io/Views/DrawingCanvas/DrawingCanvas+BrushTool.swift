@@ -200,8 +200,13 @@ extension DrawingCanvas {
         
         // Logging disabled in hot path to reduce CPU overhead
         
-        // Process brush stroke to create variable width path
-        processBrushStroke()
+        if appState.brushPreviewIsFinal, let preview = brushPreviewPath {
+            // Bake the exact preview path
+            finalizeFromPreview(preview)
+        } else {
+            // Process brush stroke to create variable width path
+            processBrushStroke()
+        }
         
         // Clean up state
         cancelBrushDrawing()
@@ -449,6 +454,22 @@ extension DrawingCanvas {
         } else { }
         
         // Logging disabled in hot path to reduce CPU overhead
+    }
+
+    // MARK: - Finalize From Preview (no recompute)
+    private func finalizeFromPreview(_ preview: VectorPath) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
+            color: getCurrentStrokeColor(),
+            width: getCurrentStrokeWidth(),
+            lineCap: document.defaultStrokeLineCap,
+            lineJoin: document.defaultStrokeLineJoin,
+            miterLimit: document.defaultStrokeMiterLimit,
+            opacity: getCurrentStrokeOpacity()
+        )
+        let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
+        let shape = VectorShape(name: "Brush Stroke", path: preview, strokeStyle: strokeStyle, fillStyle: fillStyle)
+        document.addShape(shape)
     }
     
     // MARK: - Remove Overlap Functionality

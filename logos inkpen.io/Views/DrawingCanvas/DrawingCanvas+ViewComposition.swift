@@ -44,13 +44,7 @@ extension DrawingCanvas {
             Path { path in
                 addPathElements(preview.elements, to: &path)
             }
-            .fill(Color.black.opacity(0.001)) // invisible fill to keep path valid
-            .overlay(
-                Path { path in
-                    addPathElements(preview.elements, to: &path)
-                }
-                .stroke(Color.accentColor, lineWidth: max(1.0, 1.0 / document.zoomLevel))
-            )
+            .modifier(BrushPreviewStyleModifier(appState: appState, document: document, preview: preview))
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
@@ -414,3 +408,31 @@ extension DrawingCanvas {
     }
 
 } 
+
+// MARK: - Brush Preview Styling
+private struct BrushPreviewStyleModifier: ViewModifier {
+    @Environment(AppState.self) var appState
+    let appStateRef: AppState?
+    let document: VectorDocument
+    let preview: VectorPath
+    
+    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
+        self.document = document
+        self.preview = preview
+        self.appStateRef = appState
+    }
+    
+    func body(content: Content) -> some View {
+        switch appStateRef?.brushPreviewStyle ?? .outline {
+        case .outline:
+            ZStack {
+                content.opacity(0.001)
+                Path { p in addPathElements(preview.elements, to: &p) }
+                    .stroke(Color.blue, lineWidth: max(1.0, 1.0 / document.zoomLevel))
+            }
+        case .fill:
+            Path { p in addPathElements(preview.elements, to: &p) }
+                .fill(document.defaultFillColor.color)
+        }
+    }
+}

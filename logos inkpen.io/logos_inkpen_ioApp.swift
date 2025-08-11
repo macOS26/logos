@@ -1708,7 +1708,7 @@ struct logos_inken_ioApp: App {
                 Divider()
                 
                 Button("Preferences...") {
-                    // TODO: Add preferences window
+                    openWindow(id: "app-preferences")
                 }
                 .keyboardShortcut(",", modifiers: [.command])
                 .help("Open application preferences")

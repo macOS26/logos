@@ -149,3 +149,34 @@ struct ObjectRow: View {
         }
     }
 } 
+
+// MARK: - Preferences View
+struct PreferencesView: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\._openURL) private var openURL
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Preferences")
+                .font(.title2)
+                .fontWeight(.semibold)
+            
+            GroupBox(label: Label("Brush Preview", systemImage: "paintbrush").font(.headline)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Preview Style", selection: Binding(get: { appState.brushPreviewStyle }, set: { appState.brushPreviewStyle = $0 })) {
+                        Text("Blue Outline").tag(AppState.BrushPreviewStyle.outline)
+                        Text("Object Fill Color").tag(AppState.BrushPreviewStyle.fill)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    Toggle("Preview is final (don’t change on mouse up)", isOn: Binding(get: { appState.brushPreviewIsFinal }, set: { appState.brushPreviewIsFinal = $0 }))
+                }
+                .padding(.vertical, 6)
+            }
+            
+            Spacer()
+        }
+        .padding(20)
+        .frame(minWidth: 480, minHeight: 220)
+    }
+}
