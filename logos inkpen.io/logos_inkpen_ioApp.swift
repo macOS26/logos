@@ -2360,6 +2360,14 @@ struct logos_inken_ioApp: App {
         }
         .windowResizability(.contentSize)
         
+        // Preferences window
+        WindowGroup("Preferences", id: "app-preferences") {
+            PreferencesView()
+                .environment(appState)
+        }
+        .defaultSize(width: 520, height: 320)
+        .windowResizability(.contentSize)
+        
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
         WindowGroup("New Document Setup") {
