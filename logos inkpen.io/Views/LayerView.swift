@@ -566,19 +566,38 @@ struct SelectionOutline: View {
             // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
             let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
             let center = CGPoint(x: bounds.midX, y: bounds.midY)
+            // Compute bounds to display: for group containers, apply transform to group bounds;
+            // for individual shapes, bounds already include the baked transform.
+            let transformedBounds: CGRect = {
+                if shape.isGroupContainer {
+                    let transform = shape.transform
+                    let corners = [
+                        CGPoint(x: bounds.minX, y: bounds.minY).applying(transform),
+                        CGPoint(x: bounds.maxX, y: bounds.minY).applying(transform),
+                        CGPoint(x: bounds.maxX, y: bounds.maxY).applying(transform),
+                        CGPoint(x: bounds.minX, y: bounds.maxY).applying(transform)
+                    ]
+                    let minX = corners.map { $0.x }.min() ?? bounds.minX
+                    let minY = corners.map { $0.y }.min() ?? bounds.minY
+                    let maxX = corners.map { $0.x }.max() ?? bounds.maxX
+                    let maxY = corners.map { $0.y }.max() ?? bounds.maxY
+                    return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                } else {
+                    return bounds
+                }
+            }()
             
             ZStack {
                 // Bounding box outline
                 Rectangle()
                     .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-                    .frame(width: bounds.width, height: bounds.height)
-                    .position(center)
-                    .transformEffect(shape.transform)
+                    .frame(width: transformedBounds.width, height: transformedBounds.height)
+                    .position(CGPoint(x: transformedBounds.midX, y: transformedBounds.midY))
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
                 
                 // CENTER POINT: Blue square same size as corners
-                let transformedCenter = CGPoint(x: center.x, y: center.y).applying(shape.transform)
+                let transformedCenter = shape.isGroupContainer ? CGPoint(x: center.x, y: center.y).applying(shape.transform) : center
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
@@ -591,7 +610,7 @@ struct SelectionOutline: View {
                 // 4 Corner handles - ALL BLUE
                 ForEach(0..<4) { i in
                     let position = cornerPosition(for: i, in: bounds, center: center)
-                    let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
+                    let transformedCorner = shape.isGroupContainer ? CGPoint(x: position.x, y: position.y).applying(shape.transform) : position
                     
                     Rectangle()
                         .fill(Color.blue)
