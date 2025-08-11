@@ -14,7 +14,34 @@ extension DrawingCanvas {
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
         SafeMetalView { cgContext, size in
+            // Draw grid/selection via CG
             renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
+            // Draw live brush preview path in overlay without touching document layers
+            if let preview = brushPreviewPath {
+                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+                cgContext.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0))
+                let cgPath = CGMutablePath()
+                for e in preview.elements {
+                    switch e {
+                    case .move(let to):
+                        cgPath.move(to: transformPointToView(to.cgPoint, geometry: geometry))
+                    case .line(let to):
+                        cgPath.addLine(to: transformPointToView(to.cgPoint, geometry: geometry))
+                    case .curve(let to, let c1, let c2):
+                        cgPath.addCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+                                        control1: transformPointToView(c1.cgPoint, geometry: geometry),
+                                        control2: transformPointToView(c2.cgPoint, geometry: geometry))
+                    case .quadCurve(let to, let c):
+                        cgPath.addQuadCurve(to: transformPointToView(to.cgPoint, geometry: geometry),
+                                            control: transformPointToView(c.cgPoint, geometry: geometry))
+                    case .close:
+                        cgPath.closeSubpath()
+                    }
+                }
+                cgContext.addPath(cgPath)
+                cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
+                cgContext.fillPath()
+            }
         }
         .allowsHitTesting(false)
     }

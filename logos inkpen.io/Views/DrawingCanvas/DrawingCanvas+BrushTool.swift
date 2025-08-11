@@ -205,6 +205,7 @@ extension DrawingCanvas {
         
         // Clean up state
         cancelBrushDrawing()
+        brushPreviewPath = nil
         
         // AUTO-DESELECT: Clear selection after completing brush stroke
         // This allows user to immediately change colors for the next stroke
@@ -299,8 +300,8 @@ extension DrawingCanvas {
                       let layerIndex2 = self.document.selectedLayerIndex,
                       let shapeIndex = self.document.layers[layerIndex2].shapes.firstIndex(where: { $0.id == targetShapeId }) else { return }
 
-                self.document.layers[layerIndex2].shapes[shapeIndex].path = previewPath
-                // Defer style updates to stroke end (reduces churn); remove if you prefer batching
+                // Update in-memory preview only; avoid mutating document to prevent SwiftUI diff spikes
+                self.brushPreviewPath = previewPath
             }
         }
     }

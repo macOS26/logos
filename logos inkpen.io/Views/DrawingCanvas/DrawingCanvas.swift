@@ -233,6 +233,7 @@ struct DrawingCanvas: View {
     @State internal var brushSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
     @State internal var isBrushDrawing = false
     @State internal var activeBrushShape: VectorShape? = nil // Real-time brush shape preview
+    @State internal var brushPreviewPath: VectorPath? = nil // Preview path drawn by Metal overlay (not in document)
 
     // MARKER DRAWING STATE (Felt-tip marker with circular strokes)
     @State internal var markerPath: VectorPath?
