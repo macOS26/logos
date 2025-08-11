@@ -287,22 +287,7 @@ struct ShapeView: View {
         }
     }
     
-    private func addPathElements(_ elements: [PathElement], to path: inout Path) {
-        for element in elements {
-            switch element {
-            case .move(let to):
-                path.move(to: to.cgPoint)
-            case .line(let to):
-                path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
-                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
-                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-            case .close:
-                path.closeSubpath()
-            }
-        }
-    }
+    // Uses shared `addPathElements` from Utilities/PathElementUtils.swift
 }
 
 struct GridView: View {
@@ -563,41 +548,47 @@ struct SelectionOutline: View {
             }
         } else {
             // NORMAL SELECTION: Show bounding box outline with blue corner handles and center point
-            // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-            let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-            let center = CGPoint(x: bounds.midX, y: bounds.midY)
-            // Compute bounds to display: for group containers, apply transform to group bounds;
-            // for individual shapes, bounds already include the baked transform.
+            // Compute precise bounds in canvas coordinates
+            // Regular shapes: use the actual rendered path with transform baked-in
+            // Group containers: transform group bounds corners
+            let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            let center = CGPoint(x: baseBounds.midX, y: baseBounds.midY)
             let transformedBounds: CGRect = {
                 if shape.isGroupContainer {
-                    let transform = shape.transform
+                    let t = shape.transform
                     let corners = [
-                        CGPoint(x: bounds.minX, y: bounds.minY).applying(transform),
-                        CGPoint(x: bounds.maxX, y: bounds.minY).applying(transform),
-                        CGPoint(x: bounds.maxX, y: bounds.maxY).applying(transform),
-                        CGPoint(x: bounds.minX, y: bounds.maxY).applying(transform)
+                        CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                        CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
                     ]
-                    let minX = corners.map { $0.x }.min() ?? bounds.minX
-                    let minY = corners.map { $0.y }.min() ?? bounds.minY
-                    let maxX = corners.map { $0.x }.max() ?? bounds.maxX
-                    let maxY = corners.map { $0.y }.max() ?? bounds.maxY
+                    let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+                    let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+                    let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+                    let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
                     return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
                 } else {
-                    return bounds
+                    // Build the same final path used for rendering and get its bounds
+                    let originalPath = Path { path in
+                        addPathElements(shape.path.elements, to: &path)
+                    }
+                    let finalPath = originalPath.applying(shape.transform)
+                    return finalPath.boundingRect
                 }
             }()
             
             ZStack {
                 // Bounding box outline
-                Rectangle()
-                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
-                    .frame(width: transformedBounds.width, height: transformedBounds.height)
-                    .position(CGPoint(x: transformedBounds.midX, y: transformedBounds.midY))
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                // Draw selection rectangle using Path to avoid layout rounding differences
+                Path { path in
+                    path.addRect(transformedBounds)
+                }
+                .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
+                .scaleEffect(zoomLevel, anchor: .topLeading)
+                .offset(x: canvasOffset.x, y: canvasOffset.y)
                 
                 // CENTER POINT: Blue square same size as corners
-                let transformedCenter = shape.isGroupContainer ? CGPoint(x: center.x, y: center.y).applying(shape.transform) : center
+                let transformedCenter = shape.isGroupContainer ? CGPoint(x: center.x, y: center.y).applying(shape.transform) : CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
@@ -609,8 +600,12 @@ struct SelectionOutline: View {
                 
                 // 4 Corner handles - ALL BLUE
                 ForEach(0..<4) { i in
-                    let position = cornerPosition(for: i, in: bounds, center: center)
-                    let transformedCorner = shape.isGroupContainer ? CGPoint(x: position.x, y: position.y).applying(shape.transform) : position
+                    // Use corners from transformedBounds directly for regular shapes; transform corners for groups
+                    let position = cornerPosition(for: i, in: baseBounds, center: center)
+                    let transformedCorner = shape.isGroupContainer ? CGPoint(x: position.x, y: position.y).applying(shape.transform) : CGPoint(
+                        x: i == 0 ? transformedBounds.minX : (i == 1 ? transformedBounds.maxX : (i == 2 ? transformedBounds.maxX : transformedBounds.minX)),
+                        y: i == 0 ? transformedBounds.minY : (i == 1 ? transformedBounds.minY : (i == 2 ? transformedBounds.maxY : transformedBounds.maxY))
+                    )
                     
                     Rectangle()
                         .fill(Color.blue)
