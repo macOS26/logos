@@ -157,26 +157,8 @@ struct ShapeView: View {
                 }
             }
             
-            // GROUP SELECTION OUTLINE: Show selection outline for the entire group bounds
-            if isSelected {
-                if shape.isGroupContainer {
-                    // For groups, show selection outline around group bounds
-                    let groupBounds = shape.groupBounds
-                    Rectangle()
-                        .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                        .frame(width: groupBounds.width, height: groupBounds.height)
-                        .position(x: groupBounds.midX, y: groupBounds.midY)
-                        .opacity(0.7)
-                } else {
-                    // For individual shapes, transform the outline separately
-                    Path { path in
-                        addPathElements(shape.path.elements, to: &path)
-                    }
-                    .transform(shape.transform) // Apply transform to outline only
-                    .stroke(Color.blue, lineWidth: 1.0 / zoomLevel)
-                    .opacity(0.7)
-                }
-            }
+            // INLINE SELECTION OUTLINE DISABLED: Selection outlines are handled by SelectionOutline below
+            // This prevents duplicate outlines at high zoom.
         }
         // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
         .scaleEffect(zoomLevel, anchor: .topLeading)
@@ -550,9 +532,9 @@ struct SelectionOutline: View {
                         }
                         cachedPath
                             .stroke(Color.blue, lineWidth: 2.0 / zoomLevel)
+                            .transformEffect(groupedShape.transform)
                             .scaleEffect(zoomLevel, anchor: .topLeading)
                             .offset(x: canvasOffset.x, y: canvasOffset.y)
-                            .transformEffect(groupedShape.transform)
                     }
                 } else {
                     // REGULAR SHAPE: Show single path outline with cached path
@@ -574,9 +556,9 @@ struct SelectionOutline: View {
                     }
                     cachedPath
                         .stroke(Color.blue, lineWidth: 2.0 / zoomLevel)
+                        .transformEffect(shape.transform)
                         .scaleEffect(zoomLevel, anchor: .topLeading)
                         .offset(x: canvasOffset.x, y: canvasOffset.y)
-                        .transformEffect(shape.transform)
                 }
             }
         } else {
@@ -591,31 +573,33 @@ struct SelectionOutline: View {
                     .stroke(Color.blue, lineWidth: 1.0 / zoomLevel) // Scale-independent line width
                     .frame(width: bounds.width, height: bounds.height)
                     .position(center)
+                    .transformEffect(shape.transform)
                     .scaleEffect(zoomLevel, anchor: .topLeading)
                     .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    .transformEffect(shape.transform)
                 
                 // CENTER POINT: Blue square same size as corners
+                let transformedCenter = CGPoint(x: center.x, y: center.y).applying(shape.transform)
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
                     .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
                     .position(CGPoint(
-                        x: center.x * zoomLevel + canvasOffset.x,
-                        y: center.y * zoomLevel + canvasOffset.y
+                        x: transformedCenter.x * zoomLevel + canvasOffset.x,
+                        y: transformedCenter.y * zoomLevel + canvasOffset.y
                     ))
                 
                 // 4 Corner handles - ALL BLUE
                 ForEach(0..<4) { i in
                     let position = cornerPosition(for: i, in: bounds, center: center)
+                    let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
                     
                     Rectangle()
                         .fill(Color.blue)
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: handleSize, height: handleSize) // Fixed UI size - does not scale with artwork
                         .position(CGPoint(
-                            x: position.x * zoomLevel + canvasOffset.x,
-                            y: position.y * zoomLevel + canvasOffset.y
+                            x: transformedCorner.x * zoomLevel + canvasOffset.x,
+                            y: transformedCorner.y * zoomLevel + canvasOffset.y
                         ))
                 }
             }
@@ -743,11 +727,11 @@ struct ScaleHandles: View {
                     
                     Circle()
                         .fill(isLockedPin ? Color.red : Color.green)
-                        .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
-                        .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
+                        .stroke(Color.white, lineWidth: 1.0)
+                        .frame(width: handleSize, height: handleSize)
                         .offset(
-                            x: cornerPos.x * zoomLevel + canvasOffset.x - (handleSize / zoomLevel) / 2,
-                            y: cornerPos.y * zoomLevel + canvasOffset.y - (handleSize / zoomLevel) / 2
+                            x: cornerPos.x * zoomLevel + canvasOffset.x - (handleSize) / 2,
+                            y: cornerPos.y * zoomLevel + canvasOffset.y - (handleSize) / 2
                         )
                         .onTapGesture {
                             if !isScaling {
@@ -1064,13 +1048,15 @@ struct ScaleHandles: View {
             let point = pathPoints[index]
             let isLockedPin = lockedPinPointIndex == index
             
+            let transformedPoint = CGPoint(x: point.x, y: point.y).applying(shape.transform)
             Circle()
                 .fill(isLockedPin ? Color.red : Color.green)  // RED = locked pin, GREEN = scalable
-                .stroke(Color.white, lineWidth: 1.0 / zoomLevel)
-                .frame(width: handleSize / zoomLevel, height: handleSize / zoomLevel)
-                .position(CGPoint(x: point.x, y: point.y))
-                .scaleEffect(zoomLevel, anchor: .topLeading)
-                .offset(x: canvasOffset.x, y: canvasOffset.y)
+                .stroke(Color.white, lineWidth: 1.0)
+                .frame(width: handleSize, height: handleSize)
+                .position(CGPoint(
+                    x: transformedPoint.x * zoomLevel + canvasOffset.x,
+                    y: transformedPoint.y * zoomLevel + canvasOffset.y
+                ))
                 .onTapGesture {
                     if !isScaling {
                         // SINGLE CLICK: Set this as the locked pin point (RED)

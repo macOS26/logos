@@ -52,18 +52,21 @@ struct ProfessionalDirectSelectionView: View {
                         path.addLine(to: handleInfo.handleLocation)
                     }
                     .stroke(Color.orange, lineWidth: 2.0 / document.zoomLevel) // Scale-independent, orange for selected handles
+                    // Apply transforms in correct order: shape transform (canvas space) → zoom → offset
+                    .transformEffect(shape.transform)
                     .scaleEffect(document.zoomLevel, anchor: .topLeading)
                     .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-                    .transformEffect(shape.transform)
                     
                     // Draw HIGHLIGHTED handle as larger circle - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                    // Position the handle marker using transformed canvas coordinates to avoid scaling the marker itself
+                    let transformedHandle = CGPoint(x: handleInfo.handleLocation.x, y: handleInfo.handleLocation.y).applying(shape.transform)
                     Circle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork
                         .position(CGPoint(
-                            x: handleInfo.handleLocation.x * document.zoomLevel + document.canvasOffset.x,
-                            y: handleInfo.handleLocation.y * document.zoomLevel + document.canvasOffset.y
+                            x: transformedHandle.x * document.zoomLevel + document.canvasOffset.x,
+                            y: transformedHandle.y * document.zoomLevel + document.canvasOffset.y
                         ))
                 }
             }
@@ -71,14 +74,15 @@ struct ProfessionalDirectSelectionView: View {
             // HIGHLIGHT INDIVIDUALLY SELECTED ANCHOR POINTS - USE SAME COORDINATE SYSTEM AS ARROW TOOL
             ForEach(Array(selectedPoints), id: \.self) { pointID in
                 if let pointLocation = getPointLocation(pointID),
-                   let _ = getShapeForPoint(pointID) {
+                   let shape = getShapeForPoint(pointID) {
+                    let transformedPoint = CGPoint(x: pointLocation.x, y: pointLocation.y).applying(shape.transform)
                     Rectangle()
                         .fill(Color.orange)
                         .stroke(Color.white, lineWidth: 1.0)
                         .frame(width: 10, height: 10) // Fixed UI size - does not scale with artwork
                         .position(CGPoint(
-                            x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
-                            y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
+                            x: transformedPoint.x * document.zoomLevel + document.canvasOffset.x,
+                            y: transformedPoint.y * document.zoomLevel + document.canvasOffset.y
                         ))
                 }
             }
@@ -158,18 +162,20 @@ struct ProfessionalDirectSelectionView: View {
             path.addLine(to: to)
         }
         .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
+        // Apply transforms in correct order: shape transform (canvas space) → zoom → offset
+        .transformEffect(shape.transform)
         .scaleEffect(document.zoomLevel, anchor: .topLeading)
         .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
-        .transformEffect(shape.transform)
         
-        // HANDLE CIRCLE
+        // HANDLE CIRCLE: use transformed position so the marker remains device-size and correctly aligned
+        let transformedTo = CGPoint(x: to.x, y: to.y).applying(shape.transform)
         Circle()
             .fill(Color.blue)
             .stroke(Color.white, lineWidth: 0.5)
             .frame(width: 6, height: 6)
             .position(CGPoint(
-                x: to.x * document.zoomLevel + document.canvasOffset.x,
-                y: to.y * document.zoomLevel + document.canvasOffset.y
+                x: transformedTo.x * document.zoomLevel + document.canvasOffset.x,
+                y: transformedTo.y * document.zoomLevel + document.canvasOffset.y
             ))
     }
     
