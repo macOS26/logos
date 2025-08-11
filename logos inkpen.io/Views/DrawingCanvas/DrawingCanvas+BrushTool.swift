@@ -14,6 +14,9 @@ fileprivate var lastBrushStyleUpdateTime: CFAbsoluteTime = 0
 fileprivate var lastBrushPreviewPointCount: Int = 0
 fileprivate let brushPreviewMinInterval: CFAbsoluteTime = 1.0 / 60.0 // ~60 FPS max
 fileprivate let brushStyleUpdateInterval: CFAbsoluteTime = 0.2 // batch style updates
+fileprivate let brushPreviewQueue = DispatchQueue(label: "brush.preview.queue", qos: .userInitiated)
+fileprivate var isBrushPreviewComputing: Bool = false
+fileprivate var pendingBrushPreview: Bool = false
 
 extension DrawingCanvas {
     
@@ -257,58 +260,75 @@ extension DrawingCanvas {
         guard let activeBrushShape = activeBrushShape,
               brushRawPoints.count >= 2,
               let layerIndex = document.selectedLayerIndex else { return }
-        
-        // LIVE PREVIEW: Generate actual variable width brush stroke in real-time!
-        let previewPath = generateLivePreviewPath()
-        
-        // Find and update the shape in the document with the REAL brush stroke preview
-        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
-            document.layers[layerIndex].shapes[shapeIndex].path = previewPath
 
-            // Batch style updates to reduce CPU churn
-            let now = CFAbsoluteTimeGetCurrent()
-            if (now - lastBrushStyleUpdateTime) >= brushStyleUpdateInterval {
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
-                    color: getCurrentStrokeColor(),
-                    width: getCurrentStrokeWidth(),
-                    opacity: getCurrentStrokeOpacity()
-                )
-                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                    color: getCurrentFillColor(),
-                    opacity: getCurrentFillOpacity()
-                )
-                lastBrushStyleUpdateTime = now
+        // Coalesce compute work off the main thread to avoid UI spikes
+        if isBrushPreviewComputing {
+            pendingBrushPreview = true
+            return
+        }
+        isBrushPreviewComputing = true
+
+        // Snapshot inputs to avoid races
+        let snapshotRawPoints = brushRawPoints
+        let snapshotThickness = document.currentBrushThickness
+        let snapshotSensitivity = document.currentBrushPressureSensitivity
+        let snapshotTaper = document.currentBrushTaper
+        let snapshotSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25
+        let targetShapeId = activeBrushShape.id
+
+        brushPreviewQueue.async {
+            // Compute preview path off the main thread
+            let previewPath = self.generateLivePreviewPathOffMain(
+                rawPoints: snapshotRawPoints,
+                thickness: snapshotThickness,
+                pressureSensitivity: snapshotSensitivity,
+                taper: snapshotTaper,
+                previewTolerance: snapshotSmoothingTolerance
+            )
+
+            DispatchQueue.main.async {
+                defer {
+                    isBrushPreviewComputing = false
+                    if pendingBrushPreview {
+                        pendingBrushPreview = false
+                        self.updateBrushPreview()
+                    }
+                }
+
+                guard self.isBrushDrawing,
+                      let layerIndex2 = self.document.selectedLayerIndex,
+                      let shapeIndex = self.document.layers[layerIndex2].shapes.firstIndex(where: { $0.id == targetShapeId }) else { return }
+
+                self.document.layers[layerIndex2].shapes[shapeIndex].path = previewPath
+                // Defer style updates to stroke end (reduces churn); remove if you prefer batching
             }
         }
     }
     
     /// Generate live preview of the variable width brush stroke as the user draws
-    private func generateLivePreviewPath() -> VectorPath {
-        guard brushRawPoints.count >= 2 else {
-            // Fallback for insufficient points
-            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
+    private func generateLivePreviewPathOffMain(
+        rawPoints: [BrushPoint],
+        thickness: Double,
+        pressureSensitivity: Double,
+        taper: Double,
+        previewTolerance: Double
+    ) -> VectorPath {
+        guard rawPoints.count >= 2 else {
+            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
-        
-        // FIXED: Show the COMPLETE stroke, not just recent points!
-        let rawPointLocations = brushRawPoints.map { $0.location }
-        
-        // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview to maintain smooth performance
-        let previewSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25 // Slightly less detailed for speed
-        // Use CPU DP for preview to avoid GPU sync stalls; GPU is used at stroke end
-        let simplifiedPoints: [CGPoint] = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
-        
-        // Generate variable width preview with proper pressure mapping for the FULL stroke
+
+        let rawPointLocations = rawPoints.map { $0.location }
+        let simplifiedPoints: [CGPoint] = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
         if simplifiedPoints.count >= 2 {
             return generatePreviewVariableWidthPath(
                 centerPoints: simplifiedPoints,
-                recentRawPoints: brushRawPoints, // Pass ALL raw points for complete pressure mapping
-                thickness: document.currentBrushThickness,
-                pressureSensitivity: document.currentBrushPressureSensitivity,
-                taper: document.currentBrushTaper
+                recentRawPoints: rawPoints,
+                thickness: thickness,
+                pressureSensitivity: pressureSensitivity,
+                taper: taper
             )
         } else {
-            // Fallback for single point
-            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
+            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
     }
     
