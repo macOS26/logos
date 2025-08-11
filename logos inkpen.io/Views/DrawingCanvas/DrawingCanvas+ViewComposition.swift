@@ -15,7 +15,7 @@ extension DrawingCanvas {
             Path { path in
                 addPathElements(currentPath.elements, to: &path)
             }
-            .stroke(Color.blue, lineWidth: 1.0)
+            .stroke(Color.blue, lineWidth: 1.0 / document.zoomLevel)
             .scaleEffect(document.zoomLevel, anchor: .topLeading)  // ✅ FIXED: Added missing anchor
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             
