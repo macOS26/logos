@@ -1172,12 +1172,6 @@ struct ColorSwatchGrid: View {
                 // Stroke color (background, bottom-right)
                 Button {
                     document.activeColorTarget = .stroke
-                    // 🔥 UPDATE INK PANEL: Send action to update INK panel with current stroke color
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("UpdateInkPanelColor"),
-                        object: nil,
-                        userInfo: ["color": currentStrokeColor, "target": "stroke"]
-                    )
                 } label: {
                     if case .clear = currentStrokeColor {
                         ZStack {
@@ -1217,12 +1211,6 @@ struct ColorSwatchGrid: View {
                 // Fill color (foreground, top-left)
                 Button {
                     document.activeColorTarget = .fill
-                    // 🔥 UPDATE INK PANEL: Send action to update INK panel with current fill color
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("UpdateInkPanelColor"),
-                        object: nil,
-                        userInfo: ["color": currentFillColor, "target": "fill"]
-                    )
                 } label: {
                     if case .clear = currentFillColor {
                         ZStack {
@@ -1273,24 +1261,14 @@ struct ColorSwatchGrid: View {
                             applyStrokeColorToSelected(color)
                             print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
                             
-                            // 🔥 UPDATE INK PANEL: Send notification to update INK panel with stroke color
-                            NotificationCenter.default.post(
-                                name: NSNotification.Name("UpdateInkPanelColor"),
-                                object: nil,
-                                userInfo: ["color": color, "target": "stroke"]
-                            )
+                            // INK panel auto-updates from document bindings
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
                             print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
                             
-                            // 🔥 UPDATE INK PANEL: Send notification to update INK panel with fill color
-                            NotificationCenter.default.post(
-                                name: NSNotification.Name("UpdateInkPanelColor"),
-                                object: nil,
-                                userInfo: ["color": color, "target": "fill"]
-                            )
+                            // INK panel auto-updates from document bindings
                         }
                     } label: {
                         ZStack {
