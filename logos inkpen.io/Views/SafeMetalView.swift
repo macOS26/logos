@@ -3,39 +3,37 @@ import MetalKit
 
 /// A SwiftUI view that safely handles Metal rendering with graceful fallbacks
 struct SafeMetalView: NSViewRepresentable {
-    @StateObject private var metalManager = MetalDeviceManager()
-    @StateObject private var performanceMonitor = PerformanceMonitor()
-    @State private var metalRenderer: MetalRenderer?
-    
     let renderContent: (CGContext, CGSize) -> Void
-    
-    func makeNSView(context: Context) -> NSView {
-        // GPU-ONLY: Always use Metal (no fallbacks)
-        return makeMetalView(context: context)
-    }
-    
-    func updateNSView(_ nsView: NSView, context: Context) {
-        // GPU-ONLY: Always Metal
-        if let metalView = nsView as? MTKView {
-            metalView.setNeedsDisplay(metalView.bounds)
+
+    // Coordinator holds stateful objects to avoid mutating SwiftUI state during updates
+    class Coordinator {
+        let metalManager: MetalDeviceManager
+        let performanceMonitor: PerformanceMonitor
+        let renderer: MetalRenderer
+
+        init(renderContent: @escaping (CGContext, CGSize) -> Void) {
+            self.metalManager = MetalDeviceManager()
+            self.performanceMonitor = PerformanceMonitor()
+            self.renderer = MetalRenderer(renderContent: renderContent, performanceMonitor: self.performanceMonitor)
         }
     }
-    
-    private func makeMetalView(context: Context) -> MTKView {
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(renderContent: renderContent)
+    }
+
+    func makeNSView(context: Context) -> MTKView {
         let metalView = MTKView()
-        metalView.device = metalManager.device
-        
-        // Create and store the renderer to maintain strong reference
-        let renderer = MetalRenderer(renderContent: renderContent, performanceMonitor: performanceMonitor)
-        metalRenderer = renderer
-        metalView.delegate = renderer
-        
+        metalView.device = context.coordinator.metalManager.device
+        metalView.delegate = context.coordinator.renderer
         metalView.colorPixelFormat = .bgra8Unorm
         metalView.framebufferOnly = false
         return metalView
     }
-    
 
+    func updateNSView(_ metalView: MTKView, context: Context) {
+        metalView.setNeedsDisplay(metalView.bounds)
+    }
 }
 
 /// Metal renderer that doesn't trigger library loading errors
