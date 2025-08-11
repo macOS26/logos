@@ -109,7 +109,7 @@ private func makeSolidHandCursor(pointSize: CGFloat, originalHotspot: CGPoint, s
     return NSCursor(image: composed, hotSpot: hotspot)
 }
 
-// Build a cursor: black symbol as-is, solid white fill under clear areas, then a uniform white halo (no black outline)
+// Build a cursor: black foreground glyph, solid white fill behind it, and a 1pt white halo
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint, fillSymbolName: String? = nil) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
     let fillBase: NSImage? = {
@@ -130,8 +130,8 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
 
     let composed = NSImage(size: newSize)
     composed.lockFocus()
-    // Create uniform 1px halo using morphological dilation on the white fill glyph
-    // 1) Render white fill glyph to an offscreen image (transparent background)
+    // Create uniform 1px halo using morphological dilation on the white glyph
+    // 1) Render white symbol to an offscreen image (transparent background)
     let whiteMaskImage = NSImage(size: symbolSize)
     whiteMaskImage.lockFocus()
     NSColor.clear.set()
@@ -160,7 +160,7 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
     }
     whiteSymbol.draw(in: destRect)
 
-    // Then draw the black symbol on top (as-is), no extra black outline
+    // Then draw crisp black glyph on top
     blackSymbol.draw(in: destRect)
 
     composed.unlockFocus()
