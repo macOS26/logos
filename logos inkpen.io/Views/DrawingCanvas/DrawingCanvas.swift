@@ -12,28 +12,33 @@ import AppKit
 // Build a haloed SF Symbol cursor with white glow for visibility on any background
 private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
-    let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
-    let symbolImage = base.withSymbolConfiguration(config) ?? base
+    // Prepare white and black variants of the symbol for layered rendering
+    let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
+    let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
+    let blackConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.black])
+    let whiteSymbol = (base.withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? base)
+    let blackSymbol = (base.withSymbolConfiguration(baseConfig.applying(blackConfig)) ?? base)
 
     let padding: CGFloat = 4
-    let destRect = NSRect(x: padding, y: padding, width: symbolImage.size.width, height: symbolImage.size.height)
-    let newSize = NSSize(width: symbolImage.size.width + padding * 2, height: symbolImage.size.height + padding * 2)
+    let symbolSize = blackSymbol.size
+    let destRect = NSRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
+    let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
 
     let composed = NSImage(size: newSize)
     composed.lockFocus()
-
-    // Draw halo via shadowed pass
+    // First draw a solid white version of the cursor glyph (acts as interior white)
     NSGraphicsContext.current?.saveGraphicsState()
-    let shadow = NSShadow()
-    shadow.shadowBlurRadius = 4
-    shadow.shadowColor = NSColor.white
-    shadow.shadowOffset = .zero
-    shadow.set()
-    symbolImage.draw(in: destRect)
+    // Optional subtle halo
+    let halo = NSShadow()
+    halo.shadowBlurRadius = 4
+    halo.shadowColor = NSColor.white
+    halo.shadowOffset = .zero
+    halo.set()
+    whiteSymbol.draw(in: destRect)
     NSGraphicsContext.current?.restoreGraphicsState()
 
-    // Draw crisp symbol on top
-    symbolImage.draw(in: destRect)
+    // Then draw crisp black glyph on top
+    blackSymbol.draw(in: destRect)
 
     composed.unlockFocus()
 

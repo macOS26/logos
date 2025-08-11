@@ -137,7 +137,8 @@ private final class CursorOverlayNSView: NSView {
             guard let self = self else { return event }
             guard self.window === event.window else { return event }
             let p = self.convert(event.locationInWindow, from: nil)
-            if self.bounds.contains(p) && self.shouldForceCustomCursor() {
+            // Only enforce while we're in a hover state over the canvas
+            if self.isHovering && self.bounds.contains(p) && self.shouldForceCustomCursor() {
                 self.applyForcedCursor()
             }
             return event
