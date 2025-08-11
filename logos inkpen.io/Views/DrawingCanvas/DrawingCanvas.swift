@@ -154,14 +154,59 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
         }
     }
 
-    // 3) Draw dilated white (uniform halo) then solid white fill for the center
+    // 3) Draw dilated white (uniform halo) then interior white fill
     if let dilatedCG {
         NSImage(cgImage: dilatedCG, size: symbolSize).draw(in: destRect)
     }
-    whiteSymbol.draw(in: destRect)
+    if symbolName == "magnifyingglass" {
+        // Asymmetric inner oval to cover top/left better while avoiding right/bottom peeking
+        let baseInset = min(symbolSize.width, symbolSize.height)
+        let leftInset = baseInset * 0.24
+        let topInset = baseInset * 0.24
+        let rightInset = baseInset * 0.30
+        let bottomInset = baseInset * 0.30
+        let innerLensRect = NSRect(
+            x: destRect.origin.x + leftInset,
+            y: destRect.origin.y + bottomInset,
+            width: symbolSize.width - leftInset - rightInset,
+            height: symbolSize.height - topInset - bottomInset
+        )
+        // White shadow behind lens fill
+        NSGraphicsContext.current?.saveGraphicsState()
+        let fillShadow = NSShadow()
+        fillShadow.shadowBlurRadius = 4.0
+        fillShadow.shadowColor = NSColor.white
+        fillShadow.shadowOffset = .zero
+        fillShadow.set()
+        NSColor.white.setFill()
+        NSBezierPath(ovalIn: innerLensRect).fill()
+        NSGraphicsContext.current?.restoreGraphicsState()
+        // Solid lens fill on top (no shadow)
+        NSColor.white.setFill()
+        NSBezierPath(ovalIn: innerLensRect).fill()
+    } else if symbolName != "eyedropper", fillBase != nil {
+        // Default: draw white fill for other symbols (skip eyedropper)
+        whiteSymbol.draw(in: destRect)
+    }
 
-    // Then draw the black symbol on top (as-is), no extra black outline
-    blackSymbol.draw(in: destRect)
+    // No extra interior shape for eyedropper to prevent white bleed
+
+    // Draw black symbol with white shadow for magnifying glass and eyedropper, then draw crisp on top
+    if symbolName == "magnifyingglass" || symbolName == "eyedropper" {
+        NSGraphicsContext.current?.saveGraphicsState()
+        let edgeShadow = NSShadow()
+        edgeShadow.shadowBlurRadius = 4.0
+        edgeShadow.shadowColor = NSColor.white
+        edgeShadow.shadowOffset = .zero
+        edgeShadow.set()
+        blackSymbol.draw(in: destRect)
+        NSGraphicsContext.current?.restoreGraphicsState()
+        // Crisp draw on top
+        blackSymbol.draw(in: destRect)
+    } else {
+        // Default
+        blackSymbol.draw(in: destRect)
+    }
 
     composed.unlockFocus()
 
