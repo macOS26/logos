@@ -7,120 +7,16 @@
 
 import SwiftUI
 import AppKit
-import CoreImage
 
 #if os(macOS)
-// Build a cursor by drawing a solid black symbol with a uniform white shadow (halo)
-private func makeSolidShadowCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint, shadowBlur: CGFloat = 2.0) -> NSCursor {
+// Build a haloed SF Symbol cursor with white glow for visibility on any background
+private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint) -> NSCursor {
     guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
-    let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
-    let blackSymbol = base.withSymbolConfiguration(config) ?? base
-
-    let padding: CGFloat = 4
-    let symbolSize = blackSymbol.size
-    let destRect = NSRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
-    let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
-
-    let composed = NSImage(size: newSize)
-    composed.lockFocus()
-    // Shadow pass to create even halo
-    NSGraphicsContext.current?.saveGraphicsState()
-    let halo = NSShadow()
-    halo.shadowBlurRadius = shadowBlur
-    halo.shadowColor = NSColor.white
-    halo.shadowOffset = .zero
-    halo.set()
-    blackSymbol.draw(in: destRect)
-    NSGraphicsContext.current?.restoreGraphicsState()
-    // Crisp solid symbol on top
-    blackSymbol.draw(in: destRect)
-    composed.unlockFocus()
-
-    let hotspot = CGPoint(x: padding + originalHotspot.x, y: padding + originalHotspot.y)
-    return NSCursor(image: composed, hotSpot: hotspot)
-}
-
-// Build the HAND cursor: solid white interior, crisp black outline, white shadow halo (4pt)
-private func makeSolidHandCursor(pointSize: CGFloat, originalHotspot: CGPoint, shadowBlur: CGFloat = 4.0) -> NSCursor {
-    guard let outlineBase = NSImage(systemSymbolName: "hand.raised", accessibilityDescription: nil),
-          let fillBase = NSImage(systemSymbolName: "hand.raised.fill", accessibilityDescription: nil)
-    else { return .crosshair }
-
-    let outlineConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
-    let outlineImage = outlineBase.withSymbolConfiguration(outlineConfig) ?? outlineBase
-
-    let fillConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
-    let whitePalette = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
-    let fillImage = (fillBase.withSymbolConfiguration(fillConfig.applying(whitePalette)) ?? fillBase)
-
-    let padding: CGFloat = 4
-    let symbolSize = outlineImage.size
-    let destRect = NSRect(x: padding, y: padding, width: symbolSize.width, height: symbolSize.height)
-    let newSize = NSSize(width: symbolSize.width + padding * 2, height: symbolSize.height + padding * 2)
-
-    let composed = NSImage(size: newSize)
-    composed.lockFocus()
-
-    // 1) Shadow pass for even white halo around the hand outline
-    NSGraphicsContext.current?.saveGraphicsState()
-    let halo = NSShadow()
-    halo.shadowBlurRadius = shadowBlur
-    halo.shadowColor = NSColor.white
-    halo.shadowOffset = .zero
-    halo.set()
-    outlineImage.draw(in: destRect)
-    NSGraphicsContext.current?.restoreGraphicsState()
-
-    // 2) Solid white fill using the filled hand symbol, slightly inset to avoid peeking past outline
-    // Render white fill to offscreen, then erode (shrink) by 1px for a clean inset
-    let fillMaskImage = NSImage(size: symbolSize)
-    fillMaskImage.lockFocus()
-    NSColor.clear.set()
-    NSBezierPath(rect: NSRect(origin: .zero, size: symbolSize)).fill()
-    fillImage.draw(in: NSRect(origin: .zero, size: symbolSize))
-    fillMaskImage.unlockFocus()
-
-    if let fillCG = fillMaskImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-        let ciFill = CIImage(cgImage: fillCG)
-        if let minFilter = CIFilter(name: "CIMorphologyMinimum") {
-            minFilter.setValue(ciFill, forKey: kCIInputImageKey)
-            minFilter.setValue(1.0, forKey: kCIInputRadiusKey)
-            let ciContext = CIContext(options: nil)
-            if let output = minFilter.outputImage,
-               let shrunkCG = ciContext.createCGImage(output, from: output.extent) {
-                NSImage(cgImage: shrunkCG, size: symbolSize).draw(in: destRect)
-            } else {
-                // Fallback: draw unmodified fill
-                fillImage.draw(in: destRect)
-            }
-        } else {
-            fillImage.draw(in: destRect)
-        }
-    } else {
-        fillImage.draw(in: destRect)
-    }
-
-    // 3) Crisp black outline on top
-    outlineImage.draw(in: destRect)
-
-    composed.unlockFocus()
-
-    let hotspot = CGPoint(x: padding + originalHotspot.x, y: padding + originalHotspot.y)
-    return NSCursor(image: composed, hotSpot: hotspot)
-}
-
-// Build a cursor: black foreground glyph, solid white fill behind it, and a 1pt white halo
-private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHotspot: CGPoint, fillSymbolName: String? = nil) -> NSCursor {
-    guard let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else { return .crosshair }
-    let fillBase: NSImage? = {
-        if let name = fillSymbolName { return NSImage(systemSymbolName: name, accessibilityDescription: nil) }
-        return nil
-    }()
     // Prepare white and black variants of the symbol for layered rendering
     let baseConfig = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .regular)
     let whiteConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.white])
     let blackConfig = NSImage.SymbolConfiguration(paletteColors: [NSColor.black])
-    let whiteSymbol = ((fillBase ?? base).withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? (fillBase ?? base))
+    let whiteSymbol = (base.withSymbolConfiguration(baseConfig.applying(whiteConfig)) ?? base)
     let blackSymbol = (base.withSymbolConfiguration(baseConfig.applying(blackConfig)) ?? base)
 
     let padding: CGFloat = 4
@@ -130,35 +26,16 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
 
     let composed = NSImage(size: newSize)
     composed.lockFocus()
-    // Create uniform 1px halo using morphological dilation on the white glyph
-    // 1) Render white symbol to an offscreen image (transparent background)
-    let whiteMaskImage = NSImage(size: symbolSize)
-    whiteMaskImage.lockFocus()
-    NSColor.clear.set()
-    NSBezierPath(rect: NSRect(origin: .zero, size: symbolSize)).fill()
-    whiteSymbol.draw(in: NSRect(origin: .zero, size: symbolSize))
-    whiteMaskImage.unlockFocus()
-
-    // 2) Convert to CIImage and dilate
-    var dilatedCG: CGImage? = nil
-    if let whiteCG = whiteMaskImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-        let ciImg = CIImage(cgImage: whiteCG)
-        if let filter = CIFilter(name: "CIMorphologyMaximum") {
-            filter.setValue(ciImg, forKey: kCIInputImageKey)
-            filter.setValue(1.0, forKey: kCIInputRadiusKey)
-            let context = CIContext(options: nil)
-            if let output = filter.outputImage,
-               let cgOut = context.createCGImage(output, from: output.extent) {
-                dilatedCG = cgOut
-            }
-        }
-    }
-
-    // 3) Draw dilated white (uniform halo) then solid white fill for the center
-    if let dilatedCG {
-        NSImage(cgImage: dilatedCG, size: symbolSize).draw(in: destRect)
-    }
+    // First draw a solid white version of the cursor glyph (acts as interior white)
+    NSGraphicsContext.current?.saveGraphicsState()
+    // Optional subtle halo
+    let halo = NSShadow()
+    halo.shadowBlurRadius = 4
+    halo.shadowColor = NSColor.white
+    halo.shadowOffset = .zero
+    halo.set()
     whiteSymbol.draw(in: destRect)
+    NSGraphicsContext.current?.restoreGraphicsState()
 
     // Then draw crisp black glyph on top
     blackSymbol.draw(in: destRect)
@@ -173,7 +50,7 @@ private func makeHaloCursor(symbolName: String, pointSize: CGFloat, originalHots
 let EyedropperCursor: NSCursor = {
     // Hotspot tuned to tip location in original symbol space
     let originalHotspot = CGPoint(x: 4, y: 16) // approx tip for 18pt symbol
-    return makeHaloCursor(symbolName: "eyedropper", pointSize: 18, originalHotspot: originalHotspot, fillSymbolName: "eyedropper")
+    return makeHaloCursor(symbolName: "eyedropper", pointSize: 18, originalHotspot: originalHotspot)
 }()
 
 // Shared magnifying glass cursor for zoom tool (with halo)
@@ -183,20 +60,20 @@ let MagnifyingGlassCursor: NSCursor = {
     let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
     let symbol = base.withSymbolConfiguration(config) ?? base
     let center = CGPoint(x: symbol.size.width * 0.35, y: symbol.size.height * 0.35)
-    return makeHaloCursor(symbolName: "magnifyingglass", pointSize: 18, originalHotspot: center, fillSymbolName: "magnifyingglass")
+    return makeHaloCursor(symbolName: "magnifyingglass", pointSize: 18, originalHotspot: center)
 }()
 
 // Shared hand cursors for pan tool (with halo)
 let HandOpenCursor: NSCursor = {
-    // Solid white interior, black outline, 4pt white halo
+    // Approximate hotspot at palm center for 18pt symbol
     let originalHotspot = CGPoint(x: 9, y: 9)
-    return makeSolidHandCursor(pointSize: 18, originalHotspot: originalHotspot, shadowBlur: 4.0)
+    return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
 
 let HandClosedCursor: NSCursor = {
-    // Same visual as open (solid white, black outline, 4pt halo) per request
+    // Use outline variant (non-solid) for closed/grab state
     let originalHotspot = CGPoint(x: 9, y: 9)
-    return makeSolidHandCursor(pointSize: 18, originalHotspot: originalHotspot, shadowBlur: 4.0)
+    return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
 #endif
 
