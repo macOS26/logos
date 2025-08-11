@@ -31,6 +31,8 @@ extension DrawingCanvas {
                 EyedropperCursor.set()
             } else if document.currentTool == .zoom {
                 MagnifyingGlassCursor.set()
+            } else if [.square, .circle, .equilateralTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .rectangle, .roundedRectangle, .pill, .ellipse, .oval, .egg, .cone, .rightTriangle, .acuteTriangle, .isoscelesTriangle, .star].contains(document.currentTool) {
+                TargetCursor.set()
             }
             #endif
             

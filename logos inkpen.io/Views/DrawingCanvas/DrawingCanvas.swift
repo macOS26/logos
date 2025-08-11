@@ -76,6 +76,12 @@ let HandClosedCursor: NSCursor = {
     let originalHotspot = CGPoint(x: 9, y: 9)
     return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
+
+// Shared target cursor for shape tools (square, circle, triangle, polygon)
+let TargetCursor: NSCursor = {
+    let originalHotspot = CGPoint(x: 9, y: 9)
+    return makeHaloCursor(symbolName: "target.dot", pointSize: 18, originalHotspot: originalHotspot)
+}()
 #endif
 
 // MARK: - Hashable CGPoint Wrapper for macOS < 15.0 Compatibility
