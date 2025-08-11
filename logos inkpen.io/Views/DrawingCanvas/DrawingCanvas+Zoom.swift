@@ -56,12 +56,7 @@ extension DrawingCanvas {
             isZoomGestureActive = true
             print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
         }
-        #if os(macOS)
-        // Keep magnifying glass visible during pinch
-        if isCanvasHovering { MagnifyingGlassCursor.set() }
-        // Also reassert next runloop to avoid arrow racing us
-        DispatchQueue.main.async { if isCanvasHovering { MagnifyingGlassCursor.set() } }
-        #endif
+        // Do not override the cursor during pinch-to-zoom to avoid interfering with other tools
         
         let newZoomLevel = max(0.1, min(16.0, initialZoomLevel * value))
         

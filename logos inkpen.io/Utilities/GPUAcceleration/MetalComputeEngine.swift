@@ -239,6 +239,9 @@ class MetalComputeEngine {
         }
         
         let pointCount = points.count
+        guard pointCount > 0 else {
+            return .failure(.operationFailed("No points provided"))
+        }
         
         // Convert to Metal-compatible format
         let metalPoints = points.map { Point2D(x: Float($0.x), y: Float($0.y)) }
@@ -251,17 +254,27 @@ class MetalComputeEngine {
         
         var lineStartMetal = Point2D(x: Float(lineStart.x), y: Float(lineStart.y))
         var lineEndMetal = Point2D(x: Float(lineEnd.x), y: Float(lineEnd.y))
+        var pointCountUInt = UInt32(pointCount)
+        var zeroUInt: UInt32 = 0
+        guard let maxIndexBuffer = device.makeBuffer(bytes: &zeroUInt, length: MemoryLayout<UInt32>.stride, options: .storageModeShared) else {
+            return .failure(.bufferCreationFailed)
+        }
         
         // Setup compute encoder
         computeEncoder.setComputePipelineState(pipeline)
+        // Match Metal shader signature in MetalComputeShaders.metal:
+        // points[0], lineStart[1], lineEnd[2], distances[3], maxIndex[4], pointCount[5]
         computeEncoder.setBuffer(pointsBuffer, offset: 0, index: 0)
-        computeEncoder.setBuffer(distancesBuffer, offset: 0, index: 1)
-        computeEncoder.setBytes(&lineStartMetal, length: MemoryLayout<Point2D>.stride, index: 2)
-        computeEncoder.setBytes(&lineEndMetal, length: MemoryLayout<Point2D>.stride, index: 3)
+        computeEncoder.setBytes(&lineStartMetal, length: MemoryLayout<Point2D>.stride, index: 1)
+        computeEncoder.setBytes(&lineEndMetal, length: MemoryLayout<Point2D>.stride, index: 2)
+        computeEncoder.setBuffer(distancesBuffer, offset: 0, index: 3)
+        computeEncoder.setBuffer(maxIndexBuffer, offset: 0, index: 4)
+        computeEncoder.setBytes(&pointCountUInt, length: MemoryLayout<UInt32>.stride, index: 5)
         
         // Dispatch threads
-        let threadsPerGroup = MTLSize(width: min(pointCount, pipeline.maxTotalThreadsPerThreadgroup), height: 1, depth: 1)
-        let groupsPerGrid = MTLSize(width: (pointCount + threadsPerGroup.width - 1) / threadsPerGroup.width, height: 1, depth: 1)
+        let tpw = max(1, min(pipeline.maxTotalThreadsPerThreadgroup, pointCount))
+        let threadsPerGroup = MTLSize(width: tpw, height: 1, depth: 1)
+        let groupsPerGrid = MTLSize(width: (pointCount + tpw - 1) / tpw, height: 1, depth: 1)
         
         computeEncoder.dispatchThreadgroups(groupsPerGrid, threadsPerThreadgroup: threadsPerGroup)
         computeEncoder.endEncoding()
@@ -271,10 +284,10 @@ class MetalComputeEngine {
         
         // Read back results
         let distancesPointer = distancesBuffer.contents().bindMemory(to: Float.self, capacity: pointCount)
-        
+
         var maxDistance: Float = 0
         var maxIndex = 0
-        
+        // Always compute max on CPU; the kernel does not perform a real reduction
         for i in 0..<pointCount {
             let distance = distancesPointer[i]
             if distance > maxDistance {

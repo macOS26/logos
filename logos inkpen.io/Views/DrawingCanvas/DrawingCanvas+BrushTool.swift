@@ -274,10 +274,20 @@ extension DrawingCanvas {
         
         // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview to maintain smooth performance
         let previewSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25 // Slightly less detailed for speed
-        let simplifiedPoints = douglasPeuckerSimplify(
-            points: rawPointLocations,
-            tolerance: previewSmoothingTolerance
-        )
+        // Try GPU-accelerated Douglas–Peucker when beneficial; fall back to CPU
+        let simplifiedPoints: [CGPoint]
+        if rawPointLocations.count >= 200 { // threshold to amortize GPU dispatch cost
+            let metalEngine = MetalComputeEngine.shared
+            let result = metalEngine.douglasPeuckerGPU(rawPointLocations, tolerance: Float(previewSmoothingTolerance))
+            switch result {
+            case .success(let pts):
+                simplifiedPoints = pts
+            case .failure(_):
+                simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
+            }
+        } else {
+            simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
+        }
         
         // Generate variable width preview with proper pressure mapping for the FULL stroke
         if simplifiedPoints.count >= 2 {
@@ -311,24 +321,69 @@ extension DrawingCanvas {
         
         // Step 1: Apply Chaikin smoothing for initial curve smoothing (if enabled)
         if document.settings.advancedSmoothingEnabled {
-            let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
-                points: processedPoints,
-                iterations: document.settings.chaikinSmoothingIterations,
-                ratio: 0.25
-            )
-            processedPoints = chaikinSmoothed
-            print("🖌️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
+            // Prefer GPU Chaikin for large strokes; fall back to CPU
+            if processedPoints.count >= 200 {
+                let metalEngine = MetalComputeEngine.shared
+                let gpuResult = metalEngine.chaikinSmoothingGPU(points: processedPoints, ratio: 0.25)
+                switch gpuResult {
+                case .success(let pts):
+                    processedPoints = pts
+                    print("🖌️ CHAIKIN (GPU): Smoothed to \(processedPoints.count) points")
+                case .failure(_):
+                    let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
+                        points: processedPoints,
+                        iterations: document.settings.chaikinSmoothingIterations,
+                        ratio: 0.25
+                    )
+                    processedPoints = chaikinSmoothed
+                    print("🖌️ CHAIKIN (CPU): Smoothed to \(processedPoints.count) points (")
+                }
+            } else {
+                let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
+                    points: processedPoints,
+                    iterations: document.settings.chaikinSmoothingIterations,
+                    ratio: 0.25
+                )
+                processedPoints = chaikinSmoothed
+                print("🖌️ CHAIKIN (CPU): Smoothed to \(processedPoints.count) points")
+            }
         }
         
         // Step 2: Apply improved Douglas-Peucker simplification with sharp corner preservation
         let smoothingTolerance = document.currentBrushSmoothingTolerance  // Use brush-specific smoothing tolerance
-        brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
-            CurveSmoothing.improvedDouglassPeucker(
-                points: processedPoints,
-                tolerance: smoothingTolerance,
-                preserveSharpCorners: document.settings.preserveSharpCorners
-            ) :
-            douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+        if processedPoints.count >= 200 {
+            // Try GPU DP first; then apply CPU corner-preserving refinement if desired
+            let metalEngine = MetalComputeEngine.shared
+            let result = metalEngine.douglasPeuckerGPU(processedPoints, tolerance: Float(smoothingTolerance))
+            switch result {
+            case .success(let pts):
+                if document.settings.advancedSmoothingEnabled {
+                    brushSimplifiedPoints = CurveSmoothing.improvedDouglassPeucker(
+                        points: pts,
+                        tolerance: smoothingTolerance,
+                        preserveSharpCorners: document.settings.preserveSharpCorners
+                    )
+                } else {
+                    brushSimplifiedPoints = pts
+                }
+            case .failure(_):
+                brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+                    CurveSmoothing.improvedDouglassPeucker(
+                        points: processedPoints,
+                        tolerance: smoothingTolerance,
+                        preserveSharpCorners: document.settings.preserveSharpCorners
+                    ) :
+                    douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+            }
+        } else {
+            brushSimplifiedPoints = document.settings.advancedSmoothingEnabled ?
+                CurveSmoothing.improvedDouglassPeucker(
+                    points: processedPoints,
+                    tolerance: smoothingTolerance,
+                    preserveSharpCorners: document.settings.preserveSharpCorners
+                ) :
+                douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
+        }
         
         print("🖌️ DOUGLAS-PEUCKER: Simplified to \(brushSimplifiedPoints.count) points (tolerance: \(String(format: "%.1f", smoothingTolerance)))")
         

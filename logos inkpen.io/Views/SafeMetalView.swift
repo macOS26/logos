@@ -14,7 +14,12 @@ struct SafeMetalView: NSViewRepresentable {
         init(renderContent: @escaping (CGContext, CGSize) -> Void) {
             self.metalManager = MetalDeviceManager()
             self.performanceMonitor = PerformanceMonitor()
-            self.renderer = MetalRenderer(renderContent: renderContent, performanceMonitor: self.performanceMonitor)
+            self.renderer = MetalRenderer(
+                renderContent: renderContent,
+                performanceMonitor: self.performanceMonitor,
+                device: self.metalManager.device,
+                commandQueue: self.metalManager.commandQueue
+            )
         }
     }
 
@@ -28,6 +33,12 @@ struct SafeMetalView: NSViewRepresentable {
         metalView.delegate = context.coordinator.renderer
         metalView.colorPixelFormat = .bgra8Unorm
         metalView.framebufferOnly = false
+        // Transparent overlay so underlying SwiftUI content shows through
+        metalView.clearColor = MTLClearColorMake(0, 0, 0, 0)
+        metalView.isPaused = false
+        metalView.enableSetNeedsDisplay = false
+        metalView.layer?.isOpaque = false
+        metalView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 0, alpha: 0)
         return metalView
     }
 
@@ -40,10 +51,19 @@ struct SafeMetalView: NSViewRepresentable {
 class MetalRenderer: NSObject, MTKViewDelegate {
     let renderContent: (CGContext, CGSize) -> Void
     weak var performanceMonitor: PerformanceMonitor?
+    let device: MTLDevice
+    let commandQueue: MTLCommandQueue
     
-    init(renderContent: @escaping (CGContext, CGSize) -> Void, performanceMonitor: PerformanceMonitor? = nil) {
+    init(
+        renderContent: @escaping (CGContext, CGSize) -> Void,
+        performanceMonitor: PerformanceMonitor? = nil,
+        device: MTLDevice,
+        commandQueue: MTLCommandQueue
+    ) {
         self.renderContent = renderContent
         self.performanceMonitor = performanceMonitor
+        self.device = device
+        self.commandQueue = commandQueue
     }
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
@@ -75,25 +95,16 @@ class MetalRenderer: NSObject, MTKViewDelegate {
     }
     
     private func renderWithSafeMetal(drawable: CAMetalDrawable, renderPassDescriptor: MTLRenderPassDescriptor) {
-        // Implement safe Metal rendering here
-        // This approach avoids the default.metallib loading issues
-        
-        // For now, fall back to Core Graphics until Metal is properly configured
-        let size = CGSize(width: drawable.texture.width, height: drawable.texture.height)
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let context = CGContext(
-            data: nil,
-            width: Int(size.width),
-            height: Int(size.height),
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        )
-        
-        if let cgContext = context {
-            renderContent(cgContext, size)
+        // Strict Metal path: clear the drawable using a command buffer; no CoreGraphics fallback
+        guard let commandBuffer = commandQueue.makeCommandBuffer(),
+              let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
+            fatalError("❌ Metal rendering unavailable: failed to create command buffer/encoder")
         }
+
+        // Ensure we do not overwrite scene: only clear alpha if needed; currently clearColor is transparent
+        encoder.endEncoding()
+        commandBuffer.present(drawable)
+        commandBuffer.commit()
     }
 }
 

@@ -13,14 +13,10 @@ extension DrawingCanvas {
     /// Optional Metal-accelerated overlay that can be toggled on/off
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        // Disabled by default - change to true when you want to test Metal acceleration
-        if false { // TODO: Replace with appState.useMetalAcceleration when ready
-            SafeMetalView { cgContext, size in
-                renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
-            }
-            .opacity(0.99) // Slightly transparent to allow click-through if needed
-            .allowsHitTesting(false) // Don't interfere with existing gestures
+        SafeMetalView { cgContext, size in
+            renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
         }
+        .allowsHitTesting(false)
     }
     
     /// Render selected canvas elements with Metal acceleration
