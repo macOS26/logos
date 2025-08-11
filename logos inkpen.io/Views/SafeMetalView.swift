@@ -35,14 +35,16 @@ struct SafeMetalView: NSViewRepresentable {
         metalView.framebufferOnly = false
         // Transparent overlay so underlying SwiftUI content shows through
         metalView.clearColor = MTLClearColorMake(0, 0, 0, 0)
-        metalView.isPaused = false
-        metalView.enableSetNeedsDisplay = false
+        // Power-friendly defaults: draw on demand
+        metalView.isPaused = true
+        metalView.enableSetNeedsDisplay = true
         metalView.layer?.isOpaque = false
         metalView.layer?.backgroundColor = CGColor(red: 0, green: 0, blue: 0, alpha: 0)
         return metalView
     }
 
     func updateNSView(_ metalView: MTKView, context: Context) {
+        // On-demand redraw only when SwiftUI updates propagate here
         metalView.setNeedsDisplay(metalView.bounds)
     }
 }
