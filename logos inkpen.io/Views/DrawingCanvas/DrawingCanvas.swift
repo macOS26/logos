@@ -77,11 +77,47 @@ let HandClosedCursor: NSCursor = {
     return makeHaloCursor(symbolName: "hand.raised", pointSize: 18, originalHotspot: originalHotspot)
 }()
 
-// Shared target cursor for shape tools (square, circle, triangle, polygon)
-let TargetCursor: NSCursor = {
-    let originalHotspot = CGPoint(x: 9, y: 9)
-    return makeHaloCursor(symbolName: "target.dot", pointSize: 18, originalHotspot: originalHotspot)
-}()
+// Crosshair cursor with slight hotspot adjustment to correct 1–2px left bias
+private func makeCrosshairCursor(size: CGFloat = 20, hotspotAdjustX: CGFloat = 0, hotspotAdjustY: CGFloat = -1) -> NSCursor {
+    let imgSize = NSSize(width: size, height: size)
+    // Align 1pt strokes to pixel grid using 0.5 offsets
+    let centerX = floor(imgSize.width / 2) + 0.5
+    let centerY = floor(imgSize.height / 2) + 0.5
+    let image = NSImage(size: imgSize)
+    image.lockFocus()
+    // White shadow halo for visibility
+    NSGraphicsContext.current?.saveGraphicsState()
+    let halo = NSShadow()
+    halo.shadowBlurRadius = 2
+    halo.shadowColor = NSColor.white
+    halo.shadowOffset = .zero
+    halo.set()
+    NSColor.black.setStroke()
+    let pathShadow = NSBezierPath()
+    pathShadow.lineWidth = 1
+    // Horizontal line
+    pathShadow.move(to: CGPoint(x: 0, y: centerY))
+    pathShadow.line(to: CGPoint(x: imgSize.width, y: centerY))
+    // Vertical line
+    pathShadow.move(to: CGPoint(x: centerX, y: 0))
+    pathShadow.line(to: CGPoint(x: centerX, y: imgSize.height))
+    pathShadow.stroke()
+    NSGraphicsContext.current?.restoreGraphicsState()
+    // Crisp black lines on top
+    NSColor.black.setStroke()
+    let path = NSBezierPath()
+    path.lineWidth = 1
+    path.move(to: CGPoint(x: 0, y: centerY))
+    path.line(to: CGPoint(x: imgSize.width, y: centerY))
+    path.move(to: CGPoint(x: centerX, y: 0))
+    path.line(to: CGPoint(x: centerX, y: imgSize.height))
+    path.stroke()
+    image.unlockFocus()
+    let hotspot = CGPoint(x: centerX + hotspotAdjustX, y: centerY + hotspotAdjustY)
+    return NSCursor(image: image, hotSpot: hotspot)
+}
+
+let CrosshairCursor: NSCursor = makeCrosshairCursor()
 #endif
 
 // MARK: - Hashable CGPoint Wrapper for macOS < 15.0 Compatibility

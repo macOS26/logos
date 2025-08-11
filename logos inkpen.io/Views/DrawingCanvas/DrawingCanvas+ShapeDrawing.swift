@@ -92,17 +92,30 @@ extension DrawingCanvas {
                 .line(to: VectorPoint(currentLocation))
             ])
         case .rectangle:
-            let rect = CGRect(
-                x: min(startPoint.x, currentLocation.x),
-                y: min(startPoint.y, currentLocation.y),
-                width: abs(currentLocation.x - startPoint.x),
-                height: abs(currentLocation.y - startPoint.y)
-            )
+            // Rectangle aligned to cursor with pixel-precise edges
+            var minX = min(startPoint.x, currentLocation.x)
+            var maxX = max(startPoint.x, currentLocation.x)
+            var minY = min(startPoint.y, currentLocation.y)
+            var maxY = max(startPoint.y, currentLocation.y)
+
+            // Shift the edge under the cursor inward by half a screen pixel (in canvas units)
+            let halfPixelInCanvas = 0.5 / document.zoomLevel
+            if currentLocation.x >= startPoint.x {
+                maxX -= halfPixelInCanvas
+            } else {
+                minX += halfPixelInCanvas
+            }
+            if currentLocation.y >= startPoint.y {
+                maxY -= halfPixelInCanvas
+            } else {
+                minY += halfPixelInCanvas
+            }
+
             currentPath = VectorPath(elements: [
-                .move(to: VectorPoint(rect.minX, rect.minY)),
-                .line(to: VectorPoint(rect.maxX, rect.minY)),
-                .line(to: VectorPoint(rect.maxX, rect.maxY)),
-                .line(to: VectorPoint(rect.minX, rect.maxY)),
+                .move(to: VectorPoint(minX, minY)),
+                .line(to: VectorPoint(maxX, minY)),
+                .line(to: VectorPoint(maxX, maxY)),
+                .line(to: VectorPoint(minX, maxY)),
                 .close
             ], isClosed: true)
         case .square:

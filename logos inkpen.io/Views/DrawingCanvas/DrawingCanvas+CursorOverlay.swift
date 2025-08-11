@@ -104,6 +104,10 @@ private final class CursorOverlayNSView: NSView {
                 return EyedropperCursor
             case .zoom:
                 return MagnifyingGlassCursor
+            case .rectangle, .square, .circle,
+                 .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle,
+                 .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                return CrosshairCursor
             default:
                 return nil
             }
@@ -153,7 +157,10 @@ private final class CursorOverlayNSView: NSView {
 
     private func shouldForceCustomCursor() -> Bool {
         switch currentTool {
-        case .hand, .eyedropper, .zoom:
+        case .hand, .eyedropper, .zoom,
+             .rectangle, .square, .circle,
+             .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle,
+             .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
             return true
         default:
             return false
@@ -169,6 +176,10 @@ private final class CursorOverlayNSView: NSView {
                 return EyedropperCursor
             case .zoom:
                 return MagnifyingGlassCursor
+            case .rectangle, .square, .circle,
+                 .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle,
+                 .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                return CrosshairCursor
             default:
                 return nil
             }

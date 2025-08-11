@@ -226,8 +226,8 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 } else if newTool == .zoom {
                     MagnifyingGlassCursor.set()
-                } else if newTool == .square || newTool == .circle || newTool == .equilateralTriangle || newTool == .polygon || newTool == .pentagon || newTool == .hexagon || newTool == .heptagon || newTool == .octagon || newTool == .nonagon || newTool == .rectangle || newTool == .roundedRectangle || newTool == .pill || newTool == .ellipse || newTool == .oval || newTool == .egg || newTool == .cone || newTool == .rightTriangle || newTool == .acuteTriangle || newTool == .isoscelesTriangle || newTool == .star {
-                    TargetCursor.set()
+                } else if newTool == .rectangle || newTool == .square || newTool == .circle || newTool == .equilateralTriangle || newTool == .isoscelesTriangle || newTool == .rightTriangle || newTool == .acuteTriangle || newTool == .polygon || newTool == .pentagon || newTool == .hexagon || newTool == .heptagon || newTool == .octagon || newTool == .nonagon {
+                    CrosshairCursor.set()
                 } else {
                     NSCursor.arrow.set()
                 }
@@ -246,8 +246,8 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 } else if document.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
-                } else if document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon || document.currentTool == .rectangle || document.currentTool == .roundedRectangle || document.currentTool == .pill || document.currentTool == .ellipse || document.currentTool == .oval || document.currentTool == .egg || document.currentTool == .cone || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .star {
-                    TargetCursor.set()
+                } else if document.currentTool == .rectangle || document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon {
+                    CrosshairCursor.set()
                 }
                 #endif
             } else {
@@ -284,6 +284,8 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
+                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                    CrosshairCursor.set()
                 default:
                     NSCursor.arrow.set()
                 }
@@ -297,6 +299,8 @@ extension DrawingCanvas {
                             EyedropperCursor.set()
                         case .zoom:
                             MagnifyingGlassCursor.set()
+                        case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                            CrosshairCursor.set()
                         default:
                             NSCursor.arrow.set()
                         }
@@ -340,6 +344,8 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
+                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                    CrosshairCursor.set()
                 default:
                     break
                 }
@@ -353,6 +359,8 @@ extension DrawingCanvas {
                             EyedropperCursor.set()
                         case .zoom:
                             MagnifyingGlassCursor.set()
+                        case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                            CrosshairCursor.set()
                         default:
                             break
                         }
@@ -372,6 +380,8 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
+                case .square, .circle, .equilateralTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                    NSCursor.crosshair.set()
                 default:
                     break
                 }
