@@ -88,7 +88,7 @@ struct ShapeView: View {
                             
                             // Stroke rendering - reuse the same cached path
                             if effectiveViewMode == .keyline {
-                                cachedPath.stroke(Color.black, lineWidth: 1.0)
+                                cachedPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
                             } else if let strokeStyle = groupedShape.strokeStyle, strokeStyle.color != .clear {
                                 renderStrokeWithPlacement(shape: groupedShape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: cachedPath)
                                     .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
@@ -148,7 +148,7 @@ struct ShapeView: View {
                     
                     // Stroke rendering - reuse the same cached pre-transformed path
                     if effectiveViewMode == .keyline {
-                        finalPath.stroke(Color.black, lineWidth: 1.0)
+                        finalPath.stroke(Color.black, lineWidth: 1.0 / zoomLevel)
                     } else if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
                         renderStrokeWithPlacement(shape: shape, strokeStyle: strokeStyle, viewMode: effectiveViewMode, path: finalPath)
                             .opacity(strokeStyle.placement == .outside ? 1.0 : strokeStyle.opacity)
