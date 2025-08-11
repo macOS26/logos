@@ -1620,6 +1620,12 @@ struct logos_inken_ioApp: App {
     @Environment(\.dismissWindow) private var dismissWindow
     
     init() {
+        // Register default preferences for first launch
+        UserDefaults.standard.register(defaults: [
+            "brushPreviewStyle": AppState.BrushPreviewStyle.outline.rawValue,
+            "brushPreviewIsFinal": false
+        ])
+        
         // Test Metal Compute Engine on app startup
         print("🔧 Testing Metal Compute Engine...")
         let metalWorking = MetalComputeEngine.testMetalEngine()
