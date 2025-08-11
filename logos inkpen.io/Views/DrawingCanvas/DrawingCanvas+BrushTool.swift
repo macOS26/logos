@@ -8,6 +8,13 @@
 import SwiftUI
 import Foundation
 
+// Throttle and batching state for brush preview (file-private to avoid stored properties in extensions)
+fileprivate var lastBrushPreviewTime: CFAbsoluteTime = 0
+fileprivate var lastBrushStyleUpdateTime: CFAbsoluteTime = 0
+fileprivate var lastBrushPreviewPointCount: Int = 0
+fileprivate let brushPreviewMinInterval: CFAbsoluteTime = 1.0 / 60.0 // ~60 FPS max
+fileprivate let brushStyleUpdateInterval: CFAbsoluteTime = 0.2 // batch style updates
+
 extension DrawingCanvas {
     
     // MARK: - Helper Functions
@@ -166,7 +173,7 @@ extension DrawingCanvas {
         // Add the preview shape to the document immediately
         document.addShape(activeBrushShape!)
         
-        print("🖌️ BRUSH: Started drawing at \(location)")
+        // Logging disabled in hot path to reduce CPU overhead
     }
     
     internal func handleBrushDragUpdate(at location: CGPoint) {
@@ -188,7 +195,7 @@ extension DrawingCanvas {
     internal func handleBrushDragEnd() {
         guard isBrushDrawing else { return }
         
-        print("🖌️ BRUSH: Finishing drawing with \(brushRawPoints.count) raw points")
+        // Logging disabled in hot path to reduce CPU overhead
         
         // Process brush stroke to create variable width path
         processBrushStroke()
@@ -199,7 +206,7 @@ extension DrawingCanvas {
         // AUTO-DESELECT: Clear selection after completing brush stroke
         // This allows user to immediately change colors for the next stroke
         document.selectedShapeIDs.removeAll()
-        print("🎨 BRUSH: Auto-deselected shape to enable color changes for next stroke")
+        // Logging disabled in hot path to reduce CPU overhead
         
         print("✅ BRUSH: Stroke completed and converted to variable width path")
     }
@@ -230,7 +237,7 @@ extension DrawingCanvas {
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         
         // Print pressure value during drawing
-        print("🎨 BRUSH PRESSURE: \(String(format: "%.2f", finalPressure)) at (\(Int(location.x)), \(Int(location.y))) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]")
+        // Logging disabled in hot path to reduce CPU overhead
         
         return finalPressure
     }
@@ -238,6 +245,15 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateBrushPreview() {
+        // Throttle preview updates to avoid per-event heavy work
+        let nowTs = CFAbsoluteTimeGetCurrent()
+        let addedPoints = brushRawPoints.count - lastBrushPreviewPointCount
+        if (nowTs - lastBrushPreviewTime) < brushPreviewMinInterval && addedPoints < 3 {
+            return
+        }
+        lastBrushPreviewTime = nowTs
+        lastBrushPreviewPointCount = brushRawPoints.count
+
         guard let activeBrushShape = activeBrushShape,
               brushRawPoints.count >= 2,
               let layerIndex = document.selectedLayerIndex else { return }
@@ -248,17 +264,21 @@ extension DrawingCanvas {
         // Find and update the shape in the document with the REAL brush stroke preview
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
             document.layers[layerIndex].shapes[shapeIndex].path = previewPath
-            
-            // Update stroke and fill using current user settings and toggles
-            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
-                color: getCurrentStrokeColor(),
-                width: getCurrentStrokeWidth(),
-                opacity: getCurrentStrokeOpacity()
-            )
-            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                color: getCurrentFillColor(),
-                opacity: getCurrentFillOpacity()
-            )
+
+            // Batch style updates to reduce CPU churn
+            let now = CFAbsoluteTimeGetCurrent()
+            if (now - lastBrushStyleUpdateTime) >= brushStyleUpdateInterval {
+                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
+                    color: getCurrentStrokeColor(),
+                    width: getCurrentStrokeWidth(),
+                    opacity: getCurrentStrokeOpacity()
+                )
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                    color: getCurrentFillColor(),
+                    opacity: getCurrentFillOpacity()
+                )
+                lastBrushStyleUpdateTime = now
+            }
         }
     }
     
@@ -274,20 +294,8 @@ extension DrawingCanvas {
         
         // PERFORMANCE OPTIMIZATION: Use a slightly higher tolerance for live preview to maintain smooth performance
         let previewSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25 // Slightly less detailed for speed
-        // Try GPU-accelerated Douglas–Peucker when beneficial; fall back to CPU
-        let simplifiedPoints: [CGPoint]
-        if rawPointLocations.count >= 200 { // threshold to amortize GPU dispatch cost
-            let metalEngine = MetalComputeEngine.shared
-            let result = metalEngine.douglasPeuckerGPU(rawPointLocations, tolerance: Float(previewSmoothingTolerance))
-            switch result {
-            case .success(let pts):
-                simplifiedPoints = pts
-            case .failure(_):
-                simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
-            }
-        } else {
-            simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
-        }
+        // Use CPU DP for preview to avoid GPU sync stalls; GPU is used at stroke end
+        let simplifiedPoints: [CGPoint] = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewSmoothingTolerance)
         
         // Generate variable width preview with proper pressure mapping for the FULL stroke
         if simplifiedPoints.count >= 2 {
@@ -315,7 +323,7 @@ extension DrawingCanvas {
         }
         
         let rawPointLocations = brushRawPoints.map { $0.location }
-        print("🖌️ ADVANCED SMOOTHING: Starting with \(rawPointLocations.count) raw brush points")
+        // Logging disabled in hot path to reduce CPU overhead
         
         var processedPoints = rawPointLocations
         
@@ -328,7 +336,6 @@ extension DrawingCanvas {
                 switch gpuResult {
                 case .success(let pts):
                     processedPoints = pts
-                    print("🖌️ CHAIKIN (GPU): Smoothed to \(processedPoints.count) points")
                 case .failure(_):
                     let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
                         points: processedPoints,
@@ -336,7 +343,6 @@ extension DrawingCanvas {
                         ratio: 0.25
                     )
                     processedPoints = chaikinSmoothed
-                    print("🖌️ CHAIKIN (CPU): Smoothed to \(processedPoints.count) points (")
                 }
             } else {
                 let chaikinSmoothed = CurveSmoothing.chaikinSmooth(
@@ -345,7 +351,6 @@ extension DrawingCanvas {
                     ratio: 0.25
                 )
                 processedPoints = chaikinSmoothed
-                print("🖌️ CHAIKIN (CPU): Smoothed to \(processedPoints.count) points")
             }
         }
         
@@ -385,7 +390,7 @@ extension DrawingCanvas {
                 douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         }
         
-        print("🖌️ DOUGLAS-PEUCKER: Simplified to \(brushSimplifiedPoints.count) points (tolerance: \(String(format: "%.1f", smoothingTolerance)))")
+        // Logging disabled in hot path to reduce CPU overhead
         
         // Step 2: Generate variable width brush stroke path using the SIMPLIFIED POINTS with pressure data
         // The smoothness comes from the final bezier path creation, not from over-sampling
@@ -418,11 +423,9 @@ extension DrawingCanvas {
             if document.brushRemoveOverlap {
                 applySelfUnionToBrushStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
             }
-        } else {
-            print("🚨 BRUSH ERROR: Could not find activeBrushShape in layer! ID: \(activeBrushShape.id)")
-        }
+        } else { }
         
-        print("🖌️ BRUSH: Generated variable width path with \(brushSimplifiedPoints.count) control points")
+        // Logging disabled in hot path to reduce CPU overhead
     }
     
     // MARK: - Remove Overlap Functionality
