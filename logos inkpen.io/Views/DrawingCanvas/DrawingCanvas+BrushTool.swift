@@ -298,10 +298,12 @@ extension DrawingCanvas {
 
                 guard self.isBrushDrawing,
                       let layerIndex2 = self.document.selectedLayerIndex,
-                      let shapeIndex = self.document.layers[layerIndex2].shapes.firstIndex(where: { $0.id == targetShapeId }) else { return }
+                      self.document.layers[layerIndex2].shapes.contains(where: { $0.id == targetShapeId }) else { return }
 
-                // Update in-memory preview only; avoid mutating document to prevent SwiftUI diff spikes
+                // Update in-memory preview only; SwiftUI overlay will render it in real-time
                 self.brushPreviewPath = previewPath
+                // Trigger a SwiftUI update for the overlay without heavy layer diffs
+                self.dragPreviewUpdateTrigger.toggle()
             }
         }
     }

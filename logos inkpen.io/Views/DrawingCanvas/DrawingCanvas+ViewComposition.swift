@@ -39,6 +39,22 @@ extension DrawingCanvas {
         // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
         rubberBandPreview(geometry: geometry)
         
+        // Brush live preview (SwiftUI overlay; avoids document mutations during drag)
+        if let preview = brushPreviewPath {
+            Path { path in
+                addPathElements(preview.elements, to: &path)
+            }
+            .fill(Color.black.opacity(0.001)) // invisible fill to keep path valid
+            .overlay(
+                Path { path in
+                    addPathElements(preview.elements, to: &path)
+                }
+                .stroke(Color.accentColor, lineWidth: max(1.0, 1.0 / document.zoomLevel))
+            )
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+
         bezierAnchorPoints()
         bezierControlHandles()
         bezierClosePathHint()
