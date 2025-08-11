@@ -321,28 +321,23 @@ extension DrawingCanvas {
         taper: Double,
         previewTolerance: Double
     ) -> VectorPath {
-        // Lightweight centerline preview: decimate + polyline (minimal CPU)
         guard rawPoints.count >= 2 else {
             return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
 
-        var pts = rawPoints.map { $0.location }
-        // Decimate to cap preview complexity
-        let maxPreviewPoints = 256
-        if pts.count > maxPreviewPoints {
-            let strideVal = max(1, pts.count / maxPreviewPoints)
-            var decimated: [CGPoint] = []
-            decimated.reserveCapacity(maxPreviewPoints)
-            for i in stride(from: 0, to: pts.count, by: strideVal) { decimated.append(pts[i]) }
-            if let last = pts.last, decimated.last != last { decimated.append(last) }
-            pts = decimated
+        let rawPointLocations = rawPoints.map { $0.location }
+        let simplifiedPoints: [CGPoint] = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+        if simplifiedPoints.count >= 2 {
+            return generatePreviewVariableWidthPath(
+                centerPoints: simplifiedPoints,
+                recentRawPoints: rawPoints,
+                thickness: thickness,
+                pressureSensitivity: pressureSensitivity,
+                taper: taper
+            )
+        } else {
+            return VectorPath(elements: [.move(to: VectorPoint(rawPoints[0].location))])
         }
-
-        var elements: [PathElement] = []
-        elements.reserveCapacity(pts.count)
-        elements.append(.move(to: VectorPoint(pts[0])))
-        for i in 1..<pts.count { elements.append(.line(to: VectorPoint(pts[i]))) }
-        return VectorPath(elements: elements)
     }
     
     // MARK: - Brush Stroke Processing
