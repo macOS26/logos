@@ -16,7 +16,7 @@ extension DrawingCanvas {
         // Respect the Performance HUD preference as a global kill switch for the stats HUD
         if !appState.showPerformanceHUD {
             // Still return something ViewBuilder-compatible without overlay
-            return AnyView(EmptyView())
+            EmptyView()
         } else {
             SafeMetalView { cgContext, size in
             // Draw grid/selection via CG
@@ -49,7 +49,6 @@ extension DrawingCanvas {
             }
             }
             .allowsHitTesting(false)
-            return AnyView($0)
         }
     }
     

@@ -1168,13 +1168,19 @@ class StartupCoordinator {
     
     private func configureWindowTabbing() async {
         await MainActor.run {
+            // Disable automatic, system-wide forced tabbing. Use manual by default.
             NSWindow.allowsAutomaticWindowTabbing = true
-            UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
-            
+            UserDefaults.standard.set("manual", forKey: "AppleWindowTabbingMode")
+
+            // Be selective: prefer tabbing only for document windows; disallow for utility windows.
             NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
+                if let controller = window.windowController, controller.document != nil {
+                    window.tabbingMode = .preferred
+                } else {
+                    window.tabbingMode = .disallowed
+                }
             }
-            print("📄 StartupCoordinator: Window tabbing configured")
+            print("📄 StartupCoordinator: Window tabbing set to manual; document windows prefer tabs, others disallowed")
         }
     }
     
@@ -1510,11 +1516,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func configureWindowsAsync() async {
         await MainActor.run {
-            // FORCE: Set window tabbing mode to always
+            // Respect manual tabbing mode set in StartupCoordinator
             NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
+                if let controller = window.windowController, controller.document != nil {
+                    window.tabbingMode = .preferred
+                } else {
+                    window.tabbingMode = .disallowed
+                }
             }
-            print("📄 App: Window tabbing configured asynchronously")
+            print("📄 App: Window tabbing configured per-window (documents prefer tabs; utility windows disallowed)")
         }
     }
     
@@ -1527,9 +1537,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func handleApplicationBecameActiveAsync() async {
         await MainActor.run {
-            // Ensure tabbing mode is maintained
+            // Ensure tabbing mode is maintained selectively
             NSApplication.shared.windows.forEach { window in
-                window.tabbingMode = .preferred
+                if let controller = window.windowController, controller.document != nil {
+                    window.tabbingMode = .preferred
+                } else {
+                    window.tabbingMode = .disallowed
+                }
             }
         }
     }
