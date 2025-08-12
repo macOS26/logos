@@ -91,13 +91,7 @@ class AppState {
         didSet { UserDefaults.standard.set(showPerformanceHUD, forKey: "showPerformanceHUD") }
     }
 
-    // Preference mirroring Apple system Metal HUD (MTL_HUD_ENABLED / MetalForceHudEnabled)
-    var systemMetalHUDPreference: Bool = false {
-        didSet {
-            UserDefaults.standard.set(systemMetalHUDPreference, forKey: "systemMetalHUDPreference")
-            applySystemMetalHUD(enabled: systemMetalHUDPreference)
-        }
-    }
+    // Removed: Apple system Metal HUD preference (external system HUD not controlled by app)
     
     // MARK: - Initializer
     private init() {
@@ -124,8 +118,7 @@ class AppState {
         // Load performance HUD preference (default OFF until Metal graphics finalized)
         self.showPerformanceHUD = UserDefaults.standard.object(forKey: "showPerformanceHUD") as? Bool ?? false
 
-        // Load preference for Apple's system Metal HUD (default OFF)
-        self.systemMetalHUDPreference = UserDefaults.standard.object(forKey: "systemMetalHUDPreference") as? Bool ?? false
+        // Removed: Loading Apple system Metal HUD preference
     }
 
 
@@ -244,29 +237,7 @@ class AppState {
         // For now, silent execution
     }
 
-    // MARK: - System Metal HUD Control (Apple HUD)
-    /// Applies Apple's Metal Performance HUD visibility using environment and defaults.
-    /// Takes effect on next app launch.
-    func applySystemMetalHUD(enabled: Bool) {
-        // Update env for future launches (per-user session)
-        if enabled {
-            _ = Self.runCommand("/bin/launchctl", ["setenv", "MTL_HUD_ENABLED", "1"])  
-            _ = Self.runCommand("/usr/bin/defaults", ["write", "-g", "MetalForceHudEnabled", "-bool", "YES"])  
-        } else {
-            _ = Self.runCommand("/bin/launchctl", ["unsetenv", "MTL_HUD_ENABLED"])  
-            _ = Self.runCommand("/usr/bin/defaults", ["write", "-g", "MetalForceHudEnabled", "-bool", "NO"])  
-        }
-        print("🧰 System Metal HUD set to: \(enabled ? "ON" : "OFF") — relaunch app to apply")
-    }
-
-    private static func runCommand(_ launchPath: String, _ arguments: [String]) -> Int32 {
-        let task = Process()
-        task.launchPath = launchPath
-        task.arguments = arguments
-        do { try task.run() } catch { return -1 }
-        task.waitUntilExit()
-        return task.terminationStatus
-    }
+    // Removed: System Metal HUD control utilities and shell runner
 }
 
 // MARK: - Persistent Gradient HUD Manager

@@ -111,7 +111,8 @@ struct ProfessionalTextCanvas: View {
                 resizeOffset: resizeOffset,
                 textBoxState: textBoxState,
                 isResizeHandleActive: isResizeHandleActive,  // NEW: Pass resize handle state
-                onTextBoxSelect: handleTextBoxSelect
+                onTextBoxSelect: handleTextBoxSelect,
+                zoomLevel: CGFloat(document.zoomLevel)
                 // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
             )
             
@@ -127,6 +128,7 @@ struct ProfessionalTextCanvas: View {
                     viewModel: viewModel,
                     dragOffset: dragOffset,
                     resizeOffset: resizeOffset,
+                    zoomLevel: CGFloat(document.zoomLevel),
                     onResizeChanged: handleResizeChanged,
                     onResizeEnded: handleResizeEnded,
                     onResizeStarted: handleResizeStarted  // NEW: Track when resize starts
@@ -354,6 +356,7 @@ struct ProfessionalTextBoxView: View {
     let textBoxState: ProfessionalTextCanvas.TextBoxState
     let isResizeHandleActive: Bool  // NEW: Track resize handle state
     let onTextBoxSelect: (CGPoint) -> Void
+    let zoomLevel: CGFloat
     // REMOVED: onDragChanged and onDragEnded - arrow tool handles all dragging
     
     private func getBorderColor() -> Color {
@@ -369,7 +372,7 @@ struct ProfessionalTextBoxView: View {
             // Main text box rectangle with clear background
             Rectangle()
                 .fill(Color.clear) // Clear background - arrow tool handles hit detection
-                .stroke(getBorderColor(), lineWidth: 2) // Standard 2px border width
+                .stroke(getBorderColor(), lineWidth: 1.0 / max(zoomLevel, 0.0001)) // Always ~1px on screen
                 .frame(
                     width: viewModel.textBoxFrame.width + resizeOffset.width,
                     height: viewModel.textBoxFrame.height + resizeOffset.height
@@ -834,6 +837,7 @@ struct ProfessionalResizeHandleView: View {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     let dragOffset: CGSize
     let resizeOffset: CGSize
+    let zoomLevel: CGFloat
     let onResizeChanged: (DragGesture.Value) -> Void
     let onResizeEnded: () -> Void
     let onResizeStarted: () -> Void // NEW: Track when resize starts
@@ -843,7 +847,7 @@ struct ProfessionalResizeHandleView: View {
     var body: some View {
         Circle()
             .fill(Color.blue)
-            .stroke(Color.white, lineWidth: 1)
+            .stroke(Color.white, lineWidth: 1.0 / max(zoomLevel, 0.0001)) // Always ~1px on screen
             .frame(width: 12, height: 12) // Made slightly bigger and more visible
             .position(
                 x: viewModel.textBoxFrame.maxX + dragOffset.width + resizeOffset.width,

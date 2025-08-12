@@ -31,7 +31,7 @@ extension DrawingCanvas {
         if isCommandPressed && document.currentTool == .selection {
             var hitShape: VectorShape?
             var hitLayerIndex: Int?
-            // Hit test similar to below but early-exit on first hit
+            // STRICT OBJECT-BASED hit test (no bounds fallback) when Command is held
             outerHit: for layerIndex in document.layers.indices.reversed() {
                 let layer = document.layers[layerIndex]
                 if !layer.isVisible { continue }
@@ -39,14 +39,8 @@ extension DrawingCanvas {
                     if !shape.isVisible { continue }
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
-                    let transformedBounds = shape.bounds.applying(shape.transform).insetBy(dx: -12, dy: -12)
-                    let isHit: Bool
-                    // Prefer path hit for precision while Command is down
-                    if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0) {
-                        isHit = true
-                    } else {
-                        isHit = transformedBounds.contains(location)
-                    }
+                    let tolerance: CGFloat = 8.0
+                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
                     if isHit {
                         hitShape = shape
                         hitLayerIndex = layerIndex
@@ -67,9 +61,8 @@ extension DrawingCanvas {
                     document.selectedLayerIndex = layerIndex
                     document.objectWillChange.send()
                     print("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)")
-                    return
                 } else {
-                    // If not yet selected, select it (shows outline while Command held)
+                    // If not yet selected, toggle/add selection strictly by object hit
                     document.selectedTextIDs.removeAll()
                     if isShiftPressed {
                         document.selectedShapeIDs.insert(shape.id)
@@ -78,9 +71,11 @@ extension DrawingCanvas {
                     }
                     document.selectedLayerIndex = layerIndex
                     document.objectWillChange.send()
-                    return
                 }
             }
+            // IMPORTANT: Do not fall back to bounds-based regular selection while Command is held
+            // If nothing was hit by object, leave selection unchanged
+            return
         }
         
         // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (Adobe Illustrator style)

@@ -257,8 +257,8 @@ class VectorDocument: ObservableObject, Codable {
     @Published var fontManager: FontManager = FontManager()
     
     // DEFAULT COLORS FOR NEW SHAPES
-    @Published var defaultFillColor: VectorColor = .white // Professional default: white fill
-    @Published var defaultStrokeColor: VectorColor = .black // Professional default: black stroke
+    @Published var defaultFillColor: VectorColor = .appleSystem(.systemBlue) // Default fill: macOS system blue
+    @Published var defaultStrokeColor: VectorColor = .rgb(RGBColor(red: 1, green: 0, blue: 0)) // Default stroke: red
     @Published var defaultFillOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeOpacity: Double = 1.0  // 100% opacity by default
     @Published var defaultStrokeWidth: Double = 1.0  // Default stroke width for new shapes

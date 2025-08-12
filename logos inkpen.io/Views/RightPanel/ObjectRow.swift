@@ -170,14 +170,6 @@ struct PreferencesView: View {
                     Text("When off, Metal remains enabled; only the debug HUD is hidden.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Divider()
-                    Toggle(
-                        "Apple Metal Performance HUD (requires relaunch)",
-                        isOn: Binding(get: { appState.systemMetalHUDPreference }, set: { appState.systemMetalHUDPreference = $0 })
-                    )
-                    Text("Controls Apple’s system HUD via MTL_HUD_ENABLED and MetalForceHudEnabled.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)
             }

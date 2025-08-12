@@ -10,15 +10,11 @@ import MetalKit
 /// This provides Metal acceleration without breaking existing functionality
 extension DrawingCanvas {
     
-    /// Optional Metal-accelerated overlay that can be toggled on/off
+    /// Optional Metal-accelerated overlay (always active when using the Metal layer)
+    /// HUD visibility is controlled separately by `appState.showPerformanceHUD`.
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        // Respect the Performance HUD preference as a global kill switch for the stats HUD
-        if !appState.showPerformanceHUD {
-            // Still return something ViewBuilder-compatible without overlay
-            EmptyView()
-        } else {
-            SafeMetalView { cgContext, size in
+        SafeMetalView { cgContext, size in
             // Draw grid/selection via CG
             renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
             // Draw live brush preview path in overlay without touching document layers
@@ -47,9 +43,8 @@ extension DrawingCanvas {
                 cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
                 cgContext.fillPath()
             }
-            }
-            .allowsHitTesting(false)
         }
+        .allowsHitTesting(false)
     }
     
     /// Render selected canvas elements with Metal acceleration
@@ -223,7 +218,8 @@ extension DrawingCanvas {
             // Your existing pressure-sensitive overlay (unchanged)
             pressureSensitiveOverlay(geometry: geometry)
             
-            // No HUD here; HUD is controlled via preference and only shown when enabled
+            // Performance HUD (independent of Metal rendering)
+            CanvasPerformanceHUD()
             #if os(macOS)
             // AppKit-backed cursor overlay to eliminate flicker
             CanvasCursorOverlayView(
@@ -255,7 +251,7 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 } else if newTool == .zoom {
                     MagnifyingGlassCursor.set()
-                } else if newTool == .rectangle || newTool == .square || newTool == .circle || newTool == .equilateralTriangle || newTool == .isoscelesTriangle || newTool == .rightTriangle || newTool == .acuteTriangle || newTool == .polygon || newTool == .pentagon || newTool == .hexagon || newTool == .heptagon || newTool == .octagon || newTool == .nonagon {
+                } else if newTool == .rectangle || newTool == .square || newTool == .circle || newTool == .equilateralTriangle || newTool == .isoscelesTriangle || newTool == .rightTriangle || newTool == .acuteTriangle || newTool == .cone || newTool == .polygon || newTool == .pentagon || newTool == .hexagon || newTool == .heptagon || newTool == .octagon || newTool == .nonagon {
                     CrosshairCursor.set()
                 } else {
                     NSCursor.arrow.set()
@@ -275,7 +271,7 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 } else if document.currentTool == .zoom {
                     MagnifyingGlassCursor.set()
-                } else if document.currentTool == .rectangle || document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon {
+                } else if document.currentTool == .rectangle || document.currentTool == .square || document.currentTool == .circle || document.currentTool == .equilateralTriangle || document.currentTool == .isoscelesTriangle || document.currentTool == .rightTriangle || document.currentTool == .acuteTriangle || document.currentTool == .cone || document.currentTool == .polygon || document.currentTool == .pentagon || document.currentTool == .hexagon || document.currentTool == .heptagon || document.currentTool == .octagon || document.currentTool == .nonagon {
                     CrosshairCursor.set()
                 }
                 #endif
@@ -313,7 +309,7 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
-                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
                     CrosshairCursor.set()
                 default:
                     NSCursor.arrow.set()
@@ -328,7 +324,7 @@ extension DrawingCanvas {
                             EyedropperCursor.set()
                         case .zoom:
                             MagnifyingGlassCursor.set()
-                        case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                        case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
                             CrosshairCursor.set()
                         default:
                             NSCursor.arrow.set()
@@ -373,7 +369,7 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
-                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                case .rectangle, .square, .circle, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
                     CrosshairCursor.set()
                 default:
                     break
@@ -409,7 +405,7 @@ extension DrawingCanvas {
                     EyedropperCursor.set()
                 case .zoom:
                     MagnifyingGlassCursor.set()
-                case .square, .circle, .equilateralTriangle, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
+                case .square, .circle, .equilateralTriangle, .cone, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon:
                     NSCursor.crosshair.set()
                 default:
                     break
@@ -420,5 +416,34 @@ extension DrawingCanvas {
         .contextMenu {
             directSelectionContextMenu
         }
+    }
+}
+
+// MARK: - Canvas Performance HUD Wrapper
+
+/// Lightweight overlay that shows the `PerformanceOverlay` whenever
+/// `appState.showPerformanceHUD` is enabled. This is independent from
+/// Metal rendering so the preference works 100% of the time.
+private struct CanvasPerformanceHUD: View {
+    @Environment(AppState.self) private var appState
+    @StateObject private var performanceMonitor = PerformanceMonitor()
+
+    var body: some View {
+        Group {
+            if appState.showPerformanceHUD {
+                VStack {
+                    HStack {
+                        Spacer()
+                        PerformanceOverlay(performanceMonitor: performanceMonitor)
+                            .padding(.top, 8)
+                            .padding(.trailing, 8)
+                    }
+                    Spacer()
+                }
+            } else {
+                EmptyView()
+            }
+        }
+        .allowsHitTesting(false)
     }
 }

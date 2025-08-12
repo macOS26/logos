@@ -224,6 +224,10 @@ extension DrawingCanvas {
     /// UNIFIED SELECTION DRAG - Consolidates selection behavior for all areas  
     /// FIXED: Simplified logic to prevent bouncing behavior
     private func handleUnifiedSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
+        // If a transform handle drag is active (e.g., arrow-tool transform box), ignore canvas drag
+        if document.isHandleScalingActive {
+            return
+        }
         // CORNER TOOL FIX: Prevent object dragging when in corner radius edit mode
         // In this mode, only corner handles should be interactive, not the object itself
         if isCornerRadiusEditMode {

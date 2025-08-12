@@ -210,45 +210,57 @@ extension DrawingCanvas {
         ], isClosed: true)
     }
     
-    /// Create a proper egg path using simple 4-curve approach
-    /// An egg is an ellipse with one end narrower and more curved, the other wider and flatter
+    /// Create an egg path INSCRIBED within `rect` (no overshoot),
+    /// using asymmetric Bézier control constants: tighter top, fuller bottom.
+    /// This ensures the egg draws inside the same drag box behavior as the square tool.
     internal func createEggPath(rect: CGRect) -> VectorPath {
-        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let centerX = rect.midX
+        let centerY = rect.midY
         let radiusX = rect.width / 2
         let radiusY = rect.height / 2
-        
-        // SIMPLE EGG FORMULA: Use standard ellipse with vertical offset
-        // The narrow end should be rounded, not pointed
-        let eggOffset = radiusY * 0.3  // Vertical offset to create egg asymmetry
-        
-        // Use standard ellipse control points (0.552) for smooth curves
-        let controlPointOffsetX = radiusX * 0.552
-        let controlPointOffsetY = radiusY * 0.552
-        
+
+        // Use ellipse k ≈ 0.552 for quadrant control points.
+        // Make the TOP a bit tighter and the BOTTOM a bit fuller to mimic an egg.
+        let kTop: CGFloat = 0.552 * 0.78   // tighter top
+        let kBottom: CGFloat = 0.552 * 1.12 // fuller bottom
+
+        let minX = rect.minX
+        let maxX = rect.maxX
+        let minY = rect.minY
+        let maxY = rect.maxY
+
         return VectorPath(elements: [
-            // Start at rightmost point
-            .move(to: VectorPoint(center.x + radiusX, center.y)),
-            
-            // Curve 1: Right → Top (wider end)
-            .curve(to: VectorPoint(center.x, center.y - radiusY - eggOffset),
-                   control1: VectorPoint(center.x + radiusX, center.y - controlPointOffsetY),
-                   control2: VectorPoint(center.x + controlPointOffsetX, center.y - radiusY - eggOffset)),
-            
-            // Curve 2: Top → Left (wider end)
-            .curve(to: VectorPoint(center.x - radiusX, center.y),
-                   control1: VectorPoint(center.x - controlPointOffsetX, center.y - radiusY - eggOffset),
-                   control2: VectorPoint(center.x - radiusX, center.y - controlPointOffsetY)),
-            
-            // Curve 3: Left → Bottom (narrower end)
-            .curve(to: VectorPoint(center.x, center.y + radiusY - eggOffset),
-                   control1: VectorPoint(center.x - radiusX, center.y + controlPointOffsetY),
-                   control2: VectorPoint(center.x - controlPointOffsetX, center.y + radiusY - eggOffset)),
-            
-            // Curve 4: Bottom → Right (narrower end)
-            .curve(to: VectorPoint(center.x + radiusX, center.y),
-                   control1: VectorPoint(center.x + controlPointOffsetX, center.y + radiusY - eggOffset),
-                   control2: VectorPoint(center.x + radiusX, center.y + controlPointOffsetY)),
-            
+            // Start at TOP center (inside box)
+            .move(to: VectorPoint(centerX, minY)),
+
+            // Top → Right side (use tighter top controls)
+            .curve(
+                to: VectorPoint(maxX, centerY),
+                control1: VectorPoint(centerX + kTop * radiusX, minY),
+                control2: VectorPoint(maxX, centerY - kTop * radiusY)
+            ),
+
+            // Right side → Bottom (fuller bottom controls)
+            .curve(
+                to: VectorPoint(centerX, maxY),
+                control1: VectorPoint(maxX, centerY + kBottom * radiusY),
+                control2: VectorPoint(centerX + kBottom * radiusX, maxY)
+            ),
+
+            // Bottom → Left side (fuller bottom controls)
+            .curve(
+                to: VectorPoint(minX, centerY),
+                control1: VectorPoint(centerX - kBottom * radiusX, maxY),
+                control2: VectorPoint(minX, centerY + kBottom * radiusY)
+            ),
+
+            // Left side → Top (tighter top controls)
+            .curve(
+                to: VectorPoint(centerX, minY),
+                control1: VectorPoint(minX, centerY - kTop * radiusY),
+                control2: VectorPoint(centerX - kTop * radiusX, minY)
+            ),
+
             .close
         ], isClosed: true)
     }
@@ -509,7 +521,8 @@ extension DrawingCanvas {
         }
     }
     
-    /// Create an acute triangle path (all angles less than 90 degrees)
+    /// Create an acute triangle path (all angles < 90°) that stays pinned to the drag's top-left
+    /// and fills its bounding box similar to the equilateral triangle tool.
     internal func createAcuteTrianglePath(rect: CGRect) -> VectorPath {
         // Normalize rect to handle negative width/height from different drag directions
         let normalizedRect = CGRect(
@@ -519,13 +532,15 @@ extension DrawingCanvas {
             height: abs(rect.height)
         )
         
-        // Create a tall, narrow triangle with all acute angles
-        let baseWidth = normalizedRect.width * 0.6 // Make it narrower for acute angles
+        // Use the full base width so the cursor at the bottom-right corner corresponds to
+        // the triangle's bottom-right point (no horizontal drift). Keep the apex offset from
+        // the left edge to ensure an acute apex angle and a stable, pinned feel.
+        let apexOffsetRatio: CGFloat = 0.2 // 20% from the left keeps apex acute and stable
+        let apexX = normalizedRect.minX + normalizedRect.width * apexOffsetRatio
         
-        let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
-        let topPoint = VectorPoint(center.x, normalizedRect.minY)
-        let bottomLeft = VectorPoint(center.x - baseWidth / 2, normalizedRect.maxY)
-        let bottomRight = VectorPoint(center.x + baseWidth / 2, normalizedRect.maxY)
+        let topPoint = VectorPoint(apexX, normalizedRect.minY)              // near top-left
+        let bottomLeft = VectorPoint(normalizedRect.minX, normalizedRect.maxY)   // full-width base
+        let bottomRight = VectorPoint(normalizedRect.maxX, normalizedRect.maxY)
         
         return VectorPath(elements: [
             .move(to: topPoint),
