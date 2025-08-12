@@ -13,7 +13,12 @@ extension DrawingCanvas {
     /// Optional Metal-accelerated overlay that can be toggled on/off
     @ViewBuilder
     internal func optionalMetalAcceleratedOverlay(geometry: GeometryProxy) -> some View {
-        SafeMetalView { cgContext, size in
+        // Respect the Performance HUD preference as a global kill switch for the stats HUD
+        if !appState.showPerformanceHUD {
+            // Still return something ViewBuilder-compatible without overlay
+            return AnyView(EmptyView())
+        } else {
+            SafeMetalView { cgContext, size in
             // Draw grid/selection via CG
             renderCanvasWithMetal(cgContext: cgContext, size: size, geometry: geometry)
             // Draw live brush preview path in overlay without touching document layers
@@ -42,8 +47,10 @@ extension DrawingCanvas {
                 cgContext.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.0))
                 cgContext.fillPath()
             }
+            }
+            .allowsHitTesting(false)
+            return AnyView($0)
         }
-        .allowsHitTesting(false)
     }
     
     /// Render selected canvas elements with Metal acceleration
@@ -217,7 +224,7 @@ extension DrawingCanvas {
             // Your existing pressure-sensitive overlay (unchanged)
             pressureSensitiveOverlay(geometry: geometry)
             
-            // Performance monitoring moved to toolbar
+            // No HUD here; HUD is controlled via preference and only shown when enabled
             #if os(macOS)
             // AppKit-backed cursor overlay to eliminate flicker
             CanvasCursorOverlayView(

@@ -4,14 +4,15 @@ import SwiftUI
 struct SafeMetalViewWithStats: View {
     let renderContent: (CGContext, CGSize) -> Void
     @State private var showPerformanceOverlay: Bool = true
+    @Environment(AppState.self) private var appState
     
     var body: some View {
         ZStack {
             // Main Metal rendering view
             SafeMetalView(renderContent: renderContent)
             
-            // Performance overlay
-            if showPerformanceOverlay {
+            // Performance overlay (respects Preferences toggle)
+            if showPerformanceOverlay && appState.showPerformanceHUD {
                 PerformanceOverlay(performanceMonitor: performanceMonitor)
             }
         }
@@ -42,15 +43,17 @@ extension DrawingCanvas {
             // Original canvas content
             canvasMainContent(geometry: geometry)
             
-            // Performance overlay (top-right corner)
-            VStack {
-                HStack {
+            // Performance overlay (top-right corner, respects Preferences toggle)
+            if appState.showPerformanceHUD {
+                VStack {
+                    HStack {
+                        Spacer()
+                        PerformanceOverlay(performanceMonitor: getOrCreatePerformanceMonitor())
+                            .padding(.top, 8)
+                            .padding(.trailing, 8)
+                    }
                     Spacer()
-                    PerformanceOverlay(performanceMonitor: getOrCreatePerformanceMonitor())
-                        .padding(.top, 8)
-                        .padding(.trailing, 8)
                 }
-                Spacer()
             }
         }
     }

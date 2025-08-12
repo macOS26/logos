@@ -38,6 +38,8 @@ struct PerformanceOverlay: View {
             }
         }
         .allowsHitTesting(true) // Allow tapping to expand
+        // Position adjustment: move right by 24 and down by 12
+        .offset(x: 24, y: 12)
     }
     
     private var fpsIndicator: some View {

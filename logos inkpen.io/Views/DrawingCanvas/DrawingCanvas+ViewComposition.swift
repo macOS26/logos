@@ -63,7 +63,7 @@ extension DrawingCanvas {
                 document: document,
                 geometry: geometry,
                 isShiftPressed: self.isShiftPressed,
-                isOptionPressed: self.isOptionPressed
+                isOptionPressed: self.isOptionPressed || self.isCommandPressed
             )
         }
         

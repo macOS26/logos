@@ -251,6 +251,10 @@ struct DrawingCanvas: View {
     @State internal var isTemporaryHandToolActive = false
     @State internal var temporaryToolPreviousTool: DrawingTool? = nil
     
+    // TEMPORARY COMMAND MODIFIER STATE (Arrow tool outline + temp direct selection)
+    @State internal var isTemporaryDirectSelectionViaCommand = false
+    @State internal var temporaryCommandPreviousTool: DrawingTool? = nil
+    
     // Zoom gesture state
     @State internal var initialZoomLevel: CGFloat = 1.0
     

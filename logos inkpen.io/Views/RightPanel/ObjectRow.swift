@@ -161,6 +161,27 @@ struct PreferencesView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             
+            GroupBox(label: Label("Performance HUD", systemImage: "gauge.medium").font(.headline)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(
+                        "Show on-canvas Performance HUD",
+                        isOn: Binding(get: { appState.showPerformanceHUD }, set: { appState.showPerformanceHUD = $0 })
+                    )
+                    Text("When off, Metal remains enabled; only the debug HUD is hidden.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Divider()
+                    Toggle(
+                        "Apple Metal Performance HUD (requires relaunch)",
+                        isOn: Binding(get: { appState.systemMetalHUDPreference }, set: { appState.systemMetalHUDPreference = $0 })
+                    )
+                    Text("Controls Apple’s system HUD via MTL_HUD_ENABLED and MetalForceHudEnabled.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 6)
+            }
+
             GroupBox(label: Label("Brush Preview", systemImage: "paintbrush").font(.headline)) {
                 VStack(alignment: .leading, spacing: 12) {
                     Picker("Preview Style", selection: Binding(get: { appState.brushPreviewStyle }, set: { appState.brushPreviewStyle = $0 })) {

@@ -2,48 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.toddbruss.logos-inkpen-io.document</string>
-			<key>UTTypeDescription</key>
-			<string>Ink Pen Document</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-				<string>public.content</string>
-			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>inkpen</string>
-				</array>
-				<key>public.mime-type</key>
-				<array>
-					<string>application/x-inkpen-document</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeIdentifier</key>
-			<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
-			<key>UTTypeDescription</key>
-			<string>Draggable Vector Object</string>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>dvo</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -63,6 +21,48 @@
 			</array>
 			<key>NSDocumentClass</key>
 			<string>NSDocument</string>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Ink Pen Document</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.toddbruss.logos-inkpen-io.document</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>inkpen</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-inkpen-document</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>Draggable Vector Object</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.toddbruss.logos-inkpen-io.draggableVectorObject</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>dvo</string>
+				</array>
+			</dict>
 		</dict>
 	</array>
 </dict>

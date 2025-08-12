@@ -2370,6 +2370,9 @@ struct logos_inken_ioApp: App {
         WindowGroup("Preferences", id: "app-preferences") {
             PreferencesView()
                 .environment(appState)
+                .background(WindowAccessor { window in
+                    window?.tabbingMode = .disallowed
+                })
         }
         .defaultSize(width: 520, height: 320)
         .windowResizability(.contentSize)

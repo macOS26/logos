@@ -445,12 +445,24 @@ extension DrawingCanvas {
                 opacity: getCurrentFillOpacity()
             )
             
-            document.layers[layerIndex].shapes[shapeIndex] = finalShape
-            
-            // Apply self-union operation if remove overlap is enabled
+            // Apply overlap removal inline before writing back
             if document.brushRemoveOverlap {
-                applySelfUnionToBrushStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+                let cg = finalShape.path.cgPath
+                var cleaned: CGPath? = nil
+                // Try normalization (winding)
+                cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+                // Fall back to self-union if normalization yields nil
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                    finalShape.path = VectorPath(cgPath: cleanedPath)
+                    print("🖌️ BRUSH: Removed self-overlap (normalize/union)")
+                } else {
+                    print("🖌️ BRUSH: Overlap removal produced no change; keeping original")
+                }
             }
+            document.layers[layerIndex].shapes[shapeIndex] = finalShape
         } else { }
         
         // Logging disabled in hot path to reduce CPU overhead
@@ -468,7 +480,22 @@ extension DrawingCanvas {
             opacity: getCurrentStrokeOpacity()
         )
         let fillStyle = FillStyle(color: getCurrentFillColor(), opacity: getCurrentFillOpacity())
-        let shape = VectorShape(name: "Brush Stroke", path: preview, strokeStyle: strokeStyle, fillStyle: fillStyle)
+        var finalPath = preview
+        if document.brushRemoveOverlap {
+            let cg = preview.cgPath
+            var cleaned: CGPath? = nil
+            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                finalPath = VectorPath(cgPath: cleanedPath)
+                print("🖌️ BRUSH: Removed self-overlap for preview bake")
+            } else {
+                print("🖌️ BRUSH: Overlap removal (preview bake) produced no change")
+            }
+        }
+        let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
         document.addShape(shape)
     }
     
@@ -509,9 +536,9 @@ extension DrawingCanvas {
             return
         }
         
-        // Apply self-union to remove any self-intersections within the brush stroke
-        // CRASH FIX: Use safe union operation with proper error handling
-        if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
+        // Normalize the path to remove any self-intersections within the brush stroke
+        // Using normalization is the correct way to resolve overlaps for a single path
+        if let cleanedPath = CoreGraphicsPathOperations.normalized(originalPath) {
             // SAFETY CHECK: Verify the result path is valid
             guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
                 print("🚨 BRUSH ERROR: Union operation produced invalid path - keeping original")

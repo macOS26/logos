@@ -44,6 +44,36 @@ extension DrawingCanvas {
                     print("⌥ OPTION KEY PRESSED: Path-based selection enabled")
                 }
                 
+                // Command-based temporary behavior for Arrow tool
+                if self.isCommandPressed {
+                    // Only when using selection tool, enter temporary command mode
+                    if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
+                        self.isTemporaryDirectSelectionViaCommand = true
+                        self.temporaryCommandPreviousTool = self.document.currentTool
+                        print("⌘ COMMAND HELD: Temporary object outline selection mode enabled")
+                    }
+                } else {
+                    // Command released: if we were in temporary command mode and didn't permanently switch tools, restore
+                    if self.isTemporaryDirectSelectionViaCommand {
+                        self.isTemporaryDirectSelectionViaCommand = false
+                        print("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode")
+                        // If we temporarily switched to direct selection, restore the Selection tool
+                        if self.document.currentTool == .directSelection {
+                            self.document.currentTool = .selection
+                        }
+                        // When leaving temp mode, ensure direct selection visuals are cleared
+                        if self.document.currentTool == .selection {
+                            // Keep selectedShapeIDs, but clear direct selection state
+                            self.selectedPoints.removeAll()
+                            self.selectedHandles.removeAll()
+                            self.directSelectedShapeIDs.removeAll()
+                            self.syncDirectSelectionWithDocument()
+                            self.document.objectWillChange.send()
+                        }
+                        self.temporaryCommandPreviousTool = nil
+                    }
+                }
+                
                 return event // Let flagsChanged pass through normally
             }
             

@@ -25,6 +25,64 @@ extension DrawingCanvas {
             return
         }
         
+        // COMMAND+CLICK WITH ARROW TOOL: Temporary direct selection on second click of already selected object
+        // First click with Command shows blue outline (already handled by outline view). If the user clicks again while holding Command,
+        // switch to direct selection for that object (points/handles visible). Release Command to return to normal selection.
+        if isCommandPressed && document.currentTool == .selection {
+            var hitShape: VectorShape?
+            var hitLayerIndex: Int?
+            // Hit test similar to below but early-exit on first hit
+            outerHit: for layerIndex in document.layers.indices.reversed() {
+                let layer = document.layers[layerIndex]
+                if !layer.isVisible { continue }
+                for shape in layer.shapes.reversed() {
+                    if !shape.isVisible { continue }
+                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+                    if isBackgroundShape { continue }
+                    let transformedBounds = shape.bounds.applying(shape.transform).insetBy(dx: -12, dy: -12)
+                    let isHit: Bool
+                    // Prefer path hit for precision while Command is down
+                    if PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0) {
+                        isHit = true
+                    } else {
+                        isHit = transformedBounds.contains(location)
+                    }
+                    if isHit {
+                        hitShape = shape
+                        hitLayerIndex = layerIndex
+                        break outerHit
+                    }
+                }
+            }
+            if let shape = hitShape, let layerIndex = hitLayerIndex {
+                // If this shape is already selected, Command-click toggles to temporary direct selection
+                let isAlreadySelected = document.selectedShapeIDs.contains(shape.id)
+                if isAlreadySelected {
+                    // Enter direct selection mode for this shape
+                    document.currentTool = .directSelection
+                    directSelectedShapeIDs = [shape.id]
+                    selectedPoints.removeAll()
+                    selectedHandles.removeAll()
+                    syncDirectSelectionWithDocument()
+                    document.selectedLayerIndex = layerIndex
+                    document.objectWillChange.send()
+                    print("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)")
+                    return
+                } else {
+                    // If not yet selected, select it (shows outline while Command held)
+                    document.selectedTextIDs.removeAll()
+                    if isShiftPressed {
+                        document.selectedShapeIDs.insert(shape.id)
+                    } else {
+                        document.selectedShapeIDs = [shape.id]
+                    }
+                    document.selectedLayerIndex = layerIndex
+                    document.objectWillChange.send()
+                    return
+                }
+            }
+        }
+        
         // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (Adobe Illustrator style)
         if isControlPressed && document.currentTool == .selection {
             print("🎯 CONTROL+CLICK: Checking for rounded rectangle to enter corner radius mode")
