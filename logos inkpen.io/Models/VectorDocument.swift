@@ -275,10 +275,30 @@ class VectorDocument: ObservableObject, Codable {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
         let active = getShapesByIds(selectedShapeIDs)
+        // Determine any masks among selection
+        let maskIDsToRelease: Set<UUID> = Set(active.filter { $0.isClippingPath }.map { $0.id })
+        
+        // 1) Clear clipping relationship on selected shapes themselves
         for s in active {
             if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
                 layers[layerIndex].shapes[i].clippedByShapeID = nil
-                layers[layerIndex].shapes[i].isClippingPath = false
+                // If this shape is a mask and was selected, clear its mask flag
+                if layers[layerIndex].shapes[i].isClippingPath { layers[layerIndex].shapes[i].isClippingPath = false }
+            }
+        }
+        
+        // 2) If any selected shape(s) are masks, clear all references to them
+        if !maskIDsToRelease.isEmpty {
+            for idx in layers[layerIndex].shapes.indices {
+                if let clipID = layers[layerIndex].shapes[idx].clippedByShapeID, maskIDsToRelease.contains(clipID) {
+                    layers[layerIndex].shapes[idx].clippedByShapeID = nil
+                }
+            }
+            // Clear mask flags on the mask shapes
+            for idx in layers[layerIndex].shapes.indices {
+                if maskIDsToRelease.contains(layers[layerIndex].shapes[idx].id) {
+                    layers[layerIndex].shapes[idx].isClippingPath = false
+                }
             }
         }
     }

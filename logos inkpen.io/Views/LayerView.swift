@@ -34,7 +34,10 @@ struct LayerView: View {
         ZStack {
             ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
                 let currentShape = layer.shapes[shapeIndex]
-                if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
+                // Do not render clipping path shapes themselves
+                if currentShape.isClippingPath {
+                    EmptyView()
+                } else if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
                     ShapeView(
                         shape: currentShape,
                         zoomLevel: zoomLevel,
@@ -47,10 +50,34 @@ struct LayerView: View {
                         dragPreviewTrigger: dragPreviewTrigger
                     )
                     .mask(
-                        Path { path in
-                            addPathElements(maskShape.path.elements, to: &path)
+                        Group {
+                            if maskShape.isGroupContainer {
+                                ZStack {
+                                    ForEach(maskShape.groupedShapes, id: \.id) { grouped in
+                                        let useEvenOdd = (grouped.path.fillRule == .evenOdd)
+                                        Path { p in
+                                            addPathElements(grouped.path.elements, to: &p)
+                                        }
+                                        .applying(grouped.transform)
+                                        .fill(
+                                            Color.black,
+                                            style: FillStyle(eoFill: useEvenOdd, antialiased: true)
+                                        )
+                                    }
+                                }
+                                .transformEffect(maskShape.transform)
+                            } else {
+                                let useEvenOdd = (maskShape.path.fillRule == .evenOdd)
+                                Path { path in
+                                    addPathElements(maskShape.path.elements, to: &path)
+                                }
+                                .applying(maskShape.transform)
+                                .fill(
+                                    Color.black,
+                                    style: FillStyle(eoFill: useEvenOdd, antialiased: true)
+                                )
+                            }
                         }
-                        .applying(maskShape.transform)
                     )
                 } else {
                     ShapeView(
