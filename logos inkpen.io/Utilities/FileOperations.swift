@@ -940,13 +940,119 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
+        // Consolidate shapes that share identical gradients into compound paths
+        let consolidatedShapes = consolidateSharedGradients(in: shapes)
+        
         return ParseResult(
-            shapes: shapes,
+            shapes: consolidatedShapes,
             textObjects: textObjects,
             documentSize: documentSize,
             creator: creator,
             version: version
         )
+    }
+
+    // MARK: - Gradient Consolidation
+    private func consolidateSharedGradients(in inputShapes: [VectorShape]) -> [VectorShape] {
+        guard !inputShapes.isEmpty else { return inputShapes }
+        
+        // Group shapes by layer affinity is unknown here; shapes are already appended in order.
+        // We’ll conservatively consolidate only shapes that have:
+        // - same blend mode and opacity
+        // - same fill gradient signature
+        // - are not clipping paths and not groups/warp objects
+        
+        struct GroupKey: Hashable {
+            let blendMode: BlendMode
+            let opacity: Double
+            let gradientSig: String
+        }
+        
+        var buckets: [GroupKey: [VectorShape]] = [:]
+        var passthrough: [VectorShape] = []
+        
+        for shape in inputShapes {
+            guard let fill = shape.fillStyle,
+                  case .gradient(let g) = fill.color,
+                  !shape.isGroup,
+                  !shape.isWarpObject,
+                  !shape.isClippingPath else {
+                passthrough.append(shape)
+                continue
+            }
+            let key = GroupKey(blendMode: shape.blendMode, opacity: fill.opacity, gradientSig: g.signature)
+            buckets[key, default: []].append(shape)
+        }
+        
+        var result: [VectorShape] = []
+        
+        // Add non-gradient or excluded shapes back
+        result.append(contentsOf: passthrough)
+        
+        // For each bucket, if there is more than one shape, build a compound path
+        for (key, shapes) in buckets {
+            if shapes.count == 1 {
+                result.append(shapes[0])
+                continue
+            }
+            
+            // Attempt to union paths. If union fails, fall back to multi-subpath compound without boolean union.
+            var cgPaths: [CGPath] = shapes.map { $0.path.cgPath }
+            
+            // Try CoreGraphics union on pairs iteratively (best-effort; falls back on simple merge)
+            var combined: CGPath? = cgPaths.first
+            for p in cgPaths.dropFirst() {
+                if let c = combined, let u = CoreGraphicsPathOperations.union(c, p, using: .winding) {
+                    combined = u
+                } else {
+                    combined = nil
+                    break
+                }
+            }
+            
+            let compoundPath: VectorPath
+            if let unified = combined {
+                compoundPath = VectorPath(cgPath: unified, fillRule: .winding)
+            } else {
+                // Build a compound-like path by concatenating subpaths
+                var elements: [PathElement] = []
+                for p in cgPaths {
+                    let vp = VectorPath(cgPath: p)
+                    elements.append(contentsOf: vp.elements)
+                }
+                compoundPath = VectorPath(elements: elements, isClosed: true, fillRule: .winding)
+            }
+            
+            // Use first shape’s style as canonical
+            var base = shapes[0]
+            var compound = VectorShape(
+                name: "Compound Gradient",
+                path: compoundPath,
+                geometricType: nil,
+                strokeStyle: nil,
+                fillStyle: base.fillStyle,
+                transform: .identity,
+                isVisible: true,
+                isLocked: false,
+                opacity: base.opacity,
+                blendMode: key.blendMode,
+                isGroup: false,
+                groupedShapes: [],
+                groupTransform: .identity,
+                isCompoundPath: true,
+                isWarpObject: false,
+                originalPath: nil,
+                warpEnvelope: [],
+                originalEnvelope: [],
+                isRoundedRectangle: false,
+                originalBounds: nil,
+                cornerRadii: []
+            )
+            compound.updateBounds()
+            result.append(compound)
+        }
+        
+        return result
     }
     
     /// Enable extreme value handling for radial gradients that cannot be reproduced
@@ -1672,15 +1778,9 @@ class SVGParser: NSObject, XMLParserDelegate {
                             print("✅ NORMAL COORDINATE: \(absoluteValue) → \(normalizedValue)")
                         }
                     } else {
-                        // STANDARD MODE: Normal handling for most SVGs
-                        if normalizedValue < 0.0 || normalizedValue > 1.0 {
-                            // Coordinates outside 0-1 range: default to center (0.5)
-                            finalValue = 0.5
-                            print("⚠️ OUT OF RANGE COORDINATE (standard mode): \(absoluteValue) → \(normalizedValue) → 0.5")
-                        } else {
-                            // Coordinates within 0-1 range: use as-is
-                            finalValue = normalizedValue
-                        }
+                        // STANDARD MODE: Preserve normalized value even if outside 0-1; clamping happens later
+                        finalValue = normalizedValue
+                        print("✅ STANDARD COORDINATE: \(absoluteValue) → \(normalizedValue) (preserved)")
                     }
                     
                     // Ensure final value is within 0-1 range
@@ -1927,13 +2027,35 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         let attributes = currentGradientAttributes
         
+        // Handle gradient inheritance (xlink:href / href)
+        var inheritedGradient: VectorGradient? = nil
+        if let hrefRaw = attributes["xlink:href"] ?? attributes["href"] {
+            var refId = hrefRaw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if refId.hasPrefix("url(#") && refId.hasSuffix(")") {
+                refId = String(refId.dropFirst(5).dropLast(1))
+            } else if refId.hasPrefix("#") {
+                refId = String(refId.dropFirst())
+            }
+            inheritedGradient = gradientDefinitions[refId]
+            if inheritedGradient != nil {
+                print("🧬 Inheriting gradient from \(refId) for \(gradientId)")
+            } else {
+                print("⚠️ Referenced gradient not found: \(refId)")
+            }
+        }
+        
         // Ensure we have at least one gradient stop
         if currentGradientStops.isEmpty {
-            print("⚠️ Gradient \(gradientId) has no color stops - creating default black to white")
-            currentGradientStops = [
-                GradientStop(position: 0.0, color: .black),
-                GradientStop(position: 1.0, color: .white)
-            ]
+            if let inherited = inheritedGradient {
+                currentGradientStops = inherited.stops
+                print("✅ Inherited \(currentGradientStops.count) stops from referenced gradient")
+            } else {
+                print("⚠️ Gradient \(gradientId) has no color stops - creating default black to white")
+                currentGradientStops = [
+                    GradientStop(position: 0.0, color: .black),
+                    GradientStop(position: 1.0, color: .white)
+                ]
+            }
         }
         
         // Determine gradient type from stored gradient type
@@ -1959,27 +2081,46 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
             
-            // Parse gradientTransform to get the correct angle
-            let finalAngle = parseGradientTransformAngle(from: attributes)
+            // Parse gradientTransform to capture rotation and scale (for Y-flips like scale(1,-1))
+            let transformInfo = parseGradientTransformFromAttributes(attributes)
             
             // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
-            // For ColecoVision: horizontal gradient should span left edge to right edge of EACH LETTER
             let startPoint: CGPoint
             let endPoint: CGPoint
             
-            // Use the original SVG coordinates directly
-            startPoint = CGPoint(x: x1, y: y1)
-            endPoint = CGPoint(x: x2, y: y2)
+            // Use inherited coordinates if present and not overridden
+            if let inherited = inheritedGradient, case .linear(let inh) = inherited,
+               attributes["x1"] == nil && attributes["y1"] == nil && attributes["x2"] == nil && attributes["y2"] == nil {
+                startPoint = inh.startPoint
+                endPoint = inh.endPoint
+            } else {
+                // Use the original SVG coordinates directly (normalized earlier if needed)
+                startPoint = CGPoint(x: x1, y: y1)
+                endPoint = CGPoint(x: x2, y: y2)
+            }
             
-            // Use the transform angle if available, otherwise calculate from coordinates
-            let angleDegrees = finalAngle != 0.0 ? finalAngle : {
-                let deltaX = x2 - x1
-                let deltaY = y2 - y1
-                let angle = atan2(deltaY, deltaX)
-                return radiansToDegrees(angle)
-            }()
+            // Compute the base direction from coordinates
+            var deltaX = x2 - x1
+            var deltaY = y2 - y1
             
-            print("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(finalAngle)°)")
+            // Apply scale from gradientTransform to the direction vector only
+            // Translation does not affect angle; rotation will be added separately
+            if transformInfo.scaleX != 1.0 || transformInfo.scaleY != 1.0 {
+                deltaX *= transformInfo.scaleX
+                deltaY *= transformInfo.scaleY
+            }
+            
+            // Angle from transformed direction
+            var computedAngle = radiansToDegrees(atan2(deltaY, deltaX))
+            
+            // Add any explicit rotate() from gradientTransform
+            if transformInfo.angle != 0.0 {
+                computedAngle += transformInfo.angle
+            }
+            
+            let angleDegrees = computedAngle
+            
+            print("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(transformInfo.angle)°)")
             print("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))")
             print("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))")
             print("🔥 FINAL GRADIENT: Linear gradient with original coordinates, stops=\(currentGradientStops.count)")
@@ -2000,10 +2141,16 @@ class SVGParser: NSObject, XMLParserDelegate {
                 units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
             
+            // Inherit units/spread if not specified
+            if let inherited = inheritedGradient, case .linear(let inh) = inherited {
+                if attributes["gradientUnits"] == nil { linearGradient.units = inh.units }
+                if attributes["spreadMethod"] == nil { linearGradient.spreadMethod = inh.spreadMethod }
+            }
+            
             // Set the origin point to the center of the gradient
             linearGradient.originPoint = CGPoint(x: originX, y: originY)
             
-            // Set the angle from the calculated angle
+            // Set the angle from the calculated angle (after applying gradientTransform effects)
             linearGradient.angle = angleDegrees
             
             vectorGradient = .linear(linearGradient)
@@ -2037,8 +2184,8 @@ class SVGParser: NSObject, XMLParserDelegate {
             // parseGradientCoordinate already handles the conversion from userSpaceOnUse to objectBoundingBox
             // So cx, cy, fx, fy are already in the correct 0-1 range
             
-            let centerPoint: CGPoint
-            let focalPoint: CGPoint
+            var centerPoint: CGPoint
+            var focalPoint: CGPoint
             
             if useExtremeHandling {
                 // AUTO-CENTER MODE: Use your radial gradient code that auto-centers fills
@@ -2085,6 +2232,14 @@ class SVGParser: NSObject, XMLParserDelegate {
                 spreadMethod: spreadMethod,
                 units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
             )
+            
+            // Inherit center/radius/units/spread if not specified
+            if let inherited = inheritedGradient, case .radial(let inh) = inherited {
+                if attributes["cx"] == nil && attributes["cy"] == nil { radialGradient.centerPoint = inh.centerPoint }
+                if attributes["r"] == nil { radialGradient.radius = inh.radius }
+                if attributes["gradientUnits"] == nil { radialGradient.units = inh.units }
+                if attributes["spreadMethod"] == nil { radialGradient.spreadMethod = inh.spreadMethod }
+            }
             
             // Set the origin point to the center point
             radialGradient.originPoint = centerPoint
@@ -5641,8 +5796,8 @@ class FileOperations {
         }
         
         var svg = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 \(width) \(height)">
+        <?xml version=\"1.0\" encoding=\"UTF-8\"?>
+        <svg id=\"Layer_1\" data-name=\"Layer 1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 \(width) \(height)\">
         <defs>
         """
         
@@ -5743,6 +5898,13 @@ class FileOperations {
             for shape in layer.shapes {
                 if !shape.isVisible { continue }
                 
+                // SPECIAL-CASE RASTER IMAGES: Export as <image> with data URI
+                if ImageContentRegistry.containsImage(shape),
+                   let nsImage = ImageContentRegistry.image(for: shape.id) {
+                    svg += try generateSVGImageElement(shape, image: nsImage)
+                    continue
+                }
+
                 // Find matching CSS class
                 let fillStyle = generateSVGFill(shape.fillStyle, gradientMapping: gradientToIdMapping)
                 let strokeStyle = generateSVGStroke(shape.strokeStyle, gradientMapping: gradientToIdMapping)
@@ -5792,6 +5954,64 @@ class FileOperations {
         // Don't include transform attribute since coordinates are already transformed
         return """
         <path d="\(pathData)" \(fillStyle) \(strokeStyle) id="shape-\(shape.id)"/>
+        
+        """
+    }
+
+    // MARK: - Raster Image Export
+    /// Generate an SVG <image> element for a raster-backed shape using a data URI
+    private static func generateSVGImageElement(_ shape: VectorShape, image: NSImage) throws -> String {
+        // Apply transform to the rect corners to export baked coordinates like paths
+        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+
+        // Compute bounds from transformed path elements
+        var minX = CGFloat.greatestFiniteMagnitude
+        var minY = CGFloat.greatestFiniteMagnitude
+        var maxX = -CGFloat.greatestFiniteMagnitude
+        var maxY = -CGFloat.greatestFiniteMagnitude
+        for element in transformedPath.elements {
+            switch element {
+            case .move(let to):
+                minX = min(minX, CGFloat(to.x)); minY = min(minY, CGFloat(to.y))
+                maxX = max(maxX, CGFloat(to.x)); maxY = max(maxY, CGFloat(to.y))
+            case .line(let to):
+                minX = min(minX, CGFloat(to.x)); minY = min(minY, CGFloat(to.y))
+                maxX = max(maxX, CGFloat(to.x)); maxY = max(maxY, CGFloat(to.y))
+            case .curve(let to, let c1, let c2):
+                minX = min(minX, CGFloat(to.x), CGFloat(c1.x), CGFloat(c2.x))
+                minY = min(minY, CGFloat(to.y), CGFloat(c1.y), CGFloat(c2.y))
+                maxX = max(maxX, CGFloat(to.x), CGFloat(c1.x), CGFloat(c2.x))
+                maxY = max(maxY, CGFloat(to.y), CGFloat(c1.y), CGFloat(c2.y))
+            case .quadCurve(let to, let c):
+                minX = min(minX, CGFloat(to.x), CGFloat(c.x))
+                minY = min(minY, CGFloat(to.y), CGFloat(c.y))
+                maxX = max(maxX, CGFloat(to.x), CGFloat(c.x))
+                maxY = max(maxY, CGFloat(to.y), CGFloat(c.y))
+            case .close:
+                break
+            }
+        }
+        if minX == .greatestFiniteMagnitude || minY == .greatestFiniteMagnitude {
+            return "" // no geometry
+        }
+        let x = minX
+        let y = minY
+        let width = max(0, maxX - minX)
+        let height = max(0, maxY - minY)
+
+        // Rasterize NSImage to PNG data (safer for data URIs and widely supported)
+        guard let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            // If encoding fails, fallback to transparent rect path
+            return "<rect x=\"\(x)\" y=\"\(y)\" width=\"\(width)\" height=\"\(height)\" fill=\"none\"/>\n"
+        }
+        let base64 = pngData.base64EncodedString()
+        let href = "data:image/png;base64,\(base64)"
+
+        // Compose SVG image tag with baked coordinates
+        return """
+        <image id=\"image-\(shape.id)\" x=\"\(x)\" y=\"\(y)\" width=\"\(width)\" height=\"\(height)\" xlink:href=\"\(href)\" preserveAspectRatio=\"none\"/>
         
         """
     }

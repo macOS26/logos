@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1024 1024">
+  <!-- Generator: Adobe Illustrator 29.6.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 9)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: url(#linear-gradient);
+      }
+
+      .st1 {
+        mix-blend-mode: multiply;
+      }
+
+      .st1, .st2 {
+        isolation: isolate;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="363.02" y1="110.23" x2="903.77" y2="914.83" gradientTransform="translate(0 1021.89) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6ebe44"/>
+      <stop offset="0" stop-color="#6ebe44"/>
+      <stop offset=".25" stop-color="#bcda20"/>
+      <stop offset=".42" stop-color="#eceb09"/>
+      <stop offset=".51" stop-color="#fff200"/>
+      <stop offset=".58" stop-color="#fbca08"/>
+      <stop offset=".68" stop-color="#f79a11"/>
+      <stop offset=".78" stop-color="#f47419"/>
+      <stop offset=".86" stop-color="#f1581f"/>
+      <stop offset=".94" stop-color="#f04822"/>
+      <stop offset="1" stop-color="#ef4223"/>
+    </linearGradient>
+  </defs>
+  <g class="st2">
+    <g id="Layer_1">
+      <rect class="st1" y="0" width="1024" height="1024" rx="143.49" ry="143.49"/>
+      <path class="st0" d="M866.69,178.75h124.75l-444.72,666.51h-118.97L866.69,178.75ZM277.58,845.25h118.98L841.28,178.74h-124.75l-438.94,666.51h-.01Z"/>
+    </g>
+  </g>
+</svg>

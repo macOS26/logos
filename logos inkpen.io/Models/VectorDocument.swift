@@ -182,6 +182,15 @@ struct DocumentSettings: Codable, Hashable {
         
         print("🔄 Unit changed to \(newUnit.rawValue) - Document size preserved: \(String(format: "%.1f", currentSizeInPoints.width))×\(String(format: "%.1f", currentSizeInPoints.height)) points")
     }
+
+    /// Set the document size in points, updating width/height according to current unit
+    /// and persisting the points value to avoid unit conversion drift.
+    mutating func setSizeInPoints(_ newSize: CGSize) {
+        _sizeInPoints = newSize
+        let ppu = unit.pointsPerUnit
+        width = newSize.width / ppu
+        height = newSize.height / ppu
+    }
 }
 
 // MARK: - Zoom Request System
@@ -568,6 +577,47 @@ class VectorDocument: ObservableObject, Codable {
         
         return documentBounds
     }
+
+    /// Calculate bounds of user artwork only (excludes Pasteboard and Canvas layers)
+    /// Returns nil when no artwork exists on user layers.
+    func getArtworkBounds() -> CGRect? {
+        var artworkBounds: CGRect = .zero
+        var hasContent = false
+
+        // Consider only layers beyond index 1 (skip 0: Pasteboard, 1: Canvas)
+        for (layerIndex, layer) in layers.enumerated() where layerIndex >= 2 {
+            guard layer.isVisible else { continue }
+            for shape in layer.shapes where shape.isVisible {
+                let shapeBounds = shape.bounds.applying(shape.transform)
+                if !hasContent {
+                    artworkBounds = shapeBounds
+                    hasContent = true
+                } else {
+                    artworkBounds = artworkBounds.union(shapeBounds)
+                }
+            }
+        }
+
+        // Include visible text objects that belong to user layers (>= 2)
+        for textObj in textObjects where textObj.isVisible {
+            if let li = textObj.layerIndex, li >= 2 {
+                let textBounds = CGRect(
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                ).applying(textObj.transform)
+                if !hasContent {
+                    artworkBounds = textBounds
+                    hasContent = true
+                } else {
+                    artworkBounds = artworkBounds.union(textBounds)
+                }
+            }
+        }
+
+        return hasContent ? artworkBounds : nil
+    }
     
     deinit {}
     
@@ -582,6 +632,8 @@ class VectorDocument: ObservableObject, Codable {
     func onSettingsChanged() {
         // Update pasteboard when canvas size changes
         updatePasteboardLayer()
+        // Update canvas layer to match new document size
+        updateCanvasLayer()
         
         // Update any other dependent elements
         objectWillChange.send()
@@ -685,6 +737,54 @@ class VectorDocument: ObservableObject, Codable {
         layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         print("✅ Shape coordinates updated - object origin now follows object position")
+    }
+
+    /// Update canvas layer rectangle to match current `settings.sizeInPoints`
+    func updateCanvasLayer() {
+        guard layers.count > 1,
+              layers[1].name == "Canvas",
+              let canvasIndex = layers[1].shapes.firstIndex(where: { $0.name == "Canvas Background" }) else {
+            print("⚠️ Cannot update canvas - canvas layer not found")
+            return
+        }
+        let newCanvasRect = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 0),
+            size: settings.sizeInPoints
+        )
+        var updatedCanvasShape = newCanvasRect
+        updatedCanvasShape.fillStyle = FillStyle(color: settings.backgroundColor, opacity: 1.0)
+        updatedCanvasShape.strokeStyle = nil
+        updatedCanvasShape.name = "Canvas Background"
+        updatedCanvasShape.id = layers[1].shapes[canvasIndex].id
+        layers[1].shapes[canvasIndex] = updatedCanvasShape
+        print("📐 Updated canvas layer to size: \(settings.sizeInPoints)")
+    }
+
+    /// Translate all content in the document by a delta. Skips background shapes by default.
+    func translateAllContent(by delta: CGPoint, includeBackgrounds: Bool = false) {
+        guard delta != .zero else { return }
+        let backgroundNames: Set<String> = ["Canvas Background", "Pasteboard Background"]
+
+        // Translate shapes across all layers
+        for layerIndex in layers.indices {
+            for shapeIndex in layers[layerIndex].shapes.indices {
+                let shapeName = layers[layerIndex].shapes[shapeIndex].name
+                if !includeBackgrounds && backgroundNames.contains(shapeName) { continue }
+
+                // Apply translation via transform, then bake into coordinates
+                layers[layerIndex].shapes[shapeIndex].transform = layers[layerIndex].shapes[shapeIndex].transform
+                    .translatedBy(x: delta.x, y: delta.y)
+                applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex)
+            }
+        }
+
+        // Translate text objects' positions
+        for i in textObjects.indices {
+            textObjects[i].position.x += delta.x
+            textObjects[i].position.y += delta.y
+        }
+
+        objectWillChange.send()
     }
     
     // MARK: - Codable Implementation

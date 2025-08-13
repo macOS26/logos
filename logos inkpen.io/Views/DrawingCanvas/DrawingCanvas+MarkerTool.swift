@@ -47,17 +47,19 @@ extension DrawingCanvas {
         let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
         
+        // Use dedicated marker opacity for both stroke and fill to honor Marker Settings
+        let markerOpacity = document.currentMarkerOpacity
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: strokeWidth,
             lineCap: .round,
             lineJoin: .round,
-            opacity: getCurrentStrokeOpacity()
+            opacity: markerOpacity
         ) : nil
         
         let fillStyle = FillStyle(
             color: markerFillColor,
-            opacity: getCurrentFillOpacity()
+            opacity: markerOpacity
         )
         
         activeMarkerShape = VectorShape(
@@ -166,17 +168,19 @@ extension DrawingCanvas {
             let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             
+            // Apply marker-specific opacity consistently during live preview
+            let markerOpacity = document.currentMarkerOpacity
             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = strokeColor != nil ? StrokeStyle(
                 color: markerStrokeColor,
                 width: strokeWidth,
                 lineCap: .round,
                 lineJoin: .round,
-                opacity: getCurrentStrokeOpacity()
+                opacity: markerOpacity
             ) : nil
             
             document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
                 color: markerFillColor,
-                opacity: getCurrentFillOpacity()
+                opacity: markerOpacity
             )
         }
     }
@@ -268,17 +272,19 @@ extension DrawingCanvas {
             let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
             
+            // Apply marker-specific opacity for finalized shape
+            let markerOpacity = document.currentMarkerOpacity
             finalShape.strokeStyle = strokeColor != nil ? StrokeStyle(
                 color: markerStrokeColor,
                 width: strokeWidth,
                 lineCap: .round,
                 lineJoin: .round,
-                opacity: getCurrentStrokeOpacity()
+                opacity: markerOpacity
             ) : nil
             
             finalShape.fillStyle = FillStyle(
                 color: markerFillColor,
-                opacity: getCurrentFillOpacity()
+                opacity: markerOpacity
             )
             
             document.layers[layerIndex].shapes[shapeIndex] = finalShape

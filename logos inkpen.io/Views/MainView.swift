@@ -1098,6 +1098,21 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Zoom Controls")
             
+            // Snap page to artwork/selection
+            Button {
+                onSnapPageToArtwork()
+            } label: {
+                Image(systemName: "rectangle.3.group")
+            }
+            .help("Snap Page to Artwork Bounds")
+
+            Button {
+                onSnapPageToSelection()
+            } label: {
+                Image(systemName: "selection.pin.in.out")
+            }
+            .help("Snap Page to Selection Bounds")
+
             // Document Settings
             Button {
                 showingDocumentSettings = true
@@ -1169,6 +1184,67 @@ struct MainToolbarContent: ToolbarContent {
         // Set to 100% zoom (Adobe Illustrator standard)
         document.requestZoom(to: 1.0, mode: .actualSize)
         print("🔍 ACTUAL SIZE: Set to 100% zoom")
+    }
+
+    // MARK: - Page Snap Functions
+    private func onSnapPageToArtwork() {
+        // Compute bounds of visible artwork only (exclude pasteboard/canvas)
+        guard let bounds = document.getArtworkBounds(), bounds.width > 0, bounds.height > 0 else { return }
+        document.saveToUndoStack()
+
+        // Update page size to artwork bounds
+        document.settings.setSizeInPoints(CGSize(width: bounds.width, height: bounds.height))
+        document.onSettingsChanged()
+
+        // Move all content so artwork minX/minY becomes (0,0)
+        let delta = CGPoint(x: -bounds.minX, y: -bounds.minY)
+        document.translateAllContent(by: delta)
+
+        // Fit to new page
+        document.requestZoom(to: 0.0, mode: .fitToPage)
+    }
+
+    private func onSnapPageToSelection() {
+        // Compute combined bounds of selected shapes/text
+        guard let selectionBounds = getSelectionBoundsForDocument(), selectionBounds.width > 0, selectionBounds.height > 0 else { return }
+        document.saveToUndoStack()
+
+        // Update page size to selection bounds
+        document.settings.setSizeInPoints(CGSize(width: selectionBounds.width, height: selectionBounds.height))
+        document.onSettingsChanged()
+
+        // Move selection so its minX/minY becomes (0,0) and non-selected relative accordingly
+        let delta = CGPoint(x: -selectionBounds.minX, y: -selectionBounds.minY)
+        document.translateAllContent(by: delta)
+
+        // Fit to page after change
+        document.requestZoom(to: 0.0, mode: .fitToPage)
+    }
+
+    private func getSelectionBoundsForDocument() -> CGRect? {
+        var combinedBounds: CGRect?
+        // Shapes in user layers only (>= 2)
+        for (layerIndex, layer) in document.layers.enumerated() where layerIndex >= 2 {
+            for shape in layer.shapes {
+                if document.selectedShapeIDs.contains(shape.id) {
+                    let shapeBounds = shape.bounds.applying(shape.transform)
+                    combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
+                }
+            }
+        }
+        // Text in user layers only
+        for textObj in document.textObjects {
+            if document.selectedTextIDs.contains(textObj.id), let li = textObj.layerIndex, li >= 2 {
+                let textBounds = CGRect(
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                ).applying(textObj.transform)
+                combinedBounds = combinedBounds.map { $0.union(textBounds) } ?? textBounds
+            }
+        }
+        return combinedBounds
     }
     
     // MARK: - Professional Object Management Functions (Adobe Illustrator Standards)
