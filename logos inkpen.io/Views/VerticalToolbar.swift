@@ -1187,6 +1187,17 @@ struct ColorSwatchGrid: View {
                                 .frame(width: 22, height: 22)
                                 .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
                             
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .stroke {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
                                 path.addLine(to: CGPoint(x: 22, y: 22))
@@ -1196,14 +1207,40 @@ struct ColorSwatchGrid: View {
                         }
                     } else if case .gradient(let gradient) = currentStrokeColor {
                         // Handle gradient colors with NSView-based rendering
-                        GradientSwatchNSView(gradient: gradient, size: 22)
-                            .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
+                        ZStack {
+                            GradientSwatchNSView(gradient: gradient, size: 22)
+                                .frame(width: 22, height: 22)
+                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
+
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .stroke {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+                        }
                     } else {
-                        Rectangle()
-                            .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
-                            .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
+                        ZStack {
+                            Rectangle()
+                                .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
+                                .frame(width: 22, height: 22)
+                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
+
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .stroke {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+                        }
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -1226,6 +1263,17 @@ struct ColorSwatchGrid: View {
                                 .frame(width: 22, height: 22)
                                 .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
                             
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .fill {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
                                 path.addLine(to: CGPoint(x: 22, y: 22))
@@ -1235,14 +1283,40 @@ struct ColorSwatchGrid: View {
                         }
                     } else if case .gradient(let gradient) = currentFillColor {
                         // Handle gradient colors with NSView-based rendering
-                        GradientSwatchNSView(gradient: gradient, size: 22)
-                            .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
+                        ZStack {
+                            GradientSwatchNSView(gradient: gradient, size: 22)
+                                .frame(width: 22, height: 22)
+                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
+
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .fill {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+                        }
                     } else {
-                        Rectangle()
-                            .fill(currentFillColor.color.opacity(currentFillOpacity))
-                            .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
+                        ZStack {
+                            Rectangle()
+                                .fill(currentFillColor.color.opacity(currentFillOpacity))
+                                .frame(width: 22, height: 22)
+                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
+
+                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            if document.activeColorTarget == .fill {
+                                Rectangle()
+                                    .fill(Color.black.opacity(0.25))
+                                    .blendMode(.multiply)
+                                    .padding(1)
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.5))
+                                    .padding(1)
+                            }
+                        }
                     }
                 }
                 .buttonStyle(PlainButtonStyle())

@@ -99,6 +99,19 @@ class AppState {
         }
     }
 
+	// MARK: - In-App Performance HUD (draggable, moveable)
+	/// Show a lightweight in-app performance HUD that can be dragged
+	var showInAppPerformanceHUD: Bool = true {
+		didSet { UserDefaults.standard.set(showInAppPerformanceHUD, forKey: "showInAppPerformanceHUD") }
+	}
+	/// Persistent position for the in-app HUD (top-left origin)
+	var inAppHUDOffsetX: CGFloat = 24 {
+		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetX), forKey: "inAppHUDOffsetX") }
+	}
+	var inAppHUDOffsetY: CGFloat = 12 {
+		didSet { UserDefaults.standard.set(Double(inAppHUDOffsetY), forKey: "inAppHUDOffsetY") }
+	}
+
     // Position and size controls for Apple's HUD carrier view
     var metalHUDOffsetX: CGFloat = 0 {
         didSet { UserDefaults.standard.set(Double(metalHUDOffsetX), forKey: "metalHUDOffsetX") }
@@ -137,6 +150,10 @@ class AppState {
 
         // Load Apple system HUD preference and layout
         self.enableSystemMetalHUD = UserDefaults.standard.object(forKey: "enableSystemMetalHUD") as? Bool ?? false
+		// Load in-app HUD preferences
+		self.showInAppPerformanceHUD = UserDefaults.standard.object(forKey: "showInAppPerformanceHUD") as? Bool ?? true
+		self.inAppHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetX") as? Double ?? 24)
+		self.inAppHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "inAppHUDOffsetY") as? Double ?? 12)
         self.metalHUDOffsetX = CGFloat(UserDefaults.standard.object(forKey: "metalHUDOffsetX") as? Double ?? 0)
         self.metalHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "metalHUDOffsetY") as? Double ?? 24)
         self.metalHUDWidth = CGFloat(UserDefaults.standard.object(forKey: "metalHUDWidth") as? Double ?? 420)

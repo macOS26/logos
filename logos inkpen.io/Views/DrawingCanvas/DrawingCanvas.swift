@@ -295,6 +295,11 @@ struct DrawingCanvas: View {
     @State internal var coincidentPointClusters: [HashableCGPoint: [PointID]] = [:]
     @State internal var coincidentPointRadius: CGFloat = 2.0 // Points within this radius are considered coincident
     @State internal var coincidentPointTolerance: Double = 1.0 // Points within 1 pixel are considered coincident
+
+	// In-App Performance HUD drag state
+	@State internal var isHUDDragging = false
+	@State internal var hudDragStartOffsetX: CGFloat = 0
+	@State internal var hudDragStartOffsetY: CGFloat = 0
     
     // ENHANCED TEXT EDITING STATE (Professional Core Graphics Text Editing)
     @State internal var isEditingText = false

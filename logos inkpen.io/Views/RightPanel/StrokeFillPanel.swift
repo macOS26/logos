@@ -26,8 +26,7 @@ func formatNumberForDisplay(_ value: Double, maxDecimals: Int = 2) -> String {
 
 struct StrokeFillPanel: View {
     @ObservedObject var document: VectorDocument
-    @State private var showingStrokeColorPicker = false
-    @State private var showingFillColorPicker = false
+    @Environment(AppState.self) private var appState
     
     // FIXED: Show current colors - from selected shapes or defaults for new shapes
     private var selectedStrokeColor: VectorColor {
@@ -142,8 +141,14 @@ struct StrokeFillPanel: View {
                         fillColor: selectedFillColor,
                         strokeOpacity: strokeOpacity,
                         fillOpacity: fillOpacity,
-                        onStrokeColorTap: { showingStrokeColorPicker = true },
-                        onFillColorTap: { showingFillColorPicker = true }
+                        onStrokeColorTap: {
+                            document.activeColorTarget = .stroke
+                            appState.persistentInkHUD.show(document: document)
+                        },
+                        onFillColorTap: {
+                            document.activeColorTarget = .fill
+                            appState.persistentInkHUD.show(document: document)
+                        }
                     )
                     
                     // Fill Properties
@@ -198,32 +203,6 @@ struct StrokeFillPanel: View {
                 Spacer()
             }
             .padding()
-        }
-        .sheet(isPresented: $showingStrokeColorPicker) {
-            ColorPickerModal(
-                document: document,
-                title: "Stroke Color",
-                onColorSelected: { color in
-                    updateStrokeColor(color)
-                    // Only add to swatches if not already present
-                    if !document.currentSwatches.contains(color) {
-                        document.addColorSwatch(color)
-                    }
-                }
-            )
-        }
-        .sheet(isPresented: $showingFillColorPicker) {
-            ColorPickerModal(
-                document: document,
-                title: "Fill Color",
-                onColorSelected: { color in
-                    updateFillColor(color)
-                    // Only add to swatches if not already present
-                    if !document.currentSwatches.contains(color) {
-                        document.addColorSwatch(color)
-                    }
-                }
-            )
         }
     }
     

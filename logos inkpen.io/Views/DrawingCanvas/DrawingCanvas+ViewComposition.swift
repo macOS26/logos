@@ -211,6 +211,18 @@ extension DrawingCanvas {
             
             // Pressure-sensitive overlay for real Apple Pencil pressure detection
             pressureSensitiveOverlay(geometry: geometry)
+			
+			// In-App Performance HUD (draggable, independent of Apple's HUD)
+			if appState.showInAppPerformanceHUD {
+				VStack {
+					HStack {
+						Spacer()
+						hudOverlay
+							.offset(x: appState.inAppHUDOffsetX, y: appState.inAppHUDOffsetY)
+					}
+					Spacer()
+				}
+			}
         }
         // CRITICAL FIX: NO CLIPPING to allow pasteboard area gestures
         .onAppear {
@@ -219,6 +231,21 @@ extension DrawingCanvas {
             setupToolKeyboardShortcuts()
             previousTool = document.currentTool
         }
+
+	// MARK: - In-App Performance HUD
+	private var hudOverlay: some View {
+		// Use optimized monitor for minimal overhead
+		let monitor = OptimizedPerformanceMonitor.shared
+		return LightweightPerformanceOverlay(monitor: monitor)
+			.gesture(
+				DragGesture(minimumDistance: 0)
+					.onChanged { value in
+						// Update offsets live while dragging (top-right anchored container; we apply positive x/y)
+						AppState.shared.inAppHUDOffsetX = value.translation.width + AppState.shared.inAppHUDOffsetX
+						AppState.shared.inAppHUDOffsetY = value.translation.height + AppState.shared.inAppHUDOffsetY
+					}
+				)
+	}
             .onDisappear {
                 teardownKeyEventMonitoring()
                 // No cursor management
