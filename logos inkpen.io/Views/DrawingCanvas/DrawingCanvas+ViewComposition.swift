@@ -64,7 +64,8 @@ extension DrawingCanvas {
                 geometry: geometry,
                 isShiftPressed: self.isShiftPressed,
                 isOptionPressed: self.isOptionPressed,
-                isCommandPressed: self.isCommandPressed
+                isCommandPressed: self.isCommandPressed,
+                dragPreviewDelta: currentDragDelta
             )
         }
         

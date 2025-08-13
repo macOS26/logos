@@ -153,12 +153,12 @@ struct ShapeView: View {
                     )
                 } else if ImageContentRegistry.containsImage(shape),
                           let image = ImageContentRegistry.image(for: shape.id) {
-                    // RENDER RASTER IMAGE, respecting shape.transform and opacity
+                    // RENDER RASTER IMAGE AS A RECT PATH FILLED WITH IMAGEPAINT
+                    // This aligns the visual rect exactly with the vector bounds and transform pipeline
                     let swiftImage = Image(nsImage: image)
-                    swiftImage
-                        .resizable()
-                        .interpolation(.high)
-                        .frame(width: shape.bounds.width, height: shape.bounds.height, alignment: .topLeading)
+                    let rectPath = Path(CGRect(origin: .zero, size: shape.bounds.size))
+                    rectPath
+                        .fill(ImagePaint(image: swiftImage, sourceRect: CGRect(x: 0, y: 0, width: 1, height: 1), scale: 1.0))
                         .opacity(shape.opacity)
                         .transformEffect(shape.transform)
                 } else {
@@ -407,6 +407,7 @@ struct SelectionHandlesView: View {
     let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     let isOptionPressed: Bool  // Passed from DrawingCanvas for path-based selection
     let isCommandPressed: Bool // When true, show red with white outline for selected shapes
+    let dragPreviewDelta: CGPoint // Keep selection box in sync during 60fps preview
     
     var body: some View {
         ZStack {
@@ -415,7 +416,9 @@ struct SelectionHandlesView: View {
                 let layer = document.layers[layerIndex]
                 ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
                     let shape = layer.shapes[shapeIndex]
-                    if document.selectedShapeIDs.contains(shape.id) {
+                    // Never show transform box for background shapes
+                    let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
+                    if document.selectedShapeIDs.contains(shape.id) && !isBackgroundShape {
                         // ENVELOPE TOOL: Always show active green envelope handles when using envelope tool
                         if document.currentTool == .warp {
                             EnvelopeHandles(
@@ -453,6 +456,9 @@ struct SelectionHandlesView: View {
                                         canvasOffset: document.canvasOffset,
                                         isShiftPressed: isShiftPressed
                                     )
+                                    // Keep the selection bounds visually in sync with object preview movement
+                                    .offset(x: dragPreviewDelta.x * document.zoomLevel,
+                                            y: dragPreviewDelta.y * document.zoomLevel)
                                 }
                             } else if document.currentTool == .scale {
                                 // Scale tool: Only corner scaling handles
@@ -597,27 +603,19 @@ struct SelectionOutline: View {
             let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
             let center = CGPoint(x: baseBounds.midX, y: baseBounds.midY)
             let transformedBounds: CGRect = {
-                if shape.isGroupContainer {
-                    let t = shape.transform
-                    let corners = [
-                        CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                        CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                        CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                        CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-                    ]
-                    let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-                    let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-                    let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-                    let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-                    return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-                } else {
-                    // Build the same final path used for rendering and get its bounds
-                    let originalPath = Path { path in
-                        addPathElements(shape.path.elements, to: &path)
-                    }
-                    let finalPath = originalPath.applying(shape.transform)
-                    return finalPath.boundingRect
-                }
+                // Robust bounds: transform all four corners, regardless of type (works for images too)
+                let t = shape.transform
+                let corners = [
+                    CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                    CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                    CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                    CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+                ]
+                let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+                let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+                let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+                let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+                return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             }()
             
             ZStack {
@@ -631,7 +629,7 @@ struct SelectionOutline: View {
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
                 
                 // CENTER POINT: Blue square same size as corners
-                let transformedCenter = shape.isGroupContainer ? CGPoint(x: center.x, y: center.y).applying(shape.transform) : CGPoint(x: transformedBounds.midX, y: transformedBounds.midY)
+                let transformedCenter = CGPoint(x: center.x, y: center.y).applying(shape.transform)
                 Rectangle()
                     .fill(Color.blue)
                     .stroke(Color.white, lineWidth: 1.0)
@@ -645,10 +643,7 @@ struct SelectionOutline: View {
                 ForEach(0..<4) { i in
                     // Use corners from transformedBounds directly for regular shapes; transform corners for groups
                     let position = cornerPosition(for: i, in: baseBounds, center: center)
-                    let transformedCorner = shape.isGroupContainer ? CGPoint(x: position.x, y: position.y).applying(shape.transform) : CGPoint(
-                        x: i == 0 ? transformedBounds.minX : (i == 1 ? transformedBounds.maxX : (i == 2 ? transformedBounds.maxX : transformedBounds.minX)),
-                        y: i == 0 ? transformedBounds.minY : (i == 1 ? transformedBounds.minY : (i == 2 ? transformedBounds.maxY : transformedBounds.maxY))
-                    )
+                    let transformedCorner = CGPoint(x: position.x, y: position.y).applying(shape.transform)
                     
                     Rectangle()
                         .fill(Color.blue)
@@ -821,26 +816,19 @@ struct TransformBoxHandles: View {
     // Compute transformed bounds in canvas coordinates (after shape.transform)
     private func computeTransformedBounds() -> CGRect {
         let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        if shape.isGroupContainer {
-            let t = shape.transform
-            let corners = [
-                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-            ]
-            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-        } else {
-            let originalPath = Path { p in
-                addPathElements(shape.path.elements, to: &p)
-            }
-            let finalPath = originalPath.applying(shape.transform)
-            return finalPath.boundingRect
-        }
+        // Use corner transformation for ALL shape types (consistent with image rendering)
+        let t = shape.transform
+        let corners = [
+            CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+            CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+            CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+            CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+        ]
+        let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+        let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+        let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+        let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 
     private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
@@ -989,9 +977,16 @@ struct TransformBoxHandles: View {
         document.isHandleScalingActive = false
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            // Reset to initial transform to avoid drift and apply final preview
-            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
+            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
+                // Commit the preview transform as the shape.transform
+                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
+                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            } else {
+                // Reset to initial transform to avoid drift and apply final preview to path coordinates
+                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+                applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            }
             previewTransform = .identity
             // Force UI refresh to reflect committed transform
             document.objectWillChange.send()

@@ -140,6 +140,16 @@ extension DrawingCanvas {
     private func applyDragDeltaToShapeCoordinates(layerIndex: Int, shapeIndex: Int, delta: CGPoint) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
         
+        // SPECIAL CASE: Raster image shapes are rendered using their transform, not path coordinates.
+        // Move them by updating the transform translation rather than rewriting path points.
+        if ImageContentRegistry.containsImage(shape) {
+            var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
+            updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
+            // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
+            document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+            return
+        }
+        
         // FLATTENED SHAPE FIX: Handle groups correctly
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
             // Apply delta to each individual shape within the flattened group
