@@ -239,6 +239,40 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentBrushSmoothingTolerance: Double = 2.0 // Current brush smoothing tolerance (like freehand)
     @Published var hasPressureInput: Bool = false // Whether pressure-sensitive input is detected
     @Published var brushApplyNoStroke: Bool = true // When enabled, applies no stroke regardless of current stroke settings
+    
+    // MARK: - Clipping Masks
+    /// Creates a clipping mask with top-most selected shape as the clipping path for the rest
+    func makeClippingMaskFromSelection() {
+        guard let layerIndex = selectedLayerIndex else { return }
+        let selectedShapes = getSelectedShapesInStackingOrder()
+        guard selectedShapes.count >= 2 else { return }
+        saveToUndoStack()
+        // Use topmost as mask
+        guard let maskID = selectedShapes.last?.id else { return }
+        // Mark mask
+        if let idx = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) {
+            layers[layerIndex].shapes[idx].isClippingPath = true
+        }
+        // Apply clipping to others
+        for s in selectedShapes.dropLast() {
+            if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
+                layers[layerIndex].shapes[i].clippedByShapeID = maskID
+            }
+        }
+    }
+    
+    /// Releases any clipping relationship among selected shapes
+    func releaseClippingMaskForSelection() {
+        guard let layerIndex = selectedLayerIndex else { return }
+        saveToUndoStack()
+        let active = getShapesByIds(selectedShapeIDs)
+        for s in active {
+            if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
+                layers[layerIndex].shapes[i].clippedByShapeID = nil
+                layers[layerIndex].shapes[i].isClippingPath = false
+            }
+        }
+    }
     @Published var brushRemoveOverlap: Bool = true // When enabled, applies union operation to merge overlapping parts
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0
@@ -1677,7 +1711,7 @@ class VectorDocument: ObservableObject, Codable {
     func requestZoom(to targetZoom: CGFloat, mode: ZoomMode) {
         let request = ZoomRequest(targetZoom: targetZoom, mode: mode)
         zoomRequest = request
-        print("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%")
+        Log.debug("🔍 ZOOM REQUEST: \(mode) → \(String(format: "%.1f", targetZoom * 100))%", category: .zoom)
     }
     
     /// Clear zoom request after processing

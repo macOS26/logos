@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 import CoreGraphics
+import UniformTypeIdentifiers
 
 struct LayerView: View {
     let layer: VectorLayer
@@ -32,17 +33,38 @@ struct LayerView: View {
     var body: some View {
         ZStack {
             ForEach(layer.shapes.indices, id: \.self) { shapeIndex in
-                ShapeView(
-                    shape: layer.shapes[shapeIndex],
-                    zoomLevel: zoomLevel,
-                    canvasOffset: canvasOffset,
-                    isSelected: selectedShapeIDs.contains(layer.shapes[shapeIndex].id),
-                    viewMode: viewMode,
-                    isCanvasLayer: isCanvasLayer,  // Pass Canvas layer info
-                    isPasteboardLayer: isPasteboardLayer,  // Pass Pasteboard layer info
-                    dragPreviewDelta: dragPreviewDelta,
-                    dragPreviewTrigger: dragPreviewTrigger
-                )
+                let currentShape = layer.shapes[shapeIndex]
+                if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
+                    ShapeView(
+                        shape: currentShape,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        isSelected: selectedShapeIDs.contains(currentShape.id),
+                        viewMode: viewMode,
+                        isCanvasLayer: isCanvasLayer,
+                        isPasteboardLayer: isPasteboardLayer,
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger
+                    )
+                    .mask(
+                        Path { path in
+                            addPathElements(maskShape.path.elements, to: &path)
+                        }
+                        .applying(maskShape.transform)
+                    )
+                } else {
+                    ShapeView(
+                        shape: currentShape,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        isSelected: selectedShapeIDs.contains(currentShape.id),
+                        viewMode: viewMode,
+                        isCanvasLayer: isCanvasLayer,  // Pass Canvas layer info
+                        isPasteboardLayer: isPasteboardLayer,  // Pass Pasteboard layer info
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger
+                    )
+                }
             }
         }
         .opacity(layer.opacity)
@@ -129,6 +151,16 @@ struct ShapeView: View {
                         transform: shape.transform,
                         opacity: shape.opacity
                     )
+                } else if ImageContentRegistry.containsImage(shape),
+                          let image = ImageContentRegistry.image(for: shape.id) {
+                    // RENDER RASTER IMAGE, respecting shape.transform and opacity
+                    let swiftImage = Image(nsImage: image)
+                    swiftImage
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: shape.bounds.width, height: shape.bounds.height, alignment: .topLeading)
+                        .opacity(shape.opacity)
+                        .transformEffect(shape.transform)
                 } else {
                     // REGULAR SHAPE RENDERING: Pre-transform the path with caching
                     // PERFORMANCE OPTIMIZATION: Create path only once per shape
@@ -374,6 +406,7 @@ struct SelectionHandlesView: View {
     let geometry: GeometryProxy
     let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     let isOptionPressed: Bool  // Passed from DrawingCanvas for path-based selection
+    let isCommandPressed: Bool // When true, show red with white outline for selected shapes
     
     var body: some View {
         ZStack {
@@ -403,14 +436,24 @@ struct SelectionHandlesView: View {
                         } else {
                             // Show different handles based on tool for regular shapes
                             if document.currentTool == .selection {
-                                // Arrow tool: Transform box with 8 handles + center (Illustrator-style)
-                                TransformBoxHandles(
-                                    document: document,
-                                    shape: shape,
-                                    zoomLevel: document.zoomLevel,
-                                    canvasOffset: document.canvasOffset,
-                                    isShiftPressed: isShiftPressed
-                                )
+                                // Command key: show red with white outline instead of transform box
+                                if isCommandPressed {
+                                    PathOutline(
+                                        document: document,
+                                        shape: shape,
+                                        zoomLevel: document.zoomLevel,
+                                        canvasOffset: document.canvasOffset
+                                    )
+                                } else {
+                                    // Arrow tool: Transform box with 8 handles + center (Illustrator-style)
+                                    TransformBoxHandles(
+                                        document: document,
+                                        shape: shape,
+                                        zoomLevel: document.zoomLevel,
+                                        canvasOffset: document.canvasOffset,
+                                        isShiftPressed: isShiftPressed
+                                    )
+                                }
                             } else if document.currentTool == .scale {
                                 // Scale tool: Only corner scaling handles
                                 ScaleHandles(
@@ -629,6 +672,63 @@ struct SelectionOutline: View {
         case 3: return CGPoint(x: bounds.minX, y: bounds.maxY) // Bottom-left
         default: return center
         }
+    }
+}
+
+// MARK: - Command Outline (Red with white outline)
+struct PathOutline: View {
+    @ObservedObject var document: VectorDocument
+    let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    
+    var body: some View {
+        ZStack {
+            if shape.isGroup && !shape.groupedShapes.isEmpty {
+                ForEach(shape.groupedShapes.indices, id: \.self) { index in
+                    let groupedShape = shape.groupedShapes[index]
+                    let cachedPath = Path { path in
+                        for element in groupedShape.path.elements {
+                            switch element {
+                            case .move(let to):
+                                path.move(to: to.cgPoint)
+                            case .line(let to):
+                                path.addLine(to: to.cgPoint)
+                            case .curve(let to, let control1, let control2):
+                                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+                            case .quadCurve(let to, let control):
+                                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+                            case .close:
+                                path.closeSubpath()
+                            }
+                        }
+                    }
+                    cachedPath
+                        .stroke(Color.white, lineWidth: 3.0 / zoomLevel)
+                        .overlay(
+                            cachedPath
+                                .stroke(Color.red, lineWidth: 1.5 / zoomLevel)
+                        )
+                        .transformEffect(groupedShape.transform)
+                        .scaleEffect(zoomLevel, anchor: .topLeading)
+                        .offset(x: canvasOffset.x, y: canvasOffset.y)
+                }
+            } else {
+                let cachedPath = Path { path in
+                    addPathElements(shape.path.elements, to: &path)
+                }
+                cachedPath
+                    .stroke(Color.white, lineWidth: 3.0 / zoomLevel)
+                    .overlay(
+                        cachedPath
+                            .stroke(Color.red, lineWidth: 1.5 / zoomLevel)
+                    )
+                    .transformEffect(shape.transform)
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 

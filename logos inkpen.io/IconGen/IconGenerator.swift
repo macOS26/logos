@@ -358,11 +358,33 @@ class DocumentIconGenerator {
         
         // Set the custom icon for the file
         NSWorkspace.shared.setIcon(icon, forFile: url.path, options: [])
+
+        // Also write SVG preview sidecar for Finder/QuickLook workflows
+        // Example: MyDoc.inkpen -> MyDoc.inkpen.svg
+        let svgPreview = generateInkpenPreview(for: document)
+        let previewURL = previewSidecarURL(for: url)
+        do {
+            try svgPreview.write(to: previewURL, atomically: true, encoding: .utf8)
+            print("✅ Wrote SVG preview sidecar: \(previewURL.path)")
+        } catch {
+            print("❌ Failed to write SVG preview sidecar: \(error.localizedDescription)")
+        }
     }
     
     func clearCustomIcon(for url: URL) {
         // Clear the custom icon and use default
         NSWorkspace.shared.setIcon(nil, forFile: url.path, options: [])
+        
+        // Optionally remove sidecar SVG preview if present
+        let previewURL = previewSidecarURL(for: url)
+        if FileManager.default.fileExists(atPath: previewURL.path) {
+            do {
+                try FileManager.default.removeItem(at: previewURL)
+                print("🧹 Removed SVG preview sidecar: \(previewURL.path)")
+            } catch {
+                print("⚠️ Could not remove SVG preview sidecar: \(error.localizedDescription)")
+            }
+        }
     }
     
     // MARK: - Inkpen Preview Generation
@@ -410,5 +432,12 @@ class DocumentIconGenerator {
             </g>
         </svg>
         """
+    }
+
+    // MARK: - Helpers
+    
+    private func previewSidecarURL(for url: URL) -> URL {
+        // Keep original filename and append .svg (results in e.g., MyDoc.inkpen.svg)
+        return url.appendingPathExtension("svg")
     }
 }

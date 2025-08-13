@@ -93,7 +93,7 @@ class MetalComputeEngine {
         }
         self.library = library
         try setupComputePipelines()
-        print("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))")
+        Log.debug("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))", category: .metal)
     }
     
     // MARK: - Setup
@@ -1171,18 +1171,18 @@ class MetalComputeEngine {
     
     /// Test if the Metal engine is working properly
     static func testMetalEngine() -> Bool {
-        print("🔧 Metal Engine Test: Starting diagnostic...")
+        Log.debug("🔧 Metal Engine Test: Starting diagnostic...", category: .metal)
         
         // Check if Metal device is available
         guard let device = MTLCreateSystemDefaultDevice() else {
-            print("❌ Metal Engine Test: No Metal device available")
+            Log.debug("❌ Metal Engine Test: No Metal device available", category: .metal)
             return false
         }
-        print("✅ Metal Engine Test: Metal device found: \(device.name)")
+        Log.debug("✅ Metal Engine Test: Metal device found: \(device.name)", category: .metal)
         
         // Check if command queue can be created
         guard device.makeCommandQueue() != nil else {
-            print("❌ Metal Engine Test: Cannot create command queue")
+            Log.debug("❌ Metal Engine Test: Cannot create command queue", category: .metal)
             return false
         }
         print("✅ Metal Engine Test: Command queue created successfully")
@@ -1191,9 +1191,9 @@ class MetalComputeEngine {
         let engine: MetalComputeEngine
         do {
             engine = try MetalComputeEngine()
-            print("✅ Metal Engine Test: Engine initialized successfully")
+            Log.debug("✅ Metal Engine Test: Engine initialized successfully", category: .metal)
         } catch {
-            print("❌ Metal Engine Test: Engine not initialized - \(error)")
+            Log.debug("❌ Metal Engine Test: Engine not initialized - \(error)", category: .metal)
             return false
         }
         
@@ -1207,14 +1207,14 @@ class MetalComputeEngine {
         switch distanceResult {
         case .success(let distance):
             if abs(distance - expectedDistance) < 0.1 {
-                print("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))")
+                Log.debug("✅ Metal Engine Test: Distance calculation working (got \(distance), expected \(expectedDistance))", category: .metal)
                 return true
             } else {
-                print("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))")
+                Log.debug("❌ Metal Engine Test: Distance calculation failed (got \(distance), expected \(expectedDistance))", category: .metal)
                 return false
             }
         case .failure(let error):
-            print("❌ Metal Engine Test: Distance calculation failed with error: \(error)")
+            Log.debug("❌ Metal Engine Test: Distance calculation failed with error: \(error)", category: .metal)
             return false
         }
     }

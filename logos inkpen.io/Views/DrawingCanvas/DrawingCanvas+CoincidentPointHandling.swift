@@ -20,13 +20,23 @@ extension DrawingCanvas {
         
         var coincidentPoints: Set<PointID> = []
         let targetPoint = CGPoint(x: targetPosition.x, y: targetPosition.y)
+		
+		// CRITICAL: Restrict coincident searches to ACTIVE/SELECTED shapes only
+		// This prevents dragging points on one object from affecting other, non-selected objects
+		let allowedShapeIDs: Set<UUID> = {
+			let active = document.getActiveShapeIDs()
+			// Always include the target point's shape as a fallback
+			return active.isEmpty ? [targetPointID.shapeID] : active
+		}()
         
         // Search through all layers and shapes for points at the same location
         for layerIndex in document.layers.indices {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            for shape in layer.shapes {
+			for shape in layer.shapes {
+				// Only consider shapes that are currently active/selected
+				if !allowedShapeIDs.contains(shape.id) { continue }
                 if !shape.isVisible { continue }
                 
                 // Check each path element for coincident points

@@ -45,6 +45,18 @@ extension DrawingCanvas {
                 analyzeCoincidentPoints()
             }
         }
+        
+        // Clipping mask actions when shapes selected
+        if !document.selectedShapeIDs.isEmpty {
+            Divider()
+            Button("Make Clipping Mask") {
+                document.makeClippingMaskFromSelection()
+            }
+            .disabled(document.selectedShapeIDs.count < 2)
+            Button("Release Clipping Mask") {
+                document.releaseClippingMaskForSelection()
+            }
+        }
     }
 
 }

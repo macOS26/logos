@@ -29,12 +29,22 @@ class AppState {
     static let shared = AppState()
     
     var selectedPanelTab: PanelTab = .layers
+
+    // MARK: - Logging Preferences
+    /// Master switch for verbose console logging
+    var enableVerboseLogging: Bool = false {
+        didSet { UserDefaults.standard.set(enableVerboseLogging, forKey: "enableVerboseLogging") }
+    }
+    /// Separate control for extremely noisy pressure-related logs
+    var enablePressureLogging: Bool = false {
+        didSet { UserDefaults.standard.set(enablePressureLogging, forKey: "enablePressureLogging") }
+    }
     
     // MARK: - Default Tool Setting (Persistent across app launches)
     var defaultTool: DrawingTool = .selection {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
-            print("🛠️ Default tool changed to: \(defaultTool.rawValue)")
+            Log.debug("🛠️ Default tool changed to: \(defaultTool.rawValue)")
         }
     }
     
@@ -42,7 +52,7 @@ class AppState {
     var pressureSensitivityEnabled: Bool = true {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
-            print("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)")
+            Log.debug("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
         }
     }
     
@@ -132,14 +142,14 @@ class AppState {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
             self.defaultTool = tool
-            print("🛠️ Loaded saved default tool: \(tool.rawValue)")
+            Log.debug("🛠️ Loaded saved default tool: \(tool.rawValue)")
         } else {
-            print("🛠️ Using default tool: selection")
+            Log.debug("🛠️ Using default tool: selection")
         }
         
         // Load saved pressure sensitivity setting
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
-        print("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)")
+        Log.debug("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
         
         // Load brush preview preferences
         if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
@@ -158,6 +168,10 @@ class AppState {
         self.metalHUDOffsetY = CGFloat(UserDefaults.standard.object(forKey: "metalHUDOffsetY") as? Double ?? 24)
         self.metalHUDWidth = CGFloat(UserDefaults.standard.object(forKey: "metalHUDWidth") as? Double ?? 420)
         self.metalHUDHeight = CGFloat(UserDefaults.standard.object(forKey: "metalHUDHeight") as? Double ?? 280)
+
+        // Load logging preferences
+        self.enableVerboseLogging = UserDefaults.standard.object(forKey: "enableVerboseLogging") as? Bool ?? false
+        self.enablePressureLogging = UserDefaults.standard.object(forKey: "enablePressureLogging") as? Bool ?? false
     }
 
 

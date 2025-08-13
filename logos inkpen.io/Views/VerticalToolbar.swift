@@ -1181,21 +1181,17 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
+	                            
+	                            Rectangle()
+	                                .fill(Color.clear)
+	                                .frame(width: 22, height: 22)
                             
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
-                            
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
 
                             Path { path in
@@ -1210,17 +1206,13 @@ struct ColorSwatchGrid: View {
                         ZStack {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
 
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
                     } else {
@@ -1228,22 +1220,19 @@ struct ColorSwatchGrid: View {
                             Rectangle()
                                 .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
 
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .focusable(false)
                 .help("Current Stroke Color: \(currentStrokeColor) (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)  // Bottom-right offset
                 
@@ -1257,21 +1246,17 @@ struct ColorSwatchGrid: View {
                             CheckerboardPattern(size: 4)
                                 .frame(width: 22, height: 22)
                                 .clipped()
+	                            
+	                            Rectangle()
+	                                .fill(Color.clear)
+	                                .frame(width: 22, height: 22)
                             
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
-                            
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
 
                             Path { path in
@@ -1286,17 +1271,13 @@ struct ColorSwatchGrid: View {
                         ZStack {
                             GradientSwatchNSView(gradient: gradient, size: 22)
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
 
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
                     } else {
@@ -1304,26 +1285,23 @@ struct ColorSwatchGrid: View {
                             Rectangle()
                                 .fill(currentFillColor.color.opacity(currentFillOpacity))
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
 
-                            // Selected overlay: 25% black (multiply) behind 50% white, inset to keep border visible
+                            // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-                                Rectangle()
-                                    .fill(Color.black.opacity(0.25))
-                                    .blendMode(.multiply)
-                                    .padding(1)
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .padding(1)
+	                                Rectangle()
+	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
+	                                Rectangle()
+	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .focusable(false)
                 .help("Current Fill Color: \(currentFillColor) (Opacity: \(Int(currentFillOpacity * 100))%) - Click to make active")
                 .offset(x: -6, y: -6)  // Top-left offset
             }
-            .frame(width: 34, height: 34)  // Total frame to contain both squares
+			.frame(width: 28, height: 28)  // Total frame to contain both squares
             .padding(.bottom, 8)
             
             // Color Swatches

@@ -265,7 +265,7 @@ extension DrawingCanvas {
 
         guard let activeBrushShape = activeBrushShape,
               brushRawPoints.count >= 2,
-              let layerIndex = document.selectedLayerIndex else { return }
+              document.selectedLayerIndex != nil else { return }
 
         // Coalesce compute work off the main thread to avoid UI spikes
         if isBrushPreviewComputing {
@@ -470,7 +470,7 @@ extension DrawingCanvas {
 
     // MARK: - Finalize From Preview (no recompute)
     private func finalizeFromPreview(_ preview: VectorPath) {
-        guard let layerIndex = document.selectedLayerIndex else { return }
+        guard document.selectedLayerIndex != nil else { return }
         let strokeStyle: StrokeStyle? = document.brushApplyNoStroke ? nil : StrokeStyle(
             color: getCurrentStrokeColor(),
             width: getCurrentStrokeWidth(),

@@ -39,7 +39,7 @@ extension DrawingCanvas {
         
         // Only proceed with shape creation if user has dragged significantly
         if Double(dragDistance) < minimumDragThreshold {
-            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)")
+            Log.debug("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - CLICK IGNORED (shapes are drag-only)", category: .shapes)
             return
         }
         
@@ -54,8 +54,8 @@ extension DrawingCanvas {
             shapeStartPoint = screenToCanvas(value.startLocation, geometry: geometry)
             drawingStartPoint = shapeStartPoint
             
-            print("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))")
-            print("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation")
+            Log.debug("🎨 SHAPE DRAWING: Started at cursor position (\(String(format: "%.1f", shapeDragStart.x)), \(String(format: "%.1f", shapeDragStart.y)))", category: .shapes)
+            Log.debug("🎨 SHAPE TOOL: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - starting shape creation", category: .shapes)
         }
         
         // Calculate cursor movement from reference location (perfect 1:1 tracking)
@@ -396,53 +396,169 @@ extension DrawingCanvas {
             }
             let innerRadius = Double(outerRadius) * innerRatio
             currentPath = createStarPath(center: center, outerRadius: Double(outerRadius), innerRadius: innerRadius, points: points)
-        case .polygon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 6) // Default hexagon
-        case .pentagon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 5)
-        case .hexagon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 6)
-        case .heptagon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 7)
-        case .octagon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            // 🚀 PHASE 12: GPU-accelerated distance calculation for radius
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 8)
-        case .nonagon:
-            let center = CGPoint(
-                x: (startPoint.x + currentLocation.x) / 2,
-                y: (startPoint.y + currentLocation.y) / 2
-            )
-            let radius = calculateDistanceWithFallback(from: startPoint, to: currentLocation) / 2.0
-            currentPath = createPolygonPath(center: center, radius: Double(radius), sides: 9)
+		case .polygon:
+			// Pin from start like rectangle/square and use a square bounds to keep the polygon regular
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 6) // Default hexagon
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
+		case .pentagon:
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 5)
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
+		case .hexagon:
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 6)
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
+		case .heptagon:
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 7)
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
+		case .octagon:
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 8)
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
+		case .nonagon:
+			let dragDeltaX = currentLocation.x - startPoint.x
+			let dragDeltaY = currentLocation.y - startPoint.y
+			let size = max(abs(dragDeltaX), abs(dragDeltaY))
+			let rect = CGRect(
+				x: startPoint.x,
+				y: startPoint.y,
+				width: dragDeltaX >= 0 ? size : -size,
+				height: dragDeltaY >= 0 ? size : -size
+			)
+			let normalizedRect = CGRect(
+				x: min(rect.minX, rect.maxX),
+				y: min(rect.minY, rect.maxY),
+				width: abs(rect.width),
+				height: abs(rect.height)
+			)
+			let center = CGPoint(x: normalizedRect.midX, y: normalizedRect.midY)
+			let radius = Double(min(normalizedRect.width, normalizedRect.height) / 2.0)
+			currentPath = createPolygonPath(center: center, radius: radius, sides: 9)
+			let boundingBox = VectorPath(elements: [
+				.move(to: VectorPoint(normalizedRect.minX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.minY)),
+				.line(to: VectorPoint(normalizedRect.maxX, normalizedRect.maxY)),
+				.line(to: VectorPoint(normalizedRect.minX, normalizedRect.maxY)),
+				.close
+			], isClosed: false)
+			tempBoundingBoxPath = boundingBox
         default:
             break
         }
@@ -543,9 +659,9 @@ extension DrawingCanvas {
             )
             
             document.addShape(shape)
-            print("✅ Created standard shape: \(document.currentTool.rawValue)")
+        Log.debug("✅ Created standard shape: \(document.currentTool.rawValue)", category: .shapes)
         }
-        print("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)")
+        Log.debug("✅ Created shape with default colors: fill=\(document.defaultFillColor), stroke=\(document.defaultStrokeColor)", category: .shapes)
         
         // PROFESSIONAL SHAPE DRAWING: Clean state reset for next drawing operation
         // This ensures each new shape starts with fresh reference points
@@ -553,6 +669,6 @@ extension DrawingCanvas {
         shapeStartPoint = CGPoint.zero
         drawingStartPoint = nil
         
-        print("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation")
+        Log.debug("🎨 SHAPE DRAWING: Completed successfully - state reset for next operation", category: .shapes)
     }
 } 

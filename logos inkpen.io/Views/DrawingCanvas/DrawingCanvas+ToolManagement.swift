@@ -72,21 +72,21 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
         
-        print("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)")
-        print("🔧 FONT SETTINGS: Preserved all typography properties for this text box")
+        Log.debug("🎯 TEXT STATE: \(textID.uuidString.prefix(8)) → GREEN (Selected, not editing)", category: .selection)
+        Log.debug("🔧 FONT SETTINGS: Preserved all typography properties for this text box", category: .selection)
     }
     
     // MARK: - Selection Conversion Between Tools
     
     /// Handles automatic selection conversion when switching between tools
     private func handleSelectionConversion(from oldTool: DrawingTool, to newTool: DrawingTool) {
-        print("🔧 TOOL CONVERSION: \(oldTool.rawValue) → \(newTool.rawValue)")
+        Log.debug("🔧 TOOL CONVERSION: \(oldTool.rawValue) → \(newTool.rawValue)", category: .input)
         
         // CASE 1: Switching TO Arrow Tool (Selection)
         if newTool == .selection {
             // Convert direct selection to regular selection
             if !directSelectedShapeIDs.isEmpty {
-                print("🎯 Converting direct selection to regular selection")
+                Log.debug("🎯 Converting direct selection to regular selection", category: .selection)
                 document.selectedShapeIDs = directSelectedShapeIDs
                 // Clear direct selection state
                 directSelectedShapeIDs.removeAll()
@@ -100,7 +100,7 @@ extension DrawingCanvas {
         else if newTool == .directSelection {
             // Convert regular selection to direct selection
             if !document.selectedShapeIDs.isEmpty {
-                print("🎯 Converting regular selection to direct selection")
+                Log.debug("🎯 Converting regular selection to direct selection", category: .selection)
                 directSelectedShapeIDs = document.selectedShapeIDs
                 // Clear regular selection
                 document.selectedShapeIDs.removeAll()
@@ -109,7 +109,7 @@ extension DrawingCanvas {
             }
             // Keep existing direct selection if switching from convert point tool
             else if oldTool == .convertAnchorPoint {
-                print("🎯 Maintaining direct selection from convert point tool")
+                Log.debug("🎯 Maintaining direct selection from convert point tool", category: .selection)
             }
         }
         
@@ -117,7 +117,7 @@ extension DrawingCanvas {
         else if newTool == .convertAnchorPoint {
             // Convert regular selection to direct selection (same as direct selection tool)
             if !document.selectedShapeIDs.isEmpty {
-                print("🎯 Converting regular selection to direct selection for convert point tool")
+                Log.debug("🎯 Converting regular selection to direct selection for convert point tool", category: .selection)
                 directSelectedShapeIDs = document.selectedShapeIDs
                 // Clear regular selection
                 document.selectedShapeIDs.removeAll()
@@ -125,7 +125,7 @@ extension DrawingCanvas {
             }
             // Keep existing direct selection if switching from direct selection tool
             else if oldTool == .directSelection {
-                print("🎯 Maintaining direct selection from direct selection tool")
+                Log.debug("🎯 Maintaining direct selection from direct selection tool", category: .selection)
             }
         }
         
@@ -133,7 +133,7 @@ extension DrawingCanvas {
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint) && 
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint {
             // Clear all selection state when switching to drawing tools
-            print("🎯 Switching to drawing tool - clearing all selections")
+            Log.debug("🎯 Switching to drawing tool - clearing all selections", category: .selection)
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs.removeAll()
             directSelectedShapeIDs.removeAll()

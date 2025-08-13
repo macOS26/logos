@@ -34,14 +34,14 @@ extension DrawingCanvas {
                 self.isCommandPressed = event.modifierFlags.contains(.command)
                 self.isControlPressed = event.modifierFlags.contains(.control)
                 
-                // Debug logging for key state changes
+                // Debug logging for key state changes (gated)
                 if self.isShiftPressed {
-                    print("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)")
+                    Log.debug("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)", category: .input)
                 } else {
-                    print("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)")
+                    Log.debug("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)", category: .input)
                 }
                 if self.isOptionPressed {
-                    print("⌥ OPTION KEY PRESSED: Path-based selection enabled")
+                    Log.debug("⌥ OPTION KEY PRESSED: Path-based selection enabled", category: .input)
                 }
                 
                 // Command-based temporary behavior for Arrow tool
@@ -50,13 +50,13 @@ extension DrawingCanvas {
                     if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
-                        print("⌘ COMMAND HELD: Temporary object outline selection mode enabled")
+                        Log.debug("⌘ COMMAND HELD: Temporary object outline selection mode enabled", category: .input)
                     }
                 } else {
                     // Command released: if we were in temporary command mode and didn't permanently switch tools, restore
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
-                        print("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode")
+                        Log.debug("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode", category: .input)
                         // If we temporarily switched to direct selection, restore the Selection tool
                         if self.document.currentTool == .directSelection {
                             self.document.currentTool = .selection
@@ -91,7 +91,7 @@ extension DrawingCanvas {
                    ["\u{63235}", "\u{63234}", "\u{63233}", "\u{63232}"].contains(characters) { // Arrow keys
                     // Activate corner radius tool
                     document.currentTool = .cornerRadius
-                    print("🔧 CONTROL+ARROW: Activated corner radius tool")
+                    Log.debug("🔧 CONTROL+ARROW: Activated corner radius tool", category: .input)
                     return nil // Consume the event
                 }
             }
@@ -160,7 +160,7 @@ extension DrawingCanvas {
         // Switch to hand tool
         document.currentTool = .hand
         
-        print("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")")
+        Log.debug("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")", category: .input)
     }
     
     /// Deactivate temporary hand tool when spacebar is released
@@ -173,6 +173,6 @@ extension DrawingCanvas {
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
         
-        print("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)")
+        Log.debug("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)", category: .input)
     }
 } 

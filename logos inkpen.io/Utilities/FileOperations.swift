@@ -9,6 +9,7 @@ import Foundation
 import CoreGraphics
 import UniformTypeIdentifiers
 import PDFKit
+import AppKit
 
 // MARK: - PROFESSIONAL VECTOR GRAPHICS IMPORT SYSTEM
 // Supports: SVG, PDF, Adobe Illustrator (.AI), and prepares for DWG/DXF
@@ -148,11 +149,16 @@ class VectorImportManager {
     
     // MARK: - Main Import Interface
     
-    /// Import vector graphics file with professional-grade parsing
+    /// Import file; routes to vector or raster import as appropriate
     func importVectorFile(from url: URL) async -> VectorImportResult {
         print("🔄 Importing vector file: \(url.lastPathComponent)")
         
-        // Detect file format
+        // Detect vector or raster
+        if let raster = detectRaster(from: url) {
+            return await importRaster(from: url, raster: raster)
+        }
+        
+        // Detect vector format
         guard let format = detectFormat(from: url) else {
             return VectorImportResult(
                 success: false,
@@ -267,6 +273,24 @@ class VectorImportManager {
         return detectFormatByContent(data)
     }
     
+    // MARK: - Raster Detection
+    enum RasterFormat: String, CaseIterable {
+        case png = "png"
+        case jpg = "jpg"
+        case jpeg = "jpeg"
+        case tif = "tif"
+        case tiff = "tiff"
+        case gif = "gif"
+        case bmp = "bmp"
+        case heic = "heic"
+        case webp = "webp"
+    }
+    
+    private func detectRaster(from url: URL) -> RasterFormat? {
+        let ext = url.pathExtension.lowercased()
+        return RasterFormat.allCases.first { $0.rawValue == ext }
+    }
+    
     private func detectFormatByContent(_ data: Data) -> VectorFileFormat? {
         guard let string = String(data: data.prefix(1024), encoding: .utf8) else { return nil }
         
@@ -364,6 +388,49 @@ class VectorImportManager {
                 warnings: warnings
             )
         }
+    }
+
+    // MARK: - Raster Import
+    private func importRaster(from url: URL, raster: RasterFormat) async -> VectorImportResult {
+        print("🖼️ Importing raster image: \(url.lastPathComponent)")
+        guard let nsImage = NSImage(contentsOf: url) else {
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                metadata: createDefaultMetadata(),
+                errors: [.parsingError("Failed to open image", line: nil)],
+                warnings: []
+            )
+        }
+        let size = nsImage.size
+        let rectShape = VectorShape(
+            name: "[IMG] \(url.lastPathComponent)",
+            path: VectorPath(elements: [
+                .move(to: VectorPoint(0, 0)),
+                .line(to: VectorPoint(size.width, 0)),
+                .line(to: VectorPoint(size.width, size.height)),
+                .line(to: VectorPoint(0, size.height)),
+                .close
+            ], isClosed: true),
+            strokeStyle: StrokeStyle(color: .clear, width: 0),
+            fillStyle: FillStyle(color: .clear),
+            transform: .identity
+        )
+        ImageContentRegistry.register(image: nsImage, for: rectShape.id)
+        let meta = VectorImportMetadata(
+            originalFormat: .pdf, // placeholder; not used for raster
+            documentSize: size,
+            colorSpace: "sRGB",
+            units: .pixels,
+            dpi: 72,
+            layerCount: 1,
+            shapeCount: 1,
+            textObjectCount: 0,
+            importDate: Date(),
+            sourceApplication: nil,
+            documentVersion: nil
+        )
+        return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
     }
     
     // MARK: - PDF Import (Professional Standard)

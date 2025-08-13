@@ -162,49 +162,12 @@ struct PreferencesView: View {
                 .fontWeight(.semibold)
             
             GroupBox(label: Label("Performance HUD", systemImage: "gauge.medium").font(.headline)) {
-                VStack(alignment: .leading, spacing: 8) {
+				VStack(alignment: .leading, spacing: 8) {
 				Toggle(
-					"Show In‑App Performance HUD (moveable)",
-					isOn: Binding(get: { appState.showInAppPerformanceHUD }, set: { appState.showInAppPerformanceHUD = $0 })
-				)
-				Toggle(
-					"Show Apple Metal Performance HUD (requires restart)",
+					"Show Apple Metal Performance HUD",
 					isOn: Binding(get: { appState.enableSystemMetalHUD }, set: { appState.enableSystemMetalHUD = $0 })
 				)
-				HStack(spacing: 8) {
-					Text("In‑App Offset X")
-					Slider(value: Binding(get: { Double(appState.inAppHUDOffsetX) }, set: { appState.inAppHUDOffsetX = CGFloat($0) }), in: -200...600)
-					Text(String(Int(appState.inAppHUDOffsetX)))
-						.monospaced()
-						.foregroundStyle(.secondary)
 				}
-				HStack(spacing: 8) {
-					Text("In‑App Offset Y")
-					Slider(value: Binding(get: { Double(appState.inAppHUDOffsetY) }, set: { appState.inAppHUDOffsetY = CGFloat($0) }), in: -200...600)
-					Text(String(Int(appState.inAppHUDOffsetY)))
-						.monospaced()
-						.foregroundStyle(.secondary)
-				}
-				Group {
-					HStack(spacing: 8) {
-						Text("System HUD Width")
-						Slider(value: Binding(get: { Double(appState.metalHUDWidth) }, set: { appState.metalHUDWidth = CGFloat($0) }), in: 250...700)
-						Text(String(Int(appState.metalHUDWidth)))
-							.monospaced()
-							.foregroundStyle(.secondary)
-					}
-					HStack(spacing: 8) {
-						Text("System HUD Height")
-						Slider(value: Binding(get: { Double(appState.metalHUDHeight) }, set: { appState.metalHUDHeight = CGFloat($0) }), in: 160...500)
-						Text(String(Int(appState.metalHUDHeight)))
-							.monospaced()
-							.foregroundStyle(.secondary)
-					}
-				}
-				Text("Apple’s HUD is controlled by environment and may require relaunch. The in‑app HUD is instant and draggable.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
                 .padding(.vertical, 6)
             }
 

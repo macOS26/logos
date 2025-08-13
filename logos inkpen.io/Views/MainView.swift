@@ -274,10 +274,13 @@ struct MainView: View {
                     // MICRO DELAY: Just enough for geometry to be established
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        print("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established")
+                        Log.debug("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established", category: .zoom)
                     }
                 }
             )
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .init("ShowImportDialogRequest"))) { _ in
+            showingImportDialog = true
         }
         .sheet(isPresented: $showingExportDialog) {
             ExportView(document: document)
@@ -310,6 +313,7 @@ struct MainView: View {
                 UTType(filenameExtension: "ai")!,        // Adobe Illustrator files (.ai)
                 UTType(filenameExtension: "eps")!,       // EPS files (.eps)
                 UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
+                .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
                 .data                                    // Generic data for unknown formats
             ],
             allowsMultipleSelection: false
@@ -393,7 +397,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            print("🔍 PROPER FIT TO PAGE: Applied after geometry established")
+            Log.debug("🔍 PROPER FIT TO PAGE: Applied after geometry established", category: .zoom)
         }
     }
     
@@ -402,7 +406,7 @@ struct MainView: View {
     private func fitToPage() {
         // Fit the entire page to the view (Adobe Illustrator standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
+        Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     // MARK: - Document Save/Load Functionality
@@ -498,7 +502,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            print("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established")
+            Log.debug("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established", category: .zoom)
         }
     }
     
@@ -508,7 +512,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            print("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established")
+            Log.debug("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established", category: .zoom)
         }
     }
     
@@ -621,7 +625,7 @@ struct MainView: View {
                     // MICRO DELAY: Just enough for geometry to be established (like Adobe Illustrator)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        print("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established")
+                        Log.debug("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .zoom)
                     }
                 } else {
                     print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")
@@ -1160,7 +1164,7 @@ struct MainToolbarContent: ToolbarContent {
     private func onFitToPage() {
         // Fit the entire page to the view (Adobe Illustrator standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        print("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view")
+        Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     private func onActualSize() {

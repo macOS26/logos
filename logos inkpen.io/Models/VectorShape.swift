@@ -262,6 +262,12 @@ struct VectorShape: Codable, Hashable, Identifiable {
     // MARK: - Compound Path Properties
     var isCompoundPath: Bool
     
+    // MARK: - Clipping Mask Support
+    /// When true, this shape acts as a clipping path for its immediate following siblings (Adobe-style)
+    var isClippingPath: Bool = false
+    /// Optional: Clip this shape's visual output to the path of another shape (typically the previous one)
+    var clippedByShapeID: UUID?
+    
     // MARK: - Warp Object Properties (Professional Envelope Warping)
     var isWarpObject: Bool
     var originalPath: VectorPath?  // Original unwrapped path
@@ -290,6 +296,8 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.groupedShapes = groupedShapes
         self.groupTransform = groupTransform
         self.isCompoundPath = isCompoundPath
+        self.isClippingPath = false
+        self.clippedByShapeID = nil
         self.isWarpObject = isWarpObject
         self.originalPath = originalPath
         self.warpEnvelope = warpEnvelope
@@ -562,6 +570,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         case id, name, path, geometricType, strokeStyle, fillStyle, transform, isVisible, isLocked, opacity, blendMode, bounds
         case isGroup, groupedShapes, groupTransform, isCompoundPath, isWarpObject, originalPath, warpEnvelope, originalEnvelope
         case isRoundedRectangle, originalBounds, cornerRadii
+        case isClippingPath, clippedByShapeID
     }
 }
 

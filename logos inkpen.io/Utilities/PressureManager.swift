@@ -60,14 +60,14 @@ class PressureManager: ObservableObject {
         // Check if the system supports pressure by checking available input devices
         // We'll detect this more accurately when we actually receive pressure events
         hasRealPressureInput = false // Start as false, will be updated when real events detected
-        print("🎨 PRESSURE MANAGER: Initial detection - will detect on first pressure event")
+        Log.debug("🎨 PRESSURE MANAGER: Initial detection - will detect on first pressure event", category: .pressure)
     }
     
     /// Updates pressure support status based on actual events
     func updatePressureSupport(_ isSupported: Bool) {
         DispatchQueue.main.async {
             self.hasRealPressureInput = isSupported
-            print("🎨 PRESSURE MANAGER: Updated pressure support: \(isSupported)")
+            Log.debug("🎨 PRESSURE MANAGER: Updated pressure support: \(isSupported)", category: .pressure)
         }
     }
     
@@ -75,27 +75,27 @@ class PressureManager: ObservableObject {
     
     /// Processes pressure from real input events
     func processRealPressure(_ pressure: Double, at location: CGPoint, timestamp: Date = Date(), isTabletEvent: Bool = false) {
-        print("🎨 PRESSURE MANAGER: processRealPressure called with pressure: \(pressure)")
-        print("🎨 PRESSURE MANAGER: AppState pressure sensitivity enabled: \(AppState.shared.pressureSensitivityEnabled)")
+        Log.debug("🎨 PRESSURE MANAGER: processRealPressure called with pressure: \(pressure)", category: .pressure)
+        Log.debug("🎨 PRESSURE MANAGER: AppState pressure sensitivity enabled: \(AppState.shared.pressureSensitivityEnabled)", category: .pressure)
         
         guard AppState.shared.pressureSensitivityEnabled else {
-            print("🎨 PRESSURE MANAGER: Pressure sensitivity disabled, setting to 1.0")
+            Log.debug("🎨 PRESSURE MANAGER: Pressure sensitivity disabled, setting to 1.0", category: .pressure)
             currentPressure = 1.0
             return
         }
         
-        print("🎨 PRESSURE MANAGER: Pressure sensitivity enabled, processing pressure")
+        Log.debug("🎨 PRESSURE MANAGER: Pressure sensitivity enabled, processing pressure", category: .pressure)
         
         // If in tablet-only calibration mode, ignore non-tablet events during calibration
         if isCalibrating && tabletOnlyCalibration && !isTabletEvent {
-            print("🎨 CALIBRATION: Ignoring non-tablet event (tablet-only mode)")
+            Log.debug("🎨 CALIBRATION: Ignoring non-tablet event (tablet-only mode)", category: .pressure)
             return
         }
         
         // Mark that we have real pressure input
         if !hasRealPressureInput {
             hasRealPressureInput = true
-            print("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!")
+            Log.debug("🎨 PRESSURE MANAGER: ✅ Real pressure input detected and enabled!", category: .pressure)
         }
         
         // Real pressure is already in good range, just clamp it
@@ -103,7 +103,7 @@ class PressureManager: ObservableObject {
         
         DispatchQueue.main.async {
             self.currentPressure = clampedPressure
-            print("🎨 PRESSURE MANAGER: Updated currentPressure to: \(clampedPressure)")
+            Log.debug("🎨 PRESSURE MANAGER: Updated currentPressure to: \(clampedPressure)", category: .pressure)
         }
         
         // Update tracking for hybrid scenarios
@@ -118,12 +118,12 @@ class PressureManager: ObservableObject {
         // Debug output for pressure changes (only log significant changes to avoid spam)
         if let lastPressure = lastRecordedPressure, abs(pressure - lastPressure) > 0.1 {
             let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-            print("🎨 \(eventType): \(String(format: "%.3f", pressure)) at (\(Int(location.x)), \(Int(location.y)))")
+            Log.debug("🎨 \(eventType): \(String(format: "%.3f", pressure)) at (\(Int(location.x)), \(Int(location.y)))", category: .pressure)
             lastRecordedPressure = pressure
         } else if lastRecordedPressure == nil {
             lastRecordedPressure = pressure
             let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-            print("🎨 \(eventType): First pressure reading: \(String(format: "%.3f", pressure))")
+            Log.debug("🎨 \(eventType): First pressure reading: \(String(format: "%.3f", pressure))", category: .pressure)
         }
     }
     
@@ -184,7 +184,7 @@ class PressureManager: ObservableObject {
         lastTimestamp = nil
         lastRecordedPressure = nil
         currentPressure = 1.0
-        print("🎨 PRESSURE MANAGER: Reset for new stroke")
+        Log.debug("🎨 PRESSURE MANAGER: Reset for new stroke", category: .pressure)
     }
     
     /// Gets pressure for a specific point in a drawing operation
@@ -207,7 +207,7 @@ class PressureManager: ObservableObject {
             self.calibrationMinPressure = 0.0
             self.calibrationMaxPressure = 0.0
             self.calibrationSampleCount = 0
-            print("🎨 CALIBRATION: Started pressure calibration")
+            Log.debug("🎨 CALIBRATION: Started pressure calibration", category: .pressure)
         }
     }
     
@@ -215,9 +215,9 @@ class PressureManager: ObservableObject {
     func stopCalibration() {
         DispatchQueue.main.async {
             self.isCalibrating = false
-            print("🎨 CALIBRATION: Stopped pressure calibration")
-            print("🎨 CALIBRATION: Final range: \(String(format: "%.3f", self.calibrationMinPressure)) - \(String(format: "%.3f", self.calibrationMaxPressure))")
-            print("🎨 CALIBRATION: Total samples: \(self.calibrationSampleCount)")
+            Log.debug("🎨 CALIBRATION: Stopped pressure calibration", category: .pressure)
+            Log.debug("🎨 CALIBRATION: Final range: \(String(format: "%.3f", self.calibrationMinPressure)) - \(String(format: "%.3f", self.calibrationMaxPressure))", category: .pressure)
+            Log.debug("🎨 CALIBRATION: Total samples: \(self.calibrationSampleCount)", category: .pressure)
         }
     }
     
@@ -227,7 +227,7 @@ class PressureManager: ObservableObject {
             self.calibrationMinPressure = 0.0
             self.calibrationMaxPressure = 0.0
             self.calibrationSampleCount = 0
-            print("🎨 CALIBRATION: Reset calibration data to 0.0")
+            Log.debug("🎨 CALIBRATION: Reset calibration data to 0.0", category: .pressure)
         }
     }
     
@@ -237,12 +237,12 @@ class PressureManager: ObservableObject {
             if pressure < self.calibrationMinPressure {
                 self.calibrationMinPressure = pressure
                 let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-                print("🎨 CALIBRATION (\(eventType)): New minimum pressure: \(String(format: "%.3f", pressure))")
+                Log.debug("🎨 CALIBRATION (\(eventType)): New minimum pressure: \(String(format: "%.3f", pressure))", category: .pressure)
             }
             if pressure > self.calibrationMaxPressure {
                 self.calibrationMaxPressure = pressure
                 let eventType = isTabletEvent ? "TABLET" : "TRACKPAD"
-                print("🎨 CALIBRATION (\(eventType)): New maximum pressure: \(String(format: "%.3f", pressure))")
+                Log.debug("🎨 CALIBRATION (\(eventType)): New maximum pressure: \(String(format: "%.3f", pressure))", category: .pressure)
             }
             self.calibrationSampleCount += 1
         }

@@ -233,7 +233,7 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness")
+        Log.debug("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness", category: .zoom)
         print("   Document Bounds: \(documentBounds)")
         print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")

@@ -130,6 +130,30 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
             }
             
+            // Clipping Masks
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Clipping Masks")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                HStack(spacing: 6) {
+                    Button("Make Clipping Mask") {
+                        document.makeClippingMaskFromSelection()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(document.selectedShapeIDs.count < 2)
+                    Button("Release Clipping Mask") {
+                        document.releaseClippingMaskForSelection()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(document.selectedShapeIDs.isEmpty)
+                }
+                .padding(.horizontal, 12)
+            }
+            
             Spacer()
         }
     }

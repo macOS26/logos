@@ -156,7 +156,6 @@ class DocumentState: ObservableObject {
         // CRITICAL: Clean up all subscriptions to prevent retain cycles
         NotificationCenter.default.removeObserver(self)
         cancellables.removeAll()
-        document = nil
         print("🎯 DocumentState deallocated - subscriptions cleaned up")
     }
     
@@ -287,6 +286,11 @@ class DocumentState: ObservableObject {
         }
         
         // Removed excessive logging per user request
+    }
+    
+    // MARK: - Commands Actions
+    func showImportDialog() {
+        NotificationCenter.default.post(name: .init("ShowImportDialogRequest"), object: nil)
     }
     
     // MARK: - Menu Actions (Direct document interaction)
@@ -711,6 +715,7 @@ struct DocumentBasedMainView: View {
                 UTType(filenameExtension: "ai")!,        // Adobe Illustrator files (.ai)
                 UTType(filenameExtension: "eps")!,       // EPS files (.eps)
                 UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
+                .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
                 .data                                    // Generic data for unknown formats
             ],
             allowsMultipleSelection: false
@@ -1168,19 +1173,10 @@ class StartupCoordinator {
     
     private func configureWindowTabbing() async {
         await MainActor.run {
-            // Disable automatic, system-wide forced tabbing. Use manual by default.
+            // Enable automatic tabbing for document windows; utility windows opt-out individually
             NSWindow.allowsAutomaticWindowTabbing = true
-            UserDefaults.standard.set("manual", forKey: "AppleWindowTabbingMode")
-
-            // Be selective: prefer tabbing only for document windows; disallow for utility windows.
-            NSApplication.shared.windows.forEach { window in
-                if let controller = window.windowController, controller.document != nil {
-                    window.tabbingMode = .preferred
-                } else {
-                    window.tabbingMode = .disallowed
-                }
-            }
-            print("📄 StartupCoordinator: Window tabbing set to manual; document windows prefer tabs, others disallowed")
+            UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
+            print("📄 StartupCoordinator: Window tabbing set to always; document windows will tab, utilities opt-out")
         }
     }
     
@@ -1470,6 +1466,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
+
+		// Remove Apple's default Edit/View menus; keep our custom menus
+		removeDefaultSystemMenus()
     }
     
     private func setupFallbackTimer() {
@@ -1492,6 +1491,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
+
+	// Remove Apple's default "Edit" and duplicate "View" menus, keeping our custom menus intact
+	private func removeDefaultSystemMenus() {
+		DispatchQueue.main.async {
+			guard let mainMenu = NSApp.mainMenu else { return }
+			// Iterate in reverse so indices remain valid while removing
+			for index in stride(from: mainMenu.numberOfItems - 1, through: 0, by: -1) {
+				guard let item = mainMenu.item(at: index) else { continue }
+				let title = item.title
+				if title == "Edit" {
+					// Keep our custom Edit (has items like "Paste in Back" or "Deselect All")
+					let keep = item.submenu?.items.contains { $0.title == "Paste in Back" || $0.title == "Deselect All" } == true
+					if !keep { mainMenu.removeItem(at: index) }
+				} else if title == "View" {
+					// Keep our custom View (has items like "Color View" or "Keyline View")
+					let keep = item.submenu?.items.contains { $0.title == "Color View" || $0.title == "Keyline View" } == true
+					if !keep { mainMenu.removeItem(at: index) }
+				}
+			}
+		}
+	}
     
     private func setupGlobalErrorHandling() {
         // Set up a global exception handler for unhandled errors
@@ -1524,16 +1544,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func configureWindowsAsync() async {
         await MainActor.run {
-            // Respect manual tabbing mode set in StartupCoordinator
+            // Adjust any Apple Metal HUD carrier view if present in visible windows
             NSApplication.shared.windows.forEach { window in
-                if let controller = window.windowController, controller.document != nil {
-                    window.tabbingMode = .preferred
-                } else {
-                    window.tabbingMode = .disallowed
-                }
-
-                // Try to locate the Apple Metal HUD carrier window/view and adjust its frame
-                // Heuristic: find a child window containing a text layer with "FPS:" or "GPU:" style labels
                 if AppState.shared.enableSystemMetalHUD {
                     for subview in window.contentView?.subviews ?? [] {
                         let className = String(describing: type(of: subview))
@@ -1548,7 +1560,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     }
                 }
             }
-            print("📄 App: Window tabbing configured per-window (documents prefer tabs; utility windows disallowed)")
+            print("📄 App: Adjusted Metal HUD positioning where applicable")
         }
     }
     
@@ -1561,14 +1573,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func handleApplicationBecameActiveAsync() async {
         await MainActor.run {
-            // Ensure tabbing mode is maintained selectively
-            NSApplication.shared.windows.forEach { window in
-                if let controller = window.windowController, controller.document != nil {
-                    window.tabbingMode = .preferred
-                } else {
-                    window.tabbingMode = .disallowed
-                }
-            }
+            // No-op: individual windows manage their own tabbing preferences
         }
     }
     
@@ -1683,6 +1688,20 @@ struct logos_inken_ioApp: App {
                         dismissWindow: { id in dismissWindow(id: id) }
                     )
                 }
+                .background(WindowAccessor { window in
+                    // Ensure document windows prefer tabbing
+                    window?.tabbingMode = .preferred
+                    // Default to the first tab when a tab group exists
+                    if let w = window, let tabGroup = w.tabGroup, let first = tabGroup.windows.first {
+                        tabGroup.selectedWindow = first
+                    }
+					// Ensure the first document shows the tab bar so the + button is visible
+					let firstTabBarKey = "firstDocTabBarShown"
+					if let w = window, !UserDefaults.standard.bool(forKey: firstTabBarKey) {
+						w.perform(#selector(NSWindow.toggleTabBar(_:)), with: nil)
+						UserDefaults.standard.set(true, forKey: firstTabBarKey)
+					}
+                })
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
@@ -1758,6 +1777,15 @@ struct logos_inken_ioApp: App {
                 .help("Open application preferences")
             }
             
+            // FILE MENU - Add Import here (requested)
+            CommandMenu("File") {
+                Button("Import…") {
+                    documentState?.showImportDialog()
+                }
+                .keyboardShortcut("i", modifiers: [.command])
+                .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
+            }
+
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
                 Button("Undo") {
@@ -1820,6 +1848,15 @@ struct logos_inken_ioApp: App {
             
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
+                // Import Section
+                Button("Import…") {
+                    documentState?.showImportDialog()
+                }
+                .keyboardShortcut("i", modifiers: [.command])
+                .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
+                
+                Divider()
+
                 // Arrange Section
                 Button("Bring to Front") {
                     documentState?.bringToFront()

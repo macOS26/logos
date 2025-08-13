@@ -262,7 +262,7 @@ extension DrawingCanvas {
             // Track enter/exit over the drawing area
             isCanvasHovering = isHovering
             if isHovering {
-                print("🖱️ Canvas hover: entered")
+                Log.debug("🖱️ Canvas hover: entered", category: .input)
                 #if os(macOS)
                 if document.currentTool == .hand {
                     HandOpenCursor.set()
@@ -275,7 +275,7 @@ extension DrawingCanvas {
                 }
                 #endif
             } else {
-                print("🖱️ Canvas hover: exited")
+                Log.debug("🖱️ Canvas hover: exited", category: .input)
                 #if os(macOS)
                 NSCursor.arrow.set()
                 #endif

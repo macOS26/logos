@@ -118,29 +118,29 @@ extension DrawingCanvas {
         case .fitToPage:
             // Fit to page: Calculate optimal zoom and center
             fitToPage(geometry: geometry)
-            print("🔍 HANDLED ZOOM REQUEST: Fit to Page")
+            Log.debug("🔍 HANDLED ZOOM REQUEST: Fit to Page", category: .zoom)
             
         case .actualSize:
             // Actual size: Set to 100% and center properly
             actualSize(geometry: geometry)
-            print("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)")
+            Log.debug("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)", category: .zoom)
             
         case .zoomIn, .zoomOut:
             // Zoom in/out: Use mouse position as focal point for professional behavior
             if currentMousePosition != .zero {
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: currentMousePosition, geometry: geometry)
-                print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)")
+                Log.debug("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)", category: .zoom)
             } else {
                 // Fallback to view center if no mouse position tracked
                 let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: viewCenter, geometry: geometry)
-                print("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)")
+                Log.debug("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)", category: .zoom)
             }
             
         case .custom(let focalPoint):
             // Custom zoom with specific focal point
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
-            print("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)")
+            Log.debug("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)", category: .zoom)
         }
         
         // Clear the request after processing
