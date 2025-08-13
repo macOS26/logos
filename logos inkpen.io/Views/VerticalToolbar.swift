@@ -1188,9 +1188,9 @@ struct ColorSwatchGrid: View {
                             
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
 
@@ -1209,9 +1209,9 @@ struct ColorSwatchGrid: View {
 
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
@@ -1223,9 +1223,9 @@ struct ColorSwatchGrid: View {
 
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .stroke {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
@@ -1253,9 +1253,9 @@ struct ColorSwatchGrid: View {
                             
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
 
@@ -1274,9 +1274,9 @@ struct ColorSwatchGrid: View {
 
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }
@@ -1288,9 +1288,9 @@ struct ColorSwatchGrid: View {
 
                             // Selected overlay: 3pt black overprint + 3pt white screen on top (same size)
                             if document.activeColorTarget == .fill {
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.black.opacity(0.35), lineWidth: 2)
-	                                Rectangle()
+	                                Rectangle().inset(by: 1)
 	                                    .strokeBorder(Color.white.opacity(0.7), lineWidth: 1)
                             }
                         }

@@ -13,17 +13,17 @@ enum LogCategory {
 
 struct Log {
     static func debug(_ message: String, category: LogCategory = .general) {
-        // Pressure logs can be controlled independently since they are the noisiest
+        // Read flags directly from UserDefaults to avoid touching AppState during its initialization
+        let defaults = UserDefaults.standard
+        let pressureEnabled = (defaults.object(forKey: "enablePressureLogging") as? Bool) ?? false
+        let verboseEnabled = (defaults.object(forKey: "enableVerboseLogging") as? Bool) ?? false
+
         if category == .pressure {
-            if AppState.shared.enablePressureLogging {
-                print(message)
-            }
+            if pressureEnabled { print(message) }
             return
         }
-        
-        if AppState.shared.enableVerboseLogging {
-            print(message)
-        }
+
+        if verboseEnabled { print(message) }
     }
 }
 

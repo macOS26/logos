@@ -279,9 +279,7 @@ struct MainView: View {
                 }
             )
         }
-        .onReceive(NotificationCenter.default.publisher(for: .init("ShowImportDialogRequest"))) { _ in
-            showingImportDialog = true
-        }
+        // Notification-based import request removed per policy
         .sheet(isPresented: $showingExportDialog) {
             ExportView(document: document)
         }

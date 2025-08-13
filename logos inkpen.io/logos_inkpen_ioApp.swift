@@ -290,7 +290,51 @@ class DocumentState: ObservableObject {
     
     // MARK: - Commands Actions
     func showImportDialog() {
-        NotificationCenter.default.post(name: .init("ShowImportDialogRequest"), object: nil)
+        guard let document = document else { return }
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [
+            .svg,
+            .pdf,
+            UTType("com.adobe.illustrator.ai-image")!,
+            UTType("com.adobe.encapsulated-postscript")!,
+            UTType("com.adobe.postscript")!,
+            UTType(filenameExtension: "ps")!,
+            UTType(filenameExtension: "ai")!,
+            UTType(filenameExtension: "eps")!,
+            UTType(filenameExtension: "dwf")!,
+            .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!,
+            .data
+        ]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.title = "Import"
+        panel.begin { response in
+            guard response == .OK, let url = panel.urls.first else { return }
+            Task {
+                let result = await VectorImportManager.shared.importVectorFile(from: url)
+                await MainActor.run {
+                    if result.success {
+                        document.saveToUndoStack()
+                        if let layerIndex = document.selectedLayerIndex ?? (document.layers.indices.first) {
+                            var newShapeIDs: Set<UUID> = []
+                            for shape in result.shapes {
+                                document.layers[layerIndex].addShape(shape)
+                                newShapeIDs.insert(shape.id)
+                            }
+                            document.selectedShapeIDs = newShapeIDs
+                        }
+                        self.updateAllStates()
+                    } else {
+                        let alert = NSAlert()
+                        alert.messageText = "Import Failed"
+                        let errorText = result.errors.map { $0.localizedDescription }.joined(separator: ", ")
+                        alert.informativeText = errorText.isEmpty ? "The selected file could not be imported." : errorText
+                        alert.alertStyle = .warning
+                        alert.runModal()
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Menu Actions (Direct document interaction)
@@ -1777,8 +1821,8 @@ struct logos_inken_ioApp: App {
                 .help("Open application preferences")
             }
             
-            // FILE MENU - Add Import here (requested)
-            CommandMenu("File") {
+            // FILE MENU - add Import to existing File menu instead of creating a new one
+            CommandGroup(after: .newItem) {
                 Button("Import…") {
                     documentState?.showImportDialog()
                 }

@@ -155,8 +155,8 @@ extension DrawingCanvas {
         
         Log.debug("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
-        // CRITICAL FIX: Check for text objects FIRST (they should be selectable with selection tool!)
-        if let textID = findTextAt(location: location) {
+        // Only run text hit-testing when using the Font tool to avoid noisy logs during normal selection
+        if document.currentTool == .font, let textID = findTextAt(location: location) {
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                 let textObject = document.textObjects[textIndex]
                 
@@ -299,32 +299,45 @@ extension DrawingCanvas {
                         let tolerance: CGFloat = 8.0
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
                         Log.debug("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
-                    } else {
-                        // Regular selection: Use different logic for stroke vs filled
-                        let isStrokeOnly = shape.fillStyle?.color == .clear || shape.fillStyle == nil
-                        
-                        if isStrokeOnly && shape.strokeStyle != nil {
-                            // Method 1: Stroke-only shapes - use stroke-based hit testing only
-                            let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                            let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                            
-                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                            Log.debug("  - Regular stroke hit test: \(isHit)", category: .selection)
+                } else {
+                    // Regular selection: Use different logic for stroke vs filled
+                    // SPECIAL CASE: Raster image shapes should behave like filled rectangles (click inside selects)
+                    let isImageShape = ImageContentRegistry.containsImage(shape)
+                    let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
+                    
+                    if isImageShape {
+                        // Treat images as filled rectangles for hit-testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                        if expandedBounds.contains(location) {
+                            isHit = true
+                            Log.debug("  - Image bounds hit: YES", category: .selection)
                         } else {
-                            // Method 2: Filled shapes - use bounds + path hit testing
-                            let transformedBounds = shape.bounds.applying(shape.transform)
-                            let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
-                            
-                            if expandedBounds.contains(location) {
-                                isHit = true
-                                Log.debug("  - Regular bounds hit test: \(isHit)", category: .selection)
-                            } else {
-                                // Fallback: precise path hit test
-                                isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                                Log.debug("  - Regular path hit test: \(isHit)", category: .selection)
-                            }
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                            Log.debug("  - Image path hit: \(isHit)", category: .selection)
+                        }
+                    } else if isStrokeOnly && shape.strokeStyle != nil {
+                        // Method 1: Stroke-only shapes - use stroke-based hit testing only
+                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
+                        
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                        Log.debug("  - Regular stroke hit test: \(isHit)", category: .selection)
+                    } else {
+                        // Method 2: Filled shapes - use bounds + path hit testing
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                        
+                        if expandedBounds.contains(location) {
+                            isHit = true
+                            Log.debug("  - Regular bounds hit test: \(isHit)", category: .selection)
+                        } else {
+                            // Fallback: precise path hit test
+                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                            Log.debug("  - Regular path hit test: \(isHit)", category: .selection)
                         }
                     }
+                }
                 }
                 
                 if isHit {
