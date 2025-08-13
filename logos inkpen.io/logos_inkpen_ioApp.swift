@@ -1447,6 +1447,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "cannot open file at line 49448"
         ])
         
+        // Apply Apple Metal Performance HUD environment if enabled in preferences
+        let enabled = UserDefaults.standard.bool(forKey: "enableSystemMetalHUD")
+        if enabled {
+            setenv("MTL_HUD_ENABLED", "1", 1)
+        } else {
+            unsetenv("MTL_HUD_ENABLED")
+        }
+
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
         
@@ -1522,6 +1530,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     window.tabbingMode = .preferred
                 } else {
                     window.tabbingMode = .disallowed
+                }
+
+                // Try to locate the Apple Metal HUD carrier window/view and adjust its frame
+                // Heuristic: find a child window containing a text layer with "FPS:" or "GPU:" style labels
+                if AppState.shared.enableSystemMetalHUD {
+                    for subview in window.contentView?.subviews ?? [] {
+                        let className = String(describing: type(of: subview))
+                        if className.lowercased().contains("hud") || className.lowercased().contains("metal") {
+                            var frame = subview.frame
+                            frame.origin.x = AppState.shared.metalHUDOffsetX
+                            frame.origin.y = window.frame.height - AppState.shared.metalHUDOffsetY - frame.height
+                            frame.size.width = AppState.shared.metalHUDWidth
+                            frame.size.height = AppState.shared.metalHUDHeight
+                            subview.frame = frame
+                        }
+                    }
                 }
             }
             print("📄 App: Window tabbing configured per-window (documents prefer tabs; utility windows disallowed)")

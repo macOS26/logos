@@ -218,8 +218,7 @@ extension DrawingCanvas {
             // Your existing pressure-sensitive overlay (unchanged)
             pressureSensitiveOverlay(geometry: geometry)
             
-            // Performance HUD (independent of Metal rendering)
-            CanvasPerformanceHUD()
+            // Removed custom in-app Performance HUD overlay
             #if os(macOS)
             // AppKit-backed cursor overlay to eliminate flicker
             CanvasCursorOverlayView(
@@ -419,31 +418,4 @@ extension DrawingCanvas {
     }
 }
 
-// MARK: - Canvas Performance HUD Wrapper
-
-/// Lightweight overlay that shows the `PerformanceOverlay` whenever
-/// `appState.showPerformanceHUD` is enabled. This is independent from
-/// Metal rendering so the preference works 100% of the time.
-private struct CanvasPerformanceHUD: View {
-    @Environment(AppState.self) private var appState
-    @StateObject private var performanceMonitor = PerformanceMonitor()
-
-    var body: some View {
-        Group {
-            if appState.showPerformanceHUD {
-                VStack {
-                    HStack {
-                        Spacer()
-                        PerformanceOverlay(performanceMonitor: performanceMonitor)
-                            .padding(.top, 8)
-                            .padding(.trailing, 8)
-                    }
-                    Spacer()
-                }
-            } else {
-                EmptyView()
-            }
-        }
-        .allowsHitTesting(false)
-    }
-}
+// Removed: CanvasPerformanceHUD wrapper and usage

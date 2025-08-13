@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import AppKit
+import CoreGraphics
 
 class ColorManagement {
     
@@ -258,6 +260,109 @@ class ColorManagement {
             return RGBColor(red: 0.95 * r + 0.05 * g, green: 0.433 * g + 0.567 * b, blue: 0.475 * g + 0.525 * b, alpha: color.alpha)
         }
     }
+}
+
+// MARK: - Centralized Working Color Space and Conversions
+final class ColorManager {
+	static let shared = ColorManager()
+	
+	/// Preferred working color space for the entire app. Display P3 offers a significantly wider gamut than sRGB.
+	/// We keep this configurable in case we decide to experiment with other wide-gamut spaces in the future.
+	enum WorkingSpace {
+		case displayP3
+		case sRGB
+		case linearSRGB
+		case extendedSRGB
+	}
+	
+	/// Configure the global working space here. Default: Display P3
+	private(set) var workingSpace: WorkingSpace = .displayP3
+	
+	/// CoreGraphics color space for the current working space
+	var workingCGColorSpace: CGColorSpace {
+		switch workingSpace {
+		case .displayP3: return CGColorSpace(name: CGColorSpace.displayP3)!
+		case .sRGB: return CGColorSpace(name: CGColorSpace.sRGB)!
+		case .linearSRGB: return CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+		case .extendedSRGB: return CGColorSpace(name: CGColorSpace.extendedSRGB)!
+		}
+	}
+	
+	/// SwiftUI color space for constructing Colors in the working space
+	var workingSwiftUIColorSpace: Color.RGBColorSpace {
+		switch workingSpace {
+		case .displayP3: return .displayP3
+		case .sRGB: return .sRGB
+		case .linearSRGB: return .sRGBLinear
+		case .extendedSRGB: return .sRGB // SwiftUI doesn't expose an explicit extended sRGB; use sRGB path and allow CGColor for extended
+		}
+	}
+	
+	/// Optionally change working space at runtime (not recommended without full migration)
+	func setWorkingSpace(_ space: WorkingSpace) {
+		workingSpace = space
+	}
+	
+	// MARK: - Core Conversions
+	/// Convert a CGColor to the working color space (relative colorimetric intent)
+	func toWorking(_ cgColor: CGColor) -> CGColor {
+		if cgColor.colorSpace == workingCGColorSpace { return cgColor }
+		return cgColor.converted(to: workingCGColorSpace, intent: .relativeColorimetric, options: nil) ?? cgColor
+	}
+	
+	/// Convert a CGColor to a target color space
+	func convert(_ cgColor: CGColor, to target: CGColorSpace) -> CGColor {
+		if cgColor.colorSpace == target { return cgColor }
+		return cgColor.converted(to: target, intent: .relativeColorimetric, options: nil) ?? cgColor
+	}
+	
+	/// Safely extract RGBA in working space from a SwiftUI Color
+	func rgbaInWorkingSpace(from color: Color) -> (r: Double, g: Double, b: Double, a: Double) {
+		let ns = NSColor(color)
+		let targetNSColorSpace = NSColorSpace(cgColorSpace: workingCGColorSpace) ?? NSColorSpace.deviceRGB
+		let converted = ns.usingColorSpace(targetNSColorSpace) ?? ns
+		var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+		converted.getRed(&r, green: &g, blue: &b, alpha: &a)
+		return (Double(r), Double(g), Double(b), Double(a))
+	}
+	
+	/// Create a SwiftUI Color in the working space from raw RGBA assumed in the given source space
+	func makeColor(r: Double, g: Double, b: Double, a: Double = 1.0, source: CGColorSpace) -> Color {
+		let components: [CGFloat] = [CGFloat(r), CGFloat(g), CGFloat(b), CGFloat(a)]
+		guard let srcColor = CGColor(colorSpace: source, components: components) else {
+			return Color(workingSwiftUIColorSpace, red: r, green: g, blue: b, opacity: a)
+		}
+		let working = toWorking(srcColor)
+		return Color(working)
+	}
+	
+	/// Convert normalized RGBA from source color space into RGBA in working color space
+	func convertRGBAtoWorking(r: Double, g: Double, b: Double, a: Double = 1.0, source: CGColorSpace) -> (r: Double, g: Double, b: Double, a: Double) {
+		let comps: [CGFloat] = [CGFloat(r), CGFloat(g), CGFloat(b), CGFloat(a)]
+		guard let src = CGColor(colorSpace: source, components: comps) else {
+			return (r, g, b, a)
+		}
+		let wk = toWorking(src)
+		guard let out = wk.components, wk.numberOfComponents >= 4 else { return (r, g, b, a) }
+		return (Double(out[0]), Double(out[1]), Double(out[2]), Double(out[3]))
+	}
+	
+	// MARK: - Convenience for common spaces
+	var sRGBCG: CGColorSpace { CGColorSpace(name: CGColorSpace.sRGB)! }
+	var linearSRGBCG: CGColorSpace { CGColorSpace(name: CGColorSpace.extendedLinearSRGB)! }
+	var extendedSRGBCG: CGColorSpace { CGColorSpace(name: CGColorSpace.extendedSRGB)! }
+	var displayP3CG: CGColorSpace { CGColorSpace(name: CGColorSpace.displayP3)! }
+	
+	// MARK: - SVG Helpers
+	/// Convert a CGColor in any space to 8-bit sRGB hex string for SVG output
+	func cgColorToSRGBHex(_ cgColor: CGColor) -> String {
+		let srgb = convert(cgColor, to: sRGBCG)
+		guard let comps = srgb.components else { return "#000000" }
+		let r = Int(round(Double(comps[0]) * 255.0))
+		let g = Int(round(Double(comps[1]) * 255.0))
+		let b = Int(round(Double(comps[2]) * 255.0))
+		return String(format: "#%02X%02X%02X", r, g, b)
+	}
 }
 
 // MARK: - Supporting Types

@@ -3,25 +3,16 @@ import SwiftUI
 /// SafeMetalView with built-in performance monitoring overlay
 struct SafeMetalViewWithStats: View {
     let renderContent: (CGContext, CGSize) -> Void
-    @State private var showPerformanceOverlay: Bool = true
-    @Environment(AppState.self) private var appState
+    @State private var showPerformanceOverlay: Bool = false
     
     var body: some View {
         ZStack {
             // Main Metal rendering view
             SafeMetalView(renderContent: renderContent)
             
-            // Performance overlay (respects Preferences toggle)
-            if showPerformanceOverlay && appState.showPerformanceHUD {
-                PerformanceOverlay(performanceMonitor: performanceMonitor)
-            }
+            // Removed custom in-app Performance HUD overlay (now controlled by system HUD)
         }
-        .onTapGesture(count: 3) {
-            // Triple-tap to toggle performance overlay
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showPerformanceOverlay.toggle()
-            }
-        }
+        // Removed triple-tap toggling for the in-app overlay
     }
     
     // Access the performance monitor from the SafeMetalView
@@ -43,18 +34,7 @@ extension DrawingCanvas {
             // Original canvas content
             canvasMainContent(geometry: geometry)
             
-            // Performance overlay (top-right corner, respects Preferences toggle)
-            if appState.showPerformanceHUD {
-                VStack {
-                    HStack {
-                        Spacer()
-                        PerformanceOverlay(performanceMonitor: getOrCreatePerformanceMonitor())
-                            .padding(.top, 8)
-                            .padding(.trailing, 8)
-                    }
-                    Spacer()
-                }
-            }
+            // Removed in-app performance overlay; system Metal HUD is used instead
         }
     }
     

@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AppKit
 
 // MARK: - Color Modes
 enum ColorMode: String, CaseIterable, Codable {
@@ -52,11 +53,13 @@ struct RGBColor: Codable, Hashable {
     }
     
     var color: Color {
-        Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha)
+        // Create color in the app's working space
+        return ColorManager.shared.makeColor(r: red, g: green, b: blue, a: alpha, source: ColorManager.shared.sRGBCG)
     }
     
     var cgColor: CGColor {
-        CGColor(red: red, green: green, blue: blue, alpha: alpha)
+        let comps: [CGFloat] = [CGFloat(red), CGFloat(green), CGFloat(blue), CGFloat(alpha)]
+        return CGColor(colorSpace: ColorManager.shared.sRGBCG, components: comps) ?? CGColor(red: red, green: green, blue: blue, alpha: alpha)
     }
 }
 
@@ -84,7 +87,8 @@ struct CMYKColor: Codable, Hashable {
     }
     
     var color: Color {
-        rgbColor.color
+        // CMYK components are device independent; render via sRGB-equivalent then into working space
+        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.sRGBCG)
     }
 }
 
@@ -134,7 +138,8 @@ struct HSBColorModel: Codable, Hashable {
     }
     
     var color: Color {
-        rgbColor.color
+        // HSB is interpreted in sRGB primaries. Convert to working space for UI
+        return ColorManager.shared.makeColor(r: rgbColor.red, g: rgbColor.green, b: rgbColor.blue, a: alpha, source: ColorManager.shared.sRGBCG)
     }
     
     // Create HSB from RGB
@@ -184,7 +189,8 @@ struct SPOTColor: Codable, Hashable {
     }
     
     var color: Color {
-        Color(.sRGB, red: rgbEquivalent.red, green: rgbEquivalent.green, blue: rgbEquivalent.blue, opacity: alpha)
+        // Pantone is stored with sRGB equivalents; present in working space
+        return ColorManager.shared.makeColor(r: rgbEquivalent.red, g: rgbEquivalent.green, b: rgbEquivalent.blue, a: alpha, source: ColorManager.shared.sRGBCG)
     }
     
     // Distance calculation for color matching
@@ -656,7 +662,7 @@ enum VectorColor: Codable, Hashable {
         case .appleSystem(let systemColor):
             return systemColor.color
         case .gradient(let gradient):
-            // For gradients, return the first stop color as a fallback
+            // For gradients, return the first stop color as a fallback (already VectorColor → Color path will hit working space)
             return gradient.stops.first?.color.color ?? Color.black
         case .clear:
             return Color.clear
@@ -676,9 +682,9 @@ enum VectorColor: Codable, Hashable {
         case .hsb(let hsb):
             return hsb.rgbColor.cgColor
         case .pantone(let pantone):
-            return pantone.rgbEquivalent.cgColor
+            return ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG)
         case .spot(let spot):
-            return spot.rgbEquivalent.cgColor
+            return ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG)
         case .appleSystem(let systemColor):
             return systemColor.rgbEquivalent.cgColor
         case .gradient(let gradient):
@@ -1023,15 +1029,29 @@ struct AppleSystemColor: Codable, Hashable {
 // Helper extension for Color components
 extension Color {
     var components: (red: Double, green: Double, blue: Double, alpha: Double) {
-        let nsColor = NSColor(self)
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
+        let baseNSColor = NSColor(self)
         
-        nsColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        if let converted = baseNSColor.usingColorSpace(NSColorSpace.sRGB) ?? baseNSColor.usingColorSpace(NSColorSpace.deviceRGB) {
+            var r: CGFloat = 0
+            var g: CGFloat = 0
+            var b: CGFloat = 0
+            var a: CGFloat = 0
+            converted.getRed(&r, green: &g, blue: &b, alpha: &a)
+            return (Double(r), Double(g), Double(b), Double(a))
+        }
         
-        return (red: Double(red), green: Double(green), blue: Double(blue), alpha: Double(alpha))
+        let cg = baseNSColor.cgColor
+        if let comps = cg.components {
+            if cg.numberOfComponents == 2 {
+                let v = comps[0]
+                let a = comps[1]
+                return (Double(v), Double(v), Double(v), Double(a))
+            } else if cg.numberOfComponents >= 4 {
+                return (Double(comps[0]), Double(comps[1]), Double(comps[2]), Double(comps[3]))
+            }
+        }
+        
+        return (0, 0, 0, 1)
     }
 }
 

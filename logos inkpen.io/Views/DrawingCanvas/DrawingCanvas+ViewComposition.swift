@@ -433,6 +433,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
         case .fill:
             Path { p in addPathElements(preview.elements, to: &p) }
                 .fill(document.defaultFillColor.color)
+                .opacity(document.defaultFillOpacity)
         }
     }
 }

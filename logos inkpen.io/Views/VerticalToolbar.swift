@@ -1185,7 +1185,7 @@ struct ColorSwatchGrid: View {
                             Rectangle()
                                 .fill(Color.clear)
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .stroke ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
+                                .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
                             
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
@@ -1198,12 +1198,12 @@ struct ColorSwatchGrid: View {
                         // Handle gradient colors with NSView-based rendering
                         GradientSwatchNSView(gradient: gradient, size: 22)
                             .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .stroke ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
+                            .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
                     } else {
                         Rectangle()
                             .fill(currentStrokeColor.color.opacity(currentStrokeOpacity))
                             .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .stroke ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .stroke ? 2 : 0.5)
+                            .border(document.activeColorTarget == .stroke ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .stroke ? 3 : 0.5)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
@@ -1224,7 +1224,7 @@ struct ColorSwatchGrid: View {
                             Rectangle()
                                 .fill(Color.clear)
                                 .frame(width: 22, height: 22)
-                                .border(document.activeColorTarget == .fill ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
+                                .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
                             
                             Path { path in
                                 path.move(to: CGPoint(x: 0, y: 0))
@@ -1237,12 +1237,12 @@ struct ColorSwatchGrid: View {
                         // Handle gradient colors with NSView-based rendering
                         GradientSwatchNSView(gradient: gradient, size: 22)
                             .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .fill ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
+                            .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
                     } else {
                         Rectangle()
                             .fill(currentFillColor.color.opacity(currentFillOpacity))
                             .frame(width: 22, height: 22)
-                            .border(document.activeColorTarget == .fill ? Color.black.opacity(0.3) : Color.gray, width: document.activeColorTarget == .fill ? 2 : 0.5)
+                            .border(document.activeColorTarget == .fill ? Color.white.opacity(0.5) : Color.gray, width: document.activeColorTarget == .fill ? 3 : 0.5)
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
