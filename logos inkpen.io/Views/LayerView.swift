@@ -49,36 +49,7 @@ struct LayerView: View {
                         dragPreviewDelta: dragPreviewDelta,
                         dragPreviewTrigger: dragPreviewTrigger
                     )
-                    .mask(
-                        Group {
-                            if maskShape.isGroupContainer {
-                                ZStack {
-                                    ForEach(maskShape.groupedShapes, id: \.id) { grouped in
-                                        let useEvenOdd = (grouped.path.fillRule == .evenOdd)
-                                        Path { p in
-                                            addPathElements(grouped.path.elements, to: &p)
-                                        }
-                                        .applying(grouped.transform)
-                                        .fill(
-                                            Color.black,
-                                            style: FillStyle(eoFill: useEvenOdd, antialiased: true)
-                                        )
-                                    }
-                                }
-                                .transformEffect(maskShape.transform)
-                            } else {
-                                let useEvenOdd = (maskShape.path.fillRule == .evenOdd)
-                                Path { path in
-                                    addPathElements(maskShape.path.elements, to: &path)
-                                }
-                                .applying(maskShape.transform)
-                                .fill(
-                                    Color.black,
-                                    style: FillStyle(eoFill: useEvenOdd, antialiased: true)
-                                )
-                            }
-                        }
-                    )
+                    .mask(ShapeMaskView(maskShape: maskShape))
                 } else {
                     ShapeView(
                         shape: currentShape,
@@ -347,6 +318,48 @@ struct ShapeView: View {
     }
     
     // Uses shared `addPathElements` from Utilities/PathElementUtils.swift
+}
+
+// Extracted mask view to simplify type-checking of the main body
+private struct ShapeMaskView: View {
+    let maskShape: VectorShape
+
+    var body: some View {
+        Group {
+            if maskShape.isGroupContainer {
+                GroupMaskContainer(maskShape: maskShape)
+            } else {
+                SingleMaskShape(shape: maskShape)
+            }
+        }
+    }
+}
+
+// MARK: - Mask Subviews
+private struct SingleMaskShape: View {
+    let shape: VectorShape
+
+    var body: some View {
+        let useEvenOdd = (shape.path.fillRule == .evenOdd)
+        return Path { path in
+            addPathElements(shape.path.elements, to: &path)
+        }
+        .applying(shape.transform)
+        .fill(Color.black, style: SwiftUI.FillStyle(eoFill: useEvenOdd, antialiased: true))
+    }
+}
+
+private struct GroupMaskContainer: View {
+    let maskShape: VectorShape
+
+    var body: some View {
+        ZStack {
+            ForEach(maskShape.groupedShapes, id: \.id) { grouped in
+                SingleMaskShape(shape: grouped)
+            }
+        }
+        .transformEffect(maskShape.transform)
+    }
 }
 
 struct GridView: View {
