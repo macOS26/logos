@@ -2552,7 +2552,7 @@ struct logos_inken_ioApp: App {
         }
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
-        WindowGroup("Select Gradient Color", id: "gradient-hud") {
+        Window("Select Gradient Color", id: "gradient-hud") {
                 StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
                     .environment(appState)
                     .background(WindowAccessor { window in
@@ -2592,7 +2592,7 @@ struct logos_inken_ioApp: App {
         // 🔥 NO MANUAL POSITIONING - Let macOS handle window positioning naturally
         
         // 🔥 INK COLOR MIXER HUD WINDOW
-        WindowGroup("Ink Color Mixer", id: "ink-hud") {
+        Window("Ink Color Mixer", id: "ink-hud") {
             StableInkHUDContent()
                 .environment(appState)
                 .background(WindowAccessor { window in
@@ -2619,7 +2619,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
         
         // Preferences window
-        WindowGroup("Preferences", id: "app-preferences") {
+        Window("Preferences", id: "app-preferences") {
             PreferencesView()
                 .environment(appState)
                 .background(WindowAccessor { window in
@@ -2631,12 +2631,12 @@ struct logos_inken_ioApp: App {
         
         // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
         // Re-enabled but configured to not interfere with document tabbing
-        WindowGroup("New Document Setup") {
-            ContentView()
-                .environment(appState)
-        }
-        .defaultSize(width: 1200, height: 800)
-        .windowResizability(.contentSize)
+        // WindowGroup("New Document Setup") {
+        //     ContentView()
+        //         .environment(appState)
+        // }
+        // .defaultSize(width: 1200, height: 800)
+        // .windowResizability(.contentSize)
     }
 }
 

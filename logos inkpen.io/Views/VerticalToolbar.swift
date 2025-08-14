@@ -1484,3 +1484,4 @@ struct VerticalToolbar_Previews: PreviewProvider {
             .frame(height: 600)
     }
 }
+
