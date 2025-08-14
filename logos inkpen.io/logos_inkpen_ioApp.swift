@@ -1908,25 +1908,23 @@ struct logos_inken_ioApp: App {
             }
 
             // FILE MENU - Save and Save As…
-            CommandGroup(replacing: .saveItem) {
+            CommandGroup(after: .newItem) {
                 Button("Save") {
                     NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("s", modifiers: [.command])
 
-                Button("Save As…") {
+            }
+
+            CommandGroup(after: .newItem) {
+                Button("Save As...") {
                     NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
             }
 
-			// Ensure Save As… is always visible (avoid Duplicate/Option toggling)
-			CommandGroup(replacing: .importExport) {
-				Button("Save As…") {
-					NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
-				}
-				.keyboardShortcut("s", modifiers: [.command, .shift])
-			}
+        
+		
 
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
