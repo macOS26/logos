@@ -1548,6 +1548,8 @@ final class StderrFilter {
 // MARK: - AppDelegate to ensure proper document tabbing and window persistence
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        removeDefaultSystemMenus()
+
         // Install stderr filter to suppress noisy system-level SQLite warning lines
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
@@ -1579,8 +1581,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
 
-		// Remove Apple's default Edit/View menus; keep our custom menus
-		removeDefaultSystemMenus()
+		// Normalize menus shortly after launch (once) so order is correct
+	
     }
     
     private func setupFallbackTimer() {
@@ -1604,24 +1606,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-	// Remove Apple's default "Edit" and duplicate "View" menus, keeping our custom menus intact
+	// Remove Apple's default menus while keeping our custom ones
 	private func removeDefaultSystemMenus() {
 		DispatchQueue.main.async {
 			guard let mainMenu = NSApp.mainMenu else { return }
 			// Iterate in reverse so indices remain valid while removing
-			for index in stride(from: mainMenu.numberOfItems - 1, through: 0, by: -1) {
-				guard let item = mainMenu.item(at: index) else { continue }
-				let title = item.title
-				if title == "Edit" {
-					// Keep our custom Edit (has items like "Paste in Back" or "Deselect All")
-					let keep = item.submenu?.items.contains { $0.title == "Paste in Back" || $0.title == "Deselect All" } == true
-					if !keep { mainMenu.removeItem(at: index) }
-				} else if title == "View" {
-					// Keep our custom View (has items like "Color View" or "Keyline View")
-					let keep = item.submenu?.items.contains { $0.title == "Color View" || $0.title == "Keyline View" } == true
-					if !keep { mainMenu.removeItem(at: index) }
-				}
-			}
+			
+
+			// Ensure File appears immediately after the app menu, before View
+//			if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "File" }),
+//			   let fileItem = mainMenu.item(at: fileIndex) {
+//				mainMenu.removeItem(at: fileIndex)
+//				mainMenu.insertItem(fileItem, at: 1)
+//			}
+//            
+//            
+//            if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "Edit" }),
+//               let fileItem = mainMenu.item(at: fileIndex) {
+//                mainMenu.removeItem(at: fileIndex)
+//                //mainMenu.insertItem(fileItem, at: 2)
+//            }
+//
+//			// Ensure View sits after Zoom without recreating/losing its submenu/targets
+//			if let viewIndex = mainMenu.items.firstIndex(where: { $0.title == "View" }),
+//			   let viewItem = mainMenu.item(at: viewIndex) {
+//				mainMenu.removeItem(at: viewIndex)
+//				let insertAt = min(mainMenu.numberOfItems, 4)
+//				mainMenu.insertItem(viewItem, at: insertAt)
+//			}
+            
+//            for index in stride(from: mainMenu.numberOfItems - 1, through: 0, by: -1) {
+//                guard let item = mainMenu.item(at: index) else { continue }
+//                let title = item.title
+//                if title == "File" {
+//                    let isOurFile = item.submenu?.items.contains { $0.title == "New Document" || $0.title == "Import…" } == true
+//                    if !isOurFile { mainMenu.removeItem(at: index) }
+//                } else if title == "Edit" {
+//                    let isOurEdit = item.submenu?.items.contains { $0.title == "Paste in Back" || $0.title == "Deselect All" } == true
+//                    if !isOurEdit { mainMenu.removeItem(at: index) }
+//                }
+//            }
 		}
 	}
     
@@ -1819,21 +1843,44 @@ struct logos_inken_ioApp: App {
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
         .commands {
-            // Replace default "New" menu to avoid extra entries from auxiliary WindowGroups
-            CommandGroup(replacing: .newItem) {
+            // Create a fully custom File menu
+            CommandMenu("File") {
                 Button("New Document") {
                     NSDocumentController.shared.newDocument(nil)
                 }
                 .keyboardShortcut("n", modifiers: [.command])
                 .help("Create a new document")
 
-					Divider()
+                Divider()
 
-					Button("Open…") {
-						NSDocumentController.shared.openDocument(nil)
-					}
-					.keyboardShortcut("o", modifiers: [.command])
-					.help("Open an existing document")
+                Button("Open…") {
+                    NSDocumentController.shared.openDocument(nil)
+                }
+                .keyboardShortcut("o", modifiers: [.command])
+                .help("Open an existing document")
+
+                Button("Import…") {
+                    documentState?.showImportDialog()
+                }
+                .keyboardShortcut("i", modifiers: [.command])
+                .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
+
+                Divider()
+
+                Button("Close") {
+                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("w", modifiers: [.command])
+
+                Button("Save") {
+                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command])
+
+                Button("Save As...") {
+                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
             }
 
             // Application Menu commands (appears under the app name)
@@ -1898,30 +1945,7 @@ struct logos_inken_ioApp: App {
                 .help("Open application preferences")
             }
             
-            // FILE MENU - add Import to existing File menu instead of creating a new one
-            CommandGroup(after: .newItem) {
-                Button("Import…") {
-                    documentState?.showImportDialog()
-                }
-                .keyboardShortcut("i", modifiers: [.command])
-                .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
-            }
-
-            // FILE MENU - Save and Save As…
-            CommandGroup(after: .newItem) {
-                Button("Save") {
-                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("s", modifiers: [.command])
-
-            }
-
-            CommandGroup(after: .newItem) {
-                Button("Save As...") {
-                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
-            }
+            // Remove any default File menu content via AppKit in AppDelegate
 
         
 		
@@ -2220,7 +2244,8 @@ struct logos_inken_ioApp: App {
             }
             
             // VIEW MENU - Zoom and View Mode using DocumentState (no more notifications!)
-            CommandMenu("View") {
+            CommandMenu("Zoom") {
+                
                 Button("Zoom In") {
                     documentState?.zoomIn()
                 }
