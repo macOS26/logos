@@ -964,29 +964,29 @@ struct MainToolbarContent: ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
             // File Operations
             Menu {
-                Button("New Document") {
-                    onNew()
-                }
-                .keyboardShortcut("n", modifiers: [.command])
-                
-                Button("Open Document") {
-                    onOpen()
-                }
-                .keyboardShortcut("o", modifiers: [.command])
-                
-                Divider()
-                
-                Button("Save") {
-                    onSave()
-                }
-                .keyboardShortcut("s", modifiers: [.command])
-                
-                Button("Save As...") {
-                    onSaveAs()
-                }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
-                
-                Divider()
+//                Button("New Document") {
+//                    onNew()
+//                }
+//                .keyboardShortcut("n", modifiers: [.command])
+//                
+//                Button("Open Document") {
+//                    onOpen()
+//                }
+//                .keyboardShortcut("o", modifiers: [.command])
+//                
+//                Divider()
+//                
+//                Button("Save") {
+//                    onSave()
+//                }
+//                .keyboardShortcut("s", modifiers: [.command])
+//                
+//                Button("Save As...") {
+//                    onSaveAs()
+//                }
+//                .keyboardShortcut("s", modifiers: [.command, .shift])
+//                
+//                Divider()
                 
                 Menu("Export") {
                     Button("Export as DWG (AutoCAD)") {

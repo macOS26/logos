@@ -1844,43 +1844,54 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
         .commands {
             // Create a fully custom File menu
-            CommandMenu("File") {
-                Button("New Document") {
-                    NSDocumentController.shared.newDocument(nil)
+            
+            
+            
+            CommandGroup(before: .importExport) {
+                Button("Save As...") {
+                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
                 }
-                .keyboardShortcut("n", modifiers: [.command])
-                .help("Create a new document")
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+            }
+           
+            
+            
+            CommandGroup(replacing: .importExport) {
+//                Button("New Document") {
+//                    NSDocumentController.shared.newDocument(nil)
+//                }
+//                .keyboardShortcut("n", modifiers: [.command])
+//                .help("Create a new document")
+//
+//                Divider()
+//
+//                Button("Open…") {
+//                    NSDocumentController.shared.openDocument(nil)
+//                }
+//                .keyboardShortcut("o", modifiers: [.command])
+//                .help("Open an existing document")
 
-                Divider()
-
-                Button("Open…") {
-                    NSDocumentController.shared.openDocument(nil)
-                }
-                .keyboardShortcut("o", modifiers: [.command])
-                .help("Open an existing document")
-
+             
+                    
                 Button("Import…") {
                     documentState?.showImportDialog()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
 
-                Divider()
+           //     Divider()
 
-                Button("Close") {
-                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("w", modifiers: [.command])
+//                Button("Close") {
+//                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
+//                }
+//                .keyboardShortcut("w", modifiers: [.command])
+//
+//                Button("Save") {
+//                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
+//                }
+//                .keyboardShortcut("s", modifiers: [.command])
+//
 
-                Button("Save") {
-                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("s", modifiers: [.command])
-
-                Button("Save As...") {
-                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
             }
 
             // Application Menu commands (appears under the app name)
@@ -1951,7 +1962,7 @@ struct logos_inken_ioApp: App {
 		
 
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
-            CommandMenu("Edit") {
+            CommandGroup(replacing: .undoRedo) {
                 Button("Undo") {
                     documentState?.undo()
                 }
