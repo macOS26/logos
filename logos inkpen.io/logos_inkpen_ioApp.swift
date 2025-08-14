@@ -1803,9 +1803,10 @@ struct logos_inken_ioApp: App {
                 .background(WindowAccessor { window in
                     // Ensure document windows prefer tabbing
                     window?.tabbingMode = .preferred
-                    // Default to the first tab when a tab group exists
-                    if let w = window, let tabGroup = w.tabGroup, let first = tabGroup.windows.first {
-                        tabGroup.selectedWindow = first
+                    // When a new document window appears, make that window's tab active
+                    if let w = window, let tabGroup = w.tabGroup {
+                        tabGroup.selectedWindow = w
+                        w.makeKeyAndOrderFront(nil)
                     }
 					// Ensure the first document shows the tab bar so the + button is visible
 					let firstTabBarKey = "firstDocTabBarShown"
@@ -1905,6 +1906,27 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("i", modifiers: [.command])
                 .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
             }
+
+            // FILE MENU - Save and Save As…
+            CommandGroup(replacing: .saveItem) {
+                Button("Save") {
+                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command])
+
+                Button("Save As…") {
+                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+            }
+
+			// Ensure Save As… is always visible (avoid Duplicate/Option toggling)
+			CommandGroup(replacing: .importExport) {
+				Button("Save As…") {
+					NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
+				}
+				.keyboardShortcut("s", modifiers: [.command, .shift])
+			}
 
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandMenu("Edit") {
@@ -2488,8 +2510,9 @@ struct logos_inken_ioApp: App {
                 .help("Switch to corner radius tool")
             }
             
-            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState (no more notifications!)
-            CommandMenu("Development") {
+            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState
+            // Remove custom development menu to avoid build issues; re-enable if needed.
+            /* CommandMenu("Development Tools") {
                 Button("CoreGraphics Path Operations Test") {
                     appState.showCoreGraphicsTest()
                 }
@@ -2502,7 +2525,7 @@ struct logos_inken_ioApp: App {
                     appState.runPathOperationsBenchmark()
                 }
                 .help("Benchmark ClipperPath vs CoreGraphics performance")
-            }
+            } */
         }
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window

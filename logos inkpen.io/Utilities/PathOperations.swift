@@ -535,42 +535,81 @@ class PathOperations {
     
     // MARK: - STROKE OUTLINING COMPATIBILITY
     
+	/// Helper to detect if a path contains at least one closed subpath
+	private static func pathHasClosedSubpath(_ path: CGPath) -> Bool {
+		var hasClosed = false
+		path.applyWithBlock { element in
+			if element.pointee.type == .closeSubpath { hasClosed = true }
+		}
+		return hasClosed
+	}
+
     /// Converts a stroke into a filled path outline (Adobe Illustrator "Outline Stroke" feature)
     /// The resulting stroke is unified using Union operation to remove any overlapping parts
     static func outlineStroke(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
-        let bounds = path.boundingBoxOfPath
-        let expandedBounds = bounds.insetBy(dx: -strokeStyle.width * 2, dy: -strokeStyle.width * 2)
-        
-        guard !expandedBounds.isEmpty && expandedBounds.width > 0 && expandedBounds.height > 0 else {
-            return nil
-        }
-        
-        let outlinedPath: CGPath?
-        
-        if strokeStyle.dashPattern.isEmpty {
-            // Simple stroke without dash pattern
-            outlinedPath = path.copy(
-                strokingWithWidth: strokeStyle.width,
-                lineCap: strokeStyle.lineCap,
-                lineJoin: strokeStyle.lineJoin,
-                miterLimit: strokeStyle.miterLimit
-            )
-        } else {
-            // For dashed strokes, we need to handle dash patterns manually
-            outlinedPath = outlineStrokeWithDashPattern(path: path, strokeStyle: strokeStyle)
-        }
-        
-        // Apply Union operation to the outlined stroke to flatten any overlapping parts
-        guard let outlined = outlinedPath else { return nil }
-        
-        // Use CoreGraphics Union operation with the same shape twice to flatten overlapping parts
-        if let unifiedStroke = CoreGraphicsPathOperations.union(outlined, outlined, using: .winding) {
-            print("✅ OUTLINE STROKE: Applied CoreGraphics Union to flatten overlapping parts")
-            return unifiedStroke
-        } else {
-            print("⚠️ OUTLINE STROKE: CoreGraphics Union failed, returning original outlined path")
-            return outlined
-        }
+		let bounds = path.boundingBoxOfPath
+		let hasClosed = pathHasClosedSubpath(path)
+		let placement = strokeStyle.placement
+		
+		// For inside/outside on closed shapes, we mimic rendering strategy:
+		// - Create a CENTERED stroke with DOUBLE width, then boolean with the original path
+		// For open paths or center placement, just use the provided width (centered)
+		let shouldMaskPlacement = hasClosed && placement != .center
+		let effectiveWidth: CGFloat = shouldMaskPlacement ? CGFloat(strokeStyle.width) * 2.0 : CGFloat(strokeStyle.width)
+		
+		let expandedBounds = bounds.insetBy(dx: -effectiveWidth * 2, dy: -effectiveWidth * 2)
+		guard !expandedBounds.isEmpty && expandedBounds.width > 0 && expandedBounds.height > 0 else { return nil }
+		
+		// Build an effective stroke style for outlining (centered, possibly doubled width)
+		let effectiveStrokeStyle = StrokeStyle(
+			color: strokeStyle.color,
+			width: Double(effectiveWidth),
+			placement: .center,
+			dashPattern: strokeStyle.dashPattern,
+			lineCap: strokeStyle.lineCap,
+			lineJoin: strokeStyle.lineJoin,
+			miterLimit: strokeStyle.miterLimit,
+			opacity: strokeStyle.opacity,
+			blendMode: strokeStyle.blendMode
+		)
+		
+		let outlinedPath: CGPath?
+		if effectiveStrokeStyle.dashPattern.isEmpty {
+			outlinedPath = path.copy(
+				strokingWithWidth: CGFloat(effectiveStrokeStyle.width),
+				lineCap: effectiveStrokeStyle.lineCap,
+				lineJoin: effectiveStrokeStyle.lineJoin,
+				miterLimit: CGFloat(effectiveStrokeStyle.miterLimit)
+			)
+		} else {
+			outlinedPath = outlineStrokeWithDashPattern(path: path, strokeStyle: effectiveStrokeStyle)
+		}
+		
+		guard let outlined = outlinedPath else { return nil }
+		
+		// Flatten any overlaps in the outlined stroke
+		let unifiedStroke = CoreGraphicsPathOperations.union(outlined, outlined, using: .winding) ?? outlined
+		
+		// Respect inside/outside by booleaning with the original path for closed shapes
+		guard shouldMaskPlacement else { return unifiedStroke }
+		switch placement {
+		case .inside:
+			if let insideOnly = CoreGraphicsPathOperations.intersection(unifiedStroke, path, using: .winding) {
+				return insideOnly
+			} else {
+				// Fallback to centered outline if intersection fails (e.g., open paths)
+				return unifiedStroke
+			}
+		case .outside:
+			if let outsideOnly = CoreGraphicsPathOperations.subtract(path, from: unifiedStroke, using: .winding) {
+				return outsideOnly
+			} else {
+				// Fallback to centered outline if subtraction fails
+				return unifiedStroke
+			}
+		case .center:
+			return unifiedStroke
+		}
     }
     
     /// Handles stroke outlining with dash patterns

@@ -280,16 +280,27 @@ struct ShapeView: View {
             }
             
         case .outside:
-            // OUTSIDE STROKE - CRITICAL FIX: Handle opacity internally to prevent bleed-through
+            // OUTSIDE STROKE - render a doubled centered stroke and mask it to only the exterior region
             ZStack {
+                // Compute a large rect around the path to build an even-odd outside mask
+                let boundingBox = path.cgPath.boundingBoxOfPath
+                let expansion = max(strokeStyle.width * 4, 1000)
+                let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
+
+                // Build a mask that reveals only the area outside the shape path
+                let outsideMask = Path { maskPath in
+                    maskPath.addRect(largeRect)
+                    maskPath.addPath(path)
+                }
+                .fill(Color.black, style: SwiftUI.FillStyle(eoFill: true))
+
                 if strokeStyle.isGradient {
-                    // For gradient strokes, use a different approach that preserves gradient quality
-                    // Create a stroke style with the original width but adjust the gradient coordinates
+                    // For gradient strokes, keep gradient coordinates stable via a centered style, then mask to outside
                     let adjustedStrokeStyle = StrokeStyle(
                         color: strokeStyle.color,
-                        width: strokeStyle.width * 2, // Double width for outside placement
-                        placement: .center, // Use center placement for the gradient calculation
-                        dashPattern: strokeStyle.dashPattern.map { $0 * 2 }, // Scale dash pattern
+                        width: strokeStyle.width * 2,
+                        placement: .center,
+                        dashPattern: strokeStyle.dashPattern.map { $0 * 2 },
                         lineCap: strokeStyle.lineCap,
                         lineJoin: strokeStyle.lineJoin,
                         miterLimit: strokeStyle.miterLimit,
@@ -297,36 +308,33 @@ struct ShapeView: View {
                         blendMode: strokeStyle.blendMode
                     )
                     let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width * 2, // Double width
+                        lineWidth: strokeStyle.width * 2,
                         lineCap: swiftUIStrokeStyle.lineCap,
                         lineJoin: swiftUIStrokeStyle.lineJoin,
                         miterLimit: swiftUIStrokeStyle.miterLimit,
-                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
+                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
                     )
-                    
+
                     renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                        .mask(outsideMask)
                         .opacity(strokeStyle.opacity)
                 } else {
-                    // For solid color strokes, use the original approach
+                    // Solid color stroke: double width, masked to outside only
                     let doubleWidthStrokeStyle = SwiftUI.StrokeStyle(
-                        lineWidth: strokeStyle.width * 2, // Double width
+                        lineWidth: strokeStyle.width * 2,
                         lineCap: swiftUIStrokeStyle.lineCap,
                         lineJoin: swiftUIStrokeStyle.lineJoin,
                         miterLimit: swiftUIStrokeStyle.miterLimit,
-                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern
+                        dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
                     )
-                    
+
                     renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
+                        .mask(outsideMask)
                         .opacity(strokeStyle.opacity)
                 }
 
-                // 2. Cover the inside stroke completely with opaque background
-                // This ensures NO stroke color bleeds through, regardless of fill opacity
-                path.fill(Color.white.opacity(1.0)) // Ensure completely opaque white background
-                
-                // 3. Draw the actual fill at correct opacity on top
+                // Draw the fill normally (no opaque underlay), preserving its alpha
                 if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
-                    // Corrected call to use the updated renderFill
                     renderFill(fillStyle: fillStyle, path: path, shape: shape)
                 }
             }
