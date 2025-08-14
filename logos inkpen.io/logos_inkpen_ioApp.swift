@@ -768,16 +768,7 @@ struct DocumentBasedMainView: View {
                 onRunDiagnostics: runPasteboardDiagnostics
             )
         }
-        .sheet(isPresented: $showingNewDocumentSetup) {
-            NewDocumentSetupView(
-                isPresented: $showingNewDocumentSetup,
-                onDocumentCreated: { newDocument, suggestedURL in
-                    // Replace current document with new one
-                    loadImportedDocument(newDocument)
-                    print("✅ Created new document with custom settings")
-                }
-            )
-        }
+        // New Document Setup has moved to its own WindowGroup; remove sheet
         .sheet(isPresented: $showingDocumentSettings) {
             DocumentSettingsView(document: document)
         }
@@ -882,10 +873,11 @@ struct DocumentBasedMainView: View {
             // Connect document to menu system
             documentState.setDocument(document)
             
-            // If app-level onNew() requested setup, present it once for this new document
-            if appState.showSetupOnNewDoc {
-                showingNewDocumentSetup = true
-                appState.showSetupOnNewDoc = false
+            // If a New Document was configured in the setup window, apply it now
+            if let configured = appState.pendingNewDocument {
+                loadImportedDocument(configured)
+                appState.pendingNewDocument = nil
+                print("✅ Applied pending new document settings from setup window")
             }
             
             // Defer fit to page operation to prevent blocking
@@ -1818,13 +1810,8 @@ struct logos_inken_ioApp: App {
     }
     
     func onNew() {
-        // Trigger new document creation and mark to show setup on first appear
-        
-        if !appState.showSetupOnNewDoc {
-            appState.showSetupOnNewDoc = true
-            NSDocumentController.shared.newDocument(nil)
-        }
-       
+        // Open dedicated setup window instead of creating a new tabbed document
+        openWindow(id: "new-document-setup")
     }
     
     var body: some Scene {
@@ -1861,12 +1848,12 @@ struct logos_inken_ioApp: App {
         .commands {
             // Create a fully custom File menu
             
-            CommandGroup(before: .newItem) {
-                Button("New Document Setup") {
-                    self.onNew()
-                }
-                .keyboardShortcut("n", modifiers: [.command])
-            }
+//            CommandGroup(before: .newItem) {
+//                Button("New Document Setup") {
+//                    self.onNew()
+//                }
+//                .keyboardShortcut("n", modifiers: [.command])
+//            }
             
             CommandGroup(before: .importExport) {
                 Button("Save As...") {
@@ -2388,6 +2375,31 @@ struct logos_inken_ioApp: App {
                         window.delegate = GradientHUDWindowDelegate.shared
                     }
                 })
+        }
+        .windowResizability(.contentSize)
+        
+        // NEW DOCUMENT SETUP WINDOW GROUP (dedicated windows, not in tab bar)
+        WindowGroup("Document Setup", id: "new-document-setup") {
+            NewDocumentSetupView(
+                isPresented: .constant(true),
+                onDocumentCreated: { newDoc, _ in
+                    // Always create a new document window directly without triggering the system file picker
+                    print("🔧 Creating new document window directly via openWindow")
+                    
+                    // Store the configured document settings for the new window to pick up
+                    appState.pendingNewDocument = newDoc
+                    
+                    // Create a new document window using the environment (bypasses system file picker)
+                    openWindow(id: "document")
+                    
+                    // Close the setup window
+                    dismissWindow(id: "new-document-setup")
+                    
+                    print("✅ New document window requested - setup window closed")
+                }
+            )
+            .frame(minWidth: 1000, minHeight: 750)
+            .environment(appState)
         }
         .windowResizability(.contentSize)
         

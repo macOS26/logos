@@ -84,6 +84,12 @@ class AppState {
     // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
+    
+    // MARK: - New Document Pipeline (WindowGroup-based)
+    /// When user completes New Document Setup in its own window, we store the
+    /// configured VectorDocument here. The next created DocumentGroup window
+    /// will detect this and load these settings, then clear the value.
+    var pendingNewDocument: VectorDocument? = nil
 
     // MARK: - New Document Flow
     /// When true, the next opened document will present the New Document Setup sheet on appear

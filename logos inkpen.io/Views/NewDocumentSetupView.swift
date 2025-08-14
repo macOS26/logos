@@ -71,6 +71,7 @@ struct NewDocumentSetupView: View {
     // Skip the very next unit conversion triggered by a programmatic unit change (e.g., Quick Size)
     @State private var skipNextUnitConversion = false
     @Environment(AppState.self) private var appState
+    @Environment(\.dismissWindow) private var dismissWindow
     
     // Removed TemplateManager usage
     
@@ -97,7 +98,6 @@ struct NewDocumentSetupView: View {
             // Professional Footer (compact, clean)
             professionalFooter
         }
-        .frame(width: 1000, height: 700)
         .background(Color.ui.windowBackground)
         .onAppear {
             generateDocumentPreview()
@@ -133,7 +133,7 @@ struct NewDocumentSetupView: View {
                 Spacer()
                 
                 // Close Button
-                Button(action: { isPresented = false }) {
+                Button(action: { dismissWindow() }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
@@ -421,7 +421,7 @@ struct NewDocumentSetupView: View {
                 Spacer()
                 
                 Button("Cancel") {
-                    isPresented = false
+                    dismissWindow()
                 }
                 .buttonStyle(ProfessionalSecondaryButtonStyle())
                 
