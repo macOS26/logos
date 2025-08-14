@@ -237,7 +237,7 @@ class VectorDocument: ObservableObject, Codable {
     // CRITICAL FIX: Shared state to prevent double transformations  
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
     @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
-    @Published var currentTool: DrawingTool = .selection
+    @Published var currentTool: DrawingTool = .brush
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
     @Published var shearAnchor: ShearAnchor = .center // NEW: Shear anchor point selection
@@ -369,7 +369,7 @@ class VectorDocument: ObservableObject, Codable {
         self.selectedShapeIDs = []
         self.selectedTextIDs = [] // PROFESSIONAL TEXT SUPPORT
         self.textObjects = [] // PROFESSIONAL TEXT OBJECTS
-        self.currentTool = .selection
+        self.currentTool = .brush
         self.scalingAnchor = .center
         self.viewMode = .color
         self.zoomLevel = 1.0
@@ -2942,8 +2942,8 @@ class VectorDocument: ObservableObject, Codable {
         var subpaths: [CGPath] = []
         var currentPath = CGMutablePath()
         
-        cgPath.applyWithBlock { elementPtr in
-            let element = elementPtr.pointee
+        cgPath.applyWithBlock { elementPointer in
+            let element = elementPointer.pointee
             
             switch element.type {
             case .moveToPoint:

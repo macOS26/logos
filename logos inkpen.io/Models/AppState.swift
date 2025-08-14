@@ -41,7 +41,7 @@ class AppState {
     }
     
     // MARK: - Default Tool Setting (Persistent across app launches)
-    var defaultTool: DrawingTool = .selection {
+    var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
             Log.debug("🛠️ Default tool changed to: \(defaultTool.rawValue)")
@@ -154,7 +154,8 @@ class AppState {
             self.defaultTool = tool
             Log.debug("🛠️ Loaded saved default tool: \(tool.rawValue)")
         } else {
-            Log.debug("🛠️ Using default tool: selection")
+            self.defaultTool = .brush
+            Log.debug("🛠️ Using default tool: brush")
         }
         
         // Load saved pressure sensitivity setting

@@ -1712,13 +1712,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
-        // Return true to enable proper document-based app behavior
-        return true
+        // Return false to prevent the Open Dialog, but we'll handle document creation ourselves
+        print("📄 App: Intercepting untitled file creation - will show New Document Setup Window instead")
+        return false
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // If no windows are visible, create a new document
+        // If no windows are visible, let DocumentGroup handle document creation
         if !flag {
+            print("📄 App: App reopened with no visible windows, DocumentGroup will handle document creation")
             return true
         }
         return false
@@ -1809,12 +1811,36 @@ struct logos_inken_ioApp: App {
         print("🔧 Metal Engine Status: \(metalWorking ? "✅ Working" : "❌ Failed")")
     }
     
+
+    
     func onNew() {
         // Open dedicated setup window instead of creating a new tabbed document
         openWindow(id: "new-document-setup")
     }
     
     var body: some Scene {
+        // ONBOARDING: Show New Document Setup Window when no documents exist
+        WindowGroup("Document Setup", id: "onboarding-setup") {
+            NewDocumentSetupView(
+                isPresented: .constant(true),
+                onDocumentCreated: { newDoc, _ in
+                    // Store the configured document settings
+                    appState.pendingNewDocument = newDoc
+                    
+                    // Close this onboarding window
+                    dismissWindow(id: "onboarding-setup")
+                    
+                    // Create a new document using DocumentGroup
+                    NSDocumentController.shared.newDocument(nil)
+                }
+            )
+            .environment(appState)
+        }
+        .defaultSize(width: 800, height: 600)
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+        .defaultPosition(.center)
+
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
             DocumentBasedContentView(inkpenDocument: file.$document, fileURL: file.fileURL)
@@ -1827,76 +1853,36 @@ struct logos_inken_ioApp: App {
                         dismissWindow: { id in dismissWindow(id: id) }
                     )
                 }
-                .background(WindowAccessor { window in
-                    // Ensure document windows prefer tabbing
-                    window?.tabbingMode = .preferred
-                    // When a new document window appears, make that window's tab active
-                    if let w = window, let tabGroup = w.tabGroup {
-                        tabGroup.selectedWindow = w
-                        w.makeKeyAndOrderFront(nil)
-                    }
-                    // Ensure the first document shows the tab bar so the + button is visible
-                    let firstTabBarKey = "firstDocTabBarShown"
-                    if let w = window, !UserDefaults.standard.bool(forKey: firstTabBarKey) {
-                        w.perform(#selector(NSWindow.toggleTabBar(_:)), with: nil)
-                        UserDefaults.standard.set(true, forKey: firstTabBarKey)
-                    }
-                })
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
+
         .commands {
             // Create a fully custom File menu
             
-//            CommandGroup(before: .newItem) {
-//                Button("New Document Setup") {
-//                    self.onNew()
-//                }
-//                .keyboardShortcut("n", modifiers: [.command])
-//            }
-            
-            CommandGroup(before: .importExport) {
-                Button("Save As...") {
-                    NSApp.sendAction(#selector(NSDocument.saveAs(_:)), to: nil, from: nil)
+            CommandGroup(before: .newItem) {
+                Button("New Document Setup") {
+                    self.onNew()
                 }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
+                .keyboardShortcut("n", modifiers: [.command])
+                .help("Create a new document with custom settings")
             }
             
-            
             CommandGroup(replacing: .importExport) {
-                //                Button("New Document") {
-                //                    NSDocumentController.shared.newDocument(nil)
-                //                }
-                //                .keyboardShortcut("n", modifiers: [.command])
-                //                .help("Create a new document")
-                //
-                //                Divider()
-                //
-                //                Button("Open…") {
-                //                    NSDocumentController.shared.openDocument(nil)
-                //                }
-                //                .keyboardShortcut("o", modifiers: [.command])
-                //                .help("Open an existing document")
+                Button("Open…") {
+                    NSApp.sendAction(#selector(NSDocumentController.openDocument(_:)), to: nil, from: nil)
+                }
+                .keyboardShortcut("o", modifiers: [.command])
+                .help("Open an existing document")
+                
+                Divider()
                 
                 Button("Import…") {
                     documentState?.showImportDialog()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
-                
-                //     Divider()
-                
-                //                Button("Close") {
-                //                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
-                //                }
-                //                .keyboardShortcut("w", modifiers: [.command])
-                //
-                //                Button("Save") {
-                //                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
-                //                }
-                //                .keyboardShortcut("s", modifiers: [.command])
-                //
-                
+  
             }
             
             // Application Menu commands (appears under the app name)
@@ -2378,31 +2364,6 @@ struct logos_inken_ioApp: App {
         }
         .windowResizability(.contentSize)
         
-        // NEW DOCUMENT SETUP WINDOW GROUP (dedicated windows, not in tab bar)
-        WindowGroup("Document Setup", id: "new-document-setup") {
-            NewDocumentSetupView(
-                isPresented: .constant(true),
-                onDocumentCreated: { newDoc, _ in
-                    // Always create a new document window directly without triggering the system file picker
-                    print("🔧 Creating new document window directly via openWindow")
-                    
-                    // Store the configured document settings for the new window to pick up
-                    appState.pendingNewDocument = newDoc
-                    
-                    // Create a new document window using the environment (bypasses system file picker)
-                    openWindow(id: "document")
-                    
-                    // Close the setup window
-                    dismissWindow(id: "new-document-setup")
-                    
-                    print("✅ New document window requested - setup window closed")
-                }
-            )
-            .frame(minWidth: 1000, minHeight: 750)
-            .environment(appState)
-        }
-        .windowResizability(.contentSize)
-        
         // Preferences window
         Window("Preferences", id: "app-preferences") {
             PreferencesView()
@@ -2564,3 +2525,7 @@ struct ClipboardData: Codable {
     let shapes: [VectorShape]
     let texts: [VectorText]
 }
+
+
+
+// MARK: - App Structure
