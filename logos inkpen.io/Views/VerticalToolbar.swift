@@ -1235,7 +1235,6 @@ struct ColorSwatchGrid: View {
                 .focusable(false)
                 .help("Current Stroke Color: \(currentStrokeColor) (Opacity: \(Int(currentStrokeOpacity * 100))%) - Click to make active")
                 .offset(x: 6, y: 6)  // Bottom-right offset
-                
                 // Fill color (foreground, top-left)
                 Button {
                     document.activeColorTarget = .fill
@@ -1302,8 +1301,9 @@ struct ColorSwatchGrid: View {
                 .offset(x: -6, y: -6)  // Top-left offset
             }
 			.frame(width: 28, height: 28)  // Total frame to contain both squares
-            .padding(.bottom, 8)
-            
+            .padding(.bottom, 6)
+            .padding(.top, 8)
+
             // Color Swatches
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
