@@ -35,6 +35,7 @@ struct MainView: View {
     
     // MARK: - Development Views State (moved to AppState)
     
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         ZStack {
             // Main app layout
@@ -378,12 +379,10 @@ struct MainView: View {
             }
         }
         .focusedSceneObject(documentState)
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            // Update menu states when app becomes active
-            documentState.setDocument(document)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
-            // Note: Menu states now update automatically via @Published properties
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                documentState.setDocument(document)
+            }
         }
     }
     

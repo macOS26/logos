@@ -159,6 +159,22 @@ struct ShapeView: View {
                         .fill(ImagePaint(image: swiftImage, sourceRect: CGRect(x: 0, y: 0, width: 1, height: 1), scale: 1.0))
                         .opacity(shape.opacity)
                         .transformEffect(shape.transform)
+                } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                    // Attempt late hydration if not yet in registry
+                    if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+                        let swiftImage = Image(nsImage: hydrated)
+                        let rectPath = Path(CGRect(origin: .zero, size: shape.bounds.size))
+                        rectPath
+                            .fill(ImagePaint(image: swiftImage, sourceRect: CGRect(x: 0, y: 0, width: 1, height: 1), scale: 1.0))
+                            .opacity(shape.opacity)
+                            .transformEffect(shape.transform)
+                    } else {
+                        // Optional visual placeholder (dashed rect) when link missing
+                        let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))
+                        placeholder
+                            .stroke(Color.gray.opacity(0.5), style: SwiftUI.StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .transformEffect(shape.transform)
+                    }
                 } else {
                     // REGULAR SHAPE RENDERING: Pre-transform the path with caching
                     // PERFORMANCE OPTIMIZATION: Create path only once per shape

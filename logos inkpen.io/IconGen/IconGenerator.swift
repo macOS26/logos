@@ -15,6 +15,9 @@ class DocumentIconGenerator {
     
     private init() {}
     
+    // Configuration: disabled by default to avoid sandbox/permission issues when writing next to the document
+    var enableSVGSidecarPreviews: Bool = false
+    
     // MARK: - Document Icon Generation
     
     func generateDocumentIcon(for document: VectorDocument, size: CGSize = CGSize(width: 256, height: 256)) -> NSImage {
@@ -359,15 +362,19 @@ class DocumentIconGenerator {
         // Set the custom icon for the file
         NSWorkspace.shared.setIcon(icon, forFile: url.path, options: [])
 
-        // Also write SVG preview sidecar for Finder/QuickLook workflows
+        // Optionally write SVG preview sidecar for Finder/QuickLook workflows when enabled
         // Example: MyDoc.inkpen -> MyDoc.inkpen.svg
-        let svgPreview = generateInkpenPreview(for: document)
-        let previewURL = previewSidecarURL(for: url)
-        do {
-            try svgPreview.write(to: previewURL, atomically: true, encoding: .utf8)
-            print("✅ Wrote SVG preview sidecar: \(previewURL.path)")
-        } catch {
-            print("❌ Failed to write SVG preview sidecar: \(error.localizedDescription)")
+        if enableSVGSidecarPreviews {
+            let svgPreview = generateInkpenPreview(for: document)
+            let previewURL = previewSidecarURL(for: url)
+            do {
+                try svgPreview.write(to: previewURL, atomically: true, encoding: .utf8)
+                print("✅ Wrote SVG preview sidecar: \(previewURL.path)")
+            } catch {
+                print("❌ Failed to write SVG preview sidecar: \(error.localizedDescription)")
+            }
+        } else {
+            print("ℹ️ Skipping SVG preview sidecar write (disabled). File icon was updated.")
         }
     }
     

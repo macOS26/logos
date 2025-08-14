@@ -403,7 +403,7 @@ class VectorImportManager {
             )
         }
         let size = nsImage.size
-        let rectShape = VectorShape(
+        var rectShape = VectorShape(
             name: "[IMG] \(url.lastPathComponent)",
             path: VectorPath(elements: [
                 .move(to: VectorPoint(0, 0)),
@@ -416,6 +416,12 @@ class VectorImportManager {
             fillStyle: FillStyle(color: .clear),
             transform: .identity
         )
+        // Default behavior: store a linked path (relative to chosen base later on save)
+        rectShape.linkedImagePath = url.path
+        // Also store a security-scoped bookmark when possible (DocumentGroup sandbox)
+        if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) {
+            rectShape.linkedImageBookmarkData = bookmark
+        }
         ImageContentRegistry.register(image: nsImage, for: rectShape.id)
         let meta = VectorImportMetadata(
             originalFormat: .pdf, // placeholder; not used for raster
@@ -5283,6 +5289,13 @@ class FileOperations {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         
+        // Before encoding, ensure raster shapes carry link info by default
+        // Rule: default to linked path; embedding happens via explicit menu action elsewhere.
+        // We cannot mutate the live document here; instead, we rely on the model fields already being set
+        // during import or explicit actions. We do, however, set the base directory for path resolution.
+        let baseDir = url.deletingLastPathComponent()
+        ImageContentRegistry.setBaseDirectoryURL(baseDir)
+        
         do {
             let jsonData = try encoder.encode(document)
             try jsonData.write(to: url)
@@ -5303,6 +5316,17 @@ class FileOperations {
             
             let document = try decoder.decode(VectorDocument.self, from: jsonData)
             print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+            // After decoding, hydrate raster images from embedded data or linked paths
+            ImageContentRegistry.setBaseDirectoryURL(url.deletingLastPathComponent())
+            for layer in document.layers {
+                for shape in layer.shapes {
+                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                }
+            }
+            // Trigger UI refresh after hydration
+            DispatchQueue.main.async {
+                document.objectWillChange.send()
+            }
             return document
         } catch {
             print("❌ JSON import failed: \(error)")
@@ -5320,6 +5344,17 @@ class FileOperations {
         do {
             let document = try decoder.decode(VectorDocument.self, from: data)
             print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+            // Note: Without a file URL, we cannot resolve relative paths. Embedded images will still load.
+            ImageContentRegistry.setBaseDirectoryURL(nil)
+            for layer in document.layers {
+                for shape in layer.shapes {
+                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                }
+            }
+            // Trigger UI refresh after hydration
+            DispatchQueue.main.async {
+                document.objectWillChange.send()
+            }
             return document
         } catch {
             print("❌ JSON data import failed: \(error)")

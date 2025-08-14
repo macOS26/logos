@@ -63,7 +63,7 @@ struct StrokeStyle: Codable, Hashable {
     var opacity: Double // PROFESSIONAL STROKE TRANSPARENCY
     var blendMode: BlendMode // PROFESSIONAL STROKE BLEND MODES
     
-    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .outside, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = color
         self.width = width
         self.placement = placement
@@ -78,7 +78,7 @@ struct StrokeStyle: Codable, Hashable {
     // MARK: - Gradient Support
     
     /// Create a stroke style with a gradient
-    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .outside, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = .gradient(gradient)
         self.width = width
         self.placement = placement
@@ -253,6 +253,14 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var opacity: Double
     var blendMode: BlendMode
     var bounds: CGRect
+    
+    // MARK: - Raster Image Persistence (optional)
+    /// If this shape represents a placed image, persist either a link or embedded data.
+    /// Default behavior is to save `linkedImagePath` only; embedding is user-triggered.
+    var embeddedImageData: Data? = nil
+    var linkedImagePath: String? = nil
+    /// Optional: Security-scoped bookmark for linked image (required for sandboxed access across launches)
+    var linkedImageBookmarkData: Data? = nil
     
     // MARK: - Group Properties
     var isGroup: Bool
@@ -563,6 +571,11 @@ struct VectorShape: Codable, Hashable, Identifiable {
         originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
         cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
         
+        // NEW: Raster image persistence
+        embeddedImageData = try container.decodeIfPresent(Data.self, forKey: .embeddedImageData)
+        linkedImagePath = try container.decodeIfPresent(String.self, forKey: .linkedImagePath)
+        linkedImageBookmarkData = try container.decodeIfPresent(Data.self, forKey: .linkedImageBookmarkData)
+        
         // Removed excessive logging for performance
     }
     
@@ -571,6 +584,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         case isGroup, groupedShapes, groupTransform, isCompoundPath, isWarpObject, originalPath, warpEnvelope, originalEnvelope
         case isRoundedRectangle, originalBounds, cornerRadii
         case isClippingPath, clippedByShapeID
+        case embeddedImageData, linkedImagePath, linkedImageBookmarkData
     }
 }
 

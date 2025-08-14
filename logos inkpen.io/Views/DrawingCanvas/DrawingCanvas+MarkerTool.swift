@@ -52,6 +52,7 @@ extension DrawingCanvas {
         let strokeStyle = strokeColor != nil ? StrokeStyle(
             color: markerStrokeColor,
             width: strokeWidth,
+            placement: .outside,
             lineCap: .round,
             lineJoin: .round,
             opacity: markerOpacity
@@ -173,6 +174,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = strokeColor != nil ? StrokeStyle(
                 color: markerStrokeColor,
                 width: strokeWidth,
+                placement: .outside,
                 lineCap: .round,
                 lineJoin: .round,
                 opacity: markerOpacity
@@ -277,6 +279,7 @@ extension DrawingCanvas {
             finalShape.strokeStyle = strokeColor != nil ? StrokeStyle(
                 color: markerStrokeColor,
                 width: strokeWidth,
+                placement: .outside,
                 lineCap: .round,
                 lineJoin: .round,
                 opacity: markerOpacity

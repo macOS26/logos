@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AppKit
 
 // MARK: - Units
 enum MeasurementUnit: String, CaseIterable, Codable {
@@ -348,9 +349,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var currentMarkerFeathering: Double = 0.3 // Marker edge feathering (0.0-1.0)
     @Published var currentMarkerTaperStart: Double = 0.1 // Marker start taper (0.0-0.5)
     @Published var currentMarkerTaperEnd: Double = 0.1 // Marker end taper (0.0-0.5)
-    @Published var markerUseFillAsStroke: Bool = false // When enabled, uses fill color as stroke color for marker
+    @Published var markerUseFillAsStroke: Bool = true // Default ON: use fill color for both fill and stroke for marker
     @Published var markerApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
-    @Published var markerRemoveOverlap: Bool = false // When enabled, applies union operation to merge overlapping parts
+    @Published var markerRemoveOverlap: Bool = true // Default ON: union overlapping parts of same marker shape
     
     // BRUSH SETTINGS (Variable width brush strokes)
     
@@ -929,6 +930,11 @@ class VectorDocument: ObservableObject, Codable {
         for shape in originalLayer.shapes {
             var duplicatedShape = shape
             duplicatedShape.id = UUID() // New unique ID
+            // If this shape carries raster content, duplicate the image registry entry to the new ID
+            if ImageContentRegistry.containsImage(shape),
+               let image = ImageContentRegistry.image(for: shape.id) {
+                ImageContentRegistry.register(image: image, for: duplicatedShape.id)
+            }
             duplicatedLayer.shapes.append(duplicatedShape)
         }
         
@@ -1171,6 +1177,11 @@ class VectorDocument: ObservableObject, Codable {
         for shape in shapesToDuplicate {
             var newShape = shape
             newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate
+            // Duplicate raster content mapping when present
+            if ImageContentRegistry.containsImage(shape),
+               let image = ImageContentRegistry.image(for: shape.id) {
+                ImageContentRegistry.register(image: image, for: newShape.id)
+            }
             
             // PROFESSIONAL COORDINATE SYSTEM: Apply offset to actual coordinates instead of using transform
             // This ensures object origin follows object position

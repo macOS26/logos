@@ -62,9 +62,20 @@ class GradientHUDWindowDelegate: NSObject, NSWindowDelegate {
     }
 }
 
-// MARK: - Cleanup Notifications
-extension Notification.Name {
-    static let forceDocumentStateCleanup = Notification.Name("forceDocumentStateCleanup")
+// MARK: - DocumentState Registry (replaces notifications)
+final class DocumentStateRegistry {
+    static let shared = DocumentStateRegistry()
+    private let table = NSHashTable<DocumentState>.weakObjects()
+    private let lock = NSLock()
+    private init() {}
+    func register(_ state: DocumentState) {
+        lock.lock(); defer { lock.unlock() }
+        table.add(state)
+    }
+    func forceCleanupAll() {
+        lock.lock(); let states = table.allObjects; lock.unlock()
+        for state in states { state.forceCleanup() }
+    }
 }
 
 // MARK: - InkpenDocument for DocumentGroup (ADDITION - not replacement)
@@ -134,6 +145,7 @@ class DocumentState: ObservableObject {
     @Published var canReleaseLoopingPath = false
     @Published var canUnwrapWarpObject = false
     @Published var canExpandWarpObject = false
+    @Published var canEmbedLinkedImages = false
     
     private var cancellables = Set<AnyCancellable>()
     private var isTerminating = false
@@ -142,19 +154,12 @@ class DocumentState: ObservableObject {
         print("🎯 DocumentState initialized with automatic menu state updates")
         // Defer observer setup until document is set to prevent blocking during launch
         
-        // Listen for forced cleanup notification
-        NotificationCenter.default.addObserver(
-            forName: .forceDocumentStateCleanup,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.forceCleanup()
-        }
+        // Register with central registry (no notifications)
+        DocumentStateRegistry.shared.register(self)
     }
     
     deinit {
         // CRITICAL: Clean up all subscriptions to prevent retain cycles
-        NotificationCenter.default.removeObserver(self)
         cancellables.removeAll()
         print("🎯 DocumentState deallocated - subscriptions cleaned up")
     }
@@ -284,6 +289,15 @@ class DocumentState: ObservableObject {
         canExpandWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
             document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
         }
+        // Links menu enablement: any selected shape with a linked image or a raster image in registry
+        canEmbedLinkedImages = {
+            let selected = document.getShapesByIds(document.selectedShapeIDs)
+            for s in selected {
+                if s.linkedImagePath != nil { return true }
+                if ImageContentRegistry.containsImage(s) { return true }
+            }
+            return false
+        }()
         
         // Removed excessive logging per user request
     }
@@ -557,6 +571,45 @@ class DocumentState: ObservableObject {
         updateAllStates()
         print("📝 MENU: Converted selected text to outlines")
     }
+
+    // MARK: - Links Commands
+    func embedSelectedLinkedImages() {
+        guard let document = document else { return }
+        var anyEmbedded = false
+        for layerIndex in document.layers.indices {
+            for shapeIndex in document.layers[layerIndex].shapes.indices {
+                var shape = document.layers[layerIndex].shapes[shapeIndex]
+                guard document.selectedShapeIDs.contains(shape.id) else { continue }
+                // Obtain image either from registry or from linked path
+                var nsImage: NSImage? = ImageContentRegistry.image(for: shape.id)
+                if nsImage == nil, let path = shape.linkedImagePath {
+                    let url = URL(fileURLWithPath: NSString(string: path).expandingTildeInPath)
+                    nsImage = NSImage(contentsOf: url)
+                    if let img = nsImage { ImageContentRegistry.register(image: img, for: shape.id) }
+                }
+                guard let image = nsImage else { continue }
+                // Create PNG data preferred; fallback to TIFF if needed
+                var embedded: Data? = nil
+                if let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                    embedded = rep.representation(using: .png, properties: [:])
+                    if embedded == nil { embedded = tiff }
+                }
+                if embedded == nil, let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    let rep = NSBitmapImageRep(cgImage: cg)
+                    embedded = rep.representation(using: .png, properties: [:])
+                }
+                guard let data = embedded else { continue }
+                shape.embeddedImageData = data
+                // Keep link path for reference; user can manually clear if desired
+                document.layers[layerIndex].shapes[shapeIndex] = shape
+                anyEmbedded = true
+            }
+        }
+        if anyEmbedded {
+            print("🧩 Embedded linked images into document for selected shapes")
+        }
+        updateAllStates()
+    }
     
     // MARK: - Path Cleanup Commands (Professional Tools)
     func cleanupDuplicatePoints() {
@@ -747,6 +800,17 @@ struct DocumentBasedMainView: View {
                 }
             )
         }
+        .onAppear {
+            // Hydrate linked images when opened via DocumentGroup (where init lacks URL context)
+            if let url = fileURL {
+                ImageContentRegistry.setBaseDirectoryURL(url.deletingLastPathComponent())
+                for layer in document.layers {
+                    for shape in layer.shapes {
+                        _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                    }
+                }
+            }
+        }
         .onChange(of: fileURL) { newURL in
             // When DocumentGroup completes Save As, the fileURL updates.
             // Generate the custom icon and SVG sidecar preview at that path.
@@ -828,10 +892,7 @@ struct DocumentBasedMainView: View {
             print("📄 DocumentBasedMainView disappearing - cleaning up DocumentState")
             documentState.cleanup()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .forceDocumentStateCleanup)) { _ in
-            // Handle forced cleanup during app termination
-            documentState.forceCleanup()
-        }
+        // Cleanup is triggered directly by the AppDelegate via DocumentStateRegistry
         .focusedSceneObject(documentState)
     }
     
@@ -1644,8 +1705,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         print("📄 App: Application should terminate - starting graceful shutdown")
         
-        // Notify all DocumentState instances to stop updating immediately
-        NotificationCenter.default.post(name: .forceDocumentStateCleanup, object: nil)
+        // Directly instruct all DocumentState instances to stop updating immediately
+        DocumentStateRegistry.shared.forceCleanupAll()
         
         // Allow a brief moment for cleanup to complete
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -1697,8 +1758,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Force cleanup of any DocumentState instances that might still have active subscriptions
         print("📄 App: Forcing cleanup of all DocumentState instances")
         
-        // Post a notification to force all DocumentState instances to clean up
-        NotificationCenter.default.post(name: .forceDocumentStateCleanup, object: nil)
+        // Directly force cleanup of all DocumentState instances
+        DocumentStateRegistry.shared.forceCleanupAll()
         
         // Give a brief moment for cleanup to complete
         RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
@@ -1764,6 +1825,14 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("n", modifiers: [.command])
                 .help("Create a new document")
+
+					Divider()
+
+					Button("Open…") {
+						NSDocumentController.shared.openDocument(nil)
+					}
+					.keyboardShortcut("o", modifiers: [.command])
+					.help("Open an existing document")
             }
 
             // Application Menu commands (appears under the app name)
@@ -2012,6 +2081,17 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(!(documentState?.document?.selectedTextIDs.isEmpty == false))
                 .help("Convert selected text objects to vector outlines")
+                
+                Divider()
+                
+                // Links submenu for image handling
+                Menu("Links") {
+                    Button("Embed Linked Images in Selection") {
+                        documentState?.embedSelectedLinkedImages()
+                    }
+                    .disabled(documentState?.canEmbedLinkedImages != true)
+                    .help("Embed the image data into the document for portability. Default behavior keeps links.")
+                }
                 
                 Divider()
                 
