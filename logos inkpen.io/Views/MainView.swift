@@ -964,29 +964,29 @@ struct MainToolbarContent: ToolbarContent {
         ToolbarItemGroup(placement: .automatic) {
             // File Operations
             Menu {
-//                Button("New Document") {
-//                    onNew()
-//                }
-//                .keyboardShortcut("n", modifiers: [.command])
-//                
-//                Button("Open Document") {
-//                    onOpen()
-//                }
-//                .keyboardShortcut("o", modifiers: [.command])
-//                
-//                Divider()
-//                
-//                Button("Save") {
-//                    onSave()
-//                }
-//                .keyboardShortcut("s", modifiers: [.command])
-//                
-//                Button("Save As...") {
-//                    onSaveAs()
-//                }
-//                .keyboardShortcut("s", modifiers: [.command, .shift])
-//                
-//                Divider()
+                Button("New Document") {
+                    onNew()
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                
+                Button("Open Document") {
+                    onOpen()
+                }
+                .keyboardShortcut("o", modifiers: [.command])
+                
+                Divider()
+                
+                Button("Save") {
+                    onSave()
+                }
+                .keyboardShortcut("s", modifiers: [.command])
+                
+                Button("Save As...") {
+                    onSaveAs()
+                }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+                
+                Divider()
                 
                 Menu("Export") {
                     Button("Export as DWG (AutoCAD)") {
@@ -1120,24 +1120,9 @@ struct MainToolbarContent: ToolbarContent {
             }
             .help("Document Settings")
             
-            // Color Picker (removed)
             
-            // Import Vector Graphics
-            Button {
-                showingImportDialog = true
-            } label: {
-                Image(systemName: "folder.badge.plus")
-            }
-            .help("Import SVG, PDF, Adobe Illustrator (.ai), EPS, PostScript (.ps), and DWF files")
-            
-            // Debug: Run Pasteboard Diagnostics
-            Button {
-                onRunDiagnostics()
-            } label: {
-                Image(systemName: "wrench.and.screwdriver")
-            }
-            .help("Run Pasteboard Diagnostics (Debug)")
-            
+          
+
             if showingImportProgress {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .blue))

@@ -2033,41 +2033,36 @@ struct logos_inken_ioApp: App {
 
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
-                // Import Section
-                Button("Import…") {
-                    documentState?.showImportDialog()
-                }
-                .keyboardShortcut("i", modifiers: [.command])
-                .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
-                
-                Divider()
-
                 // Arrange Section
-                Button("Bring to Front") {
-                    documentState?.bringToFront()
-                }
-                .keyboardShortcut("]", modifiers: [.command, .shift])
-                .disabled(documentState?.hasSelection != true)
                 
-                Button("Bring Forward") {
-                    documentState?.bringForward()
+                Menu("Arrange") {
+                    Button("Bring to Front") {
+                        documentState?.bringToFront()
+                    }
+                    .keyboardShortcut("]", modifiers: [.command, .shift])
+                    .disabled(documentState?.hasSelection != true)
+                    
+                    Button("Bring Forward") {
+                        documentState?.bringForward()
+                    }
+                    .keyboardShortcut("]", modifiers: [.command])
+                    .disabled(documentState?.hasSelection != true)
+                    
+                    Button("Send Backward") {
+                        documentState?.sendBackward()
+                    }
+                    .keyboardShortcut("[", modifiers: [.command])
+                    .disabled(documentState?.hasSelection != true)
+                    
+                    Button("Send to Back") {
+                        documentState?.sendToBack()
+                    }
+                    .keyboardShortcut("[", modifiers: [.command, .shift])
+                    .disabled(documentState?.hasSelection != true)
+                    
                 }
-                .keyboardShortcut("]", modifiers: [.command])
-                .disabled(documentState?.hasSelection != true)
-                
-                Button("Send Backward") {
-                    documentState?.sendBackward()
-                }
-                .keyboardShortcut("[", modifiers: [.command])
-                .disabled(documentState?.hasSelection != true)
-                
-                Button("Send to Back") {
-                    documentState?.sendToBack()
-                }
-                .keyboardShortcut("[", modifiers: [.command, .shift])
-                .disabled(documentState?.hasSelection != true)
-                
-                Divider()
+              
+              
                 
                 // Group Section
                 Button("Group") {
@@ -2265,7 +2260,7 @@ struct logos_inken_ioApp: App {
             }
             
             // VIEW MENU - Zoom and View Mode using DocumentState (no more notifications!)
-            CommandGroup(before: .appVisibility) {
+            CommandGroup(replacing: .sidebar) {
                 
                 Button("Zoom In") {
                     documentState?.zoomIn()
@@ -2554,7 +2549,7 @@ struct logos_inken_ioApp: App {
                 .help("Switch to corner radius tool")
             }
             
-            CommandGroup(replacing: .saveItem) {}
+            
 
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState
