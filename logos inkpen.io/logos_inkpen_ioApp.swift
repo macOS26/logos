@@ -1844,8 +1844,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
         .commands {
             // Create a fully custom File menu
-            
-            
+           
             
             CommandGroup(before: .importExport) {
                 Button("Save As...") {
@@ -1854,8 +1853,7 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("s", modifiers: [.command, .shift])
             }
            
-            
-            
+      
             CommandGroup(replacing: .importExport) {
 //                Button("New Document") {
 //                    NSDocumentController.shared.newDocument(nil)
@@ -1966,6 +1964,8 @@ struct logos_inken_ioApp: App {
                 Button("Undo") {
                     documentState?.undo()
                 }
+				
+
                 .keyboardShortcut("z", modifiers: [.command])
                 .disabled(documentState?.canUndo != true)
                 
@@ -2020,7 +2020,17 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("a", modifiers: [.command, .shift])
                 .disabled(documentState?.hasSelection != true)
             }
+
+            // Replace Apple's default groups that inject duplicates under Edit
+            CommandGroup(replacing: .pasteboard) {
+                // Empty on purpose. We provide Cut/Copy/Paste above.
+            }
+            CommandGroup(replacing: .textEditing) {
+                // Empty on purpose. We provide Select All/Deselect All above.
+            }
             
+            
+
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
                 // Import Section
@@ -2255,7 +2265,7 @@ struct logos_inken_ioApp: App {
             }
             
             // VIEW MENU - Zoom and View Mode using DocumentState (no more notifications!)
-            CommandMenu("Zoom") {
+            CommandGroup(before: .appVisibility) {
                 
                 Button("Zoom In") {
                     documentState?.zoomIn()
@@ -2543,6 +2553,9 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut(.upArrow, modifiers: [.control])
                 .help("Switch to corner radius tool")
             }
+            
+            CommandGroup(replacing: .saveItem) {}
+
             
             // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState
             // Remove custom development menu to avoid build issues; re-enable if needed.
