@@ -114,6 +114,7 @@ struct HorizontalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
+        var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         
         // Draw ticks and labels
@@ -205,6 +206,12 @@ struct HorizontalRuler: View {
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
 
+                    // Ensure loop visits 5 mm and 10 mm positions even when minors are 12/16 mm
+                    // If desired minor is not a divisor of 5, step by 1 mm to reliably hit 5 mm/10 mm
+                    let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
+                    let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
+                    loopStep = Double(stepMm) * mmPoints
+
                     // Override base major detection and labeling logic for centimeters and millimeters
                     if unit == .centimeters {
                         isMajorTick = isCentimeter
@@ -213,6 +220,14 @@ struct HorizontalRuler: View {
                         // In mm mode, majors are every 10 mm (1 cm). Labels are 10,20,30…
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
+                    }
+
+                    // For minor ticks, respect the desired minor spacing (skip others)
+                    if !isCentimeter && !isHalfCentimeter {
+                        if mmIndex % desiredMinorMm != 0 {
+                            x += loopStep
+                            continue
+                        }
                     }
 
                     if isCentimeter {
@@ -284,7 +299,7 @@ struct HorizontalRuler: View {
                 }
             }
             
-            x += tickSpacing
+            x += loopStep
         }
     }
 }
@@ -353,6 +368,7 @@ struct VerticalRuler: View {
         
         // Determine appropriate tick spacing
         let tickSpacing = calculateTickSpacing(for: unit, zoomLevel: zoomLevel)
+        var loopStep = tickSpacing
         let majorTickInterval = getMajorTickInterval(for: unit, zoomLevel: zoomLevel)
         
         // Draw ticks and labels
@@ -441,6 +457,11 @@ struct VerticalRuler: View {
                     let isCentimeter = (mmIndex % 10 == 0)
                     let isHalfCentimeter = (mmIndex % 5 == 0)
 
+                    // Ensure loop visits 5 mm and 10 mm positions even when minors are 12/16 mm
+                    let desiredMinorMm = max(1, Int(round(tickSpacing / mmPoints)))
+                    let stepMm: Int = (desiredMinorMm % 5 == 0) ? min(desiredMinorMm, 5) : 1
+                    loopStep = Double(stepMm) * mmPoints
+
                     // Override base major detection and labeling logic for centimeters and millimeters
                     if unit == .centimeters {
                         isMajorTick = isCentimeter
@@ -449,6 +470,14 @@ struct VerticalRuler: View {
                         // In mm mode, majors are every 10 mm (1 cm). Labels are 10,20,30…
                         isMajorTick = isCentimeter
                         labelUsesMajor = isCentimeter
+                    }
+
+                    // For minor ticks, respect the desired minor spacing (skip others)
+                    if !isCentimeter && !isHalfCentimeter {
+                        if mmIndex % desiredMinorMm != 0 {
+                            y += loopStep
+                            continue
+                        }
                     }
 
                     if isCentimeter {
@@ -521,7 +550,7 @@ struct VerticalRuler: View {
                 }
             }
             
-            y += tickSpacing
+            y += loopStep
         }
     }
 }
@@ -607,27 +636,33 @@ private func calculateTickSpacing(for unit: MeasurementUnit, zoomLevel: Double) 
             return pointsPerUnit * 2 // 144 points = 2 inch intervals
         }
     case .centimeters:
-        // CM: consistent 1 mm minor spacing where practical; scale out conservatively
+        // CM: base detail at 100% = 1 mm minors
+        // Reduce detail below 100%: 75% → 2 mm, 50% → 4 mm, 24%–<25% → 12 mm, <24% → 16 mm
+        let mmPoints = MeasurementUnit.millimeters.pointsPerUnit
         if zoomLevel >= 1.0 {
-            return pointsPerUnit / 10 // 1 mm
+            return mmPoints * 1      // 1 mm
+        } else if zoomLevel >= 0.75 {
+            return mmPoints * 2      // 2 mm (half as detailed)
         } else if zoomLevel >= 0.5 {
-            return pointsPerUnit / 5  // 2 mm
-        } else if zoomLevel >= 0.25 {
-            return pointsPerUnit / 2  // 5 mm
+            return mmPoints * 4      // 4 mm (quarter detail)
+        } else if zoomLevel >= 0.24 {
+            return mmPoints * 12     // 12 mm for 24%–<25%
         } else {
-            return pointsPerUnit      // 1 cm when zoomed far out
+            return mmPoints * 16     // 16 mm below 24%
         }
     case .millimeters:
-        // Millimeters: same layout as centimeters but in mm units
-        // Full detail at ≥100%: 1 mm minors; scale out to 2/5/10 mm
+        // MM: base detail at 100% = 1 mm minors
+        // Reduce detail below 100%: 75% → 2 mm, 50% → 4 mm, 24%–<25% → 12 mm, <24% → 16 mm
         if zoomLevel >= 1.0 {
-            return pointsPerUnit          // 1 mm
+            return pointsPerUnit * 1   // 1 mm
+        } else if zoomLevel >= 0.75 {
+            return pointsPerUnit * 2   // 2 mm (half as detailed)
         } else if zoomLevel >= 0.5 {
-            return pointsPerUnit * 2      // 2 mm
-        } else if zoomLevel >= 0.25 {
-            return pointsPerUnit * 5      // 5 mm
+            return pointsPerUnit * 4   // 4 mm (quarter detail)
+        } else if zoomLevel >= 0.24 {
+            return pointsPerUnit * 12  // 12 mm for 24%–<25%
         } else {
-            return pointsPerUnit * 10     // 10 mm (1 cm)
+            return pointsPerUnit * 16  // 16 mm below 24%
         }
     case .picas:
         // Minor spacing adapts to keep readable subdivisions under the major scheme above
@@ -775,6 +810,18 @@ struct UnitsConverter {
             return String(format: "%.2f pc", convertedValue)
         }
     }
+}
+
+// Greatest common divisor for integers (Euclidean algorithm)
+private func gcd(_ a: Int, _ b: Int) -> Int {
+    var x = abs(a)
+    var y = abs(b)
+    while y != 0 {
+        let r = x % y
+        x = y
+        y = r
+    }
+    return max(1, x)
 }
 
 // Preview

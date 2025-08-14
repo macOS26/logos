@@ -119,7 +119,7 @@ struct InkpenDocument: FileDocument {
 //// MARK: - AppDelegate to Remove Default Menus
 //final class AppDelegate: NSObject, NSApplicationDelegate {
 //    func applicationWillUpdate(_ notification: Notification) {
-//       
+//
 //    }
 //}
 
@@ -358,7 +358,7 @@ class DocumentState: ObservableObject {
     }
     
     func redo() {
-        document?.redo() 
+        document?.redo()
         updateAllStates()
     }
     
@@ -571,7 +571,7 @@ class DocumentState: ObservableObject {
         updateAllStates()
         print("📝 MENU: Converted selected text to outlines")
     }
-
+    
     // MARK: - Links Commands
     func embedSelectedLinkedImages() {
         guard let document = document else { return }
@@ -715,7 +715,7 @@ struct DocumentBasedMainView: View {
                             .zIndex(1) // CRITICAL: Canvas below panels but above background
                             .allowsHitTesting(true) // CRITICAL: Ensure gesture capture everywhere
                         
-                        // Rulers - CRITICAL: Above canvas but below panels 
+                        // Rulers - CRITICAL: Above canvas but below panels
                         RulersView(document: document, geometry: geometry)
                             .zIndex(50) // CRITICAL: Rulers above canvas but below toolbar/panels
                             .allowsHitTesting(true) // Allow ruler interactions (taps, drags, right-clicks)
@@ -743,9 +743,9 @@ struct DocumentBasedMainView: View {
         .frame(minHeight: 524) // MINIMUM: Ensure overall height accommodates all elements + status bar (500 + 24)
         .toolbar {
             // CUSTOM DOCUMENT TOOLBAR with icon and clickable path navigation
-//            ToolbarItem(placement: .principal) {
-//                DocumentTitleToolbar(fileURL: fileURL)
-//            }
+            //            ToolbarItem(placement: .principal) {
+            //                DocumentTitleToolbar(fileURL: fileURL)
+            //            }
             
             MainToolbarContent(
                 document: document,
@@ -840,7 +840,7 @@ struct DocumentBasedMainView: View {
                 guard let url = urls.first else { return }
                 importVectorFile(from: url)
             case .failure(let error):
-                 print("❌ File import error: \(error)")
+                print("❌ File import error: \(error)")
             }
         }
         .sheet(item: $importResult) { result in
@@ -881,6 +881,12 @@ struct DocumentBasedMainView: View {
             
             // Connect document to menu system
             documentState.setDocument(document)
+            
+            // If app-level onNew() requested setup, present it once for this new document
+            if appState.showSetupOnNewDoc {
+                showingNewDocumentSetup = true
+                appState.showSetupOnNewDoc = false
+            }
             
             // Defer fit to page operation to prevent blocking
             Task {
@@ -1002,8 +1008,8 @@ struct DocumentBasedMainView: View {
     }
     
     private func newDocument() {
-        // Show the new document setup window
-        showingNewDocumentSetup = true
+        // Keep legacy API available; forward to onNew()
+        //onNew()
     }
     
     private func loadImportedDocument(_ importedDoc: VectorDocument) {
@@ -1159,7 +1165,7 @@ struct DocumentBasedMainView: View {
             }
         }
     }
-
+    
     private func runPasteboardDiagnostics() {
         print("🔧 DocumentGroup: Running pasteboard diagnostics")
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
@@ -1169,9 +1175,9 @@ struct DocumentBasedMainView: View {
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "Pasteboard Diagnostics Complete"
-            alert.informativeText = report.overallPassed ? 
-                "✅ All tests PASSED! Pasteboard is working correctly." :
-                "❌ Some tests FAILED. Check the console for detailed results."
+            alert.informativeText = report.overallPassed ?
+            "✅ All tests PASSED! Pasteboard is working correctly." :
+            "❌ Some tests FAILED. Check the console for detailed results."
             alert.alertStyle = report.overallPassed ? .informational : .warning
             alert.runModal()
         }
@@ -1276,9 +1282,9 @@ class StartupCoordinator {
         timeoutTask.cancel()
         
         // Test error handling in development
-        #if DEBUG
+#if DEBUG
         testErrorHandling()
-        #endif
+#endif
         
         print("📄 StartupCoordinator: Startup sequence completed")
     }
@@ -1349,9 +1355,9 @@ class SystemErrorHandler {
         let errorCode = (error as NSError).code
         
         // Check for DetachedSignatures and other system directory access errors
-        if errorDescription.contains("detachedsignatures") || 
-           errorDescription.contains("/private/var/db/") ||
-           errorDescription.contains("no such file or directory") {
+        if errorDescription.contains("detachedsignatures") ||
+            errorDescription.contains("/private/var/db/") ||
+            errorDescription.contains("no such file or directory") {
             
             print("📄 SystemErrorHandler: Detected system directory access error - \(errorDescription)")
             print("📄 SystemErrorHandler: This is likely a code signing verification issue in development")
@@ -1360,33 +1366,33 @@ class SystemErrorHandler {
         }
         
         // Check for RenderBox framework errors
-        if errorDescription.contains("renderbox") || 
-           errorDescription.contains("metallib") ||
-           errorDescription.contains("mach-o") {
+        if errorDescription.contains("renderbox") ||
+            errorDescription.contains("metallib") ||
+            errorDescription.contains("mach-o") {
             print("📄 SystemErrorHandler: Detected RenderBox/Metal framework error - \(errorDescription)")
             print("📄 SystemErrorHandler: This is a system framework loading issue - continuing gracefully")
             return true // Error handled
         }
         
         // Check for persona attributes errors
-        if errorDescription.contains("personaattributes") || 
-           errorDescription.contains("persona type") ||
-           errorDescription.contains("operation not permitted") {
+        if errorDescription.contains("personaattributes") ||
+            errorDescription.contains("persona type") ||
+            errorDescription.contains("operation not permitted") {
             print("📄 SystemErrorHandler: Detected persona attributes error - \(errorDescription)")
             print("📄 SystemErrorHandler: This is a system permission issue - continuing gracefully")
             return true // Error handled
         }
         
         // Check for other common system-level errors that shouldn't block the app
-        if errorDomain == "NSCocoaErrorDomain" && 
-           (errorDescription.contains("file system") || errorDescription.contains("permission")) {
+        if errorDomain == "NSCocoaErrorDomain" &&
+            (errorDescription.contains("file system") || errorDescription.contains("permission")) {
             print("📄 SystemErrorHandler: Detected file system permission error - continuing gracefully")
             return true // Error handled
         }
         
         // Check for NSPOSIXErrorDomain errors with specific codes
-        if errorDomain == "NSPOSIXErrorDomain" && 
-           (errorCode == 1 || errorCode == 2) { // Operation not permitted, No such file or directory
+        if errorDomain == "NSPOSIXErrorDomain" &&
+            (errorCode == 1 || errorCode == 2) { // Operation not permitted, No such file or directory
             print("📄 SystemErrorHandler: Detected POSIX error (code \(errorCode)) - continuing gracefully")
             return true // Error handled
         }
@@ -1549,7 +1555,7 @@ final class StderrFilter {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         removeDefaultSystemMenus()
-
+        
         // Install stderr filter to suppress noisy system-level SQLite warning lines
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
@@ -1564,7 +1570,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             unsetenv("MTL_HUD_ENABLED")
         }
-
+        
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
         
@@ -1580,9 +1586,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Set up a fallback timer to ensure the app doesn't hang
         setupFallbackTimer()
-
-		// Normalize menus shortly after launch (once) so order is correct
-	
+        
+        // Normalize menus shortly after launch (once) so order is correct
+        
     }
     
     private func setupFallbackTimer() {
@@ -1605,49 +1611,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
     }
-
-	// Remove Apple's default menus while keeping our custom ones
-	private func removeDefaultSystemMenus() {
-		DispatchQueue.main.async {
-			guard let mainMenu = NSApp.mainMenu else { return }
-			// Iterate in reverse so indices remain valid while removing
-			
-
-			// Ensure File appears immediately after the app menu, before View
-//			if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "File" }),
-//			   let fileItem = mainMenu.item(at: fileIndex) {
-//				mainMenu.removeItem(at: fileIndex)
-//				mainMenu.insertItem(fileItem, at: 1)
-//			}
-//            
-//            
-//            if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "Edit" }),
-//               let fileItem = mainMenu.item(at: fileIndex) {
-//                mainMenu.removeItem(at: fileIndex)
-//                //mainMenu.insertItem(fileItem, at: 2)
-//            }
-//
-//			// Ensure View sits after Zoom without recreating/losing its submenu/targets
-//			if let viewIndex = mainMenu.items.firstIndex(where: { $0.title == "View" }),
-//			   let viewItem = mainMenu.item(at: viewIndex) {
-//				mainMenu.removeItem(at: viewIndex)
-//				let insertAt = min(mainMenu.numberOfItems, 4)
-//				mainMenu.insertItem(viewItem, at: insertAt)
-//			}
+    
+    // Remove Apple's default menus while keeping our custom ones
+    private func removeDefaultSystemMenus() {
+        DispatchQueue.main.async {
+            guard let mainMenu = NSApp.mainMenu else { return }
+            // Iterate in reverse so indices remain valid while removing
             
-//            for index in stride(from: mainMenu.numberOfItems - 1, through: 0, by: -1) {
-//                guard let item = mainMenu.item(at: index) else { continue }
-//                let title = item.title
-//                if title == "File" {
-//                    let isOurFile = item.submenu?.items.contains { $0.title == "New Document" || $0.title == "Import…" } == true
-//                    if !isOurFile { mainMenu.removeItem(at: index) }
-//                } else if title == "Edit" {
-//                    let isOurEdit = item.submenu?.items.contains { $0.title == "Paste in Back" || $0.title == "Deselect All" } == true
-//                    if !isOurEdit { mainMenu.removeItem(at: index) }
-//                }
-//            }
-		}
-	}
+            
+            // Ensure File appears immediately after the app menu, before View
+            //			if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "File" }),
+            //			   let fileItem = mainMenu.item(at: fileIndex) {
+            //				mainMenu.removeItem(at: fileIndex)
+            //				mainMenu.insertItem(fileItem, at: 1)
+            //			}
+            //
+            //
+            //            if let fileIndex = mainMenu.items.firstIndex(where: { $0.title == "Edit" }),
+            //               let fileItem = mainMenu.item(at: fileIndex) {
+            //                mainMenu.removeItem(at: fileIndex)
+            //                //mainMenu.insertItem(fileItem, at: 2)
+            //            }
+            //
+            //			// Ensure View sits after Zoom without recreating/losing its submenu/targets
+            //			if let viewIndex = mainMenu.items.firstIndex(where: { $0.title == "View" }),
+            //			   let viewItem = mainMenu.item(at: viewIndex) {
+            //				mainMenu.removeItem(at: viewIndex)
+            //				let insertAt = min(mainMenu.numberOfItems, 4)
+            //				mainMenu.insertItem(viewItem, at: insertAt)
+            //			}
+            
+            //            for index in stride(from: mainMenu.numberOfItems - 1, through: 0, by: -1) {
+            //                guard let item = mainMenu.item(at: index) else { continue }
+            //                let title = item.title
+            //                if title == "File" {
+            //                    let isOurFile = item.submenu?.items.contains { $0.title == "New Document" || $0.title == "Import…" } == true
+            //                    if !isOurFile { mainMenu.removeItem(at: index) }
+            //                } else if title == "Edit" {
+            //                    let isOurEdit = item.submenu?.items.contains { $0.title == "Paste in Back" || $0.title == "Deselect All" } == true
+            //                    if !isOurEdit { mainMenu.removeItem(at: index) }
+            //                }
+            //            }
+        }
+    }
     
     private func setupGlobalErrorHandling() {
         // Set up a global exception handler for unhandled errors
@@ -1659,12 +1665,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("📄 GlobalErrorHandler: Reason: \(exceptionReason)")
             
             // Check if this is a system-level error we should handle gracefully
-            if exceptionReason.contains("DetachedSignatures") || 
-               exceptionReason.contains("/private/var/db/") ||
-               exceptionReason.contains("No such file or directory") ||
-               exceptionReason.contains("RenderBox") ||
-               exceptionReason.contains("metallib") ||
-               exceptionReason.contains("personaAttributes") {
+            if exceptionReason.contains("DetachedSignatures") ||
+                exceptionReason.contains("/private/var/db/") ||
+                exceptionReason.contains("No such file or directory") ||
+                exceptionReason.contains("RenderBox") ||
+                exceptionReason.contains("metallib") ||
+                exceptionReason.contains("personaAttributes") {
                 print("📄 GlobalErrorHandler: System-level error detected - continuing gracefully")
                 return // Don't crash the app
             }
@@ -1674,9 +1680,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-
     
-
+    
+    
     
     private func configureWindowsAsync() async {
         await MainActor.run {
@@ -1811,6 +1817,16 @@ struct logos_inken_ioApp: App {
         print("🔧 Metal Engine Status: \(metalWorking ? "✅ Working" : "❌ Failed")")
     }
     
+    func onNew() {
+        // Trigger new document creation and mark to show setup on first appear
+        
+        if !appState.showSetupOnNewDoc {
+            appState.showSetupOnNewDoc = true
+            NSDocumentController.shared.newDocument(nil)
+        }
+       
+    }
+    
     var body: some Scene {
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in
@@ -1832,19 +1848,25 @@ struct logos_inken_ioApp: App {
                         tabGroup.selectedWindow = w
                         w.makeKeyAndOrderFront(nil)
                     }
-					// Ensure the first document shows the tab bar so the + button is visible
-					let firstTabBarKey = "firstDocTabBarShown"
-					if let w = window, !UserDefaults.standard.bool(forKey: firstTabBarKey) {
-						w.perform(#selector(NSWindow.toggleTabBar(_:)), with: nil)
-						UserDefaults.standard.set(true, forKey: firstTabBarKey)
-					}
+                    // Ensure the first document shows the tab bar so the + button is visible
+                    let firstTabBarKey = "firstDocTabBarShown"
+                    if let w = window, !UserDefaults.standard.bool(forKey: firstTabBarKey) {
+                        w.perform(#selector(NSWindow.toggleTabBar(_:)), with: nil)
+                        UserDefaults.standard.set(true, forKey: firstTabBarKey)
+                    }
                 })
         }
         .defaultSize(width: 1400, height: 900)  // Set larger default size for document windows
         .windowResizability(.contentSize)
         .commands {
             // Create a fully custom File menu
-           
+            
+            CommandGroup(before: .newItem) {
+                Button("New Document Setup") {
+                    self.onNew()
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+            }
             
             CommandGroup(before: .importExport) {
                 Button("Save As...") {
@@ -1852,46 +1874,44 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
             }
-           
-      
+            
+            
             CommandGroup(replacing: .importExport) {
-//                Button("New Document") {
-//                    NSDocumentController.shared.newDocument(nil)
-//                }
-//                .keyboardShortcut("n", modifiers: [.command])
-//                .help("Create a new document")
-//
-//                Divider()
-//
-//                Button("Open…") {
-//                    NSDocumentController.shared.openDocument(nil)
-//                }
-//                .keyboardShortcut("o", modifiers: [.command])
-//                .help("Open an existing document")
-
-             
-                    
+                //                Button("New Document") {
+                //                    NSDocumentController.shared.newDocument(nil)
+                //                }
+                //                .keyboardShortcut("n", modifiers: [.command])
+                //                .help("Create a new document")
+                //
+                //                Divider()
+                //
+                //                Button("Open…") {
+                //                    NSDocumentController.shared.openDocument(nil)
+                //                }
+                //                .keyboardShortcut("o", modifiers: [.command])
+                //                .help("Open an existing document")
+                
                 Button("Import…") {
                     documentState?.showImportDialog()
                 }
                 .keyboardShortcut("i", modifiers: [.command])
                 .help("Import SVG, PDF, AI, EPS, DWF, PNG, JPEG, TIFF, GIF, BMP, HEIC")
-
-           //     Divider()
-
-//                Button("Close") {
-//                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
-//                }
-//                .keyboardShortcut("w", modifiers: [.command])
-//
-//                Button("Save") {
-//                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
-//                }
-//                .keyboardShortcut("s", modifiers: [.command])
-//
-
+                
+                //     Divider()
+                
+                //                Button("Close") {
+                //                    NSApp.sendAction(#selector(NSWindow.performClose(_:)), to: nil, from: nil)
+                //                }
+                //                .keyboardShortcut("w", modifiers: [.command])
+                //
+                //                Button("Save") {
+                //                    NSApp.sendAction(#selector(NSDocument.save(_:)), to: nil, from: nil)
+                //                }
+                //                .keyboardShortcut("s", modifiers: [.command])
+                //
+                
             }
-
+            
             // Application Menu commands (appears under the app name)
             CommandGroup(replacing: .appSettings) {
                 Menu("Default Tool") {
@@ -1954,18 +1974,11 @@ struct logos_inken_ioApp: App {
                 .help("Open application preferences")
             }
             
-            // Remove any default File menu content via AppKit in AppDelegate
-
-        
-		
-
             // SOLUTION: Create Custom Working Edit Menu with AUTOMATIC STATE UPDATES
             CommandGroup(replacing: .undoRedo) {
                 Button("Undo") {
                     documentState?.undo()
                 }
-				
-
                 .keyboardShortcut("z", modifiers: [.command])
                 .disabled(documentState?.canUndo != true)
                 
@@ -2020,7 +2033,7 @@ struct logos_inken_ioApp: App {
                 .keyboardShortcut("a", modifiers: [.command, .shift])
                 .disabled(documentState?.hasSelection != true)
             }
-
+            
             // Replace Apple's default groups that inject duplicates under Edit
             CommandGroup(replacing: .pasteboard) {
                 // Empty on purpose. We provide Cut/Copy/Paste above.
@@ -2030,7 +2043,7 @@ struct logos_inken_ioApp: App {
             }
             
             
-
+            
             // CREATE TOP-LEVEL Object Menu with AUTOMATIC STATES
             CommandMenu("Object") {
                 // Arrange Section
@@ -2061,8 +2074,6 @@ struct logos_inken_ioApp: App {
                     .disabled(documentState?.hasSelection != true)
                     
                 }
-              
-              
                 
                 // Group Section
                 Button("Group") {
@@ -2226,40 +2237,40 @@ struct logos_inken_ioApp: App {
                 .help("Run a test to verify the duplicate point merger works correctly")
             }
             
-            // PANEL MENU - replaces custom Window menu; keeps macOS default Window menu intact
+            // PANEL MENU
             CommandMenu("Panel") {
                 Button(action: { appState.selectedPanelTab = .layers }) {
                     Label("Layer", systemImage: PanelTab.layers.iconName)
                 }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
-
+                
                 Button(action: { appState.selectedPanelTab = .properties }) {
                     Label("Paint", systemImage: PanelTab.properties.iconName)
                 }
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-
+                
                 Button(action: { appState.selectedPanelTab = .gradient }) {
                     Label("Grade", systemImage: PanelTab.gradient.iconName)
                 }
                 .keyboardShortcut("g", modifiers: [.command, .shift])
-
+                
                 Button(action: { appState.selectedPanelTab = .color }) {
                     Label("Ink", systemImage: PanelTab.color.iconName)
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
-
+                
                 Button(action: { appState.selectedPanelTab = .pathOps }) {
                     Label("Path", systemImage: PanelTab.pathOps.iconName)
                 }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
-
+                
                 Button(action: { appState.selectedPanelTab = .font }) {
                     Label("Font", systemImage: PanelTab.font.iconName)
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
             }
             
-            // VIEW MENU - Zoom and View Mode using DocumentState (no more notifications!)
+            // VIEW MENU
             CommandGroup(replacing: .sidebar) {
                 
                 Button("Zoom In") {
@@ -2311,301 +2322,44 @@ struct logos_inken_ioApp: App {
                 }
                 .keyboardShortcut(";", modifiers: [.command])
             }
-            
-            // TOOLS MENU - Tool Switching
-            CommandMenu("Tools") {
-                Button("Selection Tool") {
-                    documentState?.switchToTool(.selection)
-                }
-                .keyboardShortcut("a", modifiers: [])
-                .help("Switch to selection tool")
-                
-                Button("Direct Selection Tool") {
-                    documentState?.switchToTool(.directSelection)
-                }
-                .keyboardShortcut("d", modifiers: [])
-                .help("Switch to direct selection tool")
-                
-                Button("Convert Anchor Point Tool") {
-                    documentState?.switchToTool(.convertAnchorPoint)
-                }
-                .keyboardShortcut("c", modifiers: [])
-                .help("Switch to convert anchor point tool")
-                
-                Divider()
-                
-                Button("Scale Tool") {
-                    documentState?.switchToTool(.scale)
-                }
-                .keyboardShortcut("s", modifiers: [])
-                .help("Switch to scale tool")
-                
-                Button("Rotate Tool") {
-                    documentState?.switchToTool(.rotate)
-                }
-                .keyboardShortcut("r", modifiers: [])
-                .help("Switch to rotate tool")
-                
-                Button("Shear Tool") {
-                    documentState?.switchToTool(.shear)
-                }
-                .keyboardShortcut("x", modifiers: [])
-                .help("Switch to shear tool")
-                
-                Button("Warp Tool") {
-                    documentState?.switchToTool(.warp)
-                }
-                .keyboardShortcut("w", modifiers: [])
-                .help("Switch to warp tool")
-                
-                Divider()
-                
-                Button("Bezier Pen Tool") {
-                    documentState?.switchToTool(.bezierPen)
-                }
-                .keyboardShortcut("p", modifiers: [])
-                .help("Switch to bezier pen tool")
-                
-                Button("Freehand Tool") {
-                    documentState?.switchToTool(.freehand)
-                }
-                .keyboardShortcut("f", modifiers: [])
-                .help("Switch to freehand tool")
-                
-                Button("Brush Tool") {
-                    documentState?.switchToTool(.brush)
-                }
-                .keyboardShortcut("b", modifiers: [])
-                .help("Switch to brush tool")
-                
-                Button("Marker Tool") {
-                    documentState?.switchToTool(.marker)
-                }
-                .keyboardShortcut("m", modifiers: [])
-                .help("Switch to marker tool")
-                
-                Button("Font Tool") {
-                    documentState?.switchToTool(.font)
-                }
-                .keyboardShortcut("t", modifiers: [])
-                .help("Switch to font tool")
-                
-                Divider()
-                
-                Button("Line Tool") {
-                    documentState?.switchToTool(.line)
-                }
-                .keyboardShortcut("l", modifiers: [])
-                .help("Switch to line tool")
-                
-                Button("Rectangle Tool") {
-                    documentState?.switchToTool(.rectangle)
-                }
-                .keyboardShortcut("r", modifiers: [.option])
-                .help("Switch to rectangle tool")
-                
-                Button("Square Tool") {
-                    documentState?.switchToTool(.square)
-                }
-                .keyboardShortcut("s", modifiers: [.option])
-                .help("Switch to square tool")
-                
-                Button("Rounded Rectangle Tool") {
-                    documentState?.switchToTool(.roundedRectangle)
-                }
-                .keyboardShortcut("r", modifiers: [.shift, .option])
-                .help("Switch to rounded rectangle tool")
-                
-                Button("Pill Tool") {
-                    documentState?.switchToTool(.pill)
-                }
-                .keyboardShortcut("p", modifiers: [.shift, .option])
-                .help("Switch to pill tool")
-                
-                Button("Circle Tool") {
-                    documentState?.switchToTool(.circle)
-                }
-                .keyboardShortcut("c", modifiers: [.option])
-                .help("Switch to circle tool")
-                
-                Button("Ellipse Tool") {
-                    documentState?.switchToTool(.ellipse)
-                }
-                .keyboardShortcut("e", modifiers: [])
-                .help("Switch to ellipse tool")
-                
-                Button("Oval Tool") {
-                    documentState?.switchToTool(.oval)
-                }
-                .keyboardShortcut("o", modifiers: [])
-                .help("Switch to oval tool")
-                
-                Button("Egg Tool") {
-                    documentState?.switchToTool(.egg)
-                }
-                .keyboardShortcut("e", modifiers: [.shift])
-                .help("Switch to egg tool")
-                
-                Button("Cone Tool") {
-                    documentState?.switchToTool(.cone)
-                }
-                .keyboardShortcut("c", modifiers: [.shift, .option])
-                .help("Switch to cone tool")
-                
-                Divider()
-                
-                Button("Equilateral Triangle Tool") {
-                    documentState?.switchToTool(.equilateralTriangle)
-                }
-                .keyboardShortcut("t", modifiers: [.shift])
-                .help("Switch to equilateral triangle tool")
-                
-                Button("Isosceles Triangle Tool") {
-                    documentState?.switchToTool(.isoscelesTriangle)
-                }
-                .keyboardShortcut("i", modifiers: [])
-                .help("Switch to isosceles triangle tool")
-                
-                Button("Right Triangle Tool") {
-                    documentState?.switchToTool(.rightTriangle)
-                }
-                .keyboardShortcut("r", modifiers: [.shift, .option])
-                .help("Switch to right triangle tool")
-                
-                Button("Acute Triangle Tool") {
-                    documentState?.switchToTool(.acuteTriangle)
-                }
-                .keyboardShortcut("a", modifiers: [.shift])
-                .help("Switch to acute triangle tool")
-                
-                Divider()
-                
-                Button("Star Tool") {
-                    documentState?.switchToTool(.star)
-                }
-                .keyboardShortcut("s", modifiers: [.shift])
-                .help("Switch to star tool")
-                
-                Button("Polygon Tool") {
-                    documentState?.switchToTool(.polygon)
-                }
-                .keyboardShortcut("p", modifiers: [.option])
-                .help("Switch to polygon tool")
-                
-                Button("Pentagon Tool") {
-                    documentState?.switchToTool(.pentagon)
-                }
-                .keyboardShortcut("5", modifiers: [])
-                .help("Switch to pentagon tool")
-                
-                Button("Hexagon Tool") {
-                    documentState?.switchToTool(.hexagon)
-                }
-                .keyboardShortcut("6", modifiers: [])
-                .help("Switch to hexagon tool")
-                
-                Button("Heptagon Tool") {
-                    documentState?.switchToTool(.heptagon)
-                }
-                .keyboardShortcut("7", modifiers: [])
-                .help("Switch to heptagon tool")
-                
-                Button("Octagon Tool") {
-                    documentState?.switchToTool(.octagon)
-                }
-                .keyboardShortcut("8", modifiers: [])
-                .help("Switch to octagon tool")
-                
-                Divider()
-                
-                Button("Eyedropper Tool") {
-                    documentState?.switchToTool(.eyedropper)
-                }
-                .keyboardShortcut("i", modifiers: [])
-                .help("Switch to eyedropper tool")
-                
-                Button("Hand Tool") {
-                    documentState?.switchToTool(.hand)
-                }
-                .keyboardShortcut("h", modifiers: [])
-                .help("Switch to hand tool")
-                
-                Button("Zoom Tool") {
-                    documentState?.switchToTool(.zoom)
-                }
-                .keyboardShortcut("z", modifiers: [])
-                .help("Switch to zoom tool")
-                
-                Button("Gradient Tool") {
-                    documentState?.switchToTool(.gradient)
-                }
-                .keyboardShortcut("g", modifiers: [])
-                .help("Switch to gradient tool")
-                
-                Button("Corner Radius Tool") {
-                    documentState?.switchToTool(.cornerRadius)
-                }
-                .keyboardShortcut(.upArrow, modifiers: [.control])
-                .help("Switch to corner radius tool")
-            }
-            
-            
-
-            
-            // DEVELOPMENT MENU - CoreGraphics Path Operations Testing using AppState
-            // Remove custom development menu to avoid build issues; re-enable if needed.
-            /* CommandMenu("Development Tools") {
-                Button("CoreGraphics Path Operations Test") {
-                    appState.showCoreGraphicsTest()
-                }
-                .keyboardShortcut("t", modifiers: [.command, .shift, .option])
-                .help("Test new CoreGraphics boolean operations (macOS 14+)")
-                
-                Divider()
-                
-                Button("Performance Benchmark") {
-                    appState.runPathOperationsBenchmark()
-                }
-                .help("Benchmark ClipperPath vs CoreGraphics performance")
-            } */
         }
         
         // 🔥 GRADIENT HUD WINDOW - Real floating window that can go outside main window
         Window("Select Gradient Color", id: "gradient-hud") {
-                StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
-                    .environment(appState)
-                    .background(WindowAccessor { window in
-                        if let window {
-                            // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
-                            window.styleMask = [.hudWindow, .titled, .closable]
-                            window.hidesOnDeactivate = true
-                            // 🔥 HUD APPEARANCE
-                            window.appearance = NSAppearance(named: .darkAqua)
-                            window.titlebarAppearsTransparent = true
-                            window.titleVisibility = .visible // Keep this visible for dragging
-                            window.title = "Select Gradient Color" // Set your window title
-                            // 🔥 TRANSPARENCY & BACKGROUND
-                            window.isOpaque = true
-                            window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
-                            window.hasShadow = true
-                            window.level = .modalPanel
-                            window.isMovableByWindowBackground = false // FALSE so sliders work
-                            window.tabbingMode = .disallowed
-                            
-                            // 🔥 OPTIONAL: Style the window buttons
-                            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-                            window.standardWindowButton(.zoomButton)?.isHidden = true
-                            window.styleMask.insert(.utilityWindow)
-                            // Keep close button visible
-                            
-                            // 🔥 INTERCEPT CLOSE BUTTON TO PRESERVE POSITION
-                            window.delegate = GradientHUDWindowDelegate.shared
-                            
-                            // 🔥 LET SYSTEM MANAGE POSITIONING - No manual positioning
-                            // The window will appear at a sensible default location
-                            // and remember its position when moved by the user
-                        }
-                    })
+            StableGradientHUDContent(hudManager: appState.persistentGradientHUD)
+                .environment(appState)
+                .background(WindowAccessor { window in
+                    if let window {
+                        // 🔥 HUD WINDOW WITH DRAGGABLE TITLE BAR
+                        window.styleMask = [.hudWindow, .titled, .closable]
+                        window.hidesOnDeactivate = true
+                        // 🔥 HUD APPEARANCE
+                        window.appearance = NSAppearance(named: .darkAqua)
+                        window.titlebarAppearsTransparent = true
+                        window.titleVisibility = .visible // Keep this visible for dragging
+                        window.title = "Select Gradient Color" // Set your window title
+                        // 🔥 TRANSPARENCY & BACKGROUND
+                        window.isOpaque = true
+                        window.backgroundColor = NSColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+                        window.hasShadow = true
+                        window.level = .modalPanel
+                        window.isMovableByWindowBackground = false // FALSE so sliders work
+                        window.tabbingMode = .disallowed
+                        
+                        // 🔥 OPTIONAL: Style the window buttons
+                        window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+                        window.standardWindowButton(.zoomButton)?.isHidden = true
+                        window.styleMask.insert(.utilityWindow)
+                        // Keep close button visible
+                        
+                        // 🔥 INTERCEPT CLOSE BUTTON TO PRESERVE POSITION
+                        window.delegate = GradientHUDWindowDelegate.shared
+                        
+                        // 🔥 LET SYSTEM MANAGE POSITIONING - No manual positioning
+                        // The window will appear at a sensible default location
+                        // and remember its position when moved by the user
+                    }
+                })
         }
         .windowResizability(.contentSize) // Size to content
         // 🔥 NO MANUAL POSITIONING - Let macOS handle window positioning naturally
@@ -2647,15 +2401,6 @@ struct logos_inken_ioApp: App {
         }
         .defaultSize(width: 520, height: 320)
         .windowResizability(.contentSize)
-        
-        // SECONDARY: WindowGroup for non-document windows (templates, etc.)  
-        // Re-enabled but configured to not interfere with document tabbing
-        // WindowGroup("New Document Setup") {
-        //     ContentView()
-        //         .environment(appState)
-        // }
-        // .defaultSize(width: 1200, height: 800)
-        // .windowResizability(.contentSize)
     }
 }
 
@@ -2800,8 +2545,6 @@ class ClipboardManager {
             print("❌ Failed to paste in back: \(error)")
         }
     }
-    
-    // NOTE: offsetPath function removed - paste now uses exact original coordinates
 }
 
 // MARK: - Clipboard Data Structure

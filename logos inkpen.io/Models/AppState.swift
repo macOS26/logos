@@ -84,6 +84,10 @@ class AppState {
     // 🔥 WINDOW MANAGEMENT - For opening gradient HUD window
     var openWindowAction: ((String) -> Void)?
     var dismissWindowAction: ((String) -> Void)?
+
+    // MARK: - New Document Flow
+    /// When true, the next opened document will present the New Document Setup sheet on appear
+    var showSetupOnNewDoc: Bool = false
     
     // MARK: - Preferences: Brush Preview
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
