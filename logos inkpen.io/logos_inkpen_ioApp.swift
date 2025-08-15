@@ -1564,7 +1564,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
         
-        Log.startup("📄 App: Starting graceful initialization sequence")
+        // REMOVED: Repetitive app initialization logging
         
         // Use the startup coordinator for robust initialization
         Task {
@@ -1584,7 +1584,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupFallbackTimer() {
         // Set up a timer that will force the app to continue if it gets stuck
         Timer.scheduledTimer(withTimeInterval: 15.0, repeats: false) { _ in
-            Log.startup("📄 App: Fallback timer triggered - ensuring app is responsive")
+            // REMOVED: Repetitive fallback timer logging
             
             // Force any pending operations to complete
             DispatchQueue.main.async {
@@ -1697,10 +1697,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         
         // If no document windows are open, let DocumentGroup handle document creation
         if documentWindows.isEmpty {
-            Log.startup("📄 App: App reopened with no document windows, DocumentGroup will handle document creation")
+            // REMOVED: Repetitive app reopen logging
             return true
         } else {
-            Log.startup("📄 App: App reopened with existing document windows - not showing onboarding setup")
+            // REMOVED: Repetitive app reopen logging
             return false
         }
     }

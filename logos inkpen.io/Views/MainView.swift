@@ -94,7 +94,7 @@ struct MainView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(minWidth: 400, minHeight: 300) // MINIMUM: Ensure drawing area is never crushed
-                    .clipped() // CRITICAL: Clip content to prevent overflow into other panels
+                    // REMOVED: .clipped() to allow clipping masks to extend beyond canvas boundaries
                 }
                 .frame(maxWidth: .infinity)
                 .frame(minWidth: 500) // MINIMUM: Ensure center area has enough space

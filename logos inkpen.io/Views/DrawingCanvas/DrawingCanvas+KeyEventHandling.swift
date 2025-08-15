@@ -34,15 +34,8 @@ extension DrawingCanvas {
                 self.isCommandPressed = event.modifierFlags.contains(.command)
                 self.isControlPressed = event.modifierFlags.contains(.control)
                 
-                // Debug logging for key state changes (gated)
-                if self.isShiftPressed {
-                    Log.info("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)", category: .input)
-                } else {
-                    Log.info("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)", category: .input)
-                }
-                if self.isOptionPressed {
-                    Log.info("⌥ OPTION KEY PRESSED: Path-based selection enabled", category: .input)
-                }
+                // REMOVED: Repetitive debug logging for key state changes that spam the console
+                // Only log significant state changes when needed for debugging
                 
                 // Command-based temporary behavior for Arrow tool
                 if self.isCommandPressed {
@@ -50,13 +43,13 @@ extension DrawingCanvas {
                     if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
-                        Log.info("⌘ COMMAND HELD: Temporary object outline selection mode enabled", category: .input)
+                        // REMOVED: Repetitive command held logging
                     }
                 } else {
                     // Command released: if we were in temporary command mode and didn't permanently switch tools, restore
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
-                        Log.info("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode", category: .input)
+                        // REMOVED: Repetitive command released logging
                         // If we temporarily switched to direct selection, restore the default tool
                         if self.document.currentTool == .directSelection {
                             self.document.currentTool = AppState.shared.defaultTool

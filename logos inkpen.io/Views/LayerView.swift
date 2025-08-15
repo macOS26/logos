@@ -54,7 +54,7 @@ struct LayerView: View {
                         )
                     }
                     .mask(
-                        // Core Graphics clipping mask with live preview support
+                        // Core Graphics clipping mask with live preview support - UNCONSTRAINED BY CANVAS
                         CoreGraphicsClippingMaskView(
                             clippedShape: currentShape,
                             maskShape: maskShape,
@@ -65,6 +65,8 @@ struct LayerView: View {
                             dragPreviewTrigger: dragPreviewTrigger
                         )
                         .id(dragPreviewTrigger) // Force update when drag preview trigger changes
+                        .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow mask to extend beyond canvas bounds
+                        // REMOVED: .clipped() to allow clipping masks to extend beyond canvas boundaries
                     )
                     .onAppear {
                         // Debug clipping mask rendering

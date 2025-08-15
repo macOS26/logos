@@ -22,7 +22,7 @@ class MetalDeviceManager: ObservableObject {
         self.device = metalDevice
         self.commandQueue = cmdQueue
         
-        Log.info("✅ Metal GPU initialized successfully: \(metalDevice.name)", category: .fileOperations)
+        // REMOVED: Repetitive Metal GPU initialization logging
     }
     
     /// Execute Metal commands (no fallbacks - GPU required)

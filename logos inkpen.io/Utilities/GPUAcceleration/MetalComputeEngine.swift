@@ -93,7 +93,7 @@ class MetalComputeEngine {
         }
         self.library = library
         try setupComputePipelines()
-        Log.info("✅ Metal Compute Engine: GPU acceleration ready (\(device.name))", category: .metal)
+        // REMOVED: Repetitive Metal GPU acceleration logging
     }
     
     // MARK: - Setup
