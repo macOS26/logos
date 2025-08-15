@@ -80,6 +80,26 @@ extension DrawingCanvas {
             y: cursorDelta.y / preciseZoom
         )
         
+        // CRITICAL FIX: For clipping masks, move the image shape DURING drag for live preview
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                
+                // CLIPPING MASK LIVE MOVEMENT: If this is a mask shape, move it and all its clipped content NOW
+                if shape.isClippingPath {
+                    Log.info("🎭 CLIPPING MASK LIVE: Moving mask '\(shape.name)' and all clipped content during drag", category: .selection)
+                    document.moveClippingMask(shape.id, by: canvasDelta)
+                    
+                    // CRITICAL: Update the drag start position to prevent accumulation
+                    selectionDragStart = value.location
+                    
+                    // Reset the canvas delta since we've already moved the objects
+                    currentDragDelta = .zero
+                    return
+                }
+            }
+        }
+        
         // BLAZING FAST 60FPS: Store drag delta for preview rendering - DON'T modify actual objects during drag
         // This eliminates expensive document updates and bounds recalculation during drag
         currentDragDelta = canvasDelta
@@ -111,11 +131,8 @@ extension DrawingCanvas {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     let shape = document.layers[layerIndex].shapes[shapeIndex]
                     
-                    // CLIPPING MASK MOVEMENT: If this is a mask shape, move it and all its clipped content
-                    if shape.isClippingPath {
-                        Log.info("🎭 CLIPPING MASK: Moving mask '\(shape.name)' and all clipped content", category: .selection)
-                        document.moveClippingMask(shape.id, by: currentDragDelta)
-                    } else {
+                    // CLIPPING MASK MOVEMENT: Only for non-clipping masks (clipping masks are handled during drag)
+                    if !shape.isClippingPath {
                         // Regular shape movement
                         applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                     }

@@ -54,12 +54,18 @@ struct LayerView: View {
                         )
                     }
                     .mask(
-                        // Create mask with identical coordinate transformations - NO drag preview for masks
-                        ShapeMaskView(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: .zero, isSelected: false)
+                        // Core Graphics clipping mask with live preview support
+                        CoreGraphicsClippingMaskView(
+                            clippedShape: currentShape,
+                            maskShape: maskShape,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            dragPreviewDelta: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta : .zero,
+                            isSelected: selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id),
+                            dragPreviewTrigger: dragPreviewTrigger
+                        )
+                        .id(dragPreviewTrigger) // Force update when drag preview trigger changes
                     )
-                    // CLIPPED SHAPE LIVE PREVIEW: Apply drag preview to the clipped shape container
-                    .offset(x: selectedShapeIDs.contains(currentShape.id) ? dragPreviewDelta.x * zoomLevel : 0, 
-                            y: selectedShapeIDs.contains(currentShape.id) ? dragPreviewDelta.y * zoomLevel : 0)
                     .onAppear {
                         // Debug clipping mask rendering
                         print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
@@ -402,7 +408,9 @@ private struct SingleMaskShape: View {
         .offset(x: canvasOffset.x, y: canvasOffset.y)
         // Only apply transform for groups, just like the main ShapeView
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
-        // CLIPPING MASK FIX: No drag preview offset for masks - prevents scaling during drag
+        // CLIPPING MASK LIVE PREVIEW: Apply drag preview for live movement
+        .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0,
+                y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
     }
 }
 
@@ -416,12 +424,14 @@ private struct GroupMaskContainer: View {
     var body: some View {
         ZStack {
             ForEach(maskShape.groupedShapes, id: \.id) { grouped in
-                SingleMaskShape(shape: grouped, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: .zero, isSelected: false)
+                SingleMaskShape(shape: grouped, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: dragPreviewDelta, isSelected: isSelected)
             }
         }
         // CRITICAL FIX: Only apply group transform, not zoom/offset (already applied to individual shapes)
         .transformEffect(maskShape.transform)
-        // CLIPPING MASK FIX: No drag preview offset for group masks - prevents scaling during drag
+        // CLIPPING MASK LIVE PREVIEW: Apply drag preview for live movement
+        .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0,
+                y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
     }
 }
 
@@ -4758,6 +4768,248 @@ class SVGRenderingView: NSView {
         svgDocument.renderToVectorContext(context, targetSize: svgBounds.size)
         
         context.restoreGState()
+    }
+}
+
+// MARK: - Core Graphics Clipping Mask View
+
+struct CoreGraphicsClippingMaskView: NSViewRepresentable {
+    let clippedShape: VectorShape
+    let maskShape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let dragPreviewDelta: CGPoint
+    let isSelected: Bool
+    let dragPreviewTrigger: Bool
+    
+    func makeNSView(context: Context) -> ClippingMaskNSView {
+        let nsView = ClippingMaskNSView()
+        nsView.wantsLayer = true
+        return nsView
+    }
+    
+    func updateNSView(_ nsView: ClippingMaskNSView, context: Context) {
+        nsView.clippedShape = clippedShape
+        nsView.maskShape = maskShape
+        nsView.zoomLevel = zoomLevel
+        nsView.canvasOffset = canvasOffset
+        nsView.dragPreviewDelta = dragPreviewDelta
+        nsView.isSelected = isSelected
+        nsView.dragPreviewTrigger = dragPreviewTrigger
+        nsView.needsDisplay = true
+    }
+}
+
+class ClippingMaskNSView: NSView {
+    var clippedShape: VectorShape = VectorShape(path: VectorPath())
+    var maskShape: VectorShape = VectorShape(path: VectorPath())
+    var zoomLevel: Double = 1.0
+    var canvasOffset: CGPoint = .zero
+    var dragPreviewDelta: CGPoint = .zero
+    var isSelected: Bool = false
+    var dragPreviewTrigger: Bool = false
+    
+    override var isFlipped: Bool {
+        return true
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        
+        context.saveGState()
+        
+        // Apply coordinate transformations in the same order as SwiftUI
+        context.scaleBy(x: zoomLevel, y: zoomLevel)
+        context.translateBy(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
+        
+        // CRITICAL FIX: Apply drag preview offset for live movement
+        if isSelected {
+            context.translateBy(x: dragPreviewDelta.x / zoomLevel, y: dragPreviewDelta.y / zoomLevel)
+        }
+        
+        // Create the mask path
+        let maskPath = createPathFromShape(maskShape)
+        
+        // Set up clipping using Core Graphics
+        context.addPath(maskPath)
+        context.clip() // This creates the clipping mask
+        
+        // Now draw the clipped shape content (drag preview already applied above)
+        drawShapeContent(clippedShape, in: context)
+        
+        context.restoreGState()
+    }
+    
+    private func createPathFromShape(_ shape: VectorShape) -> CGPath {
+        let path = CGMutablePath()
+        
+        // Add path elements
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                path.move(to: to.cgPoint)
+            case .line(let to):
+                path.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                path.closeSubpath()
+            }
+        }
+        
+        // Apply shape transform
+        if !shape.transform.isIdentity {
+            let transformedPath = CGMutablePath()
+            transformedPath.addPath(path, transform: shape.transform)
+            return transformedPath
+        }
+        
+        return path
+    }
+    
+    private func drawShapeContent(_ shape: VectorShape, in context: CGContext) {
+        // Check if this is an image first
+        if ImageContentRegistry.containsImage(shape),
+           let image = ImageContentRegistry.image(for: shape.id) {
+            // RENDER IMAGE THROUGH CORE GRAPHICS
+            drawImageContent(shape: shape, image: image, in: context)
+            return
+        }
+        
+        // Check for linked/embedded images
+        if shape.linkedImagePath != nil || shape.embeddedImageData != nil,
+           let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+            drawImageContent(shape: shape, image: hydrated, in: context)
+            return
+        }
+        
+        // Regular shape rendering
+        let shapePath = createPathFromShape(shape)
+        
+        // Draw fill if present
+        if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
+            context.addPath(shapePath)
+            
+            switch fillStyle.color {
+            case .rgb(let rgb):
+                context.setFillColor(rgb.cgColor)
+                context.fillPath()
+            case .cmyk(let cmyk):
+                context.setFillColor(cmyk.rgbColor.cgColor)
+                context.fillPath()
+            case .hsb(let hsb):
+                context.setFillColor(hsb.rgbColor.cgColor)
+                context.fillPath()
+            case .pantone(let pantone):
+                context.setFillColor(ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
+                context.fillPath()
+            case .spot(let spot):
+                context.setFillColor(ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
+                context.fillPath()
+            case .appleSystem(let systemColor):
+                context.setFillColor(systemColor.rgbEquivalent.cgColor)
+                context.fillPath()
+            case .gradient(let gradient):
+                drawGradientFill(gradient, in: context, path: shapePath)
+            case .clear:
+                // No fill for clear
+                break
+            case .black:
+                context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+                context.fillPath()
+            case .white:
+                context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+                context.fillPath()
+            }
+        }
+        
+        // Draw stroke if present
+        if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
+            context.addPath(shapePath)
+            context.setLineWidth(strokeStyle.width)
+            
+            switch strokeStyle.color {
+            case .rgb(let rgb):
+                context.setStrokeColor(rgb.cgColor)
+            case .cmyk(let cmyk):
+                context.setStrokeColor(cmyk.rgbColor.cgColor)
+            case .hsb(let hsb):
+                context.setStrokeColor(hsb.rgbColor.cgColor)
+            case .pantone(let pantone):
+                context.setStrokeColor(ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
+            case .spot(let spot):
+                context.setStrokeColor(ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
+            case .appleSystem(let systemColor):
+                context.setStrokeColor(systemColor.rgbEquivalent.cgColor)
+            case .gradient(let gradient):
+                // For stroke gradients, we'll use a simple approach
+                context.setStrokeColor(NSColor.black.cgColor)
+            case .clear:
+                // No stroke for clear
+                break
+            case .black:
+                context.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+            case .white:
+                context.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+            }
+            
+            context.strokePath()
+        }
+    }
+    
+    private func drawImageContent(shape: VectorShape, image: NSImage, in context: CGContext) {
+        // Create a rect path for the image bounds
+        let imageRect = CGRect(origin: .zero, size: shape.bounds.size)
+        let imagePath = CGPath(rect: imageRect, transform: nil)
+        
+        // Add the image path and clip to it
+        context.addPath(imagePath)
+        context.clip()
+        
+        // Draw the image using Core Graphics
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            // Set the drawing rect to match the shape bounds
+            let drawRect = CGRect(origin: .zero, size: shape.bounds.size)
+            
+            // Draw the image
+            context.draw(cgImage, in: drawRect)
+        }
+    }
+    
+    private func drawGradientFill(_ gradient: VectorGradient, in context: CGContext, path: CGPath) {
+        // Create gradient colors
+        let colors = gradient.stops.map { stop -> CGColor in
+            if case .clear = stop.color {
+                return stop.color.cgColor
+            } else {
+                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
+            }
+        }
+        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
+        
+        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
+            return
+        }
+        
+        // Draw gradient based on type
+        switch gradient {
+        case .linear(let linear):
+            let startPoint = CGPoint(x: linear.startPoint.x, y: linear.startPoint.y)
+            let endPoint = CGPoint(x: linear.endPoint.x, y: linear.endPoint.y)
+            context.addPath(path)
+            context.clip()
+            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
+            
+        case .radial(let radial):
+            let center = CGPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
+            let startRadius: CGFloat = 0
+            let endRadius: CGFloat = radial.radius
+            context.addPath(path)
+            context.clip()
+            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: startRadius, endCenter: center, endRadius: endRadius, options: [])
+        }
     }
 }
 
