@@ -282,7 +282,12 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
+        // CRITICAL FIX: Automatically select only the mask shape, deselect the clipped content
+        selectedShapeIDs.removeAll()
+        selectedShapeIDs.insert(maskID)
+        
         Log.info("✅ CLIPPING MASK: Created successfully with \(selectedShapes.count - 1) clipped shapes", category: .general)
+        Log.info("🎯 SELECTION: Automatically selected mask shape '\(layers[layerIndex].shapes.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .selection)
     }
     
     /// Releases any clipping relationship among selected shapes
@@ -307,6 +312,15 @@ class VectorDocument: ObservableObject, Codable {
             for idx in layers[layerIndex].shapes.indices {
                 if let clipID = layers[layerIndex].shapes[idx].clippedByShapeID, maskIDsToRelease.contains(clipID) {
                     layers[layerIndex].shapes[idx].clippedByShapeID = nil
+                    
+                    // CRITICAL FIX: Restore proper bounds for image shapes after releasing clipping mask
+                    let shape = layers[layerIndex].shapes[idx]
+                    if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                        // Force bounds recalculation for image shapes
+                        layers[layerIndex].shapes[idx].updateBounds()
+                        Log.info("🖼️ IMAGE BOUNDS: Restored bounds for image '\(shape.name)' after releasing clipping mask", category: .general)
+                        Log.info("   📊 New bounds: \(layers[layerIndex].shapes[idx].bounds)", category: .general)
+                    }
                 }
             }
             // Clear mask flags on the mask shapes
@@ -316,6 +330,18 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
         }
+        
+        // 3) CRITICAL FIX: Also restore bounds for any shapes that were clipped by the released masks
+        for idx in layers[layerIndex].shapes.indices {
+            let shape = layers[layerIndex].shapes[idx]
+            if shape.clippedByShapeID == nil && (ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil) {
+                // This image shape is no longer clipped, ensure its bounds are correct
+                layers[layerIndex].shapes[idx].updateBounds()
+                Log.info("🖼️ IMAGE BOUNDS: Ensured bounds are correct for unclipped image '\(shape.name)'", category: .general)
+            }
+        }
+        
+        Log.info("✅ CLIPPING MASK: Released successfully and restored image bounds", category: .general)
     }
     
     /// Moves a clipping mask and all its clipped content together

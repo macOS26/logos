@@ -371,19 +371,29 @@ extension DrawingCanvas {
             // CRITICAL FIX: Clear text selection when selecting shapes
             document.selectedTextIDs.removeAll()
             
+            // CLIPPING MASK SELECTION LOGIC: If this shape is clipped by another shape, select the mask instead
+            var shapeToSelect = shape
+            if let clippedByShapeID = shape.clippedByShapeID {
+                // This shape is clipped by another shape - find the mask shape
+                if let maskShape = document.layers[layerIndex].shapes.first(where: { $0.id == clippedByShapeID }) {
+                    Log.info("🎭 CLIPPING MASK: Shape '\(shape.name)' is clipped by '\(maskShape.name)' - selecting mask instead", category: .selection)
+                    shapeToSelect = maskShape
+                }
+            }
+            
             if isShiftPressed {
                 // SHIFT+CLICK: Add to selection
-                document.selectedShapeIDs.insert(shape.id)
+                document.selectedShapeIDs.insert(shapeToSelect.id)
             } else if isCommandPressed {
                 // CMD+CLICK: Toggle selection
-                if document.selectedShapeIDs.contains(shape.id) {
-                    document.selectedShapeIDs.remove(shape.id)
+                if document.selectedShapeIDs.contains(shapeToSelect.id) {
+                    document.selectedShapeIDs.remove(shapeToSelect.id)
                 } else {
-                    document.selectedShapeIDs.insert(shape.id)
+                    document.selectedShapeIDs.insert(shapeToSelect.id)
                 }
             } else {
                 // REGULAR CLICK: Replace selection
-                document.selectedShapeIDs = [shape.id]
+                document.selectedShapeIDs = [shapeToSelect.id]
             }
             
             // Update selected layer
