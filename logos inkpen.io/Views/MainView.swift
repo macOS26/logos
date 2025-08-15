@@ -305,11 +305,11 @@ struct MainView: View {
             allowedContentTypes: [
                 .svg,                                    // SVG files
                 .pdf,                                    // PDF files
-                UTType("com.adobe.illustrator.ai-image")!, // Adobe Illustrator files
+                UTType("com.adobe.illustrator.ai-image")!, // AI files
                 UTType("com.adobe.encapsulated-postscript")!, // EPS files
                 UTType("com.adobe.postscript")!,         // PostScript files
                 UTType(filenameExtension: "ps")!,        // PostScript files (.ps)
-                UTType(filenameExtension: "ai")!,        // Adobe Illustrator files (.ai)
+                UTType(filenameExtension: "ai")!,        // AI files (.ai)
                 UTType(filenameExtension: "eps")!,       // EPS files (.eps)
                 UTType(filenameExtension: "dwf")!,       // DWF files (.dwf)
                 .png, .jpeg, .tiff, .gif, .bmp, UTType("public.heic")!, // Raster images
@@ -379,8 +379,8 @@ struct MainView: View {
             }
         }
         .focusedSceneObject(documentState)
-        .onChange(of: scenePhase) { phase in
-            if phase == .active {
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
                 documentState.setDocument(document)
             }
         }
@@ -401,7 +401,7 @@ struct MainView: View {
     
     
     private func fitToPage() {
-        // Fit the entire page to the view (Adobe Illustrator standard)
+        // Fit the entire page to the view (professional standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
         Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
@@ -619,7 +619,7 @@ struct MainView: View {
                     
                     print("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack")
                     
-                    // MICRO DELAY: Just enough for geometry to be established (like Adobe Illustrator)
+                    // MICRO DELAY: Just enough for geometry to be established (like professional applications)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
                         Log.debug("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .zoom)
@@ -1142,30 +1142,30 @@ struct MainToolbarContent: ToolbarContent {
     
     // Performance tracking helper removed - no longer needed
     
-    // MARK: - Professional Zoom Functions (Adobe Illustrator Standards)
+    // MARK: - Professional Zoom Functions (Professional Standards)
     
     private func onZoomIn() {
-        // Zoom in by 25% (Adobe Illustrator standard)
+        // Zoom in by 25% (professional standard)
         let newZoom = min(16.0, document.zoomLevel * 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
         print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
     }
     
     private func onZoomOut() {
-        // Zoom out by 25% (Adobe Illustrator standard)
+        // Zoom out by 25% (professional standard)
         let newZoom = max(0.1, document.zoomLevel / 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomOut)
         print("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
     }
     
     private func onFitToPage() {
-        // Fit the entire page to the view (Adobe Illustrator standard)
+        // Fit the entire page to the view (professional standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
         Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     private func onActualSize() {
-        // Set to 100% zoom (Adobe Illustrator standard)
+        // Set to 100% zoom (professional standard)
         document.requestZoom(to: 1.0, mode: .actualSize)
         print("🔍 ACTUAL SIZE: Set to 100% zoom")
     }
@@ -1231,7 +1231,7 @@ struct MainToolbarContent: ToolbarContent {
         return combinedBounds
     }
     
-    // MARK: - Professional Object Management Functions (Adobe Illustrator Standards)
+    // MARK: - Professional Object Management Functions (Industry Standards)
     
     private func bringSelectedToFront() {
         guard let layerIndex = document.selectedLayerIndex,
