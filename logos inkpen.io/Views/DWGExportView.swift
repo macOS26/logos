@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Professional DWG Export Configuration View (Adobe Illustrator Standards for AutoCAD)
+/// Professional DWG Export Configuration View (Professional Standards for AutoCAD)
 struct DWGExportView: View {
     @ObservedObject var document: VectorDocument
     @Binding var options: DWGExportOptions
@@ -38,7 +38,7 @@ struct DWGExportView: View {
                             .font(.title2)
                             .fontWeight(.semibold)
                         
-                        Text("Adobe Illustrator Standards for AutoCAD Compatibility")
+                        Text("Professional Standards for AutoCAD Compatibility")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -52,7 +52,7 @@ struct DWGExportView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     
-                    // Professional Scale Configuration (Adobe Illustrator Method)
+                    // Professional Scale Configuration (Professional Method)
                     GroupBox("Professional Scale Configuration") {
                         VStack(spacing: 16) {
                             
@@ -62,11 +62,11 @@ struct DWGExportView: View {
                                 Spacer()
                             }
                             
-                            // Scale Selection (Adobe Illustrator / AutoCAD Standards)
+                            // Scale Selection (Professional / AutoCAD Standards)
                             VStack(alignment: .leading, spacing: 12) {
                                 
                                 // Architectural Scales
-                                Text("Architectural (Adobe Illustrator / AutoCAD)")
+                                Text("Architectural (Professional / AutoCAD)")
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                     .foregroundColor(.primary)
@@ -166,7 +166,7 @@ struct DWGExportView: View {
                                     .help("AutoCAD uses inverted Y-axis compared to screen coordinates")
                                 
                                 Toggle("Include Reference Rectangle", isOn: $includeReferenceRectangle)
-                                    .help("Adobe Illustrator method: adds reference rectangle for scaling verification")
+                                    .help("Professional method: adds reference rectangle for scaling verification")
                             }
                         }
                         .padding()
