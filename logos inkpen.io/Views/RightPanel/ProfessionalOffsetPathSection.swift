@@ -43,7 +43,7 @@ enum JoinType: CaseIterable {
     }
 }
 
-// MARK: - Professional Offset Path Section (Adobe Illustrator Standards)
+// MARK: - Professional Offset Path Section (Professional Standards)
 
 struct ProfessionalOffsetPathSection: View {
     @ObservedObject var document: VectorDocument
@@ -79,7 +79,7 @@ struct ProfessionalOffsetPathSection: View {
                 
                 Spacer()
                 
-                // Adobe Illustrator icon
+                // Professional icon
                 Image(systemName: "arrow.up.and.down.and.arrow.left.and.right")
                     .font(.caption2)
                     .foregroundColor(.secondary)
@@ -113,7 +113,7 @@ struct ProfessionalOffsetPathSection: View {
                         .tint(.blue)
                     }
                     
-                    // Keep Original Path Checkbox (Adobe Illustrator Standard)
+                    // Keep Original Path Checkbox (Professional Standard)
                     HStack {
                         Button {
                             keepOriginalPath.toggle()
@@ -129,14 +129,14 @@ struct ProfessionalOffsetPathSection: View {
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .help("Keep the original path when creating offset (Adobe Illustrator default)")
+                        .help("Keep the original path when creating offset (Professional default)")
                         
                         Spacer()
                     }
                     
 
                     
-                    // Join Type Selection (Adobe Illustrator style)
+                    // Join Type Selection (Professional style)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Joins:")
                             .font(.caption2)
@@ -199,7 +199,7 @@ struct ProfessionalOffsetPathSection: View {
                     
 
                     
-                    // Action Buttons (Adobe Illustrator style)
+                    // Action Buttons (Professional style)
                     VStack(spacing: 4) {
                         HStack(spacing: 6) {
                             // Offset Path button (handles both positive and negative offsets)
