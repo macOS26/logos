@@ -292,10 +292,15 @@ class ImageNSViewClass: NSView {
         print("   📍 Image origin: \(imageBounds.origin)")
         print("   📏 Image size: \(imageBounds.size)")
         
-        // Draw the image directly in the bounds (no transform applied to context)
+        // FIXED: Flip image vertically without changing coordinate system
+        // This keeps the bounds correct while fixing the image orientation
+        context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
+        context.scaleBy(x: 1.0, y: -1.0)
+        
+        // Draw the image at origin (0,0) since we've translated the context
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            context.draw(cgImage, in: imageBounds)
-            print("   ✅ Image drawn at: \(imageBounds)")
+            context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
+            print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
         } else {
             print("   ❌ Failed to get CGImage")
         }
