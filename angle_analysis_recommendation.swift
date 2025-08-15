@@ -105,7 +105,6 @@ print("\n🔍 INDUSTRY STANDARDS ANALYSIS:")
 print("\n📊 How other formats handle linear gradients:")
 print("   - SVG: Uses x1,y1,x2,y2 coordinates (no explicit angle)")
 print("   - CSS: Uses angle or direction keywords (angle is primary)")
-print("   - Adobe Illustrator: Uses angle and coordinates")
 print("   - Figma: Uses start/end points (no explicit angle)")
 print("   - Sketch: Uses angle and coordinates")
 
