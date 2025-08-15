@@ -317,6 +317,138 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
     }
+    
+    /// Moves a clipping mask and all its clipped content together
+    func moveClippingMask(_ maskID: UUID, by offset: CGPoint) {
+        guard let layerIndex = selectedLayerIndex else { return }
+        saveToUndoStack()
+        
+        // Find the mask shape
+        guard let maskIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) else { return }
+        
+        // Move the mask shape by updating its path coordinates (not just transform)
+        moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: maskIndex, by: offset)
+        
+        // Move all clipped content by the same amount
+        for idx in layers[layerIndex].shapes.indices {
+            if layers[layerIndex].shapes[idx].clippedByShapeID == maskID {
+                moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: idx, by: offset)
+            }
+        }
+        
+        Log.info("🎭 CLIPPING MASK: Moved mask '\(layers[layerIndex].shapes[maskIndex].name)' and all clipped content by \(offset)", category: .general)
+        objectWillChange.send()
+    }
+    
+    /// Helper function to move a shape by updating its path coordinates
+    private func moveShapeByPathCoordinates(layerIndex: Int, shapeIndex: Int, by offset: CGPoint) {
+        let shape = layers[layerIndex].shapes[shapeIndex]
+        
+        // For images and complex shapes, update the path coordinates directly
+        if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+            // For image shapes, update both transform and path coordinates
+            layers[layerIndex].shapes[shapeIndex].transform = shape.transform.translatedBy(x: offset.x, y: offset.y)
+            
+            // Also update the path coordinates for the image bounds
+            var updatedElements: [PathElement] = []
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to):
+                    let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    updatedElements.append(.move(to: VectorPoint(newPoint)))
+                case .line(let to):
+                    let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    updatedElements.append(.line(to: VectorPoint(newPoint)))
+                case .curve(let to, let control1, let control2):
+                    let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
+                    let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
+                    updatedElements.append(.curve(
+                        to: VectorPoint(newTo),
+                        control1: VectorPoint(newControl1),
+                        control2: VectorPoint(newControl2)
+                    ))
+                case .quadCurve(let to, let control):
+                    let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
+                    updatedElements.append(.quadCurve(
+                        to: VectorPoint(newTo),
+                        control: VectorPoint(newControl)
+                    ))
+                case .close:
+                    updatedElements.append(.close)
+                }
+            }
+            layers[layerIndex].shapes[shapeIndex].path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+        } else {
+            // For regular shapes, update path coordinates directly
+            var updatedElements: [PathElement] = []
+            for element in shape.path.elements {
+                switch element {
+                case .move(let to):
+                    let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    updatedElements.append(.move(to: VectorPoint(newPoint)))
+                case .line(let to):
+                    let newPoint = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    updatedElements.append(.line(to: VectorPoint(newPoint)))
+                case .curve(let to, let control1, let control2):
+                    let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    let newControl1 = CGPoint(x: control1.x + offset.x, y: control1.y + offset.y)
+                    let newControl2 = CGPoint(x: control2.x + offset.x, y: control2.y + offset.y)
+                    updatedElements.append(.curve(
+                        to: VectorPoint(newTo),
+                        control1: VectorPoint(newControl1),
+                        control2: VectorPoint(newControl2)
+                    ))
+                case .quadCurve(let to, let control):
+                    let newTo = CGPoint(x: to.x + offset.x, y: to.y + offset.y)
+                    let newControl = CGPoint(x: control.x + offset.x, y: control.y + offset.y)
+                    updatedElements.append(.quadCurve(
+                        to: VectorPoint(newTo),
+                        control: VectorPoint(newControl)
+                    ))
+                case .close:
+                    updatedElements.append(.close)
+                }
+            }
+            layers[layerIndex].shapes[shapeIndex].path = VectorPath(elements: updatedElements, isClosed: shape.path.isClosed)
+        }
+        
+        // Update bounds after moving
+        layers[layerIndex].shapes[shapeIndex].updateBounds()
+    }
+    
+    /// Checks if a shape is part of a clipping mask (either as mask or clipped content)
+    func isShapeInClippingMask(_ shapeID: UUID) -> Bool {
+        guard let layerIndex = selectedLayerIndex else { return false }
+        
+        if let shape = layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
+            return shape.isClippingPath || shape.clippedByShapeID != nil
+        }
+        return false
+    }
+    
+    /// Gets all shapes that are part of a clipping mask (including the mask itself)
+    func getClippingMaskGroup(for maskID: UUID) -> [VectorShape] {
+        guard let layerIndex = selectedLayerIndex else { return [] }
+        
+        var group: [VectorShape] = []
+        
+        // Add the mask shape
+        if let maskShape = layers[layerIndex].shapes.first(where: { $0.id == maskID && $0.isClippingPath }) {
+            group.append(maskShape)
+        }
+        
+        // Add all clipped content
+        for shape in layers[layerIndex].shapes {
+            if shape.clippedByShapeID == maskID {
+                group.append(shape)
+            }
+        }
+        
+        return group
+    }
+    
     @Published var brushRemoveOverlap: Bool = true // When enabled, applies union operation to merge overlapping parts
     @Published var viewMode: ViewMode = .color
     @Published var zoomLevel: Double = 1.0

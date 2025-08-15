@@ -109,7 +109,16 @@ extension DrawingCanvas {
             // Apply drag delta to shapes
             for shapeID in document.selectedShapeIDs {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
+                    let shape = document.layers[layerIndex].shapes[shapeIndex]
+                    
+                    // CLIPPING MASK MOVEMENT: If this is a mask shape, move it and all its clipped content
+                    if shape.isClippingPath {
+                        Log.info("🎭 CLIPPING MASK: Moving mask '\(shape.name)' and all clipped content", category: .selection)
+                        document.moveClippingMask(shape.id, by: currentDragDelta)
+                    } else {
+                        // Regular shape movement
+                        applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
+                    }
                 }
             }
             

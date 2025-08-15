@@ -54,9 +54,12 @@ struct LayerView: View {
                         )
                     }
                     .mask(
-                        // Create mask with identical coordinate transformations
-                        ShapeMaskView(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
+                        // Create mask with identical coordinate transformations - NO drag preview for masks
+                        ShapeMaskView(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: .zero, isSelected: false)
                     )
+                    // CLIPPED SHAPE LIVE PREVIEW: Apply drag preview to the clipped shape container
+                    .offset(x: selectedShapeIDs.contains(currentShape.id) ? dragPreviewDelta.x * zoomLevel : 0, 
+                            y: selectedShapeIDs.contains(currentShape.id) ? dragPreviewDelta.y * zoomLevel : 0)
                     .onAppear {
                         // Debug clipping mask rendering
                         print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
@@ -366,13 +369,15 @@ private struct ShapeMaskView: View {
     let maskShape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let dragPreviewDelta: CGPoint
+    let isSelected: Bool
 
     var body: some View {
         Group {
             if maskShape.isGroupContainer {
-                GroupMaskContainer(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
+                GroupMaskContainer(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: dragPreviewDelta, isSelected: isSelected)
             } else {
-                SingleMaskShape(shape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
+                SingleMaskShape(shape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: dragPreviewDelta, isSelected: isSelected)
             }
         }
     }
@@ -383,6 +388,8 @@ private struct SingleMaskShape: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let dragPreviewDelta: CGPoint
+    let isSelected: Bool
 
     var body: some View {
         let useEvenOdd = (shape.path.fillRule == .evenOdd)
@@ -390,10 +397,12 @@ private struct SingleMaskShape: View {
             addPathElements(shape.path.elements, to: &path)
         }
         .fill(Color.black, style: SwiftUI.FillStyle(eoFill: useEvenOdd, antialiased: true))
-        // CRITICAL: Apply transformations in EXACTLY the same order as the main shape
+        // CRITICAL FIX: Apply transformations in EXACTLY the same order as the main ShapeView
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
-        .transformEffect(shape.transform)
+        // Only apply transform for groups, just like the main ShapeView
+        .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
+        // CLIPPING MASK FIX: No drag preview offset for masks - prevents scaling during drag
     }
 }
 
@@ -401,14 +410,18 @@ private struct GroupMaskContainer: View {
     let maskShape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
+    let dragPreviewDelta: CGPoint
+    let isSelected: Bool
 
     var body: some View {
         ZStack {
             ForEach(maskShape.groupedShapes, id: \.id) { grouped in
-                SingleMaskShape(shape: grouped, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
+                SingleMaskShape(shape: grouped, zoomLevel: zoomLevel, canvasOffset: canvasOffset, dragPreviewDelta: .zero, isSelected: false)
             }
         }
+        // CRITICAL FIX: Only apply group transform, not zoom/offset (already applied to individual shapes)
         .transformEffect(maskShape.transform)
+        // CLIPPING MASK FIX: No drag preview offset for group masks - prevents scaling during drag
     }
 }
 

@@ -240,7 +240,7 @@ extension DrawingCanvas {
                     continue
                 } else if shape.isGroupContainer {
                     // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
-                    Log.debug("  - Group container: checking \(shape.groupedShapes.count) grouped shapes", category: .selection)
+                    Log.info("  - Group container: checking \(shape.groupedShapes.count) grouped shapes", category: .selection)
                     for groupedShape in shape.groupedShapes {
                         if !groupedShape.isVisible { continue }
                         

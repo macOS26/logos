@@ -137,6 +137,21 @@ struct PathOperationsPanel: View {
                     .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 12)
+                
+                // Clipping Mask Selection Mode Toggle
+                HStack {
+                    Toggle("Allow Content Selection", isOn: Binding(
+                        get: { AppState.shared.enableClippingMaskContentSelection },
+                        set: { AppState.shared.enableClippingMaskContentSelection = $0 }
+                    ))
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .font(.caption)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                
                 HStack(spacing: 6) {
                     Button("Make Clipping Mask") {
                         document.makeClippingMaskFromSelection()

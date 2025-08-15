@@ -44,7 +44,7 @@ class AppState {
     var defaultTool: DrawingTool = .brush {
         didSet {
             UserDefaults.standard.set(defaultTool.rawValue, forKey: "defaultTool")
-            Log.debug("🛠️ Default tool changed to: \(defaultTool.rawValue)")
+            Log.info("🛠️ Default tool changed to: \(defaultTool.rawValue)")
         }
     }
     
@@ -52,7 +52,17 @@ class AppState {
     var pressureSensitivityEnabled: Bool = true {
         didSet {
             UserDefaults.standard.set(pressureSensitivityEnabled, forKey: "pressureSensitivityEnabled")
-            Log.debug("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
+            Log.info("🎨 PRESSURE: Sensitivity toggled to: \(pressureSensitivityEnabled)", category: .pressure)
+        }
+    }
+    
+    // MARK: - Clipping Mask Selection Mode
+    /// When true, allows selection of individual shapes within clipping masks
+    /// When false, clipping mask contents cannot be individually selected
+    var enableClippingMaskContentSelection: Bool = false {
+        didSet {
+            UserDefaults.standard.set(enableClippingMaskContentSelection, forKey: "enableClippingMaskContentSelection")
+            Log.info("🎭 CLIPPING MASK: Content selection mode \(enableClippingMaskContentSelection ? "enabled" : "disabled")", category: .general)
         }
     }
     

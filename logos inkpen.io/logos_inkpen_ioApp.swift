@@ -1633,6 +1633,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     private func configureWindowsAsync() async {
         await MainActor.run {
+            // Check if we have any document windows open
+            let documentWindows = NSApplication.shared.windows.filter { window in
+                // Check if this is a document window (not the onboarding window)
+                return window.title != "Document Setup" && window.title != ""
+            }
+            
+            // If we have document windows open, close the onboarding window
+            if !documentWindows.isEmpty {
+                // Close the onboarding window if it exists
+                if let onboardingWindow = NSApplication.shared.windows.first(where: { $0.title == "Document Setup" }) {
+                    onboardingWindow.close()
+                    Log.info("📄 App: Document windows detected at launch - closing onboarding setup window", category: .startup)
+                }
+            } else {
+                Log.info("📄 App: No document windows detected at launch - keeping onboarding setup window", category: .startup)
+            }
+            
             // Adjust any Apple Metal HUD carrier view if present in visible windows
             NSApplication.shared.windows.forEach { window in
                 if AppState.shared.enableSystemMetalHUD {
@@ -1673,12 +1690,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // If no windows are visible, let DocumentGroup handle document creation
-        if !flag {
-            Log.startup("📄 App: App reopened with no visible windows, DocumentGroup will handle document creation")
-            return true
+        // Check if we have any document windows open (not just visible windows)
+        let documentWindows = NSApplication.shared.windows.filter { window in
+            return window.title != "Document Setup" && window.title != ""
         }
-        return false
+        
+        // If no document windows are open, let DocumentGroup handle document creation
+        if documentWindows.isEmpty {
+            Log.startup("📄 App: App reopened with no document windows, DocumentGroup will handle document creation")
+            return true
+        } else {
+            Log.startup("📄 App: App reopened with existing document windows - not showing onboarding setup")
+            return false
+        }
     }
     
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -1774,7 +1798,7 @@ struct logos_inken_ioApp: App {
     //    }
     
     var body: some Scene {
-        // ONBOARDING: Show New Document Setup Window when no documents exist
+        // ONBOARDING: Show New Document Setup Window only when no document windows exist
         WindowGroup("Document Setup", id: "onboarding-setup") {
             NewDocumentSetupView(
                 isPresented: .constant(true),
