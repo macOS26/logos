@@ -62,7 +62,7 @@ The application is built using modern SwiftUI with a clean MVVM architecture:
 
 ### Professional Features
 
-This vector drawing application rivals commercial software like Adobe Illustrator and MacroMedia Freehand with:
+This vector drawing application rivals commercial software like professional vector graphics applications with:
 
 - Professional-grade vector path manipulation
 - Industry-standard color management
