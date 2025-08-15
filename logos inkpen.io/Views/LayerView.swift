@@ -247,17 +247,15 @@ struct ImageNSView: NSViewRepresentable {
     let image: NSImage
     let bounds: CGRect
     let opacity: Double
-    let transform: CGAffineTransform  // NEW: Pass the transform
     
     func makeNSView(context: Context) -> ImageNSViewClass {
-        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, transform: transform)
+        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity)
     }
     
     func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
         nsView.image = image
         nsView.imageBounds = bounds
         nsView.opacity = opacity
-        nsView.transform = transform  // NEW: Update the transform
         nsView.needsDisplay = true
     }
 }
@@ -266,13 +264,11 @@ class ImageNSViewClass: NSView {
     var image: NSImage
     var imageBounds: CGRect
     var opacity: Double
-    var transform: CGAffineTransform  // NEW: Store the transform
     
-    init(image: NSImage, bounds: CGRect, opacity: Double, transform: CGAffineTransform) {
+    init(image: NSImage, bounds: CGRect, opacity: Double) {
         self.image = image
         self.imageBounds = bounds
         self.opacity = opacity
-        self.transform = transform
         super.init(frame: .zero)
         self.wantsLayer = true
         self.layer?.backgroundColor = NSColor.clear.cgColor
@@ -294,16 +290,15 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // CRITICAL FIX: Apply the shape's transform to the drawing context
-        // This ensures the image is drawn with the correct rotation, scale, and position
-        context.concatenate(transform)
+        // FIXED: Match GradientNSView approach - draw image directly in bounds
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the image as-is.
         
         // DEBUG LOGGING: Track image placement and movement
         print("🖼️ IMAGE NSVIEW DRAW:")
         print("   📊 Image bounds: \(imageBounds)")
         print("   📍 Image origin: \(imageBounds.origin)")
         print("   📏 Image size: \(imageBounds.size)")
-        print("   🔄 Applied transform: [\(String(format: "%.3f", transform.a)), \(String(format: "%.3f", transform.b)), \(String(format: "%.3f", transform.c)), \(String(format: "%.3f", transform.d)), \(String(format: "%.1f", transform.tx)), \(String(format: "%.1f", transform.ty))]")
         
         // FIXED: Flip image vertically without changing coordinate system
         // This keeps the bounds correct while fixing the image orientation
@@ -313,7 +308,7 @@ class ImageNSViewClass: NSView {
         // Draw the image at origin (0,0) since we've translated the context
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
-            print("   ✅ Image drawn at: \(imageBounds) with vertical flip and transform")
+            print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
         } else {
             print("   ❌ Failed to get CGImage")
         }
@@ -412,8 +407,7 @@ struct ShapeView: View {
                     ImageNSView(
                         image: image,
                         bounds: transformedBounds,
-                        opacity: shape.opacity,
-                        transform: shape.transform  // NEW: Pass the shape's transform
+                        opacity: shape.opacity
                     )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
@@ -428,8 +422,7 @@ struct ShapeView: View {
                         ImageNSView(
                             image: hydrated,
                             bounds: transformedBounds,
-                            opacity: shape.opacity,
-                            transform: shape.transform  // NEW: Pass the shape's transform
+                            opacity: shape.opacity
                         )
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
@@ -1381,28 +1374,7 @@ struct TransformBoxHandles: View {
     }
 }
 
-    // MARK: - Helper Functions
-    
-    /// Get the correct bounds for a shape, considering transforms for images
-    internal func getEffectiveBounds(for shape: VectorShape) -> CGRect {
-        if ImageContentRegistry.containsImage(shape) {
-            // IMAGE SHAPE: Use transformed bounds (path bounds + transform)
-            // This matches how images are rendered in ImageNSView
-            let pathBounds = shape.path.cgPath.boundingBoxOfPath
-            return pathBounds.applying(shape.transform)
-        } else if shape.isGroup {
-            // GROUP: Use group bounds
-            return shape.groupBounds
-        } else if shape.isGroupContainer {
-            // GROUP CONTAINER: Use group bounds
-            return shape.groupBounds
-        } else {
-            // REGULAR SHAPE: Use shape bounds
-            return shape.bounds
-        }
-    }
-    
-    // MARK: - Scale Tool Handles
+// MARK: - Scale Tool Handles
 struct ScaleHandles: View {
     @ObservedObject var document: VectorDocument
     let shape: VectorShape
@@ -1431,7 +1403,7 @@ struct ScaleHandles: View {
 
     var body: some View {
         // SCALE TOOL: Show all path points + center point with correct colors
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -1650,7 +1622,7 @@ struct ScaleHandles: View {
             }
         }
         .onAppear {
-            initialBounds = bounds
+            initialBounds = shape.bounds
             initialTransform = shape.transform
             extractPathPoints()
             
@@ -1745,22 +1717,40 @@ struct ScaleHandles: View {
     private func finishScaling() {
         scalingStarted = false
         isScaling = false
-        document.isHandleScalingActive = false
+        document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
+        
+        Log.info("🏁 SCALING FINISH: Applying final transform to coordinates", category: .general)
+        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        print("   🎯 FINAL MARQUEE: Bounds (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
+        
+        // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
+        // This ensures object origin stays with object after scaling (Professional behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-            // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-                // Commit the preview transform as the shape.transform
-                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            } else {
-                // Reset to initial transform to avoid drift and apply final preview to path coordinates
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-                applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-            }
+            
+            let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            
+            let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+            
+            // Reset preview transform and marquee bounds
             previewTransform = .identity
-            // Force UI refresh to reflect committed transform
-            document.objectWillChange.send()
+            finalMarqueeBounds = .zero // Hide marquee
+            
+            Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
+            
+            // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
+            // This updates the points to match the scaled object positions
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.updatePathPointsAfterScaling()
+            }
         }
     }
     
@@ -1801,7 +1791,7 @@ struct ScaleHandles: View {
         
         // Update center point based on current bounds
         // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
@@ -1833,8 +1823,7 @@ struct ScaleHandles: View {
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Scale away from the locked pin point
-                            let bounds = getEffectiveBounds(for: shape)
-                            handleScalingFromPoint(draggedPointIndex: index, dragValue: value, bounds: bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            handleScalingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
                         .onEnded { _ in
                             finishScaling()
@@ -1859,7 +1848,7 @@ struct ScaleHandles: View {
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
-                let bounds = getEffectiveBounds(for: shape)
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
                 print("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
@@ -2312,7 +2301,7 @@ struct RotateHandles: View {
     var body: some View {
         // ROTATE TOOL: Show actual path points + center point for precise anchor selection
         // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -2404,7 +2393,7 @@ struct RotateHandles: View {
                 )
         }
         .onAppear {
-            initialBounds = bounds
+            initialBounds = shape.bounds
             initialTransform = shape.transform
             setupRotationKeyEventMonitoring()
             extractPathPoints()
@@ -2433,8 +2422,8 @@ struct RotateHandles: View {
         }
         
         // Update center point based on current bounds
-        // Use consistent bounding box calculation for alignment with selection tool
-        let bounds = getEffectiveBounds(for: shape)
+        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
@@ -2464,8 +2453,7 @@ struct RotateHandles: View {
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
-                            let bounds = getEffectiveBounds(for: shape)
-                            handlePointRotation(anchorPointIndex: index, dragValue: value, bounds: bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            handlePointRotation(anchorPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
                         .onEnded { _ in
                             finishRotation()
@@ -2533,24 +2521,6 @@ struct RotateHandles: View {
     }
     
     private func updatePathPointsAfterRotation() {
-        // SPECIAL-CASE IMAGES: Don't re-extract path points for images
-        // Images use transforms, not path coordinate changes
-        if ImageContentRegistry.containsImage(shape) {
-            print("🖼️ IMAGE ROTATION: Skipping path point extraction - preserving transform-based bounds")
-            
-            // For images, just update the center point based on the transformed bounds
-            let newBounds = getEffectiveBounds(for: shape)
-            centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
-            
-            // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new bounds
-            pointsRefreshTrigger += 1
-            
-            print("🔄 IMAGE ROTATION: Updated center point to (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
-            print("   📐 Transformed bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
-            Log.info("   🔄 Image view refresh trigger: \(pointsRefreshTrigger)", category: .general)
-            return
-        }
-        
         // FORCE REFRESH: Clear current points and re-extract from transformed object
         pathPoints.removeAll()
         
@@ -2748,14 +2718,6 @@ struct RotateHandles: View {
         // CRITICAL FIX: Always calculate from initial transform to prevent drift
         previewTransform = initialTransform.concatenating(rotationTransform)
         
-        // DEBUG: Log the actual transform values
-        print("🔄 ROTATION DEBUG:")
-        print("   📐 Anchor: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
-        print("   📊 Angle: \(String(format: "%.1f", angle * 180 / .pi))°")
-        print("   🔧 Rotation Transform: [\(String(format: "%.3f", rotationTransform.a)), \(String(format: "%.3f", rotationTransform.b)), \(String(format: "%.3f", rotationTransform.c)), \(String(format: "%.3f", rotationTransform.d)), \(String(format: "%.1f", rotationTransform.tx)), \(String(format: "%.1f", rotationTransform.ty))]")
-        print("   🔧 Initial Transform: [\(String(format: "%.3f", initialTransform.a)), \(String(format: "%.3f", initialTransform.b)), \(String(format: "%.3f", initialTransform.c)), \(String(format: "%.3f", initialTransform.d)), \(String(format: "%.1f", initialTransform.tx)), \(String(format: "%.1f", initialTransform.ty))]")
-        print("   🔧 Preview Transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
-        
         // MARQUEE PREVIEW: Ensure isRotating is true for marquee visibility
         isRotating = true
         
@@ -2786,25 +2748,11 @@ struct RotateHandles: View {
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
             
-            // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-                print("🖼️ IMAGE ROTATION DEBUG:")
-                print("   🔧 Setting image transform to: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
-                print("   📐 Before updateBounds: bounds=\(document.layers[layerIndex].shapes[shapeIndex].bounds)")
-                
-                // Commit the preview transform as the shape.transform
-                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                
-                print("   📐 After updateBounds: bounds=\(document.layers[layerIndex].shapes[shapeIndex].bounds)")
-                print("   🔧 Final transform: [\(String(format: "%.3f", document.layers[layerIndex].shapes[shapeIndex].transform.a)), \(String(format: "%.3f", document.layers[layerIndex].shapes[shapeIndex].transform.b)), \(String(format: "%.3f", document.layers[layerIndex].shapes[shapeIndex].transform.c)), \(String(format: "%.3f", document.layers[layerIndex].shapes[shapeIndex].transform.d)), \(String(format: "%.1f", document.layers[layerIndex].shapes[shapeIndex].transform.tx)), \(String(format: "%.1f", document.layers[layerIndex].shapes[shapeIndex].transform.ty))]")
-            } else {
-                // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-                
-                // Apply the final transform to coordinates and reset transform to identity
-                applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-            }
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
@@ -2992,7 +2940,7 @@ struct ShearHandles: View {
     
     var body: some View {
         // SHEAR TOOL: Show all path points + center point with correct colors (same as scale tool)
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         
         ZStack {
@@ -3127,8 +3075,7 @@ struct ShearHandles: View {
 
         }
         .onAppear {
-            let bounds = getEffectiveBounds(for: shape)
-            initialBounds = bounds
+            initialBounds = shape.bounds
             initialTransform = shape.transform
             extractPathPoints()
             
@@ -3195,18 +3142,11 @@ struct ShearHandles: View {
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
-            // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
-            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-                // Commit the preview transform as the shape.transform
-                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            } else {
-                // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-                
-                // Apply the final transform to coordinates and reset transform to identity
-                applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-            }
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             Log.info("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity", category: .fileOperations)
             
@@ -3256,8 +3196,7 @@ struct ShearHandles: View {
         }
         
         // Update center point based on current bounds
-        // Use consistent bounding box calculation for alignment with selection tool
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
@@ -3288,8 +3227,7 @@ struct ShearHandles: View {
                     DragGesture(minimumDistance: 3)
                         .onChanged { value in
                             // DRAG: Shear away from the locked pin point
-                            let bounds = getEffectiveBounds(for: shape)
-                            handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
+                            handleShearingFromPoint(draggedPointIndex: index, dragValue: value, bounds: shape.bounds, center: CGPoint(x: centerPoint.x, y: centerPoint.y))
                         }
                         .onEnded { _ in
                             finishShear()
@@ -3313,7 +3251,7 @@ struct ShearHandles: View {
                 print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
             } else {
                 // Bounds corner point (if we add them later)
-                let bounds = getEffectiveBounds(for: shape)
+                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 shearAnchorPoint = center // Fallback to center
                 Log.info("🔴 LOCKED PIN: Set to bounds point (fallback to center)", category: .general)
@@ -3565,7 +3503,7 @@ struct EnvelopeHandles: View {
     
     var body: some View {
         // ENVELOPE TOOL: Show bounding box corners with correct colors
-        let bounds = getEffectiveBounds(for: shape)
+        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape paths
@@ -3850,8 +3788,13 @@ struct EnvelopeHandles: View {
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
         } else {
-            // Use consistent bounding box calculation for alignment with selection tool
-            let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
+            let bounds = shape.bounds
+            let newOriginalCorners = [
+                CGPoint(x: bounds.minX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.maxY),
+                CGPoint(x: bounds.minX, y: bounds.maxY)
+            ]
             originalCorners = newOriginalCorners
             warpedCorners = newOriginalCorners
         }
@@ -3914,10 +3857,9 @@ struct EnvelopeHandles: View {
             initialBounds = originalPath.cgPath.boundingBoxOfPath
             Log.fileOperation("🔧 WARP OBJECT: Using original path bounds for reference", level: .info)
         } else {
-            // For regular shapes, use consistent bounding box calculation
-            let bounds = getEffectiveBounds(for: shape)
-            initialBounds = bounds
-            Log.fileOperation("🔧 REGULAR SHAPE: Using consistent bounding box calculation for reference", level: .info)
+            // For regular shapes, use current bounds
+            initialBounds = shape.bounds
+            Log.fileOperation("🔧 REGULAR SHAPE: Using current bounds for reference", level: .info)
         }
         
         initialTransform = shape.transform
@@ -4913,7 +4855,7 @@ class GradientStrokeNSView: NSView {
         // Special handling for groups and compound shapes
         if shape.isGroup || shape.isGroupContainer {
             Log.info("   👥 GROUP/COMPOUND SHAPE: Using composite bounds", category: .general)
-            let bounds = getEffectiveBounds(for: shape)
+            let bounds = shape.isGroup ? shape.bounds : shape.groupBounds
             
             // For groups, use the overall bounds (already computed across all grouped shapes)
             let objectSpaceCorners = [

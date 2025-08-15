@@ -8,7 +8,6 @@
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
-import AppKit
 
 // MARK: - Codable Extensions for Core Graphics Types
 extension CGLineCap: Codable {
@@ -326,32 +325,20 @@ struct VectorShape: Codable, Hashable, Identifiable {
         if isGroup && !groupedShapes.isEmpty {
             // Flattened shape: Use union of all grouped shapes' bounds
             var calculatedBounds = CGRect.zero
-            if groupedShapes.isEmpty {
-                calculatedBounds = CGRect.zero
-            } else {
-                for (index, shape) in groupedShapes.enumerated() {
-                    let shapeBounds = shape.bounds
-                    if index == 0 {
-                        calculatedBounds = shapeBounds
-                    } else {
-                        calculatedBounds = calculatedBounds.union(shapeBounds)
-                    }
+            for (index, shape) in groupedShapes.enumerated() {
+                let shapeBounds = shape.bounds
+                if index == 0 {
+                    calculatedBounds = shapeBounds
+                } else {
+                    calculatedBounds = calculatedBounds.union(shapeBounds)
                 }
             }
             bounds = calculatedBounds
         } else {
-            // Check if this is an image that needs transformed bounds
-            if ImageContentRegistry.containsImage(self) {
-                // IMAGE SHAPE: Calculate transformed bounds (path bounds + transform)
-                let pathBounds = path.cgPath.boundingBoxOfPath
-                let transformedBounds = pathBounds.applying(transform)
-                bounds = transformedBounds
-            } else {
-                // Regular shape: Use original path bounds, not transformed bounds
-                // This prevents double transformation issues during rendering
-                bounds = path.cgPath.boundingBoxOfPath
-                // Transform is applied separately during rendering via .transformEffect()
-            }
+            // Regular shape: Use original path bounds, not transformed bounds
+            // This prevents double transformation issues during rendering
+            bounds = path.cgPath.boundingBoxOfPath
+            // Transform is applied separately during rendering via .transformEffect()
         }
     }
     
