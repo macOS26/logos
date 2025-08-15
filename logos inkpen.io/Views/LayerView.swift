@@ -38,34 +38,30 @@ struct LayerView: View {
                 if currentShape.isClippingPath {
                     EmptyView()
                 } else if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
-                    // FIXED CLIPPING MASK: Use proper coordinate system alignment
-                       // Render the clipped shape normally
-                        ShapeView(
-                            shape: currentShape,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            isSelected: selectedShapeIDs.contains(currentShape.id),
-                            viewMode: viewMode,
-                            isCanvasLayer: isCanvasLayer,
-                            isPasteboardLayer: isPasteboardLayer,
-                            dragPreviewDelta: dragPreviewDelta,
-                            dragPreviewTrigger: dragPreviewTrigger
-                        )
-
-                    .mask(
-                        // Core Graphics clipping mask with live preview support - UNCONSTRAINED BY CANVAS
-                        CoreGraphicsClippingMaskView(
-                            clippedShape: currentShape,
-                            maskShape: maskShape,
-                            zoomLevel: zoomLevel,
-                            canvasOffset: canvasOffset,
-                            dragPreviewDelta: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta : .zero,
-                            isSelected: selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id),
-                            dragPreviewTrigger: dragPreviewTrigger
-                        )
-                        .id(dragPreviewTrigger) // Force update when drag preview trigger changes
-                       // .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow mask to extend beyond canvas bounds
+                    // FIXED CLIPPING MASK: Use NSView approach like gradient fills
+                    // Create pre-transformed paths for the clipping mask
+                    let clippedPath = createPreTransformedPath(for: currentShape)
+                    let maskPath = createPreTransformedPath(for: maskShape)
+                    
+                    // Render the clipped shape using NSView-based clipping mask
+                    ClippingMaskShapeView(
+                        clippedShape: currentShape,
+                        maskShape: maskShape,
+                        clippedPath: clippedPath,
+                        maskPath: maskPath,
+                        zoomLevel: zoomLevel,
+                        canvasOffset: canvasOffset,
+                        isSelected: selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id),
+                        dragPreviewDelta: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta : .zero,
+                        dragPreviewTrigger: dragPreviewTrigger
                     )
+                    // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
+                    .scaleEffect(zoomLevel, anchor: .topLeading)
+                    .offset(x: canvasOffset.x, y: canvasOffset.y)
+                    // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
+                    .offset(x: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta.x * zoomLevel : 0, 
+                            y: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta.y * zoomLevel : 0)
+                    .id(dragPreviewTrigger) // Force update when drag preview trigger changes
                     .onAppear {
                         // Debug clipping mask rendering
                         print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
@@ -92,6 +88,211 @@ struct LayerView: View {
             }
         }
         .opacity(layer.opacity)
+    }
+    
+    // Helper function to create pre-transformed paths for clipping masks
+    private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
+        let path = CGMutablePath()
+        
+        // Add path elements
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                path.move(to: to.cgPoint)
+            case .line(let to):
+                path.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                path.closeSubpath()
+            }
+        }
+        
+        // Apply shape transform
+        if !shape.transform.isIdentity {
+            let transformedPath = CGMutablePath()
+            transformedPath.addPath(path, transform: shape.transform)
+            return transformedPath
+        }
+        
+        return path
+    }
+}
+
+// MARK: - NSView-Based Clipping Mask Shape View
+
+struct ClippingMaskShapeView: NSViewRepresentable {
+    let clippedShape: VectorShape
+    let maskShape: VectorShape
+    let clippedPath: CGPath
+    let maskPath: CGPath
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
+    let isSelected: Bool
+    let dragPreviewDelta: CGPoint
+    let dragPreviewTrigger: Bool
+    
+    func makeNSView(context: Context) -> ClippingMaskNSView {
+        return ClippingMaskNSView(clippedShape: clippedShape, maskShape: maskShape, clippedPath: clippedPath, maskPath: maskPath)
+    }
+    
+    func updateNSView(_ nsView: ClippingMaskNSView, context: Context) {
+        nsView.clippedShape = clippedShape
+        nsView.maskShape = maskShape
+        nsView.clippedPath = clippedPath
+        nsView.maskPath = maskPath
+        nsView.zoomLevel = zoomLevel
+        nsView.canvasOffset = canvasOffset
+        nsView.isSelected = isSelected
+        nsView.dragPreviewDelta = dragPreviewDelta
+        nsView.dragPreviewTrigger = dragPreviewTrigger
+        nsView.needsDisplay = true
+    }
+}
+
+class ClippingMaskNSView: NSView {
+    var clippedShape: VectorShape
+    var maskShape: VectorShape
+    var clippedPath: CGPath
+    var maskPath: CGPath
+    var zoomLevel: Double = 1.0
+    var canvasOffset: CGPoint = .zero
+    var isSelected: Bool = false
+    var dragPreviewDelta: CGPoint = .zero
+    var dragPreviewTrigger: Bool = false
+    
+    init(clippedShape: VectorShape, maskShape: VectorShape, clippedPath: CGPath, maskPath: CGPath) {
+        self.clippedShape = clippedShape
+        self.maskShape = maskShape
+        self.clippedPath = clippedPath
+        self.maskPath = maskPath
+        super.init(frame: .zero)
+        self.wantsLayer = true
+        self.layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override var isFlipped: Bool {
+        return true
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        
+        context.saveGState()
+        
+        // Apply clipping mask
+        context.addPath(maskPath)
+        context.clip()
+        
+        // Draw the clipped content (image or shape)
+        if ImageContentRegistry.containsImage(clippedShape),
+           let image = ImageContentRegistry.image(for: clippedShape.id) {
+            // Draw image using the same approach as ImageNSView
+            context.setAlpha(CGFloat(clippedShape.opacity))
+            context.concatenate(clippedShape.transform)
+            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                context.draw(cgImage, in: clippedShape.bounds)
+            }
+        } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
+                  let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
+            // Draw linked/embedded image using the same approach as ImageNSView
+            context.setAlpha(CGFloat(clippedShape.opacity))
+            context.concatenate(clippedShape.transform)
+            if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                context.draw(cgImage, in: clippedShape.bounds)
+            }
+        } else {
+            // Draw shape with fill and stroke
+            context.addPath(clippedPath)
+            
+            // Apply fill
+            if let fillStyle = clippedShape.fillStyle, fillStyle.color != .clear {
+                context.setFillColor(fillStyle.color.cgColor)
+                context.fillPath()
+            }
+            
+            // Apply stroke
+            if let strokeStyle = clippedShape.strokeStyle, strokeStyle.color != .clear {
+                context.setStrokeColor(strokeStyle.color.cgColor)
+                context.setLineWidth(strokeStyle.width)
+                context.strokePath()
+            }
+        }
+        
+        context.restoreGState()
+    }
+    
+
+}
+
+// MARK: - NSView-Based Image View
+
+struct ImageNSView: NSViewRepresentable {
+    let image: NSImage
+    let bounds: CGRect
+    let transform: CGAffineTransform
+    let opacity: Double
+    
+    func makeNSView(context: Context) -> ImageNSViewClass {
+        return ImageNSViewClass(image: image, bounds: bounds, transform: transform, opacity: opacity)
+    }
+    
+    func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
+        nsView.image = image
+        nsView.imageBounds = bounds
+        nsView.transform = transform
+        nsView.opacity = opacity
+        nsView.needsDisplay = true
+    }
+}
+
+class ImageNSViewClass: NSView {
+    var image: NSImage
+    var imageBounds: CGRect
+    var transform: CGAffineTransform
+    var opacity: Double
+    
+    init(image: NSImage, bounds: CGRect, transform: CGAffineTransform, opacity: Double) {
+        self.image = image
+        self.imageBounds = bounds
+        self.transform = transform
+        self.opacity = opacity
+        super.init(frame: .zero)
+        self.wantsLayer = true
+        self.layer?.backgroundColor = NSColor.clear.cgColor
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override var isFlipped: Bool {
+        return true
+    }
+    
+    override func draw(_ dirtyRect: NSRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        
+        context.saveGState()
+        
+        // Apply opacity
+        context.setAlpha(CGFloat(opacity))
+        
+        // Apply transform
+        context.concatenate(transform)
+        
+        // Draw the image in the bounds
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            context.draw(cgImage, in: imageBounds)
+        }
+        
+        context.restoreGState()
     }
 }
 
@@ -177,23 +378,23 @@ struct ShapeView: View {
                     )
                 } else if ImageContentRegistry.containsImage(shape),
                           let image = ImageContentRegistry.image(for: shape.id) {
-                    // RENDER RASTER IMAGE AS A RECT PATH FILLED WITH IMAGEPAINT
-                    // This aligns the visual rect exactly with the vector bounds and transform pipeline
-                    let swiftImage = Image(nsImage: image)
-                    let rectPath = Path(CGRect(origin: .zero, size: shape.bounds.size))
-                    rectPath
-                        .fill(ImagePaint(image: swiftImage, sourceRect: CGRect(x: 0, y: 0, width: 1, height: 1), scale: 1.0))
-                        .opacity(shape.opacity)
-                        .transformEffect(shape.transform)
+                    // RENDER RASTER IMAGE USING NSVIEW (same as gradient fills)
+                    ImageNSView(
+                        image: image,
+                        bounds: shape.bounds,
+                        transform: shape.transform,
+                        opacity: shape.opacity
+                    )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
                     if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-                        let swiftImage = Image(nsImage: hydrated)
-                        let rectPath = Path(CGRect(origin: .zero, size: shape.bounds.size))
-                        rectPath
-                            .fill(ImagePaint(image: swiftImage, sourceRect: CGRect(x: 0, y: 0, width: 1, height: 1), scale: 1.0))
-                            .opacity(shape.opacity)
-                            .transformEffect(shape.transform)
+                        // RENDER HYDRATED IMAGE USING NSVIEW
+                        ImageNSView(
+                            image: hydrated,
+                            bounds: shape.bounds,
+                            transform: shape.transform,
+                            opacity: shape.opacity
+                        )
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
                         let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))
@@ -4771,245 +4972,5 @@ class SVGRenderingView: NSView {
     }
 }
 
-// MARK: - Core Graphics Clipping Mask View
 
-struct CoreGraphicsClippingMaskView: NSViewRepresentable {
-    let clippedShape: VectorShape
-    let maskShape: VectorShape
-    let zoomLevel: Double
-    let canvasOffset: CGPoint
-    let dragPreviewDelta: CGPoint
-    let isSelected: Bool
-    let dragPreviewTrigger: Bool
-    
-    func makeNSView(context: Context) -> ClippingMaskNSView {
-        let nsView = ClippingMaskNSView()
-        nsView.wantsLayer = true
-        return nsView
-    }
-    
-    func updateNSView(_ nsView: ClippingMaskNSView, context: Context) {
-        nsView.clippedShape = clippedShape
-        nsView.maskShape = maskShape
-        nsView.zoomLevel = zoomLevel
-        nsView.canvasOffset = canvasOffset
-        nsView.dragPreviewDelta = dragPreviewDelta
-        nsView.isSelected = isSelected
-        nsView.dragPreviewTrigger = dragPreviewTrigger
-        nsView.needsDisplay = true
-    }
-}
-
-class ClippingMaskNSView: NSView {
-    var clippedShape: VectorShape = VectorShape(path: VectorPath())
-    var maskShape: VectorShape = VectorShape(path: VectorPath())
-    var zoomLevel: Double = 1.0
-    var canvasOffset: CGPoint = .zero
-    var dragPreviewDelta: CGPoint = .zero
-    var isSelected: Bool = false
-    var dragPreviewTrigger: Bool = false
-    
-    override var isFlipped: Bool {
-        return true
-    }
-    
-    override func draw(_ dirtyRect: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
-        
-        context.saveGState()
-        
-        // Apply coordinate transformations in the same order as SwiftUI
-        context.scaleBy(x: zoomLevel, y: zoomLevel)
-        context.translateBy(x: canvasOffset.x / zoomLevel, y: canvasOffset.y / zoomLevel)
-        
-        // CRITICAL FIX: Apply drag preview offset for live movement
-        if isSelected {
-            context.translateBy(x: dragPreviewDelta.x / zoomLevel, y: dragPreviewDelta.y / zoomLevel)
-        }
-        
-        // Create the mask path
-        let maskPath = createPathFromShape(maskShape)
-        
-        // Set up clipping using Core Graphics
-        context.addPath(maskPath)
-        context.clip() // This creates the clipping mask
-        
-        // Now draw the clipped shape content (drag preview already applied above)
-        drawShapeContent(clippedShape, in: context)
-        
-        context.restoreGState()
-    }
-    
-    private func createPathFromShape(_ shape: VectorShape) -> CGPath {
-        let path = CGMutablePath()
-        
-        // Add path elements
-        for element in shape.path.elements {
-            switch element {
-            case .move(let to):
-                path.move(to: to.cgPoint)
-            case .line(let to):
-                path.addLine(to: to.cgPoint)
-            case .curve(let to, let control1, let control2):
-                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
-            case .quadCurve(let to, let control):
-                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
-            case .close:
-                path.closeSubpath()
-            }
-        }
-        
-        // Apply shape transform
-        if !shape.transform.isIdentity {
-            let transformedPath = CGMutablePath()
-            transformedPath.addPath(path, transform: shape.transform)
-            return transformedPath
-        }
-        
-        return path
-    }
-    
-    private func drawShapeContent(_ shape: VectorShape, in context: CGContext) {
-        // Check if this is an image first
-        if ImageContentRegistry.containsImage(shape),
-           let image = ImageContentRegistry.image(for: shape.id) {
-            // RENDER IMAGE THROUGH CORE GRAPHICS
-            drawImageContent(shape: shape, image: image, in: context)
-            return
-        }
-        
-        // Check for linked/embedded images
-        if shape.linkedImagePath != nil || shape.embeddedImageData != nil,
-           let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-            drawImageContent(shape: shape, image: hydrated, in: context)
-            return
-        }
-        
-        // Regular shape rendering
-        let shapePath = createPathFromShape(shape)
-        
-        // Draw fill if present
-        if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
-            context.addPath(shapePath)
-            
-            switch fillStyle.color {
-            case .rgb(let rgb):
-                context.setFillColor(rgb.cgColor)
-                context.fillPath()
-            case .cmyk(let cmyk):
-                context.setFillColor(cmyk.rgbColor.cgColor)
-                context.fillPath()
-            case .hsb(let hsb):
-                context.setFillColor(hsb.rgbColor.cgColor)
-                context.fillPath()
-            case .pantone(let pantone):
-                context.setFillColor(ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
-                context.fillPath()
-            case .spot(let spot):
-                context.setFillColor(ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
-                context.fillPath()
-            case .appleSystem(let systemColor):
-                context.setFillColor(systemColor.rgbEquivalent.cgColor)
-                context.fillPath()
-            case .gradient(let gradient):
-                drawGradientFill(gradient, in: context, path: shapePath)
-            case .clear:
-                // No fill for clear
-                break
-            case .black:
-                context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-                context.fillPath()
-            case .white:
-                context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-                context.fillPath()
-            }
-        }
-        
-        // Draw stroke if present
-        if let strokeStyle = shape.strokeStyle, strokeStyle.color != .clear {
-            context.addPath(shapePath)
-            context.setLineWidth(strokeStyle.width)
-            
-            switch strokeStyle.color {
-            case .rgb(let rgb):
-                context.setStrokeColor(rgb.cgColor)
-            case .cmyk(let cmyk):
-                context.setStrokeColor(cmyk.rgbColor.cgColor)
-            case .hsb(let hsb):
-                context.setStrokeColor(hsb.rgbColor.cgColor)
-            case .pantone(let pantone):
-                context.setStrokeColor(ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
-            case .spot(let spot):
-                context.setStrokeColor(ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG))
-            case .appleSystem(let systemColor):
-                context.setStrokeColor(systemColor.rgbEquivalent.cgColor)
-            case .gradient(let gradient):
-                // For stroke gradients, we'll use a simple approach
-                context.setStrokeColor(NSColor.black.cgColor)
-            case .clear:
-                // No stroke for clear
-                break
-            case .black:
-                context.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-            case .white:
-                context.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-            }
-            
-            context.strokePath()
-        }
-    }
-    
-    private func drawImageContent(shape: VectorShape, image: NSImage, in context: CGContext) {
-        // Create a rect path for the image bounds
-        let imageRect = CGRect(origin: .zero, size: shape.bounds.size)
-        let imagePath = CGPath(rect: imageRect, transform: nil)
-        
-        // Add the image path and clip to it
-        context.addPath(imagePath)
-        context.clip()
-        
-        // Draw the image using Core Graphics
-        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            // Set the drawing rect to match the shape bounds
-            let drawRect = CGRect(origin: .zero, size: shape.bounds.size)
-            
-            // Draw the image
-            context.draw(cgImage, in: drawRect)
-        }
-    }
-    
-    private func drawGradientFill(_ gradient: VectorGradient, in context: CGContext, path: CGPath) {
-        // Create gradient colors
-        let colors = gradient.stops.map { stop -> CGColor in
-            if case .clear = stop.color {
-                return stop.color.cgColor
-            } else {
-                return stop.color.color.opacity(stop.opacity).cgColor ?? stop.color.cgColor
-            }
-        }
-        let locations: [CGFloat] = gradient.stops.map { CGFloat($0.position) }
-        
-        guard let cgGradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations) else {
-            return
-        }
-        
-        // Draw gradient based on type
-        switch gradient {
-        case .linear(let linear):
-            let startPoint = CGPoint(x: linear.startPoint.x, y: linear.startPoint.y)
-            let endPoint = CGPoint(x: linear.endPoint.x, y: linear.endPoint.y)
-            context.addPath(path)
-            context.clip()
-            context.drawLinearGradient(cgGradient, start: startPoint, end: endPoint, options: [])
-            
-        case .radial(let radial):
-            let center = CGPoint(x: radial.centerPoint.x, y: radial.centerPoint.y)
-            let startRadius: CGFloat = 0
-            let endRadius: CGFloat = radial.radius
-            context.addPath(path)
-            context.clip()
-            context.drawRadialGradient(cgGradient, startCenter: center, startRadius: startRadius, endCenter: center, endRadius: endRadius, options: [])
-        }
-    }
-}
 
