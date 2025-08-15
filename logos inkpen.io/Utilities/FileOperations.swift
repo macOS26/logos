@@ -416,6 +416,17 @@ class VectorImportManager {
             fillStyle: FillStyle(color: .clear),
             transform: .identity
         )
+        
+        // CRITICAL FIX: Ensure bounds match the actual image dimensions
+        // The bounds should be exactly the same as the image size
+        rectShape.bounds = CGRect(origin: .zero, size: size)
+        
+        // DEBUG: Log the image import details
+        Log.info("🖼️ IMAGE IMPORT DEBUG: \(url.lastPathComponent)", category: .general)
+        Log.info("   📏 Image size: \(size)", category: .general)
+        Log.info("   📊 Path bounds: \(rectShape.path.cgPath.boundingBoxOfPath)", category: .general)
+        Log.info("   📊 Set bounds: \(rectShape.bounds)", category: .general)
+        Log.info("   🔄 Transform: \(rectShape.transform)", category: .general)
         // Default behavior: store a linked path (relative to chosen base later on save)
         rectShape.linkedImagePath = url.path
         // Also store a security-scoped bookmark when possible (DocumentGroup sandbox)

@@ -178,7 +178,7 @@ class ClippingMaskNSView: NSView {
     }
     
     override var isFlipped: Bool {
-        return true
+        return false  // Use normal coordinate system like gradient fills
     }
     
     override func draw(_ dirtyRect: NSRect) {
@@ -186,26 +186,28 @@ class ClippingMaskNSView: NSView {
         
         context.saveGState()
         
-        // Apply clipping mask
+        // Apply clipping mask using the mask path
         context.addPath(maskPath)
         context.clip()
         
         // Draw the clipped content (image or shape)
         if ImageContentRegistry.containsImage(clippedShape),
            let image = ImageContentRegistry.image(for: clippedShape.id) {
-            // Draw image using the same approach as ImageNSView
+            // CRITICAL FIX: Draw image at clipped path bounds, apply transform to context
+            let imageRect = clippedPath.boundingBoxOfPath
             context.setAlpha(CGFloat(clippedShape.opacity))
             context.concatenate(clippedShape.transform)
             if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: clippedShape.bounds)
+                context.draw(cgImage, in: imageRect)
             }
         } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
                   let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
-            // Draw linked/embedded image using the same approach as ImageNSView
+            // Draw linked/embedded image
+            let imageRect = clippedPath.boundingBoxOfPath
             context.setAlpha(CGFloat(clippedShape.opacity))
             context.concatenate(clippedShape.transform)
             if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: clippedShape.bounds)
+                context.draw(cgImage, in: imageRect)
             }
         } else {
             // Draw shape with fill and stroke
@@ -236,17 +238,15 @@ class ClippingMaskNSView: NSView {
 struct ImageNSView: NSViewRepresentable {
     let image: NSImage
     let bounds: CGRect
-    let transform: CGAffineTransform
     let opacity: Double
     
     func makeNSView(context: Context) -> ImageNSViewClass {
-        return ImageNSViewClass(image: image, bounds: bounds, transform: transform, opacity: opacity)
+        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity)
     }
     
     func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
         nsView.image = image
         nsView.imageBounds = bounds
-        nsView.transform = transform
         nsView.opacity = opacity
         nsView.needsDisplay = true
     }
@@ -255,13 +255,11 @@ struct ImageNSView: NSViewRepresentable {
 class ImageNSViewClass: NSView {
     var image: NSImage
     var imageBounds: CGRect
-    var transform: CGAffineTransform
     var opacity: Double
     
-    init(image: NSImage, bounds: CGRect, transform: CGAffineTransform, opacity: Double) {
+    init(image: NSImage, bounds: CGRect, opacity: Double) {
         self.image = image
         self.imageBounds = bounds
-        self.transform = transform
         self.opacity = opacity
         super.init(frame: .zero)
         self.wantsLayer = true
@@ -273,7 +271,7 @@ class ImageNSViewClass: NSView {
     }
     
     override var isFlipped: Bool {
-        return true
+        return true  // FIXED: Match GradientNSView coordinate system
     }
     
     override func draw(_ dirtyRect: NSRect) {
@@ -284,12 +282,22 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // Apply transform
-        context.concatenate(transform)
+        // FIXED: Match GradientNSView approach - draw image directly in bounds
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the image as-is.
         
-        // Draw the image in the bounds
+        // DEBUG LOGGING: Track image placement and movement
+        print("🖼️ IMAGE NSVIEW DRAW:")
+        print("   📊 Image bounds: \(imageBounds)")
+        print("   📍 Image origin: \(imageBounds.origin)")
+        print("   📏 Image size: \(imageBounds.size)")
+        
+        // Draw the image directly in the bounds (no transform applied to context)
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             context.draw(cgImage, in: imageBounds)
+            print("   ✅ Image drawn at: \(imageBounds)")
+        } else {
+            print("   ❌ Failed to get CGImage")
         }
         
         context.restoreGState()
@@ -378,21 +386,29 @@ struct ShapeView: View {
                     )
                 } else if ImageContentRegistry.containsImage(shape),
                           let image = ImageContentRegistry.image(for: shape.id) {
-                    // RENDER RASTER IMAGE USING NSVIEW (same as gradient fills)
+                    // RENDER RASTER IMAGE USING NSVIEW - FIXED POSITIONING
+                    // FIXED: Match GradientNSView approach - use pre-transformed bounds
+                    let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                    let transformedBounds = pathBounds.applying(shape.transform)
+                    
                     ImageNSView(
                         image: image,
-                        bounds: shape.bounds,
-                        transform: shape.transform,
+                        bounds: transformedBounds,
                         opacity: shape.opacity
                     )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
                     if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-                        // RENDER HYDRATED IMAGE USING NSVIEW
+                        // RENDER HYDRATED IMAGE USING NSVIEW - FIXED POSITIONING
+                        // FIXED: Match GradientNSView approach - use pre-transformed bounds
+                        let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                        let transformedBounds = pathBounds.applying(shape.transform)
+                        
+
+                        
                         ImageNSView(
                             image: hydrated,
-                            bounds: shape.bounds,
-                            transform: shape.transform,
+                            bounds: transformedBounds,
                             opacity: shape.opacity
                         )
                     } else {
@@ -436,9 +452,10 @@ struct ShapeView: View {
         // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
-        // Group transform is handled inside the group rendering block.
-        // Individual shape transform is now BAKED INTO the path.
-        // The transform modifier is only applied for groups.
+        // CRITICAL FIX: Apply shape transform for groups only
+        // Groups: transform is handled inside the group rendering block
+        // Images: transform is handled by ImageNSView itself
+        // Regular shapes: transform is BAKED INTO the path
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
         // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
         .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0, 
