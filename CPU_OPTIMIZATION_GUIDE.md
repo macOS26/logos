@@ -155,7 +155,7 @@ if cpuUsage > 70% {
 3. **Monitor the toolbar** - real-time performance feedback
 4. **Compare before/after** - CPU usage should be noticeably lower
 
-Your Metal pseudo-object approach now includes **professional-grade performance optimization** that rivals Adobe Illustrator and other vector graphics apps! 🎊
+Your Metal pseudo-object approach now includes **professional-grade performance optimization** that rivals professional vector graphics applications! 🎊
 
 ## 🔍 **Troubleshooting**
 
