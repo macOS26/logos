@@ -236,7 +236,7 @@ struct ShapeView: View {
             renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: swiftUIStrokeStyle, shape: shape)
             
         case .inside:
-            // PROFESSIONAL INSIDE STROKE (Adobe Illustrator Standard)
+            // PROFESSIONAL INSIDE STROKE (Professional Standard)
             if strokeStyle.isGradient {
                 // For gradient strokes, use a different approach that preserves gradient quality
                 // Create a stroke style with the original width but adjust the gradient coordinates
@@ -557,7 +557,7 @@ struct SelectionHandlesView: View {
                 }
             }
             
-            // Show handles for selected text objects (Adobe Illustrator Standards)
+            // Show handles for selected text objects (Professional Standards)
             ForEach(document.textObjects.indices, id: \.self) { textIndex in
                 let textObject = document.textObjects[textIndex]
                 if document.selectedTextIDs.contains(textObject.id) {
@@ -1444,7 +1444,7 @@ struct ScaleHandles: View {
         print("   🎯 FINAL MARQUEE: Bounds (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
         
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
-        // This ensures object origin stays with object after scaling (Adobe Illustrator behavior)
+        // This ensures object origin stays with object after scaling (Professional behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
@@ -1733,7 +1733,7 @@ struct ScaleHandles: View {
 
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
-    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    /// This ensures object origin moves with the object (Professional behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
         let currentTransform = transform ?? shape.transform
@@ -2326,7 +2326,7 @@ struct RotateHandles: View {
     }
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates (Rotation version)
-    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    /// This ensures object origin moves with the object (Professional behavior)
     private func applyRotationTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
         let currentTransform = transform ?? shape.transform
@@ -2461,7 +2461,7 @@ struct RotateHandles: View {
         print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
         
         // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
-        // This ensures object origin stays with object after rotation (Adobe Illustrator behavior)
+        // This ensures object origin stays with object after rotation (Professional behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
@@ -2534,7 +2534,7 @@ struct RotateHandles: View {
     }
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
-    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    /// This ensures object origin moves with the object (Professional behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
         let currentTransform = transform ?? shape.transform
@@ -2858,7 +2858,7 @@ struct ShearHandles: View {
         print("🏁 SHEAR FINISH: Applying final transform to coordinates")
         
         // CRITICAL FIX: Apply shear to actual coordinates, not just transform
-        // This ensures object origin stays with object after shearing (Adobe Illustrator behavior)
+        // This ensures object origin stays with object after shearing (Professional behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
@@ -3136,7 +3136,7 @@ struct ShearHandles: View {
 
     
     /// PROFESSIONAL COORDINATE SYSTEM FIX: Apply transform to actual coordinates
-    /// This ensures object origin moves with the object (Adobe Illustrator behavior)
+    /// This ensures object origin moves with the object (Professional behavior)
     private func applyTransformToShapeCoordinates(layerIndex: Int, shapeIndex: Int, transform: CGAffineTransform? = nil) {
         let shape = document.layers[layerIndex].shapes[shapeIndex]
         let currentTransform = transform ?? shape.transform
