@@ -138,7 +138,7 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            print("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))")
+            Log.fileOperation("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))", level: .info)
             
             updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
             updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
@@ -149,7 +149,7 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            print("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))")
+            Log.fileOperation("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))", level: .info)
             
             // Don't clamp the coordinates - allow them to extend beyond object bounds
             // This allows the origin point to move freely within the scaled gradient area
@@ -162,7 +162,7 @@ extension DrawingCanvas {
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         
-        //print("📐 Updating gradient origin X to: \(newX)")
+        //Log.fileOperation("📐 Updating gradient origin X to: \(newX)", level: .info)
         
         switch selectedGradient {
         case .linear(var linear):
@@ -179,7 +179,7 @@ extension DrawingCanvas {
     private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
         
-        //print("📐 Updating gradient origin Y to: \(newY)")
+        //Log.fileOperation("📐 Updating gradient origin Y to: \(newY)", level: .info)
         
         switch selectedGradient {
         case .linear(var linear):

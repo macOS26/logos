@@ -21,7 +21,7 @@ class GPUMathAcceleratorSimple {
         if isMetalAvailable {
             print("✅ GPU Math Accelerator (Simple): Ready with \(device?.name ?? "Unknown GPU")")
         } else {
-            print("⚠️ GPU Math Accelerator (Simple): Using CPU-only mode")
+            Log.fileOperation("⚠️ GPU Math Accelerator (Simple): Using CPU-only mode", level: .info)
         }
     }
     
@@ -91,7 +91,7 @@ class GPUMathAcceleratorSimple {
         // Build result from kept points
         result = keepPoints.sorted().map { points[$0] }
         
-        print("🚀 Phase 1: Simplified \(points.count) → \(result.count) points (GPU-ready algorithm)")
+        Log.info("🚀 Phase 1: Simplified \(points.count) → \(result.count) points (GPU-ready algorithm)", category: .general)
         return result
     }
     
@@ -114,7 +114,7 @@ class GPUMathAcceleratorSimple {
     /// Main entry point for Phase 1 GPU acceleration
     func optimizeDrawingPath(_ points: [CGPoint], tolerance: CGFloat) -> [CGPoint] {
         if points.count > 20 { // Lower threshold for testing
-            print("🚀 Phase 1: GPU-ready optimization for \(points.count) points")
+            Log.info("🚀 Phase 1: GPU-ready optimization for \(points.count) points", category: .general)
             return douglasPeuckerSimplifyGPUReady(points, tolerance: tolerance)
         } else {
             return points
@@ -139,7 +139,7 @@ class GPUMathAcceleratorSimple {
     
     /// Prepare data structures for next GPU phase
     func prepareForGPUPhase2() {
-        print("📋 Preparing for Phase 2: Metal compute shaders")
+        Log.fileOperation("📋 Preparing for Phase 2: Metal compute shaders", level: .info)
         // Future: Setup for full GPU compute shaders
     }
 }
@@ -150,7 +150,7 @@ extension GPUMathAcceleratorSimple {
     
     /// Test Phase 1 optimizations
     func testPhase1Performance() {
-        print("🧪 Testing Phase 1 GPU-ready optimizations...")
+        Log.info("🧪 Testing Phase 1 GPU-ready optimizations...", category: .general)
         
         // Create test data
         var testPoints: [CGPoint] = []
@@ -166,12 +166,12 @@ extension GPUMathAcceleratorSimple {
         
         let processingTime = (endTime - startTime) * 1000 // Convert to ms
         
-        print("✅ Phase 1 Results:")
-        print("   Input: \(testPoints.count) points")
-        print("   Output: \(simplified.count) points")
+        Log.info("✅ Phase 1 Results:", category: .fileOperations)
+        Log.info("   Input: \(testPoints.count) points", category: .general)
+        Log.info("   Output: \(simplified.count) points", category: .general)
         print("   Time: \(String(format: "%.2f", processingTime))ms")
         let reductionPercent = (1.0 - Double(simplified.count) / Double(testPoints.count)) * 100
         print("   Reduction: \(String(format: "%.1f", reductionPercent))%")
-        print("   Mode: \(getPerformanceInfo())")
+        Log.info("   Mode: \(getPerformanceInfo())", category: .general)
     }
 }

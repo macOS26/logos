@@ -36,12 +36,12 @@ extension DrawingCanvas {
                 
                 // Debug logging for key state changes (gated)
                 if self.isShiftPressed {
-                    Log.debug("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)", category: .input)
+                    Log.info("⬆️ SHIFT KEY PRESSED: Transform constraints enabled (immediate)", category: .input)
                 } else {
-                    Log.debug("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)", category: .input)
+                    Log.info("⬆️ SHIFT KEY RELEASED: Transform constraints disabled (immediate)", category: .input)
                 }
                 if self.isOptionPressed {
-                    Log.debug("⌥ OPTION KEY PRESSED: Path-based selection enabled", category: .input)
+                    Log.info("⌥ OPTION KEY PRESSED: Path-based selection enabled", category: .input)
                 }
                 
                 // Command-based temporary behavior for Arrow tool
@@ -50,13 +50,13 @@ extension DrawingCanvas {
                     if self.document.currentTool == .selection && !self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = true
                         self.temporaryCommandPreviousTool = self.document.currentTool
-                        Log.debug("⌘ COMMAND HELD: Temporary object outline selection mode enabled", category: .input)
+                        Log.info("⌘ COMMAND HELD: Temporary object outline selection mode enabled", category: .input)
                     }
                 } else {
                     // Command released: if we were in temporary command mode and didn't permanently switch tools, restore
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
-                        Log.debug("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode", category: .input)
+                        Log.info("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode", category: .input)
                         // If we temporarily switched to direct selection, restore the default tool
                         if self.document.currentTool == .directSelection {
                             self.document.currentTool = AppState.shared.defaultTool
@@ -91,7 +91,7 @@ extension DrawingCanvas {
                    ["\u{63235}", "\u{63234}", "\u{63233}", "\u{63232}"].contains(characters) { // Arrow keys
                     // Activate corner radius tool
                     document.currentTool = .cornerRadius
-                    Log.debug("🔧 CONTROL+ARROW: Activated corner radius tool", category: .input)
+                    Log.info("🔧 CONTROL+ARROW: Activated corner radius tool", category: .input)
                     return nil // Consume the event
                 }
             }
@@ -135,7 +135,7 @@ extension DrawingCanvas {
         }
     }
     
-    // PROFESSIONAL TOOL KEYBOARD SHORTCUTS (Adobe Illustrator Standards)
+            // PROFESSIONAL TOOL KEYBOARD SHORTCUTS (Professional Standards)
     internal func setupToolKeyboardShortcuts() {
         // REMOVED: NSEvent keyboard monitoring was disabled to fix text input issues
         // All keyboard shortcuts have been removed to prevent interference with NSTextView
@@ -160,7 +160,7 @@ extension DrawingCanvas {
         // Switch to hand tool
         document.currentTool = .hand
         
-        Log.debug("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")", category: .input)
+        Log.info("✋ SPACEBAR: Temporary Hand Tool activated from \(temporaryToolPreviousTool?.rawValue ?? "unknown")", category: .input)
     }
     
     /// Deactivate temporary hand tool when spacebar is released
@@ -173,6 +173,6 @@ extension DrawingCanvas {
         isTemporaryHandToolActive = false
         temporaryToolPreviousTool = nil
         
-        Log.debug("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)", category: .input)
+        Log.info("✋ SPACEBAR: Temporary Hand Tool deactivated, restored to \(previousTool.rawValue)", category: .input)
     }
 } 

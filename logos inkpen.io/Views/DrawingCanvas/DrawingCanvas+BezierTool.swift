@@ -33,7 +33,7 @@ extension DrawingCanvas {
         if isBezierDrawing && bezierPoints.count >= 3 && showClosePathHint {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-            if distance(location, firstPointLocation) <= 25.0 { // Close tolerance (Adobe Illustrator standard)
+            if distance(location, firstPointLocation) <= 25.0 { // Close tolerance (professional standard)
                 closeBezierPath()
                 return
             }
@@ -75,10 +75,10 @@ extension DrawingCanvas {
                 // Add the real shape to the document immediately
                 document.addShape(activeBezierShape!)
                 
-                print("🎯 CREATED FIRST POINT: Started new path at \(location)")
-                print("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
+                Log.fileOperation("🎯 CREATED FIRST POINT: Started new path at \(location)", level: .info)
+                Log.fileOperation("🎨 PEN TOOL INITIAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
             } else {
-                print("🎯 BEZIER PEN TAP: Path already started - ignoring duplicate creation attempt")
+                Log.fileOperation("🎯 BEZIER PEN TAP: Path already started - ignoring duplicate creation attempt", level: .info)
             }
             return
         } else {
@@ -113,8 +113,8 @@ extension DrawingCanvas {
             // Update the real shape in the document immediately
             updateActiveBezierShapeInDocument()
             
-            print("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)")
-            print("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid")
+            Log.fileOperation("🎯 CORNER POINT: Added point \(bezierPoints.count) at \(location) (pure click - no drag)", level: .info)
+            Log.info("📍 Previous point \(previousActiveIndex ?? -1) is now hollow, current point \(activeBezierPointIndex ?? -1) is solid", category: .general)
         }
     }
     
@@ -158,9 +158,9 @@ extension DrawingCanvas {
             // Add the real shape to the document immediately
             document.addShape(activeBezierShape!)
             
-            print("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(startLocation)")
+            Log.fileOperation("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(startLocation)", level: .info)
         } else if !isBezierDrawing && activeBezierShape != nil {
-            print("🎯 BEZIER PEN DRAG: Path already started by tap handler - continuing with existing path")
+            Log.fileOperation("🎯 BEZIER PEN DRAG: Path already started by tap handler - continuing with existing path", level: .info)
         }
         
         // Regular bezier pen drag handling (for existing paths)
@@ -191,7 +191,7 @@ extension DrawingCanvas {
             if !isDraggingBezierHandle {
                 isDraggingBezierHandle = true
                 isDraggingBezierPoint = true
-                print("📝 EDITING: Dragging handles from existing point \(pointIndex)")
+                Log.fileOperation("📝 EDITING: Dragging handles from existing point \(pointIndex)", level: .info)
             }
             
             // Create/update bezier handles for this existing point
@@ -248,7 +248,7 @@ extension DrawingCanvas {
                     // Add the new point to the path as a line segment initially
                     bezierPath?.addElement(.line(to: newPoint))
                     
-                    print("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)")
+                    Log.fileOperation("🎯 NEW POINT: First plotted anchor point \(bezierPoints.count) at \(startLocation)", level: .info)
                     // Creating smooth curve handles as user drags...
                 } else {
                     // Point already exists nearby (probably from tap handler)
@@ -293,7 +293,7 @@ extension DrawingCanvas {
         }
     }
     
-    // MARK: - Professional Real-Time Path Updates (Adobe Illustrator Style)
+            // MARK: - Professional Real-Time Path Updates (Professional Style)
     
     /// Updates the active bezier shape in the document with the current path
     /// This gives real-time visual feedback like professional vector apps
@@ -332,12 +332,12 @@ extension DrawingCanvas {
 
     internal func finishBezierPath() {
         guard let activeBezierShape = activeBezierShape, bezierPoints.count >= 2 else {
-            print("Cannot finish bezier path - insufficient points or no active shape")
+            Log.info("Cannot finish bezier path - insufficient points or no active shape", category: .general)
             cancelBezierDrawing()
             return
         }
         
-        // PROFESSIONAL REAL-TIME PATH COMPLETION: Apply final colors like Adobe Illustrator
+        // PROFESSIONAL REAL-TIME PATH COMPLETION: Apply final colors like professional software
         // Open paths should get both stroke AND fill using document defaults (toolbar selection)
         if let layerIndex = document.selectedLayerIndex {
             for shapeIndex in document.layers[layerIndex].shapes.indices {
@@ -359,12 +359,12 @@ extension DrawingCanvas {
             }
         }
         
-        print("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors")
-        print("Path elements: \(activeBezierShape.path.elements.count)")
-        print("Shape bounds: \(activeBezierShape.bounds)")
-        print("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)")
-        print("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))")
-        print("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, opacity: document.defaultStrokeOpacity))")
+        Log.info("✅ Finished bezier path with \(bezierPoints.count) points using toolbar colors", category: .fileOperations)
+        Log.info("Path elements: \(activeBezierShape.path.elements.count)", category: .general)
+        Log.info("Shape bounds: \(activeBezierShape.bounds)", category: .general)
+        Log.fileOperation("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
+        Log.info("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))", category: .general)
+        Log.info("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, opacity: document.defaultStrokeOpacity))", category: .general)
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
@@ -377,7 +377,7 @@ extension DrawingCanvas {
         // Users can manually switch tools when they're ready to edit points
         // This enables uninterrupted tracing workflows
         
-        print("✅ FINISHED PATH: Pen tool remains active for continuous tracing")
+        Log.info("✅ FINISHED PATH: Pen tool remains active for continuous tracing", category: .fileOperations)
     }
     
     internal func finishBezierPenDrag() {

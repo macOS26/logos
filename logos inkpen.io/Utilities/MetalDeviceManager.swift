@@ -22,7 +22,7 @@ class MetalDeviceManager: ObservableObject {
         self.device = metalDevice
         self.commandQueue = cmdQueue
         
-        print("✅ Metal GPU initialized successfully: \(metalDevice.name)")
+        Log.info("✅ Metal GPU initialized successfully: \(metalDevice.name)", category: .fileOperations)
     }
     
     /// Execute Metal commands (no fallbacks - GPU required)

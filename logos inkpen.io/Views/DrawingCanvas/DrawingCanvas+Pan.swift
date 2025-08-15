@@ -16,7 +16,7 @@ fileprivate let enableHandToolLogging = false
 extension DrawingCanvas {
     internal func handlePanGesture(value: DragGesture.Value, geometry: GeometryProxy) {
         // PROFESSIONAL HAND TOOL: Perfect cursor-to-canvas synchronization
-        // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW standards
+        // Based on professional vector graphics software standards
         // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
         
         // CRITICAL FIX: Only initialize state once per drag operation
@@ -28,7 +28,7 @@ extension DrawingCanvas {
             isPanGestureActive = true  // PROFESSIONAL GESTURE COORDINATION
             
             if enableHandToolLogging {
-                print("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive")
+                Log.info("✋ HAND TOOL: Established reference location (Professional Standard), UI responsive", category: .general)
                 print("   Reference canvas offset: (\(String(format: "%.1f", initialCanvasOffset.x)), \(String(format: "%.1f", initialCanvasOffset.y)))")
                 print("   Reference cursor location: (\(String(format: "%.1f", handToolDragStart.x)), \(String(format: "%.1f", handToolDragStart.y)))")
             }
@@ -54,7 +54,7 @@ extension DrawingCanvas {
             HandClosedCursor.set()
         }
         #endif
-        // This is the gold standard used by Adobe Illustrator, FreeHand, Inkscape, and CorelDRAW
+        // This is the gold standard used by professional vector graphics software
         document.canvasOffset = CGPoint(
             x: initialCanvasOffset.x + cursorDelta.x,
             y: initialCanvasOffset.y + cursorDelta.y

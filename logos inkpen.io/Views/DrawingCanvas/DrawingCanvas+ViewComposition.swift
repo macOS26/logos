@@ -33,10 +33,10 @@ extension DrawingCanvas {
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
         
-        // PROFESSIONAL REAL-TIME BEZIER PATH (Adobe Illustrator style - shows actual path with real colors)
+        // PROFESSIONAL REAL-TIME BEZIER PATH (Professional style - shows actual path with real colors)
         // Note: Real bezier shapes are now shown as actual VectorShapes in the document
         
-        // PROFESSIONAL RUBBER BAND PREVIEW (Adobe Illustrator Standards)
+        // PROFESSIONAL RUBBER BAND PREVIEW (Professional Standards)
         rubberBandPreview(geometry: geometry)
         
         // Brush live preview (SwiftUI overlay; avoids document mutations during drag)
@@ -54,7 +54,7 @@ extension DrawingCanvas {
         bezierClosePathHint()
         
         // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
-        // PROFESSIONAL UX: Hide selection dots during movement (Adobe Illustrator standard)
+        // PROFESSIONAL UX: Hide selection dots during movement (professional standard)
         // CORNER TOOL FIX: Hide bounding box and selection handles when in corner radius edit mode
         if !(document.currentTool == .bezierPen && isBezierDrawing) && 
            !(document.currentTool == .selection && isDrawing) &&
@@ -251,7 +251,7 @@ extension DrawingCanvas {
             }
             .onTapGesture { location in
                 // CRITICAL: Single-click selection (was missing!)
-                Log.debug("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
+                Log.info("🎯 SINGLE CLICK DETECTED at: \(location)", category: .selection)
                 handleUnifiedTap(at: location, geometry: geometry)
             }
             .simultaneousGesture(
@@ -321,87 +321,87 @@ extension DrawingCanvas {
         isTabletEvent: Bool,
         geometry: GeometryProxy
     ) {
-        Log.debug("🎨 PRESSURE EVENT: Received event type: \(eventType)", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Pressure: \(pressure)", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Is tablet event: \(isTabletEvent)", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Current tool: \(document.currentTool)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Received event type: \(eventType)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Pressure: \(pressure)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Is tablet event: \(isTabletEvent)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Current tool: \(document.currentTool)", category: .pressure)
         
         // Convert to canvas coordinates
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
-        Log.debug("🎨 PRESSURE EVENT: Screen location: (\(location.x), \(location.y))", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Canvas location: (\(canvasLocation.x), \(canvasLocation.y))", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Screen location: (\(location.x), \(location.y))", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Canvas location: (\(canvasLocation.x), \(canvasLocation.y))", category: .pressure)
         
         // Update pressure manager with real pressure data
         PressureManager.shared.processRealPressure(pressure, at: canvasLocation, isTabletEvent: isTabletEvent)
         PressureManager.shared.updatePressureSupport(true)
         
-        Log.debug("🎨 PRESSURE EVENT: Updated PressureManager", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)", category: .pressure)
-        Log.debug("🎨 PRESSURE EVENT: Current pressure: \(PressureManager.shared.currentPressure)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Updated PressureManager", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Has real pressure input: \(PressureManager.shared.hasRealPressureInput)", category: .pressure)
+        Log.info("🎨 PRESSURE EVENT: Current pressure: \(PressureManager.shared.currentPressure)", category: .pressure)
         
         // Route to appropriate tool based on event type and current tool
         switch eventType {
         case .began:
-            Log.debug("🎨 PRESSURE EVENT: Routing to handlePressureDrawingStart", category: .pressure)
+            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingStart", category: .pressure)
             handlePressureDrawingStart(at: canvasLocation)
         case .changed:
-            Log.debug("🎨 PRESSURE EVENT: Routing to handlePressureDrawingUpdate", category: .pressure)
+            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingUpdate", category: .pressure)
             handlePressureDrawingUpdate(at: canvasLocation)
         case .ended:
-            Log.debug("🎨 PRESSURE EVENT: Routing to handlePressureDrawingEnd", category: .pressure)
+            Log.info("🎨 PRESSURE EVENT: Routing to handlePressureDrawingEnd", category: .pressure)
             handlePressureDrawingEnd(at: canvasLocation)
         }
     }
     
     private func handlePressureDrawingStart(at location: CGPoint) {
-        Log.debug("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.debug("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
-        Log.debug("🎨 PRESSURE DRAWING START: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING START: Called for tool: \(document.currentTool)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING START: Is brush drawing: \(isBrushDrawing)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING START: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
         
         switch document.currentTool {
         case .brush:
             if !isBrushDrawing {
-                Log.debug("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING START: Starting brush drawing", category: .pressure)
                 handleBrushDragStart(at: location)
             } else {
-                Log.debug("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING START: Brush already drawing, skipping start", category: .pressure)
             }
         case .marker:
             if !isMarkerDrawing {
-                Log.debug("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING START: Starting marker drawing", category: .pressure)
                 handleMarkerDragStart(at: location)
             } else {
-                Log.debug("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING START: Marker already drawing, skipping start", category: .pressure)
             }
         default:
-            Log.debug("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
+            Log.info("🎨 PRESSURE DRAWING START: Unknown tool, skipping", category: .pressure)
             break
         }
     }
     
     private func handlePressureDrawingUpdate(at location: CGPoint) {
-        Log.debug("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
-        Log.debug("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
-        Log.debug("🎨 PRESSURE DRAWING UPDATE: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING UPDATE: Called for tool: \(document.currentTool)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING UPDATE: Is brush drawing: \(isBrushDrawing)", category: .pressure)
+        Log.info("🎨 PRESSURE DRAWING UPDATE: Is marker drawing: \(isMarkerDrawing)", category: .pressure)
         
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
-                Log.debug("🎨 PRESSURE DRAWING UPDATE: Calling handleBrushDragUpdate", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Calling handleBrushDragUpdate", category: .pressure)
                 handleBrushDragUpdate(at: location)
             } else {
-                Log.debug("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
             }
         case .marker:
             if isMarkerDrawing {
-                Log.debug("🎨 PRESSURE DRAWING UPDATE: Calling handleMarkerDragUpdate", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Calling handleMarkerDragUpdate", category: .pressure)
                 handleMarkerDragUpdate(at: location)
             } else {
-                Log.debug("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
+                Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)
             }
         default:
-            Log.debug("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
+            Log.info("🎨 PRESSURE DRAWING UPDATE: Unknown tool, skipping", category: .pressure)
             break
         }
     }

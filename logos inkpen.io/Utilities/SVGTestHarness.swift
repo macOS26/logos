@@ -235,7 +235,7 @@ struct CGVectorView: View {
             // CRITICAL FIX: Add Core Image safety checks
             guard size.width > 0 && size.height > 0 && 
                   size.width <= 16384 && size.height <= 16384 else {
-                print("⚠️ Invalid image size for Core Image: \(size)")
+                Log.fileOperation("⚠️ Invalid image size for Core Image: \(size)", level: .info)
                 return
             }
             
@@ -243,7 +243,7 @@ struct CGVectorView: View {
                 let nsImage = NSImage(cgImage: cgImage, size: size)
                 context.draw(Image(nsImage: nsImage), in: CGRect(origin: .zero, size: size))
             } else {
-                print("⚠️ Failed to create CGImage from context")
+                Log.fileOperation("⚠️ Failed to create CGImage from context", level: .info)
             }
         }
     }

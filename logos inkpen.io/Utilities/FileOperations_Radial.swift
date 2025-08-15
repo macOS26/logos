@@ -151,7 +151,7 @@
 //    
 //    /// Import vector graphics file with professional-grade parsing
 //    func importVectorFile(from url: URL) async -> VectorImportResult {
-//        print("🔄 Importing vector file: \(url.lastPathComponent)")
+//        Log.fileOperation("🔄 Importing vector file: \(url.lastPathComponent)", level: .info)
 //        
 //        // Detect file format
 //        guard let format = detectFormat(from: url) else {
@@ -164,7 +164,7 @@
 //            )
 //        }
 //        
-//        print("📋 Detected format: \(format.displayName)")
+//        Log.fileOperation("📋 Detected format: \(format.displayName)", level: .info)
 //        
 //        // Check if format is currently supported
 //        guard format.isCurrentlySupported else {
@@ -259,7 +259,7 @@
 //        var warnings: [String] = []
 //        var shapes: [VectorShape] = []
 //        
-//        print("📊 Importing SVG using professional SVG parser...")
+//        Log.fileOperation("📊 Importing SVG using professional SVG parser...", level: .info)
 //        
 //        do {
 //            guard let data = try? Data(contentsOf: url) else {
@@ -288,7 +288,7 @@
 //                documentVersion: svgContent.version
 //            )
 //            
-//            print("✅ SVG import successful: \(shapes.count) shapes")
+//            Log.info("✅ SVG import successful: \(shapes.count) shapes", category: .fileOperations)
 //            
 //            return VectorImportResult(
 //                success: true,
@@ -300,7 +300,7 @@
 //            
 //        } catch {
 //            errors.append(.parsingError(error.localizedDescription, line: nil))
-//            print("❌ SVG import failed: \(error)")
+//            Log.error("❌ SVG import failed: \(error)", category: .error)
 //            
 //            return VectorImportResult(
 //                success: false,
@@ -319,7 +319,7 @@
 //        let warnings: [String] = []
 //        var shapes: [VectorShape] = []
 //        
-//        print("📊 Importing PDF using CoreGraphics professional parser...")
+//        Log.fileOperation("📊 Importing PDF using CoreGraphics professional parser...", level: .info)
 //        
 //        guard let pdfDocument = CGPDFDocument(url as CFURL) else {
 //            errors.append(.corruptedFile)
@@ -365,7 +365,7 @@
 //                documentVersion: pdfContent.version
 //            )
 //            
-//            print("✅ PDF import successful: \(shapes.count) vector shapes")
+//            Log.info("✅ PDF import successful: \(shapes.count) vector shapes", category: .fileOperations)
 //            
 //            return VectorImportResult(
 //                success: true,
@@ -377,7 +377,7 @@
 //            
 //        } catch {
 //            errors.append(.parsingError(error.localizedDescription, line: nil))
-//            print("❌ PDF import failed: \(error)")
+//            Log.error("❌ PDF import failed: \(error)", category: .error)
 //            
 //            return VectorImportResult(
 //                success: false,
@@ -394,8 +394,8 @@
 //        var errors: [VectorImportError] = []
 //        let warnings: [String] = []
 //        
-//        print("📊 Importing Adobe Illustrator file...")
-//        print("💡 Adobe Illustrator files contain embedded PDF data")
+//        Log.fileOperation("📊 Importing Adobe Illustrator file...", level: .info)
+//        Log.fileOperation("💡 Adobe Illustrator files contain embedded PDF data", level: .info)
 //        
 //        do {
 //            let aiContent = try parseAdobeIllustratorFile(url)
@@ -419,7 +419,7 @@
 //                    documentVersion: aiContent.version
 //                )
 //                
-//                print("✅ Adobe Illustrator import successful via embedded PDF")
+//                Log.info("✅ Adobe Illustrator import successful via embedded PDF", category: .fileOperations)
 //                
 //                return VectorImportResult(
 //                    success: pdfResult.success,
@@ -434,7 +434,7 @@
 //            
 //        } catch {
 //            errors.append(.parsingError(error.localizedDescription, line: nil))
-//            print("❌ Adobe Illustrator import failed: \(error)")
+//            Log.error("❌ Adobe Illustrator import failed: \(error)", category: .error)
 //            
 //            return VectorImportResult(
 //                success: false,
@@ -452,7 +452,7 @@
 //        var errors: [VectorImportError] = []
 //        let warnings: [String] = []
 //        
-//        print("📊 Importing EPS (Encapsulated PostScript)...")
+//        Log.fileOperation("📊 Importing EPS (Encapsulated PostScript)...", level: .info)
 //        
 //        // EPS can often be converted to PDF for import
 //        do {
@@ -473,7 +473,7 @@
 //                documentVersion: epsContent.version
 //            )
 //            
-//            print("✅ EPS import successful: \(epsContent.shapes.count) shapes")
+//            Log.info("✅ EPS import successful: \(epsContent.shapes.count) shapes", category: .fileOperations)
 //            
 //            return VectorImportResult(
 //                success: true,
@@ -485,7 +485,7 @@
 //            
 //        } catch {
 //            errors.append(.parsingError(error.localizedDescription, line: nil))
-//            print("❌ EPS import failed: \(error)")
+//            Log.error("❌ EPS import failed: \(error)", category: .error)
 //            
 //            return VectorImportResult(
 //                success: false,
@@ -504,8 +504,8 @@
 //        var warnings: [String] = []
 //        var shapes: [VectorShape] = []
 //        
-//        print("📊 Importing DWF (Design Web Format)...")
-//        print("💡 DWF is Autodesk's published, open format for CAD/engineering drawings")
+//        Log.fileOperation("📊 Importing DWF (Design Web Format)...", level: .info)
+//        Log.fileOperation("💡 DWF is Autodesk's published, open format for CAD/engineering drawings", level: .info)
 //        
 //        do {
 //            guard let data = try? Data(contentsOf: url) else {
@@ -542,7 +542,7 @@
 //                documentVersion: dwfContent.version
 //            )
 //            
-//            print("✅ DWF import successful: \(shapes.count) vector shapes, \(dwfContent.layerCount) layers")
+//            Log.info("✅ DWF import successful: \(shapes.count) vector shapes, \(dwfContent.layerCount) layers", category: .fileOperations)
 //            
 //            return VectorImportResult(
 //                success: true,
@@ -554,7 +554,7 @@
 //            
 //        } catch {
 //            errors.append(.parsingError(error.localizedDescription, line: nil))
-//            print("❌ DWF import failed: \(error)")
+//            Log.error("❌ DWF import failed: \(error)", category: .error)
 //            
 //            return VectorImportResult(
 //                success: false,
@@ -640,7 +640,7 @@
 //
 //private func parseSVGContent(_ data: Data) throws -> SVGContent {
 //    // PROFESSIONAL SVG PARSER IMPLEMENTATION
-//    print("🔧 Implementing professional SVG parser...")
+//    Log.fileOperation("🔧 Implementing professional SVG parser...", level: .info)
 //    
 //    guard let xmlString = String(data: data, encoding: .utf8) else {
 //        throw VectorImportError.parsingError("Could not decode SVG as UTF-8", line: nil)
@@ -840,7 +840,7 @@
 //    // MARK: - CSS Style Parsing
 //    
 //    private func parseCSSStyles(_ cssContent: String) {
-//        print("🎨 Parsing CSS styles")
+//        Log.fileOperation("🎨 Parsing CSS styles", level: .info)
 //        
 //        // Parse CSS rules from style content
 //        let rules = cssContent.components(separatedBy: "}")
@@ -866,11 +866,11 @@
 //                }
 //                
 //                cssStyles[selector] = styles
-//                print("📋 Added CSS rule: \(selector) -> \(styles)")
+//                Log.fileOperation("📋 Added CSS rule: \(selector) -> \(styles)", level: .info)
 //            }
 //        }
 //        
-//        print("✅ CSS parsing complete - \(cssStyles.count) rules parsed")
+//        Log.info("✅ CSS parsing complete - \(cssStyles.count) rules parsed", category: .fileOperations)
 //    }
 //    
 //    // MARK: - SVG Element Parsers
@@ -878,7 +878,7 @@
 //    private func parseText(attributes: [String: String]) {
 //        currentTextContent = ""
 //        currentTextAttributes = attributes
-//        print("🔤 Starting text element parsing")
+//        Log.fileOperation("🔤 Starting text element parsing", level: .info)
 //    }
 //    
 //    private func finishTextElement() {
@@ -908,7 +908,7 @@
 //        currentTextContent = ""
 //        currentTextAttributes = [:]
 //        
-//        print("📝 Created text object: '\(textObject.content)'")
+//        Log.fileOperation("📝 Created text object: '\(textObject.content)'", level: .info)
 //    }
 //    
 //    private func parseSVGRoot(attributes: [String: String]) {
@@ -930,7 +930,7 @@
 //                viewBoxHeight = parts[3]
 //                hasViewBox = true
 //                
-//                print("🔧 ViewBox parsed: x=\(viewBoxX), y=\(viewBoxY), width=\(viewBoxWidth), height=\(viewBoxHeight)")
+//                Log.fileOperation("🔧 ViewBox parsed: x=\(viewBoxX), y=\(viewBoxY), width=\(viewBoxWidth), height=\(viewBoxHeight)", level: .info)
 //                
 //                // If no explicit width/height, use viewBox dimensions
 //                if attributes["width"] == nil && attributes["height"] == nil {
@@ -946,7 +946,7 @@
 //                    .translatedBy(x: -viewBoxX, y: -viewBoxY)
 //                    .scaledBy(x: scaleX, y: scaleY)
 //                
-//                print("🔄 ViewBox transform: scale=(\(scaleX), \(scaleY)), translate=(\(-viewBoxX), \(-viewBoxY))")
+//                Log.fileOperation("🔄 ViewBox transform: scale=(\(scaleX), \(scaleY)), translate=(\(-viewBoxX), \(-viewBoxY))", level: .info)
 //            }
 //        } else {
 //            // No viewBox, use document size
@@ -965,19 +965,19 @@
 //        if let transform = attributes["transform"] {
 //            let groupTransform = parseTransform(transform)
 //            currentTransform = currentTransform.concatenating(groupTransform)
-//            print("🔄 Group transform applied: \(transform)")
+//            Log.fileOperation("🔄 Group transform applied: \(transform)", level: .info)
 //        }
 //    }
 //    
 //    private func parsePath(attributes: [String: String]) {
 //        guard let d = attributes["d"] else { return }
 //        
-//        print("🔍 Parsing SVG path: \(d)")
+//        Log.debug("🔍 Parsing SVG path: \(d)", category: .general)
 //        
 //        let pathData = parsePathData(d)
 //        let vectorPath = VectorPath(elements: pathData)
 //        
-//        print("📐 Created path with \(pathData.count) elements")
+//        Log.fileOperation("📐 Created path with \(pathData.count) elements", level: .info)
 //        
 //        let shape = createShape(
 //            name: "Path",
@@ -986,18 +986,18 @@
 //        )
 //        
 //        if let fill = shape.fillStyle {
-//            print("🎨 Shape has fill style: \(fill)")
+//            Log.fileOperation("🎨 Shape has fill style: \(fill)", level: .info)
 //        } else {
-//            print("⚪ Shape has no fill")
+//            Log.fileOperation("⚪ Shape has no fill", level: .info)
 //        }
 //        if let stroke = shape.strokeStyle {
-//            print("🖊️ Shape has stroke style: \(stroke)")
+//            Log.fileOperation("🖊️ Shape has stroke style: \(stroke)", level: .info)
 //        } else {
-//            print("📝 Shape has no stroke")
+//            Log.fileOperation("📝 Shape has no stroke", level: .info)
 //        }
 //        
 //        shapes.append(shape)
-//        print("✅ Added shape to collection - total: \(shapes.count)")
+//        Log.info("✅ Added shape to collection - total: \(shapes.count)", category: .fileOperations)
 //    }
 //    
 //    private func parseRectangle(attributes: [String: String]) {
@@ -1166,22 +1166,22 @@
 //        var mergedAttributes = attributes
 //        
 //        if let className = attributes["class"] {
-//            print("🏷️ Processing classes: \(className)")
+//            Log.fileOperation("🏷️ Processing classes: \(className)", level: .info)
 //            // Handle multiple classes separated by spaces
 //            let classNames = className.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
 //            for cls in classNames {
 //                let selector = "." + cls
 //                if let classStyles = cssStyles[selector] {
-//                    print("✅ Found styles for \(selector): \(classStyles)")
+//                    Log.info("✅ Found styles for \(selector): \(classStyles)", category: .fileOperations)
 //                    // CSS class styles have lower priority than inline styles
 //                    for (key, value) in classStyles {
 //                        if mergedAttributes[key] == nil {
 //                            mergedAttributes[key] = value
-//                            print("   Applied \(key): \(value)")
+//                            Log.info("   Applied \(key): \(value)", category: .general)
 //                        }
 //                    }
 //                } else {
-//                    print("❌ No styles found for \(selector)")
+//                    Log.error("❌ No styles found for \(selector)", category: .error)
 //                }
 //            }
 //        }
@@ -1219,11 +1219,11 @@
 //            // CRITICAL: Apply viewBox transform AFTER shape transform to ensure objects stay within bounds
 //            let shapeTransform = parseTransform(mergedAttributes["transform"] ?? "")
 //            transform = currentTransform.concatenating(shapeTransform)
-//            print("🔄 Applied external SVG transform (viewBox → shape transform)")
+//            Log.fileOperation("🔄 Applied external SVG transform (viewBox → shape transform)", level: .info)
 //        } else {
 //            // Our own exported SVG (no transform attribute) - coordinates are already correct
 //            transform = currentTransform.isIdentity ? .identity : currentTransform
-//            print("✅ Using identity transform for logos-exported shape")
+//            Log.info("✅ Using identity transform for logos-exported shape", category: .fileOperations)
 //        }
 //        
 //        return VectorShape(
@@ -1251,16 +1251,16 @@
 //        // Check for gradient reference: url(#gradientId)
 //        if stroke.hasPrefix("url(#") && stroke.hasSuffix(")") {
 //            let gradientId = String(stroke.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
-//            print("🔍 Looking for stroke gradient: \(gradientId)")
-//            print("🔍 Available gradients: \(gradientDefinitions.keys.sorted())")
+//            Log.debug("🔍 Looking for stroke gradient: \(gradientId)", category: .general)
+//            Log.debug("🔍 Available gradients: \(gradientDefinitions.keys.sorted())", category: .general)
 //            
 //            if let gradient = gradientDefinitions[gradientId] {
 //                let width = parseLength(attributes["stroke-width"]) ?? 1.0
 //                let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
-//                print("✅ Applied gradient stroke: \(gradientId)")
+//                Log.info("✅ Applied gradient stroke: \(gradientId)", category: .fileOperations)
 //                return StrokeStyle(gradient: gradient, width: width, opacity: opacity)
 //            }
-//            print("❌ Gradient reference not found for stroke: \(gradientId)")
+//            Log.error("❌ Gradient reference not found for stroke: \(gradientId)", category: .error)
 //            // Fallback to black if gradient not found
 //            let width = parseLength(attributes["stroke-width"]) ?? 1.0
 //            let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
@@ -1281,15 +1281,15 @@
 //        // Check for gradient reference: url(#gradientId)
 //        if fill.hasPrefix("url(#") && fill.hasSuffix(")") {
 //            let gradientId = String(fill.dropFirst(5).dropLast(1)) // Remove "url(#" and ")"
-//            print("🔍 Looking for fill gradient: \(gradientId)")
-//            print("🔍 Available gradients: \(gradientDefinitions.keys.sorted())")
+//            Log.debug("🔍 Looking for fill gradient: \(gradientId)", category: .general)
+//            Log.debug("🔍 Available gradients: \(gradientDefinitions.keys.sorted())", category: .general)
 //            
 //            if let gradient = gradientDefinitions[gradientId] {
 //                let opacity = parseLength(attributes["fill-opacity"]) ?? 1.0
-//                print("✅ Applied gradient fill: \(gradientId)")
+//                Log.info("✅ Applied gradient fill: \(gradientId)", category: .fileOperations)
 //                return FillStyle(gradient: gradient, opacity: opacity)
 //            }
-//            print("❌ Gradient reference not found for fill: \(gradientId)")
+//            Log.error("❌ Gradient reference not found for fill: \(gradientId)", category: .error)
 //            // Fallback to black if gradient not found
 //            return FillStyle(color: .black, opacity: parseLength(attributes["fill-opacity"]) ?? 1.0)
 //        }
@@ -1413,10 +1413,10 @@
 //                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
 //                if normalizer > 0 {
 //                    let normalizedValue = absoluteValue / normalizer
-//                    print("🔧 USER SPACE COORDINATE: \(absoluteValue) / \(normalizer) = \(normalizedValue)")
+//                    Log.fileOperation("🔧 USER SPACE COORDINATE: \(absoluteValue) / \(normalizer) = \(normalizedValue)", level: .info)
 //                    return normalizedValue
 //                } else {
-//                    print("⚠️ Invalid viewBox dimension, using absolute coordinate")
+//                    Log.fileOperation("⚠️ Invalid viewBox dimension, using absolute coordinate", level: .info)
 //                    return absoluteValue
 //                }
 //            } else {
@@ -1513,7 +1513,7 @@
 //                }
 //                
 //            default:
-//                print("⚠️ Unknown transform type: \(transformType)")
+//                Log.fileOperation("⚠️ Unknown transform type: \(transformType)", level: .info)
 //            }
 //        }
 //        
@@ -1524,7 +1524,7 @@
 //    
 //    private func parseLinearGradient(attributes: [String: String]) {
 //        guard let id = attributes["id"] else {
-//            print("⚠️ Linear gradient missing id attribute")
+//            Log.fileOperation("⚠️ Linear gradient missing id attribute", level: .info)
 //            return
 //        }
 //        
@@ -1534,7 +1534,7 @@
 //        currentGradientStops = []
 //        isParsingGradient = true
 //        
-//        print("🎨 Parsing linear gradient: \(id)")
+//        Log.fileOperation("🎨 Parsing linear gradient: \(id)", level: .info)
 //        print("   - x1: \(attributes["x1"] ?? "0%"), y1: \(attributes["y1"] ?? "0%")")
 //        print("   - x2: \(attributes["x2"] ?? "100%"), y2: \(attributes["y2"] ?? "0%")")
 //        print("   - gradientUnits: \(attributes["gradientUnits"] ?? "objectBoundingBox")")
@@ -1542,7 +1542,7 @@
 //    
 //    private func parseRadialGradient(attributes: [String: String]) {
 //        guard let id = attributes["id"] else {
-//            print("⚠️ Radial gradient missing id attribute")
+//            Log.fileOperation("⚠️ Radial gradient missing id attribute", level: .info)
 //            return
 //        }
 //        
@@ -1552,7 +1552,7 @@
 //        currentGradientStops = []
 //        isParsingGradient = true
 //        
-//        print("🎨 Parsing radial gradient: \(id)")
+//        Log.fileOperation("🎨 Parsing radial gradient: \(id)", level: .info)
 //    }
 //    
 //    private func parseGradientStop(attributes: [String: String]) {
@@ -1586,7 +1586,7 @@
 //        let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
 //        currentGradientStops.append(gradientStop)
 //        
-//        print("🎨 Added gradient stop: offset=\(offset), color=\(stopColor)")
+//        Log.fileOperation("🎨 Added gradient stop: offset=\(offset), color=\(stopColor)", level: .info)
 //    }
 //    
 //    private func finishGradientElement() {
@@ -1596,7 +1596,7 @@
 //        
 //        // Ensure we have at least one gradient stop
 //        if currentGradientStops.isEmpty {
-//            print("⚠️ Gradient \(gradientId) has no color stops - creating default black to white")
+//            Log.fileOperation("⚠️ Gradient \(gradientId) has no color stops - creating default black to white", level: .info)
 //            currentGradientStops = [
 //                GradientStop(position: 0.0, color: .black),
 //                GradientStop(position: 1.0, color: .white)
@@ -1616,7 +1616,7 @@
 //            let x2Raw = attributes["x2"] ?? "100%"
 //            let y2Raw = attributes["y2"] ?? "0%"
 //            
-//            print("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)")
+//            Log.fileOperation("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)", level: .info)
 //            
 //            // Parse coordinates with proper gradient units handling
 //            let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
@@ -1624,7 +1624,7 @@
 //            let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
 //            let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
 //            
-//            print("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)")
+//            Log.fileOperation("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)", level: .info)
 //            
 //            // Apply gradientTransform if present (only for angle calculation)
 //            let transformedX1 = x1
@@ -1645,7 +1645,7 @@
 //                            // Negative Y scale means Y-flip
 //                            transformedY1 = -y1
 //                            transformedY2 = -y2
-//                            print("🔄 Applied Y-flip from gradientTransform scale(x, \(scaleY))")
+//                            Log.fileOperation("🔄 Applied Y-flip from gradientTransform scale(x, \(scaleY))", level: .info)
 //                        }
 //                    }
 //                }
@@ -1710,7 +1710,7 @@
 //            linearGradient.originPoint = CGPoint(x: originX, y: originY)
 //            
 //            vectorGradient = .linear(linearGradient)
-//            print("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
+//            Log.info("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
 //            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angle))° (shape-relative)")
 //            
 //        } else { // radialGradient
@@ -1724,7 +1724,7 @@
 //            let fxRaw = attributes["fx"]
 //            let fyRaw = attributes["fy"]
 //            
-//            print("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)")
+//            Log.fileOperation("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)", level: .info)
 //            
 //            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true)
 //            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false)
@@ -1734,7 +1734,7 @@
 //            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true) : cx
 //            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false) : cy
 //            
-//            print("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)")
+//            Log.fileOperation("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", level: .info)
 //            
 //            // SIMPLE OBJECT-RELATIVE: ALL radial gradients paint relative to individual object bounds
 //            // Always center in object and radius spans to object edge
@@ -1742,7 +1742,7 @@
 //            let focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
 //            let radius = 0.5  // Radius spans from center to object edge
 //            
-//            print("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5")
+//            Log.fileOperation("🎯 OBJECT-RELATIVE RADIAL: center=(0.5,0.5), radius=0.5", level: .info)
 //            
 //            // Parse spread method
 //            let spreadMethod = GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
@@ -1753,12 +1753,12 @@
 //            var gradientScaleY: Double = 1.0
 //            
 //            if let gradientTransformRaw = attributes["gradientTransform"] {
-//                print("🔄 Parsing gradientTransform: \(gradientTransformRaw)")
+//                Log.fileOperation("🔄 Parsing gradientTransform: \(gradientTransformRaw)", level: .info)
 //                let transforms = parseGradientTransform(gradientTransformRaw)
 //                gradientAngle = transforms.angle
 //                gradientScaleX = transforms.scaleX
 //                gradientScaleY = transforms.scaleY
-//                print("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)")
+//                Log.fileOperation("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)", level: .info)
 //            }
 //            
 //            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
@@ -1780,10 +1780,10 @@
 //            radialGradient.scaleY = gradientScaleY
 //            
 //            vectorGradient = .radial(radialGradient)
-//            print("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)")
+//            Log.info("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
 //            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", radius)) (shape-relative)")
 //            if fxRaw != nil || fyRaw != nil {
-//                print("   - Focal point: \(focalPoint)")
+//                Log.info("   - Focal point: \(focalPoint)", category: .general)
 //            }
 //        }
 //        
@@ -1797,7 +1797,7 @@
 //        currentGradientStops = []
 //        isParsingGradient = false
 //        
-//        print("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops")
+//        Log.info("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops", category: .general)
 //    }
 //    
 //    /// Parse SVG gradientTransform attribute to extract angle and aspect ratio
@@ -1816,7 +1816,7 @@
 //            if let rotateAngle = numbers.first {
 //                // Illustrator shows negative angle, so negate the SVG rotation
 //                angle = -rotateAngle
-//                print("🔄 Extracted rotation: \(rotateAngle)° -> angle: \(angle)°")
+//                Log.fileOperation("🔄 Extracted rotation: \(rotateAngle)° -> angle: \(angle)°", level: .info)
 //            }
 //        }
 //        
@@ -1827,12 +1827,12 @@
 //            if numbers.count >= 2 {
 //                scaleX = numbers[0]
 //                scaleY = numbers[1]
-//                print("🔄 Extracted scale: x=\(scaleX), y=\(scaleY)")
+//                Log.fileOperation("🔄 Extracted scale: x=\(scaleX), y=\(scaleY)", level: .info)
 //            } else if numbers.count == 1 {
 //                // Uniform scale
 //                scaleX = numbers[0]
 //                scaleY = numbers[0]
-//                print("🔄 Extracted uniform scale: \(numbers[0])")
+//                Log.fileOperation("🔄 Extracted uniform scale: \(numbers[0])", level: .info)
 //            }
 //        }
 //        
@@ -1976,11 +1976,11 @@
 //        var subpathStart = CGPoint.zero
 //        var lastControlPoint: CGPoint?
 //        
-//        print("🔍 RAW PATH DATA: \(pathData.prefix(100))...")
+//        Log.debug("🔍 RAW PATH DATA: \(pathData.prefix(100))...", category: .general)
 //        
 //        // Professional SVG tokenization using proper regex patterns
 //        let tokens = tokenizeSVGPath(pathData)
-//        print("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))")
+//        Log.fileOperation("🎯 FIRST 15 TOKENS: \(tokens.prefix(15))", level: .info)
 //        
 //        // Check for basic parsing issues
 //        var coordinateCount = 0
@@ -1992,7 +1992,7 @@
 //                coordinateCount += 1
 //            }
 //        }
-//        print("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates")
+//        Log.fileOperation("📊 PARSED: \(commandCount) commands, \(coordinateCount) coordinates", level: .info)
 //        
 //        var i = 0
 //        var currentCommand: String = ""
@@ -2004,7 +2004,7 @@
 //            if token.rangeOfCharacter(from: .letters) != nil {
 //                // It's a command
 //                currentCommand = token
-//                print("🔧 COMMAND: \(currentCommand)")
+//                Log.fileOperation("🔧 COMMAND: \(currentCommand)", level: .info)
 //                i += 1
 //                continue
 //            }
@@ -2015,7 +2015,7 @@
 //                if i + 1 < tokens.count {
 //                    let x = Double(tokens[i]) ?? 0
 //                    let y = Double(tokens[i + 1]) ?? 0
-//                    print("   Move to: (\(x), \(y))")
+//                    Log.info("   Move to: (\(x), \(y))", category: .general)
 //                    currentPoint = CGPoint(x: x, y: y)
 //                    subpathStart = currentPoint
 //                    elements.append(.move(to: VectorPoint(currentPoint)))
@@ -2023,7 +2023,7 @@
 //                    // After first moveto, subsequent coordinate pairs are treated as lineto
 //                    currentCommand = "L"
 //                } else {
-//                    print("   ⚠️ Not enough tokens for M command")
+//                    Log.info("   ⚠️ Not enough tokens for M command", category: .general)
 //                    i += 1
 //                }
 //                
@@ -2044,13 +2044,13 @@
 //                if i + 1 < tokens.count {
 //                    let x = Double(tokens[i]) ?? 0
 //                    let y = Double(tokens[i + 1]) ?? 0
-//                    print("   Line to: (\(x), \(y))")
+//                    Log.info("   Line to: (\(x), \(y))", category: .general)
 //                    currentPoint = CGPoint(x: x, y: y)
 //                    lastControlPoint = nil // Reset control point after line command
 //                    elements.append(.line(to: VectorPoint(currentPoint)))
 //                    i += 2
 //                } else {
-//                    print("   ⚠️ Not enough tokens for L command")
+//                    Log.info("   ⚠️ Not enough tokens for L command", category: .general)
 //                    i += 1
 //                }
 //                
@@ -2147,8 +2147,8 @@
 //                    let y2 = currentPoint.y + dy2
 //                    let newPoint = CGPoint(x: currentPoint.x + dx, y: currentPoint.y + dy)
 //                    
-//                    print("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))")
-//                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
+//                    Log.info("   Curve from (\(currentPoint.x), \(currentPoint.y)) to (\(newPoint.x), \(newPoint.y))", category: .general)
+//                    Log.info("   Controls: (\(x1), \(y1)), (\(x2), \(y2))", category: .general)
 //                    
 //                    currentPoint = newPoint
 //                    lastControlPoint = CGPoint(x: x2, y: y2)
@@ -2160,7 +2160,7 @@
 //                    ))
 //                    i += 6
 //                } else {
-//                    print("   ⚠️ Not enough tokens for c command")
+//                    Log.info("   ⚠️ Not enough tokens for c command", category: .general)
 //                    i += 1
 //                }
 //                
@@ -2185,8 +2185,8 @@
 //                        y1 = currentPoint.y
 //                    }
 //                    
-//                    print("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))")
-//                    print("   Controls: (\(x1), \(y1)), (\(x2), \(y2))")
+//                    Log.info("   Smooth curve from (\(currentPoint.x), \(currentPoint.y)) to (\(x), \(y))", category: .general)
+//                    Log.info("   Controls: (\(x1), \(y1)), (\(x2), \(y2))", category: .general)
 //                    
 //                    currentPoint = CGPoint(x: x, y: y)
 //                    lastControlPoint = CGPoint(x: x2, y: y2)
@@ -2290,7 +2290,7 @@
 //                }
 //                
 //            case "Z", "z": // Close path
-//                print("   Close path")
+//                Log.info("   Close path", category: .general)
 //                elements.append(.close)
 //                currentPoint = subpathStart
 //                lastControlPoint = nil
@@ -2302,9 +2302,9 @@
 //            }
 //        }
 //        
-//        print("🏁 FINAL ELEMENTS: \(elements.count) total")
+//        Log.info("🏁 FINAL ELEMENTS: \(elements.count) total", category: .general)
 //        for (index, element) in elements.enumerated() {
-//            print("  [\(index)] \(element)")
+//            Log.info("  [\(index)] \(element)", category: .general)
 //        }
 //        return elements
 //    }
@@ -2325,7 +2325,7 @@
 //}
 //
 //private func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
-//    print("🔧 Implementing professional PDF vector extraction...")
+//    Log.fileOperation("🔧 Implementing professional PDF vector extraction...", level: .info)
 //    
 //    var shapes: [VectorShape] = []
 //    let textCount: Int = 0
@@ -2374,7 +2374,7 @@
 //    
 //    shapes.append(rectShape)
 //    
-//    print("✅ PDF vector extraction completed: \(shapes.count) shapes extracted")
+//    Log.info("✅ PDF vector extraction completed: \(shapes.count) shapes extracted", category: .fileOperations)
 //    
 //    return PDFContent(
 //        shapes: shapes,
@@ -2385,7 +2385,7 @@
 //}
 //
 //private func parseAdobeIllustratorFile(_ url: URL) throws -> AIContent {
-//    print("🔧 Implementing professional Adobe Illustrator parser...")
+//    Log.fileOperation("🔧 Implementing professional Adobe Illustrator parser...", level: .info)
 //    
 //    guard let data = try? Data(contentsOf: url) else {
 //        throw VectorImportError.fileNotFound
@@ -2403,7 +2403,7 @@
 //    
 //    // Check if it contains PDF data
 //    if fileContent.contains("%PDF-") {
-//        print("📋 Found embedded PDF data in AI file")
+//        Log.fileOperation("📋 Found embedded PDF data in AI file", level: .info)
 //        
 //        // Extract the PDF portion from the AI file
 //        if let pdfStartRange = fileContent.range(of: "%PDF-") {
@@ -2429,7 +2429,7 @@
 //                try pdfData.write(to: tempURL)
 //                embeddedPDFURL = tempURL
 //                
-//                print("✅ Extracted embedded PDF to temporary file")
+//                Log.info("✅ Extracted embedded PDF to temporary file", category: .fileOperations)
 //            }
 //        }
 //    }
@@ -2447,7 +2447,7 @@
 //    layerCount = fileContent.components(separatedBy: layerPattern).count - 1
 //    if layerCount <= 0 { layerCount = 1 }
 //    
-//    print("✅ Adobe Illustrator parsing completed - Found \(layerCount) layers")
+//    Log.info("✅ Adobe Illustrator parsing completed - Found \(layerCount) layers", category: .fileOperations)
 //    
 //    return AIContent(
 //        embeddedPDFURL: embeddedPDFURL,
@@ -2457,7 +2457,7 @@
 //}
 //
 //private func parseEPSContent(_ url: URL) throws -> EPSContent {
-//    print("🔧 Implementing professional EPS/PostScript parser...")
+//    Log.fileOperation("🔧 Implementing professional EPS/PostScript parser...", level: .info)
 //    
 //    guard let data = try? Data(contentsOf: url) else {
 //        throw VectorImportError.fileNotFound
@@ -2489,7 +2489,7 @@
 //                   let width = Double(components[3]),
 //                   let height = Double(components[4]) {
 //                    boundingBox = CGRect(x: x, y: y, width: width - x, height: height - y)
-//                    print("📋 Found bounding box: \(boundingBox)")
+//                    Log.fileOperation("📋 Found bounding box: \(boundingBox)", level: .info)
 //                }
 //            }
 //        }
@@ -2521,7 +2521,7 @@
 //    // Parse basic PostScript drawing commands to extract shapes
 //    shapes = try parsePostScriptPaths(fileContent)
 //    
-//    print("✅ EPS parsing completed: \(shapes.count) shapes, \(textCount) text objects")
+//    Log.info("✅ EPS parsing completed: \(shapes.count) shapes, \(textCount) text objects", category: .fileOperations)
 //    
 //    return EPSContent(
 //        shapes: shapes,
@@ -2611,7 +2611,7 @@
 //
 //private func parseDWFContent(_ data: Data) throws -> DWFContent {
 //    // PROFESSIONAL DWF PARSER - Based on Autodesk's published specification
-//    print("🔧 Implementing professional DWF parser...")
+//    Log.fileOperation("🔧 Implementing professional DWF parser...", level: .info)
 //    
 //    guard data.count >= 12 else {
 //        throw VectorImportError.invalidStructure("File too small to be valid DWF")
@@ -2630,7 +2630,7 @@
 //    let versionEnd = headerString.index(headerString.endIndex, offsetBy: -1)
 //    let version = String(headerString[versionStart..<versionEnd])
 //    
-//    print("📋 DWF Version: \(version)")
+//    Log.fileOperation("📋 DWF Version: \(version)", level: .info)
 //    
 //    // Parse DWF data block starting at byte 13
 //    var currentOffset = 12
@@ -2651,7 +2651,7 @@
 //            let trailerData = data.subdata(in: currentOffset..<(currentOffset + 10))
 //            if let trailerString = String(data: trailerData, encoding: .ascii),
 //               trailerString == "(EndOfDWF)" {
-//                print("📋 Found DWF termination trailer")
+//                Log.fileOperation("📋 Found DWF termination trailer", level: .info)
 //                break
 //            }
 //        }
@@ -2699,7 +2699,7 @@
 //        }
 //    }
 //    
-//    print("✅ DWF parsing complete: \(shapes.count) shapes, \(layerCount) layers")
+//    Log.info("✅ DWF parsing complete: \(shapes.count) shapes, \(layerCount) layers", category: .fileOperations)
 //    
 //    return DWFContent(
 //        shapes: shapes,
@@ -2721,21 +2721,21 @@
 //private func parseDWFLine(_ data: Data, offset: inout Int) throws -> VectorShape? {
 //    // Parse DWF line format: L x1,y1 x2,y2
 //    // This is a simplified implementation - full implementation would handle all coordinate formats
-//    print("🔧 DWF line parser - simplified implementation")
+//    Log.fileOperation("🔧 DWF line parser - simplified implementation", level: .info)
 //    offset += 20 // Skip for now
 //            return nil
 //        }
 //
 //private func parseDWFPolyline(_ data: Data, offset: inout Int) throws -> VectorShape? {
 //    // Parse DWF polyline format: P count x1,y1 x2,y2 ...
-//    print("🔧 DWF polyline parser - simplified implementation")
+//    Log.fileOperation("🔧 DWF polyline parser - simplified implementation", level: .info)
 //    offset += 20 // Skip for now
 //    return nil
 //}
 //
 //private func parseDWFCircle(_ data: Data, offset: inout Int) throws -> VectorShape? {
 //    // Parse DWF circle format: R x,y,radius
-//    print("🔧 DWF circle parser - simplified implementation")
+//    Log.fileOperation("🔧 DWF circle parser - simplified implementation", level: .info)
 //    offset += 20 // Skip for now
 //    return nil
 //}
@@ -2749,7 +2749,7 @@
 //                                 sourceApplication: inout String?,
 //                                 missingFonts: inout [String]) throws {
 //    // Parse extended ASCII opcodes like (DrawingInfo), (Layer), (View), etc.
-//    print("🔧 DWF extended ASCII parser - simplified implementation")
+//    Log.fileOperation("🔧 DWF extended ASCII parser - simplified implementation", level: .info)
 //    
 //    // Find matching closing parenthesis
 //    let startOffset = offset
@@ -2767,12 +2767,12 @@
 //        if let contentString = String(data: contentData, encoding: .ascii) {
 //            // Parse specific DWF commands
 //            if contentString.contains("DrawingInfo") {
-//                print("📋 Found DWF DrawingInfo section")
+//                Log.fileOperation("📋 Found DWF DrawingInfo section", level: .info)
 //            } else if contentString.contains("Layer") {
 //                layerCount += 1
-//                print("📋 Found DWF Layer definition")
+//                Log.fileOperation("📋 Found DWF Layer definition", level: .info)
 //            } else if contentString.contains("View") {
-//                print("📋 Found DWF View definition")
+//                Log.fileOperation("📋 Found DWF View definition", level: .info)
 //            }
 //        }
 //    }
@@ -2789,7 +2789,7 @@
 //    let length = lengthBytes.withUnsafeBytes { $0.load(as: UInt32.self) }
 //    
 //    offset += 4 + Int(length)
-//    print("⚠️ Skipped \(length) bytes of encrypted/binary DWF data")
+//    Log.fileOperation("⚠️ Skipped \(length) bytes of encrypted/binary DWF data", level: .info)
 //}
 //
 //// MARK: - PROFESSIONAL DWF EXPORT SYSTEM (Adobe Illustrator Standards)
@@ -2805,8 +2805,8 @@
 //    
 //    /// Export to DWF with professional scaling (Adobe Illustrator approach for AutoDesk)
 //    func exportDWF(_ document: VectorDocument, to url: URL, options: DWFExportOptions) throws {
-//        print("📄 Exporting to DWF using Adobe Illustrator professional standards...")
-//        print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
+//        Log.info("📄 Exporting to DWF using Adobe Illustrator professional standards...", category: .general)
+//        Log.fileOperation("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)", level: .info)
 //        
 //        // Create reference rectangle for scale maintenance (Adobe Illustrator method)
 //        let referenceRect = calculateReferenceRectangle(for: document, options: options)
@@ -2823,16 +2823,16 @@
 //        // Write DWF file with proper headers and structure
 //        try writeDWFFile(content: dwfContent, to: url)
 //        
-//        print("✅ DWF export successful: \(url.lastPathComponent)")
-//        print("📊 Exported: \(dwfContent.shapeCount) shapes, \(dwfContent.layerCount) layers")
+//        Log.info("✅ DWF export successful: \(url.lastPathComponent)", category: .fileOperations)
+//        Log.fileOperation("📊 Exported: \(dwfContent.shapeCount) shapes, \(dwfContent.layerCount) layers", level: .info)
 //    }
 //    
 //    // MARK: - DWG Export (Adobe Illustrator Standards for AutoCAD)
 //    
 //    /// Export to DWG with professional AutoCAD scaling (Adobe Illustrator approach)
 //    func exportDWG(_ document: VectorDocument, to url: URL, options: DWGExportOptions) throws {
-//        print("📄 Exporting to DWG using Adobe Illustrator professional standards for AutoCAD...")
-//        print("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)")
+//        Log.info("📄 Exporting to DWG using Adobe Illustrator professional standards for AutoCAD...", category: .general)
+//        Log.fileOperation("📐 Scale: \(options.scale.description), Units: \(options.targetUnits.rawValue)", level: .info)
 //        
 //        // Create professional reference rectangle (Adobe Illustrator method for AutoCAD)
 //        let referenceRect = calculateDWGReferenceRectangle(for: document, options: options)
@@ -2849,8 +2849,8 @@
 //        // Write DWG file with proper AutoCAD structure
 //        try writeDWGFile(content: dwgContent, to: url, version: options.dwgVersion)
 //        
-//        print("✅ DWG export successful: \(url.lastPathComponent)")
-//        print("📊 Exported: \(dwgContent.entityCount) entities, \(dwgContent.layerCount) layers")
+//        Log.info("✅ DWG export successful: \(url.lastPathComponent)", category: .fileOperations)
+//        Log.fileOperation("📊 Exported: \(dwgContent.entityCount) entities, \(dwgContent.layerCount) layers", level: .info)
 //    }
 //    
 //    // MARK: - Professional Scale Calculations (Adobe Illustrator Method)
@@ -3582,10 +3582,10 @@
 //    
 //    /// Professional DWG export with 100% scaling and millimeter precision
 //    func exportDWGWithMillimeterPrecision(_ document: VectorDocument, to url: URL, options: DWGExportOptions) async throws {
-//        print("🔧 PROFESSIONAL DWG EXPORT - 100% Scaling with Millimeter Precision")
-//        print("📊 Source units: \(document.documentUnits.rawValue)")
-//        print("📊 Target units: \(options.targetUnits.rawValue)")
-//        print("📊 Scale: \(options.scale.description)")
+//        Log.fileOperation("🔧 PROFESSIONAL DWG EXPORT - 100% Scaling with Millimeter Precision", level: .info)
+//        Log.fileOperation("📊 Source units: \(document.documentUnits.rawValue)", level: .info)
+//        Log.fileOperation("📊 Target units: \(options.targetUnits.rawValue)", level: .info)
+//        Log.fileOperation("📊 Scale: \(options.scale.description)", level: .info)
 //        
 //        // Calculate professional unit conversion with millimeter precision
 //        let preciseConversionFactor = document.documentUnits.convertTo(options.targetUnits, value: 1.0)
@@ -3594,9 +3594,9 @@
 //        let scaleMultiplier = getMillimeterPreciseScaleMultiplier(for: options.scale)
 //        let finalScaleFactor = preciseConversionFactor * scaleMultiplier
 //        
-//        print("📊 Conversion factor: \(preciseConversionFactor)")
-//        print("📊 Scale multiplier: \(scaleMultiplier)")
-//        print("📊 Final scale: \(finalScaleFactor)")
+//        Log.fileOperation("📊 Conversion factor: \(preciseConversionFactor)", level: .info)
+//        Log.fileOperation("📊 Scale multiplier: \(scaleMultiplier)", level: .info)
+//        Log.fileOperation("📊 Final scale: \(finalScaleFactor)", level: .info)
 //        
 //        // Create professional coordinate transformation
 //        let transformation = createProfessionalCADTransformation(
@@ -3611,7 +3611,7 @@
 //            scaleFactor: finalScaleFactor
 //        )
 //        
-//        print("📊 Precise bounds: \(preciseBounds)")
+//        Log.fileOperation("📊 Precise bounds: \(preciseBounds)", level: .info)
 //        
 //        // Generate DWG content with millimeter precision
 //        let content = try generateProfessionalDWGContent(
@@ -3624,16 +3624,16 @@
 //        // Write DWG file with millimeter precision
 //        try await writeProfessionalDWGFile(content: content, to: url, options: options)
 //        
-//        print("✅ DWG EXPORT COMPLETE - Millimeter precision maintained")
-//        print("📊 Exported: \(content.entityCount) entities, \(content.layerCount) layers")
+//        Log.info("✅ DWG EXPORT COMPLETE - Millimeter precision maintained", category: .fileOperations)
+//        Log.fileOperation("📊 Exported: \(content.entityCount) entities, \(content.layerCount) layers", level: .info)
 //    }
 //    
 //    /// Professional DWF export with 100% scaling and millimeter precision
 //    func exportDWFWithMillimeterPrecision(_ document: VectorDocument, to url: URL, options: DWFExportOptions) async throws {
-//        print("🔧 PROFESSIONAL DWF EXPORT - 100% Scaling with Millimeter Precision")
-//        print("📊 Source units: \(document.documentUnits.rawValue)")
-//        print("📊 Target units: \(options.targetUnits.rawValue)")
-//        print("📊 Scale: \(options.scale.description)")
+//        Log.fileOperation("🔧 PROFESSIONAL DWF EXPORT - 100% Scaling with Millimeter Precision", level: .info)
+//        Log.fileOperation("📊 Source units: \(document.documentUnits.rawValue)", level: .info)
+//        Log.fileOperation("📊 Target units: \(options.targetUnits.rawValue)", level: .info)
+//        Log.fileOperation("📊 Scale: \(options.scale.description)", level: .info)
 //        
 //        // Calculate professional unit conversion with millimeter precision
 //        let preciseConversionFactor = document.documentUnits.convertTo(options.targetUnits, value: 1.0)
@@ -3642,9 +3642,9 @@
 //        let scaleMultiplier = getMillimeterPreciseScaleMultiplier(for: options.scale)
 //        let finalScaleFactor = preciseConversionFactor * scaleMultiplier
 //        
-//        print("📊 Conversion factor: \(preciseConversionFactor)")
-//        print("📊 Scale multiplier: \(scaleMultiplier)")
-//        print("📊 Final scale: \(finalScaleFactor)")
+//        Log.fileOperation("📊 Conversion factor: \(preciseConversionFactor)", level: .info)
+//        Log.fileOperation("📊 Scale multiplier: \(scaleMultiplier)", level: .info)
+//        Log.fileOperation("📊 Final scale: \(finalScaleFactor)", level: .info)
 //        
 //        // Create professional coordinate transformation
 //        let transformation = createProfessionalCADTransformationForDWF(
@@ -3659,7 +3659,7 @@
 //            scaleFactor: finalScaleFactor
 //        )
 //        
-//        print("📊 Precise bounds: \(preciseBounds)")
+//        Log.fileOperation("📊 Precise bounds: \(preciseBounds)", level: .info)
 //        
 //        // Generate DWF content with millimeter precision
 //        let content = try generateProfessionalDWFContent(
@@ -3672,8 +3672,8 @@
 //        // Write DWF file with millimeter precision
 //        try await writeProfessionalDWFFile(content: content, to: url, options: options)
 //        
-//        print("✅ DWF EXPORT COMPLETE - Millimeter precision maintained")
-//        print("📊 Exported: \(content.shapeCount) shapes, \(content.layerCount) layers")
+//        Log.info("✅ DWF EXPORT COMPLETE - Millimeter precision maintained", category: .fileOperations)
+//        Log.fileOperation("📊 Exported: \(content.shapeCount) shapes, \(content.layerCount) layers", level: .info)
 //    }
 //    
 //    // MARK: - MILLIMETER PRECISION SCALING CALCULATIONS
@@ -4159,7 +4159,7 @@
 //    // MARK: - ENHANCED FILE WRITING WITH MILLIMETER PRECISION
 //    
 //    private func writeProfessionalDWGFile(content: DWGExportContent, to url: URL, options: DWGExportOptions) async throws {
-//        print("🔧 Writing DWG file with millimeter precision...")
+//        Log.fileOperation("🔧 Writing DWG file with millimeter precision...", level: .info)
 //        
 //        var dwgData = Data()
 //        
@@ -4205,11 +4205,11 @@
 //        dwgData.append(footer.data(using: .utf8)!)
 //        
 //        try dwgData.write(to: url)
-//        print("✅ Professional DWG file written with millimeter precision")
+//        Log.info("✅ Professional DWG file written with millimeter precision", category: .fileOperations)
 //    }
 //    
 //    private func writeProfessionalDWFFile(content: DWFExportContent, to url: URL, options: DWFExportOptions) async throws {
-//        print("🔧 Writing DWF file with millimeter precision...")
+//        Log.fileOperation("🔧 Writing DWF file with millimeter precision...", level: .info)
 //        
 //        var dwfData = Data()
 //        
@@ -4228,7 +4228,7 @@
 //        dwfData.append(footer.data(using: .ascii)!)
 //        
 //        try dwfData.write(to: url)
-//        print("✅ Professional DWF file written with millimeter precision")
+//        Log.info("✅ Professional DWF file written with millimeter precision", category: .fileOperations)
 //    }
 //    
 //    // MARK: - MILLIMETER PRECISION SERIALIZATION
@@ -4793,7 +4793,7 @@
 //    // MARK: - TODO: Other export formats (for future implementation)
 //    
 //    static func exportToJSON(_ document: VectorDocument, url: URL) throws {
-//        print("💾 Exporting document to JSON: \(url.path)")
+//        Log.info("💾 Exporting document to JSON: \(url.path)", category: .general)
 //        
 //        let encoder = JSONEncoder()
 //        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -4802,15 +4802,15 @@
 //        do {
 //            let jsonData = try encoder.encode(document)
 //            try jsonData.write(to: url)
-//            print("✅ Successfully exported JSON document")
+//            Log.info("✅ Successfully exported JSON document", category: .fileOperations)
 //        } catch {
-//            print("❌ JSON export failed: \(error)")
+//            Log.error("❌ JSON export failed: \(error)", category: .error)
 //            throw VectorImportError.parsingError("Failed to export JSON: \(error.localizedDescription)", line: nil)
 //        }
 //    }
 //    
 //    static func importFromJSON(url: URL) throws -> VectorDocument {
-//        print("📂 Importing document from JSON: \(url.path)")
+//        Log.info("📂 Importing document from JSON: \(url.path)", category: .general)
 //        
 //        do {
 //            let jsonData = try Data(contentsOf: url)
@@ -4818,16 +4818,16 @@
 //            decoder.dateDecodingStrategy = .iso8601
 //            
 //            let document = try decoder.decode(VectorDocument.self, from: jsonData)
-//            print("✅ Successfully imported JSON document with \(document.layers.count) layers")
+//            Log.info("✅ Successfully imported JSON document with \(document.layers.count) layers", category: .fileOperations)
 //            return document
 //        } catch {
-//            print("❌ JSON import failed: \(error)")
+//            Log.error("❌ JSON import failed: \(error)", category: .error)
 //            throw VectorImportError.parsingError("Failed to import JSON: \(error.localizedDescription)", line: nil)
 //        }
 //    }
 //    
 //    static func importFromSVG(url: URL) async throws -> VectorDocument {
-//        print("🎨 Importing document from SVG: \(url.path)")
+//        Log.fileOperation("🎨 Importing document from SVG: \(url.path)", level: .info)
 //        
 //        let result = await VectorImportManager.shared.importVectorFile(from: url)
 //        
@@ -4850,9 +4850,9 @@
 //        document.settings.height = canvasHeight / 72.0
 //        document.settings.unit = .inches
 //        
-//        print("🎯 SVG IMPORT USING VIEWBOX DIMENSIONS:")
-//        print("   SVG document size: \(svgDocumentSize)")
-//        print("   Canvas size: \(canvasWidth) × \(canvasHeight) pts")
+//        Log.fileOperation("🎯 SVG IMPORT USING VIEWBOX DIMENSIONS:", level: .info)
+//        Log.info("   SVG document size: \(svgDocumentSize)", category: .general)
+//        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
 //        print("   Document size: \(String(format: "%.2f", canvasWidth/72.0)) × \(String(format: "%.2f", canvasHeight/72.0)) inches")
 //        
 //        // Calculate actual artwork bounds for positioning
@@ -4868,7 +4868,7 @@
 //        }
 //        
 //        if !artworkBounds.isNull {
-//            print("   Actual artwork bounds: \(artworkBounds)")
+//            Log.info("   Actual artwork bounds: \(artworkBounds)", category: .general)
 //        }
 //        
 //        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
@@ -4921,13 +4921,13 @@
 //        let translateX: CGFloat = 0  // Keep at viewBox origin
 //        let translateY: CGFloat = 0  // Keep at viewBox origin
 //        
-//        print("🎯 POSITIONING CALCULATION:")
-//        print("   Using viewBox origin (0,0) - preserving SVG positioning")
+//        Log.fileOperation("🎯 POSITIONING CALCULATION:", level: .info)
+//        Log.info("   Using viewBox origin (0,0) - preserving SVG positioning", category: .general)
 //        if !artworkBounds.isNull {
-//            print("   Artwork bounds: \(artworkBounds)")
+//            Log.info("   Artwork bounds: \(artworkBounds)", category: .general)
 //            if artworkBounds.minX < 0 || artworkBounds.minY < 0 || 
 //               artworkBounds.maxX > canvasWidth || artworkBounds.maxY > canvasHeight {
-//                print("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!")
+//                Log.info("   ⚠️ WARNING: Some objects are positioned outside the viewBox bounds!", category: .general)
 //            }
 //        }
 //        
@@ -4961,11 +4961,11 @@
 //        
 //        // Log warnings if any
 //        for warning in result.warnings {
-//            print("⚠️ SVG Import Warning: \(warning)")
+//            Log.fileOperation("⚠️ SVG Import Warning: \(warning)", level: .info)
 //        }
 //        
-//        print("✅ Successfully imported SVG document with \(result.shapes.count) shapes")
-//        print("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts")
+//        Log.info("✅ Successfully imported SVG document with \(result.shapes.count) shapes", category: .fileOperations)
+//        Log.fileOperation("📐 Canvas sized to exact artwork dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
 //        return document
 //    }
 //    
@@ -5025,14 +5025,14 @@
 //    }
 //    
 //    static func exportToSVG(_ document: VectorDocument, url: URL) throws {
-//        print("🎨 Exporting document to SVG: \(url.path)")
+//        Log.fileOperation("🎨 Exporting document to SVG: \(url.path)", level: .info)
 //        
 //        do {
 //            let svgContent = try generateSVGContent(from: document)
 //            try svgContent.write(to: url, atomically: true, encoding: .utf8)
-//            print("✅ Successfully exported SVG document")
+//            Log.info("✅ Successfully exported SVG document", category: .fileOperations)
 //        } catch {
-//            print("❌ SVG export failed: \(error)")
+//            Log.error("❌ SVG export failed: \(error)", category: .error)
 //            throw VectorImportError.parsingError("Failed to export SVG: \(error.localizedDescription)", line: nil)
 //        }
 //    }
@@ -5047,10 +5047,10 @@
 //        let width = max(pasteboardBounds.width, 100) // Use pasteboard width
 //        let height = max(pasteboardBounds.height, 100) // Use pasteboard height
 //        
-//        print("📊 SVG Export bounds:")
-//        print("   Pasteboard: \(pasteboardBounds)")
-//        print("   Content: \(contentBounds)")
-//        print("   Using pasteboard bounds for consistent export")
+//        Log.fileOperation("📊 SVG Export bounds:", level: .info)
+//        Log.info("   Pasteboard: \(pasteboardBounds)", category: .general)
+//        Log.info("   Content: \(contentBounds)", category: .general)
+//        Log.info("   Using pasteboard bounds for consistent export", category: .general)
 //        
 //        // Collect unique gradients for gradient definitions FIRST
 //        var uniqueGradients: [String: VectorGradient] = [:]
@@ -5307,7 +5307,7 @@
 //                }
 //            } else {
 //                // Fallback to solid color if gradient not found
-//                print("⚠️ Gradient not found in mapping, using fallback color")
+//                Log.fileOperation("⚠️ Gradient not found in mapping, using fallback color", level: .info)
 //                return "fill=\"rgb(128,128,128)\""
 //            }
 //        }
@@ -5344,7 +5344,7 @@
 //                strokeAttributes = "stroke=\"url(#\(gradientId))\" stroke-width=\"\(width)\""
 //            } else {
 //                // Fallback to solid color if gradient not found
-//                print("⚠️ Gradient not found in mapping, using fallback color")
+//                Log.fileOperation("⚠️ Gradient not found in mapping, using fallback color", level: .info)
 //                strokeAttributes = "stroke=\"rgb(128,128,128)\" stroke-width=\"\(width)\""
 //            }
 //        } else {
@@ -5687,7 +5687,7 @@
 //    }
 //    
 //    static func exportToPDF(_ document: VectorDocument, url: URL) throws {
-//        print("📄 Exporting document to PDF: \(url.path)")
+//        Log.info("📄 Exporting document to PDF: \(url.path)", category: .general)
 //        
 //        // Create PDF context
 //        let pageSize = document.settings.sizeInPoints
@@ -5741,7 +5741,7 @@
 //        // Close PDF context
 //        context.closePDF()
 //        
-//        print("✅ Successfully exported PDF document")
+//        Log.info("✅ Successfully exported PDF document", category: .fileOperations)
 //    }
 //    
 //    private static func drawShapeInPDF(_ shape: VectorShape, context: CGContext) {
@@ -5821,7 +5821,7 @@
 //    }
 //    
 //    static func exportToPNG(_ document: VectorDocument, url: URL, scale: CGFloat) throws {
-//        print("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale")
+//        Log.fileOperation("🖼️ Exporting document to PNG: \(url.path) at \(scale)x scale", level: .info)
 //        
 //        // Calculate output size
 //        let pageSize = document.settings.sizeInPoints
@@ -5893,11 +5893,11 @@
 //            throw VectorImportError.parsingError("Failed to finalize PNG export", line: nil)
 //        }
 //        
-//        print("✅ Successfully exported PNG document")
+//        Log.info("✅ Successfully exported PNG document", category: .fileOperations)
 //    }
 //    
 //    static func exportToJPEG(_ document: VectorDocument, url: URL, scale: CGFloat, quality: Double) throws {
-//        print("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality")
+//        Log.info("📷 Exporting document to JPEG: \(url.path) at \(scale)x scale, \(Int(quality * 100))% quality", category: .general)
 //        
 //        // Calculate output size
 //        let pageSize = document.settings.sizeInPoints
@@ -5971,6 +5971,6 @@
 //            throw VectorImportError.parsingError("Failed to finalize JPEG export", line: nil)
 //        }
 //        
-//        print("✅ Successfully exported JPEG document")
+//        Log.info("✅ Successfully exported JPEG document", category: .fileOperations)
 //    }
 //}

@@ -190,7 +190,7 @@ struct FontPanel: View {
                                 .pickerStyle(.menu)
                                 .onChange(of: currentFontFamily) { oldFamily, newFamily in
                                     // When font family changes, validate and update weight/style for the new family
-                                    print("🎯 FONT PANEL: Font family changed from \(oldFamily) to \(newFamily)")
+                                    Log.fileOperation("🎯 FONT PANEL: Font family changed from \(oldFamily) to \(newFamily)", level: .info)
                                     validateAndUpdateWeightAndStyle()
                                     // Force UI refresh to update weight and style pickers
                                     fontFamilyUpdateTrigger.toggle()
@@ -488,7 +488,7 @@ struct FontPanel: View {
                                 }
                             }
                             
-                            // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Adobe Illustrator Standard)
+                            // PROFESSIONAL TEXT TO OUTLINES CONVERSION (Professional Standard)
                             if selectedText != nil {
                                 Divider()
                                 
@@ -529,18 +529,18 @@ struct FontPanel: View {
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             // CRITICAL PROTECTION: Prevent font settings from changing during tool switches
-            print("🔧 FONT PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)")
-            print("🔒 PROTECTION: Font settings remain isolated per text box UUID - no syncing")
+            Log.fileOperation("🔧 FONT PANEL: Tool changed from \(oldTool.rawValue) to \(newTool.rawValue)", level: .info)
+            Log.info("🔒 PROTECTION: Font settings remain isolated per text box UUID - no syncing", category: .general)
             
             // Log current text box states for debugging
             if let editingText = editingText {
-                print("🎯 EDITING UUID: \(editingText.id.uuidString.prefix(8)) - BLUE state maintained")
+                Log.fileOperation("🎯 EDITING UUID: \(editingText.id.uuidString.prefix(8)) - BLUE state maintained", level: .info)
             }
             if let selectedText = selectedText {
-                print("🎯 SELECTED UUID: \(selectedText.id.uuidString.prefix(8)) - GREEN state maintained")
+                Log.fileOperation("🎯 SELECTED UUID: \(selectedText.id.uuidString.prefix(8)) - GREEN state maintained", level: .info)
             }
             if selectedText == nil && editingText == nil {
-                print("🎯 NO TEXT SELECTED - showing document defaults for new text creation")
+                Log.fileOperation("🎯 NO TEXT SELECTED - showing document defaults for new text creation", level: .info)
             }
             
             // REMOVED: Property cache clearing - no longer needed
@@ -551,22 +551,22 @@ struct FontPanel: View {
             let addedIDs = newIDs.subtracting(oldIDs)
             
             for removedID in removedIDs {
-                print("🎯 TEXT DESELECTED: \(removedID.uuidString.prefix(8)) - font settings preserved")
+                Log.fileOperation("🎯 TEXT DESELECTED: \(removedID.uuidString.prefix(8)) - font settings preserved", level: .info)
             }
             for addedID in addedIDs {
-                print("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique font settings")
+                Log.fileOperation("🎯 TEXT SELECTED: \(addedID.uuidString.prefix(8)) - loading unique font settings", level: .info)
             }
             
             // Update last logged selection state safely
             if let newSelectedText = selectedText {
                 if newSelectedText.id != lastLoggedSelection {
                     lastLoggedSelection = newSelectedText.id
-                    print("🎯 FONT PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)")
+                    Log.fileOperation("🎯 FONT PANEL: Found selected text - UUID: \(newSelectedText.id.uuidString.prefix(8)), Line Spacing: \(newSelectedText.typography.lineSpacing)", level: .info)
                 }
             } else {
                 if lastLoggedSelection != nil {
                     lastLoggedSelection = nil
-                    print("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)")
+                    Log.fileOperation("🎯 FONT PANEL: No selected text found - selectedTextIDs count: \(document.selectedTextIDs.count)", level: .info)
                 }
             }
         }
@@ -575,12 +575,12 @@ struct FontPanel: View {
             if let newEditingText = editingText {
                 if newEditingText.id != lastLoggedEditing {
                     lastLoggedEditing = newEditingText.id
-                    print("🎯 FONT PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))")
+                    Log.fileOperation("🎯 FONT PANEL: Found editing text - UUID: \(newEditingText.id.uuidString.prefix(8))", level: .info)
                 }
             } else {
                 if lastLoggedEditing != nil {
                     lastLoggedEditing = nil
-                    print("🎯 FONT PANEL: No editing text found")
+                    Log.fileOperation("🎯 FONT PANEL: No editing text found", level: .info)
                 }
             }
         }
@@ -645,7 +645,7 @@ struct FontPanel: View {
         for textID in document.selectedTextIDs {
             // Prevent duplicate processing of the same UUID
             guard !processedUUIDs.contains(textID) else {
-                print("⚠️ PREVENTED DUPLICATE: Skipping already processed textbox UUID \(textID.uuidString.prefix(8))")
+                Log.fileOperation("⚠️ PREVENTED DUPLICATE: Skipping already processed textbox UUID \(textID.uuidString.prefix(8))", level: .info)
                 continue
             }
             
@@ -656,19 +656,19 @@ struct FontPanel: View {
                 
                 // Log the specific changes for this UUID
                 if originalTypography != updatedTypography {
-                    print("🎯 FONT SETTINGS UPDATE: UUID \(textID.uuidString.prefix(8))")
-                    print("  - Action: \(action)")
-                    print("  - Font: \(updatedTypography.fontFamily) \(updatedTypography.fontWeight.rawValue) \(updatedTypography.fontStyle.rawValue)")
-                    print("  - Size: \(updatedTypography.fontSize)pt")
+                    Log.fileOperation("🎯 FONT SETTINGS UPDATE: UUID \(textID.uuidString.prefix(8))", level: .info)
+                    Log.info("  - Action: \(action)", category: .general)
+                    Log.info("  - Font: \(updatedTypography.fontFamily) \(updatedTypography.fontWeight.rawValue) \(updatedTypography.fontStyle.rawValue)", category: .general)
+                    Log.info("  - Size: \(updatedTypography.fontSize)pt", category: .general)
                 } else {
-                    print("🎯 NO CHANGE: UUID \(textID.uuidString.prefix(8)) - font settings unchanged")
+                    Log.fileOperation("🎯 NO CHANGE: UUID \(textID.uuidString.prefix(8)) - font settings unchanged", level: .info)
                 }
                 
                 processedUUIDs.insert(textID)
             }
         }
         
-        print("🔧 FONT PANEL: \(action) - Processed \(processedUUIDs.count) unique text box UUIDs")
+        Log.fileOperation("🔧 FONT PANEL: \(action) - Processed \(processedUUIDs.count) unique text box UUIDs", level: .info)
     }
     
     // SIMPLE WRAPPERS: Clean individual functions
@@ -757,9 +757,9 @@ struct FontPanel: View {
         let weights = availableFontWeights
         let styles = availableFontStyles
         
-        print("🎯 FONT PANEL: Validating font options for family: \(currentFontFamily)")
-        print("  - Available weights: \(weights.map { $0.rawValue })")
-        print("  - Available styles: \(styles.map { $0.rawValue })")
+        Log.fileOperation("🎯 FONT PANEL: Validating font options for family: \(currentFontFamily)", level: .info)
+        Log.info("  - Available weights: \(weights.map { $0.rawValue })", category: .general)
+        Log.info("  - Available styles: \(styles.map { $0.rawValue })", category: .general)
         
         if let _ = selectedText {
             // Update selected text's weight/style if invalid - NO document.fontManager changes
@@ -794,6 +794,6 @@ struct FontPanel: View {
         // Use the CORRECT method that calls YOUR multi-line Core Text implementation
         document.convertSelectedTextToOutlines()
         
-        print("🎯 FONT PANEL: Converting text to vector outlines using YOUR multi-line Core Text implementation")
+        Log.fileOperation("🎯 FONT PANEL: Converting text to vector outlines using YOUR multi-line Core Text implementation", level: .info)
     }
 } 

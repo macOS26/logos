@@ -210,7 +210,7 @@ struct StrokeFillPanel: View {
     private func updateFillColor(_ color: VectorColor) {
         // ALWAYS update the default color for new shapes
         document.defaultFillColor = color
-        print("🎨 Set default fill color: \(color)")
+        Log.fileOperation("🎨 Set default fill color: \(color)", level: .info)
         
         // FIXED: Update selected text objects first
         if !document.selectedTextIDs.isEmpty {
@@ -247,7 +247,7 @@ struct StrokeFillPanel: View {
     private func updateFillOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultFillOpacity = opacity
-        print("🎨 Set default fill opacity: \(Int(opacity * 100))%")
+        Log.fileOperation("🎨 Set default fill opacity: \(Int(opacity * 100))%", level: .info)
         
         // If there are selected shapes, update them too
         if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
@@ -270,7 +270,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeColor(_ color: VectorColor) {
         // ALWAYS update the default color for new shapes
         document.defaultStrokeColor = color
-        print("🎨 Set default stroke color: \(color)")
+        Log.fileOperation("🎨 Set default stroke color: \(color)", level: .info)
         
         // FIXED: Update selected text objects first  
         if !document.selectedTextIDs.isEmpty {
@@ -315,7 +315,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeWidth(_ width: Double) {
         // ALWAYS update the default stroke width for new shapes
         document.defaultStrokeWidth = width
-        print("🎨 Set default stroke width: \(width)pt")
+        Log.fileOperation("🎨 Set default stroke width: \(width)pt", level: .info)
         
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -363,7 +363,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultStrokeOpacity = opacity
-        print("🎨 Set default stroke opacity: \(Int(opacity * 100))%")
+        Log.fileOperation("🎨 Set default stroke opacity: \(Int(opacity * 100))%", level: .info)
         
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -394,7 +394,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
         // ALWAYS update the default line join for new shapes
         document.defaultStrokeLineJoin = lineJoin
-        print("🎨 Set default stroke line join: \(lineJoin.displayName)")
+        Log.fileOperation("🎨 Set default stroke line join: \(lineJoin.displayName)", level: .info)
         
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()
@@ -421,7 +421,7 @@ struct StrokeFillPanel: View {
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
         // ALWAYS update the default line cap for new shapes
         document.defaultStrokeLineCap = lineCap
-        print("🎨 Set default stroke line cap: \(lineCap.displayName)")
+        Log.fileOperation("🎨 Set default stroke line cap: \(lineCap.displayName)", level: .info)
         
         // If there are active shapes (regular or direct selection), update them too
         let activeShapeIDs = document.getActiveShapeIDs()

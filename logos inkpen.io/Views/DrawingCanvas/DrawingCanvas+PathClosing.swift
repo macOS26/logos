@@ -33,7 +33,7 @@ extension DrawingCanvas {
                         document.layers[layerIndex].shapes[shapeIndex].path = newPath
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                         
-                        print("Closed path for shape \(shape.name)")
+                        Log.info("Closed path for shape \(shape.name)", category: .general)
                     }
                 }
             }

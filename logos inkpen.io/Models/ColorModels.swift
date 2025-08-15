@@ -564,7 +564,7 @@ class PantoneLibrary: ObservableObject {
         guard let url = Bundle.main.url(forResource: "pantone_library", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let pantoneData = try? JSONDecoder().decode([PantoneRawData].self, from: data) else {
-            print("Failed to load Pantone library - using fallback colors")
+            Log.info("Failed to load Pantone library - using fallback colors", category: .general)
             // Fallback to a small set of essential colors if file can't be loaded
             allColors = [
                 PantoneLibraryColor(pantone: "032 C", hex: "#ef3340"),
@@ -580,7 +580,7 @@ class PantoneLibrary: ObservableObject {
             PantoneLibraryColor(pantone: rawColor.pms, hex: rawColor.hex)
         }
         
-        print("✅ Loaded \(allColors.count) Pantone colors from library")
+        Log.info("✅ Loaded \(allColors.count) Pantone colors from library", category: .fileOperations)
     }
     
     // Find closest Pantone color match
@@ -1097,7 +1097,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
     var id = UUID()
     var startPoint: CGPoint     // Start point (in unit coordinates 0-1)
     var endPoint: CGPoint       // End point (in unit coordinates 0-1)  
-    var stops: [GradientStop]   // Unlimited color stops (like Illustrator)
+    var stops: [GradientStop]   // Unlimited color stops
     var spreadMethod: GradientSpreadMethod = .pad
     var units: GradientUnits = .objectBoundingBox
     
@@ -1124,7 +1124,7 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         self.storedAngle = radians * 180.0 / .pi
     }
     
-    /// Professional angle support (like Adobe Illustrator) - -180° to +180° range
+    /// Professional angle support -180° to +180° range
     var angle: Double {
         get {
             // Return the stored angle, not calculated from coordinates
@@ -1161,12 +1161,12 @@ struct LinearGradient: Codable, Hashable, Identifiable {
             startPoint.y = max(0, min(1, startPoint.y))
             endPoint.x = max(0, min(1, endPoint.x))
             endPoint.y = max(0, min(1, endPoint.y))
-            print("🔧 ANGLE SET: Clamped to objectBoundingBox range (0-1)")
+            Log.fileOperation("🔧 ANGLE SET: Clamped to objectBoundingBox range (0-1)", level: .info)
         } else {
-            print("🔧 ANGLE SET: userSpaceOnUse - coordinates can extend beyond 0-1")
+            Log.fileOperation("🔧 ANGLE SET: userSpaceOnUse - coordinates can extend beyond 0-1", level: .info)
         }
         
-        print("🔧 ANGLE UPDATE: \(degrees)° → center=(\(centerX), \(centerY)), start=\(startPoint), end=\(endPoint)")
+        Log.fileOperation("🔧 ANGLE UPDATE: \(degrees)° → center=(\(centerX), \(centerY)), start=\(startPoint), end=\(endPoint)", level: .info)
     }
     
     /// Create a simple two-color linear gradient
@@ -1202,7 +1202,7 @@ struct RadialGradient: Codable, Hashable, Identifiable {
     var scaleX: Double = 1.0  // Scale X factor (1% to 800% = 0.01 to 8.0)
     var scaleY: Double = 1.0  // Scale Y factor (1% to 800% = 0.01 to 8.0)
     
-    // NEW: Transform properties to match Illustrator gradients
+    // NEW: Transform properties to
     var angle: Double = 0.0             // Rotation angle in degrees (-180 to 180)
     
     init(centerPoint: CGPoint, radius: Double, stops: [GradientStop], focalPoint: CGPoint? = nil, spreadMethod: GradientSpreadMethod = .pad, units: GradientUnits = .objectBoundingBox) {

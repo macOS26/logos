@@ -542,7 +542,7 @@ struct SVGImportView: View {
             importedDocument = importer.importSVGFile(from: url)
             
         } catch {
-            print("Error selecting file: \(error.localizedDescription)")
+            Log.info("Error selecting file: \(error.localizedDescription)", category: .general)
         }
     }
 }

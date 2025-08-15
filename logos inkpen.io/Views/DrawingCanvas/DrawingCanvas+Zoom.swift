@@ -42,7 +42,7 @@ extension DrawingCanvas {
         return allowedZoomSteps.first ?? 0.25
     }
 
-    /// PROFESSIONAL ZOOM GESTURE HANDLING (Adobe Illustrator Standards)
+            /// PROFESSIONAL ZOOM GESTURE HANDLING (Professional Standards)
     /// Always available but conditionally processed to prevent UI lockups
     internal func handleZoomGestureChanged(value: CGFloat, geometry: GeometryProxy) {
         // PROFESSIONAL GESTURE COORDINATION: Only zoom when appropriate
@@ -54,7 +54,7 @@ extension DrawingCanvas {
         
         if !isZoomGestureActive {
             isZoomGestureActive = true
-            print("🔍 ZOOM GESTURE STARTED: UI remains fully responsive")
+            Log.info("🔍 ZOOM GESTURE STARTED: UI remains fully responsive", category: .general)
         }
         // Do not override the cursor during pinch-to-zoom to avoid interfering with other tools
         
@@ -81,7 +81,7 @@ extension DrawingCanvas {
         // PROFESSIONAL GESTURE COORDINATION: Only finalize zoom when appropriate
         guard !isDrawing && !isBezierDrawing && !isPanGestureActive else {
             // Gesture ended but we weren't processing it - UI remains responsive
-            print("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive")
+            Log.info("🔍 ZOOM GESTURE IGNORED: Drawing/Pan in progress, UI remains responsive", category: .general)
             return
         }
         
@@ -111,36 +111,36 @@ extension DrawingCanvas {
         #endif
     }
     
-    /// Handle coordinated zoom requests from menu/toolbar (Adobe Illustrator Standards)
+            /// Handle coordinated zoom requests from menu/toolbar (Professional Standards)
     internal func handleZoomRequest(_ request: ZoomRequest, geometry: GeometryProxy) {
         
         switch request.mode {
         case .fitToPage:
             // Fit to page: Calculate optimal zoom and center
             fitToPage(geometry: geometry)
-            Log.debug("🔍 HANDLED ZOOM REQUEST: Fit to Page", category: .zoom)
+            Log.info("🔍 HANDLED ZOOM REQUEST: Fit to Page", category: .zoom)
             
         case .actualSize:
             // Actual size: Set to 100% and center properly
             actualSize(geometry: geometry)
-            Log.debug("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)", category: .zoom)
+            Log.info("🔍 HANDLED ZOOM REQUEST: Actual Size (100%)", category: .zoom)
             
         case .zoomIn, .zoomOut:
             // Zoom in/out: Use mouse position as focal point for professional behavior
             if currentMousePosition != .zero {
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: currentMousePosition, geometry: geometry)
-                Log.debug("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)", category: .zoom)
+                Log.info("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at mouse position \(currentMousePosition)", category: .zoom)
             } else {
                 // Fallback to view center if no mouse position tracked
                 let viewCenter = CGPoint(x: geometry.size.width / 2.0, y: geometry.size.height / 2.0)
                 handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: viewCenter, geometry: geometry)
-                Log.debug("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)", category: .zoom)
+                Log.info("🔍 HANDLED ZOOM REQUEST: \(request.mode) to \(String(format: "%.1f", request.targetZoom * 100))% at view center (no mouse position)", category: .zoom)
             }
             
         case .custom(let focalPoint):
             // Custom zoom with specific focal point
             handleZoomAtPoint(newZoomLevel: request.targetZoom, focalPoint: focalPoint, geometry: geometry)
-            Log.debug("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)", category: .zoom)
+            Log.info("🔍 HANDLED ZOOM REQUEST: Custom zoom to \(String(format: "%.1f", request.targetZoom * 100))% at \(focalPoint)", category: .zoom)
         }
         
         // Clear the request after processing

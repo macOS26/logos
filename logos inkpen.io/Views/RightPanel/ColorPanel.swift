@@ -178,19 +178,19 @@ struct ColorPanel: View {
     }
     
     private func selectColor(_ color: VectorColor) {
-        print("🎨 COLOR PANEL: selectColor called with: \(color)")
-        print("🎨 COLOR PANEL: showGradientEditing = \(showGradientEditing)")
-        print("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)")
-        print("🎨 COLOR PANEL: activeColorTarget = \(document.activeColorTarget)")
+        Log.fileOperation("🎨 COLOR PANEL: selectColor called with: \(color)", level: .info)
+        Log.fileOperation("🎨 COLOR PANEL: showGradientEditing = \(showGradientEditing)", level: .info)
+        Log.fileOperation("🎨 COLOR PANEL: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
+        Log.fileOperation("🎨 COLOR PANEL: activeColorTarget = \(document.activeColorTarget)", level: .info)
         
         // If we have a specific callback, use it (we're in a modal for specific purpose)
         if let onColorSelected = onColorSelected {
-            print("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)")
+            Log.fileOperation("🎨 COLOR PANEL: Using onColorSelected callback (fill/stroke mode)", level: .info)
             onColorSelected(color)
         } else {
             // 🔥 FIXED: Apply color to active target when browsing colors in the Color tab
             // This makes the Color Panel behave consistently with the VerticalToolbar
-            print("🎨 COLOR PANEL: Applying color to active target: \(document.activeColorTarget)")
+            Log.fileOperation("🎨 COLOR PANEL: Applying color to active target: \(document.activeColorTarget)", level: .info)
             
             // 🔥 CRITICAL FIX: Update the preview color in the INK panel
             currentPreviewColor = color
@@ -199,14 +199,14 @@ struct ColorPanel: View {
             if document.activeColorTarget == .stroke {
                 // Set default stroke color for new shapes
                 document.defaultStrokeColor = color
-                print("🎨 COLOR PANEL: Set stroke color: \(color) (active target)")
+                Log.fileOperation("🎨 COLOR PANEL: Set stroke color: \(color) (active target)", level: .info)
                 
                 // Apply to selected shapes
                 applyStrokeColorToSelected(color)
             } else {
                 // Set default fill color for new shapes  
                 document.defaultFillColor = color
-                print("🎨 COLOR PANEL: Set fill color: \(color) (active target)")
+                Log.fileOperation("🎨 COLOR PANEL: Set fill color: \(color) (active target)", level: .info)
                 
                 // Apply to selected shapes
                 applyFillColorToSelected(color)

@@ -143,7 +143,7 @@ struct ProfessionalLayerRow: View {
                 
                 // PROTECT CANVAS LAYER: Don't allow selection of Canvas layer when locked
                 if isCanvasLayer && layer.isLocked {
-                    print("🚫 Cannot select locked Canvas layer")
+                    Log.info("🚫 Cannot select locked Canvas layer", category: .general)
                     return
                 }
                 

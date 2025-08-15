@@ -97,31 +97,31 @@ class DocumentIconGenerator {
         let svgContent = generateSVGPreview(for: document)
         
         // Debug: Print SVG content for troubleshooting
-        print("🔍 IconGenerator: Generated SVG content length: \(svgContent.count)")
+        Log.info("🔍 IconGenerator: Generated SVG content length: \(svgContent.count)", category: .general)
         if svgContent.count < 100 {
-            print("🔍 IconGenerator: SVG content preview: \(svgContent)")
+            Log.info("🔍 IconGenerator: SVG content preview: \(svgContent)", category: .general)
         }
         
         // Convert SVG content to Data
         guard let svgData = svgContent.data(using: .utf8) else {
-            print("❌ IconGenerator: Failed to convert SVG content to Data")
+            Log.error("❌ IconGenerator: Failed to convert SVG content to Data", category: .error)
             renderFallbackPreview(context: context, rect: rect)
             return
         }
         
-        print("🔍 IconGenerator: SVG data size: \(svgData.count) bytes")
+        Log.info("🔍 IconGenerator: SVG data size: \(svgData.count) bytes", category: .general)
         
         // Create SVG document using the existing SVG class
         // Add error handling for CoreSVG framework availability
         guard let svg = SVG(svgData) else {
-            print("❌ IconGenerator: Failed to create SVG object from data")
-            print("   This might be due to CoreSVG framework not being available")
-            print("   Falling back to fallback preview")
+            Log.error("❌ IconGenerator: Failed to create SVG object from data", category: .error)
+            Log.info("   This might be due to CoreSVG framework not being available", category: .general)
+            Log.info("   Falling back to fallback preview", category: .general)
             renderFallbackPreview(context: context, rect: rect)
             return
         }
         
-        print("✅ IconGenerator: Successfully created SVG object, size: \(svg.size)")
+        Log.info("✅ IconGenerator: Successfully created SVG object, size: \(svg.size)", category: .fileOperations)
         
         // Save current context state
         context.saveGState()
@@ -143,7 +143,7 @@ class DocumentIconGenerator {
         let x = rect.midX - scaledWidth / 2
         let y = rect.midY - scaledHeight / 2
         
-        print("🔍 IconGenerator: SVG rendering - scale: \(scale), position: (\(x), \(y))")
+        Log.info("🔍 IconGenerator: SVG rendering - scale: \(scale), position: (\(x), \(y))", category: .general)
         
         // FIXED: Apply transform to center and scale the SVG without Y-inversion
         // The regular renderToVectorContext inverts Y, so we pre-compensate
@@ -152,7 +152,7 @@ class DocumentIconGenerator {
         
         // Render the SVG to the context
         svg.renderToVectorContext(context, targetSize: svgSize)
-        print("✅ IconGenerator: SVG rendering completed")
+        Log.info("✅ IconGenerator: SVG rendering completed", category: .fileOperations)
         
         // Restore context state
         context.restoreGState()
@@ -369,12 +369,12 @@ class DocumentIconGenerator {
             let previewURL = previewSidecarURL(for: url)
             do {
                 try svgPreview.write(to: previewURL, atomically: true, encoding: .utf8)
-                print("✅ Wrote SVG preview sidecar: \(previewURL.path)")
+                Log.info("✅ Wrote SVG preview sidecar: \(previewURL.path)", category: .fileOperations)
             } catch {
-                print("❌ Failed to write SVG preview sidecar: \(error.localizedDescription)")
+                Log.error("❌ Failed to write SVG preview sidecar: \(error.localizedDescription)", category: .error)
             }
         } else {
-            print("ℹ️ Skipping SVG preview sidecar write (disabled). File icon was updated.")
+            Log.info("ℹ️ Skipping SVG preview sidecar write (disabled). File icon was updated.", category: .general)
         }
     }
     
@@ -387,9 +387,9 @@ class DocumentIconGenerator {
         if FileManager.default.fileExists(atPath: previewURL.path) {
             do {
                 try FileManager.default.removeItem(at: previewURL)
-                print("🧹 Removed SVG preview sidecar: \(previewURL.path)")
+                Log.info("🧹 Removed SVG preview sidecar: \(previewURL.path)", category: .general)
             } catch {
-                print("⚠️ Could not remove SVG preview sidecar: \(error.localizedDescription)")
+                Log.fileOperation("⚠️ Could not remove SVG preview sidecar: \(error.localizedDescription)", level: .info)
             }
         }
     }

@@ -15,7 +15,7 @@ extension DrawingCanvas {
             Button("Close Path") {
                 closeBezierPath()
             }
-            .keyboardShortcut("j", modifiers: [.command]) // Adobe Illustrator standard
+                            .keyboardShortcut("j", modifiers: [.command]) // Professional standard
             
             Button("Finish Path (Open)") {
                 finishBezierPath()

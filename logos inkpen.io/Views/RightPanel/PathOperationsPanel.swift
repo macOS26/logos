@@ -28,12 +28,12 @@ struct PathOperationsPanel: View {
                         .foregroundColor(.secondary)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help("Adobe Illustrator Path Operations")
+                .help("Professional Path Operations")
             }
             .padding(.horizontal, 12)
             .padding(.top, 12)
             
-            // Shape Modes Section (Adobe Illustrator standard)
+            // Shape Modes Section (professional standard)
                 VStack(alignment: .leading, spacing: 8) {
                 Text("Shape Modes")
                     .font(.caption)
@@ -54,7 +54,7 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
             }
             
-            // Path Operations Effects Section (Adobe Illustrator standard)
+            // Path Operations Effects Section (professional standard)
             VStack(alignment: .leading, spacing: 8) {
                 Text("Path Operations Effects")
                         .font(.caption)
@@ -75,7 +75,7 @@ struct PathOperationsPanel: View {
                 .padding(.horizontal, 12)
             }
             
-            // PROFESSIONAL OFFSET PATH SECTION (Adobe Illustrator / FreeHand / CorelDRAW Standards)
+            // PROFESSIONAL OFFSET PATH SECTION (Professional Standards)
             ProfessionalOffsetPathSection(document: document)
             
             // Path Cleanup Section (Professional Tools)
@@ -165,18 +165,18 @@ struct PathOperationsPanel: View {
     }
     
     private func performPathfinderOperation(_ operation: PathfinderOperation) {
-        print("🎨 PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation: \(operation.rawValue)")
+                        Log.fileOperation("🎨 PROFESSIONAL pathfinder operation: \(operation.rawValue)", level: .info)
         
-        // Get selected shapes in correct STACKING ORDER (Adobe Illustrator standard)
+                        // Get selected shapes in correct STACKING ORDER (professional standard)
         let selectedShapes = document.getSelectedShapesInStackingOrder()
         guard !selectedShapes.isEmpty else {
-            print("❌ No shapes selected for pathfinder operation")
+            Log.error("❌ No shapes selected for pathfinder operation", category: .error)
             return
         }
         
-        print("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes")
+        Log.info("📚 STACKING ORDER: Processing \(selectedShapes.count) shapes", category: .general)
         for (index, shape) in selectedShapes.enumerated() {
-            print("  \(index): \(shape.name) (bottom→top)")
+            Log.info("  \(index): \(shape.name) (bottom→top)", category: .general)
         }
         
         // Convert shapes to CGPaths
@@ -184,18 +184,18 @@ struct PathOperationsPanel: View {
         
         // Validate operation can be performed
         guard ProfessionalPathOperations.canPerformOperation(operation, on: paths) else {
-            print("❌ Cannot perform \(operation.rawValue) on selected shapes")
+            Log.error("❌ Cannot perform \(operation.rawValue) on selected shapes", category: .error)
             return
         }
         
         // Save to undo stack before making changes
         document.saveToUndoStack()
         
-        // Perform the operation using EXACT ADOBE ILLUSTRATOR BEHAVIOR
+                        // Perform the operation using EXACT PROFESSIONAL BEHAVIOR
         var resultShapes: [VectorShape] = []
         
         switch operation {
-        // SHAPE MODES (Adobe Illustrator)
+                    // SHAPE MODES (Professional)
         case .union:
             // UNION: Combines exactly two shapes, result takes color of TOPMOST object
             if let unionPath = ProfessionalPathOperations.union(paths) {
@@ -209,20 +209,20 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [unionShape]
-                print("✅ UNION: Created unified shape with topmost object's color")
+                Log.info("✅ UNION: Created unified shape with topmost object's color", category: .fileOperations)
             }
             
         case .minusFront:
             // PUNCH: Front objects subtract from back object, result takes color of BACK object
             guard selectedShapes.count >= 2 else { 
-                print("❌ PUNCH requires at least 2 shapes")
+                Log.error("❌ PUNCH requires at least 2 shapes", category: .error)
                 return 
             }
             
             let backShape = selectedShapes.first!    // First in array = bottommost = back
             let frontShapes = Array(selectedShapes.dropFirst()) // All others = front
             
-            print("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })")
+            Log.info("🔪 PUNCH: Back shape '\(backShape.name)' - Front shapes: \(frontShapes.map { $0.name })", category: .general)
             
             var resultPath = backShape.path.cgPath
             
@@ -230,11 +230,11 @@ struct PathOperationsPanel: View {
             for frontShape in frontShapes {
                 if let subtractedPath = ProfessionalPathOperations.minusFront(frontShape.path.cgPath, from: resultPath) {
                     resultPath = subtractedPath
-                    print("  ⚡ Subtracted '\(frontShape.name)' from result")
+                    Log.info("  ⚡ Subtracted '\(frontShape.name)' from result", category: .general)
                 }
             }
             
-            // Result takes style of BACK object (Adobe Illustrator standard)
+                            // Result takes style of BACK object (professional standard)
             let resultShape = VectorShape(
                 name: "Punch Result",
                 path: VectorPath(cgPath: resultPath),
@@ -244,12 +244,12 @@ struct PathOperationsPanel: View {
                 opacity: backShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ PUNCH: Result takes back object's color (\(backShape.name))")
+            Log.info("✅ PUNCH: Result takes back object's color (\(backShape.name))", category: .fileOperations)
             
         case .intersect:
             // INTERSECT: Keep only overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                print("❌ INTERSECT requires exactly 2 shapes")
+                Log.error("❌ INTERSECT requires exactly 2 shapes", category: .error)
                 return
             }
             
@@ -264,13 +264,13 @@ struct PathOperationsPanel: View {
                     opacity: topmostShape.opacity
                 )
                 resultShapes = [intersectedShape]
-                print("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))")
+                Log.info("✅ INTERSECT: Result takes topmost object's color (\(topmostShape.name))", category: .fileOperations)
             }
             
         case .exclude:
             // EXCLUDE: Remove overlapping areas, result takes color of TOPMOST object
             guard selectedShapes.count == 2 else {
-                print("❌ EXCLUDE requires exactly 2 shapes")
+                Log.error("❌ EXCLUDE requires exactly 2 shapes", category: .error)
                 return
             }
             
@@ -288,9 +288,9 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(excludedShape)
             }
-            print("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))")
+            Log.info("✅ EXCLUDE: Created \(resultShapes.count) pieces with topmost object's color (\(topmostShape.name))", category: .fileOperations)
         
-        // PATHFINDER EFFECTS (Adobe Illustrator) - These retain original colors
+                    // PATHFINDER EFFECTS (Professional) - These retain original colors
         case .mosaic:
             // MOSAIC: CoreGraphics-based alternative to Divide with PERFECT stained glass effect
             let mosaicResults = CoreGraphicsPathOperations.splitWithShapeTracking(paths, using: .winding)
@@ -309,13 +309,13 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(mosaicShape)
             }
-            print("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)")
+            Log.info("✅ MOSAIC: Created \(resultShapes.count) pieces - TRUE stained glass effect (ALL visible areas preserved)", category: .fileOperations)
             
         case .cut:
             // CUT: CoreGraphics-based alternative to Trim with curve preservation
             let cutResults = CoreGraphicsPathOperations.cutWithShapeTracking(paths, using: .winding)
             
-            // Adobe Illustrator Cut: Each resulting piece maintains the color of its original shape (with curves preserved)
+                            // Professional Cut: Each resulting piece maintains the color of its original shape (with curves preserved)
             var shapeCounters: [Int: Int] = [:]
             
             for (cutPath, originalShapeIndex) in cutResults {
@@ -330,27 +330,27 @@ struct PathOperationsPanel: View {
                 let cutShape = VectorShape(
                     name: pieceNumber > 1 ? "Cut \(originalShape.name) (\(pieceNumber))" : "Cut \(originalShape.name)",
                     path: VectorPath(cgPath: cutPath),
-                    strokeStyle: nil, // CUT removes strokes (Adobe Illustrator standard)
+                    strokeStyle: nil, // CUT removes strokes (professional standard)
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
                 resultShapes.append(cutShape)
             }
-            print("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes")
+            Log.info("✅ CUT: Created \(resultShapes.count) cut shapes with curves preserved, removed strokes", category: .fileOperations)
             
         case .merge:
-            // MERGE: Adobe Illustrator Merge - cut all shapes first (maintain appearance), then merge same colors
+                            // MERGE: Professional Merge - cut all shapes first (maintain appearance), then merge same colors
             let colors = selectedShapes.compactMap { $0.fillStyle?.color ?? .clear }
             
             guard colors.count == selectedShapes.count else {
-                print("❌ MERGE: Could not extract colors from all shapes")
+                Log.error("❌ MERGE: Could not extract colors from all shapes", category: .error)
                 return
             }
             
             let mergeResults = ProfessionalPathOperations.professionalMergeWithShapeTracking(paths, colors: colors)
             
-            // Adobe Illustrator Merge: Cut-first approach maintains appearance, then same colors get unified, removes strokes
+                            // Professional Merge: Cut-first approach maintains appearance, then same colors get unified, removes strokes
             var shapeCounters: [Int: Int] = [:]
             
             for (mergedPath, originalShapeIndex) in mergeResults {
@@ -365,20 +365,20 @@ struct PathOperationsPanel: View {
                 let mergedShape = VectorShape(
                     name: pieceNumber > 1 ? "Merged \(originalShape.name) (\(pieceNumber))" : "Merged \(originalShape.name)",
                     path: VectorPath(cgPath: mergedPath),
-                    strokeStyle: nil, // MERGE removes strokes (Adobe Illustrator standard)
+                    strokeStyle: nil, // MERGE removes strokes (professional standard)
                     fillStyle: originalShape.fillStyle,
                     transform: .identity,
                     opacity: originalShape.opacity
                 )
                 resultShapes.append(mergedShape)
             }
-            print("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes")
+            Log.info("✅ MERGE: Created \(resultShapes.count) color-unified shapes with maintained appearance, removed strokes", category: .fileOperations)
             
         case .crop:
             // CROP: Use topmost shape to crop others, then trim. Top shape becomes invisible.
             let cropResults = ProfessionalPathOperations.professionalCropWithShapeTracking(paths)
             
-            // Adobe Illustrator Crop: Each resulting piece maintains the color of its original shape
+                            // Professional Crop: Each resulting piece maintains the color of its original shape
             var shapeCounters: [Int: Int] = [:]
             
             for (croppedPath, originalShapeIndex, isInvisibleCropShape) in cropResults {
@@ -397,7 +397,7 @@ struct PathOperationsPanel: View {
                         opacity: originalShape.opacity
                     )
                     resultShapes.append(invisibleCropShape)
-                    print("   ✅ Created invisible crop boundary from \(originalShape.name)")
+                    Log.info("   ✅ Created invisible crop boundary from \(originalShape.name)", category: .general)
                 } else {
                     // Track how many pieces we've created from this original shape
                     shapeCounters[originalShapeIndex] = (shapeCounters[originalShapeIndex] ?? 0) + 1
@@ -406,7 +406,7 @@ struct PathOperationsPanel: View {
                     let croppedShape = VectorShape(
                         name: pieceNumber > 1 ? "Cropped \(originalShape.name) (\(pieceNumber))" : "Cropped \(originalShape.name)",
                         path: VectorPath(cgPath: croppedPath),
-                        strokeStyle: nil, // CROP removes strokes (Adobe Illustrator standard)
+                        strokeStyle: nil, // CROP removes strokes (professional standard)
                         fillStyle: originalShape.fillStyle,
                         transform: .identity,
                         opacity: originalShape.opacity
@@ -415,7 +415,7 @@ struct PathOperationsPanel: View {
                 }
             }
             
-            print("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes")
+            Log.info("✅ CROP: Created \(resultShapes.count) shapes (includes invisible crop boundary), removed strokes", category: .fileOperations)
             
         case .dieline:
             // DIELINE: Apply Divide then convert all results to 1px black strokes with no fill
@@ -437,7 +437,7 @@ struct PathOperationsPanel: View {
                 )
                 resultShapes.append(dielineShape)
             }
-            print("✅ DIELINE: Created \(resultShapes.count) dieline shapes")
+            Log.info("✅ DIELINE: Created \(resultShapes.count) dieline shapes", category: .fileOperations)
             
         case .separate:
             // SEPARATE: Break compound paths into individual components
@@ -449,7 +449,7 @@ struct PathOperationsPanel: View {
                 if components.count <= 1 {
                     // No separation needed, keep original
                     separatedShapes.append(shape)
-                    print("   Shape \(shapeIndex + 1): No components to separate")
+                    Log.info("   Shape \(shapeIndex + 1): No components to separate", category: .general)
                 } else {
                     // Create separate shapes for each component
                     for (componentIndex, component) in components.enumerated() {
@@ -463,24 +463,24 @@ struct PathOperationsPanel: View {
                         )
                         separatedShapes.append(separatedShape)
                     }
-                    print("   Shape \(shapeIndex + 1): Separated into \(components.count) components")
+                    Log.info("   Shape \(shapeIndex + 1): Separated into \(components.count) components", category: .general)
                 }
             }
             
             resultShapes = separatedShapes
-            print("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths")
+            Log.info("✅ SEPARATE: Created \(resultShapes.count) individual shapes from \(selectedShapes.count) compound paths", category: .fileOperations)
             
         case .kick:
             // KICK: Back objects subtract from front object, result takes color of FRONT object
             guard selectedShapes.count >= 2 else {
-                print("❌ KICK requires at least 2 shapes")
+                Log.error("❌ KICK requires at least 2 shapes", category: .error)
                 return
             }
             
             let frontShape = selectedShapes.last!     // Last in array = topmost = front
             let backShapes = Array(selectedShapes.dropLast()) // All others = back
             
-            print("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })")
+            Log.info("🔪 KICK: Front shape '\(frontShape.name)' - Back shapes: \(backShapes.map { $0.name })", category: .general)
             
             var resultPath = frontShape.path.cgPath
             
@@ -488,11 +488,11 @@ struct PathOperationsPanel: View {
             for backShape in backShapes {
                 if let subtractedPath = ProfessionalPathOperations.kick(resultPath, from: backShape.path.cgPath) {
                     resultPath = subtractedPath
-                    print("  ⚡ Subtracted '\(backShape.name)' from result")
+                    Log.info("  ⚡ Subtracted '\(backShape.name)' from result", category: .general)
                 }
             }
             
-            // Result takes style of FRONT object (Adobe Illustrator standard)
+                            // Result takes style of FRONT object (professional standard)
             let resultShape = VectorShape(
                 name: "Kick Result",
                 path: VectorPath(cgPath: resultPath),
@@ -502,11 +502,11 @@ struct PathOperationsPanel: View {
                 opacity: frontShape.opacity
             )
             resultShapes = [resultShape]
-            print("✅ KICK: Result takes front object's color (\(frontShape.name))")
+            Log.info("✅ KICK: Result takes front object's color (\(frontShape.name))", category: .fileOperations)
         }
         
         guard !resultShapes.isEmpty else {
-            print("❌ Pathfinder operation \(operation.rawValue) produced no results")
+            Log.error("❌ Pathfinder operation \(operation.rawValue) produced no results", category: .error)
             return
         }
         
@@ -519,7 +519,7 @@ struct PathOperationsPanel: View {
             document.selectShape(resultShape.id)
         }
         
-        print("✅ PROFESSIONAL ADOBE ILLUSTRATOR pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)")
+                        Log.info("✅ PROFESSIONAL pathfinder operation \(operation.rawValue) completed - created \(resultShapes.count) result shape(s)", category: .fileOperations)
     }
     
     // MARK: - Remove Overlap Functions
@@ -537,7 +537,7 @@ struct PathOperationsPanel: View {
             }
         }
         
-        print("✅ REMOVE OVERLAP: Processed \(processedCount) of \(selectedShapes.count) selected shapes")
+        Log.info("✅ REMOVE OVERLAP: Processed \(processedCount) of \(selectedShapes.count) selected shapes", category: .fileOperations)
     }
     
     /// Remove overlapping areas from all shapes in the document
@@ -553,7 +553,7 @@ struct PathOperationsPanel: View {
             }
         }
         
-        print("✅ REMOVE ALL OVERLAPS: Processed \(processedCount) of \(allShapes.count) shapes")
+        Log.info("✅ REMOVE ALL OVERLAPS: Processed \(processedCount) of \(allShapes.count) shapes", category: .fileOperations)
     }
     
     /// Remove overlapping areas from a single shape using self-union
@@ -563,7 +563,7 @@ struct PathOperationsPanel: View {
         
         // Skip if path is empty or invalid
         guard !originalPath.isEmpty && !originalPath.boundingBox.isNull && !originalPath.boundingBox.isInfinite else {
-            print("⚠️ REMOVE OVERLAP: Skipping shape with invalid path: \(shape.name)")
+            Log.fileOperation("⚠️ REMOVE OVERLAP: Skipping shape with invalid path: \(shape.name)", level: .info)
             return false
         }
         
@@ -571,7 +571,7 @@ struct PathOperationsPanel: View {
         if let cleanedPath = CoreGraphicsPathOperations.union(originalPath, originalPath) {
             // Verify the cleaned path is valid
             guard !cleanedPath.isEmpty && !cleanedPath.boundingBox.isNull && !cleanedPath.boundingBox.isInfinite else {
-                print("⚠️ REMOVE OVERLAP: Union produced invalid path for: \(shape.name)")
+                Log.fileOperation("⚠️ REMOVE OVERLAP: Union produced invalid path for: \(shape.name)", level: .info)
                 return false
             }
             
@@ -583,12 +583,12 @@ struct PathOperationsPanel: View {
                 updatedShape.path = VectorPath(cgPath: cleanedPath)
                 document.layers[layerIndex].shapes[shapeIndex] = updatedShape
                 
-                print("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)")
+                Log.info("✅ REMOVE OVERLAP: Successfully cleaned shape: \(shape.name)", category: .fileOperations)
                 return true
             }
         }
         
-        print("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)")
+        Log.error("❌ REMOVE OVERLAP: Failed to clean shape: \(shape.name)", category: .error)
         return false
     }
 

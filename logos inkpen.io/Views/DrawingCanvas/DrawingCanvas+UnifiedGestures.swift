@@ -29,7 +29,7 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .selection, .scale, .rotate, .shear, .warp:
             // All transform tools use selection logic
-            print("🎯 UNIFIED: Routing to handleSelectionTap...")
+            Log.fileOperation("🎯 UNIFIED: Routing to handleSelectionTap...", level: .info)
             handleSelectionTap(at: canvasLocation)
             // REMOVED: handleAggressiveBackgroundTap - this was deselecting objects immediately after selection!
             
@@ -48,14 +48,14 @@ extension DrawingCanvas {
             if let existingTextID = findTextAt(location: canvasLocation) {
                 startEditingText(textID: existingTextID, at: canvasLocation)
             } else {
-                print("📝 FONT TOOL: Tap on empty area - drag to create new text box (like rectangle tool)")
+                Log.fileOperation("📝 FONT TOOL: Tap on empty area - drag to create new text box (like rectangle tool)", level: .info)
             }
             // Keep background tap handling for font tool only (this makes sense for font tool)
             handleAggressiveBackgroundTap(at: canvasLocation)
             
         case .line, .rectangle, .square, .roundedRectangle, .pill, .circle, .ellipse, .oval, .egg, .cone, .star, .polygon, .pentagon, .hexagon, .heptagon, .octagon, .nonagon, .equilateralTriangle, .isoscelesTriangle, .rightTriangle, .acuteTriangle:
             // Shape tools are drag-only - ignore taps
-            print("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored")
+            Log.fileOperation("🎨 UNIFIED: Shape tools (\(document.currentTool.rawValue)) are drag-only - tap ignored", level: .info)
         
         case .zoom:
             #if os(macOS)

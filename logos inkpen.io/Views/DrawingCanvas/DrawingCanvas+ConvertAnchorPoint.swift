@@ -15,7 +15,7 @@ extension DrawingCanvas {
         
         // NEW: First check if clicking on a handle to remove it
         if let handleRemovalResult = removeHandleIfClicked(at: location, tolerance: tolerance) {
-            print("🎯 CONVERT POINT TOOL: Removed handle - \(handleRemovalResult)")
+            Log.fileOperation("🎯 CONVERT POINT TOOL: Removed handle - \(handleRemovalResult)", level: .info)
             return
         }
         
@@ -68,11 +68,11 @@ extension DrawingCanvas {
                             if isCornerPoint {
                                 // Convert corner point back to smooth curve
                                 convertCornerToSmooth(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                print("🔄 DETECTED CORNER POINT → Converting to SMOOTH")
+                                Log.fileOperation("🔄 DETECTED CORNER POINT → Converting to SMOOTH", level: .info)
                             } else {
                                 // Convert smooth point to corner point
                                 convertSmoothToCorner(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                print("🔄 DETECTED SMOOTH POINT → Converting to CORNER")
+                                Log.fileOperation("🔄 DETECTED SMOOTH POINT → Converting to CORNER", level: .info)
                             }
                             
                             // PROFESSIONAL UX: Auto-enable direct selection to show the result
@@ -101,11 +101,11 @@ extension DrawingCanvas {
         
         // ENHANCED DEBUGGING: Show detailed coordinate info for toolbar bleed-through investigation
         let documentBounds = document.documentBounds
-        print("Convert Anchor Point: No point found at location \(location)")
-        print("  - Document bounds: \(documentBounds)")
-        print("  - Is within document: \(documentBounds.contains(location))")
-        print("  - Current tool: \(document.currentTool.rawValue)")
-        print("  - This might be a toolbar click bleeding through to canvas!")
+        Log.info("Convert Anchor Point: No point found at location \(location)", category: .general)
+        Log.info("  - Document bounds: \(documentBounds)", category: .general)
+        Log.info("  - Is within document: \(documentBounds.contains(location))", category: .general)
+        Log.info("  - Current tool: \(document.currentTool.rawValue)", category: .general)
+        Log.info("  - This might be a toolbar click bleeding through to canvas!", category: .general)
     }
     
     // PROFESSIONAL UX: Auto-select shapes when clicking with Convert Point tool
@@ -133,7 +133,7 @@ extension DrawingCanvas {
                 
                 if isBackgroundShape {
                     // SKIP background shapes entirely - they should not be selectable
-                    print("  - Background shape '\(shape.name)' SKIPPED - not selectable")
+                    Log.info("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .general)
                     continue
                 } else {
                     // Regular shapes: Use different logic for stroke vs filled
@@ -161,7 +161,7 @@ extension DrawingCanvas {
                     // IMPROVED LOCKED BEHAVIOR: Handle locked layers/objects properly
                     if layer.isLocked || shape.isLocked {
                         let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        print("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection")
+                        Log.info("🚫 Convert Point Tool clicked on \(lockType) '\(shape.name)' - deselecting current selection", category: .general)
                         selectedPoints.removeAll()
                         selectedHandles.removeAll()
                         directSelectedShapeIDs.removeAll()
@@ -184,7 +184,7 @@ extension DrawingCanvas {
                     // Force UI update
                     document.objectWillChange.send()
                     
-                    print("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI")
+                    Log.fileOperation("🎯 CONVERT POINT TOOL: Selected shape \(shape.name) for direct selection UI", level: .info)
                     return
                 }
             }
@@ -225,10 +225,10 @@ extension DrawingCanvas {
         // Force UI update to show the changes
         document.objectWillChange.send()
         
-        print("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)")
-        print("  - Shape: \(shapeID)")
-        print("  - Point: Element \(elementIndex)")
-        print("  - User can see bezier handles while continuing to use Convert Point tool")
+        Log.fileOperation("🎯 CONVERT POINT TOOL: Enabled direct selection UI (tool stays active)", level: .info)
+        Log.info("  - Shape: \(shapeID)", category: .general)
+        Log.info("  - Point: Element \(elementIndex)", category: .general)
+        Log.info("  - User can see bezier handles while continuing to use Convert Point tool", category: .general)
     }
     
     internal func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
@@ -263,7 +263,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure")
+            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure", category: .fileOperations)
             
         case .move(let to):
             // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
@@ -279,7 +279,7 @@ extension DrawingCanvas {
                     document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     
-                    print("✅ ADDED OUTGOING HANDLE to move point")
+                    Log.info("✅ ADDED OUTGOING HANDLE to move point", category: .fileOperations)
                 }
             }
             
@@ -317,7 +317,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)")
+            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)", category: .fileOperations)
         default:
             break
         }
@@ -422,7 +422,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles")
+            Log.info("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles", category: .fileOperations)
         default:
             break
         }
@@ -446,7 +446,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)")
+            Log.info("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)", category: .fileOperations)
         default:
             break
         }
@@ -547,7 +547,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ REMOVED INCOMING HANDLE: Element \(elementIndex)")
+            Log.info("✅ REMOVED INCOMING HANDLE: Element \(elementIndex)", category: .fileOperations)
             
         default:
             break
@@ -574,7 +574,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ REMOVED OUTGOING HANDLE: Element \(elementIndex + 1)")
+            Log.info("✅ REMOVED OUTGOING HANDLE: Element \(elementIndex + 1)", category: .fileOperations)
             
         default:
             break

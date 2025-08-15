@@ -17,7 +17,7 @@ struct ProfessionalDirectSelectionView: View {
     var body: some View {
         ZStack {
             // PROFESSIONAL BEZIER DISPLAY: Show ALL anchor points and handles for direct-selected shapes
-            // This matches Adobe Illustrator, Photoshop, and FreeHand professional standards
+            // This matches professional vector graphics software standards
             ForEach(document.layers.indices, id: \.self) { layerIndex in
                 let layer = document.layers[layerIndex]
                 if layer.isVisible {

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// PROFESSIONAL LAYERS PANEL (Adobe Illustrator Style)
+        // PROFESSIONAL LAYERS PANEL (Professional Style)
 struct LayersPanel: View {
     @ObservedObject var document: VectorDocument
     @State private var expandedLayers: Set<Int> = []

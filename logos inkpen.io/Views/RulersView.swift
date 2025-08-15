@@ -42,7 +42,7 @@ struct RulersView: View {
                         path.addRect(CGRect(x: 0, y: 0, width: rulerThickness, height: rulerThickness))
                     })
                     .onTapGesture {
-                        print("✅ Corner square tapped")
+                        Log.info("✅ Corner square tapped", category: .fileOperations)
                     }
             }
         }
@@ -86,7 +86,7 @@ struct HorizontalRuler: View {
                 }
             }
             .onTapGesture {
-                print("✅ Horizontal ruler tapped")
+                Log.info("✅ Horizontal ruler tapped", category: .fileOperations)
             }
         }
     }
@@ -348,7 +348,7 @@ struct VerticalRuler: View {
                 }
             }
             .onTapGesture {
-                print("✅ Vertical ruler tapped")
+                Log.info("✅ Vertical ruler tapped", category: .fileOperations)
             }
         }
     }

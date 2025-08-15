@@ -14,16 +14,16 @@ extension DrawingCanvas {
     /// COMPREHENSIVE DRAWING TEST - Run this to debug coordinate system issues
     /// Use Cmd+Shift+R to run this test
     internal func runRealDrawingTest(geometry: GeometryProxy) {
-        print("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES")
+        Log.fileOperation("🔥 REAL DRAWING TEST - TRACKING COORDINATE SYSTEM CHANGES", level: .info)
         print("=" + String(repeating: "=", count: 80))
         
         // Log initial state
-        print("📊 INITIAL STATE:")
+        Log.fileOperation("📊 INITIAL STATE:", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         print("   Initial Zoom Level: \(String(format: "%.6f", initialZoomLevel))")
-        print("   Is Drawing: \(isDrawing)")
-        print("   Is Bezier Drawing: \(isBezierDrawing)")
+        Log.info("   Is Drawing: \(isDrawing)", category: .general)
+        Log.info("   Is Bezier Drawing: \(isBezierDrawing)", category: .general)
         
         // Clear any existing shapes
         if !document.layers.isEmpty {
@@ -39,11 +39,11 @@ extension DrawingCanvas {
             fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
         )
         
-        print("📍 CREATING TEST SHAPE:")
-        print("   Expected center: (\(testCenter.x), \(testCenter.y))")
+        Log.info("📍 CREATING TEST SHAPE:", category: .general)
+        Log.info("   Expected center: (\(testCenter.x), \(testCenter.y))", category: .general)
         
         // Log state before adding shape
-        print("📊 BEFORE ADDING SHAPE:")
+        Log.fileOperation("📊 BEFORE ADDING SHAPE:", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
@@ -51,7 +51,7 @@ extension DrawingCanvas {
         document.addShape(testShape)
         
         // Log state after adding shape
-        print("📊 AFTER ADDING SHAPE:")
+        Log.fileOperation("📊 AFTER ADDING SHAPE:", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
@@ -62,7 +62,7 @@ extension DrawingCanvas {
                 y: (addedShape.bounds.minY + addedShape.bounds.maxY) / 2
             )
             
-            print("📍 SHAPE VERIFICATION:")
+            Log.info("📍 SHAPE VERIFICATION:", category: .general)
             print("   Expected center: (\(String(format: "%.6f", testCenter.x)), \(String(format: "%.6f", testCenter.y)))")
             print("   Actual center: (\(String(format: "%.6f", actualCenter.x)), \(String(format: "%.6f", actualCenter.y)))")
             
@@ -70,21 +70,21 @@ extension DrawingCanvas {
             let deltaY = abs(actualCenter.y - testCenter.y)
             
             if deltaX < 0.1 && deltaY < 0.1 {
-                print("   ✅ SHAPE POSITION CORRECT")
+                Log.info("   ✅ SHAPE POSITION CORRECT", category: .general)
             } else {
                 print("   ❌ SHAPE POSITION DRIFT: ΔX=\(String(format: "%.6f", deltaX)), ΔY=\(String(format: "%.6f", deltaY))")
             }
         }
         
         // Now simulate drawing operations to see if coordinate system changes
-        print("🎨 SIMULATING DRAWING OPERATIONS:")
+        Log.fileOperation("🎨 SIMULATING DRAWING OPERATIONS:", level: .info)
         
         // Simulate start drawing
         isDrawing = true
-        print("📊 DURING DRAWING (isDrawing = true):")
+        Log.fileOperation("📊 DURING DRAWING (isDrawing = true):", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        Log.info("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)", category: .general)
         
         // Create a drawing preview to see if coordinate system shifts
         let previewStart = CGPoint(x: 200, y: 200)
@@ -94,12 +94,12 @@ extension DrawingCanvas {
             .line(to: VectorPoint(previewEnd))
         ])
         
-        print("📍 DRAWING PREVIEW CREATED:")
+        Log.info("📍 DRAWING PREVIEW CREATED:", category: .general)
         print("   Preview start: (\(String(format: "%.6f", previewStart.x)), \(String(format: "%.6f", previewStart.y)))")
         print("   Preview end: (\(String(format: "%.6f", previewEnd.x)), \(String(format: "%.6f", previewEnd.y)))")
         
         // Log state with drawing preview
-        print("📊 WITH DRAWING PREVIEW:")
+        Log.fileOperation("📊 WITH DRAWING PREVIEW:", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
         
@@ -107,18 +107,18 @@ extension DrawingCanvas {
         isDrawing = false
         currentPath = nil
         
-        print("📊 AFTER DRAWING (isDrawing = false):")
+        Log.fileOperation("📊 AFTER DRAWING (isDrawing = false):", level: .info)
         print("   Zoom Level: \(String(format: "%.6f", document.zoomLevel))")
         print("   Canvas Offset: (\(String(format: "%.6f", document.canvasOffset.x)), \(String(format: "%.6f", document.canvasOffset.y)))")
-        print("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)")
+        Log.info("   Zoom Gesture Enabled: \(!isDrawing && !isBezierDrawing)", category: .general)
         
         // Test coordinate conversion consistency
-        print("🔄 COORDINATE CONVERSION TEST:")
+        Log.fileOperation("🔄 COORDINATE CONVERSION TEST:", level: .info)
         let testCanvasPoint = CGPoint(x: 300, y: 200)
         let screenPoint = canvasToScreen(testCanvasPoint, geometry: geometry)
         let backToCanvas = screenToCanvas(screenPoint, geometry: geometry)
         
-        print("   Canvas → Screen → Canvas:")
+        Log.info("   Canvas → Screen → Canvas:", category: .general)
         print("   Original: (\(String(format: "%.6f", testCanvasPoint.x)), \(String(format: "%.6f", testCanvasPoint.y)))")
         print("   Screen: (\(String(format: "%.6f", screenPoint.x)), \(String(format: "%.6f", screenPoint.y)))")
         print("   Back to Canvas: (\(String(format: "%.6f", backToCanvas.x)), \(String(format: "%.6f", backToCanvas.y)))")
@@ -127,12 +127,12 @@ extension DrawingCanvas {
         let conversionDeltaY = abs(backToCanvas.y - testCanvasPoint.y)
         
         if conversionDeltaX < 0.001 && conversionDeltaY < 0.001 {
-            print("   ✅ COORDINATE CONVERSION ACCURATE")
+            Log.info("   ✅ COORDINATE CONVERSION ACCURATE", category: .general)
         } else {
             print("   ❌ COORDINATE CONVERSION DRIFT: ΔX=\(String(format: "%.6f", conversionDeltaX)), ΔY=\(String(format: "%.6f", conversionDeltaY))")
         }
         
         print("=" + String(repeating: "=", count: 80))
-        print("🏁 TEST COMPLETE - Check above for coordinate system issues")
+        Log.info("🏁 TEST COMPLETE - Check above for coordinate system issues", category: .general)
     }
 } 

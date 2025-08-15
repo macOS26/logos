@@ -10,7 +10,7 @@ import SwiftUI
 extension DrawingCanvas {
     internal func selectObjectAt(_ location: CGPoint) {
         // Unified selection logic for all areas - no area-specific behavior needed
-        print("🎯 SELECT OBJECT AT: \(location) - using unified selection logic")
+        Log.fileOperation("🎯 SELECT OBJECT AT: \(location) - using unified selection logic", level: .info)
         handleSelectionTap(at: location)
     }
 }

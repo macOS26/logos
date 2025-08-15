@@ -14,7 +14,7 @@ extension DrawingCanvas {
         
         // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
         if document.layers[layerIndex].isLocked {
-            print("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'")
+            Log.info("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'", category: .general)
             return
         }
         
@@ -51,7 +51,7 @@ extension DrawingCanvas {
             }
         }
         
-        print("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects")
+        Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects", level: .info)
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
@@ -97,7 +97,7 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
-            print("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied")
+            Log.fileOperation("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied", level: .info)
             return
         }
         
@@ -131,8 +131,8 @@ extension DrawingCanvas {
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             
-            print("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects")
-            print("   State reset - ready for next drag operation")
+            Log.fileOperation("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects", level: .info)
+            Log.info("   State reset - ready for next drag operation", category: .general)
         }
     }
     
@@ -212,7 +212,7 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex].warpEnvelope = updatedWarpEnvelope
                 
                 // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
-                print("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)")
+                Log.fileOperation("🔧 GROUP WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
             }
             
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -272,7 +272,7 @@ extension DrawingCanvas {
             
             // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
             // The originalEnvelope represents the coordinate system before ANY transformations
-            print("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)")
+            Log.fileOperation("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
         }
         
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -288,7 +288,7 @@ extension DrawingCanvas {
             return
         }
         
-        print("🔧 Applying transform to shape coordinates: \(shape.name)")
+        Log.fileOperation("🔧 Applying transform to shape coordinates: \(shape.name)", level: .info)
         
         // FLATTENED SHAPE FIX: Handle groups correctly
         if shape.isGroupContainer && !shape.groupedShapes.isEmpty {
@@ -345,7 +345,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].transform = .identity
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes")
+            Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
         }
         
@@ -401,6 +401,6 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
         }
         
-        print("✅ Shape coordinates updated after movement - object origin stays with object")
+        Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
     }
 } 

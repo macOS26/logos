@@ -4,7 +4,7 @@ This document explains the SVG preview system implemented for .inkpen document f
 
 ## Overview
 
-The SVG preview system provides professional document icons and previews for .inkpen files, similar to how Adobe Illustrator files work. When users save .inkpen documents, they automatically get custom file icons that show a preview of the document content.
+The SVG preview system provides professional document icons and previews for .inkpen files, similar to how professional vector graphics applications work. When users save .inkpen documents, they automatically get custom file icons that show a preview of the document content.
 
 ## Components
 
@@ -117,7 +117,7 @@ logos inkpen.io/
 - **Professional Appearance**: .inkpen files look like real vector documents
 - **Content Preview**: Users can see document content without opening the app
 - **Better Organization**: Files are easily identifiable in Finder
-- **Native Experience**: Similar to Adobe Illustrator, Sketch, or Figma files
+- **Native Experience**: Similar to Sketch, Figma, or other professional vector graphics applications
 
 ### For Developers:
 - **Modular Design**: Icon generation is separate from main app logic

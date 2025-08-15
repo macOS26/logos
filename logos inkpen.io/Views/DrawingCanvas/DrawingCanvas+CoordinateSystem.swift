@@ -175,8 +175,8 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        print("🎯 DOCUMENT SCALING (Standard Approach - NO PADDING):")
-        print("   Document Bounds: \(documentBounds)")
+        Log.fileOperation("🎯 DOCUMENT SCALING (Standard Approach - NO PADDING):", level: .info)
+        Log.info("   Document Bounds: \(documentBounds)", category: .general)
         print("   Document Aspect Ratio: \(String(format: "%.3f", documentBounds.width / documentBounds.height))")
         print("   View Size: \(String(format: "%.1f", viewSize.width)) × \(String(format: "%.1f", viewSize.height))")
         print("   View Aspect Ratio: \(String(format: "%.3f", viewSize.width / viewSize.height))")
@@ -187,7 +187,7 @@ extension DrawingCanvas {
         print("   Final Zoom: \(String(format: "%.1f", defaultZoom * 100))% (capped for usability)")
         print("   Visible Center: (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
         print("   Canvas Offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
-        print("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!")
+        Log.info("   ✅ CANVAS LAYER AUTO-SYNCS WITH ALL GRAPHICS!", category: .general)
     }
     
     /// Fit canvas to page view
@@ -233,15 +233,15 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = document.zoomLevel
         
-        Log.debug("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness", category: .zoom)
-        print("   Document Bounds: \(documentBounds)")
-        print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
+        Log.info("🔍 FIT TO PAGE: Using standard document bounds with ruler awareness", category: .zoom)
+        Log.info("   Document Bounds: \(documentBounds)", category: .general)
+        Log.info("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))", category: .general)
         print("   Fit Zoom: \(String(format: "%.1f", fitZoom * 100))% (minimum scale to fit)")
         print("   Available space: \(String(format: "%.1f", availableWidth)) × \(String(format: "%.1f", availableHeight))")
         print("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
     }
     
-    /// Set to actual size (100%) with proper centering (Adobe Illustrator standard)
+            /// Set to actual size (100%) with proper centering (professional standard)
     internal func actualSize(geometry: GeometryProxy) {
         let newZoomLevel: Double = 1.0 // 100% actual size
         
@@ -277,10 +277,10 @@ extension DrawingCanvas {
         // Update initial zoom level for gesture handling
         initialZoomLevel = CGFloat(newZoomLevel)
         
-        print("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness")
+        Log.fileOperation("🎯 ACTUAL SIZE: Set to 100% and centered document with ruler awareness", level: .info)
         print("   Document center: (\(String(format: "%.1f", documentCenter.x)), \(String(format: "%.1f", documentCenter.y)))")
         print("   Visible center (ruler-aware): (\(String(format: "%.1f", visibleCenter.x)), \(String(format: "%.1f", visibleCenter.y)))")
-        print("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))")
+        Log.info("   Rulers visible: \(document.showRulers) (offset: \(rulerOffset))", category: .general)
         print("   New offset: (\(String(format: "%.1f", document.canvasOffset.x)), \(String(format: "%.1f", document.canvasOffset.y)))")
     }
     

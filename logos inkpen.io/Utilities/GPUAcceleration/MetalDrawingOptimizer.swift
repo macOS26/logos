@@ -21,7 +21,7 @@ class MetalDrawingOptimizer {
         if isMetalAvailable {
             print("✅ Metal Drawing Optimizer: Initialized with \(device?.name ?? "Unknown GPU")")
         } else {
-            print("⚠️ Metal Drawing Optimizer: Falling back to CPU-based optimizations")
+            Log.fileOperation("⚠️ Metal Drawing Optimizer: Falling back to CPU-based optimizations", level: .info)
         }
     }
     

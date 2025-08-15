@@ -51,7 +51,7 @@ public class CoreGraphicsPathOperations {
         let boundsA = pathA.boundingBox
         let boundsB = pathB.boundingBox
         guard isFinite(boundsA) && !boundsA.isNull && isFinite(boundsB) && !boundsB.isNull else {
-            print("⚠️ CoreGraphics: Invalid path bounds for union operation")
+            Log.fileOperation("⚠️ CoreGraphics: Invalid path bounds for union operation", level: .info)
             return nil
         }
         
@@ -73,7 +73,7 @@ public class CoreGraphicsPathOperations {
         var result = validPaths[0]
         for i in 1..<validPaths.count {
             guard let unionResult = union(result, validPaths[i], using: fillRule) else {
-                print("⚠️ CoreGraphics: Union failed at path \(i), falling back to partial result")
+                Log.fileOperation("⚠️ CoreGraphics: Union failed at path \(i), falling back to partial result", level: .info)
                 return result
             }
             result = unionResult
@@ -97,14 +97,14 @@ public class CoreGraphicsPathOperations {
         var passNumber = 1
         let maxPasses = 10 // Safety limit to prevent infinite loops
         
-        print("      🔄 Multi-pass union starting with \(currentPaths.count) paths...")
+        Log.info("      🔄 Multi-pass union starting with \(currentPaths.count) paths...", category: .general)
         
         while passNumber <= maxPasses {
             var newPaths: [CGPath] = []
             var changed = false
             var processedIndices: Set<Int> = []
             
-            print("      🔄 Pass \(passNumber): Processing \(currentPaths.count) paths...")
+            Log.info("      🔄 Pass \(passNumber): Processing \(currentPaths.count) paths...", category: .general)
             
             for i in 0..<currentPaths.count {
                 if processedIndices.contains(i) { continue }
@@ -123,7 +123,7 @@ public class CoreGraphicsPathOperations {
                             combinedPath = unionResult
                             processedIndices.insert(j)
                             changed = true
-                            print("        ✅ Pass \(passNumber): Unioned path \(i) with path \(j)")
+                            Log.info("        ✅ Pass \(passNumber): Unioned path \(i) with path \(j)", category: .general)
                         }
                     }
                 }
@@ -132,11 +132,11 @@ public class CoreGraphicsPathOperations {
                 processedIndices.insert(i)
             }
             
-            print("      ✅ Pass \(passNumber): \(currentPaths.count) → \(newPaths.count) paths")
+            Log.info("      ✅ Pass \(passNumber): \(currentPaths.count) → \(newPaths.count) paths", category: .general)
             
             // If no changes occurred in this pass, we're done
             if !changed || newPaths.count == 1 {
-                print("      🏁 Multi-pass union complete after \(passNumber) passes: \(newPaths.count) final shapes")
+                Log.info("      🏁 Multi-pass union complete after \(passNumber) passes: \(newPaths.count) final shapes", category: .general)
                 return newPaths
             }
             
@@ -144,7 +144,7 @@ public class CoreGraphicsPathOperations {
             passNumber += 1
         }
         
-        print("      ⚠️ Multi-pass union reached maximum passes (\(maxPasses)): \(currentPaths.count) final shapes")
+        Log.info("      ⚠️ Multi-pass union reached maximum passes (\(maxPasses)): \(currentPaths.count) final shapes", category: .general)
         return currentPaths
     }
     
@@ -178,7 +178,7 @@ public class CoreGraphicsPathOperations {
             return [pathsWithIndices]
         }
         
-        print("      🔗 Finding connected components with stacking order respect...")
+        Log.info("      🔗 Finding connected components with stacking order respect...", category: .general)
         
         var groups: [[(CGPath, Int)]] = []
         var processed: Set<Int> = []
@@ -210,16 +210,16 @@ public class CoreGraphicsPathOperations {
                         groupIndices.insert(j)
                         processed.insert(j)
                         queue.append(j) // Add to queue to check its connections
-                        print("        🔗 Connected: path \(currentIndex) ↔ path \(j)")
+                        Log.info("        🔗 Connected: path \(currentIndex) ↔ path \(j)", category: .general)
                     }
                 }
             }
             
             groups.append(currentGroup)
-            print("      ✅ Group \(groups.count): \(currentGroup.count) connected paths")
+            Log.info("      ✅ Group \(groups.count): \(currentGroup.count) connected paths", category: .general)
         }
         
-        print("      🔗 Final result: \(groups.count) connected groups")
+        Log.info("      🔗 Final result: \(groups.count) connected groups", category: .general)
         return groups
     }
     
@@ -402,13 +402,13 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MOSAIC (CoreGraphics): Processing \(paths.count) paths - TRUE stained glass")
-        print("   🪟 Preserving ALL visible areas, breaking at intersections only")
+        Log.info("🔨 PROFESSIONAL MOSAIC (CoreGraphics): Processing \(paths.count) paths - TRUE stained glass", category: .general)
+        Log.info("   🪟 Preserving ALL visible areas, breaking at intersections only", category: .general)
         
         // Use same approach as CUT but break at intersections instead of subtracting
         let allPieces = getAllMosaicPieces(paths, using: fillRule)
         
-        print("✅ PROFESSIONAL MOSAIC: Created \(allPieces.count) pieces - ALL areas preserved with correct colors")
+        Log.info("✅ PROFESSIONAL MOSAIC: Created \(allPieces.count) pieces - ALL areas preserved with correct colors", category: .fileOperations)
         return allPieces
     }
     
@@ -423,13 +423,13 @@ public class CoreGraphicsPathOperations {
         // Mosaic operation has exponential complexity (2^n combinations)
         // Limit to reasonable number of shapes to prevent crash
         guard shapeCount <= 20 else {
-            print("⚠️ MOSAIC: Too many shapes (\(shapeCount)) - limited to 20 shapes max to prevent exponential explosion")
-            print("   💡 TIP: Use Divide or other operations for large selections")
+            Log.fileOperation("⚠️ MOSAIC: Too many shapes (\(shapeCount)) - limited to 20 shapes max to prevent exponential explosion", level: .info)
+            Log.info("   💡 TIP: Use Divide or other operations for large selections", category: .general)
             // Return original paths as fallback
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("   🪟 MOSAIC: TRUE stained glass - complete planar subdivision")
+        Log.info("   🪟 MOSAIC: TRUE stained glass - complete planar subdivision", category: .general)
         
         var allPieces: [(CGPath, Int)] = []
         
@@ -472,7 +472,7 @@ public class CoreGraphicsPathOperations {
                             allPieces.append((component, shapeIndex))
                         }
                     }
-                    print("   ✅ Shape \(shapeIndex): Added exclusive parts")
+                    Log.info("   ✅ Shape \(shapeIndex): Added exclusive parts", category: .general)
                 }
                 
             } else {
@@ -512,13 +512,13 @@ public class CoreGraphicsPathOperations {
                     }
                     
                     let shapeList = intersectingIndices.map { "\($0)" }.joined(separator: ",")
-                    print("   🔗 Intersection [\(shapeList)]: Added as separate object")
+                    Log.info("   🔗 Intersection [\(shapeList)]: Added as separate object", category: .general)
                 }
             }
         }
         
         // REMOVE DUPLICATES: Check for pieces that occupy the same geometric area
-        print("   🧹 MOSAIC: Removing duplicates from \(allPieces.count) pieces...")
+        Log.info("   🧹 MOSAIC: Removing duplicates from \(allPieces.count) pieces...", category: .general)
         
         var uniquePieces: [(CGPath, Int)] = []
         let tolerance: CGFloat = 0.1  // Small tolerance for floating point comparison
@@ -539,8 +539,8 @@ public class CoreGraphicsPathOperations {
             }
         }
         
-        print("   ✅ MOSAIC: \(uniquePieces.count) unique pieces (removed \(allPieces.count - uniquePieces.count) duplicates)")
-        print("   🪟 COMPLETE planar subdivision - true stained glass effect!")
+        Log.info("   ✅ MOSAIC: \(uniquePieces.count) unique pieces (removed \(allPieces.count - uniquePieces.count) duplicates)", category: .general)
+        Log.info("   🪟 COMPLETE planar subdivision - true stained glass effect!", category: .general)
         return uniquePieces
     }
     
@@ -641,7 +641,7 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL CUT (CoreGraphics): Processing \(paths.count) paths with curve preservation")
+        Log.info("🔨 PROFESSIONAL CUT (CoreGraphics): Processing \(paths.count) paths with curve preservation", category: .general)
         
         var resultPaths: [(CGPath, Int)] = []
         
@@ -653,7 +653,7 @@ public class CoreGraphicsPathOperations {
         for i in 0..<paths.count {
             let currentPath = paths[i]
             guard !currentPath.isEmpty else {
-                print("   ⚠️ Shape \(i): Empty path, skipping")
+                Log.info("   ⚠️ Shape \(i): Empty path, skipping", category: .general)
                 continue
             }
             
@@ -672,11 +672,11 @@ public class CoreGraphicsPathOperations {
                 // Use CoreGraphics subtract to remove the hidden parts
                 if let subtracted = subtract(frontPath, from: visiblePath, using: fillRule) {
                     visiblePath = subtracted
-                    print("   → Shape \(i): Subtracted shape \(j) (in front)")
+                    Log.info("   → Shape \(i): Subtracted shape \(j) (in front)", category: .general)
                 } else {
                     // If subtraction results in empty, this shape is completely hidden
                     visiblePath = CGMutablePath() // Empty path
-                    print("   → Shape \(i): Completely hidden by shape \(j)")
+                    Log.info("   → Shape \(i): Completely hidden by shape \(j)", category: .general)
                     break
                 }
                 
@@ -695,19 +695,19 @@ public class CoreGraphicsPathOperations {
                             resultPaths.append((component, i))
                         }
                     }
-                    print("   ✅ Shape \(i): Cut hidden parts, keeping visible area (curves preserved)")
+                    Log.info("   ✅ Shape \(i): Cut hidden parts, keeping visible area (curves preserved)", category: .general)
                 } else {
-                    print("   ✅ Shape \(i): Completely hidden, removed")
+                    Log.info("   ✅ Shape \(i): Completely hidden, removed", category: .general)
                 }
             } else {
                 // No shapes in front, so keep the entire shape (nothing to cut)
                 resultPaths.append((currentPath, i))
-                print("   ✅ Shape \(i): No shapes in front, keeping entire shape")
+                Log.info("   ✅ Shape \(i): No shapes in front, keeping entire shape", category: .general)
             }
         }
         
-        print("✅ PROFESSIONAL CUT (CoreGraphics): Created \(resultPaths.count) cut pieces with curves preserved")
-        print("   Result should look identical to original, but with hidden paths removed")
+        Log.info("✅ PROFESSIONAL CUT (CoreGraphics): Created \(resultPaths.count) cut pieces with curves preserved", category: .fileOperations)
+        Log.info("   Result should look identical to original, but with hidden paths removed", category: .general)
         return resultPaths
     }
     
@@ -733,16 +733,16 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index) }
         }
         
-        print("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with CUT then union same colors")
+        Log.info("🔨 PROFESSIONAL MERGE (CoreGraphics): Processing \(paths.count) paths with CUT then union same colors", category: .general)
         
         // STEP 1: Apply Cut logic to ALL shapes to remove hidden overlaps and maintain visual appearance
-        print("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...")
+        Log.info("   🔨 STEP 1: Applying Cut to all shapes to maintain composite appearance...", category: .general)
         let cutResults = cutWithShapeTracking(paths, using: fillRule)
         
-        print("   ✅ Cut produced \(cutResults.count) pieces from \(paths.count) original shapes")
+        Log.info("   ✅ Cut produced \(cutResults.count) pieces from \(paths.count) original shapes", category: .general)
         
         // STEP 2: Group cut results by color (same colors only)
-        print("   🎨 STEP 2: Grouping cut results by same colors...")
+        Log.info("   🎨 STEP 2: Grouping cut results by same colors...", category: .general)
         
         var colorGroups: [VectorColor: [(CGPath, Int)]] = [:]
         
@@ -754,22 +754,22 @@ public class CoreGraphicsPathOperations {
             colorGroups[color]?.append((cutPath, originalIndex))
         }
         
-        print("   🎨 Found \(colorGroups.count) color groups in cut results:")
+        Log.info("   🎨 Found \(colorGroups.count) color groups in cut results:", category: .general)
         for (color, group) in colorGroups {
-            print("     Color \(color): \(group.count) pieces")
+            Log.info("     Color \(color): \(group.count) pieces", category: .general)
         }
         
         var resultPaths: [(CGPath, Int)] = []
         
         // STEP 3: For each color group, find connected components and union them
-        print("   🔄 STEP 3: Union connected same-color pieces only...")
+        Log.info("   🔄 STEP 3: Union connected same-color pieces only...", category: .general)
         
         for (color, group) in colorGroups {
             if group.count == 1 {
                 // Single piece of this color, no union needed
                 let (path, originalIndex) = group[0]
                 resultPaths.append((path, originalIndex))
-                print("   ✅ Color \(color): Single piece, no union needed")
+                Log.info("   ✅ Color \(color): Single piece, no union needed", category: .general)
             } else {
                 // Multiple pieces of same color - find which ones are connected
                 let connectedSameColorGroups = Self.findConnectedComponents(group, using: fillRule)
@@ -786,22 +786,22 @@ public class CoreGraphicsPathOperations {
                         
                         if let unionedPath = Self.unionMultiplePaths(pathsToUnion, using: fillRule) {
                             resultPaths.append((unionedPath, firstOriginalIndex))
-                            print("   ✅ Color \(color) Group \(groupIndex + 1): Unioned \(connectedGroup.count) connected pieces → 1 shape")
+                            Log.info("   ✅ Color \(color) Group \(groupIndex + 1): Unioned \(connectedGroup.count) connected pieces → 1 shape", category: .general)
                         } else {
                             // Union failed, keep pieces separate as fallback
                             for (path, originalIndex) in connectedGroup {
                                 resultPaths.append((path, originalIndex))
                             }
-                            print("   ⚠️ Color \(color) Group \(groupIndex + 1): Union failed, kept \(connectedGroup.count) pieces separate")
+                            Log.info("   ⚠️ Color \(color) Group \(groupIndex + 1): Union failed, kept \(connectedGroup.count) pieces separate", category: .general)
                         }
                     }
                 }
                 
-                print("   ✅ Color \(color): \(group.count) pieces → \(connectedSameColorGroups.count) connected groups")
+                Log.info("   ✅ Color \(color): \(group.count) pieces → \(connectedSameColorGroups.count) connected groups", category: .general)
             }
         }
         
-        print("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) shapes from connected same-color components (stacking order respected)")
+        Log.info("✅ PROFESSIONAL MERGE (CoreGraphics): Created \(resultPaths.count) shapes from connected same-color components (stacking order respected)", category: .fileOperations)
         return resultPaths
     }
     
@@ -818,7 +818,7 @@ public class CoreGraphicsPathOperations {
     // MARK: - Crop Operations (CoreGraphics Alternative to ClipperPath)
     
     /// Crop operation: CoreGraphics-based alternative to ClipperPath with curve preservation
-    /// Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
+    /// Uses top shape to crop shapes beneath it
     /// 1. Top shape becomes invisible (no fill, no stroke) - it's the crop boundary
     /// 2. All other shapes are cropped to only show parts within the crop boundary  
     /// 3. Then everything gets CUT - removing hidden overlapping parts
@@ -831,7 +831,7 @@ public class CoreGraphicsPathOperations {
             return paths.enumerated().map { (index, path) in (path, index, false) }
         }
         
-        print("🔨 PROFESSIONAL CROP (CoreGraphics): Processing \(paths.count) paths with curve preservation")
+        Log.info("🔨 PROFESSIONAL CROP (CoreGraphics): Processing \(paths.count) paths with curve preservation", category: .general)
         
         let cropShape = paths.last!  // Top shape is the crop shape
         let shapesToCrop = Array(paths.dropLast())
@@ -843,7 +843,7 @@ public class CoreGraphicsPathOperations {
         // STEP 1: Intersect each shape with the crop shape using CoreGraphics (crop to boundary)
         for (index, path) in shapesToCrop.enumerated() {
             guard !path.isEmpty && !cropShape.isEmpty else {
-                print("   ⚠️ Shape \(index): Empty path, skipping")
+                Log.info("   ⚠️ Shape \(index): Empty path, skipping", category: .general)
                 continue
             }
             
@@ -852,20 +852,20 @@ public class CoreGraphicsPathOperations {
                 if !croppedPath.isEmpty && !croppedPath.boundingBoxOfPath.isEmpty {
                     croppedPaths.append(croppedPath)
                     originalIndices.append(index)
-                    print("   ✅ Shape \(index): Cropped to boundary (curves preserved)")
+                    Log.info("   ✅ Shape \(index): Cropped to boundary (curves preserved)", category: .general)
                 } else {
-                    print("   ⚠️ Shape \(index): Intersection result is empty")
+                    Log.info("   ⚠️ Shape \(index): Intersection result is empty", category: .general)
                 }
             } else {
-                print("   ⚠️ Shape \(index): No intersection with crop boundary")
+                Log.info("   ⚠️ Shape \(index): No intersection with crop boundary", category: .general)
             }
         }
         
-        print("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces")
+        Log.info("   ✅ STEP 1: Cropped \(shapesToCrop.count) shapes to boundary, got \(croppedPaths.count) pieces", category: .general)
         
         // STEP 2: Apply CUT to the cropped shapes to remove hidden overlapping parts
         if croppedPaths.count >= 2 {
-            print("   🔨 STEP 2: Applying CoreGraphics CUT to remove hidden overlapping parts")
+            Log.info("   🔨 STEP 2: Applying CoreGraphics CUT to remove hidden overlapping parts", category: .general)
             let cutResults = cutWithShapeTracking(croppedPaths, using: fillRule)
             
             // Map the cut results back to their original shape indices
@@ -885,7 +885,7 @@ public class CoreGraphicsPathOperations {
             // Add the invisible crop shape
             finalResults.append((cropShape, cropShapeIndex, true))
             
-            print("✅ PROFESSIONAL CROP (CoreGraphics): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            Log.info("✅ PROFESSIONAL CROP (CoreGraphics): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)", category: .fileOperations)
             return finalResults
         } else {
             // If we have fewer than 2 cropped shapes, no need to cut
@@ -900,7 +900,7 @@ public class CoreGraphicsPathOperations {
             // Add the invisible crop shape
             finalResults.append((cropShape, cropShapeIndex, true))
             
-            print("✅ PROFESSIONAL CROP (CoreGraphics): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)")
+            Log.info("✅ PROFESSIONAL CROP (CoreGraphics): Created \(finalResults.count) shapes (\(finalResults.count-1) cropped + 1 invisible)", category: .fileOperations)
             return finalResults
         }
     }

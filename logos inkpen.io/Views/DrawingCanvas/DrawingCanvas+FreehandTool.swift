@@ -58,7 +58,7 @@ extension DrawingCanvas {
         // Add the real shape to the document immediately for real-time preview
         document.addShape(activeFreehandShape!)
         
-        print("🖊️ FREEHAND: Started drawing at \(location)")
+        Log.fileOperation("🖊️ FREEHAND: Started drawing at \(location)", level: .info)
     }
     
     internal func handleFreehandDragUpdate(at location: CGPoint) {
@@ -93,7 +93,7 @@ extension DrawingCanvas {
     internal func handleFreehandDragEnd() {
         guard isFreehandDrawing else { return }
         
-        print("🖊️ FREEHAND: Finishing drawing with \(freehandRawPoints.count) raw points")
+        Log.fileOperation("🖊️ FREEHAND: Finishing drawing with \(freehandRawPoints.count) raw points", level: .info)
         
         // Apply curve fitting algorithms to create smooth bezier curves
         processFreehandPath()
@@ -101,7 +101,7 @@ extension DrawingCanvas {
         // Clean up state
         cancelFreehandDrawing()
         
-        print("✅ FREEHAND: Path completed and converted to smooth curves")
+        Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)
     }
     
     // MARK: - Real-time Preview
@@ -138,11 +138,11 @@ extension DrawingCanvas {
     
     private func processFreehandPath() {
         guard freehandRawPoints.count >= 3 else {
-            print("🖊️ FREEHAND: Too few points (\(freehandRawPoints.count)) - keeping as simple lines")
+            Log.fileOperation("🖊️ FREEHAND: Too few points (\(freehandRawPoints.count)) - keeping as simple lines", level: .info)
             return
         }
         
-        print("🖊️ ADVANCED SMOOTHING: Starting with \(freehandRawPoints.count) raw points")
+        Log.fileOperation("🖊️ ADVANCED SMOOTHING: Starting with \(freehandRawPoints.count) raw points", level: .info)
         
         var processedPoints = freehandRawPoints
         
@@ -154,7 +154,7 @@ extension DrawingCanvas {
                 ratio: 0.25
             )
             processedPoints = chaikinSmoothed
-            print("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)")
+            Log.fileOperation("🖊️ CHAIKIN: Smoothed to \(processedPoints.count) points (\(document.settings.chaikinSmoothingIterations) iterations)", level: .info)
         }
         
         // STEP 2: 🚀 OPTIMIZED Douglas-Peucker simplification (Metal-accelerated when possible)
@@ -174,7 +174,7 @@ extension DrawingCanvas {
         // STEP 4: Update the final shape with professionally smooth curves
         updateFinalFreehandShape(with: smoothPath)
         
-        print("✅ FREEHAND: Advanced smoothing completed - much smoother curves!")
+        Log.info("✅ FREEHAND: Advanced smoothing completed - much smoother curves!", category: .fileOperations)
     }
     
     // MARK: - Douglas-Peucker Line Simplification Algorithm
@@ -370,6 +370,6 @@ extension DrawingCanvas {
         // Force UI update
         document.objectWillChange.send()
         
-        print("✅ FREEHAND: Applied smooth bezier curves to final shape")
+        Log.info("✅ FREEHAND: Applied smooth bezier curves to final shape", category: .fileOperations)
     }
 }

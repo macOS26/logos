@@ -55,7 +55,7 @@ class PressureSensitiveCanvasView: NSView {
         // We'll detect pressure support dynamically when we receive actual pressure events
         // Starting with false and updating when real pressure is detected
         hasPressureSupport = false
-        print("🎨 PRESSURE: Will detect pressure support from actual events")
+        Log.fileOperation("🎨 PRESSURE: Will detect pressure support from actual events", level: .info)
     }
     
     // MARK: - Comprehensive Event Logging
@@ -79,13 +79,13 @@ class PressureSensitiveCanvasView: NSView {
             pressureValue = 0.0 // Not applicable for this event type
         }
         
-        print("🎨 EVENT LOG [\(context)]:")
-        print("   Type: \(eventType) (\(event.type))")
-        print("   Subtype: \(eventSubtype) (\(event.subtype))")
-        print("   Pressure: \(pressureValue)")
-        print("   Location: (\(location.x), \(location.y))")
-        print("   Timestamp: \(timestamp)")
-        print("   ModifierFlags: \(modifierFlags)")
+        Log.fileOperation("🎨 EVENT LOG [\(context)]:", level: .info)
+        Log.info("   Type: \(eventType) (\(event.type))", category: .general)
+        Log.info("   Subtype: \(eventSubtype) (\(event.subtype))", category: .general)
+        Log.info("   Pressure: \(pressureValue)", category: .general)
+        Log.info("   Location: (\(location.x), \(location.y))", category: .general)
+        Log.info("   Timestamp: \(timestamp)", category: .general)
+        Log.info("   ModifierFlags: \(modifierFlags)", category: .general)
         
         // Only access clickCount and buttonNumber for mouse events
         if event.type == .leftMouseDown || event.type == .leftMouseUp || event.type == .leftMouseDragged ||
@@ -93,26 +93,26 @@ class PressureSensitiveCanvasView: NSView {
            event.type == .otherMouseDown || event.type == .otherMouseUp || event.type == .otherMouseDragged {
             let clickCount = event.clickCount
             let buttonNumber = event.buttonNumber
-            print("   ClickCount: \(clickCount)")
-            print("   ButtonNumber: \(buttonNumber)")
+            Log.info("   ClickCount: \(clickCount)", category: .general)
+            Log.info("   ButtonNumber: \(buttonNumber)", category: .general)
         } else {
-            print("   ClickCount: N/A (not a mouse event)")
-            print("   ButtonNumber: N/A (not a mouse event)")
+            Log.info("   ClickCount: N/A (not a mouse event)", category: .general)
+            Log.info("   ButtonNumber: N/A (not a mouse event)", category: .general)
         }
         
         // Additional tablet-specific info
         if event.type == .tabletPoint {
-            print("   🎨 TABLET SPECIFIC:")
-            print("      PointingDeviceID: \(event.pointingDeviceID)")
-            print("      Rotation: \(event.rotation)")
-            print("      TangentialPressure: \(event.tangentialPressure)")
-            print("      VendorDefined: \(event.vendorDefined)")
-            print("      VendorID: \(event.vendorID)")
-            print("      TabletID: \(event.tabletID)")
-            print("      CapabilityMask: \(event.capabilityMask)")
+            Log.info("   🎨 TABLET SPECIFIC:", category: .general)
+            Log.info("      PointingDeviceID: \(event.pointingDeviceID)", category: .general)
+            Log.info("      Rotation: \(event.rotation)", category: .general)
+            Log.info("      TangentialPressure: \(event.tangentialPressure)", category: .general)
+            Log.info("      VendorDefined: \(event.vendorDefined)", category: .general)
+            Log.info("      VendorID: \(event.vendorID)", category: .general)
+            Log.info("      TabletID: \(event.tabletID)", category: .general)
+            Log.info("      CapabilityMask: \(event.capabilityMask)", category: .general)
         }
         
-        print("   ---")
+        Log.info("   ---", category: .general)
     }
     
     // MARK: - Mouse/Touch Event Handling
@@ -129,7 +129,7 @@ class PressureSensitiveCanvasView: NSView {
         let isTabletEvent = (event.subtype == .tabletPoint)
         onPressureEvent?(canvasLocation, pressure, .began, isTabletEvent)
         
-        print("🎨 PRESSURE: Mouse down - pressure: \(pressure), subtype: \(event.subtype.rawValue), tablet: \(isTabletEvent)")
+        Log.fileOperation("🎨 PRESSURE: Mouse down - pressure: \(pressure), subtype: \(event.subtype.rawValue), tablet: \(isTabletEvent)", level: .info)
         super.mouseDown(with: event)
     }
     
@@ -161,7 +161,7 @@ class PressureSensitiveCanvasView: NSView {
         onPressureEvent?(canvasLocation, pressure, .ended, isTabletEvent)
         
         isDragging = false
-        print("🎨 PRESSURE: Mouse up - final pressure: \(pressure)")
+        Log.fileOperation("🎨 PRESSURE: Mouse up - final pressure: \(pressure)", level: .info)
         super.mouseUp(with: event)
     }
     
@@ -177,7 +177,7 @@ class PressureSensitiveCanvasView: NSView {
         // This handles trackpad pressure changes (never tablet events)
         onPressureEvent?(canvasLocation, pressure, .changed, false)
         
-        print("🎨 PRESSURE: Pressure change - pressure: \(pressure)")
+        Log.fileOperation("🎨 PRESSURE: Pressure change - pressure: \(pressure)", level: .info)
         super.pressureChange(with: event)
     }
     
@@ -208,7 +208,7 @@ class PressureSensitiveCanvasView: NSView {
         
         onPressureEvent?(canvasLocation, pressure, eventType, true) // Always tablet event
         
-        print("🎨 TABLET: Tablet point - pressure: \(pressure), type: \(eventType)")
+        Log.fileOperation("🎨 TABLET: Tablet point - pressure: \(pressure), type: \(eventType)", level: .info)
         super.tabletPoint(with: event)
     }
     
@@ -216,9 +216,9 @@ class PressureSensitiveCanvasView: NSView {
         logEvent(event, context: "TABLET_PROXIMITY")
         
         if event.isEnteringProximity {
-            print("🎨 TABLET: Apple Pencil entering proximity")
+            Log.fileOperation("🎨 TABLET: Apple Pencil entering proximity", level: .info)
         } else {
-            print("🎨 TABLET: Apple Pencil leaving proximity")
+            Log.fileOperation("🎨 TABLET: Apple Pencil leaving proximity", level: .info)
             // End any current drawing when stylus leaves proximity
             if isDragging {
                 isDragging = false
@@ -308,7 +308,7 @@ class PressureSensitiveCanvasView: NSView {
             // Native tablet events (Apple Pencil, Wacom, etc.)
             pressure = Double(event.pressure)
             foundRealPressure = true
-            print("🎨 PRESSURE: Tablet point pressure: \(pressure)")
+            Log.fileOperation("🎨 PRESSURE: Tablet point pressure: \(pressure)", level: .info)
             
         case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
             // Check if this is a tablet event disguised as a mouse event
@@ -316,12 +316,12 @@ class PressureSensitiveCanvasView: NSView {
                 // Apple Pencil events often come as mouse events with tablet subtype
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-                print("🎨 PRESSURE: Tablet subtype pressure: \(pressure)")
+                Log.fileOperation("🎨 PRESSURE: Tablet subtype pressure: \(pressure)", level: .info)
             } else if event.pressure > 0.0 && event.pressure != 1.0 {
                 // Regular trackpad pressure
                 pressure = Double(event.pressure)
                 foundRealPressure = true
-                print("🎨 PRESSURE: Mouse/trackpad pressure: \(pressure)")
+                Log.fileOperation("🎨 PRESSURE: Mouse/trackpad pressure: \(pressure)", level: .info)
             } else {
                 pressure = 1.0
             }
@@ -330,7 +330,7 @@ class PressureSensitiveCanvasView: NSView {
             // Trackpad pressure change events - use raw pressure directly
             pressure = Double(event.pressure)
             foundRealPressure = true
-            print("🎨 PRESSURE: Trackpad pressure: \(pressure)")
+            Log.fileOperation("🎨 PRESSURE: Trackpad pressure: \(pressure)", level: .info)
             
         default:
             pressure = 1.0
@@ -339,7 +339,7 @@ class PressureSensitiveCanvasView: NSView {
         // Update pressure support status if we found real pressure
         if foundRealPressure && !hasPressureSupport {
             hasPressureSupport = true
-            print("🎨 PRESSURE: Pressure support detected and enabled!")
+            Log.fileOperation("🎨 PRESSURE: Pressure support detected and enabled!", level: .info)
         }
         
         // Clamp pressure to valid range

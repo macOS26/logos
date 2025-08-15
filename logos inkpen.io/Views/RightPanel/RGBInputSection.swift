@@ -410,7 +410,7 @@ struct RGBInputSection: View {
         
         // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
-        // print("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
+        // Log.fileOperation("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
     }
     
     private func loadFromSharedColor() {
@@ -511,20 +511,20 @@ struct RGBInputSection: View {
     private func applyColorToActiveSelection() {
         let vectorColor = VectorColor.rgb(currentColor)
         
-        // print("🎨 RGB INPUT: applyColorToActiveSelection called")
-        // print("🎨 RGB INPUT: showGradientEditing = \(showGradientEditing)")
-        // print("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        // Log.fileOperation("🎨 RGB INPUT: applyColorToActiveSelection called", level: .info)
+        // Log.fileOperation("🎨 RGB INPUT: showGradientEditing = \(showGradientEditing)", level: .info)
+        // Log.fileOperation("🎨 RGB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
         
         // 🔥 CRITICAL FIX: Only use gradient callback if THIS section allows gradient editing
         // Priority 1: If we're in gradient editing mode AND this section supports it, use gradient callback
         if showGradientEditing, let gradientCallback = appState.gradientEditingState?.onColorSelected {
-            // print("🎨 RGB INPUT: Using gradient callback (gradient mode section)")
+            // Log.fileOperation("🎨 RGB INPUT: Using gradient callback (gradient mode section)", level: .info)
             gradientCallback(vectorColor)
             return
         }
         
         // Priority 2: Otherwise, apply to document's active selection
-        // print("🎨 RGB INPUT: Using document setActiveColor (fill/stroke mode)")
+        // Log.fileOperation("🎨 RGB INPUT: Using document setActiveColor (fill/stroke mode)", level: .info)
         document.setActiveColor(vectorColor)
     }
     

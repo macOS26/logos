@@ -8,23 +8,23 @@
 import Foundation
 import CoreGraphics
 
-// MARK: - PROFESSIONAL ADOBE ILLUSTRATOR PATHFINDER STANDARDS
-// This implementation matches Adobe Illustrator, Macromedia FreeHand, and CorelDRAW exactly
+// MARK: - PROFESSIONAL PATHFINDER STANDARDS
+// This implementation matches professional vector graphics software exactly
 
 enum PathfinderOperation: String, CaseIterable, Codable {
     // SHAPE MODES (Create compound shapes that can be edited)
-    case union = "Union"                    // Adobe Illustrator "Union" - Combines shapes
-    case minusFront = "Punch"               // Adobe Illustrator "Punch" (formerly "Minus Front") - Front subtracts from back  
-    case intersect = "Intersect"            // Adobe Illustrator "Intersect" - Only overlapping areas
-    case exclude = "Exclude"                // Adobe Illustrator "Exclude" - Remove overlaps
+    case union = "Union"                    // Professional "Union" - Combines shapes
+case minusFront = "Punch"               // Professional "Punch" (formerly "Minus Front") - Front subtracts from back
+case intersect = "Intersect"            // Professional "Intersect" - Only overlapping areas
+case exclude = "Exclude"                // Professional "Exclude" - Remove overlaps
     
     // PATHFINDER EFFECTS (Create final paths that can't be edited)
     case mosaic = "Mosaic"                  // CoreGraphics "Mosaic" - True stained glass: preserve ALL visible areas, no subtraction
     case cut = "Cut"                        // CoreGraphics "Cut" - Remove hidden parts (curves preserved)
-    case merge = "Merge"                    // Adobe Illustrator "Merge" - Cut + union same colors
-    case crop = "Crop"                      // Adobe Illustrator "Crop" - Keep only overlapping
+    case merge = "Merge"                    // Professional "Merge" - Cut + union same colors
+    case crop = "Crop"                      // Professional "Crop" - Keep only overlapping
     case dieline = "Dieline"                // Professional Dieline - Divide + 1px black stroke
-    case kick = "Kick"                      // Adobe Illustrator "Kick" (formerly "Minus Back") - Back subtracts from front
+    case kick = "Kick"                      // Professional "Kick" (formerly "Minus Back") - Back subtracts from front
     case separate = "Separate"              // CoreGraphics "Components Separated" - Break compound paths into individual components
     
     var iconName: String {
@@ -71,9 +71,9 @@ enum PathfinderOperation: String, CaseIterable, Codable {
 
 class ProfessionalPathOperations {
     
-    // MARK: - ADOBE ILLUSTRATOR SHAPE MODES
+    // MARK: - PROFESSIONAL SHAPE MODES
     
-    /// UNION: Combines two or more paths into a single path (Adobe Illustrator "Union")
+    /// UNION: Combines two or more paths into a single path (Professional "Union")
     /// When exactly 2 paths are provided, behaves identically to merge operation
     /// Most commonly used operation in professional vector graphics
     static func union(_ paths: [CGPath]) -> CGPath? {
@@ -81,23 +81,23 @@ class ProfessionalPathOperations {
         return professionalUnion(paths)
     }
     
-    /// PUNCH: Front shape subtracts from back shape (Adobe Illustrator "Punch", formerly "Minus Front")
+    /// PUNCH: Front shape subtracts from back shape (Professional "Punch", formerly "Minus Front")
     /// This is one of the most frequently used operations in professional design
     static func minusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         return professionalMinusFront(frontPath, from: backPath)
     }
     
-    /// INTERSECT: Creates a path from only the overlapping areas (Adobe Illustrator "Intersect")
+    /// INTERSECT: Creates a path from only the overlapping areas (Professional "Intersect")
     static func intersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         return professionalIntersect(path1, path2)
     }
     
-    /// EXCLUDE: Removes overlapping areas, keeps non-overlapping (Adobe Illustrator "Exclude")
+    /// EXCLUDE: Removes overlapping areas, keeps non-overlapping (Professional "Exclude")
     static func exclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         return professionalExclude(path1, path2)
     }
     
-    // MARK: - ADOBE ILLUSTRATOR PATHFINDER EFFECTS
+    // MARK: - PROFESSIONAL PATHFINDER EFFECTS
     
     /// MOSAIC: True stained glass effect - preserves ALL visible areas, no subtraction
     static func mosaic(_ paths: [CGPath]) -> [CGPath] {
@@ -116,7 +116,7 @@ class ProfessionalPathOperations {
         return professionalCut(paths)
     }
     
-    /// CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
+    /// CROP: Uses top shape to crop shapes beneath it (Professional "Crop")
     static func crop(_ paths: [CGPath]) -> [CGPath] {
         return professionalCrop(paths)
     }
@@ -131,7 +131,7 @@ class ProfessionalPathOperations {
         return ProfessionalPathOperations.professionalSeparate(paths)
     }
     
-    /// KICK: Back shape subtracts from front shape (Adobe Illustrator "Kick", formerly "Minus Back")
+    /// KICK: Back shape subtracts from front shape (Professional "Kick", formerly "Minus Back")
     static func kick(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         // This is the opposite of Punch
         return professionalMinusFront(backPath, from: frontPath)
@@ -544,7 +544,7 @@ class PathOperations {
 		return hasClosed
 	}
 
-    /// Converts a stroke into a filled path outline (Adobe Illustrator "Outline Stroke" feature)
+    /// Converts a stroke into a filled path outline (Professional "Outline Stroke" feature)
     /// The resulting stroke is unified using Union operation to remove any overlapping parts
     static func outlineStroke(path: CGPath, strokeStyle: StrokeStyle) -> CGPath? {
 		let bounds = path.boundingBoxOfPath
@@ -719,11 +719,11 @@ extension ProfessionalPathOperations {
     /// Detects and merges duplicate points in a vector path
     /// This resolves issues when closing paths creates overlapping points
     static func mergeDuplicatePoints(in path: VectorPath, tolerance: Double = 5.0) -> VectorPath {
-        print("🔧 DUPLICATE POINT MERGER: Analyzing path with \(path.elements.count) elements")
-        print("   Using tolerance: \(tolerance)px")
+        Log.fileOperation("🔧 DUPLICATE POINT MERGER: Analyzing path with \(path.elements.count) elements", level: .info)
+        Log.info("   Using tolerance: \(tolerance)px", category: .general)
         
         guard path.elements.count > 2 else { 
-            print("   Path too short to have duplicates")
+            Log.info("   Path too short to have duplicates", category: .general)
             return path 
         }
         
@@ -741,7 +741,7 @@ extension ProfessionalPathOperations {
         var duplicatesRemoved = 0
         
         if let first = firstPoint {
-            print("   🎯 FIRST POINT: (\(first.x), \(first.y))")
+            Log.info("   🎯 FIRST POINT: (\(first.x), \(first.y))", category: .general)
             
             for (index, element) in path.elements.enumerated() {
                 if index == 0 { continue } // Skip the move element itself
@@ -761,7 +761,7 @@ extension ProfessionalPathOperations {
                 if let end = endpoint {
                     let distance = first.distance(to: end)
                     if distance <= tolerance {
-                        print("   🔍 FOUND FIRST/LAST DUPLICATE: Element \(index) ends at (\(end.x), \(end.y)) - distance \(distance)px from first point")
+                        Log.info("   🔍 FOUND FIRST/LAST DUPLICATE: Element \(index) ends at (\(end.x), \(end.y)) - distance \(distance)px from first point", category: .general)
                         elementsToSkip.insert(index)
                         duplicatesRemoved += 1
                     }
@@ -774,10 +774,10 @@ extension ProfessionalPathOperations {
         
         for (index, element) in path.elements.enumerated() {
             if elementsToSkip.contains(index) {
-                print("   ❌ SKIPPING element \(index): \(element) - duplicate of first point")
+                Log.info("   ❌ SKIPPING element \(index): \(element) - duplicate of first point", category: .general)
             } else {
                 cleanedElements.append(element)
-                print("   ✅ KEEPING element \(index): \(element)")
+                Log.info("   ✅ KEEPING element \(index): \(element)", category: .general)
             }
         }
         
@@ -785,7 +785,7 @@ extension ProfessionalPathOperations {
         
         // Ensure we have a valid path structure
         if cleanedElements.isEmpty {
-            print("   ⚠️ Cleaning resulted in empty path - returning original")
+            Log.info("   ⚠️ Cleaning resulted in empty path - returning original", category: .general)
             return path
         }
         
@@ -793,17 +793,17 @@ extension ProfessionalPathOperations {
         if case .move = cleanedElements.first {
             // Good, starts with move
         } else {
-            print("   ⚠️ Path doesn't start with move - returning original to avoid corruption")
+            Log.info("   ⚠️ Path doesn't start with move - returning original to avoid corruption", category: .general)
             return path
         }
         
         let cleanedPath = VectorPath(elements: cleanedElements, isClosed: path.isClosed)
         
         if duplicatesRemoved > 0 {
-            print("✅ DUPLICATE POINT MERGER: Removed \(duplicatesRemoved) duplicate points")
-            print("   Original: \(path.elements.count) elements → Cleaned: \(cleanedElements.count) elements")
+            Log.info("✅ DUPLICATE POINT MERGER: Removed \(duplicatesRemoved) duplicate points", category: .fileOperations)
+            Log.info("   Original: \(path.elements.count) elements → Cleaned: \(cleanedElements.count) elements", category: .general)
         } else {
-            print("   No duplicate points found within tolerance (\(tolerance)px)")
+            Log.info("   No duplicate points found within tolerance (\(tolerance)px)", category: .general)
         }
         
         return cleanedPath
@@ -829,7 +829,7 @@ extension ProfessionalPathOperations {
     
     /// Cleans up duplicate points in all shapes of a vector document
     static func cleanupDocumentDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
-        print("🧹 DOCUMENT CLEANUP: Removing duplicate points from all shapes")
+        Log.info("🧹 DOCUMENT CLEANUP: Removing duplicate points from all shapes", category: .general)
         
         document.saveToUndoStack()
         
@@ -843,27 +843,27 @@ extension ProfessionalPathOperations {
                 if cleanedShape.path.elements.count != originalShape.path.elements.count {
                     document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
                     totalCleaned += 1
-                    print("   Cleaned shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
+                    Log.info("   Cleaned shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements", category: .general)
                 }
             }
         }
         
         if totalCleaned > 0 {
             document.objectWillChange.send()
-            print("✅ DOCUMENT CLEANUP: Cleaned \(totalCleaned) shapes")
+            Log.info("✅ DOCUMENT CLEANUP: Cleaned \(totalCleaned) shapes", category: .fileOperations)
         } else {
-            print("   No shapes needed cleaning")
+            Log.info("   No shapes needed cleaning", category: .general)
         }
     }
     
     /// Cleans up duplicate points in selected shapes only
     static func cleanupSelectedShapesDuplicates(_ document: VectorDocument, tolerance: Double = 5.0) {
         guard !document.selectedShapeIDs.isEmpty else {
-            print("⚠️ No shapes selected for duplicate cleanup")
+            Log.fileOperation("⚠️ No shapes selected for duplicate cleanup", level: .info)
             return
         }
         
-        print("🧹 SELECTED CLEANUP: Removing duplicate points from selected shapes")
+        Log.info("🧹 SELECTED CLEANUP: Removing duplicate points from selected shapes", category: .general)
         
         document.saveToUndoStack()
         
@@ -880,7 +880,7 @@ extension ProfessionalPathOperations {
                     if cleanedShape.path.elements.count != originalShape.path.elements.count {
                         document.layers[layerIndex].shapes[shapeIndex] = cleanedShape
                         totalCleaned += 1
-                        print("   Cleaned selected shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements")
+                        Log.info("   Cleaned selected shape '\(originalShape.name)': \(originalShape.path.elements.count) → \(cleanedShape.path.elements.count) elements", category: .general)
                     }
                 }
             }
@@ -888,9 +888,9 @@ extension ProfessionalPathOperations {
         
         if totalCleaned > 0 {
             document.objectWillChange.send()
-            print("✅ SELECTED CLEANUP: Cleaned \(totalCleaned) selected shapes")
+            Log.info("✅ SELECTED CLEANUP: Cleaned \(totalCleaned) selected shapes", category: .fileOperations)
         } else {
-            print("   No selected shapes needed cleaning")
+            Log.info("   No selected shapes needed cleaning", category: .general)
         }
     }
 }
@@ -901,8 +901,8 @@ extension ProfessionalPathOperations {
     
     /// Test function to verify the duplicate point merger works correctly
     static func testDuplicatePointMerger() {
-        print("🧪 TESTING DUPLICATE POINT MERGER:")
-        print("=" + String(repeating: "=", count: 40))
+        Log.info("🧪 TESTING DUPLICATE POINT MERGER:", category: .general)
+        Log.info("=" + String(repeating: "=", count: 40), category: .general)
         
         // Create a test path with CONSECUTIVE duplicate points (not closing duplicates)
         let testElements: [PathElement] = [
@@ -918,23 +918,23 @@ extension ProfessionalPathOperations {
         
         let testPath = VectorPath(elements: testElements, isClosed: true)
         
-        print("Original path: \(testElements.count) elements")
+        Log.info("Original path: \(testElements.count) elements", category: .general)
         for (index, element) in testElements.enumerated() {
-            print("  [\(index)] \(element)")
+            Log.info("  [\(index)] \(element)", category: .general)
         }
         
         // Run the merger
         let cleanedPath = mergeDuplicatePoints(in: testPath, tolerance: 5.0)
         
-        print("\nCleaned path: \(cleanedPath.elements.count) elements")
+        Log.info("\nCleaned path: \(cleanedPath.elements.count) elements", category: .general)
         for (index, element) in cleanedPath.elements.enumerated() {
-            print("  [\(index)] \(element)")
+            Log.info("  [\(index)] \(element)", category: .general)
         }
         
         let duplicatesRemoved = testElements.count - cleanedPath.elements.count
-        print("\n✅ Test completed - removed \(duplicatesRemoved) duplicate points")
-        print("   Should have removed 2 consecutive duplicates: line(100,0) and line(200,100)")
-        print("   Should have preserved the closing structure and curve handles")
-        print("=" + String(repeating: "=", count: 40))
+        Log.info("\n✅ Test completed - removed \(duplicatesRemoved) duplicate points", category: .general)
+        Log.info("   Should have removed 2 consecutive duplicates: line(100,0) and line(200,100)", category: .general)
+        Log.info("   Should have preserved the closing structure and curve handles", category: .general)
+        Log.info("=" + String(repeating: "=", count: 40), category: .general)
     }
 }

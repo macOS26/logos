@@ -489,7 +489,7 @@ struct HSBInputSection: View {
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            print("🎨 HSB INPUT: BLOCKED gradient update - programmatic change")
+            Log.fileOperation("🎨 HSB INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
         
@@ -560,7 +560,7 @@ struct HSBInputSection: View {
         
         // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
-        print("🎨 HSB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
+        Log.fileOperation("🎨 HSB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
     }
     
     private func loadFromSharedColor() {
@@ -614,8 +614,8 @@ struct HSBInputSection: View {
     }
     
     private func setHSBValues(hue: Double, saturation: Double, brightness: Double) {
-        print("🎨 HSB INPUT: setHSBValues called with H=\(hue), S=\(saturation), B=\(brightness)")
-        print("🎨 HSB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        Log.fileOperation("🎨 HSB INPUT: setHSBValues called with H=\(hue), S=\(saturation), B=\(brightness)", level: .info)
+        Log.fileOperation("🎨 HSB INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
         
         isProgrammaticallyUpdating = true
         hueValue = String(Int(hue))
@@ -627,7 +627,7 @@ struct HSBInputSection: View {
         updateHexFromHSB()
         isProgrammaticallyUpdating = false
         
-        print("🎨 HSB INPUT: setHSBValues completed")
+        Log.fileOperation("🎨 HSB INPUT: setHSBValues completed", level: .info)
     }
     
     private func applyColorToActiveSelection() {
@@ -655,7 +655,7 @@ struct HSBInputSection: View {
         document.addColorToSwatches(vectorColor)
         
         // Debug: Confirm HSB format is being added
-        print("🎨 HSB: Added color as HSB format - H:\(exactHSBColor.hue)° S:\(Int(exactHSBColor.saturation * 100))% B:\(Int(exactHSBColor.brightness * 100))%")
+        Log.fileOperation("🎨 HSB: Added color as HSB format - H:\(exactHSBColor.hue)° S:\(Int(exactHSBColor.saturation * 100))% B:\(Int(exactHSBColor.brightness * 100))%", level: .info)
     }
     
     private func addPMSColorToSwatches() {
@@ -666,14 +666,14 @@ struct HSBInputSection: View {
             document.addColorSwatch(pmsColor)
             
             // Debug: Confirm Pantone format is being added
-            print("🎨 PMS: Added color as Pantone format - \(pantoneColor.pantone) (\(pantoneColor.name))")
+            Log.fileOperation("🎨 PMS: Added color as Pantone format - \(pantoneColor.pantone) (\(pantoneColor.name))", level: .info)
         } else {
             // Fallback: Add as HSB color if no PMS match found
             let hsbColor = VectorColor.hsb(currentColor)
             document.addColorSwatch(hsbColor)
             
             // Debug: Fallback to HSB when no Pantone match
-            print("🎨 PMS: No Pantone match found, added as HSB format instead")
+            Log.fileOperation("🎨 PMS: No Pantone match found, added as HSB format instead", level: .info)
         }
     }
     

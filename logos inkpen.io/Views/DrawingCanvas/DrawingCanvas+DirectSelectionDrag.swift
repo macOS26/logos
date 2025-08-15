@@ -17,7 +17,7 @@ extension DrawingCanvas {
             let screenTolerance: Double = 15.0
             let tolerance: Double = screenTolerance / document.zoomLevel
             
-            print("🎯 IMMEDIATE DRAG: Attempting auto-selection at start location \(canvasLocation)")
+            Log.fileOperation("🎯 IMMEDIATE DRAG: Attempting auto-selection at start location \(canvasLocation)", level: .info)
             
             // Try to auto-select a point or handle at the drag start location
             var foundPointOrHandle = false
@@ -36,11 +36,11 @@ extension DrawingCanvas {
             }
             
             if !foundPointOrHandle {
-                print("🎯 IMMEDIATE DRAG: No point or handle found at drag start - early return")
+                Log.fileOperation("🎯 IMMEDIATE DRAG: No point or handle found at drag start - early return", level: .info)
                 return
             }
             
-            print("🎯 IMMEDIATE DRAG: Auto-selected for dragging")
+            Log.fileOperation("🎯 IMMEDIATE DRAG: Auto-selected for dragging", level: .info)
         }
         
         // Now proceed with normal drag logic (points/handles should be selected)
@@ -52,7 +52,7 @@ extension DrawingCanvas {
             for layerIndex in document.layers.indices {
                 if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == pointID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
-                        print("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'")
+                        Log.info("🚫 Cannot edit points on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                         return
                     }
                     break
@@ -65,7 +65,7 @@ extension DrawingCanvas {
             for layerIndex in document.layers.indices {
                 if let _ = document.layers[layerIndex].shapes.first(where: { $0.id == handleID.shapeID }) {
                     if document.layers[layerIndex].isLocked {
-                        print("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'")
+                        Log.info("🚫 Cannot edit handles on locked layer '\(document.layers[layerIndex].name)'", category: .general)
                         return
                     }
                     break

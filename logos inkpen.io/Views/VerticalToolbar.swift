@@ -691,7 +691,7 @@ struct VerticalToolbar: View {
     
     private func handleToolLongPress(_ tool: DrawingTool, variantIndex: Int? = nil) {
         toolGroupManager.longPressedTool(tool, variantIndex: variantIndex)
-        print("🔧 Long press on tool: \(tool.rawValue)")
+        Log.fileOperation("🔧 Long press on tool: \(tool.rawValue)", level: .info)
     }
     
     // MARK: - Icon Display Functions
@@ -843,13 +843,13 @@ struct VerticalToolbar: View {
                                     // Update tool group manager state
                                     toolGroupManager.currentToolInGroup = .star
                                     toolGroupManager.setSelectedToolInGroup(.star)
-                                    print("⭐ Selected star variant: \(starVariant.rawValue)")
+                                    Log.info("⭐ Selected star variant: \(starVariant.rawValue)", category: .general)
                                 } else {
                                     document.currentTool = toolItem.tool
                                     // Update tool group manager state
                                     toolGroupManager.currentToolInGroup = toolItem.tool
                                     toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                    print("🛠️ Switched to tool: \(toolItem.tool.rawValue)")
+                                    Log.info("🛠️ Switched to tool: \(toolItem.tool.rawValue)", category: .general)
                                 }
                                 
                                 // Do not force cursor here; let canvas hover control cursor visibility.
@@ -893,13 +893,13 @@ struct VerticalToolbar: View {
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = .star
                                             toolGroupManager.setSelectedToolInGroup(.star)
-                                            print("🔧 Tool tap detected: \(starVariant.rawValue)")
+                                            Log.fileOperation("🔧 Tool tap detected: \(starVariant.rawValue)", level: .info)
                                         } else {
                                             document.currentTool = toolItem.tool
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = toolItem.tool
                                             toolGroupManager.setSelectedToolInGroup(toolItem.tool)
-                                            print("🔧 Tool tap detected: \(toolItem.tool.rawValue)")
+                                            Log.fileOperation("🔧 Tool tap detected: \(toolItem.tool.rawValue)", level: .info)
                                         }
                                         
                                         // Do not force cursor here; canvas hover logic will set it.
@@ -1169,7 +1169,7 @@ struct ColorSwatchGrid: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            // Current Fill and Stroke Colors - Adobe Illustrator Style (overlapping squares)
+            // Current Fill and Stroke Colors - Professional Style (overlapping squares)
             ZStack {
                 // Stroke color (background, bottom-right)
                 Button {
@@ -1313,14 +1313,14 @@ struct ColorSwatchGrid: View {
                             selectedStrokeColor = color
                             document.defaultStrokeColor = color  // Set default for new shapes
                             applyStrokeColorToSelected(color)
-                            print("🎨 TOOLBAR: Set stroke color: \(color) (active target)")
+                            Log.fileOperation("🎨 TOOLBAR: Set stroke color: \(color) (active target)", level: .info)
                             
                             // INK panel auto-updates from document bindings
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
                             applyFillColorToSelected(color)
-                            print("🎨 TOOLBAR: Set fill color: \(color) (active target)")
+                            Log.fileOperation("🎨 TOOLBAR: Set fill color: \(color) (active target)", level: .info)
                             
                             // INK panel auto-updates from document bindings
                         }

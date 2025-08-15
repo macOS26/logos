@@ -39,7 +39,7 @@ class ToolGroupManager: ObservableObject {
         showingAllItems = expandedGroups.contains(groupName)
         expansionAnchorTool = tool
         expansionAnchorVariant = (tool == .star) ? selectedVariant : nil
-        print("🔧 KEYBOARD: Selected \(tool.rawValue) in group \(groupName)")
+        Log.fileOperation("🔧 KEYBOARD: Selected \(tool.rawValue) in group \(groupName)", level: .info)
     }
     
     func longPressedTool(_ tool: DrawingTool, variantIndex: Int? = nil) {
@@ -56,13 +56,13 @@ class ToolGroupManager: ObservableObject {
             showingAllItems = false
             expansionAnchorTool = nil
             expansionAnchorVariant = nil
-            print("🔧 Collapsed group \(groupName)")
+            Log.fileOperation("🔧 Collapsed group \(groupName)", level: .info)
         } else {
             expandedGroups.insert(groupName)
             showingAllItems = true
             expansionAnchorTool = tool
             expansionAnchorVariant = nil
-            print("🔧 Expanded group \(groupName)")
+            Log.fileOperation("🔧 Expanded group \(groupName)", level: .info)
         }
         currentToolInGroup = tool
     }
@@ -74,10 +74,10 @@ class ToolGroupManager: ObservableObject {
         if expandedGroups.contains(groupName) {
             // Collapse only the star group
             expandedGroups.remove(groupName)
-            print("⭐ Collapsed star group on long-press of variant \(variantIndex)")
+            Log.info("⭐ Collapsed star group on long-press of variant \(variantIndex)", category: .general)
         } else {
             expandedGroups.insert(groupName)
-            print("⭐ Expanded star group on long-press of variant \(variantIndex)")
+            Log.info("⭐ Expanded star group on long-press of variant \(variantIndex)", category: .general)
         }
         currentToolInGroup = .star
         expansionAnchorTool = .star
@@ -86,7 +86,7 @@ class ToolGroupManager: ObservableObject {
     
     func selectStarVariant(_ variant: StarVariant) {
         selectedVariant = variant
-        print("⭐ Selected star variant: \(variant.rawValue)")
+        Log.info("⭐ Selected star variant: \(variant.rawValue)", category: .general)
     }
     
     func setToolButtonFrame(_ tool: DrawingTool, frame: CGRect) {
@@ -222,13 +222,13 @@ struct ExpandableToolDock: View {
     
     private func selectTool(_ tool: DrawingTool) {
         document.currentTool = tool
-        print("🛠️ Selected tool: \(tool.rawValue)")
+        Log.info("🛠️ Selected tool: \(tool.rawValue)", category: .general)
     }
     
     private func selectStarVariant(_ variant: StarVariant) {
         groupManager.selectStarVariant(variant)
         document.currentTool = .star
-        print("⭐ Selected star variant: \(variant.rawValue)")
+        Log.info("⭐ Selected star variant: \(variant.rawValue)", category: .general)
     }
 }
 
@@ -283,23 +283,23 @@ class StarToolHUDManager: ObservableObject {
     
     func showHUD() {
         guard starButtonFrame != .zero else {
-            print("⭐ Cannot show HUD - no button frame")
+            Log.info("⭐ Cannot show HUD - no button frame", category: .general)
             return
         }
         
         isHUDVisible = true
-        print("⭐ HUD visibility set to true")
+        Log.info("⭐ HUD visibility set to true", category: .general)
     }
     
     func hideHUD() {
         isHUDVisible = false
-        print("⭐ HUD visibility set to false")
+        Log.info("⭐ HUD visibility set to false", category: .general)
     }
     
     func selectVariant(_ variant: StarVariant) {
         selectedVariant = variant
         hideHUD()
-        print("⭐ HUD: Selected star variant: \(variant.rawValue)")
+        Log.info("⭐ HUD: Selected star variant: \(variant.rawValue)", category: .general)
     }
 }
 
@@ -315,7 +315,7 @@ struct StarToolHUDView: View {
         VStack(spacing: 2) {
             ForEach(availableVariants, id: \.self) { variant in
                 Button {
-                    print("⭐ HUD: Button tapped for variant: \(variant.rawValue)")
+                    Log.info("⭐ HUD: Button tapped for variant: \(variant.rawValue)", category: .general)
                     hudManager.selectVariant(variant)
                 } label: {
                     variant.iconView(
@@ -359,7 +359,7 @@ struct StarToolHUDContainer: View {
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    print("⭐ HUD: Tap detected outside HUD - dismissing")
+                    Log.info("⭐ HUD: Tap detected outside HUD - dismissing", category: .general)
                     hudManager.hideHUD()
                 }
                 .overlay(
@@ -370,7 +370,7 @@ struct StarToolHUDContainer: View {
                         )
                         .allowsHitTesting(true)
                         .onTapGesture {
-                            print("⭐ HUD: Tap detected on HUD content")
+                            Log.info("⭐ HUD: Tap detected on HUD content", category: .general)
                         }
                 )
                 .allowsHitTesting(true)

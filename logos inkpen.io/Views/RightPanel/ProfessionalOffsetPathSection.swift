@@ -231,7 +231,7 @@ struct ProfessionalOffsetPathSection: View {
     private func performOffsetPath() {
         guard !document.selectedShapeIDs.isEmpty else { return }
         
-        print("🎨 PROFESSIONAL OFFSET PATH: \(offsetDistance)pt, join: \(selectedJoinType)")
+        Log.fileOperation("🎨 PROFESSIONAL OFFSET PATH: \(offsetDistance)pt, join: \(selectedJoinType)", level: .info)
         
         // Save to undo stack
         document.saveToUndoStack()
@@ -271,19 +271,19 @@ struct ProfessionalOffsetPathSection: View {
                         // POSITIVE OFFSET: Union the unioned expanded stroke with original shape
                         if let finalResult = CoreGraphicsPathOperations.union(shape.path.cgPath, unionedStroke, using: .winding) {
                             finalPath = finalResult
-                            print("🔧 POSITIVE OFFSET: Expanded stroke + union with original shape")
+                            Log.fileOperation("🔧 POSITIVE OFFSET: Expanded stroke + union with original shape", level: .info)
                         } else {
                             finalPath = unionedStroke
-                            print("⚠️ POSITIVE OFFSET: Union with original failed, keeping unioned stroke")
+                            Log.fileOperation("⚠️ POSITIVE OFFSET: Union with original failed, keeping unioned stroke", level: .info)
                         }
                     } else {
                         // NEGATIVE OFFSET: Subtract the unioned expanded stroke from original shape
                         if let finalResult = CoreGraphicsPathOperations.subtract(unionedStroke, from: shape.path.cgPath, using: .winding) {
                             finalPath = finalResult
-                            print("🔧 NEGATIVE OFFSET: Subtracted unioned stroke from original shape")
+                            Log.fileOperation("🔧 NEGATIVE OFFSET: Subtracted unioned stroke from original shape", level: .info)
                         } else {
                             finalPath = shape.path.cgPath
-                            print("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original shape")
+                            Log.fileOperation("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original shape", level: .info)
                         }
                     }
                     
@@ -305,11 +305,11 @@ struct ProfessionalOffsetPathSection: View {
                         if offsetDistance >= 0 && keepOriginalPath {
                             // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
                             document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
-                            print("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)")
+                            Log.fileOperation("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)", level: .info)
                         } else {
                             // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
                             document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
-                            print("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)")
+                            Log.fileOperation("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)", level: .info)
                         }
                     } else {
                         // Fallback: Add to document normally
@@ -319,7 +319,7 @@ struct ProfessionalOffsetPathSection: View {
                     newOffsetShapeIDs.insert(offsetShape.id)
                     
                 } else {
-                    print("⚠️ OUTLINE STROKE UNION: Failed, keeping expanded stroke")
+                    Log.fileOperation("⚠️ OUTLINE STROKE UNION: Failed, keeping expanded stroke", level: .info)
                     let offsetVectorPath = VectorPath(cgPath: expandedStroke)
                     let offsetShape = VectorShape(
                         name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
@@ -337,11 +337,11 @@ struct ProfessionalOffsetPathSection: View {
                         if offsetDistance >= 0 && keepOriginalPath {
                             // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
                             document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
-                            print("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)")
+                            Log.fileOperation("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)", level: .info)
                         } else {
                             // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
                             document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
-                            print("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)")
+                            Log.fileOperation("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)", level: .info)
                         }
                     } else {
                         // Fallback: Add to document normally
@@ -351,7 +351,7 @@ struct ProfessionalOffsetPathSection: View {
                     newOffsetShapeIDs.insert(offsetShape.id)
                 }
             } else {
-                print("⚠️ OUTLINE STROKE: Failed on original path")
+                Log.fileOperation("⚠️ OUTLINE STROKE: Failed on original path", level: .info)
             }
             
         }
@@ -360,10 +360,10 @@ struct ProfessionalOffsetPathSection: View {
         if keepOriginalPath {
             if offsetDistance >= 0 {
                 // POSITIVE OFFSET: Offset shapes are already inserted behind originals
-                print("🔧 POSITIVE OFFSET: Offset shapes already positioned behind originals")
+                Log.fileOperation("🔧 POSITIVE OFFSET: Offset shapes already positioned behind originals", level: .info)
             } else {
                 // NEGATIVE OFFSET: Offset shapes are already positioned after originals
-                print("🔧 NEGATIVE OFFSET: Offset shapes already positioned after originals")
+                Log.fileOperation("🔧 NEGATIVE OFFSET: Offset shapes already positioned after originals", level: .info)
             }
         } else {
             // Remove original shapes if not keeping them

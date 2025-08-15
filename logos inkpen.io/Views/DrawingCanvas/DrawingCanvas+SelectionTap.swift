@@ -13,12 +13,12 @@ extension DrawingCanvas {
     internal func handleSelectionTap(at location: CGPoint) {
         // Clean up excessive logging per user request
         
-        Log.debug("🎯 SELECTION TAP: Starting selection at location \(location)", category: .selection)
-        Log.debug("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)", category: .selection)
+        Log.info("🎯 SELECTION TAP: Starting selection at location \(location)", category: .selection)
+        Log.info("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)", category: .selection)
         
-        // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (Adobe Illustrator behavior)
+        // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (professional behavior)
         if isOptionPressed && document.currentTool == .selection {
-            Log.debug("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection", category: .selection)
+            Log.info("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection", category: .selection)
             document.currentTool = .directSelection
             // Perform direct selection at the click location
             handleDirectSelectionTap(at: location)
@@ -60,7 +60,7 @@ extension DrawingCanvas {
                     syncDirectSelectionWithDocument()
                     document.selectedLayerIndex = layerIndex
                     document.objectWillChange.send()
-                    Log.debug("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)", category: .selection)
+                    Log.info("⌘ COMMAND+CLICK: Temporarily switched to Direct Selection for shape \(shape.name)", category: .selection)
                 } else {
                     // If not yet selected, toggle/add selection strictly by object hit
                     document.selectedTextIDs.removeAll()
@@ -78,9 +78,9 @@ extension DrawingCanvas {
             return
         }
         
-        // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (Adobe Illustrator style)
+        // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (professional style)
         if isControlPressed && document.currentTool == .selection {
-            Log.debug("🎯 CONTROL+CLICK: Checking for rounded rectangle to enter corner radius mode", category: .selection)
+            Log.info("🎯 CONTROL+CLICK: Checking for rounded rectangle to enter corner radius mode", category: .selection)
             
             // Find the clicked shape first
             var clickedShape: VectorShape? = nil
@@ -110,12 +110,12 @@ extension DrawingCanvas {
             
             // Check if the clicked shape is a rectangle-based shape that can have corner radius
             if let shape = clickedShape, isRectangleBasedShape(shape) {
-                Log.debug("🎯 CONTROL+CLICK: Entering corner radius edit mode for rectangle-based shape: \(shape.name)", category: .selection)
+                Log.info("🎯 CONTROL+CLICK: Entering corner radius edit mode for rectangle-based shape: \(shape.name)", category: .selection)
                 
                 // Enable corner radius support if not already enabled
                 if !shape.isRoundedRectangle {
                     // This will be handled by the toolbar when it updates the shape
-                    Log.debug("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins", category: .selection)
+                    Log.info("🎯 CONTROL+CLICK: Shape will be converted to corner-radius-enabled when editing begins", category: .selection)
                 }
                 
                 // Select the shape and enter corner radius mode
@@ -129,9 +129,9 @@ extension DrawingCanvas {
                 
                 return
             } else if clickedShape != nil {
-                Log.debug("🎯 CONTROL+CLICK: Clicked shape (\(clickedShape?.name ?? "unknown")) is not a rectangle-based shape", category: .selection)
+                Log.info("🎯 CONTROL+CLICK: Clicked shape (\(clickedShape?.name ?? "unknown")) is not a rectangle-based shape", category: .selection)
             } else {
-                Log.debug("🎯 CONTROL+CLICK: No shape found at click location", category: .selection)
+                Log.info("🎯 CONTROL+CLICK: No shape found at click location", category: .selection)
             }
         }
         
@@ -149,11 +149,11 @@ extension DrawingCanvas {
               document.currentTool == .rotate || 
               document.currentTool == .shear || 
               document.currentTool == .warp else { 
-            Log.debug("🚫 SELECTION TAP: Wrong tool - early return", category: .selection)
+            Log.info("🚫 SELECTION TAP: Wrong tool - early return", category: .selection)
             return 
         }
         
-        Log.debug("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
+        Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
         // Only run text hit-testing when using the Font tool to avoid noisy logs during normal selection
         if document.currentTool == .font, let textID = findTextAt(location: location) {
@@ -161,18 +161,18 @@ extension DrawingCanvas {
                 let textObject = document.textObjects[textIndex]
                 
                 // PRINT TEXT BOX SETTINGS AS REQUESTED BY USER
-                Log.debug("🎯 ARROW TOOL SELECTED TEXT BOX UUID: \(textID.uuidString.prefix(8))", category: .selection)
-                Log.debug("📝 CONTENT: '\(textObject.content)'", category: .selection)
-                Log.debug("🎨 TYPOGRAPHY SETTINGS:", category: .selection)
-                Log.debug("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontWeight.rawValue) \(textObject.typography.fontStyle.rawValue)", category: .selection)
-                Log.debug("  - Size: \(textObject.typography.fontSize)pt", category: .selection)
-                Log.debug("  - Line Height: \(textObject.typography.lineHeight)pt", category: .selection)
-                Log.debug("  - Line Spacing: \(textObject.typography.lineSpacing)pt", category: .selection)
-                Log.debug("  - Alignment: \(textObject.typography.alignment.rawValue)", category: .selection)
-                Log.debug("  - Fill Color: \(textObject.typography.fillColor)", category: .selection)
-                Log.debug("📦 BOUNDS: \(textObject.bounds)", category: .selection)
-                Log.debug("📍 POSITION: \(textObject.position)", category: .selection)
-                Log.debug("🔄 STATES: isEditing=\(textObject.isEditing), isVisible=\(textObject.isVisible), isLocked=\(textObject.isLocked)", category: .selection)
+                Log.info("🎯 ARROW TOOL SELECTED TEXT BOX UUID: \(textID.uuidString.prefix(8))", category: .selection)
+                Log.info("📝 CONTENT: '\(textObject.content)'", category: .selection)
+                Log.info("🎨 TYPOGRAPHY SETTINGS:", category: .selection)
+                Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontWeight.rawValue) \(textObject.typography.fontStyle.rawValue)", category: .selection)
+                Log.info("  - Size: \(textObject.typography.fontSize)pt", category: .selection)
+                Log.info("  - Line Height: \(textObject.typography.lineHeight)pt", category: .selection)
+                Log.info("  - Line Spacing: \(textObject.typography.lineSpacing)pt", category: .selection)
+                Log.info("  - Alignment: \(textObject.typography.alignment.rawValue)", category: .selection)
+                Log.info("  - Fill Color: \(textObject.typography.fillColor)", category: .selection)
+                Log.info("📦 BOUNDS: \(textObject.bounds)", category: .selection)
+                Log.info("📍 POSITION: \(textObject.position)", category: .selection)
+                Log.info("🔄 STATES: isEditing=\(textObject.isEditing), isVisible=\(textObject.isVisible), isLocked=\(textObject.isLocked)", category: .selection)
                 
                 // Check if text is locked
                 if textObject.isLocked {
@@ -209,20 +209,20 @@ extension DrawingCanvas {
         var hitShape: VectorShape?
         var hitLayerIndex: Int?
         
-        Log.debug("🎯 SELECTION TAP: Looking for shapes at location \(location)", category: .selection)
+        Log.info("🎯 SELECTION TAP: Looking for shapes at location \(location)", category: .selection)
         
         // Search through layers from top to bottom
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            Log.debug("🎯 SELECTION TAP: Checking layer \(layerIndex): '\(layer.name)' with \(layer.shapes.count) shapes", category: .selection)
+            Log.info("🎯 SELECTION TAP: Checking layer \(layerIndex): '\(layer.name)' with \(layer.shapes.count) shapes", category: .selection)
             
             // Search through shapes from top to bottom (reverse order)
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
-                Log.debug("🎯 SELECTION TAP: Testing shape '\(shape.name)' (group: \(shape.isGroupContainer))", category: .selection)
+                Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)' (group: \(shape.isGroupContainer))", category: .selection)
                 
                 // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
                 
@@ -236,7 +236,7 @@ extension DrawingCanvas {
                 if isBackgroundShape {
                     // SKIP background shapes entirely - they should not be selectable
                     // This ensures clicking on Canvas/Pasteboard always deselects, never selects
-                    Log.debug("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .selection)
+                    Log.info("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .selection)
                     continue
                 } else if shape.isGroupContainer {
                     // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
@@ -244,7 +244,7 @@ extension DrawingCanvas {
                     for groupedShape in shape.groupedShapes {
                         if !groupedShape.isVisible { continue }
                         
-                        Log.debug("    - Testing grouped shape '\(groupedShape.name)'", category: .selection)
+                        Log.info("    - Testing grouped shape '\(groupedShape.name)'", category: .selection)
                         
                         // OPTION KEY ENHANCEMENT: Use path-based selection for grouped shapes too
                         if isOptionPressed {
@@ -252,10 +252,10 @@ extension DrawingCanvas {
                             let tolerance: CGFloat = 8.0
                             if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: tolerance) {
                                 isHit = true
-                                Log.debug("      - ⌥ Option group path hit: YES", category: .selection)
+                                Log.info("      - ⌥ Option group path hit: YES", category: .selection)
                                 break
                             } else {
-                                Log.debug("      - ⌥ Option group path hit: NO", category: .selection)
+                                Log.info("      - ⌥ Option group path hit: NO", category: .selection)
                             }
                         } else {
                             // Regular selection: Apply the same hit testing logic to grouped shapes
@@ -267,10 +267,10 @@ extension DrawingCanvas {
                                 let strokeTolerance = max(15.0, strokeWidth + 10.0)
                                 if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
                                     isHit = true
-                                    Log.debug("      - Stroke hit: YES", category: .selection)
+                                    Log.info("      - Stroke hit: YES", category: .selection)
                                     break
                                 } else {
-                                    Log.debug("      - Stroke hit: NO", category: .selection)
+                                    Log.info("      - Stroke hit: NO", category: .selection)
                                 }
                             } else {
                                 // Regular grouped shapes: Use bounds + path hit testing
@@ -279,26 +279,26 @@ extension DrawingCanvas {
                                 
                                 if expandedBounds.contains(location) {
                                     isHit = true
-                                    Log.debug("      - Bounds hit: YES", category: .selection)
+                                    Log.info("      - Bounds hit: YES", category: .selection)
                                     break
                                 } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
                                     isHit = true
-                                    Log.debug("      - Path hit: YES", category: .selection)
+                                    Log.info("      - Path hit: YES", category: .selection)
                                     break
                                 } else {
-                                    Log.debug("      - Bounds hit: NO, Path hit: NO", category: .selection)
+                                    Log.info("      - Bounds hit: NO, Path hit: NO", category: .selection)
                                 }
                             }
                         }
                     }
-                    Log.debug("  - Group overall hit result: \(isHit)", category: .selection)
+                    Log.info("  - Group overall hit result: \(isHit)", category: .selection)
                 } else {
                     // OPTION KEY ENHANCEMENT: Use path-based selection when Option key is held
                     if isOptionPressed {
                         // Option key held: Use precise path-based hit testing only
                         let tolerance: CGFloat = 8.0
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                        Log.debug("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
+                        Log.info("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
                 } else {
                     // Regular selection: Use different logic for stroke vs filled
                     // SPECIAL CASE: Raster image shapes should behave like filled rectangles (click inside selects)
@@ -311,10 +311,10 @@ extension DrawingCanvas {
                         let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
                         if expandedBounds.contains(location) {
                             isHit = true
-                            Log.debug("  - Image bounds hit: YES", category: .selection)
+                            Log.info("  - Image bounds hit: YES", category: .selection)
                         } else {
                             isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            Log.debug("  - Image path hit: \(isHit)", category: .selection)
+                            Log.info("  - Image path hit: \(isHit)", category: .selection)
                         }
                     } else if isStrokeOnly && shape.strokeStyle != nil {
                         // Method 1: Stroke-only shapes - use stroke-based hit testing only
@@ -322,7 +322,7 @@ extension DrawingCanvas {
                         let strokeTolerance = max(15.0, strokeWidth + 10.0)
                         
                         isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        Log.debug("  - Regular stroke hit test: \(isHit)", category: .selection)
+                        Log.info("  - Regular stroke hit test: \(isHit)", category: .selection)
                     } else {
                         // Method 2: Filled shapes - use bounds + path hit testing
                         let transformedBounds = shape.bounds.applying(shape.transform)
@@ -330,11 +330,11 @@ extension DrawingCanvas {
                         
                         if expandedBounds.contains(location) {
                             isHit = true
-                            Log.debug("  - Regular bounds hit test: \(isHit)", category: .selection)
+                            Log.info("  - Regular bounds hit test: \(isHit)", category: .selection)
                         } else {
                             // Fallback: precise path hit test
                             isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            Log.debug("  - Regular path hit test: \(isHit)", category: .selection)
+                            Log.info("  - Regular path hit test: \(isHit)", category: .selection)
                         }
                     }
                 }
@@ -343,12 +343,12 @@ extension DrawingCanvas {
                 if isHit {
                     hitShape = shape
                     hitLayerIndex = layerIndex
-                    Log.debug("🎯 SELECTION TAP: FOUND HIT - Shape '\(shape.name)' in layer \(layerIndex)", category: .selection)
+                    Log.info("🎯 SELECTION TAP: FOUND HIT - Shape '\(shape.name)' in layer \(layerIndex)", category: .selection)
                     
                     // Check if shape is locked BEFORE setting it as hit
                     if layer.isLocked || shape.isLocked {
                         let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        Log.debug("🚫 Shape '\(shape.name)' is on \(lockType) - deselecting everything", category: .selection)
+                        Log.info("🚫 Shape '\(shape.name)' is on \(lockType) - deselecting everything", category: .selection)
                         document.selectedShapeIDs.removeAll()
                         document.selectedTextIDs.removeAll()
                         document.objectWillChange.send()
@@ -362,11 +362,11 @@ extension DrawingCanvas {
         }
         
         if hitShape == nil {
-            Log.debug("🎯 SELECTION TAP: NO SHAPE HIT - will deselect", category: .selection)
+            Log.info("🎯 SELECTION TAP: NO SHAPE HIT - will deselect", category: .selection)
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
-            Log.debug("✅ SELECTION SUCCESS: Selected shape '\(shape.name)' on layer \(layerIndex)", category: .selection)
+            Log.info("✅ SELECTION SUCCESS: Selected shape '\(shape.name)' on layer \(layerIndex)", category: .selection)
             
             // CRITICAL FIX: Clear text selection when selecting shapes
             document.selectedTextIDs.removeAll()
@@ -392,7 +392,7 @@ extension DrawingCanvas {
             // Force UI update
             document.objectWillChange.send()
         } else {
-            Log.debug("❌ NO HIT: No objects found at location \(location)", category: .selection)
+            Log.info("❌ NO HIT: No objects found at location \(location)", category: .selection)
             
             // DESELECT ALL: Tap on empty area with selection tool
             let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
@@ -402,7 +402,7 @@ extension DrawingCanvas {
             syncDirectSelectionWithDocument()
             
             if wasSelected {
-                Log.debug("🎯 DESELECTED: Cleared selection due to empty area tap", category: .selection)
+                Log.info("🎯 DESELECTED: Cleared selection due to empty area tap", category: .selection)
                 document.objectWillChange.send()
             }
         }

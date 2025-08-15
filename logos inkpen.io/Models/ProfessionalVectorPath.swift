@@ -2,7 +2,7 @@
 //  ProfessionalVectorPath.swift
 //  logos
 //
-//  Professional Vector Path with Adobe Illustrator Standards
+//  Professional Vector Path
 //  Implements advanced bezier curve mathematics and anchor point types
 //
 //  Created by Todd Bruss on 7/6/25.

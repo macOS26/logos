@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Professional DWF Export Configuration View (Adobe Illustrator Standards)
+/// Professional DWF Export Configuration View (Professional Standards)
 struct DWFExportView: View {
     @ObservedObject var document: VectorDocument
     @Binding var options: DWFExportOptions

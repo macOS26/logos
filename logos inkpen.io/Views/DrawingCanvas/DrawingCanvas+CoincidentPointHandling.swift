@@ -66,8 +66,8 @@ extension DrawingCanvas {
                         let distance = sqrt(pow(targetPoint.x - checkPoint.x, 2) + pow(targetPoint.y - checkPoint.y, 2))
                         if distance <= tolerance {
                             coincidentPoints.insert(pointID)
-                            print("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target")
-                            print("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)")
+                            Log.info("🔗 COINCIDENT POINT: Found point at element \(elementIndex) in shape \(shape.name) coincident with target", category: .general)
+                            Log.info("   Target: (\(targetPoint.x), \(targetPoint.y)), Found: (\(checkPoint.x), \(checkPoint.y)), Distance: \(distance)", category: .general)
                         }
                     }
                 }
@@ -96,9 +96,9 @@ extension DrawingCanvas {
         }
         
         if !coincidentPoints.isEmpty {
-            print("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points")
-            print("   Primary point: \(pointID)")
-            print("   Coincident points: \(coincidentPoints)")
+            Log.info("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points", category: .general)
+            Log.info("   Primary point: \(pointID)", category: .general)
+            Log.info("   Coincident points: \(coincidentPoints)", category: .general)
         }
     }
     
@@ -155,8 +155,8 @@ extension DrawingCanvas {
     /// Analyzes and reports all coincident points in the current document
     /// Useful for debugging and understanding path structure
     func analyzeCoincidentPoints() {
-        print("🔍 COINCIDENT POINT ANALYSIS:")
-        print("Using tolerance: \(coincidentPointTolerance) pixels")
+        Log.info("🔍 COINCIDENT POINT ANALYSIS:", category: .general)
+        Log.info("Using tolerance: \(coincidentPointTolerance) pixels", category: .general)
         
         var totalCoincidentGroups = 0
         var processedPoints: Set<PointID> = []
@@ -169,7 +169,7 @@ extension DrawingCanvas {
             for shape in layer.shapes {
                 if !shape.isVisible { continue }
                 
-                print("\n📋 Analyzing shape: \(shape.name)")
+                Log.info("\n📋 Analyzing shape: \(shape.name)", category: .general)
                 
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     let pointID = PointID(
@@ -195,10 +195,10 @@ extension DrawingCanvas {
                     if !coincidentPoints.isEmpty {
                         totalCoincidentGroups += 1
                         if let position = getPointPosition(pointID) {
-                            print("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):")
-                            print("      Primary: Element \(elementIndex)")
+                            Log.info("   🔗 Coincident Group \(totalCoincidentGroups) at (\(position.x), \(position.y)):", category: .general)
+                            Log.info("      Primary: Element \(elementIndex)", category: .general)
                             for coincidentPoint in coincidentPoints {
-                                print("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)")
+                                Log.info("      Coincident: Element \(coincidentPoint.elementIndex) in shape \(coincidentPoint.shapeID)", category: .general)
                             }
                             
                             // Mark all points in this group as processed
@@ -213,10 +213,10 @@ extension DrawingCanvas {
         }
         
         if totalCoincidentGroups == 0 {
-            print("✅ No coincident points found in document")
+            Log.info("✅ No coincident points found in document", category: .fileOperations)
         } else {
-            print("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups")
-            print("💡 TIP: These points will move together when selected to maintain path continuity")
+            Log.info("\n📊 SUMMARY: Found \(totalCoincidentGroups) coincident point groups", category: .general)
+            Log.fileOperation("💡 TIP: These points will move together when selected to maintain path continuity", level: .info)
         }
     }
     
@@ -256,7 +256,7 @@ extension DrawingCanvas {
                     // Apply smooth curve logic if this coincident point is a smooth curve point
                     if isSmoothCurvePoint(elements: elements, elementIndex: coincidentPointID.elementIndex) {
                         moveSmoothCurveHandles(elements: &elements, elementIndex: coincidentPointID.elementIndex, delta: delta)
-                        print("🔗 COINCIDENT SMOOTH: Applied smooth curve logic to coincident point at element \(coincidentPointID.elementIndex) in shape \(coincidentPointID.shapeID)")
+                        Log.info("🔗 COINCIDENT SMOOTH: Applied smooth curve logic to coincident point at element \(coincidentPointID.elementIndex) in shape \(coincidentPointID.shapeID)", category: .general)
                     }
                     
                     // Update the shape
@@ -386,7 +386,7 @@ extension DrawingCanvas {
                 elements[draggedHandleID.elementIndex] = updateElementControl1(elements[draggedHandleID.elementIndex], newControl1: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[lastElementIndex] = .curve(to: lastTo, control1: lastControl1, control2: VectorPoint(oppositeHandle.x, oppositeHandle.y))
                 
-                print("🔗 COINCIDENT SMOOTH: Updated first→last handles")
+                Log.info("🔗 COINCIDENT SMOOTH: Updated first→last handles", category: .general)
                 return true
             }
             
@@ -405,7 +405,7 @@ extension DrawingCanvas {
                 elements[draggedHandleID.elementIndex] = updateElementControl2(elements[draggedHandleID.elementIndex], newControl2: VectorPoint(newDraggedPosition.x, newDraggedPosition.y))
                 elements[1] = .curve(to: secondTo, control1: VectorPoint(oppositeHandle.x, oppositeHandle.y), control2: secondControl2)
                 
-                print("🔗 COINCIDENT SMOOTH: Updated last→first handles")
+                Log.info("🔗 COINCIDENT SMOOTH: Updated last→first handles", category: .general)
                 return true
             }
         }

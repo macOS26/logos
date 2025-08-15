@@ -144,22 +144,22 @@ struct ProfessionalTextCanvas: View {
         .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .onKeyPress(action: handleKeyPress)
         .onChange(of: document.selectedTextIDs) { _, selectedIDs in
-            print("🔄 SELECTED TEXT IDs CHANGED: \(selectedIDs.map { $0.uuidString.prefix(8) }) for textID \(viewModel.textObject.id.uuidString.prefix(8))")
+            Log.fileOperation("🔄 SELECTED TEXT IDs CHANGED: \(selectedIDs.map { $0.uuidString.prefix(8) }) for textID \(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
             updateTextBoxState(selectedIDs: selectedIDs)
         }
         .onChange(of: viewModel.isEditing) { _, isEditing in
-            print("🔧 VIEW MODEL EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'")
+            Log.fileOperation("🔧 VIEW MODEL EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         .onChange(of: viewModel.textObject.isEditing) { _, isEditing in
-            print("🔧 DOCUMENT TEXT EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'")
+            Log.fileOperation("🔧 DOCUMENT TEXT EDITING CHANGED: \(isEditing) for text '\(viewModel.text)'", level: .info)
             // Sync view model with document
             viewModel.isEditing = isEditing
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         // CRITICAL FIX: Monitor document text objects for editing state changes
         .onChange(of: document.textObjects.map { $0.isEditing }) { _, _ in
-            print("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state")
+            Log.fileOperation("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         .onAppear {
@@ -168,19 +168,19 @@ struct ProfessionalTextCanvas: View {
             // CRITICAL FIX: Ensure VectorText bounds match text canvas on initial appearance
             // This fixes the selection box when text is first created
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            print("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas")
+            Log.fileOperation("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas", level: .info)
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             // NEW: When user selects type tool and this text box is GREEN (selected), change to BLUE (editing)
             if oldTool != .font && newTool == .font && textBoxState == .green {
-                print("🔧 TOOL CHANGE: Type tool selected with GREEN text box - switching to BLUE (editing)")
+                Log.fileOperation("🔧 TOOL CHANGE: Type tool selected with GREEN text box - switching to BLUE (editing)", level: .info)
                 
                 // CRITICAL: Ensure only one text box can be edited at a time
                 // Stop editing on all other text boxes first
                 for textIndex in document.textObjects.indices {
                     if document.textObjects[textIndex].id != viewModel.textObject.id && document.textObjects[textIndex].isEditing {
                         document.textObjects[textIndex].isEditing = false
-                        print("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode")
+                        Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
                     }
                 }
                 
@@ -194,7 +194,7 @@ struct ProfessionalTextCanvas: View {
                 
                 // CRITICAL FIX: Force immediate state update and sync
                 textBoxState = .blue
-                print("🔵 FORCED STATE CHANGE: GREEN → BLUE due to type tool selection")
+                Log.info("🔵 FORCED STATE CHANGE: GREEN → BLUE due to type tool selection", category: .general)
                 
                 DispatchQueue.main.async {
                     updateTextBoxState(selectedIDs: document.selectedTextIDs)
@@ -203,7 +203,7 @@ struct ProfessionalTextCanvas: View {
             
             // PROFESSIONAL UX: Stop editing when user switches away from font tool
             if oldTool == .font && newTool != .font && viewModel.isEditing {
-                print("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))")
+                Log.fileOperation("🔧 TOOL CHANGE: Stopping text editing (switched from \(oldTool.rawValue) to \(newTool.rawValue))", level: .info)
                 viewModel.stopEditing()
                 
                 // Update document editing state
@@ -218,7 +218,7 @@ struct ProfessionalTextCanvas: View {
             // This ensures selection box is correct when using arrow tool
             if oldTool == .font && newTool != .font {
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-                print("🔧 TOOL CHANGE: Updated VectorText bounds for selection tool")
+                Log.fileOperation("🔧 TOOL CHANGE: Updated VectorText bounds for selection tool", level: .info)
             }
         }
     }
@@ -231,7 +231,7 @@ struct ProfessionalTextCanvas: View {
         // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
         guard let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) else {
             textBoxState = .gray
-            print("  → GRAY (text object not found in document)")
+            Log.info("  → GRAY (text object not found in document)", category: .general)
             return
         }
         
@@ -240,44 +240,44 @@ struct ProfessionalTextCanvas: View {
         let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id) // Use current document object
         
-        print("🔍 STATE CHECK: textID=\(currentTextObject.id.uuidString.prefix(8))")
-        print("  - viewModel.isEditing: \(viewModel.isEditing)")
-        print("  - currentTextObject.isEditing: \(currentTextObject.isEditing)")
-        print("  - hasTextViewFocus: \(hasTextViewFocus)")
-        print("  - isTextToolActive: \(isTextToolActive)")
-        print("  - isThisTextSelected: \(isThisTextSelected)")
-        print("  - currentTool: \(document.currentTool.rawValue)")
-        print("  - selectedIDs count: \(selectedIDs.count)")
-        print("  - selectedIDs: \(selectedIDs.map { $0.uuidString.prefix(8) })")
-        print("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))")
-        print("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })")
+        Log.info("🔍 STATE CHECK: textID=\(currentTextObject.id.uuidString.prefix(8))", category: .general)
+        Log.info("  - viewModel.isEditing: \(viewModel.isEditing)", category: .general)
+        Log.info("  - currentTextObject.isEditing: \(currentTextObject.isEditing)", category: .general)
+        Log.info("  - hasTextViewFocus: \(hasTextViewFocus)", category: .general)
+        Log.info("  - isTextToolActive: \(isTextToolActive)", category: .general)
+        Log.info("  - isThisTextSelected: \(isThisTextSelected)", category: .general)
+        Log.info("  - currentTool: \(document.currentTool.rawValue)", category: .general)
+        Log.info("  - selectedIDs count: \(selectedIDs.count)", category: .general)
+        Log.info("  - selectedIDs: \(selectedIDs.map { $0.uuidString.prefix(8) })", category: .general)
+        Log.info("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))", category: .general)
+        Log.info("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })", category: .general)
         
         // FIXED: Prioritize editing state correctly
         if currentTextObject.isEditing && isTextToolActive {
             textBoxState = .blue
-            print("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)")
+            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)", category: .general)
         } else if hasTextViewFocus && isTextToolActive {
             textBoxState = .blue
-            print("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)")
+            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected && isTextToolActive {
             textBoxState = .green
-            print("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)")
+            Log.info("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected {
             textBoxState = .green
-            print("  → GREEN (selected) - selected=\(isThisTextSelected)")
+            Log.info("  → GREEN (selected) - selected=\(isThisTextSelected)", category: .general)
         } else {
             textBoxState = .gray
-            print("  → GRAY (unselected)")
+            Log.info("  → GRAY (unselected)", category: .general)
         }
         
         if oldState != textBoxState {
-            print("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(currentTextObject.content)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))")
+            Log.fileOperation("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(currentTextObject.content)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))", level: .info)
             
             // CRITICAL FIX: Update VectorText bounds when exiting editing mode
             // This ensures selection box matches text canvas when switching states
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-                print("🔄 STATE CHANGE: Updated VectorText bounds (exiting editing mode)")
+                Log.fileOperation("🔄 STATE CHANGE: Updated VectorText bounds (exiting editing mode)", level: .info)
             }
         }
     }
@@ -302,13 +302,13 @@ struct ProfessionalTextCanvas: View {
     // NEW: Track when resize starts
     private func handleResizeStarted() {
         isResizeHandleActive = true
-        print("🔵 RESIZE HANDLE ACTIVATED")
+        Log.info("🔵 RESIZE HANDLE ACTIVATED", category: .general)
     }
     
     private func handleResizeChanged(value: DragGesture.Value) {
         isResizing = true
         resizeOffset = value.translation
-        print("🔵 TEXT BOX RESIZE: \(value.translation)")
+        Log.info("🔵 TEXT BOX RESIZE: \(value.translation)", category: .general)
     }
     
     private func handleResizeEnded() {
@@ -319,7 +319,7 @@ struct ProfessionalTextCanvas: View {
             height: max(50, viewModel.textBoxFrame.height + resizeOffset.height)
         )
         
-        print("🔄 RESIZE ENDED: Old frame: \(viewModel.textBoxFrame), New frame: \(newFrame)")
+        Log.fileOperation("🔄 RESIZE ENDED: Old frame: \(viewModel.textBoxFrame), New frame: \(newFrame)", level: .info)
         
         viewModel.updateTextBoxFrame(newFrame)
         resizeOffset = .zero
@@ -327,7 +327,7 @@ struct ProfessionalTextCanvas: View {
         isResizing = false
         isDragging = false
         isResizeHandleActive = false  // NEW: Reset resize handle state
-        print("✅ TEXT BOX RESIZE COMPLETED")
+        Log.info("✅ TEXT BOX RESIZE COMPLETED", category: .fileOperations)
     }
     
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
@@ -434,10 +434,10 @@ struct ProfessionalTextContentView: View {
             .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
             .onAppear {
                 print("🎯 NSTextView MODE (\(textBoxState == .blue ? "BLUE-EDITING" : "GREEN/GRAY-READONLY")):")
-                print("  Content: '\(viewModel.text)'")
-                print("  Font: \(viewModel.selectedFont.fontName) \(viewModel.selectedFont.pointSize)pt")
-                print("  Frame: \(viewModel.textBoxFrame)")
-                print("  Editing Allowed: \(textBoxState == .blue)")
+                Log.info("  Content: '\(viewModel.text)'", category: .general)
+                Log.info("  Font: \(viewModel.selectedFont.fontName) \(viewModel.selectedFont.pointSize)pt", category: .general)
+                Log.info("  Frame: \(viewModel.textBoxFrame)", category: .general)
+                Log.info("  Editing Allowed: \(textBoxState == .blue)", category: .general)
             }
     }
 }
@@ -494,7 +494,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
         textView.minSize = NSSize(width: fixedWidth, height: 50)
         
-        print("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isEditingAllowed) for text: '\(viewModel.text)'")
+        Log.info("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isEditingAllowed) for text: '\(viewModel.text)'", category: .general)
         
         textView.allowsUndo = isEditingAllowed
         textView.usesFindPanel = isEditingAllowed
@@ -568,7 +568,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         if nsView.font != newFont {
             nsView.font = newFont
             needsFormatUpdate = true
-            print("🔤 FONT CHANGED: \(newFont.fontName) \(newFont.pointSize)pt")
+            Log.fileOperation("🔤 FONT CHANGED: \(newFont.fontName) \(newFont.pointSize)pt", level: .info)
         }
         
         // FIXED: Proper color handling
@@ -580,7 +580,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             nsView.textColor = newTextColor
             nsView.insertionPointColor = newTextColor
             needsFormatUpdate = true
-            print("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor)")
+            Log.fileOperation("🎨 COLOR CHANGED: \(currentColor) → \(newTextColor)", level: .info)
         }
         
         // FIXED: Always update paragraph style to ensure line height and spacing are preserved
@@ -631,7 +631,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // Force layout refresh for immediate text reflow
             nsView.layoutManager?.ensureLayout(for: nsView.textContainer!)
             
-            print("📏 TEXT REFLOW: Container updated, text should now wrap to new width")
+            Log.info("📏 TEXT REFLOW: Container updated, text should now wrap to new width", category: .general)
         }
         
         // CRITICAL FIX: Only restore cursor position when text content changes, not font changes
@@ -653,7 +653,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // Only update if the range is different to avoid cursor jumping
             if nsView.selectedRange() != newRange {
                 nsView.setSelectedRange(newRange)
-                print("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength)")
+                Log.fileOperation("🎯 RESTORED CURSOR: position=\(safePosition) length=\(safeLength)", level: .info)
                 nsView.scrollRangeToVisible(newRange)
             }
         } else if viewModel.isEditing && isEditingAllowed && needsFormatUpdate {
@@ -666,12 +666,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 // Cursor is beyond text bounds, move it to end
                 let newRange = NSRange(location: textLength, length: 0)
                 nsView.setSelectedRange(newRange)
-                print("🎯 ADJUSTED CURSOR: Moved from \(currentRange.location) to end (\(textLength)) due to font change")
+                Log.fileOperation("🎯 ADJUSTED CURSOR: Moved from \(currentRange.location) to end (\(textLength)) due to font change", level: .info)
             } else if currentRange.location + currentRange.length > textLength {
                 // Selection extends beyond text bounds, adjust it
                 let newRange = NSRange(location: currentRange.location, length: textLength - currentRange.location)
                 nsView.setSelectedRange(newRange)
-                print("🎯 ADJUSTED SELECTION: Adjusted length from \(currentRange.length) to \(newRange.length) due to font change")
+                Log.fileOperation("🎯 ADJUSTED SELECTION: Adjusted length from \(currentRange.length) to \(newRange.length) due to font change", level: .info)
             }
         }
         
@@ -682,7 +682,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         nsView.isEditable = viewModel.isEditing && isEditingAllowed
         nsView.isSelectable = isEditingAllowed // CRITICAL: Only allow text selection in BLUE mode
         
-        print("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)")
+        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)", level: .info)
         
         
         if nsView.isEditable != newIsEditable {
@@ -727,10 +727,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         let isCurrentlyFirstResponder = nsView.window?.firstResponder == nsView
         
         if shouldBeFirstResponder && !isCurrentlyFirstResponder {
-            print("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
+            Log.fileOperation("🎯 MAKING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
             nsView.window?.makeFirstResponder(nsView)
         } else if !shouldBeFirstResponder && isCurrentlyFirstResponder {
-            print("🎯 REMOVING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))")
+            Log.fileOperation("🎯 REMOVING FIRST RESPONDER: textID=\(viewModel.textObject.id.uuidString.prefix(8))", level: .info)
             nsView.window?.makeFirstResponder(nil)
         }
         
@@ -774,7 +774,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // SIMPLIFIED: Trust NSTextView's isEditable property instead of double-checking
             // The NSTextView isEditable is already set correctly based on editing mode
             guard textView.isEditable else {
-                print("🚫 TEXT VIEW NOT EDITABLE: Change ignored")
+                Log.info("🚫 TEXT VIEW NOT EDITABLE: Change ignored", category: .general)
                 return
             }
             
@@ -785,7 +785,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 return
             }
             
-            // print("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')")
+            // Log.info("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')", category: .fileOperations)
             
             // CRITICAL FIX: Update both view model and document, but prevent NSTextView reset
             parent.isUpdatingFromTyping = true
@@ -805,7 +805,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         func textViewDidChangeSelection(_ notification: Notification) {
             // CRITICAL: Do not save selection changes that happen during programmatic updates
             guard !isRestoringSelection else {
-                print("🚫 COORDINATOR BLOCKED SAVE: Programmatic restore in progress")
+                Log.info("🚫 COORDINATOR BLOCKED SAVE: Programmatic restore in progress", category: .general)
                 return
             }
             guard let textView = notification.object as? NSTextView else { return }
@@ -814,15 +814,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             // Save to the new source of truth in the view model
             parent.viewModel.userInitiatedCursorPosition = selectedRange.location
             parent.viewModel.userInitiatedSelectionLength = selectedRange.length
-            print("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)")
+            Log.info("💾 COORDINATOR SAVED CURSOR: position=\(selectedRange.location) length=\(selectedRange.length)", category: .general)
         }
 
         func textDidBeginEditing(_ notification: Notification) {
-            print("✅ TEXT EDITING BEGAN")
+            Log.info("✅ TEXT EDITING BEGAN", category: .fileOperations)
         }
         
         func textDidEndEditing(_ notification: Notification) {
-            print("✅ TEXT EDITING ENDED")
+            Log.info("✅ TEXT EDITING ENDED", category: .fileOperations)
             // Text editing ended - reset any flags
             // Use async to avoid modifying state during view update
             DispatchQueue.main.async { [weak self] in
@@ -860,19 +860,19 @@ struct ProfessionalResizeHandleView: View {
                         if !hasResizeStarted {
                             hasResizeStarted = true
                             onResizeStarted()
-                            print("🔵 RESIZE HANDLE STARTED")
+                            Log.info("🔵 RESIZE HANDLE STARTED", category: .general)
                         }
                         // RESIZE HANDLE DRAG: \(value.translation)
                         onResizeChanged(value)
                     }
                     .onEnded { _ in 
-                        print("🔵 RESIZE HANDLE ENDED")
+                        Log.info("🔵 RESIZE HANDLE ENDED", category: .general)
                         hasResizeStarted = false  // Reset for next resize operation
                         onResizeEnded() 
                     }
             )
             .onAppear {
-                print("🔵 RESIZE HANDLE VISIBLE at: \(viewModel.textBoxFrame.maxX), \(viewModel.textBoxFrame.maxY)")
+                Log.info("🔵 RESIZE HANDLE VISIBLE at: \(viewModel.textBoxFrame.maxX), \(viewModel.textBoxFrame.maxY)", category: .general)
             }
     }
 }
@@ -883,7 +883,7 @@ class ProfessionalTextViewModel: ObservableObject {
         didSet {
             // NO AUTO-RESIZE: User controls text box size manually like rectangle tool
             // Text content changes don't affect size - only user drag resizing
-            // print("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - no auto-resize")
+            // Log.fileOperation("📝 TEXT CONTENT CHANGED: '\(oldValue)' → '\(text)' - no auto-resize", level: .info)
         }
     }
     @Published var fontSize: CGFloat = 24 {
@@ -947,7 +947,7 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textObject = textObject
         self.document = document
         
-        print("🔧 INIT ProfessionalTextViewModel for text: '\(textObject.content)' - autoExpandVertically: \(autoExpandVertically)")
+        Log.fileOperation("🔧 INIT ProfessionalTextViewModel for text: '\(textObject.content)' - autoExpandVertically: \(autoExpandVertically)", level: .info)
         
         // Direct initialization from VectorText
         self.text = textObject.content
@@ -964,7 +964,7 @@ class ProfessionalTextViewModel: ObservableObject {
             height: max(textObject.bounds.height, 50)   // Ensure minimum height
         )
         
-        print("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)")
+        Log.info("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)", category: .general)
         
         // No longer using notifications - font panel updates via document.textObjects changes
     }
@@ -976,7 +976,7 @@ class ProfessionalTextViewModel: ObservableObject {
         
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow other updates
         if isAutoResizing && currentTextObject.content == self.text {
-            print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
+            Log.info("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties", category: .general)
             // Still sync other properties like colors, fonts, etc.
             self.fontSize = CGFloat(currentTextObject.typography.fontSize)
             self.selectedFont = currentTextObject.typography.nsFont
@@ -999,7 +999,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 width: max(currentTextObject.bounds.width, 50),   // User-defined width or minimum
                 height: max(currentTextObject.bounds.height, 30)  // User-defined height or minimum
             )
-            print("📦 TEXT BOX INITIAL CREATION: Using VectorText bounds \(self.textBoxFrame)")
+            Log.info("📦 TEXT BOX INITIAL CREATION: Using VectorText bounds \(self.textBoxFrame)", category: .general)
         } else {
             // EXISTING TEXT BOX: Sync position, preserve size, but update VectorText bounds to match
             let oldFrame = self.textBoxFrame
@@ -1013,7 +1013,7 @@ class ProfessionalTextViewModel: ObservableObject {
             // CRITICAL FIX: If text box frame differs from VectorText bounds, update VectorText
             if oldFrame.width != currentTextObject.bounds.width || oldFrame.height != currentTextObject.bounds.height {
                 updateDocumentTextBounds(self.textBoxFrame)
-                print("📦 TEXT BOX SYNC: Updated VectorText bounds to match text canvas")
+                Log.info("📦 TEXT BOX SYNC: Updated VectorText bounds to match text canvas", category: .general)
             }
         }
 
@@ -1028,7 +1028,7 @@ class ProfessionalTextViewModel: ObservableObject {
         
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow color/font updates
         if isAutoResizing && textObject.content == self.text {
-            print("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties")
+            Log.info("🚫 SYNC PARTIAL BLOCK: Auto-resize in progress, only syncing non-content properties", category: .general)
             
             // Still sync colors, fonts, and other properties during auto-resize
             let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
@@ -1047,7 +1047,7 @@ class ProfessionalTextViewModel: ObservableObject {
             
             // Force SwiftUI update when colors change
             if colorChanged {
-                print("🎨 COLOR CHANGED during auto-resize: Forcing view refresh")
+                Log.fileOperation("🎨 COLOR CHANGED during auto-resize: Forcing view refresh", level: .info)
                 DispatchQueue.main.async {
                     self.objectWillChange.send()
                 }
@@ -1074,7 +1074,7 @@ class ProfessionalTextViewModel: ObservableObject {
             return // No changes, skip sync
         }
         
-        print("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)")
+        Log.fileOperation("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)", level: .info)
         
         // Disable auto-resize during sync to prevent loops
         let wasAutoResizing = isAutoResizing
@@ -1087,9 +1087,9 @@ class ProfessionalTextViewModel: ObservableObject {
         // CURSOR PRESERVATION: Only update text if content actually changed
         if contentChanged {
             self.text = textObject.content
-            print("📝 TEXT CONTENT UPDATED: Cursor may be affected")
+            Log.fileOperation("📝 TEXT CONTENT UPDATED: Cursor may be affected", level: .info)
         } else {
-            print("📝 TEXT CONTENT UNCHANGED: Preserving cursor position")
+            Log.fileOperation("📝 TEXT CONTENT UNCHANGED: Preserving cursor position", level: .info)
         }
         
         self.fontSize = CGFloat(textObject.typography.fontSize)
@@ -1111,7 +1111,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 typographyChanged ? "typography" : nil
             ].compactMap { $0 }.joined(separator: ", ")
             
-            print("🎨 VISUAL PROPERTIES CHANGED: \(changes) - forcing view refresh")
+            Log.fileOperation("🎨 VISUAL PROPERTIES CHANGED: \(changes) - forcing view refresh", level: .info)
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
@@ -1126,13 +1126,13 @@ class ProfessionalTextViewModel: ObservableObject {
             height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
         )
         
-        print("📦 EXTERNAL SYNC: Preserved user text box size, only updated position")
+        Log.info("📦 EXTERNAL SYNC: Preserved user text box size, only updated position", category: .general)
     }
     
     // MARK: - USER MANUAL RESIZE SUPPORT
     
     public func updateTextBoxSize(to newFrame: CGRect) {
-        print("👤 USER MANUAL RESIZE: \(textBoxFrame) → \(newFrame)")
+        Log.info("👤 USER MANUAL RESIZE: \(textBoxFrame) → \(newFrame)", category: .general)
         
         // Update our text box frame
         textBoxFrame = newFrame
@@ -1149,7 +1149,7 @@ class ProfessionalTextViewModel: ObservableObject {
             // Also update position if changed
             document.textObjects[textIndex].position = CGPoint(x: newFrame.origin.x, y: newFrame.origin.y)
             
-            print("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(document.textObjects[textIndex].bounds), position=\(document.textObjects[textIndex].position)")
+            Log.fileOperation("📋 UPDATED VECTORTEXT to match manual resize: bounds=\(document.textObjects[textIndex].bounds), position=\(document.textObjects[textIndex].position)", level: .info)
             
             // Force document update
             document.objectWillChange.send()
@@ -1163,11 +1163,11 @@ class ProfessionalTextViewModel: ObservableObject {
     
     public func scheduleAutoResize() {
         guard autoExpandVertically && !isAutoResizing else { 
-            print("🚫 AUTO-RESIZE BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)")
+            Log.info("🚫 AUTO-RESIZE BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)", category: .general)
             return 
         }
         
-        print("⏰ SCHEDULING AUTO-RESIZE for text: '\(text)' (length: \(text.count))")
+        Log.info("⏰ SCHEDULING AUTO-RESIZE for text: '\(text)' (length: \(text.count))", category: .general)
         
         // CRITICAL FIX: Cancel previous work item to prevent queue buildup
         autoResizeWorkItem?.cancel()
@@ -1184,7 +1184,7 @@ class ProfessionalTextViewModel: ObservableObject {
     
     private func autoResizeTextBoxHeight() {
         guard autoExpandVertically && !isAutoResizing else { 
-            print("🚫 AUTO-RESIZE HEIGHT BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)")
+            Log.info("🚫 AUTO-RESIZE HEIGHT BLOCKED: autoExpandVertically=\(autoExpandVertically), isAutoResizing=\(isAutoResizing)", category: .general)
             return 
         }
         
@@ -1194,7 +1194,7 @@ class ProfessionalTextViewModel: ObservableObject {
         let requiredHeight = calculateRequiredHeight()
         let newHeight = max(minTextBoxHeight, requiredHeight)
         
-        print("📐 AUTO-RESIZE: Current height: \(textBoxFrame.height)pt, Required: \(requiredHeight)pt, New: \(newHeight)pt")
+        Log.fileOperation("📐 AUTO-RESIZE: Current height: \(textBoxFrame.height)pt, Required: \(requiredHeight)pt, New: \(newHeight)pt", level: .info)
         
         // Only update if height needs to change (using original working threshold)
         if abs(textBoxFrame.height - newHeight) > 0.1 {
@@ -1207,7 +1207,7 @@ class ProfessionalTextViewModel: ObservableObject {
             )
             textBoxFrame = newFrame
             
-            print("✅ AUTO-RESIZE VERTICAL: Text box height adjusted from \(oldHeight)pt to \(newHeight)pt (WIDTH PRESERVED: \(textBoxFrame.width)pt)")
+            Log.info("✅ AUTO-RESIZE VERTICAL: Text box height adjusted from \(oldHeight)pt to \(newHeight)pt (WIDTH PRESERVED: \(textBoxFrame.width)pt)", category: .fileOperations)
             
             // CRITICAL FIX: Update VectorText bounds to match the actual text box size
             // This ensures the document knows the real size for operations like convert to paths
@@ -1217,10 +1217,10 @@ class ProfessionalTextViewModel: ObservableObject {
                     width: textBoxFrame.width,  // ACTUAL WIDTH matches text box
                     height: newHeight          // ACTUAL HEIGHT matches text box
                 )
-                print("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(document.textObjects[textIndex].bounds)")
+                Log.fileOperation("📋 UPDATED VECTORTEXT BOUNDS to match text box: \(document.textObjects[textIndex].bounds)", level: .info)
             }
         } else {
-            print("⚡ AUTO-RESIZE: Height change too small (\(abs(textBoxFrame.height - newHeight))pt) - skipping")
+            Log.info("⚡ AUTO-RESIZE: Height change too small (\(abs(textBoxFrame.height - newHeight))pt) - skipping", category: .general)
         }
     }
     
@@ -1273,7 +1273,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Update VectorText bounds when editing finishes
         // This ensures the selection box matches the text canvas when switching to arrow tool
         updateDocumentTextBounds(textBoxFrame)
-        print("🔄 STOP EDITING: Updated VectorText bounds to match text canvas")
+        Log.fileOperation("🔄 STOP EDITING: Updated VectorText bounds to match text canvas", level: .info)
     }
     
     func updateTextBoxFrame(_ newFrame: CGRect) {
@@ -1286,7 +1286,7 @@ class ProfessionalTextViewModel: ObservableObject {
         // This ensures the main selection system (blue/red rectangle) matches the text canvas
         updateDocumentTextBounds(newFrame)
         
-        print("🔄 MANUAL RESIZE: Updated text box frame to \(newFrame)")
+        Log.fileOperation("🔄 MANUAL RESIZE: Updated text box frame to \(newFrame)", level: .info)
         
         // Re-enable auto-resize after a delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
@@ -1303,7 +1303,7 @@ class ProfessionalTextViewModel: ObservableObject {
                 width: frame.width, 
                 height: frame.height
             )
-            print("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds)")
+            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds)", level: .info)
         }
     }
     
@@ -1398,11 +1398,11 @@ class ProfessionalTextViewModel: ObservableObject {
     // PUBLIC method for document conversion - calls the working Core Text method
     func convertToPath() {
         guard !text.isEmpty else { 
-            print("❌ CONVERT TO OUTLINES: Cannot convert empty text")
+            Log.error("❌ CONVERT TO OUTLINES: Cannot convert empty text", category: .error)
             return 
         }
         
-        print("🎯 CONVERTING TO OUTLINES: Using ORIGINAL WORKING Core Text conversion")
+        Log.fileOperation("🎯 CONVERTING TO OUTLINES: Using ORIGINAL WORKING Core Text conversion", level: .info)
         
         document.saveToUndoStack()
         
@@ -1410,7 +1410,7 @@ class ProfessionalTextViewModel: ObservableObject {
         convertToCoreTextPath()
         
         guard let cgPath = textPath else {
-            print("❌ CONVERT TO OUTLINES FAILED: No path created")
+            Log.error("❌ CONVERT TO OUTLINES FAILED: No path created", category: .error)
             return
         }
         
@@ -1432,7 +1432,7 @@ class ProfessionalTextViewModel: ObservableObject {
         if let layerIndex = document.selectedLayerIndex {
             document.layers[layerIndex].addShape(outlineShape)
             
-            print("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method")
+            Log.info("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method", category: .fileOperations)
             
             // Select the converted shape
             document.selectedShapeIDs = [outlineShape.id]
@@ -1441,7 +1441,7 @@ class ProfessionalTextViewModel: ObservableObject {
             // Remove original text object
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
                 document.textObjects.remove(at: textIndex)
-                print("🗑️ REMOVED ORIGINAL TEXT OBJECT")
+                Log.info("🗑️ REMOVED ORIGINAL TEXT OBJECT", category: .general)
             }
         }
     }

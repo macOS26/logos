@@ -180,7 +180,7 @@ struct DrawingCanvas: View {
     @State internal var lastTapTime: Date = Date()
     
     // PROFESSIONAL HAND TOOL STATE (Industry Standards)
-    // Based on Adobe Illustrator, MacroMedia FreeHand, Inkscape, and CorelDRAW
+            // Based on professional vector graphics software
     // Reference: US Patent 6097387A - "Dynamic control of panning operation in computer graphics"
     @State internal var initialCanvasOffset = CGPoint.zero    // Reference canvas position when drag started
     @State internal var handToolDragStart = CGPoint.zero      // Reference cursor position when drag started
@@ -196,7 +196,7 @@ struct DrawingCanvas: View {
     @State internal var shapeDragStart = CGPoint.zero         // Reference cursor position when shape drawing started
     @State internal var shapeStartPoint = CGPoint.zero       // Reference canvas position when shape drawing started
     
-    // PROFESSIONAL MULTI-SELECTION (Adobe Illustrator Standards)
+            // PROFESSIONAL MULTI-SELECTION (Professional Standards)
     @State internal var isShiftPressed = false
     @State internal var isCommandPressed = false
     @State internal var isOptionPressed = false
@@ -216,7 +216,7 @@ struct DrawingCanvas: View {
     @State internal var closePathHintLocation: CGPoint = .zero
     @State internal var isCanvasHovering: Bool = false // Track whether the mouse is over the drawing canvas
     
-    // PROFESSIONAL REAL-TIME PATH CREATION (Adobe Illustrator Style)
+            // PROFESSIONAL REAL-TIME PATH CREATION (Professional Style)
     @State internal var activeBezierShape: VectorShape? = nil // Real shape being built
     
     // FREEHAND DRAWING STATE (Professional curve fitting)

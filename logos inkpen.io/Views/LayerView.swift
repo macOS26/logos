@@ -38,18 +38,35 @@ struct LayerView: View {
                 if currentShape.isClippingPath {
                     EmptyView()
                 } else if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
-                    ShapeView(
-                        shape: currentShape,
-                        zoomLevel: zoomLevel,
-                        canvasOffset: canvasOffset,
-                        isSelected: selectedShapeIDs.contains(currentShape.id),
-                        viewMode: viewMode,
-                        isCanvasLayer: isCanvasLayer,
-                        isPasteboardLayer: isPasteboardLayer,
-                        dragPreviewDelta: dragPreviewDelta,
-                        dragPreviewTrigger: dragPreviewTrigger
+                    // FIXED CLIPPING MASK: Use proper coordinate system alignment
+                    ZStack {
+                        // Render the clipped shape normally
+                        ShapeView(
+                            shape: currentShape,
+                            zoomLevel: zoomLevel,
+                            canvasOffset: canvasOffset,
+                            isSelected: selectedShapeIDs.contains(currentShape.id),
+                            viewMode: viewMode,
+                            isCanvasLayer: isCanvasLayer,
+                            isPasteboardLayer: isPasteboardLayer,
+                            dragPreviewDelta: dragPreviewDelta,
+                            dragPreviewTrigger: dragPreviewTrigger
+                        )
+                    }
+                    .mask(
+                        // Create mask with identical coordinate transformations
+                        ShapeMaskView(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
                     )
-                    .mask(ShapeMaskView(maskShape: maskShape))
+                    .onAppear {
+                        // Debug clipping mask rendering
+                        print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
+                        print("   📊 Clipped shape bounds: \(currentShape.bounds)")
+                        print("   📊 Mask shape bounds: \(maskShape.bounds)")
+                        print("   🔄 Clipped shape transform: \(currentShape.transform)")
+                        print("   🔄 Mask shape transform: \(maskShape.transform)")
+                        print("   🔍 Zoom level: \(zoomLevel)")
+                        print("   📍 Canvas offset: \(canvasOffset)")
+                    }
                 } else {
                     ShapeView(
                         shape: currentShape,
@@ -123,19 +140,19 @@ struct ShapeView: View {
                 // CRITICAL FIX: Let ShapeView handle zoom/offset - only apply group transform here
                 .transformEffect(shape.transform) // PREVIEW SCALING: Use preview transform during scaling
                 .onAppear {
-                    print("🏗️ GROUP FIXED: Rendering group container \(shape.name)")
-                    print("   📊 Group bounds: \(shape.bounds)")
-                    print("   🔄 Group transform: \(shape.transform)")
-                    print("   🔍 Zoom level: \(zoomLevel)")
-                    print("   📍 Canvas offset: \(canvasOffset)")
-                    print("   👥 Contains \(shape.groupedShapes.count) grouped shapes")
-                    print("   ✅ COORDINATE FIX: Zoom/offset applied ONCE at group level")
+                    Log.info("🏗️ GROUP FIXED: Rendering group container \(shape.name)", category: .general)
+                    Log.info("   📊 Group bounds: \(shape.bounds)", category: .general)
+                    Log.info("   🔄 Group transform: \(shape.transform)", category: .general)
+                    Log.info("   🔍 Zoom level: \(zoomLevel)", category: .general)
+                    Log.info("   📍 Canvas offset: \(canvasOffset)", category: .general)
+                    Log.info("   👥 Contains \(shape.groupedShapes.count) grouped shapes", category: .general)
+                    Log.info("   ✅ COORDINATE FIX: Zoom/offset applied ONCE at group level", category: .general)
                     
                     for (index, groupedShape) in shape.groupedShapes.enumerated() {
-                        print("   🔥 Grouped shape \(index): \(groupedShape.name)")
-                        print("      📊 Bounds: \(groupedShape.bounds)")
-                        print("      🔄 Transform: \(groupedShape.transform)")
-                        print("      ✅ NO double zoom/offset application")
+                        Log.info("   🔥 Grouped shape \(index): \(groupedShape.name)", category: .general)
+                        Log.info("      📊 Bounds: \(groupedShape.bounds)", category: .general)
+                        Log.info("      🔄 Transform: \(groupedShape.transform)", category: .general)
+                        Log.info("      ✅ NO double zoom/offset application", category: .general)
                     }
                 }
             } else {
@@ -347,13 +364,15 @@ struct ShapeView: View {
 // Extracted mask view to simplify type-checking of the main body
 private struct ShapeMaskView: View {
     let maskShape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
 
     var body: some View {
         Group {
             if maskShape.isGroupContainer {
-                GroupMaskContainer(maskShape: maskShape)
+                GroupMaskContainer(maskShape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
             } else {
-                SingleMaskShape(shape: maskShape)
+                SingleMaskShape(shape: maskShape, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
             }
         }
     }
@@ -362,24 +381,31 @@ private struct ShapeMaskView: View {
 // MARK: - Mask Subviews
 private struct SingleMaskShape: View {
     let shape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
 
     var body: some View {
         let useEvenOdd = (shape.path.fillRule == .evenOdd)
         return Path { path in
             addPathElements(shape.path.elements, to: &path)
         }
-        .applying(shape.transform)
         .fill(Color.black, style: SwiftUI.FillStyle(eoFill: useEvenOdd, antialiased: true))
+        // CRITICAL: Apply transformations in EXACTLY the same order as the main shape
+        .scaleEffect(zoomLevel, anchor: .topLeading)
+        .offset(x: canvasOffset.x, y: canvasOffset.y)
+        .transformEffect(shape.transform)
     }
 }
 
 private struct GroupMaskContainer: View {
     let maskShape: VectorShape
+    let zoomLevel: Double
+    let canvasOffset: CGPoint
 
     var body: some View {
         ZStack {
             ForEach(maskShape.groupedShapes, id: \.id) { grouped in
-                SingleMaskShape(shape: grouped)
+                SingleMaskShape(shape: grouped, zoomLevel: zoomLevel, canvasOffset: canvasOffset)
             }
         }
         .transformEffect(maskShape.transform)
@@ -1349,7 +1375,7 @@ struct ScaleHandles: View {
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
-                print("🔴 SCALE TOOL: Default locked pin set to center")
+                Log.info("🔴 SCALE TOOL: Default locked pin set to center", category: .general)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
@@ -1357,7 +1383,7 @@ struct ScaleHandles: View {
             if !isScaling && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
-                print("🔄 SCALE TOOL: Shape bounds changed, refreshed points")
+                Log.fileOperation("🔄 SCALE TOOL: Shape bounds changed, refreshed points", level: .info)
             }
         }
         .id("scale-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
@@ -1439,7 +1465,7 @@ struct ScaleHandles: View {
         isScaling = false
         document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
         
-        print("🏁 SCALING FINISH: Applying final transform to coordinates")
+        Log.info("🏁 SCALING FINISH: Applying final transform to coordinates", category: .general)
         print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
         print("   🎯 FINAL MARQUEE: Bounds (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
         
@@ -1464,7 +1490,7 @@ struct ScaleHandles: View {
             previewTransform = .identity
             finalMarqueeBounds = .zero // Hide marquee
             
-            print("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity")
+            Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
             // This updates the points to match the scaled object positions
@@ -1514,7 +1540,7 @@ struct ScaleHandles: View {
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
-        print("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection")
+        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
     }
     
     /// Display all path points with correct colors: GREEN = scalable, RED = locked pin
@@ -1589,7 +1615,7 @@ struct ScaleHandles: View {
         // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
             // Caps-lock is active: locked pin point cannot be changed, only scale away from it
-            print("🔒 CAPS-LOCK ACTIVE: Pin point locked, scaling away from locked point")
+            Log.info("🔒 CAPS-LOCK ACTIVE: Pin point locked, scaling away from locked point", category: .general)
         }
         
         // PROFESSIONAL SCALING: Scale away from the LOCKED PIN POINT (not the dragged point)
@@ -1655,7 +1681,7 @@ struct ScaleHandles: View {
         if lockedPinPointIndex == nil && scalingAnchorPoint == .zero {
             // Default to center if no pin point was explicitly set
             setLockedPinPoint(nil) // nil = center
-            print("🔄 SCALING START: No pin point set, defaulting to center")
+            Log.fileOperation("🔄 SCALING START: No pin point set, defaulting to center", level: .info)
         }
         
         // SCALING START: Minimal logging for performance
@@ -1743,7 +1769,7 @@ struct ScaleHandles: View {
             return
         }
         
-        print("🔧 Applying scaling transform to shape coordinates: \(shape.name)")
+        Log.fileOperation("🔧 Applying scaling transform to shape coordinates: \(shape.name)", level: .info)
         
         // FLATTENED SHAPE FIX: Apply transform to individual grouped shapes, not container
         if shape.isGroup && !shape.groupedShapes.isEmpty {
@@ -1800,7 +1826,7 @@ struct ScaleHandles: View {
             document.layers[layerIndex].shapes[shapeIndex].transform = .identity
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            print("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes")
+            Log.info("✅ Flattened group coordinates updated - transformed \(transformedGroupedShapes.count) individual shapes", category: .fileOperations)
             return
         }
         
@@ -1855,7 +1881,7 @@ struct ScaleHandles: View {
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
         }
         
-        print("✅ Shape coordinates updated after scaling - object origin stays with object")
+        Log.info("✅ Shape coordinates updated after scaling - object origin stays with object", category: .fileOperations)
     }
     
 
@@ -1893,7 +1919,7 @@ struct ScaleHandles: View {
         isScaling = true
         
         // MARQUEE LOGGING: Track marquee position vs anchor
-        print("   🎯 MARQUEE PREVIEW:")
+        Log.info("   🎯 MARQUEE PREVIEW:", category: .general)
         print("      Original bounds: (\(String(format: "%.1f", currentBounds.minX)), \(String(format: "%.1f", currentBounds.minY))) → (\(String(format: "%.1f", currentBounds.maxX)), \(String(format: "%.1f", currentBounds.maxY)))")
         print("      Final marquee bounds: (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
         print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.scalingAnchor.displayName)")
@@ -2099,7 +2125,7 @@ struct RotateHandles: View {
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = nil // Select center
-                        print("🎯 ANCHOR SELECTED: Center point")
+                        Log.fileOperation("🎯 ANCHOR SELECTED: Center point", level: .info)
                     }
                 }
                 .highPriorityGesture(
@@ -2146,7 +2172,7 @@ struct RotateHandles: View {
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
-        print("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection")
+        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
     }
     
     /// Display all path points as selectable anchors
@@ -2265,7 +2291,7 @@ struct RotateHandles: View {
         
         print("🔄 FORCE UPDATED rotation points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
         print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
-        print("   🔄 View refresh trigger: \(pointsRefreshTrigger)")
+        Log.info("   🔄 View refresh trigger: \(pointsRefreshTrigger)", category: .general)
     }
     
     // MARK: - Rotation Anchor Point Calculation (Rotation-specific versions)
@@ -2336,7 +2362,7 @@ struct RotateHandles: View {
             return
         }
         
-        print("🔧 Applying rotation transform to shape coordinates: \(shape.name)")
+        Log.fileOperation("🔧 Applying rotation transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -2389,7 +2415,7 @@ struct RotateHandles: View {
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
         }
         
-        print("✅ Shape coordinates updated after rotation - object origin stays with object")
+        Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
     }
     
     // MARK: - Rotation Key Event Monitoring
@@ -2442,7 +2468,7 @@ struct RotateHandles: View {
         isRotating = true
         
         // ROTATION LOGGING: Track rotation details
-        print("   🔄 ROTATION PREVIEW:")
+        Log.info("   🔄 ROTATION PREVIEW:", category: .general)
         print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.rotationAnchor.displayName)")
         print("      Rotation angle: \(String(format: "%.1f", angle * 180 / .pi))°")
         
@@ -2457,7 +2483,7 @@ struct RotateHandles: View {
         isRotating = false
         document.isHandleScalingActive = false
         
-        print("🏁 ROTATION FINISH: Applying final transform to coordinates")
+        Log.info("🏁 ROTATION FINISH: Applying final transform to coordinates", category: .general)
         print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
         
         // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
@@ -2480,7 +2506,7 @@ struct RotateHandles: View {
             // Reset preview transform
             previewTransform = .identity
             
-            print("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity")
+            Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
             // This updates the points to match the rotated object positions
@@ -2544,7 +2570,7 @@ struct RotateHandles: View {
             return
         }
         
-        print("🔧 Applying rotation transform to shape coordinates: \(shape.name)")
+        Log.fileOperation("🔧 Applying rotation transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -2590,7 +2616,7 @@ struct RotateHandles: View {
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
-        print("✅ Shape coordinates updated after rotation - object origin stays with object")
+        Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
     }
     
     // MARK: - Key Event Monitoring
@@ -2802,7 +2828,7 @@ struct ShearHandles: View {
             // Set default locked pin point to center if none is set
             if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
                 setLockedPinPoint(nil) // nil = center point
-                print("🔴 SHEAR TOOL: Default locked pin set to center")
+                Log.info("🔴 SHEAR TOOL: Default locked pin set to center", category: .general)
             }
         }
         .onChange(of: shape.bounds) { oldBounds, newBounds in
@@ -2810,7 +2836,7 @@ struct ShearHandles: View {
             if !isShearing && oldBounds != newBounds {
                 extractPathPoints()
                 pointsRefreshTrigger += 1
-                print("🔄 SHEAR TOOL: Shape bounds changed, refreshed points")
+                Log.fileOperation("🔄 SHEAR TOOL: Shape bounds changed, refreshed points", level: .info)
             }
         }
         .id("shear-handles-\(pointsRefreshTrigger)") // Force view rebuild when points update
@@ -2842,7 +2868,7 @@ struct ShearHandles: View {
         // Ensure isShearing is true for preview visibility
         isShearing = true
         
-        print("   📊 PIN-POINT SHEAR preview updated:")
+        Log.info("   📊 PIN-POINT SHEAR preview updated:", category: .general)
         print("      Shear factors: X=\(String(format: "%.3f", shearX)), Y=\(String(format: "%.3f", shearY))")
         print("      📍 Original anchor: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
         print("      📐 Would move to: (\(String(format: "%.1f", sheared_anchor.x)), \(String(format: "%.1f", sheared_anchor.y)))")
@@ -2855,7 +2881,7 @@ struct ShearHandles: View {
         isShearing = false
         document.isHandleScalingActive = false
         
-        print("🏁 SHEAR FINISH: Applying final transform to coordinates")
+        Log.info("🏁 SHEAR FINISH: Applying final transform to coordinates", category: .general)
         
         // CRITICAL FIX: Apply shear to actual coordinates, not just transform
         // This ensures object origin stays with object after shearing (Professional behavior)
@@ -2868,7 +2894,7 @@ struct ShearHandles: View {
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            print("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity")
+            Log.info("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Force refresh of point selection system (same as rotation tool)
             // This updates the points to match the sheared object positions
@@ -2919,7 +2945,7 @@ struct ShearHandles: View {
         let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
-        print("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection")
+        Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
     }
     
     /// Display all path points with correct colors: GREEN = shearable, RED = locked pin
@@ -2974,7 +3000,7 @@ struct ShearHandles: View {
                 let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 shearAnchorPoint = center // Fallback to center
-                print("🔴 LOCKED PIN: Set to bounds point (fallback to center)")
+                Log.info("🔴 LOCKED PIN: Set to bounds point (fallback to center)", category: .general)
             }
         } else {
             // Center point
@@ -2992,7 +3018,7 @@ struct ShearHandles: View {
         // CRITICAL: Check if caps-lock is pressed to prevent changing the locked pin point
         if isCapsLockPressed && draggedPointIndex != lockedPinPointIndex {
             // Caps-lock is active: locked pin point cannot be changed, only shear away from it
-            print("🔒 CAPS-LOCK ACTIVE: Pin point locked, shearing away from locked point")
+            Log.info("🔒 CAPS-LOCK ACTIVE: Pin point locked, shearing away from locked point", category: .general)
         }
         
         // PROFESSIONAL SHEARING: Shear relative to the LOCKED PIN POINT (similar to scale tool)
@@ -3063,7 +3089,7 @@ struct ShearHandles: View {
         if lockedPinPointIndex == nil && shearAnchorPoint == .zero {
             // Default to center if no pin point was explicitly set
             setLockedPinPoint(nil) // nil = center
-            print("🔄 SHEAR START: No pin point set, defaulting to center")
+            Log.fileOperation("🔄 SHEAR START: No pin point set, defaulting to center", level: .info)
         }
         
         // SHEAR START: Minimal logging for performance
@@ -3146,7 +3172,7 @@ struct ShearHandles: View {
             return
         }
         
-        print("🔧 Applying shear transform to shape coordinates: \(shape.name)")
+        Log.fileOperation("🔧 Applying shear transform to shape coordinates: \(shape.name)", level: .info)
         
         // Transform all path elements
         var transformedElements: [PathElement] = []
@@ -3192,7 +3218,7 @@ struct ShearHandles: View {
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
-        print("✅ Shape coordinates updated after shear - object origin stays with object")
+        Log.info("✅ Shape coordinates updated after shear - object origin stays with object", category: .fileOperations)
     }
     
 
@@ -3307,7 +3333,7 @@ struct EnvelopeHandles: View {
             // CRITICAL FIX: Don't recalculate axis during active warping or when warp handles are already established
             if !isWarping && !warpingStarted && warpedCorners.isEmpty && oldBounds != newBounds {
                 initializeEnvelopeCorners()
-                print("🔄 ENVELOPE TOOL: Shape bounds changed, refreshed corners")
+                Log.fileOperation("🔄 ENVELOPE TOOL: Shape bounds changed, refreshed corners", level: .info)
             }
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
@@ -3320,7 +3346,7 @@ struct EnvelopeHandles: View {
                 
                 // CRITICAL FIX: DON'T clear envelope state - preserve warp memory
                 // This allows continuous editing when switching back to envelope tool
-                print("🔄 ENVELOPE TOOL: Switched away - committed warp and PRESERVED state")
+                Log.fileOperation("🔄 ENVELOPE TOOL: Switched away - committed warp and PRESERVED state", level: .info)
             }
             
             // ENVELOPE REACTIVATION: When switching back to envelope tool, reinitialize for current shape
@@ -3328,7 +3354,7 @@ struct EnvelopeHandles: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     self.initializeEnvelopeCorners()
                 }
-                print("🔄 ENVELOPE TOOL: Reactivated - initializing for current shape")
+                Log.fileOperation("🔄 ENVELOPE TOOL: Reactivated - initializing for current shape", level: .info)
             }
         }
         .onChange(of: document.selectedShapeIDs) { oldSelection, newSelection in
@@ -3351,7 +3377,7 @@ struct EnvelopeHandles: View {
                     self.initializeEnvelopeCorners()
                 }
                 
-                print("🔄 ENVELOPE TOOL: Shape selection changed - committed warp and reset for new shape")
+                Log.fileOperation("🔄 ENVELOPE TOOL: Shape selection changed - committed warp and reset for new shape", level: .info)
             }
         }
     }
@@ -3482,21 +3508,21 @@ struct EnvelopeHandles: View {
             if !shape.originalEnvelope.isEmpty {
                 originalCorners = shape.originalEnvelope  // TRUE original envelope (never changes)
                 warpedCorners = shape.warpEnvelope        // Current envelope (can be warped further)
-                print("🔧 WARP MEMORY PRESERVED: Using stored original envelope for reference")
+                Log.fileOperation("🔧 WARP MEMORY PRESERVED: Using stored original envelope for reference", level: .info)
                 print("   Original Envelope: [\(shape.originalEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
                 print("   Current Envelope: [\(shape.warpEnvelope.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
             } else {
                 // Fallback for older warp objects without originalEnvelope
                 originalCorners = shape.warpEnvelope
                 warpedCorners = shape.warpEnvelope
-                print("🔧 LEGACY WARP OBJECT: Missing original envelope, using current as reference")
+                Log.fileOperation("🔧 LEGACY WARP OBJECT: Missing original envelope, using current as reference", level: .info)
             }
             
-            print("   🎯 Continuous warping enabled - can warp from current state")
+            Log.info("   🎯 Continuous warping enabled - can warp from current state", category: .general)
             
             // REACTIVATION: Set preview to current warped shape for immediate visual feedback
             previewPath = shape.path  // Show current warped state immediately
-            print("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)")
+            Log.info("   🔄 REACTIVATION: Set preview to current warped shape (\(shape.path.elements.count) elements)", category: .general)
             
             return
         }
@@ -3519,7 +3545,7 @@ struct EnvelopeHandles: View {
             warpedCorners = newOriginalCorners
         }
 
-        print("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners")
+        Log.fileOperation("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners", level: .info)
     }
     
     private func cornersHaveChangedSignificantly(from oldCorners: [CGPoint], to newCorners: [CGPoint]) -> Bool {
@@ -3575,11 +3601,11 @@ struct EnvelopeHandles: View {
         } else if shape.isWarpObject, let originalPath = shape.originalPath {
             // Fallback: Use original path bounds if corners aren't available
             initialBounds = originalPath.cgPath.boundingBoxOfPath
-            print("🔧 WARP OBJECT: Using original path bounds for reference")
+            Log.fileOperation("🔧 WARP OBJECT: Using original path bounds for reference", level: .info)
         } else {
             // For regular shapes, use current bounds
             initialBounds = shape.bounds
-            print("🔧 REGULAR SHAPE: Using current bounds for reference")
+            Log.fileOperation("🔧 REGULAR SHAPE: Using current bounds for reference", level: .info)
         }
         
         initialTransform = shape.transform
@@ -3587,7 +3613,7 @@ struct EnvelopeHandles: View {
         draggingCornerIndex = cornerIndex
         document.saveToUndoStack()
         
-        print("🔧 ENVELOPE WARP STARTED: Corner \(cornerIndex)")
+        Log.fileOperation("🔧 ENVELOPE WARP STARTED: Corner \(cornerIndex)", level: .info)
     }
     
     private func calculateEnvelopeWarpPreview() {
@@ -3615,7 +3641,7 @@ struct EnvelopeHandles: View {
             }
             
             previewPath = VectorPath(elements: allWarpedElements, isClosed: false)
-            print("   🔧 Warping \(shape.groupedShapes.count) grouped shapes (flattened/group object)")
+            Log.info("   🔧 Warping \(shape.groupedShapes.count) grouped shapes (flattened/group object)", category: .general)
         } else {
             // REGULAR SHAPE: Use current path
             let warpedElements = warpPathElements(shape.path.elements)
@@ -3820,11 +3846,11 @@ struct EnvelopeHandles: View {
                 }
                 
                 updatedWarpObject.groupedShapes = warpedGroupedShapes
-                print("   🔄 Updated warp object with \(warpedGroupedShapes.count) warped grouped shapes")
+                Log.info("   🔄 Updated warp object with \(warpedGroupedShapes.count) warped grouped shapes", category: .general)
             } else if let finalWarpedPath = previewPath {
                 // WARP OBJECT + SINGLE SHAPE: Update the main path
                 updatedWarpObject.path = finalWarpedPath
-                print("   🔄 Updated warp object with single warped path")
+                Log.info("   🔄 Updated warp object with single warped path", category: .general)
             }
             
             updatedWarpObject.warpEnvelope = warpedCorners
@@ -3834,7 +3860,7 @@ struct EnvelopeHandles: View {
             }
             
             document.layers[layerIndex].shapes[shapeIndex] = updatedWarpObject
-            print("   ✅ Updated existing warp object coordinates in real-time")
+            Log.info("   ✅ Updated existing warp object coordinates in real-time", category: .general)
         } else {
             // First-time warp: create warp object
             var warpObject = currentShape
@@ -3866,12 +3892,12 @@ struct EnvelopeHandles: View {
                 }
                 
                 warpObject.groupedShapes = warpedGroupedShapes
-                print("   ✅ Created warp object from group with \(warpedGroupedShapes.count) warped shapes")
+                Log.info("   ✅ Created warp object from group with \(warpedGroupedShapes.count) warped shapes", category: .general)
             } else if let finalWarpedPath = previewPath {
                 // SINGLE SHAPE: Store original path and use warped path
                 warpObject.originalPath = currentShape.path
                 warpObject.path = finalWarpedPath
-                print("   ✅ Created warp object from single shape")
+                Log.info("   ✅ Created warp object from single shape", category: .general)
             }
             
             // CRITICAL FIX: Don't update bounds during active warping to prevent axis recalculation
@@ -3883,7 +3909,7 @@ struct EnvelopeHandles: View {
             document.selectedShapeIDs.remove(currentShape.id)
             document.selectedShapeIDs.insert(warpObject.id)
             
-            print("   🎯 First-time warp completed - created new warp object")
+            Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
         }
         
         // Log final warp state
@@ -3893,16 +3919,16 @@ struct EnvelopeHandles: View {
     }
     
     private func commitEnvelopeWarp() {
-        print("🏁 ENVELOPE WARP COMMIT: Finalizing envelope editing session")
+        Log.info("🏁 ENVELOPE WARP COMMIT: Finalizing envelope editing session", category: .general)
         
         // The shape has already been updated in real-time during editing
         // PRESERVE PREVIEW: Keep the preview when switching away so it shows correctly when returning
         // Don't clear previewPath - this maintains the warped shape preview for reactivation
         
-        print("📍 ENVELOPE SESSION COMPLETE: Warp object finalized")
-        print("🔄 REACTIVATABLE: Select envelope tool again to continue editing")
-        print("📋 UNWRAP VIA MENU: Use Object menu to unwrap back to original")
-        print("   🎯 PREVIEW PRESERVED: Will show correct state when reactivating")
+        Log.info("📍 ENVELOPE SESSION COMPLETE: Warp object finalized", category: .general)
+        Log.fileOperation("🔄 REACTIVATABLE: Select envelope tool again to continue editing", level: .info)
+        Log.fileOperation("📋 UNWRAP VIA MENU: Use Object menu to unwrap back to original", level: .info)
+        Log.info("   🎯 PREVIEW PRESERVED: Will show correct state when reactivating", category: .general)
     }
     
     // MARK: - Key Event Monitoring
@@ -4574,7 +4600,7 @@ class GradientStrokeNSView: NSView {
         
         // Special handling for groups and compound shapes
         if shape.isGroup || shape.isGroupContainer {
-            print("   👥 GROUP/COMPOUND SHAPE: Using composite bounds")
+            Log.info("   👥 GROUP/COMPOUND SHAPE: Using composite bounds", category: .general)
             let bounds = shape.isGroup ? shape.bounds : shape.groupBounds
             
             // For groups, use the overall bounds (already computed across all grouped shapes)
@@ -4600,7 +4626,7 @@ class GradientStrokeNSView: NSView {
         let pathElements = shape.path.elements
         var actualCorners: [CGPoint] = []
         
-        print("   🔍 EXTRACTING ACTUAL PATH CORNERS from \(pathElements.count) elements")
+        Log.info("   🔍 EXTRACTING ACTUAL PATH CORNERS from \(pathElements.count) elements", category: .general)
         
         // Try to extract the actual corner points from the path
         for element in pathElements {
@@ -4618,7 +4644,7 @@ class GradientStrokeNSView: NSView {
                 actualCorners.append(to.cgPoint)
                 print("     ➤ Quad curve to: (\(String(format: "%.1f", to.cgPoint.x)), \(String(format: "%.1f", to.cgPoint.y)))")
             case .close:
-                print("     ➤ Close path")
+                Log.info("     ➤ Close path", category: .general)
                 break
             }
             
@@ -4631,13 +4657,13 @@ class GradientStrokeNSView: NSView {
         // TRUE AXIS DETECTION: Use actual path corners if we found them
         if actualCorners.count >= 4 && (shape.geometricType == .rectangle || shape.geometricType == .star || pathElements.count <= 8) {
             let detectedCorners = Array(actualCorners.prefix(4))
-            print("   ✅ TRUE AXIS DETECTION: Using ACTUAL PATH CORNERS")
+            Log.info("   ✅ TRUE AXIS DETECTION: Using ACTUAL PATH CORNERS", category: .general)
             print("   📐 Detected Corners: [\(detectedCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
             return detectedCorners
         }
         
         // FALLBACK: Use transformed bounds for complex shapes
-        print("   ⚠️ FALLBACK: Using transformed bounds for complex shape")
+        Log.info("   ⚠️ FALLBACK: Using transformed bounds for complex shape", category: .general)
         let objectSpaceBounds = shape.path.cgPath.boundingBoxOfPath
         
         // Create the 4 corners of the bounding box in object space

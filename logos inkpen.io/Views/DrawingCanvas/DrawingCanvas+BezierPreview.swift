@@ -102,7 +102,7 @@ extension DrawingCanvas {
         }
     }
     
-    // MARK: - Professional Preview Functions (Adobe Illustrator Standards)
+            // MARK: - Professional Preview Functions (Professional Standards)
     
     // REMOVED: bezierPathPreview() - Now using real VectorShapes with actual document colors
     // Professional vector apps (Illustrator, FreeHand, CorelDraw) show the actual path being built, not a preview
@@ -117,7 +117,7 @@ extension DrawingCanvas {
             let lastPoint = bezierPoints[lastPointIndex]
             let lastPointLocation = CGPoint(x: lastPoint.x, y: lastPoint.y)
             
-            // PROFESSIONAL SCALE-INDEPENDENT RUBBER BAND (Adobe Illustrator Standards)
+            // PROFESSIONAL SCALE-INDEPENDENT RUBBER BAND (Professional Standards)
             let strokeWidth = 2.0 / document.zoomLevel    // Scale-independent close preview
             let rubberBandWidth = 1.0 / document.zoomLevel  // Scale-independent rubber band
             
@@ -167,16 +167,16 @@ extension DrawingCanvas {
                 .scaleEffect(document.zoomLevel, anchor: .topLeading)
                 .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
             } else {
-                // PROFESSIONAL ADOBE ILLUSTRATOR RUBBER BAND WITH CURVE PREVIEW
+                // PROFESSIONAL RUBBER BAND WITH CURVE PREVIEW
                 Path { path in
                     path.move(to: lastPointLocation)
                     
-                    // PROFESSIONAL RUBBER BAND LOGIC (Adobe Illustrator/FreeHand/CorelDraw Style)
+                    // PROFESSIONAL RUBBER BAND LOGIC (Professional Style)
                     // Key insight: Rubber band depends ONLY on the previous point's handles
                     if let lastPointHandles = bezierHandles[lastPointIndex],
                        let lastControl2 = lastPointHandles.control2 {
                         // CURVE RUBBER BAND: Previous point has outgoing handle
-                        // Show curve tangent to the existing outgoing handle (like Adobe Illustrator)
+                        // Show curve tangent to the existing outgoing handle (like professional software)
                         let lastControl2Location = CGPoint(x: lastControl2.x, y: lastControl2.y)
                         
                         // FIXED: Use EXACT same math as step 3 - no complex handle calculation!
@@ -190,7 +190,7 @@ extension DrawingCanvas {
                         
                     } else {
                         // STRAIGHT RUBBER BAND: Previous point is corner point (no outgoing handle)
-                        // Show straight line preview (like Adobe Illustrator for corner points)
+                        // Show straight line preview (like professional software for corner points)
                         path.addLine(to: canvasMouseLocation)
                     }
                 }

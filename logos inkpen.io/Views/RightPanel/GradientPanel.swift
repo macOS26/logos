@@ -191,25 +191,25 @@ struct GradientFillSection: View {
     }
     
     private func turnOffEditingState() {
-        print("🎨 GRADIENT PANEL: turnOffEditingState() called")
+        Log.fileOperation("🎨 GRADIENT PANEL: turnOffEditingState() called", level: .info)
         // 🔥 FIXED: Clear gradient editing state first to prevent circular calls
         appState.gradientEditingState = nil
-        print("🎨 GRADIENT PANEL: Cleared gradientEditingState")
+        Log.fileOperation("🎨 GRADIENT PANEL: Cleared gradientEditingState", level: .info)
         // 🔥 PROPERLY HIDE THE HUD - This will close the window and reset state
         appState.persistentGradientHUD.hide()
-        print("🎨 GRADIENT PANEL: Called persistentGradientHUD.hide()")
+        Log.fileOperation("🎨 GRADIENT PANEL: Called persistentGradientHUD.hide()", level: .info)
         // 🔥 CRITICAL: Clear the editing stop ID last to prevent onChange trigger
         editingGradientStopId = nil
-        print("🎨 GRADIENT PANEL: Cleared editingGradientStopId")
+        Log.fileOperation("🎨 GRADIENT PANEL: Cleared editingGradientStopId", level: .info)
         
         // 🔥 ADDITIONAL SAFETY: Force reset any stuck state
         DispatchQueue.main.async {
             if self.editingGradientStopId != nil {
-                print("🎨 GRADIENT PANEL: WARNING - editingGradientStopId still not nil, forcing reset")
+                Log.fileOperation("🎨 GRADIENT PANEL: WARNING - editingGradientStopId still not nil, forcing reset", level: .info)
                 self.editingGradientStopId = nil
             }
             if appState.gradientEditingState != nil {
-                print("🎨 GRADIENT PANEL: WARNING - gradientEditingState still not nil, forcing reset")
+                Log.fileOperation("🎨 GRADIENT PANEL: WARNING - gradientEditingState still not nil, forcing reset", level: .info)
                 appState.gradientEditingState = nil
             }
         }
@@ -218,7 +218,7 @@ struct GradientFillSection: View {
     // MARK: - Gradient Stop Activation
     
     private func activateGradientStop(_ stopId: UUID, color: VectorColor) {
-        print("🎨 GRADIENT PANEL: activateGradientStop called for stop \(stopId.uuidString.prefix(8))")
+        Log.fileOperation("🎨 GRADIENT PANEL: activateGradientStop called for stop \(stopId.uuidString.prefix(8))", level: .info)
         
         // Set the editing state
         editingGradientStopId = stopId
@@ -265,11 +265,11 @@ struct GradientFillSection: View {
     // MARK: - Selection and Angle Management
     
     private func updateSelectedGradient() {
-        print("🚨 GRADIENT PANEL: updateSelectedGradient called!")
-        print("🚨 GRADIENT PANEL: This function might be modifying gradients!")
+        Log.fileOperation("🚨 GRADIENT PANEL: updateSelectedGradient called!", level: .info)
+        Log.fileOperation("🚨 GRADIENT PANEL: This function might be modifying gradients!", level: .info)
         
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
-            print("🚨 GRADIENT PANEL: Found selected gradient: \(selectedGradient)")
+            Log.fileOperation("🚨 GRADIENT PANEL: Found selected gradient: \(selectedGradient)", level: .info)
             currentGradient = selectedGradient
             switch selectedGradient {
             case .linear(_):
@@ -278,18 +278,18 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             gradientId = UUID() // Generate new ID for loaded gradient
-            print("🚨 GRADIENT PANEL: Updated currentGradient and gradientId")
+            Log.fileOperation("🚨 GRADIENT PANEL: Updated currentGradient and gradientId", level: .info)
         } else {
-            print("🚨 GRADIENT PANEL: No selected gradient found")
+            Log.fileOperation("🚨 GRADIENT PANEL: No selected gradient found", level: .info)
         }
     }
     
     // NEW: Only update display, don't generate new IDs or modify state
     private func updateSelectedGradientDisplay() {
-        print("🔄 GRADIENT PANEL: updateSelectedGradientDisplay called (display only)")
+        Log.fileOperation("🔄 GRADIENT PANEL: updateSelectedGradientDisplay called (display only)", level: .info)
         
         if let selectedGradient = Self.getSelectedShapeGradient(document: document) {
-            print("🔄 GRADIENT PANEL: Found selected gradient for display update")
+            Log.fileOperation("🔄 GRADIENT PANEL: Found selected gradient for display update", level: .info)
             // Only update the display values, don't change gradientId or other state
             currentGradient = selectedGradient
             switch selectedGradient {
@@ -299,9 +299,9 @@ struct GradientFillSection: View {
                 gradientType = .radial
             }
             // DON'T generate new gradientId - preserve existing state
-            print("🔄 GRADIENT PANEL: Updated display without modifying state")
+            Log.fileOperation("🔄 GRADIENT PANEL: Updated display without modifying state", level: .info)
         } else {
-            print("🔄 GRADIENT PANEL: No selected gradient found for display")
+            Log.fileOperation("🔄 GRADIENT PANEL: No selected gradient found for display", level: .info)
         }
     }
     
@@ -346,7 +346,7 @@ struct GradientFillSection: View {
             return linear.originPoint.x
         case .radial(let radial):
             let originX = radial.originPoint.x
-            //print("🔍 getGradientOriginX: \(originX) (radial.originPoint.x)")
+            //Log.debug("🔍 getGradientOriginX: \(originX) (radial.originPoint.x)", category: .general)
             return originX
         }
     }
@@ -357,7 +357,7 @@ struct GradientFillSection: View {
             return linear.originPoint.y
         case .radial(let radial):
             let originY = radial.originPoint.y
-            //print("// print("🔍 getGradientOriginY: \(originY) (radial.originPoint.y)")
+            //print("// Log.debug("🔍 getGradientOriginY: \(originY) (radial.originPoint.y)", category: .general)
             return originY
         }
     }
@@ -648,7 +648,7 @@ struct GradientFillSection: View {
         // Add the gradient to the document's swatches
         document.addColorToSwatches(gradientColor)
         
-        print("🎨 GRADIENT PANEL: Added gradient to swatches")
+        Log.fileOperation("🎨 GRADIENT PANEL: Added gradient to swatches", level: .info)
     }
     
     // MARK: - Static Helper Functions
@@ -1250,7 +1250,7 @@ struct GradientPreviewAndStopsView: View {
                     ForEach(stops, id: \.id) { stop in
                         HStack(spacing: 8) {
                             Button(action: {
-                                print("🎨 GRADIENT STOP: Clicked on stop \(stop.id.uuidString.prefix(8))")
+                                Log.fileOperation("🎨 GRADIENT STOP: Clicked on stop \(stop.id.uuidString.prefix(8))", level: .info)
                                 // Always activate the clicked gradient stop, even if it was already set
                                 activateGradientStop(stop.id, stop.color)
                             }) {

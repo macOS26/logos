@@ -363,7 +363,7 @@ struct CMYKInputSection: View {
         // CRITICAL FIX: Don't update gradients during programmatic changes OR when just browsing
         // Only update gradients when user explicitly applies/selects colors
         if isProgrammaticallyUpdating {
-            print("🎨 CMYK INPUT: BLOCKED gradient update - programmatic change")
+            Log.fileOperation("🎨 CMYK INPUT: BLOCKED gradient update - programmatic change", level: .info)
             return
         }
         
@@ -434,7 +434,7 @@ struct CMYKInputSection: View {
         
         // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
-        print("🎨 CMYK INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)")
+        Log.fileOperation("🎨 CMYK INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)
     }
     
     private func loadFromSharedColor() {
@@ -527,8 +527,8 @@ struct CMYKInputSection: View {
     }
     
     private func setCMYKValues(cyan: Int, magenta: Int, yellow: Int, black: Int) {
-        print("🎨 CMYK INPUT: setCMYKValues called with C=\(cyan), M=\(magenta), Y=\(yellow), K=\(black)")
-        print("🎨 CMYK INPUT: Gradient editing state: \(appState.gradientEditingState != nil)")
+        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues called with C=\(cyan), M=\(magenta), Y=\(yellow), K=\(black)", level: .info)
+        Log.fileOperation("🎨 CMYK INPUT: Gradient editing state: \(appState.gradientEditingState != nil)", level: .info)
         
         isProgrammaticallyUpdating = true
         cyanValue = String(cyan)
@@ -541,7 +541,7 @@ struct CMYKInputSection: View {
         blackSlider = Double(black)
         isProgrammaticallyUpdating = false
         
-        print("🎨 CMYK INPUT: setCMYKValues completed")
+        Log.fileOperation("🎨 CMYK INPUT: setCMYKValues completed", level: .info)
     }
     
     private func applyColorToActiveSelection() {

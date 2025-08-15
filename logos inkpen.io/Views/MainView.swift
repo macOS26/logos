@@ -270,12 +270,12 @@ struct MainView: View {
                     // Set the suggested URL as current document URL
                     currentDocumentURL = suggestedURL
                     
-                    print("✅ Created new document with custom settings")
+                    Log.info("✅ Created new document with custom settings", category: .general)
                     
                     // MICRO DELAY: Just enough for geometry to be established
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        Log.debug("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established", category: .zoom)
+                        Log.info("🔍 PROPER FIT TO PAGE: Applied for new document after geometry established", category: .zoom)
                     }
                 }
             )
@@ -322,7 +322,7 @@ struct MainView: View {
                 guard let url = urls.first else { return }
                 importVectorFile(from: url)
             case .failure(let error):
-                 print("❌ File import error: \(error)")
+                 Log.error("❌ File import error: \(error)", category: .error)
             }
         }
         .sheet(item: $importResult) { result in
@@ -368,7 +368,7 @@ struct MainView: View {
         .onAppear {
             // Apply the user's default tool setting to the document
             document.currentTool = appState.defaultTool
-            print("🛠️ Applied default tool \(appState.defaultTool.rawValue) to new document")
+            Log.info("🛠️ Applied default tool \(appState.defaultTool.rawValue) to new document", category: .general)
             
             // SOLUTION: Connect document to menu system using NEW approach
             documentState.setDocument(document)
@@ -394,7 +394,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.debug("🔍 PROPER FIT TO PAGE: Applied after geometry established", category: .zoom)
+            Log.info("🔍 PROPER FIT TO PAGE: Applied after geometry established", category: .zoom)
         }
     }
     
@@ -403,7 +403,7 @@ struct MainView: View {
     private func fitToPage() {
         // Fit the entire page to the view (professional standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
+        Log.info("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     // MARK: - Document Save/Load Functionality
@@ -440,10 +440,10 @@ struct MainView: View {
             // Generate and set custom document icon
             DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
             
-            print("✅ Successfully saved document to: \(url.path)")
+            Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
             
         } catch {
-            print("❌ Save failed: \(error)")
+            Log.error("❌ Save failed: \(error)", category: .error)
             
             // Show error notification
             DispatchQueue.main.async {
@@ -485,7 +485,7 @@ struct MainView: View {
         // Clear the current document URL (imported document needs to be saved)
         currentDocumentURL = nil
         
-        print("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes")
+        Log.info("✅ Loaded imported SVG document into Ink Pen - \(document.layers.count) layers, \(document.layers.reduce(0) { $0 + $1.shapes.count }) shapes", category: .fileOperations)
         
         // Defer fit to page operation to prevent blocking
         Task {
@@ -499,7 +499,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.debug("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established", category: .zoom)
+            Log.info("🔍 PROPER FIT TO PAGE: Applied for imported document after geometry established", category: .zoom)
         }
     }
     
@@ -509,7 +509,7 @@ struct MainView: View {
         
         await MainActor.run {
             document.requestZoom(to: 0.0, mode: .fitToPage)
-            Log.debug("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established", category: .zoom)
+            Log.info("🔍 PROPER FIT TO PAGE: Applied for opened document after geometry established", category: .zoom)
         }
     }
     
@@ -565,7 +565,7 @@ struct MainView: View {
                         // Update current document URL
                         currentDocumentURL = url
                         
-                        print("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)")
+                        Log.info("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)", category: .fileOperations)
                         
                         // Defer fit to page operation to prevent blocking
                         Task {
@@ -575,7 +575,7 @@ struct MainView: View {
                     }
                     
                 } catch {
-                    print("❌ Open failed: \(error)")
+                    Log.error("❌ Open failed: \(error)", category: .error)
                     
                     // Show error notification
                     await MainActor.run {
@@ -617,15 +617,15 @@ struct MainView: View {
                     // Select all imported shapes
                     document.selectedShapeIDs = newShapeIDs
                     
-                    print("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack")
+                    Log.info("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack", category: .fileOperations)
                     
                     // MICRO DELAY: Just enough for geometry to be established (like professional applications)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                         document.requestZoom(to: 0.0, mode: .fitToPage)
-                        Log.debug("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .zoom)
+                        Log.info("🔍 PROPER FIT TO PAGE: Applied after vector import with geometry established", category: .zoom)
                     }
                 } else {
-                    print("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))")
+                    Log.error("❌ Import failed: \(result.errors.map { $0.localizedDescription }.joined(separator: ", "))", category: .error)
                 }
                 
                 // Show import result dialog
@@ -648,10 +648,10 @@ struct MainView: View {
             do {
                 try FileOperations.exportDWF(document, url: url, options: options)
                 
-                print("✅ Successfully exported DWF to: \(url.path)")
+                Log.info("✅ Successfully exported DWF to: \(url.path)", category: .fileOperations)
                 
             } catch {
-                print("❌ DWF export failed: \(error)")
+                Log.error("❌ DWF export failed: \(error)", category: .error)
                 
                 // Show error notification
                 DispatchQueue.main.async {
@@ -668,7 +668,7 @@ struct MainView: View {
     // MARK: - Debug Functions
     
     private func runPasteboardDiagnostics() {
-        print("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI")
+        Log.info("🚀 STARTING PASTEBOARD DIAGNOSTICS FROM UI", category: .general)
         let report = PasteboardDiagnostics.shared.runDiagnostics(on: document)
         report.printSummary()
         
@@ -687,8 +687,8 @@ struct MainView: View {
     // MARK: - Development Functions
     
     private func runPathOperationsBenchmark() {
-        print("🚀 RUNNING PATH OPERATIONS BENCHMARK")
-        print("Benchmarking CoreGraphics performance...")
+        Log.performance("🚀 RUNNING PATH OPERATIONS BENCHMARK", level: .info)
+        Log.performance("Benchmarking CoreGraphics performance...", level: .info)
         
         // Create test paths
         let testCases = [
@@ -698,11 +698,11 @@ struct MainView: View {
         ]
         
         for (name, paths) in testCases {
-            print("\n📊 Testing: \(name)")
+            Log.performance("\n📊 Testing: \(name)", level: .info)
             benchmarkPathOperations(name: name, pathA: paths.0, pathB: paths.1)
         }
         
-        print("\n✅ BENCHMARK COMPLETE")
+        Log.performance("\n✅ BENCHMARK COMPLETE", level: .info)
     }
     
     private func createTestCircles() -> (CGPath, CGPath) {
@@ -773,7 +773,7 @@ struct MainView: View {
         }
         let coreGraphicsTime = CFAbsoluteTimeGetCurrent() - coreGraphicsStart
         
-        print("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s (\(iterations) iterations)")
+        Log.performance("  CoreGraphics: \(String(format: "%.4f", coreGraphicsTime))s (\(iterations) iterations)", level: .info)
     }
     
     // MARK: - Professional DWG Export
@@ -790,10 +790,10 @@ struct MainView: View {
             do {
                 try FileOperations.exportDWG(document, url: url, options: options)
                 
-                print("✅ Successfully exported DWG to: \(url.path)")
+                Log.info("✅ Successfully exported DWG to: \(url.path)", category: .fileOperations)
                 
             } catch {
-                print("❌ DWG export failed: \(error)")
+                Log.error("❌ DWG export failed: \(error)", category: .error)
                 
                 // Show error notification
                 DispatchQueue.main.async {
@@ -951,7 +951,7 @@ struct MainToolbarContent: ToolbarContent {
                         let newPath = VectorPath(elements: newElements, isClosed: true)
                         document.layers[layerIndex].shapes[shapeIndex].path = newPath
                         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                        print("🎯 Closed selected path for shape \(shape.name)")
+                        Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
                     }
                 }
             }
@@ -1148,26 +1148,26 @@ struct MainToolbarContent: ToolbarContent {
         // Zoom in by 25% (professional standard)
         let newZoom = min(16.0, document.zoomLevel * 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomIn)
-        print("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+        Log.info("🔍 ZOOM IN: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
     }
     
     private func onZoomOut() {
         // Zoom out by 25% (professional standard)
         let newZoom = max(0.1, document.zoomLevel / 1.25)
         document.requestZoom(to: CGFloat(newZoom), mode: .zoomOut)
-        print("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%")
+        Log.info("🔍 ZOOM OUT: \(String(format: "%.1f", document.zoomLevel * 100))% → \(String(format: "%.1f", newZoom * 100))%", category: .zoom)
     }
     
     private func onFitToPage() {
         // Fit the entire page to the view (professional standard)
         document.requestZoom(to: 0.0, mode: .fitToPage) // 0.0 signals to calculate fit zoom
-        Log.debug("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
+        Log.info("🔍 FIT TO PAGE: Calculated optimal zoom to fit page in view", category: .zoom)
     }
     
     private func onActualSize() {
         // Set to 100% zoom (professional standard)
         document.requestZoom(to: 1.0, mode: .actualSize)
-        print("🔍 ACTUAL SIZE: Set to 100% zoom")
+        Log.info("🔍 ACTUAL SIZE: Set to 100% zoom", category: .zoom)
     }
 
     // MARK: - Page Snap Functions
@@ -1248,7 +1248,7 @@ struct MainToolbarContent: ToolbarContent {
         shapes.append(contentsOf: selectedShapes)
         
         document.layers[layerIndex].shapes = shapes
-        print("⬆️⬆️ Brought to front \(document.selectedShapeIDs.count) objects")
+        Log.info("⬆️⬆️ Brought to front \(document.selectedShapeIDs.count) objects", category: .shapes)
     }
     
     private func bringSelectedForward() {
@@ -1268,7 +1268,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         document.layers[layerIndex].shapes = shapes
-        print("⬆️ Brought forward \(document.selectedShapeIDs.count) objects")
+        Log.info("⬆️ Brought forward \(document.selectedShapeIDs.count) objects", category: .shapes)
     }
     
     private func sendSelectedBackward() {
@@ -1288,7 +1288,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         document.layers[layerIndex].shapes = shapes
-        print("⬇️ Sent backward \(document.selectedShapeIDs.count) objects")
+        Log.info("⬇️ Sent backward \(document.selectedShapeIDs.count) objects", category: .shapes)
     }
     
     private func sendSelectedToBack() {
@@ -1306,7 +1306,7 @@ struct MainToolbarContent: ToolbarContent {
         shapes.insert(contentsOf: selectedShapes, at: 0)
         
         document.layers[layerIndex].shapes = shapes
-        print("⬇️⬇️ Sent to back \(document.selectedShapeIDs.count) objects")
+        Log.info("⬇️⬇️ Sent to back \(document.selectedShapeIDs.count) objects", category: .shapes)
     }
     
     private func lockSelectedObjects() {
@@ -1332,7 +1332,7 @@ struct MainToolbarContent: ToolbarContent {
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         
-        print("🔒 Locked selected objects")
+        Log.info("🔒 Locked selected objects", category: .shapes)
     }
     
     private func unlockAllObjects() {
@@ -1350,7 +1350,7 @@ struct MainToolbarContent: ToolbarContent {
             document.textObjects[textIndex].isLocked = false
         }
         
-        print("🔓 Unlocked all objects")
+        Log.info("🔓 Unlocked all objects", category: .shapes)
     }
     
     private func hideSelectedObjects() {
@@ -1376,7 +1376,7 @@ struct MainToolbarContent: ToolbarContent {
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
         
-        print("👁️‍🗨️ Hidden selected objects")
+        Log.info("👁️‍🗨️ Hidden selected objects", category: .shapes)
     }
     
     private func showAllObjects() {
@@ -1394,7 +1394,7 @@ struct MainToolbarContent: ToolbarContent {
             document.textObjects[textIndex].isVisible = true
         }
         
-        print("👁️ Showed all objects")
+        Log.info("👁️ Showed all objects", category: .shapes)
     }
 }
 
@@ -2191,10 +2191,10 @@ struct ExportView: View {
                     try FileOperations.exportToJPEG(document, url: url, scale: CGFloat(exportScale), quality: exportQuality)
                 }
                 
-                print("✅ Successfully exported document as \(exportFormat.rawValue) to: \(url.path)")
+                Log.info("✅ Successfully exported document as \(exportFormat.rawValue) to: \(url.path)", category: .fileOperations)
                 
             } catch {
-                print("❌ Export failed: \(error)")
+                Log.error("❌ Export failed: \(error)", category: .error)
                 
                 // Show error notification
                 DispatchQueue.main.async {

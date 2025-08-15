@@ -27,7 +27,7 @@ extension DrawingCanvas {
                 return result
             }
         case .failure(let error):
-            print("⚠️ GPU CALC FAILED: \(error) - falling back to CPU")
+            Log.fileOperation("⚠️ GPU CALC FAILED: \(error) - falling back to CPU", level: .info)
             // Fallback to CPU calculation
             break
         }
@@ -74,7 +74,7 @@ extension DrawingCanvas {
     
     /// SIMPLE 180-DEGREE SYMMETRIC HANDLES - NO COMPLEX MATH!
     private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
-        // Just create simple horizontal 180-degree handles like Adobe Illustrator
+        // Just create simple horizontal 180-degree handles like professional software
         let handleLength: Double = 30.0
         
         let incomingHandle = VectorPoint(point.x - handleLength, point.y)

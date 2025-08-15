@@ -329,7 +329,7 @@ extension DrawingCanvas {
         return VectorPath(elements: elements, isClosed: true)
     }
     
-    /// Create a rounded rectangle path with individual corner radii (Adobe Illustrator style)
+            /// Create a rounded rectangle path with individual corner radii (professional style)
     internal func createRoundedRectPathWithIndividualCorners(rect: CGRect, cornerRadii: [Double]) -> VectorPath {
         // Ensure we have exactly 4 radii: [topLeft, topRight, bottomRight, bottomLeft]
         guard cornerRadii.count == 4 else {

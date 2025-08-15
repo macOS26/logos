@@ -94,7 +94,7 @@ struct ObjectRow: View {
         .onChange(of: isDragging) { oldValue, newValue in
             // Visual feedback during drag
             //if newValue {
-                //print("🎯 Dragging \(objectType.rawValue): \(name)")
+                //Log.fileOperation("🎯 Dragging \(objectType.rawValue): \(name)", level: .info)
             //}
         }
         .contextMenu {

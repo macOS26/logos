@@ -217,7 +217,7 @@ extension DrawingCanvas {
         document.selectedShapeIDs.removeAll()
         // Logging disabled in hot path to reduce CPU overhead
         
-        print("✅ BRUSH: Stroke completed and converted to variable width path")
+        Log.info("✅ BRUSH: Stroke completed and converted to variable width path", category: .fileOperations)
     }
     
     // MARK: - Pressure Simulation
@@ -346,7 +346,7 @@ extension DrawingCanvas {
         guard brushRawPoints.count >= 3,  // FIXED: Require at least 3 points like freehand
               let activeBrushShape = activeBrushShape,
               let layerIndex = document.selectedLayerIndex else { 
-            print("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape")
+            Log.info("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape", category: .general)
             return 
         }
         
@@ -457,9 +457,9 @@ extension DrawingCanvas {
                 if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
                 if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                     finalShape.path = VectorPath(cgPath: cleanedPath)
-                    print("🖌️ BRUSH: Removed self-overlap (normalize/union)")
+                    Log.info("🖌️ BRUSH: Removed self-overlap (normalize/union)", category: .general)
                 } else {
-                    print("🖌️ BRUSH: Overlap removal produced no change; keeping original")
+                    Log.info("🖌️ BRUSH: Overlap removal produced no change; keeping original", category: .general)
                 }
             }
             document.layers[layerIndex].shapes[shapeIndex] = finalShape
@@ -490,9 +490,9 @@ extension DrawingCanvas {
             if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
             if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
                 finalPath = VectorPath(cgPath: cleanedPath)
-                print("🖌️ BRUSH: Removed self-overlap for preview bake")
+                Log.info("🖌️ BRUSH: Removed self-overlap for preview bake", category: .general)
             } else {
-                print("🖌️ BRUSH: Overlap removal (preview bake) produced no change")
+                Log.info("🖌️ BRUSH: Overlap removal (preview bake) produced no change", category: .general)
             }
         }
         let shape = VectorShape(name: "Brush Stroke", path: finalPath, strokeStyle: strokeStyle, fillStyle: fillStyle)
@@ -505,7 +505,7 @@ extension DrawingCanvas {
     private func applySelfUnionToBrushStroke(shapeIndex: Int, layerIndex: Int) {
         
         guard shapeIndex < document.layers[layerIndex].shapes.count else { 
-            print("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes")
+            Log.fileOperation("🚨 BRUSH ERROR: Shape index \(shapeIndex) out of bounds! Layer has \(document.layers[layerIndex].shapes.count) shapes", level: .info)
             return 
         }
         
@@ -513,8 +513,8 @@ extension DrawingCanvas {
         
         // VERIFY: Make sure we're operating on the correct shape
         guard brushStroke.id == activeBrushShape?.id else {
-            print("🚨 BRUSH ERROR: Shape ID mismatch! Expected \(activeBrushShape?.id ?? UUID()), got \(brushStroke.id)")
-            print("🚨 BRUSH ERROR: This would affect the WRONG shape - ABORTING self-union")
+            Log.fileOperation("🚨 BRUSH ERROR: Shape ID mismatch! Expected \(activeBrushShape?.id ?? UUID()), got \(brushStroke.id)", level: .info)
+            Log.fileOperation("🚨 BRUSH ERROR: This would affect the WRONG shape - ABORTING self-union", level: .info)
             return
         }
         
@@ -525,14 +525,14 @@ extension DrawingCanvas {
         
         // SAFETY CHECK: Ensure path is valid before union operation
         guard !originalPath.isEmpty else {
-            print("🚨 BRUSH ERROR: Original path is empty - ABORTING self-union")
+            Log.fileOperation("🚨 BRUSH ERROR: Original path is empty - ABORTING self-union", level: .info)
             return
         }
         
         // SAFETY CHECK: Verify path has valid bounds
         let pathBounds = originalPath.boundingBox
         guard isPathBoundsFinite(pathBounds) && !pathBounds.isNull else {
-            print("🚨 BRUSH ERROR: Path has invalid bounds - ABORTING self-union")
+            Log.fileOperation("🚨 BRUSH ERROR: Path has invalid bounds - ABORTING self-union", level: .info)
             return
         }
         
@@ -541,7 +541,7 @@ extension DrawingCanvas {
         if let cleanedPath = CoreGraphicsPathOperations.normalized(originalPath) {
             // SAFETY CHECK: Verify the result path is valid
             guard !cleanedPath.isEmpty && isPathBoundsFinite(cleanedPath.boundingBox) else {
-                print("🚨 BRUSH ERROR: Union operation produced invalid path - keeping original")
+                Log.fileOperation("🚨 BRUSH ERROR: Union operation produced invalid path - keeping original", level: .info)
                 return
             }
             
@@ -550,9 +550,9 @@ extension DrawingCanvas {
             // Update the brush stroke with the cleaned path
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
             
-            print("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke")
+            Log.info("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke", category: .general)
         } else {
-            print("🖌️ BRUSH: Self-union operation failed, keeping original path")
+            Log.info("🖌️ BRUSH: Self-union operation failed, keeping original path", category: .general)
 
         }
     }

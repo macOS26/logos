@@ -89,7 +89,7 @@ extension DrawingCanvas {
             draggedCornerIndex = cornerIndex
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
-            print("🔧 CORNER RADIUS TOOL: Started dragging corner \(cornerIndex)")
+            Log.fileOperation("🔧 CORNER RADIUS TOOL: Started dragging corner \(cornerIndex)", level: .info)
         }
         
         // Perfect mouse tracking: Handle follows mouse exactly
@@ -132,7 +132,7 @@ extension DrawingCanvas {
             // Proportional corner radius: When shift is held, make all corners proportional
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                print("🔄 CORNER RADIUS TOOL PROPORTIONAL: Shift detected")
+                Log.fileOperation("🔄 CORNER RADIUS TOOL PROPORTIONAL: Shift detected", level: .info)
                 
                 // Get all current corner radii
                 var allRadii = shape.cornerRadii
@@ -193,7 +193,7 @@ extension DrawingCanvas {
                 if abs(currentRadius - roundedRadius) > 0.01 {
                     let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
                     if isShiftCurrentlyPressed {
-                        print("🔄 CORNER RADIUS TOOL ROUNDING: Shift detected during finish")
+                        Log.fileOperation("🔄 CORNER RADIUS TOOL ROUNDING: Shift detected during finish", level: .info)
                         // Proportional rounding: Round all corners proportionally when shift is held
                         var allRadii = selectedShape.cornerRadii
                         while allRadii.count < 4 {
@@ -211,14 +211,14 @@ extension DrawingCanvas {
                                 allRadii[i] = round(originalCornerRadius * ratio)
                             }
                             
-                            print("🔄 CORNER RADIUS TOOL: Proportional rounding ratio mode")
+                            Log.fileOperation("🔄 CORNER RADIUS TOOL: Proportional rounding ratio mode", level: .info)
                         } else {
                             // Uniform mode: When starting from 0, set ALL corners to the same radius
                             for i in 0..<4 {
                                 allRadii[i] = round(max(0.0, roundedRadius))
                             }
                             
-                            print("🔄 CORNER RADIUS TOOL: Proportional rounding uniform mode")
+                            Log.fileOperation("🔄 CORNER RADIUS TOOL: Proportional rounding uniform mode", level: .info)
                         }
                         
                         updateAllCornerRadiiToValues(
@@ -246,7 +246,7 @@ extension DrawingCanvas {
             initialCornerRadius = 0.0
             currentMousePosition = .zero
             
-            print("🔧 CORNER RADIUS TOOL: Finished dragging corner \(draggedCornerIndex ?? -1)")
+            Log.fileOperation("🔧 CORNER RADIUS TOOL: Finished dragging corner \(draggedCornerIndex ?? -1)", level: .info)
         }
     }
 }

@@ -152,15 +152,15 @@ class AppState {
         if let toolRawValue = UserDefaults.standard.string(forKey: "defaultTool"),
            let tool = DrawingTool(rawValue: toolRawValue) {
             self.defaultTool = tool
-            Log.debug("🛠️ Loaded saved default tool: \(tool.rawValue)")
+            Log.info("🛠️ Loaded saved default tool: \(tool.rawValue)")
         } else {
             self.defaultTool = .brush
-            Log.debug("🛠️ Using default tool: brush")
+            Log.info("🛠️ Using default tool: brush")
         }
         
         // Load saved pressure sensitivity setting
         self.pressureSensitivityEnabled = UserDefaults.standard.object(forKey: "pressureSensitivityEnabled") as? Bool ?? true
-        Log.debug("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
+        Log.info("🎨 PRESSURE: Loaded sensitivity setting: \(pressureSensitivityEnabled)", category: .pressure)
         
         // Load brush preview preferences
         if let styleRaw = UserDefaults.standard.string(forKey: "brushPreviewStyle"),
@@ -194,7 +194,7 @@ class AppState {
         
         self.dismissWindowAction = { id in
             if id.contains("gradient-hud") {
-                print("🎨 GRADIENT HUD: dismissWindowAction called - closing window")
+                Log.fileOperation("🎨 GRADIENT HUD: dismissWindowAction called - closing window", level: .info)
                 
                 // 🔥 NEW: Stop editing state when window is closed
                 self.persistentGradientHUD.stopEditing()
@@ -202,21 +202,21 @@ class AppState {
                 // 🔥 PRESERVE WINDOW POSITION - Use orderOut instead of close
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Select Gradient Color") && window.isVisible {
-                        print("🎨 GRADIENT HUD: Hiding window to preserve position: \(window.title)")
+                        Log.fileOperation("🎨 GRADIENT HUD: Hiding window to preserve position: \(window.title)", level: .info)
                         // Use orderOut to hide without destroying, preserving position
                         window.orderOut(nil)
                     }
                 }
-                print("🎨 GRADIENT HUD: dismissWindowAction completed")
+                Log.fileOperation("🎨 GRADIENT HUD: dismissWindowAction completed", level: .info)
             } else if id.contains("ink-hud") {
-                print("🖌️ INK HUD: dismissWindowAction called - hiding window")
+                Log.info("🖌️ INK HUD: dismissWindowAction called - hiding window", category: .general)
                 self.persistentInkHUD.hide()
                 NSApplication.shared.windows.forEach { window in
                     if window.title.contains("Ink Color Mixer") && window.isVisible {
                         window.orderOut(nil)
                     }
                 }
-                print("🖌️ INK HUD: dismissWindowAction completed")
+                Log.info("🖌️ INK HUD: dismissWindowAction completed", category: .general)
             }
             dismissWindow(id)
         }
@@ -260,7 +260,7 @@ class AppState {
     
     // 🔥 EMERGENCY RESET: Force clear all gradient editing state
     func forceResetGradientEditingState() {
-        print("🎨 GRADIENT HUD: Force resetting all gradient editing state")
+        Log.fileOperation("🎨 GRADIENT HUD: Force resetting all gradient editing state", level: .info)
         gradientEditingState = nil
         persistentGradientHUD.forceResetHidingFlag()
         persistentGradientHUD.hide()
@@ -268,13 +268,13 @@ class AppState {
         // 🔥 HIDE ALL GRADIENT WINDOWS (preserve position)
         NSApplication.shared.windows.forEach { window in
             if window.title.contains("Gradient Color Picker") {
-                print("🎨 GRADIENT HUD: Hiding window in emergency reset: \(window.title)")
+                Log.fileOperation("🎨 GRADIENT HUD: Hiding window in emergency reset: \(window.title)", level: .info)
                 // Use orderOut to hide without destroying, preserving position
                 window.orderOut(nil)
             }
         }
         
-        print("🎨 GRADIENT HUD: Force reset completed")
+        Log.fileOperation("🎨 GRADIENT HUD: Force reset completed", level: .info)
     }
     
     // MARK: - Gradient HUD Actions
@@ -341,9 +341,9 @@ class PersistentGradientHUDManager {
         
         // Remember if window was already visible to avoid reopening
         let wasAlreadyVisible = isVisible
-        print("🎨 GRADIENT HUD: show() called - wasAlreadyVisible: \(wasAlreadyVisible)")
-        print("🎨 GRADIENT HUD: stopId = \(stopId.uuidString.prefix(8))")
-        print("🎨 GRADIENT HUD: current isVisible = \(isVisible)")
+        Log.fileOperation("🎨 GRADIENT HUD: show() called - wasAlreadyVisible: \(wasAlreadyVisible)", level: .info)
+        Log.fileOperation("🎨 GRADIENT HUD: stopId = \(stopId.uuidString.prefix(8))", level: .info)
+        Log.fileOperation("🎨 GRADIENT HUD: current isVisible = \(isVisible)", level: .info)
         
         // Update state WITHOUT recreating anything
         self.editingStopId = stopId
@@ -366,7 +366,7 @@ class PersistentGradientHUDManager {
         
         for window in NSApplication.shared.windows {
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
-                print("🎨 GRADIENT HUD: Found existing window: \(identifier)")
+                Log.fileOperation("🎨 GRADIENT HUD: Found existing window: \(identifier)", level: .info)
                 
                 if !window.isVisible {
                     window.tabbingMode = .disallowed
@@ -379,11 +379,11 @@ class PersistentGradientHUDManager {
         
         // Only open a new window if we didn't find an existing one
         if !foundExistingWindow {
-            print("🎨 GRADIENT HUD: No existing window found, opening new one")
+            Log.fileOperation("🎨 GRADIENT HUD: No existing window found, opening new one", level: .info)
             appState?.openWindowAction?("gradient-hud")
         }
         
-        print("🎨 GRADIENT HUD: show() completed - isVisible = \(isVisible)")
+        Log.fileOperation("🎨 GRADIENT HUD: show() completed - isVisible = \(isVisible)", level: .info)
         // If already visible, the WindowGroup will automatically update the content
     }
     
@@ -399,7 +399,7 @@ class PersistentGradientHUDManager {
     
     // 🔥 NEW: Stop editing when window is closed with X button
     func stopEditing() {
-        print("🎨 GRADIENT HUD: Stopping editing state")
+        Log.fileOperation("🎨 GRADIENT HUD: Stopping editing state", level: .info)
         isVisible = false
         editingStopId = nil
         editingStopColor = .black
@@ -415,13 +415,13 @@ class PersistentGradientHUDManager {
         // Call the onClose callback if it exists
         onClose?()
         
-        print("🎨 GRADIENT HUD: Editing state cleared")
+        Log.fileOperation("🎨 GRADIENT HUD: Editing state cleared", level: .info)
     }
     
     // 🔥 EMERGENCY RESET: Force reset hiding flag
     func forceResetHidingFlag() {
         isHiding = false
-        print("🎨 GRADIENT HUD: Force reset hiding flag")
+        Log.fileOperation("🎨 GRADIENT HUD: Force reset hiding flag", level: .info)
     }
     
     // 🔥 DEBUG: Count gradient windows
@@ -429,7 +429,7 @@ class PersistentGradientHUDManager {
         let count = NSApplication.shared.windows.filter { window in
             window.title.contains("Gradient Color Picker")
         }.count
-        print("🎨 GRADIENT HUD: Found \(count) gradient windows")
+        Log.fileOperation("🎨 GRADIENT HUD: Found \(count) gradient windows", level: .info)
         return count
     }
     

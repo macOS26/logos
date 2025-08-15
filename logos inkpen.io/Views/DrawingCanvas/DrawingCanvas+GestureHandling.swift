@@ -34,7 +34,7 @@ extension DrawingCanvas {
             }
             #endif
             
-            // PROFESSIONAL REAL-TIME PATH UPDATES (Adobe Illustrator/FreeHand/CorelDraw Style)
+            // PROFESSIONAL REAL-TIME PATH UPDATES (Professional Style)
             if isBezierDrawing && document.currentTool == .bezierPen && bezierPoints.count > 0 {
                 let canvasLocation = screenToCanvas(location, geometry: geometry)
                 

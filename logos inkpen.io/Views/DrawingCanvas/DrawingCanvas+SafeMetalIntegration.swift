@@ -262,7 +262,7 @@ extension DrawingCanvas {
             // Track enter/exit over the drawing area
             isCanvasHovering = isHovering
             if isHovering {
-                Log.debug("🖱️ Canvas hover: entered", category: .input)
+                Log.info("🖱️ Canvas hover: entered", category: .input)
                 #if os(macOS)
                 if document.currentTool == .hand {
                     HandOpenCursor.set()
@@ -275,7 +275,7 @@ extension DrawingCanvas {
                 }
                 #endif
             } else {
-                Log.debug("🖱️ Canvas hover: exited", category: .input)
+                Log.info("🖱️ Canvas hover: exited", category: .input)
                 #if os(macOS)
                 NSCursor.arrow.set()
                 #endif
@@ -291,7 +291,7 @@ extension DrawingCanvas {
             #endif
         }
         .onTapGesture { location in
-            print("🎯 SINGLE CLICK DETECTED at: \(location)")
+            Log.fileOperation("🎯 SINGLE CLICK DETECTED at: \(location)", level: .info)
             handleUnifiedTap(at: location, geometry: geometry)
             #if os(macOS)
             // After tap, restore appropriate cursor immediately

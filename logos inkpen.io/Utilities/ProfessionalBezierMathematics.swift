@@ -3,7 +3,7 @@
 //  logos
 //
 //  Professional Bezier Curve Mathematics Module
-//  Implements Adobe Illustrator, FreeHand, and CorelDRAW standards
+//  Implements professional vector graphics software standards
 //
 //  Created by Todd Bruss on 7/6/25.
 //
@@ -14,7 +14,7 @@ import SwiftUI
 // MARK: - Professional Bezier Mathematics Foundation
 
 /// Professional Bezier curve mathematics implementing industry standards
-/// Used by Adobe Illustrator, Macromedia FreeHand, and CorelDRAW
+/// Used by professional vector graphics software
 struct ProfessionalBezierMathematics {
     
     // MARK: - Core Bezier Point Structure
@@ -39,7 +39,7 @@ struct ProfessionalBezierMathematics {
             self.handleConstraint = handleConstraint
         }
         
-        /// Adobe Illustrator-style smooth point creation
+        /// Professional-style smooth point creation
         static func smoothPoint(at location: VectorPoint, handleLength: Double, angle: Double) -> BezierPoint {
             let handleVector = VectorPoint(
                 cos(angle) * handleLength,
@@ -66,7 +66,7 @@ struct ProfessionalBezierMathematics {
         }
     }
     
-    // MARK: - Professional Anchor Point Types (Adobe Illustrator Standards)
+            // MARK: - Professional Anchor Point Types (Professional Standards)
     
     enum AnchorPointType: String, CaseIterable, Codable {
         case corner = "Corner"              // Sharp corner, no handles or independent handles
@@ -101,9 +101,9 @@ struct ProfessionalBezierMathematics {
     // MARK: - Handle Constraint Types (Professional Standards)
     
     enum HandleConstraint: String, CaseIterable, Codable {
-        case symmetric = "Symmetric"      // Handles are opposite and equal length (Adobe Illustrator smooth)
-        case aligned = "Aligned"          // Handles are opposite but different lengths (Adobe Illustrator smooth corner)
-        case independent = "Independent"  // Handles move independently (Adobe Illustrator corner/cusp)
+                case symmetric = "Symmetric"      // Handles are opposite and equal length (professional smooth)
+case aligned = "Aligned"          // Handles are opposite but different lengths (professional smooth corner)
+case independent = "Independent"  // Handles move independently (professional corner/cusp)
         case automatic = "Automatic"      // System calculates optimal handles (FreeHand style)
         
         var description: String {
@@ -291,7 +291,7 @@ struct ProfessionalBezierMathematics {
     
     // MARK: - Professional Handle Generation
     
-    /// Generate smooth handles for a point based on neighboring points (Adobe Illustrator algorithm)
+            /// Generate smooth handles for a point based on neighboring points (professional algorithm)
     /// Enhanced with dynamic handle length scaling based on point distances
     static func generateSmoothHandles(previousPoint: VectorPoint?, currentPoint: VectorPoint, nextPoint: VectorPoint?, tension: Double = 0.33) -> (VectorPoint?, VectorPoint?) {
         var incomingHandle: VectorPoint?
@@ -569,7 +569,7 @@ extension VectorPoint {
 /// Factory for creating professional bezier curves with industry-standard behavior
 struct ProfessionalBezierFactory {
     
-    /// Create Adobe Illustrator-style smooth curve
+            /// Create professional-style smooth curve
     static func createSmoothCurve(from startPoint: VectorPoint, to endPoint: VectorPoint, tension: Double = 0.33) -> [VectorPoint] {
         let direction = VectorPoint(endPoint.x - startPoint.x, endPoint.y - startPoint.y)
         let _ = startPoint.distance(to: endPoint) // distance unused - professional calculation reference

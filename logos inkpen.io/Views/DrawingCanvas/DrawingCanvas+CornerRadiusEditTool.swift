@@ -2,7 +2,7 @@
 //  DrawingCanvas+CornerRadiusEditTool.swift
 //  logos inkpen.io
 //
-//  Live corner radius editing tool (Adobe Illustrator style)
+//  Live corner radius editing tool (professional style)
 //
 
 import SwiftUI
@@ -311,7 +311,7 @@ extension DrawingCanvas {
             // IMPROVED: Check shift key state directly as backup to prevent sporadic behavior
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                print("🔄 CORNER RADIUS PROPORTIONAL: Shift detected - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))")
+                Log.fileOperation("🔄 CORNER RADIUS PROPORTIONAL: Shift detected - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))", level: .info)
             }
             if isShiftCurrentlyPressed {
                 // Get all current corner radii
@@ -424,7 +424,7 @@ extension DrawingCanvas {
                 if abs(currentRadius - roundedRadius) > 0.01 {
                     let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
                     if isShiftCurrentlyPressed {
-                        print("🔄 CORNER RADIUS ROUNDING: Shift detected during finish - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))")
+                        Log.fileOperation("🔄 CORNER RADIUS ROUNDING: Shift detected during finish - state=\(isShiftPressed), direct=\(NSEvent.modifierFlags.contains(.shift))", level: .info)
                         // PROPORTIONAL ROUNDING: Round all corners proportionally when shift is held
                         var allRadii = selectedShape.cornerRadii
                         while allRadii.count < 4 {

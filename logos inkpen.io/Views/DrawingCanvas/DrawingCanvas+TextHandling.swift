@@ -14,7 +14,7 @@ extension DrawingCanvas {
     // MARK: - Font Tool Handler (Professional Core Graphics Based)
     
     func handleFontToolTap(at location: CGPoint) {
-        print("🎯 FONT TOOL TAP at: \(location)")
+        Log.fileOperation("🎯 FONT TOOL TAP at: \(location)", level: .info)
         lastTapLocation = location
         
         // Check if tapping on existing text to edit it
@@ -31,7 +31,7 @@ extension DrawingCanvas {
         // AGGRESSIVE background tap - deselects ALL text boxes immediately
         // BUT: Use the same improved hit testing as findTextAt to be consistent
         
-        print("🔍 BACKGROUND TAP: Checking if location \(location) hits any text")
+        Log.info("🔍 BACKGROUND TAP: Checking if location \(location) hits any text", category: .general)
         
         // Use the same generous hit testing logic as findTextAt
         let tapHitsText = document.textObjects.contains { textObj in
@@ -59,14 +59,14 @@ extension DrawingCanvas {
                       expandedBounds.contains(location)
             
             if hits {
-                print("🎯 BACKGROUND TAP: Hit text '\(textObj.content.prefix(20))'")
+                Log.fileOperation("🎯 BACKGROUND TAP: Hit text '\(textObj.content.prefix(20))'", level: .info)
             }
             
             return hits
         }
         
         if !tapHitsText {
-            print("🎯 BACKGROUND TAP: No text hit - deselecting all")
+            Log.fileOperation("🎯 BACKGROUND TAP: No text hit - deselecting all", level: .info)
             // AGGRESSIVELY deselect everything
             document.selectedTextIDs.removeAll()
             document.selectedShapeIDs.removeAll()
@@ -79,14 +79,14 @@ extension DrawingCanvas {
             }
             
             finishTextEditing()
-            print("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode")
+            Log.fileOperation("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode", level: .info)
         } else {
-            print("🎯 BACKGROUND TAP: Text hit - no deselection")
+            Log.fileOperation("🎯 BACKGROUND TAP: Text hit - no deselection", level: .info)
         }
     }
     
     func findTextAt(location: CGPoint) -> UUID? {
-        print("🔍 FIND TEXT: Looking for text at location \(location)")
+        Log.info("🔍 FIND TEXT: Looking for text at location \(location)", category: .general)
         
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
@@ -113,28 +113,28 @@ extension DrawingCanvas {
             // Method 3: Create an expanded bounds area with generous tolerance
             let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20) // Much larger tolerance
             
-            print("🔍 TEXT CHECK: '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))")
-            print("  - Content area: \(textContentArea)")
-            print("  - Exact bounds: \(exactBounds)")
-            print("  - Expanded bounds: \(expandedBounds)")
+            Log.info("🔍 TEXT CHECK: '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))", category: .general)
+            Log.info("  - Content area: \(textContentArea)", category: .general)
+            Log.info("  - Exact bounds: \(exactBounds)", category: .general)
+            Log.info("  - Expanded bounds: \(expandedBounds)", category: .general)
             
             // Hit test using any of the three methods (most generous approach)
             if textContentArea.contains(location) || 
                exactBounds.contains(location) || 
                expandedBounds.contains(location) {
-                print("✅ TEXT HIT: Found text '\(textObj.content.prefix(20))' at location")
+                Log.info("✅ TEXT HIT: Found text '\(textObj.content.prefix(20))' at location", category: .fileOperations)
                 return textObj.id
             } else {
-                print("❌ TEXT MISS: Location not in any hit area")
+                Log.error("❌ TEXT MISS: Location not in any hit area", category: .error)
             }
         }
         
-        print("❌ NO TEXT: No text found at location \(location)")
+        Log.error("❌ NO TEXT: No text found at location \(location)", category: .error)
         return nil
     }
     
     func startEditingText(textID: UUID, at location: CGPoint) {
-        print("✏️ Starting to edit existing text: \(textID)")
+        Log.info("✏️ Starting to edit existing text: \(textID)", category: .general)
         
         // Save current state before editing
         document.saveToUndoStack()
@@ -144,23 +144,23 @@ extension DrawingCanvas {
         for textIndex in document.textObjects.indices {
             if document.textObjects[textIndex].isEditing {
                 editingCount += 1
-                print("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode")
+                Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
             }
             document.textObjects[textIndex].isEditing = false
         }
         
         if editingCount > 0 {
-            print("🔄 STOPPED \(editingCount) text box(es) that were in edit mode")
+            Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
         }
         
         // Find and start editing the target text
         if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
             let textObject = document.textObjects[textIndex]
             
-            print("✏️ STARTING EDIT MODE:")
-            print("  - Text: '\(textObject.content)'")
-            print("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt")
-            print("  - State: GRAY/GREEN → BLUE (editing)")
+            Log.info("✏️ STARTING EDIT MODE:", category: .general)
+            Log.info("  - Text: '\(textObject.content)'", category: .general)
+            Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
+            Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
             document.textObjects[textIndex].isEditing = true
@@ -173,30 +173,30 @@ extension DrawingCanvas {
             isEditingText = true
             editingTextID = textID
             
-            print("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode")
+            Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
         } else {
-            print("❌ TEXT NOT FOUND: Could not find text with ID \(textID)")
+            Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
     }
     
     // ENHANCED: Better double-click detection and corner circle support
     func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
-        print("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)")
+        Log.fileOperation("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)", level: .info)
         
         guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else {
-            print("❌ TEXT NOT FOUND: ID \(textID)")
+            Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
             return
         }
         
         let textObject = document.textObjects[textIndex]
         let currentState = textObject.getState(in: document)
         
-        print("📊 CURRENT STATE: \(currentState.description)")
-        print("📊 CURRENT TOOL: \(document.currentTool.rawValue)")
+        Log.fileOperation("📊 CURRENT STATE: \(currentState.description)", level: .info)
+        Log.fileOperation("📊 CURRENT TOOL: \(document.currentTool.rawValue)", level: .info)
         
         // Check if text is locked
         if textObject.isLocked {
-            print("🚫 TEXT LOCKED: Cannot interact with locked text")
+            Log.info("🚫 TEXT LOCKED: Cannot interact with locked text", category: .general)
             return
         }
         
@@ -208,26 +208,26 @@ extension DrawingCanvas {
                 // First select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                print("🎯 SELECTED TEXT: GRAY → GREEN")
+                Log.fileOperation("🎯 SELECTED TEXT: GRAY → GREEN", level: .info)
                 
                 // If font tool is active and this is a corner click, also start editing
                 if document.currentTool == .font && isCornerClick {
                     startEditingText(textID: textID, at: .zero)
-                    print("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE")
+                    Log.fileOperation("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE", level: .info)
                 }
                 
             case .selected: // GREEN
                 // Start editing if font tool is active
                 if document.currentTool == .font {
                     startEditingText(textID: textID, at: .zero)
-                    print("🎯 START EDITING: GREEN → BLUE")
+                    Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
                 } else {
-                    print("🎯 FONT TOOL NOT ACTIVE: Staying GREEN")
+                    Log.fileOperation("🎯 FONT TOOL NOT ACTIVE: Staying GREEN", level: .info)
                 }
                 
             case .editing: // BLUE
                 // Already editing - do nothing
-                print("🎯 ALREADY EDITING: Staying BLUE")
+                Log.fileOperation("🎯 ALREADY EDITING: Staying BLUE", level: .info)
             }
         } else {
             // Single click behavior
@@ -236,15 +236,15 @@ extension DrawingCanvas {
                 // Select the text
                 document.selectedTextIDs = [textID]
                 document.selectedShapeIDs.removeAll()
-                print("🎯 SINGLE CLICK: GRAY → GREEN")
+                Log.fileOperation("🎯 SINGLE CLICK: GRAY → GREEN", level: .info)
                 
             case .selected: // GREEN
                 // Already selected - no change on single click
-                print("🎯 SINGLE CLICK: Staying GREEN")
+                Log.fileOperation("🎯 SINGLE CLICK: Staying GREEN", level: .info)
                 
             case .editing: // BLUE
                 // Let NSTextView handle clicks during editing
-                print("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)")
+                Log.fileOperation("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)", level: .info)
             }
         }
     }
@@ -285,7 +285,7 @@ extension DrawingCanvas {
     
     // Create new text with user-defined size (like rectangle tool)
     func createNewTextWithSize(at location: CGPoint, width: CGFloat, height: CGFloat) {
-        print("✨ Creating new text box at: \(location) with user size: \(width) × \(height)")
+        Log.info("✨ Creating new text box at: \(location) with user size: \(width) × \(height)", category: .general)
 
         
         // Save state before creating new text
@@ -308,13 +308,13 @@ extension DrawingCanvas {
             fillOpacity: document.defaultFillOpacity
         )
         
-        print("🔤 TYPOGRAPHY CREATION:")
-        print("  - Font Manager Line Spacing: \(document.fontManager.selectedLineSpacing)")
-        print("  - Typography Line Spacing: \(typography.lineSpacing)")
-        print("  - Font Manager Line Height: \(document.fontManager.selectedLineHeight)")
-        print("  - Typography Line Height: \(typography.lineHeight)")
-        print("  - Font Manager Alignment: \(document.fontManager.selectedTextAlignment)")
-        print("  - Typography Alignment: \(typography.alignment)")
+        Log.fileOperation("🔤 TYPOGRAPHY CREATION:", level: .info)
+        Log.info("  - Font Manager Line Spacing: \(document.fontManager.selectedLineSpacing)", category: .general)
+        Log.info("  - Typography Line Spacing: \(typography.lineSpacing)", category: .general)
+        Log.info("  - Font Manager Line Height: \(document.fontManager.selectedLineHeight)", category: .general)
+        Log.info("  - Typography Line Height: \(typography.lineHeight)", category: .general)
+        Log.info("  - Font Manager Alignment: \(document.fontManager.selectedTextAlignment)", category: .general)
+        Log.info("  - Typography Alignment: \(typography.alignment)", category: .general)
         
         // Create new text object with USER-DEFINED bounds
         var newText = VectorText(
@@ -342,9 +342,9 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
         
-        print("✅ Created text box with USER-DEFINED size: \(width) × \(height)")
-        print("🎯 Text ready for editing - size will NOT change unless user manually resizes")
-        print("🎯 Cursor initialized at position 0")
+        Log.info("✅ Created text box with USER-DEFINED size: \(width) × \(height)", category: .fileOperations)
+        Log.fileOperation("🎯 Text ready for editing - size will NOT change unless user manually resizes", level: .info)
+        Log.fileOperation("🎯 Cursor initialized at position 0", level: .info)
     }
     
     // MARK: - Professional Text Input Handling
@@ -370,7 +370,7 @@ extension DrawingCanvas {
         textObj.updateBounds()
         document.textObjects[textIndex] = textObj
         
-        print("📝 Inserted '\(text)' at position \(currentCursorPosition - text.count)")
+        Log.fileOperation("📝 Inserted '\(text)' at position \(currentCursorPosition - text.count)", level: .info)
     }
     
     func deleteBackward() {
@@ -397,7 +397,7 @@ extension DrawingCanvas {
             textObj.updateBounds()
             document.textObjects[textIndex] = textObj
             
-            print("⌫ Deleted character, cursor now at \(currentCursorPosition)")
+            Log.info("⌫ Deleted character, cursor now at \(currentCursorPosition)", category: .general)
         }
     }
     
@@ -427,7 +427,7 @@ extension DrawingCanvas {
         textObj.updateBounds()
         document.textObjects[textIndex] = textObj
         
-        print("🗑️ Deleted selected text, cursor now at \(currentCursorPosition)")
+        Log.info("🗑️ Deleted selected text, cursor now at \(currentCursorPosition)", category: .general)
     }
     
     // MARK: - Text Selection
@@ -440,7 +440,7 @@ extension DrawingCanvas {
         currentSelectionRange = NSRange(location: 0, length: textObj.content.count)
         currentCursorPosition = textObj.content.count
         
-        print("📋 Selected all text (\(textObj.content.count) characters)")
+        Log.fileOperation("📋 Selected all text (\(textObj.content.count) characters)", level: .info)
     }
     
     // MARK: - Arrow Key Navigation
@@ -449,7 +449,7 @@ extension DrawingCanvas {
         if currentCursorPosition > 0 {
             currentCursorPosition -= 1
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
-            print("← Cursor moved to position \(currentCursorPosition)")
+            Log.info("← Cursor moved to position \(currentCursorPosition)", category: .general)
         }
     }
     
@@ -461,14 +461,14 @@ extension DrawingCanvas {
         if currentCursorPosition < textObj.content.count {
             currentCursorPosition += 1
             currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
-            print("→ Cursor moved to position \(currentCursorPosition)")
+            Log.info("→ Cursor moved to position \(currentCursorPosition)", category: .general)
         }
     }
     
     func moveCursorToBeginning() {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
-        print("⤴️ Cursor moved to beginning")
+        Log.info("⤴️ Cursor moved to beginning", category: .general)
     }
     
     func moveCursorToEnd() {
@@ -478,7 +478,7 @@ extension DrawingCanvas {
         let textObj = document.textObjects[textIndex]
         currentCursorPosition = textObj.content.count
         currentSelectionRange = NSRange(location: currentCursorPosition, length: 0)
-        print("⤵️ Cursor moved to end")
+        Log.info("⤵️ Cursor moved to end", category: .general)
     }
     
     // MARK: - Finishing Text Editing
@@ -494,7 +494,7 @@ extension DrawingCanvas {
                 if document.textObjects[textIndex].content.isEmpty {
                     document.textObjects.remove(at: textIndex)
                     document.selectedTextIDs.remove(editingID)
-                    print("🗑️ Removed empty text object")
+                    Log.info("🗑️ Removed empty text object", category: .general)
                 }
             }
         }
@@ -505,7 +505,7 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
         
-        print("✅ Finished text editing")
+        Log.info("✅ Finished text editing", category: .fileOperations)
     }
     
     func cancelTextEditing() {
@@ -527,7 +527,7 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
         
-        print("❌ Cancelled text editing")
+        Log.error("❌ Cancelled text editing", category: .error)
     }
 }
 
@@ -573,7 +573,7 @@ extension DrawingCanvas {
             textObj.updateBounds()
             document.textObjects[textIndex] = textObj
             
-            print("⌦ Deleted character forward")
+            Log.info("⌦ Deleted character forward", category: .general)
         }
     }
 } 
@@ -586,11 +586,11 @@ extension DrawingCanvas {
             // Select the text
             document.selectedTextIDs.insert(textID)
             document.selectedShapeIDs.removeAll() // Clear shape selection
-            print("🎯 NEW TEXT BOX: Selected text \(textID)")
+            Log.fileOperation("🎯 NEW TEXT BOX: Selected text \(textID)", level: .info)
         } else {
             // Deselect the text
             document.selectedTextIDs.remove(textID)
-            print("🎯 NEW TEXT BOX: Deselected text \(textID)")
+            Log.fileOperation("🎯 NEW TEXT BOX: Deselected text \(textID)", level: .info)
         }
         document.objectWillChange.send()
     }
@@ -611,7 +611,7 @@ extension DrawingCanvas {
             document.selectedTextIDs.insert(textID)
             document.selectedShapeIDs.removeAll()
             
-            print("✏️ NEW TEXT BOX: Started editing text \(textID)")
+            Log.info("✏️ NEW TEXT BOX: Started editing text \(textID)", category: .general)
         } else {
             // Stop editing
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
@@ -621,7 +621,7 @@ extension DrawingCanvas {
                 if document.textObjects[textIndex].content.isEmpty {
                     document.textObjects.remove(at: textIndex)
                     document.selectedTextIDs.remove(textID)
-                    print("🗑️ NEW TEXT BOX: Removed empty text object")
+                    Log.info("🗑️ NEW TEXT BOX: Removed empty text object", category: .general)
                 }
             }
             
@@ -633,7 +633,7 @@ extension DrawingCanvas {
                 currentSelectionRange = NSRange(location: 0, length: 0)
             }
             
-            print("✅ NEW TEXT BOX: Finished editing text \(textID)")
+            Log.info("✅ NEW TEXT BOX: Finished editing text \(textID)", category: .fileOperations)
         }
         document.objectWillChange.send()
     }
@@ -645,7 +645,7 @@ extension DrawingCanvas {
         document.textObjects[textIndex].content = newContent
         document.textObjects[textIndex].updateBounds()
         
-        print("📝 NEW TEXT BOX: Updated text content to '\(newContent)'")
+        Log.fileOperation("📝 NEW TEXT BOX: Updated text content to '\(newContent)'", level: .info)
         document.objectWillChange.send()
     }
     
@@ -658,7 +658,7 @@ extension DrawingCanvas {
         // Update text position
         document.textObjects[textIndex].position = newPosition
         
-        print("📍 NEW TEXT BOX: Updated text position to \(newPosition)")
+        Log.info("📍 NEW TEXT BOX: Updated text position to \(newPosition)", category: .general)
         document.objectWillChange.send()
     }
     
@@ -671,7 +671,7 @@ extension DrawingCanvas {
         // Update text bounds
         document.textObjects[textIndex].bounds = newBounds
         
-        print("📏 NEW TEXT BOX: Updated text bounds to \(newBounds)")
+        Log.info("📏 NEW TEXT BOX: Updated text bounds to \(newBounds)", category: .general)
         document.objectWillChange.send()
     }
     
@@ -707,7 +707,7 @@ extension DrawingCanvas {
             isEditingText = false
             editingTextID = nil
             
-            print("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode")
+            Log.fileOperation("🎯 AGGRESSIVE DESELECT: All text boxes → GRAY mode", level: .info)
         }
     }
     
@@ -721,16 +721,16 @@ extension DrawingCanvas {
         let isDraggingResizeHandle = isLocationOnTextResizeHandle(startLocation)
         
         if isDraggingResizeHandle {
-            print("🚫 FONT TOOL: Blocked - drag started on resize handle, not creating new text box")
-            print("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation")
+            Log.info("🚫 FONT TOOL: Blocked - drag started on resize handle, not creating new text box", category: .general)
+            Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
             return
         }
         
         // CRITICAL FIX: Also check if we're dragging ON TOP of an existing text box
         // This prevents creating overlapping text boxes
         if let existingTextID = findTextAt(location: startLocation) {
-            print("🚫 FONT TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))")
-            print("🚫 BLUE OUTLINE: Will NOT appear - would overlap existing text")
+            Log.info("🚫 FONT TOOL: Blocked - drag started on existing text box \(existingTextID.uuidString.prefix(8))", category: .general)
+            Log.info("🚫 BLUE OUTLINE: Will NOT appear - would overlap existing text", category: .general)
             return
         }
         
@@ -738,8 +738,8 @@ extension DrawingCanvas {
         
         if !isDrawing {
             // START DRAWING: Initialize shape creation state
-            print("🎨 FONT TOOL: Starting text box creation (like rectangle tool)")
-            print("🔵 BLUE OUTLINE: Will appear - creating new text box")
+            Log.fileOperation("🎨 FONT TOOL: Starting text box creation (like rectangle tool)", level: .info)
+            Log.info("🔵 BLUE OUTLINE: Will appear - creating new text box", category: .general)
             isDrawing = true
             shapeDragStart = startLocation
             shapeStartPoint = startLocation
@@ -810,9 +810,9 @@ extension DrawingCanvas {
         drawingStartPoint = nil
         
         if wasDrawing {
-            print("🔵 BLUE OUTLINE: Cleared - text box creation finished")
+            Log.info("🔵 BLUE OUTLINE: Cleared - text box creation finished", category: .general)
         }
-        print("📝 TEXT BOX DRAWING: State reset for next operation")
+        Log.fileOperation("📝 TEXT BOX DRAWING: State reset for next operation", level: .info)
     }
     
     /// Check if location is on a text box resize handle
@@ -821,7 +821,7 @@ extension DrawingCanvas {
         let tolerance: Double = 15.0    // Extra generous tolerance for easier detection
         let totalTolerance = handleRadius + tolerance
         
-        print("🔍 RESIZE HANDLE CHECK: Testing location \(location)")
+        Log.info("🔍 RESIZE HANDLE CHECK: Testing location \(location)", category: .general)
         
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
@@ -829,8 +829,8 @@ extension DrawingCanvas {
             // Check ALL text boxes - editing, selected, and even unselected ones
             // This prevents accidental creation when dragging near any text box edge
             
-            print("  - Checking text '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))")
-            print("    Position: \(textObj.position), Bounds: \(textObj.bounds)")
+            Log.info("  - Checking text '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))", category: .general)
+            Log.info("    Position: \(textObj.position), Bounds: \(textObj.bounds)", category: .general)
             
             // Calculate text box bounds in canvas coordinates
             let textBounds = CGRect(
@@ -870,12 +870,12 @@ extension DrawingCanvas {
             let expandedBounds = textBounds.insetBy(dx: -edgeTolerance, dy: -edgeTolerance)
             
             if expandedBounds.contains(location) && !textBounds.insetBy(dx: edgeTolerance, dy: edgeTolerance).contains(location) {
-                print("✅ EDGE AREA HIT: Near text box edge, treating as potential resize operation")
+                Log.info("✅ EDGE AREA HIT: Near text box edge, treating as potential resize operation", category: .fileOperations)
                 return true
             }
         }
         
-        print("❌ NO RESIZE HANDLE: Location not near any text box resize handles")
+        Log.error("❌ NO RESIZE HANDLE: Location not near any text box resize handles", category: .error)
         return false
     }
 } 
