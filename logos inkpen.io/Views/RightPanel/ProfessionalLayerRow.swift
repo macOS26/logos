@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// PROFESSIONAL LAYER ROW (Adobe Illustrator Style)
+// PROFESSIONAL LAYER ROW (Professional Style)
 struct ProfessionalLayerRow: View {
     @ObservedObject var document: VectorDocument
     let layerIndex: Int
@@ -187,7 +187,7 @@ struct ProfessionalLayerRow: View {
                 }
             }
             
-            // Expanded Object List (Adobe Illustrator Style)
+            // Expanded Object List (Professional Style)
             if isExpanded {
                 VStack(spacing: 0) {
                     // Shape Objects
