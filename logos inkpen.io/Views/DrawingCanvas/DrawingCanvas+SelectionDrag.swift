@@ -125,10 +125,11 @@ extension DrawingCanvas {
                 if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                     let shape = document.layers[layerIndex].shapes[shapeIndex]
                     
-                    // CLIPPING MASK MOVEMENT: Apply to both mask and clipped content
+                    // CLIPPING MASK MOVEMENT: Use normal drag system (preview already handled movement)
                     if shape.isClippingPath {
-                        // Move clipping mask and all its clipped content together
-                        document.moveClippingMask(shape.id, by: currentDragDelta)
+                        // Clipping masks use the same drag system as regular shapes
+                        // The preview system already showed the movement, so just apply normal coordinates
+                        applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
                     } else {
                         // Regular shape movement
                         applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
@@ -296,6 +297,16 @@ extension DrawingCanvas {
             // CRITICAL FIX: DO NOT move originalEnvelope - it must stay as reference coordinate system
             // The originalEnvelope represents the coordinate system before ANY transformations
             Log.fileOperation("🔧 WARP ENVELOPE MOVED: Updated \(updatedWarpEnvelope.count) current coordinates (original envelope preserved)", level: .info)
+        }
+        
+        // CLIPPING MASK: If this is a mask shape, also move all its clipped content
+        if shape.isClippingPath {
+            for idx in document.layers[layerIndex].shapes.indices {
+                if document.layers[layerIndex].shapes[idx].clippedByShapeID == shape.id {
+                    // Move the clipped shape by the same delta
+                    applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: idx, delta: delta)
+                }
+            }
         }
         
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
