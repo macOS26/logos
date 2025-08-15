@@ -17,11 +17,11 @@ The original implementation used `DragGesture.Value` properties directly:
 ### Professional Application Research
 Research into industry-standard applications revealed:
 
-**Adobe Illustrator:**
+**Professional Vector Applications:**
 - Users reported precision issues with Smart Guides and snapping
 - The "Align to Pixel Grid" setting was often the culprit
 - Professional users rely on Control+drag for precise operations
-- CS3 had better precision than later versions due to underlying changes
+- Earlier versions had better precision than later versions due to underlying changes
 
 **FreeHand, CorelDraw, Inkscape:**
 - All use direct cursor tracking with reference points
@@ -115,7 +115,7 @@ The solution was implemented across all drawing operations:
 - Consistent behavior across all zoom levels
 
 ### 2. Professional-Grade Precision
-- Matches Adobe Illustrator, FreeHand, CorelDraw standards
+- Matches professional vector graphics standards
 - Reliable for professional design work
 - Eliminates user frustration with drift
 
@@ -170,7 +170,7 @@ Each operation includes professional logging to verify precision:
 
 ## Research References
 
-1. **Adobe Illustrator Community Forums**: Multiple reports of precision issues with Smart Guides
+1. **Professional Vector Graphics Community Forums**: Multiple reports of precision issues with Smart Guides
 2. **Apple Developer Documentation**: NSView mouse tracking and CoreGraphics precision
 3. **Professional Drawing Applications**: FreeHand, CorelDraw, Inkscape implementation patterns
 4. **SwiftUI Gesture Limitations**: Community research on DragGesture precision issues
