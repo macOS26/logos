@@ -8,10 +8,10 @@
 import Foundation
 import CoreGraphics
 
-// MARK: - PROFESSIONAL ADOBE ILLUSTRATOR PATHFINDER OPERATIONS
-// Based on comprehensive research of Adobe Illustrator, MacroMedia FreeHand, and CorelDRAW
+// MARK: - PROFESSIONAL PATHFINDER OPERATIONS
+// Based on comprehensive research of professional vector graphics software
 
-/// Professional boolean geometry operations matching Adobe Illustrator exactly
+/// Professional boolean geometry operations matching professional standards exactly
 /// This implementation uses proper computational geometry algorithms
 class ProfessionalBooleanGeometry {
     
@@ -130,22 +130,22 @@ class ProfessionalBooleanGeometry {
     
     // MARK: - PROFESSIONAL BOOLEAN OPERATIONS
     
-    /// Adobe Illustrator UNITE operation
+    /// Professional UNITE operation
     static func union(_ subject: Polygon, _ clip: Polygon) -> Polygon {
         return performBooleanOperation(subject, clip, .union)
     }
     
-    /// Adobe Illustrator PUNCH operation (formerly MINUS FRONT)
+    /// Professional PUNCH operation (formerly MINUS FRONT)
     static func difference(_ subject: Polygon, _ clip: Polygon) -> Polygon {
         return performBooleanOperation(subject, clip, .difference)
     }
     
-    /// Adobe Illustrator INTERSECT operation
+    /// Professional INTERSECT operation
     static func intersection(_ subject: Polygon, _ clip: Polygon) -> Polygon {
         return performBooleanOperation(subject, clip, .intersection)
     }
     
-    /// Adobe Illustrator EXCLUDE operation
+    /// Professional EXCLUDE operation
     static func exclusion(_ subject: Polygon, _ clip: Polygon) -> Polygon {
         return performBooleanOperation(subject, clip, .exclusion)
     }
@@ -471,11 +471,11 @@ class ProfessionalBooleanGeometry {
     }
 }
 
-// MARK: - PROFESSIONAL PATHFINDER OPERATIONS EXACTLY LIKE ADOBE ILLUSTRATOR
+// MARK: - PROFESSIONAL PATHFINDER OPERATIONS
 
 extension ProfessionalPathOperations {
     
-    /// PROFESSIONAL UNION: Combines exactly two paths into a single path (Adobe Illustrator "Union")
+    /// PROFESSIONAL UNION: Combines exactly two paths into a single path (Professional "Union")
     static func professionalUnion(_ paths: [CGPath]) -> CGPath? {
         guard paths.count == 2 else { return nil }
         
@@ -495,7 +495,7 @@ extension ProfessionalPathOperations {
     
 
     
-    /// PROFESSIONAL PUNCH: Front subtracts from back (Adobe Illustrator "Punch", formerly "Minus Front")
+    /// PROFESSIONAL PUNCH: Front subtracts from back (Professional "Punch", formerly "Minus Front")
     static func professionalMinusFront(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         guard !frontPath.isEmpty && !backPath.isEmpty else { return backPath }
         
@@ -511,7 +511,7 @@ extension ProfessionalPathOperations {
         return nil
     }
     
-    /// PROFESSIONAL INTERSECT: Only overlapping areas (Adobe Illustrator "Intersect")
+    /// PROFESSIONAL INTERSECT: Only overlapping areas (Professional "Intersect")
     static func professionalIntersect(_ path1: CGPath, _ path2: CGPath) -> CGPath? {
         guard !path1.isEmpty && !path2.isEmpty else { return nil }
         
@@ -527,11 +527,11 @@ extension ProfessionalPathOperations {
         return nil
     }
     
-    /// PROFESSIONAL EXCLUDE: Remove overlapping areas (Adobe Illustrator "Exclude")
+    /// PROFESSIONAL EXCLUDE: Remove overlapping areas (Professional "Exclude")
     /// Returns areas that are in either path but not both (symmetric difference)
     static func professionalExclude(_ path1: CGPath, _ path2: CGPath) -> [CGPath] {
         guard !path1.isEmpty && !path2.isEmpty else {
-            // If one path is empty, return the other (Adobe Illustrator behavior)
+            // If one path is empty, return the other (professional behavior)
             let nonEmptyPath = path1.isEmpty ? path2 : path1
             return nonEmptyPath.isEmpty ? [] : [nonEmptyPath]
         }
@@ -558,7 +558,7 @@ extension ProfessionalPathOperations {
         return []
     }
     
-    /// PROFESSIONAL KICK: Back subtracts from front (Adobe Illustrator "Kick", formerly "Minus Back")
+    /// PROFESSIONAL KICK: Back subtracts from front (Professional "Kick", formerly "Minus Back")
     static func professionalMinusBack(_ frontPath: CGPath, from backPath: CGPath) -> CGPath? {
         // This is just the reverse of Punch
         return professionalMinusFront(backPath, from: frontPath)
@@ -732,7 +732,7 @@ extension ProfessionalPathOperations {
     
 
     
-    /// PROFESSIONAL MERGE: Maintains composite appearance then merges same colors (Adobe Illustrator "Merge")  
+    /// PROFESSIONAL MERGE: Maintains composite appearance then merges same colors (Professional "Merge")  
     /// Two-step process: 1) Cut all shapes (maintain appearance), 2) Union same colors
     static func professionalMergeWithShapeTracking(_ paths: [CGPath], colors: [VectorColor]) -> [(CGPath, Int)] {
         guard paths.count >= 2 && colors.count == paths.count else { 
@@ -774,7 +774,7 @@ extension ProfessionalPathOperations {
         return [result]
     }
     
-    /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Adobe Illustrator "Crop")
+    /// PROFESSIONAL CROP: Uses top shape to crop shapes beneath it (Professional "Crop")
     /// Now uses CoreGraphics for curve preservation (like Cut and Trim operations)
     /// Returns an array of tuples: (croppedPath, originalShapeIndex, isInvisibleCropShape)
     static func professionalCropWithShapeTracking(_ paths: [CGPath]) -> [(CGPath, Int, Bool)] {
