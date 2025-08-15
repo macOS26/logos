@@ -1813,10 +1813,10 @@ struct logos_inken_ioApp: App {
     
 
     
-    func onNew() {
-        // Open dedicated setup window instead of creating a new tabbed document
-        openWindow(id: "new-document-setup")
-    }
+//    func onNew() {
+//        // Open dedicated setup window instead of creating a new tabbed document
+//        openWindow(id: "new-document-setup")
+//    }
     
     var body: some Scene {
         // ONBOARDING: Show New Document Setup Window when no documents exist
@@ -1860,22 +1860,22 @@ struct logos_inken_ioApp: App {
         .commands {
             // Create a fully custom File menu
             
-            CommandGroup(before: .newItem) {
-                Button("New Document Setup") {
-                    self.onNew()
-                }
-                .keyboardShortcut("n", modifiers: [.command])
-                .help("Create a new document with custom settings")
-            }
+//            CommandGroup(before: .newItem) {
+//                Button("New Document Setup") {
+//                    self.onNew()
+//                }
+//                .keyboardShortcut("n", modifiers: [.command])
+//                .help("Create a new document with custom settings")
+//            }
             
             CommandGroup(replacing: .importExport) {
-                Button("Open…") {
-                    NSApp.sendAction(#selector(NSDocumentController.openDocument(_:)), to: nil, from: nil)
-                }
-                .keyboardShortcut("o", modifiers: [.command])
-                .help("Open an existing document")
-                
-                Divider()
+//                Button("Open…") {
+//                    NSApp.sendAction(#selector(NSDocumentController.openDocument(_:)), to: nil, from: nil)
+//                }
+//                .keyboardShortcut("o", modifiers: [.command])
+//                .help("Open an existing document")
+//                
+//                Divider()
                 
                 Button("Import…") {
                     documentState?.showImportDialog()
