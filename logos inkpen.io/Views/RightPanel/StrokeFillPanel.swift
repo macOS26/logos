@@ -91,7 +91,7 @@ struct StrokeFillPanel: View {
         return document.defaultFillOpacity  // Show default opacity for new shapes
     }
     
-    // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
+    // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
     private var strokeOpacity: Double {
         // If shapes are selected (regular or direct), show their opacity, otherwise show default
         let activeShapes = document.getActiveShapes()
@@ -104,7 +104,7 @@ struct StrokeFillPanel: View {
     
 
     
-    // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
+    // PROFESSIONAL JOIN TYPE SUPPORT (Professional Standard)
     private var strokeLineJoin: CGLineJoin {
         let activeShapes = document.getActiveShapes()
         guard let firstShape = activeShapes.first else {
@@ -113,7 +113,7 @@ struct StrokeFillPanel: View {
         return firstShape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
     }
     
-    // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
+    // PROFESSIONAL ENDCAP SUPPORT (Professional Standard)
     private var strokeLineCap: CGLineCap {
         let activeShapes = document.getActiveShapes()
         guard let firstShape = activeShapes.first else {
@@ -122,7 +122,7 @@ struct StrokeFillPanel: View {
         return firstShape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
     }
     
-    // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
+    // PROFESSIONAL MITER LIMIT SUPPORT (Professional Standard)
     private var strokeMiterLimit: Double {
         guard let layerIndex = document.selectedLayerIndex,
               let firstSelectedID = document.selectedShapeIDs.first,
@@ -359,7 +359,7 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
+            // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
     private func updateStrokeOpacity(_ opacity: Double) {
         // ALWAYS update the default opacity for new shapes
         document.defaultStrokeOpacity = opacity
@@ -390,7 +390,7 @@ struct StrokeFillPanel: View {
     
 
     
-    // PROFESSIONAL JOIN TYPE SUPPORT (Adobe Illustrator Standard)
+            // PROFESSIONAL JOIN TYPE SUPPORT (Professional Standard)
     private func updateStrokeLineJoin(_ lineJoin: CGLineJoin) {
         // ALWAYS update the default line join for new shapes
         document.defaultStrokeLineJoin = lineJoin
@@ -417,7 +417,7 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // PROFESSIONAL ENDCAP SUPPORT (Adobe Illustrator Standard)
+            // PROFESSIONAL ENDCAP SUPPORT (Professional Standard)
     private func updateStrokeLineCap(_ lineCap: CGLineCap) {
         // ALWAYS update the default line cap for new shapes
         document.defaultStrokeLineCap = lineCap
@@ -444,7 +444,7 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // PROFESSIONAL MITER LIMIT SUPPORT (Adobe Illustrator Standard)
+            // PROFESSIONAL MITER LIMIT SUPPORT (Professional Standard)
     private func updateStrokeMiterLimit(_ miterLimit: Double) {
         // ALWAYS update the default miter limit for new shapes
         document.defaultStrokeMiterLimit = miterLimit
@@ -646,7 +646,7 @@ struct StrokePropertiesSection: View {
                 .controlSize(.small)
             }
             
-            // PROFESSIONAL STROKE TRANSPARENCY (Adobe Illustrator Standard)
+            // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
             VStack(spacing: 8) {
                 HStack {
                     Text("Opacity")
@@ -687,7 +687,7 @@ struct StrokePropertiesSection: View {
                 .font(.caption)
             }
             
-            // PROFESSIONAL JOIN TYPE CONTROL (Adobe Illustrator Standard)
+            // PROFESSIONAL JOIN TYPE CONTROL (Professional Standard)
             VStack(alignment: .leading, spacing: 4) {
                 Text("Joins")
                     .font(.caption)
@@ -724,7 +724,7 @@ struct StrokePropertiesSection: View {
                 }
             }
             
-            // PROFESSIONAL ENDCAP CONTROL (Adobe Illustrator Standard)
+            // PROFESSIONAL ENDCAP CONTROL (Professional Standard)
             VStack(alignment: .leading, spacing: 4) {
                 Text("End Caps")
                     .font(.caption)
@@ -817,7 +817,7 @@ extension CGLineJoin {
     
     var description: String {
         switch self {
-        case .miter: return "Sharp pointed corners (Adobe Illustrator default)"
+                        case .miter: return "Sharp pointed corners (Professional default)"
         case .round: return "Smooth rounded corners"
         case .bevel: return "Chamfered corners (cuts off sharp points)"
         @unknown default: return "Sharp pointed corners"
