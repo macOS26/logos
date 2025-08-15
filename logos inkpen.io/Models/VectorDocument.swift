@@ -352,7 +352,11 @@ class VectorDocument: ObservableObject, Codable {
         // Find the mask shape
         guard let maskIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) else { return }
         
-        // Move the mask shape by updating its path coordinates (not just transform)
+        // CRITICAL FIX: Update the mask shape's transform property for proper synchronization
+        // This ensures the ClippingMaskNSView renders the mask in the correct position
+        layers[layerIndex].shapes[maskIndex].transform = layers[layerIndex].shapes[maskIndex].transform.translatedBy(x: offset.x, y: offset.y)
+        
+        // Move the mask shape by updating its path coordinates (for selection bounds)
         moveShapeByPathCoordinates(layerIndex: layerIndex, shapeIndex: maskIndex, by: offset)
         
         // Move all clipped content by the same amount

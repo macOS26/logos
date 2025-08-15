@@ -178,57 +178,65 @@ class ClippingMaskNSView: NSView {
     }
     
     override var isFlipped: Bool {
-        return false  // Use normal coordinate system like gradient fills
+        return true  // FIXED: Match GradientNSView coordinate system
     }
     
-    override func draw(_ dirtyRect: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
-        
-        context.saveGState()
-        
-        // Apply clipping mask using the mask path
-        context.addPath(maskPath)
-        context.clip()
-        
-        // Draw the clipped content (image or shape)
-        if ImageContentRegistry.containsImage(clippedShape),
-           let image = ImageContentRegistry.image(for: clippedShape.id) {
-            // CRITICAL FIX: Draw image at clipped path bounds, apply transform to context
-            let imageRect = clippedPath.boundingBoxOfPath
-            context.setAlpha(CGFloat(clippedShape.opacity))
-            context.concatenate(clippedShape.transform)
-            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: imageRect)
-            }
-        } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
-                  let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
-            // Draw linked/embedded image
-            let imageRect = clippedPath.boundingBoxOfPath
-            context.setAlpha(CGFloat(clippedShape.opacity))
-            context.concatenate(clippedShape.transform)
-            if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: imageRect)
-            }
-        } else {
-            // Draw shape with fill and stroke
-            context.addPath(clippedPath)
+            override func draw(_ dirtyRect: NSRect) {
+            guard let context = NSGraphicsContext.current?.cgContext else { return }
             
-            // Apply fill
-            if let fillStyle = clippedShape.fillStyle, fillStyle.color != .clear {
-                context.setFillColor(fillStyle.color.cgColor)
-                context.fillPath()
+            context.saveGState()
+            
+            // Apply clipping mask using the mask path
+            context.addPath(maskPath)
+            context.clip()
+            
+            // Draw the clipped content (image or shape)
+            if ImageContentRegistry.containsImage(clippedShape),
+               let image = ImageContentRegistry.image(for: clippedShape.id) {
+                // FIXED: Use same approach as ImageNSViewClass - no double transforms
+                let imageRect = clippedPath.boundingBoxOfPath
+                context.setAlpha(CGFloat(clippedShape.opacity))
+                
+                // FIXED: Apply same image flip logic as ImageNSViewClass
+                context.translateBy(x: imageRect.minX, y: imageRect.maxY)
+                context.scaleBy(x: 1.0, y: -1.0)
+                
+                if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    context.draw(cgImage, in: CGRect(origin: .zero, size: imageRect.size))
+                }
+            } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
+                      let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
+                // FIXED: Use same approach for linked/embedded images
+                let imageRect = clippedPath.boundingBoxOfPath
+                context.setAlpha(CGFloat(clippedShape.opacity))
+                
+                // FIXED: Apply same image flip logic
+                context.translateBy(x: imageRect.minX, y: imageRect.maxY)
+                context.scaleBy(x: 1.0, y: -1.0)
+                
+                if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                    context.draw(cgImage, in: CGRect(origin: .zero, size: imageRect.size))
+                }
+            } else {
+                // Draw shape with fill and stroke
+                context.addPath(clippedPath)
+                
+                // Apply fill
+                if let fillStyle = clippedShape.fillStyle, fillStyle.color != .clear {
+                    context.setFillColor(fillStyle.color.cgColor)
+                    context.fillPath()
+                }
+                
+                // Apply stroke
+                if let strokeStyle = clippedShape.strokeStyle, strokeStyle.color != .clear {
+                    context.setStrokeColor(strokeStyle.color.cgColor)
+                    context.setLineWidth(strokeStyle.width)
+                    context.strokePath()
+                }
             }
             
-            // Apply stroke
-            if let strokeStyle = clippedShape.strokeStyle, strokeStyle.color != .clear {
-                context.setStrokeColor(strokeStyle.color.cgColor)
-                context.setLineWidth(strokeStyle.width)
-                context.strokePath()
-            }
+            context.restoreGState()
         }
-        
-        context.restoreGState()
-    }
     
 
 }
