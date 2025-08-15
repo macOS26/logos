@@ -57,9 +57,9 @@ extension DrawingCanvas {
                     if self.isTemporaryDirectSelectionViaCommand {
                         self.isTemporaryDirectSelectionViaCommand = false
                         Log.debug("⌘ COMMAND RELEASED: Restoring normal selection/bounding box mode", category: .input)
-                        // If we temporarily switched to direct selection, restore the Selection tool
+                        // If we temporarily switched to direct selection, restore the default tool
                         if self.document.currentTool == .directSelection {
-                            self.document.currentTool = .selection
+                            self.document.currentTool = AppState.shared.defaultTool
                         }
                         // When leaving temp mode, ensure direct selection visuals are cleared
                         if self.document.currentTool == .selection {

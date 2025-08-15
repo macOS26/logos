@@ -479,7 +479,7 @@ struct MainView: View {
         document.textObjects = importedDoc.textObjects
         
         // Reset tool and view states for the new document
-        document.currentTool = .selection
+        document.currentTool = appState.defaultTool
         document.viewMode = .color
         
         // Clear the current document URL (imported document needs to be saved)

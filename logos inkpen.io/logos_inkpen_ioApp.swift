@@ -1020,7 +1020,7 @@ struct DocumentBasedMainView: View {
         document.selectedShapeIDs = importedDoc.selectedShapeIDs
         document.selectedTextIDs = importedDoc.selectedTextIDs
         document.textObjects = importedDoc.textObjects
-        document.currentTool = .selection
+        document.currentTool = appState.defaultTool
         document.viewMode = .color
         document.showRulers = importedDoc.showRulers
         document.snapToGrid = importedDoc.snapToGrid
