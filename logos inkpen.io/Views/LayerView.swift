@@ -39,8 +39,7 @@ struct LayerView: View {
                     EmptyView()
                 } else if let clipID = currentShape.clippedByShapeID, let maskShape = layer.shapes.first(where: { $0.id == clipID }) {
                     // FIXED CLIPPING MASK: Use proper coordinate system alignment
-                    ZStack {
-                        // Render the clipped shape normally
+                       // Render the clipped shape normally
                         ShapeView(
                             shape: currentShape,
                             zoomLevel: zoomLevel,
@@ -52,7 +51,7 @@ struct LayerView: View {
                             dragPreviewDelta: dragPreviewDelta,
                             dragPreviewTrigger: dragPreviewTrigger
                         )
-                    }
+
                     .mask(
                         // Core Graphics clipping mask with live preview support - UNCONSTRAINED BY CANVAS
                         CoreGraphicsClippingMaskView(
@@ -65,8 +64,7 @@ struct LayerView: View {
                             dragPreviewTrigger: dragPreviewTrigger
                         )
                         .id(dragPreviewTrigger) // Force update when drag preview trigger changes
-                        .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow mask to extend beyond canvas bounds
-                        // REMOVED: .clipped() to allow clipping masks to extend beyond canvas boundaries
+                       // .frame(maxWidth: .infinity, maxHeight: .infinity) // Allow mask to extend beyond canvas bounds
                     )
                     .onAppear {
                         // Debug clipping mask rendering
