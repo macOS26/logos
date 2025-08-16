@@ -69,10 +69,78 @@ class DocumentIconGenerator {
         let hasArtContent = documentHasArtContent(document)
         
         if hasArtContent {
-            // Render actual SVG content of the art
-            renderSVGArtPreview(context: context, rect: rect, document: document)
+            // SIMPLIFIED: Direct image rendering instead of complex SVG generation
+            renderDirectImagePreview(context: context, rect: rect, document: document)
         } else {
             // Use fallback preview when no art content
+            renderFallbackPreview(context: context, rect: rect)
+        }
+    }
+    
+    private func renderDirectImagePreview(context: CGContext, rect: CGRect, document: VectorDocument) {
+        print("🔍 IconGenerator: Rendering direct image preview...")
+        
+        // Find the first image in the document
+        var foundImage: NSImage? = nil
+        
+        for layer in document.layers where layer.isVisible {
+            for shape in layer.shapes where shape.isVisible {
+                if let image = ImageContentRegistry.image(for: shape.id) {
+                    foundImage = image
+                    print("   ✅ Found image for shape: \(shape.name)")
+                    break
+                } else if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+                    foundImage = hydrated
+                    print("   ✅ Hydrated image for shape: \(shape.name)")
+                    break
+                }
+            }
+            if foundImage != nil { break }
+        }
+        
+        if let image = foundImage {
+            // Render the image directly as a low-res thumbnail
+            print("   🖼️ Rendering image thumbnail...")
+            
+            // Save context state
+            context.saveGState()
+            
+            // Set up context for image rendering
+            context.interpolationQuality = .medium
+            context.setShouldAntialias(true)
+            context.setAllowsAntialiasing(true)
+            
+            // Calculate scale to fit image in preview rect while maintaining aspect ratio
+            let imageSize = image.size
+            let scaleX = rect.width / imageSize.width
+            let scaleY = rect.height / imageSize.height
+            let scale = min(scaleX, scaleY) * 0.8 // 80% of available space
+            
+            // Calculate centered position
+            let scaledWidth = imageSize.width * scale
+            let scaledHeight = imageSize.height * scale
+            let x = rect.midX - scaledWidth / 2
+            let y = rect.midY - scaledHeight / 2
+            
+            // Create a simple thumbnail
+            let imageRect = CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight)
+            
+            // Draw the image
+            if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                context.draw(cgImage, in: imageRect)
+                print("   ✅ Image drawn successfully")
+            }
+            
+            // Only add a subtle border to make the image stand out, not a tint
+            context.setStrokeColor(NSColor.systemGray.withAlphaComponent(0.3).cgColor)
+            context.setLineWidth(1.0)
+            context.stroke(imageRect)
+            
+            // Restore context state
+            context.restoreGState()
+            
+        } else {
+            print("   ❌ No images found, using fallback")
             renderFallbackPreview(context: context, rect: rect)
         }
     }
@@ -217,16 +285,16 @@ class DocumentIconGenerator {
         text.draw(in: textRect, withAttributes: textAttributes)
     }
     
-    // MARK: - SVG Preview Generation
+    // MARK: - SVG Preview Generation (Simplified)
     
     func generateSVGPreview(for document: VectorDocument) -> String {
-        // Use the existing SVG export code from FileOperations
-        do {
-            return try FileOperations.generateSVGContent(from: document)
-        } catch {
-            // Fallback to simple preview if SVG generation fails
-            return generateSimpleSVGPreview(for: document)
-        }
+        print("🔍 IconGenerator: Generating simplified SVG preview for document...")
+        print("   Document has \(document.layers.count) layers")
+        print("   Document has \(document.textObjects.count) text objects")
+        
+        // SIMPLIFIED: Generate basic SVG without complex image handling
+        // This is just for compatibility, the actual preview uses direct rendering
+        return generateSimpleSVGPreview(for: document)
     }
     
     private func generateSimpleSVGPreview(for document: VectorDocument) -> String {
@@ -283,6 +351,11 @@ class DocumentIconGenerator {
         if ImageContentRegistry.containsImage(shape),
            let nsImage = ImageContentRegistry.image(for: shape.id) {
             return generateImageSVG(shape, image: nsImage)
+        }
+        
+        // Try to hydrate image if not in registry
+        if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
+            return generateImageSVG(shape, image: hydrated)
         }
         
         var svg = ""
@@ -364,6 +437,7 @@ class DocumentIconGenerator {
             // If encoding fails, fallback to transparent rect path
             return "<rect x=\"\(x)\" y=\"\(y)\" width=\"\(width)\" height=\"\(height)\" fill=\"none\"/>"
         }
+        
         let base64 = pngData.base64EncodedString()
         let href = "data:image/png;base64,\(base64)"
 
