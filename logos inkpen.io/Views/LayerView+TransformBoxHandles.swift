@@ -263,7 +263,8 @@ struct TransformBoxHandles: View {
             if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
                 // Commit the preview transform as the shape.transform
                 document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                // FIXED: Don't call updateBounds() for images - it corrupts their bounds
+                // Images need to preserve their original bounds, not use path bounds
             } else {
                 // Reset to initial transform to avoid drift and apply final preview to path coordinates
                 document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
