@@ -109,13 +109,16 @@ struct ShapeView: View {
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
                         let transformedBounds = pathBounds.applying(shape.transform)
                         
-
-                        
                         ImageNSView(
                             image: hydrated,
                             bounds: transformedBounds,
                             opacity: shape.opacity
                         )
+                        .onAppear {
+                            // CRITICAL FIX: Ensure image is registered for SVG export
+                            // This was missing - images weren't being found during SVG export
+                            ImageContentRegistry.register(image: hydrated, for: shape.id)
+                        }
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
                         let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))

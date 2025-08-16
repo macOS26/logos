@@ -279,6 +279,12 @@ class DocumentIconGenerator {
     }
     
     private func generateShapeSVG(_ shape: VectorShape) -> String {
+        // SPECIAL-CASE RASTER IMAGES: Export as <image> with data URI
+        if ImageContentRegistry.containsImage(shape),
+           let nsImage = ImageContentRegistry.image(for: shape.id) {
+            return generateImageSVG(shape, image: nsImage)
+        }
+        
         var svg = ""
         
         // Generate path data
@@ -307,6 +313,98 @@ class DocumentIconGenerator {
         
         svg += "/>"
         return svg
+    }
+    
+    // MARK: - Image SVG Generation
+    
+    /// Generate an SVG <image> element for a raster-backed shape using a data URI
+    private func generateImageSVG(_ shape: VectorShape, image: NSImage) -> String {
+        // Apply transform to the rect corners to export baked coordinates like paths
+        let transformedPath = applyTransformToPath(shape.path, transform: shape.transform)
+
+        // Compute bounds from transformed path elements
+        var minX = CGFloat.greatestFiniteMagnitude
+        var minY = CGFloat.greatestFiniteMagnitude
+        var maxX = -CGFloat.greatestFiniteMagnitude
+        var maxY = -CGFloat.greatestFiniteMagnitude
+        for element in transformedPath.elements {
+            switch element {
+            case .move(let to):
+                minX = min(minX, CGFloat(to.x)); minY = min(minY, CGFloat(to.y))
+                maxX = max(maxX, CGFloat(to.x)); maxY = max(maxY, CGFloat(to.y))
+            case .line(let to):
+                minX = min(minX, CGFloat(to.x)); minY = min(minY, CGFloat(to.y))
+                maxX = max(maxX, CGFloat(to.x)); maxY = max(maxY, CGFloat(to.y))
+            case .curve(let to, let c1, let c2):
+                minX = min(minX, CGFloat(to.x), CGFloat(c1.x), CGFloat(c2.x))
+                minY = min(minY, CGFloat(to.y), CGFloat(c1.y), CGFloat(c2.y))
+                maxX = max(maxX, CGFloat(to.x), CGFloat(c1.x), CGFloat(c2.x))
+                maxY = max(maxY, CGFloat(to.y), CGFloat(c1.y), CGFloat(c2.y))
+            case .quadCurve(let to, let c):
+                minX = min(minX, CGFloat(to.x), CGFloat(c.x))
+                minY = min(minY, CGFloat(to.y), CGFloat(c.y))
+                maxX = max(maxX, CGFloat(to.x), CGFloat(c.x))
+                maxY = max(maxY, CGFloat(to.y), CGFloat(c.y))
+            case .close:
+                break
+            }
+        }
+        if minX == .greatestFiniteMagnitude || minY == .greatestFiniteMagnitude {
+            return "" // no geometry
+        }
+        let x = minX
+        let y = minY
+        let width = max(0, maxX - minX)
+        let height = max(0, maxY - minY)
+
+        // Rasterize NSImage to PNG data (safer for data URIs and widely supported)
+        guard let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else {
+            // If encoding fails, fallback to transparent rect path
+            return "<rect x=\"\(x)\" y=\"\(y)\" width=\"\(width)\" height=\"\(height)\" fill=\"none\"/>"
+        }
+        let base64 = pngData.base64EncodedString()
+        let href = "data:image/png;base64,\(base64)"
+
+        // Compose SVG image tag with baked coordinates
+        return "<image id=\"image-\(shape.id)\" x=\"\(x)\" y=\"\(y)\" width=\"\(width)\" height=\"\(height)\" xlink:href=\"\(href)\" preserveAspectRatio=\"none\"/>"
+    }
+    
+    /// Apply transform to path elements (helper function for image generation)
+    private func applyTransformToPath(_ path: VectorPath, transform: CGAffineTransform) -> VectorPath {
+        var transformedElements: [PathElement] = []
+        
+        for element in path.elements {
+            switch element {
+            case .move(let to):
+                let transformedPoint = to.cgPoint.applying(transform)
+                transformedElements.append(.move(to: VectorPoint(transformedPoint.x, transformedPoint.y)))
+            case .line(let to):
+                let transformedPoint = to.cgPoint.applying(transform)
+                transformedElements.append(.line(to: VectorPoint(transformedPoint.x, transformedPoint.y)))
+            case .curve(let to, let control1, let control2):
+                let transformedTo = to.cgPoint.applying(transform)
+                let transformedControl1 = control1.cgPoint.applying(transform)
+                let transformedControl2 = control2.cgPoint.applying(transform)
+                transformedElements.append(.curve(
+                    to: VectorPoint(transformedTo.x, transformedTo.y),
+                    control1: VectorPoint(transformedControl1.x, transformedControl1.y),
+                    control2: VectorPoint(transformedControl2.x, transformedControl2.y)
+                ))
+            case .quadCurve(let to, let control):
+                let transformedTo = to.cgPoint.applying(transform)
+                let transformedControl = control.cgPoint.applying(transform)
+                transformedElements.append(.quadCurve(
+                    to: VectorPoint(transformedTo.x, transformedTo.y),
+                    control: VectorPoint(transformedControl.x, transformedControl.y)
+                ))
+            case .close:
+                transformedElements.append(.close)
+            }
+        }
+        
+        return VectorPath(elements: transformedElements, isClosed: path.isClosed)
     }
     
     private func generatePathData(from path: VectorPath) -> String {
