@@ -138,6 +138,7 @@ extension DrawingCanvas {
         
         // Hide any close path hints
         showClosePathHint = false
+        showContinuePathHint = false
         
         // NOTE: Removed automatic tool switch to direct selection
         // Users can manually switch tools when they're ready to edit points

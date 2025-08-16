@@ -42,7 +42,13 @@ extension DrawingCanvas {
                 if bezierPoints.count >= 3 {
                     let firstPoint = bezierPoints[0]
                     let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-                    let closeTolerance: Double = 25.0
+                    
+                    // ZOOM-AWARE CLOSE TOLERANCE: Scale tolerance based on zoom level
+                    // At high zoom levels, small physical movements translate to large canvas movements
+                    // So we need to reduce the tolerance proportionally
+                    let baseCloseTolerance: Double = 5.0 // Base tolerance in screen pixels (reduced from 25.0 for precision)
+                    let zoomLevel = document.zoomLevel
+                    let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel) // Minimum 2px, scales with zoom
                     
                     if distance(canvasLocation, firstPointLocation) <= closeTolerance {
                         showClosePathHint = true
@@ -60,8 +66,19 @@ extension DrawingCanvas {
                     // First point - let rubber band handle visualization
                     // updateLivePathWithRubberBand(mouseLocation: canvasLocation)
                 }
+            } else if document.currentTool == .bezierPen && !isBezierDrawing {
+                // CONTINUE PATH HINT: Show hint when bezier pen tool is active and a point is selected
+                let (shouldShow, hintLocation) = shouldShowContinuePathHint()
+                if shouldShow, let location = hintLocation {
+                    // Show continue path hint at the selected point location
+                    showContinuePathHint = true
+                    continuePathHintLocation = location
+                } else {
+                    showContinuePathHint = false
+                }
             } else {
                 showClosePathHint = false
+                showContinuePathHint = false
             }
         } else {
             currentMouseLocation = nil

@@ -99,7 +99,8 @@ struct ShapeView: View {
                     ImageNSView(
                         image: image,
                         bounds: transformedBounds,
-                        opacity: shape.opacity
+                        opacity: shape.opacity,
+                        fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                     )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
@@ -109,16 +110,14 @@ struct ShapeView: View {
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
                         let transformedBounds = pathBounds.applying(shape.transform)
                         
+
+                        
                         ImageNSView(
                             image: hydrated,
                             bounds: transformedBounds,
-                            opacity: shape.opacity
+                            opacity: shape.opacity,
+                            fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                         )
-                        .onAppear {
-                            // CRITICAL FIX: Ensure image is registered for SVG export
-                            // This was missing - images weren't being found during SVG export
-                            ImageContentRegistry.register(image: hydrated, for: shape.id)
-                        }
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
                         let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))

@@ -145,4 +145,18 @@ extension DrawingCanvas {
         // Force UI update to show new selection state
         document.objectWillChange.send()
     }
+    
+    // MARK: - Tool State Management
+    
+    /// Clears tool-specific state when switching tools
+    internal func clearToolState() {
+        // Clear bezier pen tool state
+        if document.currentTool != .bezierPen {
+            showClosePathHint = false
+            showContinuePathHint = false
+        }
+        
+        // Clear other tool states as needed
+        // Add more tool-specific cleanup here
+    }
 } 

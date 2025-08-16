@@ -9,7 +9,12 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func handleConvertAnchorPointTap(at location: CGPoint) {
-        let tolerance: Double = 8.0 // Hit test tolerance
+        // ZOOM-AWARE CONVERT POINT TOLERANCE: Scale tolerance based on zoom level
+        // At high zoom levels, small physical movements translate to large canvas movements
+        // So we need to reduce the tolerance proportionally
+        let baseConvertTolerance: Double = 8.0 // Base tolerance in screen pixels
+        let zoomLevel = document.zoomLevel
+        let tolerance = max(2.0, baseConvertTolerance / zoomLevel) // Minimum 2px, scales with zoom
         
         // TEXT EDITING REMOVED
         

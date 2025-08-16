@@ -233,6 +233,34 @@ extension DrawingCanvas {
     }
     
     @ViewBuilder
+    internal func bezierContinuePathHint() -> some View {
+        // PROFESSIONAL CONTINUE PATH VISUAL HINT - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+        if showContinuePathHint {
+            ZStack {
+                // Blue circle indicating continue path area - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                Circle()
+                    .stroke(Color.blue, lineWidth: 2.0)
+                    .fill(Color.blue.opacity(0.1))
+                    .frame(width: 16, height: 16) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: continuePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
+                        y: continuePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                    ))
+                
+                // Small "continue" icon - USE SAME COORDINATE SYSTEM AS ARROW TOOL
+                Image(systemName: "arrow.right.circle.fill")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 12)) // Fixed UI size - does not scale with artwork
+                    .position(CGPoint(
+                        x: continuePathHintLocation.x * document.zoomLevel + document.canvasOffset.x,
+                        y: continuePathHintLocation.y * document.zoomLevel + document.canvasOffset.y
+                    ))
+            }
+            .animation(.easeInOut(duration: 0.2), value: showContinuePathHint)
+        }
+    }
+    
+    @ViewBuilder
     internal func bezierControlHandles() -> some View {
         // Render bezier handles if they exist
         if isBezierDrawing {

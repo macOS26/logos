@@ -214,6 +214,10 @@ struct DrawingCanvas: View {
     @State internal var currentMouseLocation: CGPoint? = nil // For rubber band preview
     @State internal var showClosePathHint = false
     @State internal var closePathHintLocation: CGPoint = .zero
+    
+    // MARK: - Continue Path Hint State
+    @State internal var showContinuePathHint = false
+    @State internal var continuePathHintLocation: CGPoint = .zero
     @State internal var isCanvasHovering: Bool = false // Track whether the mouse is over the drawing canvas
     
             // PROFESSIONAL REAL-TIME PATH CREATION (Professional Style)

@@ -52,6 +52,7 @@ extension DrawingCanvas {
         bezierAnchorPoints()
         bezierControlHandles()
         bezierClosePathHint()
+        bezierContinuePathHint()
         
         // Selection handles for selected shapes (EXCEPT during pen tool drawing or selection dragging)
         // PROFESSIONAL UX: Hide selection dots during movement (professional standard)

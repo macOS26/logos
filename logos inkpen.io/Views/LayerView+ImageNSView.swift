@@ -15,15 +15,17 @@ struct ImageNSView: NSViewRepresentable {
     let image: NSImage
     let bounds: CGRect
     let opacity: Double
+    let fillStyle: FillStyle? // Add support for fill styling
     
     func makeNSView(context: Context) -> ImageNSViewClass {
-        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity)
+        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, fillStyle: fillStyle)
     }
     
     func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
         nsView.image = image
         nsView.imageBounds = bounds
         nsView.opacity = opacity
+        nsView.fillStyle = fillStyle
         nsView.needsDisplay = true
     }
 }
@@ -32,11 +34,13 @@ class ImageNSViewClass: NSView {
     var image: NSImage
     var imageBounds: CGRect
     var opacity: Double
+    var fillStyle: FillStyle? // Add support for fill styling
     
-    init(image: NSImage, bounds: CGRect, opacity: Double) {
+    init(image: NSImage, bounds: CGRect, opacity: Double, fillStyle: FillStyle? = nil) {
         self.image = image
         self.imageBounds = bounds
         self.opacity = opacity
+        self.fillStyle = fillStyle
         super.init(frame: .zero)
         self.wantsLayer = true
         self.layer?.backgroundColor = NSColor.clear.cgColor
@@ -67,6 +71,8 @@ class ImageNSViewClass: NSView {
         print("   📊 Image bounds: \(imageBounds)")
         print("   📍 Image origin: \(imageBounds.origin)")
         print("   📏 Image size: \(imageBounds.size)")
+        print("   🎨 Fill style: \(fillStyle != nil ? "Present" : "None")")
+        print("   🔍 Opacity: \(opacity)")
         
         // FIXED: Flip image vertically without changing coordinate system
         // This keeps the bounds correct while fixing the image orientation
@@ -75,10 +81,37 @@ class ImageNSViewClass: NSView {
         
         // Draw the image at origin (0,0) since we've translated the context
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            // Set up context for proper transparency support
+            context.setAllowsAntialiasing(true)
+            context.setShouldAntialias(true)
+            context.interpolationQuality = .high
+            
+            // Draw the image with transparency support
             context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
             print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
         } else {
             print("   ❌ Failed to get CGImage")
+        }
+        
+        // Apply fill tint if specified
+        if let fillStyle = fillStyle {
+            print("   🎨 Applying fill tint: \(fillStyle.color)")
+            
+            // Set blend mode for the fill
+            context.setBlendMode(fillStyle.blendMode.cgBlendMode)
+            
+            // Apply fill color with opacity - use cgColor directly
+            let fillColor = fillStyle.color.cgColor
+            context.setFillColor(fillColor)
+            
+            // Set alpha for the fill (this will blend with the image)
+            context.setAlpha(CGFloat(fillStyle.opacity))
+            
+            // Fill the image bounds with the tint color
+            // This will blend with the existing image based on the blend mode
+            context.fill(CGRect(origin: .zero, size: imageBounds.size))
+            
+            print("   ✅ Fill tint applied with blend mode: \(fillStyle.blendMode) and opacity: \(fillStyle.opacity)")
         }
         
         context.restoreGState()

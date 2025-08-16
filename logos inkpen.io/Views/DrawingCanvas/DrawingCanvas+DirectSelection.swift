@@ -264,7 +264,11 @@ extension DrawingCanvas {
                             }
                         } else {
                             // Regular grouped shapes: Use path-based hit testing for object-precise selection
-                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
+                            // ZOOM-AWARE PATH HIT TEST TOLERANCE: Scale tolerance based on zoom level
+                            let basePathTolerance: Double = 8.0 // Base tolerance in screen pixels
+                            let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel) // Minimum 2px, scales with zoom
+                            
+                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: pathTolerance) {
                                 isHit = true
                                 Log.info("    - Grouped shape '\(groupedShape.name)' object-based path hit: \(isHit)", category: .general)
                                 break
@@ -283,7 +287,11 @@ extension DrawingCanvas {
                         Log.info("  - Stroke hit test: \(isHit) (tolerance: \(strokeTolerance))", category: .general)
                     } else {
                         // Regular shapes: Use path-based hit testing for object-precise selection
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
+                        // ZOOM-AWARE PATH HIT TEST TOLERANCE: Scale tolerance based on zoom level
+                        let basePathTolerance: Double = 8.0 // Base tolerance in screen pixels
+                        let pathTolerance = max(2.0, basePathTolerance / document.zoomLevel) // Minimum 2px, scales with zoom
+                        
+                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: pathTolerance)
                         Log.info("  - Object-based path hit test: \(isHit)", category: .general)
                     }
                 }

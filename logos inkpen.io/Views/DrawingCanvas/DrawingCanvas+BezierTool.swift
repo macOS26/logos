@@ -9,15 +9,15 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func cancelBezierDrawing() {
+        isBezierDrawing = false
         bezierPath = nil
         bezierPoints.removeAll()
-        isBezierDrawing = false
+        bezierHandles.removeAll()
+        activeBezierPointIndex = nil
         isDraggingBezierHandle = false
         isDraggingBezierPoint = false
-        activeBezierPointIndex = nil
-        bezierHandles.removeAll()
-        currentMouseLocation = nil
         showClosePathHint = false
+        showContinuePathHint = false
         activeBezierShape = nil // Clear the real shape reference
     }
     
@@ -33,13 +33,70 @@ extension DrawingCanvas {
         if isBezierDrawing && bezierPoints.count >= 3 && showClosePathHint {
             let firstPoint = bezierPoints[0]
             let firstPointLocation = CGPoint(x: firstPoint.x, y: firstPoint.y)
-            if distance(location, firstPointLocation) <= 25.0 { // Close tolerance (professional standard)
+            
+            // ZOOM-AWARE CLOSE TOLERANCE: Scale tolerance based on zoom level
+            // At high zoom levels, small physical movements translate to large canvas movements
+            // So we need to reduce the tolerance proportionally
+            let baseCloseTolerance: Double = 5.0 // Base tolerance in screen pixels (reduced from 25.0 for precision)
+            let zoomLevel = document.zoomLevel
+            let closeTolerance = max(2.0, baseCloseTolerance / zoomLevel) // Minimum 2px, scales with zoom
+            
+            if distance(location, firstPointLocation) <= closeTolerance { // Close tolerance (professional standard)
                 closeBezierPath()
                 return
             }
         }
         
         if !isBezierDrawing {
+            // CHECK FOR CONTINUING EXISTING PATH: If user has selected a point, continue from there
+            if let selectedPointID = selectedPoints.first {
+                if let _ = getShapeForPoint(selectedPointID),
+                   let pointPosition = getPointPosition(selectedPointID) {
+                    
+                    // CONTINUE EXISTING PATH: Start drawing from the selected point
+                    Log.fileOperation("🎯 CONTINUING EXISTING PATH: Starting from selected point at \(pointPosition)", level: .info)
+                    
+                    // Create a new bezier path starting from the selected point
+                    bezierPath = VectorPath(elements: [.move(to: pointPosition)])
+                    bezierPoints = [pointPosition]
+                    isBezierDrawing = true
+                    activeBezierPointIndex = 0 // First point is active (solid)
+                    bezierHandles.removeAll()
+                    
+                    // Create real VectorShape with document default colors
+                    let strokeStyle = StrokeStyle(
+                        color: document.defaultStrokeColor,
+                        width: document.defaultStrokeWidth, // Use user's default stroke width
+                        lineCap: document.defaultStrokeLineCap, // Use user's default line cap
+                        lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+                        miterLimit: document.defaultStrokeMiterLimit, // Use user's default line join
+                        opacity: document.defaultStrokeOpacity
+                    )
+                    let fillStyle = FillStyle(
+                        color: document.defaultFillColor,
+                        opacity: document.defaultFillOpacity
+                    )
+                    
+                    activeBezierShape = VectorShape(
+                        name: "Bezier Path (Continued)",
+                        path: bezierPath!,
+                        strokeStyle: strokeStyle,
+                        fillStyle: fillStyle
+                    )
+                    
+                    // Add the real shape to the document immediately
+                    document.addShape(activeBezierShape!)
+                    
+                    // Clear the point selection since we're now drawing
+                    selectedPoints.removeAll()
+                    document.objectWillChange.send()
+                    
+                    Log.fileOperation("🎯 CONTINUED PATH: Started new path from existing point at \(pointPosition)", level: .info)
+                    Log.fileOperation("🎨 PEN TOOL CONTINUED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
+                    return
+                }
+            }
+            
             // CREATE FIRST POINT IMMEDIATELY: Handle both canvas and pasteboard areas consistently
             // This allows click-and-drag for smooth points or simple clicks for corner points
             // SAFETY CHECK: Only create if we haven't already started a path
@@ -124,41 +181,66 @@ extension DrawingCanvas {
         
         // Calculate actual drag distance to distinguish click vs drag
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        let minimumDragThreshold: Double = 8.0 // Must drag at least 8 pixels to create handles
+        
+        // ZOOM-AWARE DRAG THRESHOLD: Scale threshold based on zoom level
+        // At high zoom levels, small physical movements translate to large canvas movements
+        // So we need to reduce the threshold proportionally
+        let baseThreshold: Double = 8.0 // Base threshold in screen pixels
+        let zoomLevel = document.zoomLevel
+        let zoomAwareThreshold = max(2.0, baseThreshold / zoomLevel) // Minimum 2px, scales with zoom
         
         // Handle first point creation if no bezier path is active (fixes gesture ordering issue)
         // SAFETY CHECK: Only create if we haven't already started a path
         if !isBezierDrawing && activeBezierShape == nil {
-            // Create the first point immediately at the start location
-            let firstPoint = VectorPoint(startLocation)
-            bezierPath = VectorPath(elements: [.move(to: firstPoint)])
-            bezierPoints = [firstPoint]
-            isBezierDrawing = true
-            activeBezierPointIndex = 0
-            bezierHandles.removeAll()
-            
-            // Create real VectorShape with document default colors
-            let strokeStyle = StrokeStyle(
-                color: document.defaultStrokeColor,
-                width: document.defaultStrokeWidth, // Use user's default stroke width
-                opacity: document.defaultStrokeOpacity
-            )
-            let fillStyle = FillStyle(
-                color: document.defaultFillColor,
-                opacity: document.defaultFillOpacity
-            )
-            
-            activeBezierShape = VectorShape(
-                name: "Bezier Path",
-                path: bezierPath!,
-                strokeStyle: strokeStyle,
-                fillStyle: fillStyle
-            )
-            
-            // Add the real shape to the document immediately
-            document.addShape(activeBezierShape!)
-            
-            Log.fileOperation("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(startLocation)", level: .info)
+            // CHECK FOR CONTINUING EXISTING PATH: If user has selected a point, continue from there
+            if let selectedPointID = selectedPoints.first {
+                if let _ = getShapeForPoint(selectedPointID),
+                   let pointPosition = getPointPosition(selectedPointID) {
+                    
+                    // CONTINUE EXISTING PATH: Start drawing from the selected point
+                    Log.fileOperation("🎯 CONTINUING EXISTING PATH FROM DRAG: Starting from selected point at \(pointPosition)", level: .info)
+                    
+                    // Create a new bezier path starting from the selected point
+                    bezierPath = VectorPath(elements: [.move(to: pointPosition)])
+                    bezierPoints = [pointPosition]
+                    isBezierDrawing = true
+                    activeBezierPointIndex = 0 // First point is active (solid)
+                    bezierHandles.removeAll()
+                    
+                    // Create real VectorShape with document default colors
+                    let strokeStyle = StrokeStyle(
+                        color: document.defaultStrokeColor,
+                        width: document.defaultStrokeWidth, // Use user's default stroke width
+                        opacity: document.defaultStrokeOpacity
+                    )
+                    let fillStyle = FillStyle(
+                        color: document.defaultFillColor,
+                        opacity: document.defaultFillOpacity
+                    )
+                    
+                    activeBezierShape = VectorShape(
+                        name: "Bezier Path (Continued)",
+                        path: bezierPath!,
+                        strokeStyle: strokeStyle,
+                        fillStyle: fillStyle
+                    )
+                    
+                    // Add the real shape to the document immediately
+                    document.addShape(activeBezierShape!)
+                    
+                    // Clear the point selection since we're now drawing
+                    selectedPoints.removeAll()
+                    document.objectWillChange.send()
+                    
+                    Log.fileOperation("🎯 CONTINUED PATH FROM DRAG: Started new path from existing point at \(pointPosition)", level: .info)
+                } else {
+                    // Fall back to creating new path at start location
+                    createNewPathFromDrag(at: startLocation)
+                }
+            } else {
+                // Create new path at start location
+                createNewPathFromDrag(at: startLocation)
+            }
         } else if !isBezierDrawing && activeBezierShape != nil {
             Log.fileOperation("🎯 BEZIER PEN DRAG: Path already started by tap handler - continuing with existing path", level: .info)
         }
@@ -167,15 +249,20 @@ extension DrawingCanvas {
         guard isBezierDrawing else { return }
         
         // Only proceed with handle creation if user has dragged significantly
-        if dragDistance < minimumDragThreshold {
-            print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) below threshold - treating as CLICK, no handles created")
+        if dragDistance < zoomAwareThreshold {
+            print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) below zoom-aware threshold (\(String(format: "%.1f", zoomAwareThreshold))px) at zoom \(String(format: "%.2f", zoomLevel))x - treating as CLICK, no handles created")
             return
         }
         
-        print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) above threshold - FIRST plotting new point, THEN creating handles")
+        print("🎯 BEZIER PEN: Drag distance (\(String(format: "%.1f", dragDistance))px) above zoom-aware threshold (\(String(format: "%.1f", zoomAwareThreshold))px) at zoom \(String(format: "%.2f", zoomLevel))x - FIRST plotting new point, THEN creating handles")
         
         // Check if we're dragging from an existing anchor point (editing existing handles)
-        let tolerance: Double = 8.0
+        // ZOOM-AWARE POINT DETECTION TOLERANCE: Scale tolerance based on zoom level
+        // At high zoom levels, small physical movements translate to large canvas movements
+        // So we need to reduce the tolerance proportionally
+        let basePointTolerance: Double = 8.0 // Base tolerance in screen pixels
+        let tolerance = max(2.0, basePointTolerance / zoomLevel) // Minimum 2px, scales with zoom
+        
         var draggedPointIndex: Int? = nil
         
         for (index, point) in bezierPoints.enumerated() {
@@ -239,7 +326,13 @@ extension DrawingCanvas {
                 let lastPoint = bezierPoints.last
                 let distanceToLastPoint = lastPoint.map { distance(startLocation, CGPoint(x: $0.x, y: $0.y)) } ?? Double.infinity
                 
-                if distanceToLastPoint > 5.0 {
+                // ZOOM-AWARE DUPLICATE POINT TOLERANCE: Scale tolerance based on zoom level
+                // At high zoom levels, small physical movements translate to large canvas movements
+                // So we need to reduce the tolerance proportionally
+                let baseDuplicateTolerance: Double = 5.0 // Base tolerance in screen pixels
+                let duplicateTolerance = max(1.0, baseDuplicateTolerance / zoomLevel) // Minimum 1px, scales with zoom
+                
+                if distanceToLastPoint > duplicateTolerance {
                     // Only add new point if it's not too close to the last one
                     let newPoint = VectorPoint(startLocation)
                     bezierPoints.append(newPoint)
@@ -489,5 +582,81 @@ extension DrawingCanvas {
         // Update the live path
         let livePath = VectorPath(elements: liveElements, isClosed: false)
         updateActiveBezierShapeWithPath(livePath)
+    }
+
+    // MARK: - Helper Functions for Path Continuation
+    
+    /// Creates a new bezier path from a drag operation at the specified location
+    /// This is used when no existing point is selected and the user starts dragging
+    private func createNewPathFromDrag(at location: CGPoint) {
+        // Create the first point immediately at the start location
+        let firstPoint = VectorPoint(location)
+        bezierPath = VectorPath(elements: [.move(to: firstPoint)])
+        bezierPoints = [firstPoint]
+        isBezierDrawing = true
+        activeBezierPointIndex = 0
+        bezierHandles.removeAll()
+        
+        // Create real VectorShape with document default colors
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: document.defaultStrokeWidth, // Use user's default stroke width
+            opacity: document.defaultStrokeOpacity
+        )
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity
+        )
+        
+        activeBezierShape = VectorShape(
+            name: "Bezier Path",
+            path: bezierPath!,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
+        
+        // Add the real shape to the document immediately
+        document.addShape(activeBezierShape!)
+        
+        Log.fileOperation("🎯 CREATED FIRST POINT FROM DRAG: Started new path at \(location)", level: .info)
+    }
+    
+    /// Gets the shape that contains a specific point (including grouped shapes)
+    /// This supports the ability to continue drawing from existing path points
+    private func getShapeForPoint(_ pointID: PointID) -> VectorShape? {
+        // Find the shape that contains this point (including grouped shapes)
+        for layer in document.layers {
+            // First check top-level shapes
+            if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
+                return shape
+            }
+            
+            // Then check grouped shapes within group containers
+            for containerShape in layer.shapes {
+                if containerShape.isGroupContainer {
+                    if let groupedShape = containerShape.groupedShapes.first(where: { $0.id == pointID.shapeID }) {
+                        return groupedShape
+                    }
+                }
+            }
+        }
+        return nil
+    }
+    
+    /// Checks if the bezier pen tool should show a continue path hint
+    /// This is called from the hover system to provide visual feedback
+    internal func shouldShowContinuePathHint() -> (Bool, CGPoint?) {
+        // Only show hint when bezier pen tool is active and no path is currently being drawn
+        guard document.currentTool == .bezierPen && !isBezierDrawing else {
+            return (false, nil)
+        }
+        
+        // Check if there's a selected point to continue from
+        if let selectedPointID = selectedPoints.first,
+           let pointPosition = getPointPosition(selectedPointID) {
+            return (true, CGPoint(x: pointPosition.x, y: pointPosition.y))
+        }
+        
+        return (false, nil)
     }
 } 
