@@ -33,13 +33,8 @@ struct ClippingMaskShapeView: View {
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger
         )
-        // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
-        .scaleEffect(zoomLevel, anchor: .topLeading)
-        .offset(x: canvasOffset.x, y: canvasOffset.y)
-        // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
-        .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0, 
-                y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
-        .id(dragPreviewTrigger) // Force update when drag preview trigger changes
+        // REMOVED: All SwiftUI transforms - handle everything in NSView
+        // The NSView will handle zoom, offset, and transforms internally
         .onAppear {
             // Debug clipping mask rendering
             print("🎭 RENDERING CLIPPED SHAPE: '\(clippedShape.name)' clipped by '\(maskShape.name)'")
@@ -72,7 +67,8 @@ struct ClippingMaskShapeView: View {
             }
         }
         
-        // Apply shape transform
+        // RESTORE: Apply shape transform for proper positioning
+        // The paths need to include transforms to align with the image
         if !shape.transform.isIdentity {
             let transformedPath = CGMutablePath()
             transformedPath.addPath(path, transform: shape.transform)
@@ -147,36 +143,49 @@ class ClippingMaskNSView: NSView {
         
         context.saveGState()
         
-        // Apply clipping mask using the mask path
+        // CRITICAL FIX: Handle ALL transforms in NSView like working image code
+        // Apply zoom and offset first, then shape transforms
+        context.translateBy(x: canvasOffset.x, y: canvasOffset.y)
+        context.scaleBy(x: zoomLevel, y: zoomLevel)
+        
+        // Apply drag preview offset if selected
+        if isSelected {
+            context.translateBy(x: dragPreviewDelta.x, y: dragPreviewDelta.y)
+        }
+        
+        // CRITICAL FIX: Apply clipping mask using the mask path
+        // The mask path should already be in the correct coordinate system
         context.addPath(maskPath)
         context.clip()
         
         // Draw the clipped content (image or shape)
         if ImageContentRegistry.containsImage(clippedShape),
            let image = ImageContentRegistry.image(for: clippedShape.id) {
-            // FIXED: Use same approach as ImageNSViewClass - no double transforms
-            let imageRect = clippedPath.boundingBoxOfPath
+            // FIXED: Use actual shape bounds and transform like regular ShapeView
+            let pathBounds = clippedShape.path.cgPath.boundingBoxOfPath
+            let transformedBounds = pathBounds.applying(clippedShape.transform)
             context.setAlpha(CGFloat(clippedShape.opacity))
             
-            // FIXED: Apply same image flip logic as ImageNSViewClass
-            context.translateBy(x: imageRect.minX, y: imageRect.maxY)
+            // Draw image at its actual transformed position with proper flip
+            context.translateBy(x: transformedBounds.minX, y: transformedBounds.maxY)
             context.scaleBy(x: 1.0, y: -1.0)
             
             if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: CGRect(origin: .zero, size: imageRect.size))
+                context.draw(cgImage, in: CGRect(origin: .zero, size: transformedBounds.size))
             }
         } else if clippedShape.linkedImagePath != nil || clippedShape.embeddedImageData != nil,
                   let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: clippedShape) {
-            // FIXED: Use same approach for linked/embedded images
-            let imageRect = clippedPath.boundingBoxOfPath
+            // FIXED: Same approach for linked/embedded images
+            let pathBounds = clippedShape.path.cgPath.boundingBoxOfPath
+            let transformedBounds = pathBounds.applying(clippedShape.transform)
             context.setAlpha(CGFloat(clippedShape.opacity))
             
-            // FIXED: Apply same image flip logic
-            context.translateBy(x: imageRect.minX, y: imageRect.maxY)
+            // Draw image at its actual transformed position with proper flip
+            context.translateBy(x: transformedBounds.minX, y: transformedBounds.maxY)
             context.scaleBy(x: 1.0, y: -1.0)
             
             if let cgImage = hydrated.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                context.draw(cgImage, in: CGRect(origin: .zero, size: imageRect.size))
+                context.draw(cgImage, in: CGRect(origin: .zero, size: transformedBounds.size))
             }
         } else {
             // Draw shape with fill and stroke

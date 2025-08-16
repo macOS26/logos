@@ -55,13 +55,8 @@ struct LayerView: View {
                         dragPreviewDelta: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta : .zero,
                         dragPreviewTrigger: dragPreviewTrigger
                     )
-                    // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
-                    .scaleEffect(zoomLevel, anchor: .topLeading)
-                    .offset(x: canvasOffset.x, y: canvasOffset.y)
-                    // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
-                    .offset(x: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta.x * zoomLevel : 0, 
-                            y: (selectedShapeIDs.contains(currentShape.id) || selectedShapeIDs.contains(maskShape.id)) ? dragPreviewDelta.y * zoomLevel : 0)
-                    .id(dragPreviewTrigger) // Force update when drag preview trigger changes
+                    // REMOVED: All SwiftUI transforms - handle everything in NSView
+                    // The NSView will handle zoom, offset, and transforms internally
                     .onAppear {
                         // Debug clipping mask rendering
                         print("🎭 RENDERING CLIPPED SHAPE: '\(currentShape.name)' clipped by '\(maskShape.name)'")
@@ -110,7 +105,8 @@ struct LayerView: View {
             }
         }
         
-        // Apply shape transform
+        // RESTORE: Apply shape transform for proper positioning
+        // The paths need to include transforms to align with the image
         if !shape.transform.isIdentity {
             let transformedPath = CGMutablePath()
             transformedPath.addPath(path, transform: shape.transform)
@@ -647,7 +643,7 @@ struct ScaleHandles: View {
                 // Path point
                 let point = pathPoints[index]
                 scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
-                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                print("�� LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
@@ -3739,7 +3735,6 @@ class GradientStrokeNSView: NSView {
         print("   📍 Object Bounds: (\(String(format: "%.1f", objectSpaceBounds.origin.x)), \(String(format: "%.1f", objectSpaceBounds.origin.y))) size (\(String(format: "%.1f", objectSpaceBounds.width)) × \(String(format: "%.1f", objectSpaceBounds.height)))")
         print("   🔄 Transform: [\(String(format: "%.3f", shape.transform.a)), \(String(format: "%.3f", shape.transform.b)), \(String(format: "%.3f", shape.transform.c)), \(String(format: "%.3f", shape.transform.d)), \(String(format: "%.1f", shape.transform.tx)), \(String(format: "%.1f", shape.transform.ty))]")
         print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
-        
         return worldSpaceCorners
     }
 
