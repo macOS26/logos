@@ -991,12 +991,7 @@ struct ScaleHandles: View {
         // Update the shape with transformed path and reset transform to identity
         document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        
-        // FIXED: Don't call updateBounds() for images - it corrupts their bounds
-        // Images need to preserve their original bounds, not use path bounds
-        if !ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        }
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
         var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
@@ -1530,12 +1525,7 @@ struct RotateHandles: View {
         // Update the shape with transformed path and reset transform to identity
         document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        
-        // FIXED: Don't call updateBounds() for images - it corrupts their bounds
-        // Images need to preserve their original bounds, not use path bounds
-        if !ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        }
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         // CORNER RADIUS SCALING: Apply transform to corner radii if this shape has them
         var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
@@ -1623,20 +1613,11 @@ struct RotateHandles: View {
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
             
-            // CRITICAL FIX: For images, keep the transform and don't transform coordinates
-            // Images need to preserve their transform for SwiftUI to handle rotation
-            if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-                // Images: Keep the transform, don't transform coordinates
-                document.layers[layerIndex].shapes[shapeIndex].transform = previewTransform
-                Log.info("✅ Image rotation: Transform preserved for SwiftUI rendering", category: .fileOperations)
-            } else {
-                // Vector shapes: Transform coordinates and reset transform to identity
-                // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-                document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-                
-                // Apply the final transform to coordinates and reset transform to identity
-                applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
-            }
+            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
+            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
+            
+            // Apply the final transform to coordinates and reset transform to identity
+            applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
@@ -1752,12 +1733,7 @@ struct RotateHandles: View {
         // Update the shape with transformed path and reset transform to identity
         document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        
-        // FIXED: Don't call updateBounds() for images - it corrupts their bounds
-        // Images need to preserve their original bounds, not use path bounds
-        if !ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        }
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         Log.info("✅ Shape coordinates updated after rotation - object origin stays with object", category: .fileOperations)
     }
@@ -2359,12 +2335,7 @@ struct ShearHandles: View {
         // Update the shape with transformed path and reset transform to identity
         document.layers[layerIndex].shapes[shapeIndex].path = transformedPath
         document.layers[layerIndex].shapes[shapeIndex].transform = .identity
-        
-        // FIXED: Don't call updateBounds() for images - it corrupts their bounds
-        // Images need to preserve their original bounds, not use path bounds
-        if !ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
-            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-        }
+        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         Log.info("✅ Shape coordinates updated after shear - object origin stays with object", category: .fileOperations)
     }

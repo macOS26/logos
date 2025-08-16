@@ -47,7 +47,7 @@ class ImageNSViewClass: NSView {
     }
     
     override var isFlipped: Bool {
-        return true  // Match coordinate system with other views
+        return true  // FIXED: Match GradientNSView coordinate system
     }
     
     override func draw(_ dirtyRect: NSRect) {
@@ -58,19 +58,27 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // FIXED: Restore coordinate flipping for proper image orientation
-        // The coordinate flipping is necessary because of the app's coordinate system
-        // SwiftUI will handle all transformations (rotation, skewing, warping) via .transformEffect()
+        // FIXED: Match GradientNSView approach - draw image directly in bounds
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the image as-is.
         
-        // Draw the image with proper coordinate flipping
+        // DEBUG LOGGING: Track image placement and movement
+        print("🖼️ IMAGE NSVIEW DRAW:")
+        print("   📊 Image bounds: \(imageBounds)")
+        print("   📍 Image origin: \(imageBounds.origin)")
+        print("   📏 Image size: \(imageBounds.size)")
+        
+        // FIXED: Flip image vertically without changing coordinate system
+        // This keeps the bounds correct while fixing the image orientation
+        context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
+        context.scaleBy(x: 1.0, y: -1.0)
+        
+        // Draw the image at origin (0,0) since we've translated the context
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            // FIXED: Apply coordinate flipping to match the app's coordinate system
-            // This keeps the image oriented correctly while allowing transforms to work
-            context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
-            context.scaleBy(x: 1.0, y: -1.0)
-            
-            // Draw the image at origin (0,0) since we've translated the context
             context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
+            print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
+        } else {
+            print("   ❌ Failed to get CGImage")
         }
         
         context.restoreGState()

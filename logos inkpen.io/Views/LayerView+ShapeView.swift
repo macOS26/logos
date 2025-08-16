@@ -91,26 +91,29 @@ struct ShapeView: View {
                     )
                 } else if ImageContentRegistry.containsImage(shape),
                           let image = ImageContentRegistry.image(for: shape.id) {
-                    // RENDER RASTER IMAGE USING NSVIEW - FIXED TRANSFORM HANDLING
-                    // FIXED: Use original bounds and let SwiftUI handle transformations
-                    // This allows rotation, skewing, and warping to work properly
-                    let imageBounds = shape.bounds
+                    // RENDER RASTER IMAGE USING NSVIEW - FIXED POSITIONING
+                    // FIXED: Match GradientNSView approach - use pre-transformed bounds
+                    let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                    let transformedBounds = pathBounds.applying(shape.transform)
                     
                     ImageNSView(
                         image: image,
-                        bounds: imageBounds,
+                        bounds: transformedBounds,
                         opacity: shape.opacity
                     )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
                     if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
-                        // RENDER HYDRATED IMAGE USING NSVIEW - FIXED TRANSFORM HANDLING
-                        // FIXED: Use original bounds and let SwiftUI handle transformations
-                        let imageBounds = shape.bounds
+                        // RENDER HYDRATED IMAGE USING NSVIEW - FIXED POSITIONING
+                        // FIXED: Match GradientNSView approach - use pre-transformed bounds
+                        let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                        let transformedBounds = pathBounds.applying(shape.transform)
+                        
+
                         
                         ImageNSView(
                             image: hydrated,
-                            bounds: imageBounds,
+                            bounds: transformedBounds,
                             opacity: shape.opacity
                         )
                     } else {
@@ -154,11 +157,11 @@ struct ShapeView: View {
         // CRITICAL FIX: Apply transforms in CORRECT order - zoom and offset first
         .scaleEffect(zoomLevel, anchor: .topLeading)
         .offset(x: canvasOffset.x, y: canvasOffset.y)
-        // CRITICAL FIX: Apply shape transform for groups and images
+        // CRITICAL FIX: Apply shape transform for groups only
         // Groups: transform is handled inside the group rendering block
-        // Images: transform is now handled by SwiftUI via .transformEffect() (like other shapes)
+        // Images: transform is handled by ImageNSView itself
         // Regular shapes: transform is BAKED INTO the path
-        .transformEffect((shape.isGroupContainer || ImageContentRegistry.containsImage(shape)) ? shape.transform : .identity)
+        .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
         // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
         .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0, 
                 y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
