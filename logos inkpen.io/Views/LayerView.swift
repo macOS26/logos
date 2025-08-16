@@ -119,6 +119,7 @@ struct LayerView: View {
         
         return path
     }
+
 }
 
 // MARK: - Clipping Mask Views moved to LayerView+ClippingMask.swift
