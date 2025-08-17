@@ -93,25 +93,24 @@ class ImageNSViewClass: NSView {
             print("   ❌ Failed to get CGImage")
         }
         
-        // Apply fill tint if specified
+        // Apply fill colorization if specified
         if let fillStyle = fillStyle {
-            print("   🎨 Applying fill tint: \(fillStyle.color)")
+            print("   🎨 Applying fill colorization: \(fillStyle.color)")
             
-            // Set blend mode for the fill
-            context.setBlendMode(fillStyle.blendMode.cgBlendMode)
+            // Use Core Graphics blend mode for safe colorization
+            context.setBlendMode(.multiply)
             
-            // Apply fill color with opacity - use cgColor directly
+            // Set the fill color
             let fillColor = fillStyle.color.cgColor
             context.setFillColor(fillColor)
             
-            // Set alpha for the fill (this will blend with the image)
+            // Set alpha for the fill
             context.setAlpha(CGFloat(fillStyle.opacity))
             
-            // Fill the image bounds with the tint color
-            // This will blend with the existing image based on the blend mode
+            // Fill the image bounds - this will colorize the image using multiply blend
             context.fill(CGRect(origin: .zero, size: imageBounds.size))
             
-            print("   ✅ Fill tint applied with blend mode: \(fillStyle.blendMode) and opacity: \(fillStyle.opacity)")
+            print("   ✅ Fill colorization applied with multiply blend mode")
         }
         
         context.restoreGState()
