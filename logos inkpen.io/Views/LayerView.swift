@@ -1544,31 +1544,26 @@ struct RotateHandles: View {
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
             
-            // CRITICAL FIX: Store rotation angle before resetting transform
+            // FIXED: Store rotation angle AND apply transform to make orange marquee rotate
+            // But prevent bounds expansion by using a different approach
             document.layers[layerIndex].shapes[shapeIndex].rotationAngle = finalRotationAngle
-            print("   🔄 Stored rotation angle: \(String(format: "%.1f", finalRotationAngle * 180 / .pi))°")
             
-            // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
-            document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
-            
-            // Apply the final transform to coordinates and reset transform to identity
+            // CRITICAL: Apply transform to make orange marquee rotate
+            // Use the existing helper function that properly handles VectorPath
             applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
+            // Reset transform to identity since we're handling rotation separately
+            document.layers[layerIndex].shapes[shapeIndex].transform = .identity
+            
             let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            print("   🔄 Stored rotation angle: \(String(format: "%.1f", finalRotationAngle * 180 / .pi))°")
             print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
             
-            // Reset preview transform
-            previewTransform = .identity
-            
-            Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
-            
-            // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
-            // This updates the points to match the rotated object positions
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.updatePathPointsAfterRotation()
-            }
+            // Trigger view refresh
+            document.objectWillChange.send()
         }
         
+        // Reset rotation state
         previewTransform = .identity
     }
     
@@ -2167,7 +2162,7 @@ struct ShearHandles: View {
                     case .curve(let to, _, _), .quadCurve(let to, _):
                         pathPoints.append(to)
                     case .close:
-                        continue
+                        continue // Skip close elements
                     }
                 }
             }
@@ -2180,7 +2175,7 @@ struct ShearHandles: View {
                 case .curve(let to, _, _), .quadCurve(let to, _):
                     pathPoints.append(to)
                 case .close:
-                    continue
+                    continue // Skip close elements
                 }
             }
         }

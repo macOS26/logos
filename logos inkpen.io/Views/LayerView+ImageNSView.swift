@@ -89,20 +89,10 @@ class ImageNSViewClass: NSView {
         context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
         context.scaleBy(x: 1.0, y: -1.0)
         
-        // DEBUG LOGGING: Track image placement and rotation
-        print("🖼️ IMAGE NSVIEW DRAW WITH ROTATION:")
-        print("   📊 Image bounds: \(imageBounds)")
-        print("   📍 Image center: \(imageCenter)")
-        print("   🔄 Rotation angle: \(rotationAngle * 180 / .pi)°")
-        print("   🎨 Fill style: \(fillStyle != nil ? "Present" : "None")")
-        print("   🔍 Opacity: \(opacity)")
-        
-        // Draw the image at the correct position with rotation
+        // CRITICAL: Draw the image at its ORIGINAL bounds, not expanded bounds
+        // The rotation is applied via context.rotate, so the image stays the same size
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            // Set up context for proper transparency support
-            context.setAllowsAntialiasing(true)
             context.setShouldAntialias(true)
-            context.interpolationQuality = .high
             
             // Calculate image rect to center it properly
             let imageSize = imageBounds.size
@@ -113,7 +103,7 @@ class ImageNSViewClass: NSView {
                 height: imageSize.height
             )
             
-            // Draw the image with proper centering
+            // Draw the image with proper centering - SAME SIZE as original
             context.draw(cgImage, in: imageRect)
             print("   ✅ Image drawn at: \(imageRect) with rotation and proper centering")
         } else {
