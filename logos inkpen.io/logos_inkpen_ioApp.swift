@@ -1632,6 +1632,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     
     private func configureWindowsAsync() async {
+        // Add a delay to let the app fully initialize and check for existing document windows
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
+        
         await MainActor.run {
             // Check if we have any document windows open
             let documentWindows = NSApplication.shared.windows.filter { window in
@@ -1645,6 +1648,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let onboardingWindow = NSApplication.shared.windows.first(where: { $0.title == "Document Setup" }) {
                     onboardingWindow.close()
                     Log.info("📄 App: Document windows detected at launch - closing onboarding setup window", category: .startup)
+                }
+                
+                // Also check if there are any other setup windows that might be visible
+                NSApplication.shared.windows.forEach { window in
+                    if window.title == "Document Setup" {
+                        window.close()
+                        Log.info("📄 App: Closed additional setup window", category: .startup)
+                    }
                 }
             } else {
                 Log.info("📄 App: No document windows detected at launch - keeping onboarding setup window", category: .startup)
@@ -1819,6 +1830,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
         .defaultPosition(.center)
+
         
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
         DocumentGroup(newDocument: InkpenDocument()) { file in

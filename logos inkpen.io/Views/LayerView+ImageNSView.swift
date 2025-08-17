@@ -62,10 +62,6 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // FIXED: Match GradientNSView approach - draw image directly in bounds
-        // The path we receive is already pre-transformed into the document's coordinate space.
-        // SwiftUI will handle scaling/offsetting this NSView. We just draw the image as-is.
-        
         // DEBUG LOGGING: Track image placement and movement
         print("🖼️ IMAGE NSVIEW DRAW:")
         print("   📊 Image bounds: \(imageBounds)")
@@ -93,24 +89,19 @@ class ImageNSViewClass: NSView {
             print("   ❌ Failed to get CGImage")
         }
         
-        // Apply fill colorization if specified
-        if let fillStyle = fillStyle {
+        // Apply fill colorization if specified (simplified approach)
+        if let fillStyle = fillStyle, fillStyle.color != .clear {
             print("   🎨 Applying fill colorization: \(fillStyle.color)")
             
-            // Use Core Graphics blend mode for safe colorization
-            context.setBlendMode(.multiply)
-            
-            // Set the fill color
-            let fillColor = fillStyle.color.cgColor
-            context.setFillColor(fillColor)
-            
-            // Set alpha for the fill
+            // Use a simple blend mode approach instead of complex pixel manipulation
+            context.setBlendMode(.lighten)
+            context.setFillColor(fillStyle.color.cgColor)
             context.setAlpha(CGFloat(fillStyle.opacity))
             
-            // Fill the image bounds - this will colorize the image using multiply blend
+            // Fill the image bounds with the color
             context.fill(CGRect(origin: .zero, size: imageBounds.size))
             
-            print("   ✅ Fill colorization applied with multiply blend mode")
+            print("   ✅ Fill colorization applied with blend mode: \(fillStyle.blendMode) and opacity: \(fillStyle.opacity)")
         }
         
         context.restoreGState()

@@ -1404,24 +1404,24 @@ struct StatusBar: View {
     var body: some View {
         HStack {
             // Current Tool with context-sensitive instructions
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 2) {
                 Text("Tool: \(document.currentTool.rawValue)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
                 // PROFESSIONAL BEZIER TOOL HINTS
                 if document.currentTool == .bezierPen {
-                    Text("Click to place points • Click near first point to close • Double-click to finish • ⌘J to close")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
+                    Text("• Click to place points • Click near first point to close")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 } else if document.currentTool == .directSelection {
-                    Text("Select anchor points and handles • ⌘⇧J to close open paths")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
+                    Text("• Select anchor points and handles")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 } else if document.currentTool == .warp {
-                    Text("Select objects to warp • Drag handles to distort • Use envelope tool for advanced warping")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
+                    Text("• Select objects to warp • Drag handles to distort")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             
