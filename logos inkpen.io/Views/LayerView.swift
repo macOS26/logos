@@ -1105,6 +1105,7 @@ struct RotateHandles: View {
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box
+            // FIXED: Use stored rotation angle to show rotated orange marquee without expanding bounds
             Path { path in
                 for element in shape.path.elements {
                     switch element {
@@ -1124,7 +1125,8 @@ struct RotateHandles: View {
             .stroke(Color.orange, lineWidth: 2.0 / zoomLevel) // Orange outline for rotate tool selection
             .scaleEffect(zoomLevel, anchor: .topLeading)
             .offset(x: canvasOffset.x, y: canvasOffset.y)
-            .transformEffect(shape.transform)
+            // FIXED: Apply stored rotation angle to show rotated marquee without changing bounds
+            .rotationEffect(Angle(radians: Double(shape.rotationAngle)), anchor: .center)
             
             // MARQUEE PREVIEW: Show ACTUAL ROTATED SHAPE OUTLINE (EXACTLY like the final object will be)
             if isRotating && !previewTransform.isIdentity {
@@ -1174,7 +1176,8 @@ struct RotateHandles: View {
                 .position(center)
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                // FIXED: Apply stored rotation angle to show rotated center point without changing bounds
+                .rotationEffect(Angle(radians: Double(shape.rotationAngle)), anchor: .center)
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = nil // Select center
@@ -1242,7 +1245,8 @@ struct RotateHandles: View {
                 .position(CGPoint(x: point.x, y: point.y))
                 .scaleEffect(zoomLevel, anchor: .topLeading)
                 .offset(x: canvasOffset.x, y: canvasOffset.y)
-                .transformEffect(shape.transform)
+                // FIXED: Apply stored rotation angle to show rotated path points without changing bounds
+                .rotationEffect(Angle(radians: Double(shape.rotationAngle)), anchor: .center)
                 .onTapGesture {
                     if !isRotating {
                         selectedAnchorPointIndex = index
@@ -1548,9 +1552,10 @@ struct RotateHandles: View {
             // But prevent bounds expansion by using a different approach
             document.layers[layerIndex].shapes[shapeIndex].rotationAngle = finalRotationAngle
             
-            // CRITICAL: Apply transform to make orange marquee rotate
-            // Use the existing helper function that properly handles VectorPath
-            applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
+            // CRITICAL: DON'T apply transform to shape coordinates - this expands bounds!
+            // Instead, just store the rotation angle and let the orange marquee show rotation
+            // The orange marquee will show rotation via the preview transform during rotation
+            // But the actual image bounds stay constant
             
             // Reset transform to identity since we're handling rotation separately
             document.layers[layerIndex].shapes[shapeIndex].transform = .identity
