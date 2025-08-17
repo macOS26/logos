@@ -255,6 +255,7 @@ struct ProfessionalOffsetPathSection: View {
             // Step 1: Apply stroke directly to the original path (centerline stroke)
             let strokeStyle = StrokeStyle(
                 width: abs(CGFloat(offsetDistance)) * 2.0, // Offset Distance × 2
+                placement: .center,
                 lineCap: .round,
                 lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
                 miterLimit: CGFloat(miterLimit)

@@ -35,7 +35,7 @@ extension DrawingCanvas {
         let testShape = VectorShape(
             name: "TEST SHAPE",
             path: createCirclePath(center: testCenter, radius: 30),
-            strokeStyle: StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), width: 3),
+            strokeStyle: StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), width: 3, placement: .center),
             fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 1.0, green: 0.5, blue: 0.0)), opacity: 0.8)
         )
         

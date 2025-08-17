@@ -234,7 +234,8 @@ class SVGToInkPenImporter: ObservableObject {
             ], isClosed: true),
             strokeStyle: StrokeStyle(
                 color: .rgb(RGBColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1.0)), 
-                width: 2.0
+                width: 2.0,
+                placement: .center
             ),
             fillStyle: FillStyle(
                 color: .rgb(RGBColor(red: 0.9, green: 0.95, blue: 1.0, alpha: 0.3))
@@ -315,7 +316,7 @@ class SVGToInkPenImporter: ObservableObject {
         let rectShape = VectorShape(
             name: "Sample Rectangle",
             path: rectPath,
-            strokeStyle: StrokeStyle(color: .black, width: 2.0),
+            strokeStyle: StrokeStyle(color: .black, width: 2.0, placement: .center),
             fillStyle: FillStyle(color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0))),
             transform: .identity
         )
@@ -333,7 +334,7 @@ class SVGToInkPenImporter: ObservableObject {
         let circleShape = VectorShape(
             name: "Sample Circle",
             path: circlePath,
-            strokeStyle: StrokeStyle(color: .black, width: 1.0),
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center),
             fillStyle: FillStyle(color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0))),
             transform: .identity
         )

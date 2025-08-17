@@ -457,7 +457,7 @@ extension DrawingCanvas {
         Log.info("Shape bounds: \(activeBezierShape.bounds)", category: .general)
         Log.fileOperation("🎨 PEN TOOL FINAL COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
         Log.info("🔍 Shape fill applied: \(FillStyle(color: document.defaultFillColor, opacity: document.defaultFillOpacity))", category: .general)
-        Log.info("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, opacity: document.defaultStrokeOpacity))", category: .general)
+                                Log.info("🔍 Shape stroke applied: \(StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, opacity: document.defaultStrokeOpacity))", category: .general)
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption

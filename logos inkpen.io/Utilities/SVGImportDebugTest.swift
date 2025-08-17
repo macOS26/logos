@@ -258,7 +258,7 @@ class SVGImportDebugTest: ObservableObject {
                     .line(to: VectorPoint(50, 150)),
                     .close
                 ], isClosed: true),
-                strokeStyle: StrokeStyle(color: .black, width: 2.0),
+                strokeStyle: StrokeStyle(color: .black, width: 2.0, placement: .center),
                 fillStyle: FillStyle(color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0))),
                 transform: .identity
             ),
@@ -269,7 +269,7 @@ class SVGImportDebugTest: ObservableObject {
                     .move(to: VectorPoint(100, 100)),
                     .curve(to: VectorPoint(200, 100), control1: VectorPoint(150, 50), control2: VectorPoint(150, 150))
                 ], isClosed: false),
-                strokeStyle: StrokeStyle(color: .rgb(RGBColor(red: 0.0, green: 1.0, blue: 0.0)), width: 1.0),
+                strokeStyle: StrokeStyle(color: .rgb(RGBColor(red: 0.0, green: 1.0, blue: 0.0)), width: 1.0, placement: .center),
                 fillStyle: FillStyle(color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0))),
                 transform: .identity
             )

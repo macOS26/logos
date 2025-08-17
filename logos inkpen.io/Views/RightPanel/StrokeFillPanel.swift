@@ -299,7 +299,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
                         }
@@ -327,7 +327,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
                         }
@@ -375,7 +375,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: opacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.opacity = opacity
                         }
@@ -406,7 +406,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineJoin: lineJoin, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineJoin = lineJoin
                         }
@@ -433,7 +433,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: lineCap, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.lineCap = lineCap
                         }
@@ -460,7 +460,7 @@ struct StrokeFillPanel: View {
                 for layerIndex in document.layers.indices {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, miterLimit: miterLimit, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.miterLimit = miterLimit
                         }

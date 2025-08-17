@@ -318,7 +318,7 @@ class TemplateManager {
             at: CGPoint(x: margin, y: margin),
             size: CGSize(width: 3.5 - (margin * 2), height: 2.0 - (margin * 2))
         )
-        safeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 1, alpha: 1)), width: 0.5) // Cyan
+        safeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 1, alpha: 1)), width: 0.5, placement: .center) // Cyan
         safeArea.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(safeArea)
         
@@ -333,7 +333,7 @@ class TemplateManager {
             at: CGPoint(x: 1.0, y: 9.0), // 1" margin, 2" from top
             size: CGSize(width: 6.5, height: 1.0) // 6.5" × 1"
         )
-        headerArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)), width: 0.5) // Blue
+        headerArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)), width: 0.5, placement: .center) // Blue
         headerArea.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(headerArea)
         
@@ -348,7 +348,7 @@ class TemplateManager {
             at: CGPoint(x: 2.0, y: 30.0), // 2" margin from left, 6" from bottom
             size: CGSize(width: 20.0, height: 4.0) // 20" × 4"
         )
-        titleArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 1, alpha: 1)), width: 1.0) // Magenta
+        titleArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 1, alpha: 1)), width: 1.0, placement: .center) // Magenta
         titleArea.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(titleArea)
         
@@ -363,7 +363,7 @@ class TemplateManager {
             at: CGPoint(x: 249, y: 0),
             size: CGSize(width: 2, height: 500)
         )
-        verticalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), width: 0.5) // Red
+        verticalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), width: 0.5, placement: .center) // Red
         verticalGuide.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(verticalGuide)
         
@@ -371,7 +371,7 @@ class TemplateManager {
             at: CGPoint(x: 0, y: 249),
             size: CGSize(width: 500, height: 2)
         )
-        horizontalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), width: 0.5) // Red
+        horizontalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 1)), width: 0.5, placement: .center) // Red
         horizontalGuide.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(horizontalGuide)
         
@@ -386,7 +386,7 @@ class TemplateManager {
             at: CGPoint(x: 2.0, y: 2.0), // 2" margin
             size: CGSize(width: 32.0, height: 20.0) // Drawing area
         )
-        border.strokeStyle = StrokeStyle(color: VectorColor.black, width: 2.0)
+        border.strokeStyle = StrokeStyle(color: VectorColor.black, width: 2.0, placement: .center)
         border.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(border)
         
@@ -412,7 +412,7 @@ class TemplateManager {
             at: CGPoint(x: 11.0, y: 1.0), // 6" from left, 1" from bottom
             size: CGSize(width: 6.0, height: 3.0) // 6" × 3"
         )
-        titleBlock.strokeStyle = StrokeStyle(color: VectorColor.black, width: 1.0)
+        titleBlock.strokeStyle = StrokeStyle(color: VectorColor.black, width: 1.0, placement: .center)
         titleBlock.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(titleBlock)
         
@@ -441,7 +441,7 @@ class TemplateManager {
             at: CGPoint(x: margin, y: margin),
             size: CGSize(width: 1920 - (margin * 2), height: 1080 - (margin * 2))
         )
-        contentSafeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0, alpha: 1)), width: 1.0) // Green
+        contentSafeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0, alpha: 1)), width: 1.0, placement: .center) // Green
         contentSafeArea.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(contentSafeArea)
         
@@ -450,7 +450,7 @@ class TemplateManager {
             at: CGPoint(x: 959, y: 0), // Center at 1920/2 - 1
             size: CGSize(width: 2, height: 1080)
         )
-        verticalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5) // Red with transparency
+        verticalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5, placement: .center) // Red with transparency
         verticalGuide.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(verticalGuide)
         
@@ -458,7 +458,7 @@ class TemplateManager {
             at: CGPoint(x: 0, y: 539), // Center at 1080/2 - 1
             size: CGSize(width: 1920, height: 2)
         )
-        horizontalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5) // Red with transparency
+        horizontalGuide.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0, alpha: 0.5)), width: 0.5, placement: .center) // Red with transparency
         horizontalGuide.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(horizontalGuide)
         
@@ -473,7 +473,7 @@ class TemplateManager {
             at: CGPoint(x: 64, y: 64),
             size: CGSize(width: 1792, height: 952)
         )
-        safeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)), width: 1.0) // Blue
+        safeArea.strokeStyle = StrokeStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1, alpha: 1)), width: 1.0, placement: .center) // Blue
         safeArea.fillStyle = FillStyle(color: VectorColor.clear)
         guides.append(safeArea)
         

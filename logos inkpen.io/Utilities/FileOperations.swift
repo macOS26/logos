@@ -412,7 +412,7 @@ class VectorImportManager {
                 .line(to: VectorPoint(0, size.height)),
                 .close
             ], isClosed: true),
-            strokeStyle: StrokeStyle(color: .clear, width: 0),
+            strokeStyle: StrokeStyle(color: .clear, width: 0, placement: .center),
             fillStyle: FillStyle(color: .clear),
             transform: .identity
         )
@@ -1612,24 +1612,24 @@ class SVGParser: NSObject, XMLParserDelegate {
             Log.info("🔍 Looking for stroke gradient: \(gradientId)", category: .general)
             Log.info("🔍 Available gradients: \(gradientDefinitions.keys.sorted())", category: .general)
             
-            if let gradient = gradientDefinitions[gradientId] {
-                let width = parseLength(attributes["stroke-width"]) ?? 1.0
-                let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
-                Log.info("✅ Applied gradient stroke: \(gradientId)", category: .fileOperations)
-                return StrokeStyle(gradient: gradient, width: width, opacity: opacity)
-            }
-            Log.error("❌ Gradient reference not found for stroke: \(gradientId)", category: .error)
-            // Fallback to black if gradient not found
+                    if let gradient = gradientDefinitions[gradientId] {
             let width = parseLength(attributes["stroke-width"]) ?? 1.0
             let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
-            return StrokeStyle(color: .black, width: width, opacity: opacity)
+            Log.info("✅ Applied gradient stroke: \(gradientId)", category: .fileOperations)
+            return StrokeStyle(gradient: gradient, width: width, placement: .center, opacity: opacity)
+        }
+        Log.error("❌ Gradient reference not found for stroke: \(gradientId)", category: .error)
+        // Fallback to black if gradient not found
+        let width = parseLength(attributes["stroke-width"]) ?? 1.0
+        let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
+        return StrokeStyle(color: .black, width: width, placement: .center, opacity: opacity)
         }
         
         let color = parseColor(stroke) ?? .black
         let width = parseLength(attributes["stroke-width"]) ?? 1.0
         let opacity = parseLength(attributes["stroke-opacity"]) ?? 1.0
         
-        return StrokeStyle(color: color, width: width, opacity: opacity)
+        return StrokeStyle(color: color, width: width, placement: .center, opacity: opacity)
     }
     
     private func parseFillStyle(_ attributes: [String: String]) -> FillStyle? {
@@ -2869,7 +2869,7 @@ private func extractPDFVectorContent(_ page: CGPDFPage) throws -> PDFContent {
     let rectShape = VectorShape(
         name: "PDF Rectangle",
         path: rectPath,
-        strokeStyle: StrokeStyle(color: .black, width: 1.0),
+        strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center),
         fillStyle: FillStyle(color: .rgb(RGBColor(red: 0.8, green: 0.8, blue: 1.0)))
     )
     
@@ -3094,7 +3094,7 @@ private func parsePostScriptPaths(_ content: String) throws -> [VectorShape] {
                 let shape = VectorShape(
                     name: "EPS Shape \(shapes.count + 1)",
                     path: vectorPath,
-                    strokeStyle: command.contains("stroke") ? StrokeStyle(color: .black, width: 1.0) : nil,
+                    strokeStyle: command.contains("stroke") ? StrokeStyle(color: .black, width: 1.0, placement: .center) : nil,
                     fillStyle: command.contains("fill") ? FillStyle(color: .rgb(RGBColor(red: 0.7, green: 0.7, blue: 0.9))) : nil
                 )
                 shapes.append(shape)
@@ -3477,7 +3477,7 @@ class VectorExportManager {
                 var mutableTransformation = transformation
                 let transformedPath = shape.path.cgPath.copy(using: &mutableTransformation)
                 let dwfOpcodes = try convertPathToDWFOpcodes(transformedPath!, 
-                                                           strokeStyle: shape.strokeStyle ?? StrokeStyle(),
+                                                           strokeStyle: shape.strokeStyle ?? StrokeStyle(placement: .center),
                                                            fillStyle: shape.fillStyle ?? FillStyle())
                 opcodes.append(contentsOf: dwfOpcodes)
                 shapeCount += 1
@@ -3755,7 +3755,7 @@ class VectorExportManager {
                 var mutableTransformation = transformation
                 let transformedPath = shape.path.cgPath.copy(using: &mutableTransformation)
                 let dwgEntities = try convertPathToDWGEntities(transformedPath!, 
-                                                             strokeStyle: shape.strokeStyle ?? StrokeStyle(),
+                                                             strokeStyle: shape.strokeStyle ?? StrokeStyle(placement: .center),
                                                              fillStyle: shape.fillStyle ?? FillStyle(),
                                                              layerName: layer.name)
                 entities.append(contentsOf: dwgEntities)
@@ -4472,7 +4472,7 @@ class VectorExportManager {
         // Convert to DWG entities with millimeter precision
         let pathEntities = try convertPathToMillimeterPrecisionDWGEntities(
             transformedPath,
-            strokeStyle: shape.strokeStyle ?? StrokeStyle(),
+            strokeStyle: shape.strokeStyle ?? StrokeStyle(placement: .center),
             fillStyle: shape.fillStyle ?? FillStyle(),
             layerName: layerName
         )

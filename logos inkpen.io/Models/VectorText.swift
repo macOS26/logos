@@ -435,7 +435,7 @@ struct VectorText: Identifiable, Codable, Hashable {
             return VectorShape(
                 name: "Text Outline: \(content)",
                 path: vectorPath,
-                strokeStyle: typography.hasStroke ? StrokeStyle(color: typography.strokeColor, width: typography.strokeWidth, opacity: typography.strokeOpacity) : nil,
+                strokeStyle: typography.hasStroke ? StrokeStyle(color: typography.strokeColor, width: typography.strokeWidth, placement: .center, opacity: typography.strokeOpacity) : nil,
                 fillStyle: FillStyle(color: typography.fillColor, opacity: typography.fillOpacity),
                 transform: .identity, // No additional transform needed
                 isGroup: false // Single unified shape, not a group

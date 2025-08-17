@@ -504,6 +504,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var defaultStrokeWidth: Double = 1.0  // Default stroke width for new shapes
     
     // DEFAULT STROKE STYLE PROPERTIES FOR NEW SHAPES
+    @Published var defaultStrokePlacement: StrokePlacement = .center  // Default stroke placement for new shapes
     @Published var defaultStrokeLineJoin: CGLineJoin = .miter  // Default line join for new shapes
     @Published var defaultStrokeLineCap: CGLineCap = .butt  // Default line cap for new shapes
     @Published var defaultStrokeMiterLimit: Double = 10.0  // Default miter limit for new shapes
@@ -986,7 +987,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit
     }
     
     required init(from decoder: Decoder) throws {
@@ -1019,6 +1020,7 @@ class VectorDocument: ObservableObject, Codable {
         defaultFillOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultFillOpacity) ?? 1.0
         defaultStrokeOpacity = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeOpacity) ?? 1.0
         defaultStrokeWidth = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeWidth) ?? 1.0
+        defaultStrokePlacement = try container.decodeIfPresent(StrokePlacement.self, forKey: .defaultStrokePlacement) ?? .center
         defaultStrokeLineJoin = try container.decodeIfPresent(CGLineJoin.self, forKey: .defaultStrokeLineJoin) ?? .miter
         defaultStrokeLineCap = try container.decodeIfPresent(CGLineCap.self, forKey: .defaultStrokeLineCap) ?? .butt
         defaultStrokeMiterLimit = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeMiterLimit) ?? 10.0
@@ -1052,6 +1054,7 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(defaultFillOpacity, forKey: .defaultFillOpacity)
         try container.encode(defaultStrokeOpacity, forKey: .defaultStrokeOpacity)
         try container.encode(defaultStrokeWidth, forKey: .defaultStrokeWidth)
+        try container.encode(defaultStrokePlacement, forKey: .defaultStrokePlacement)
         try container.encode(defaultStrokeLineJoin, forKey: .defaultStrokeLineJoin)
         try container.encode(defaultStrokeLineCap, forKey: .defaultStrokeLineCap)
         try container.encode(defaultStrokeMiterLimit, forKey: .defaultStrokeMiterLimit)
@@ -1804,7 +1807,7 @@ class VectorDocument: ObservableObject, Codable {
             let outlineShape = VectorShape(
                 name: "Text Outline: \(textObject.content)",
                 path: vectorPath,
-                strokeStyle: textObject.typography.hasStroke ? StrokeStyle(color: textObject.typography.strokeColor, width: textObject.typography.strokeWidth, opacity: textObject.typography.strokeOpacity) : nil,
+                strokeStyle: textObject.typography.hasStroke ? StrokeStyle(color: textObject.typography.strokeColor, width: textObject.typography.strokeWidth, placement: .center, opacity: textObject.typography.strokeOpacity) : nil,
                 fillStyle: FillStyle(color: textObject.typography.fillColor, opacity: textObject.typography.fillOpacity),
                 transform: .identity, // No additional transform needed
                 isGroup: false // Single unified shape, not a group
@@ -2116,7 +2119,7 @@ class VectorDocument: ObservableObject, Codable {
                     }
                 case .stroke:
                     if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color)
+                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
                     } else {
                         layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
                     }
@@ -2530,6 +2533,7 @@ class VectorDocument: ObservableObject, Codable {
                     strokeStyle: StrokeStyle(
                         color: .black,
                         width: 1.0,
+                        placement: .center,
                         lineCap: .round,
                         lineJoin: .round
                     ),

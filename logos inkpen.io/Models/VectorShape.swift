@@ -63,7 +63,7 @@ struct StrokeStyle: Codable, Hashable {
     var opacity: Double // PROFESSIONAL STROKE TRANSPARENCY
     var blendMode: BlendMode // PROFESSIONAL STROKE BLEND MODES
     
-    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .outside, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(color: VectorColor = .black, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = color
         self.width = width
         self.placement = placement
@@ -78,7 +78,7 @@ struct StrokeStyle: Codable, Hashable {
     // MARK: - Gradient Support
     
     /// Create a stroke style with a gradient
-    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .outside, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
+    init(gradient: VectorGradient, width: Double = 1.0, placement: StrokePlacement = .center, dashPattern: [Double] = [], lineCap: CGLineCap = .butt, lineJoin: CGLineJoin = .miter, miterLimit: Double = 10.0, opacity: Double = 1.0, blendMode: BlendMode = .normal) {
         self.color = .gradient(gradient)
         self.width = width
         self.placement = placement
@@ -483,7 +483,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
             name: "Rectangle", 
             path: path, 
             geometricType: .rectangle, 
-            strokeStyle: StrokeStyle(color: .black, width: 1.0, opacity: 1.0), 
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0), 
             fillStyle: FillStyle(color: .white, opacity: 1.0)
         )
     }
@@ -511,7 +511,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
             name: "Circle", 
             path: path, 
             geometricType: .circle, 
-            strokeStyle: StrokeStyle(color: .black, width: 1.0, opacity: 1.0), 
+            strokeStyle: StrokeStyle(color: .black, width: 1.0, placement: .center, opacity: 1.0), 
             fillStyle: FillStyle(color: .white, opacity: 1.0)
         )
     }
@@ -535,7 +535,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         elements.append(.close)
         
         let path = VectorPath(elements: elements, isClosed: true)
-        return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(), fillStyle: FillStyle(color: .white))
+        return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(placement: .center), fillStyle: FillStyle(color: .white))
     }
     
     // MARK: - Backward Compatibility for Corner Radius
