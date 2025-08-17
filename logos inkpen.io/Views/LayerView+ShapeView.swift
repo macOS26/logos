@@ -102,6 +102,10 @@ struct ShapeView: View {
                         opacity: shape.opacity,
                         fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                     )
+                    // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
+                    // This prevents the jumping effect when moving scaled/rotated images
+                    .offset(x: isSelected ? dragPreviewDelta.x : 0, 
+                            y: isSelected ? dragPreviewDelta.y : 0)
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
                     if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
@@ -118,6 +122,10 @@ struct ShapeView: View {
                             opacity: shape.opacity,
                             fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                         )
+                        // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
+                        // This prevents the jumping effect when moving scaled/rotated images
+                        .offset(x: isSelected ? dragPreviewDelta.x : 0, 
+                                y: isSelected ? dragPreviewDelta.y : 0)
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
                         let placeholder = Path(CGRect(origin: .zero, size: shape.bounds.size))
@@ -165,8 +173,10 @@ struct ShapeView: View {
         // Regular shapes: transform is BAKED INTO the path
         .transformEffect(shape.isGroupContainer ? shape.transform : .identity)
         // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
-        .offset(x: isSelected ? dragPreviewDelta.x * zoomLevel : 0, 
-                y: isSelected ? dragPreviewDelta.y * zoomLevel : 0)
+        // CRITICAL FIX: For images, the preview offset is applied at the ImageNSView level in canvas space
+        // For other shapes, apply the offset at the view level in screen space
+        .offset(x: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.x * zoomLevel : 0, 
+                y: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .opacity(shape.opacity)
     }

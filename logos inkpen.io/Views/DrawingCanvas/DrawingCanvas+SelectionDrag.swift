@@ -168,7 +168,30 @@ extension DrawingCanvas {
         // Move them by updating the transform translation rather than rewriting path points.
         if ImageContentRegistry.containsImage(shape) {
             var updatedShape = document.layers[layerIndex].shapes[shapeIndex]
-            updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
+            
+            // CRITICAL FIX: For transformed images, we need to handle the coordinate system properly
+            // to prevent jumping when the image has scaling, rotation, or other transforms
+            if updatedShape.transform.isIdentity {
+                // Simple case: no existing transforms, just add translation
+                updatedShape.transform = updatedShape.transform.translatedBy(x: delta.x, y: delta.y)
+            } else {
+                // COMPLEX CASE: Image has existing transforms (scale, rotation, etc.)
+                // We need to decompose the transform, add the translation, and recompose
+                // This prevents coordinate system drift and jumping
+                
+                // Extract the current transform components
+                let currentTransform = updatedShape.transform
+                
+                // Create a pure translation transform for the delta
+                let translationTransform = CGAffineTransform(translationX: delta.x, y: delta.y)
+                
+                // Apply the translation to the existing transform
+                // This preserves all existing scaling, rotation, and skew while adding movement
+                updatedShape.transform = currentTransform.concatenating(translationTransform)
+                
+                Log.info("🖼️ IMAGE TRANSFORM: Applied delta (\(String(format: "%.2f", delta.x)), \(String(format: "%.2f", delta.y))) to existing transform", category: .fileOperations)
+            }
+            
             // Bounds for images are their rectangular path; keep as-is (transform applied at render time)
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
             return

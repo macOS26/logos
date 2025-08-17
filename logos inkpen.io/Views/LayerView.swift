@@ -179,7 +179,7 @@ struct ScaleHandles: View {
     let shape: VectorShape
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let isShiftPressed: Bool  // Passed from DrawingCanvas for shift constraints
+    let isShiftPressed: Bool  // Passed from DrawingCanvas for transform tool constraints
     
     // Professional scaling state management - FIXED IMPLEMENTATION
     @State private var isScaling = false
@@ -200,10 +200,40 @@ struct ScaleHandles: View {
     
     private let handleSize: CGFloat = 10
 
+    // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
+    private var calculatedBounds: CGRect {
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
+    }
+    
+    private var calculatedCenter: CGPoint {
+        let bounds = calculatedBounds
+        return CGPoint(x: bounds.midX, y: bounds.midY)
+    }
+
     var body: some View {
         // SCALE TOOL: Show all path points + center point with correct colors
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        // This ensures the scale tool aligns properly with transformed images
+        let bounds = calculatedBounds
+        let center = calculatedCenter
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape paths
@@ -589,8 +619,27 @@ struct ScaleHandles: View {
         }
         
         // Update center point based on current bounds
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        let bounds: CGRect
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for scale anchor selection", level: .info)
@@ -647,7 +696,27 @@ struct ScaleHandles: View {
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
-                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                // CRITICAL FIX: Use the same bounds calculation for consistency
+                let bounds: CGRect
+                if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+                    // For transformed images, calculate bounds the same way as transform box handles
+                    let baseBounds = shape.bounds
+                    let t = shape.transform
+                    let corners = [
+                        CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                        CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+                    ]
+                    let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+                    let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+                    let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+                    let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+                    bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                } else {
+                    // For regular shapes and untransformed images, use existing logic
+                    bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
                 print("🔴 LOCKED PIN: Set to bounds corner \(cornerIndex) at (\(String(format: "%.1f", scalingAnchorPoint.x)), \(String(format: "%.1f", scalingAnchorPoint.y)))")
@@ -1097,11 +1166,40 @@ struct RotateHandles: View {
     
     private let handleSize: CGFloat = 8
     
+    // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
+    private var calculatedBounds: CGRect {
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
+    }
+    
+    private var calculatedCenter: CGPoint {
+        let bounds = calculatedBounds
+        return CGPoint(x: bounds.midX, y: bounds.midY)
+    }
+    
     var body: some View {
         // ROTATE TOOL: Show actual path points + center point for precise anchor selection
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        // This ensures the rotate tool aligns properly with transformed images
+        let bounds = calculatedBounds
+        let center = calculatedCenter
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape path, not bounding box
@@ -1221,8 +1319,27 @@ struct RotateHandles: View {
         }
         
         // Update center point based on current bounds
-        // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        let bounds: CGRect
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for rotation anchor selection", level: .info)
@@ -1737,10 +1854,40 @@ struct ShearHandles: View {
     
     private let handleSize: CGFloat = 10
     
+    // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
+    private var calculatedBounds: CGRect {
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
+    }
+    
+    private var calculatedCenter: CGPoint {
+        let bounds = calculatedBounds
+        return CGPoint(x: bounds.midX, y: bounds.midY)
+    }
+    
     var body: some View {
         // SHEAR TOOL: Show all path points + center point with correct colors (same as scale tool)
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        // This ensures the shear tool aligns properly with transformed images
+        let bounds = calculatedBounds
+        let center = calculatedCenter
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape paths
@@ -1995,7 +2142,27 @@ struct ShearHandles: View {
         }
         
         // Update center point based on current bounds
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        let bounds: CGRect
+        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+            // For transformed images, calculate bounds the same way as transform box handles
+            let baseBounds = shape.bounds
+            let t = shape.transform
+            let corners = [
+                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+            ]
+            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        } else {
+            // For regular shapes and untransformed images, use existing logic
+            bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
         Log.fileOperation("🎯 EXTRACTED \(pathPoints.count) path points + center for shear anchor selection", level: .info)
@@ -2050,7 +2217,27 @@ struct ShearHandles: View {
                 print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
             } else {
                 // Bounds corner point (if we add them later)
-                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                // CRITICAL FIX: Use the same bounds calculation for consistency
+                let bounds: CGRect
+                if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
+                    // For transformed images, calculate bounds the same way as transform box handles
+                    let baseBounds = shape.bounds
+                    let t = shape.transform
+                    let corners = [
+                        CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
+                        CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
+                        CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+                    ]
+                    let minX = corners.map { $0.x }.min() ?? baseBounds.minX
+                    let minY = corners.map { $0.y }.min() ?? baseBounds.minY
+                    let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
+                    let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+                    bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                } else {
+                    // For regular shapes and untransformed images, use existing logic
+                    bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 shearAnchorPoint = center // Fallback to center
                 Log.info("🔴 LOCKED PIN: Set to bounds point (fallback to center)", category: .general)
