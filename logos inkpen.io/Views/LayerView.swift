@@ -1533,19 +1533,20 @@ struct RotateHandles: View {
     
     private func finishRotation() {
         rotationStarted = false
-        isRotating = false
         document.isHandleScalingActive = false
         
-        Log.info("🏁 ROTATION FINISH: Applying final transform to coordinates", category: .general)
-        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        // CRITICAL FIX: Store the rotation angle before applying transform to coordinates
+        let finalRotationAngle = atan2(previewTransform.b, previewTransform.a)
         
-        // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
-        // This ensures object origin stays with object after rotation (Professional behavior)
         if let layerIndex = document.selectedLayerIndex,
            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            
+            // CRITICAL FIX: Store rotation angle before resetting transform
+            document.layers[layerIndex].shapes[shapeIndex].rotationAngle = finalRotationAngle
+            print("   🔄 Stored rotation angle: \(String(format: "%.1f", finalRotationAngle * 180 / .pi))°")
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
             document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
