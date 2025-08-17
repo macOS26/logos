@@ -287,10 +287,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var originalBounds: CGRect?    // Original rectangle bounds (never changes, like originalPath)
     var cornerRadii: [Double] = [] // Current radius for each corner [topLeft, topRight, bottomRight, bottomLeft] in points
     
-    // MARK: - Rotation Properties (for ImageNSView context.rotate)
-    var rotationAngle: CGFloat = 0.0 // Stored rotation angle in radians
-    
-    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = [], rotationAngle: CGFloat = 0.0) {
+    init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = []) {
         self.id = UUID()
         self.name = name
         self.path = path
@@ -316,7 +313,6 @@ struct VectorShape: Codable, Hashable, Identifiable {
         self.isRoundedRectangle = isRoundedRectangle
         self.originalBounds = originalBounds
         self.cornerRadii = cornerRadii
-        self.rotationAngle = rotationAngle
     }
     
     var transformedPath: CGPath {

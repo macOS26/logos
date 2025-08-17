@@ -16,11 +16,9 @@ struct ImageNSView: NSViewRepresentable {
     let bounds: CGRect
     let opacity: Double
     let fillStyle: FillStyle? // Add support for fill styling
-    let transform: CGAffineTransform // Add transform parameter for rotation
-    let rotationAngle: CGFloat // Add explicit rotation angle parameter
     
     func makeNSView(context: Context) -> ImageNSViewClass {
-        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, fillStyle: fillStyle, transform: transform, rotationAngle: rotationAngle)
+        return ImageNSViewClass(image: image, bounds: bounds, opacity: opacity, fillStyle: fillStyle)
     }
     
     func updateNSView(_ nsView: ImageNSViewClass, context: Context) {
@@ -28,8 +26,6 @@ struct ImageNSView: NSViewRepresentable {
         nsView.imageBounds = bounds
         nsView.opacity = opacity
         nsView.fillStyle = fillStyle
-        nsView.transform = transform
-        nsView.rotationAngle = rotationAngle
         nsView.needsDisplay = true
     }
 }
@@ -39,16 +35,12 @@ class ImageNSViewClass: NSView {
     var imageBounds: CGRect
     var opacity: Double
     var fillStyle: FillStyle? // Add support for fill styling
-    var transform: CGAffineTransform // Add transform property
-    var rotationAngle: CGFloat // Add rotation angle property
     
-    init(image: NSImage, bounds: CGRect, opacity: Double, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, rotationAngle: CGFloat = 0.0) {
+    init(image: NSImage, bounds: CGRect, opacity: Double, fillStyle: FillStyle? = nil) {
         self.image = image
         self.imageBounds = bounds
         self.opacity = opacity
         self.fillStyle = fillStyle
-        self.transform = transform
-        self.rotationAngle = rotationAngle
         super.init(frame: .zero)
         self.wantsLayer = true
         self.layer?.backgroundColor = NSColor.clear.cgColor
@@ -70,52 +62,33 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // FIXED: Use context.rotate for proper image rotation without distortion
-        // Calculate the center of the image bounds for rotation
-        let imageCenter = CGPoint(x: imageBounds.midX, y: imageBounds.midY)
+        // FIXED: Match GradientNSView approach - draw image directly in bounds
+        // The path we receive is already pre-transformed into the document's coordinate space.
+        // SwiftUI will handle scaling/offsetting this NSView. We just draw the image as-is.
         
-        // Use the stored rotation angle instead of extracting from transform
-        // The transform gets reset to identity after rotation, so we need the stored angle
-        
-        // Apply the transform's translation first (position the image)
-        context.translateBy(x: transform.tx, y: transform.ty)
-        
-        // Move to center, rotate, then move back
-        context.translateBy(x: imageCenter.x, y: imageCenter.y)
-        context.rotate(by: rotationAngle)
-        context.translateBy(x: -imageCenter.x, y: -imageCenter.y)
-        
-        // FIXED: Restore vertical flip to fix upside-down image
-        context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
-        context.scaleBy(x: 1.0, y: -1.0)
-        
-        // DEBUG LOGGING: Track image placement and rotation
-        print("🖼️ IMAGE NSVIEW DRAW WITH ROTATION:")
+        // DEBUG LOGGING: Track image placement and movement
+        print("🖼️ IMAGE NSVIEW DRAW:")
         print("   📊 Image bounds: \(imageBounds)")
-        print("   📍 Image center: \(imageCenter)")
-        print("   🔄 Rotation angle: \(rotationAngle * 180 / .pi)°")
+        print("   📍 Image origin: \(imageBounds.origin)")
+        print("   📏 Image size: \(imageBounds.size)")
         print("   🎨 Fill style: \(fillStyle != nil ? "Present" : "None")")
         print("   🔍 Opacity: \(opacity)")
         
-        // Draw the image at the correct position with rotation
+        // FIXED: Flip image vertically without changing coordinate system
+        // This keeps the bounds correct while fixing the image orientation
+        context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
+        context.scaleBy(x: 1.0, y: -1.0)
+        
+        // Draw the image at origin (0,0) since we've translated the context
         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
             // Set up context for proper transparency support
             context.setAllowsAntialiasing(true)
             context.setShouldAntialias(true)
             context.interpolationQuality = .high
             
-            // Calculate image rect to center it properly
-            let imageSize = imageBounds.size
-            let imageRect = CGRect(
-                x: 0, // Since we translated to imageBounds.minX, minY
-                y: 0, // Since we translated to imageBounds.maxY
-                width: imageSize.width,
-                height: imageSize.height
-            )
-            
-            // Draw the image with proper centering
-            context.draw(cgImage, in: imageRect)
-            print("   ✅ Image drawn at: \(imageRect) with rotation and proper centering")
+            // Draw the image with transparency support
+            context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
+            print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
         } else {
             print("   ❌ Failed to get CGImage")
         }
@@ -131,12 +104,12 @@ class ImageNSViewClass: NSView {
             let fillColor = fillStyle.color.cgColor
             context.setFillColor(fillColor)
             
-            // Set alpha for the fill (this will blend with the existing image)
+            // Set alpha for the fill (this will blend with the image)
             context.setAlpha(CGFloat(fillStyle.opacity))
             
             // Fill the image bounds with the tint color
             // This will blend with the existing image based on the blend mode
-            context.fill(imageBounds)
+            context.fill(CGRect(origin: .zero, size: imageBounds.size))
             
             print("   ✅ Fill tint applied with blend mode: \(fillStyle.blendMode) and opacity: \(fillStyle.opacity)")
         }

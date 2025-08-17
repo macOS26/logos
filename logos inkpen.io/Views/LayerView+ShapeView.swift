@@ -92,31 +92,31 @@ struct ShapeView: View {
                 } else if ImageContentRegistry.containsImage(shape),
                           let image = ImageContentRegistry.image(for: shape.id) {
                     // RENDER RASTER IMAGE USING NSVIEW - FIXED POSITIONING
-                    // FIXED: Use original bounds and apply rotation via context.rotate
+                    // FIXED: Match GradientNSView approach - use pre-transformed bounds
                     let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                    let transformedBounds = pathBounds.applying(shape.transform)
                     
                     ImageNSView(
                         image: image,
-                        bounds: pathBounds, // Use original bounds, not transformed
+                        bounds: transformedBounds,
                         opacity: shape.opacity,
-                        fillStyle: shape.fillStyle, // Pass fillStyle for image tinting
-                        transform: shape.transform, // Pass transform for rotation
-                        rotationAngle: shape.rotationAngle // Pass stored rotation angle
+                        fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                     )
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
                     if let hydrated = ImageContentRegistry.hydrateImageIfAvailable(for: shape) {
                         // RENDER HYDRATED IMAGE USING NSVIEW - FIXED POSITIONING
-                        // FIXED: Use original bounds and apply rotation via context.rotate
+                        // FIXED: Match GradientNSView approach - use pre-transformed bounds
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                        let transformedBounds = pathBounds.applying(shape.transform)
+                        
+
                         
                         ImageNSView(
                             image: hydrated,
-                            bounds: pathBounds, // Use original bounds, not transformed
+                            bounds: transformedBounds,
                             opacity: shape.opacity,
-                            fillStyle: shape.fillStyle, // Pass fillStyle for image tinting
-                            transform: shape.transform, // Pass transform for rotation
-                            rotationAngle: shape.rotationAngle // Pass stored rotation angle
+                            fillStyle: shape.fillStyle // Pass fillStyle for image tinting
                         )
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
