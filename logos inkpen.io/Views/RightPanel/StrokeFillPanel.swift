@@ -132,6 +132,31 @@ struct StrokeFillPanel: View {
         return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
     }
     
+    // IMAGE OPACITY SUPPORT
+    private var hasSelectedImages: Bool {
+        guard let layerIndex = document.selectedLayerIndex else { return false }
+        return document.selectedShapeIDs.contains { shapeID in
+            if let shape = document.layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
+                return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+            }
+            return false
+        }
+    }
+    
+    private var selectedImageOpacity: Double {
+        guard let layerIndex = document.selectedLayerIndex,
+              let firstImageShapeID = document.selectedShapeIDs.first(where: { shapeID in
+                  if let shape = document.layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
+                      return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                  }
+                  return false
+              }),
+              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstImageShapeID }) else {
+            return 1.0
+        }
+        return shape.opacity
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -159,6 +184,14 @@ struct StrokeFillPanel: View {
                         onUpdateFillColor: updateFillColor,
                         onUpdateFillOpacity: updateFillOpacity
                     )
+                    
+                    // Image Properties - Only show when images are selected
+                    if hasSelectedImages {
+                        ImagePropertiesSection(
+                            imageOpacity: selectedImageOpacity,
+                            onUpdateImageOpacity: updateImageOpacity
+                        )
+                    }
                     
                     // Stroke Properties
                     StrokePropertiesSection(
@@ -466,6 +499,23 @@ struct StrokeFillPanel: View {
                         }
                         break // Found the shape, no need to check other layers
                     }
+                }
+            }
+        }
+    }
+    
+    // IMAGE OPACITY UPDATE METHOD
+    private func updateImageOpacity(_ opacity: Double) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        
+        document.saveToUndoStack()
+        
+        for shapeID in document.selectedShapeIDs {
+            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                // Only update image shapes
+                if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                    document.layers[layerIndex].shapes[shapeIndex].opacity = opacity
                 }
             }
         }
@@ -1393,6 +1443,48 @@ struct MarkerSettingsSection: View {
         }
         .padding()
         .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Image Properties Section
+struct ImagePropertiesSection: View {
+    let imageOpacity: Double
+    let onUpdateImageOpacity: (Double) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .foregroundColor(.accentColor)
+                Text("Image Properties")
+                    .font(.headline)
+                    .fontWeight(.medium)
+                Spacer()
+            }
+            
+            // Image Opacity
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Opacity")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                    Spacer()
+                    Text("\(Int(imageOpacity * 100))%")
+                        .font(.caption)
+                        .foregroundColor(Color.ui.secondaryText)
+                }
+                
+                Slider(value: Binding(
+                    get: { imageOpacity },
+                    set: { onUpdateImageOpacity($0) }
+                ), in: 0...1)
+                .controlSize(.small)
+                .help("Adjust image opacity (0-100%)")
+            }
+        }
+        .padding()
+        .background(Color.ui.semiTransparentControlBackground)
         .cornerRadius(12)
     }
 }
