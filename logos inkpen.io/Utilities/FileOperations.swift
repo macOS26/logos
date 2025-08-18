@@ -61,6 +61,7 @@ struct VectorImportResult: Identifiable {
     let id = UUID()
     let success: Bool
     let shapes: [VectorShape]
+    let textObjects: [VectorText]
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
@@ -163,6 +164,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
                 warnings: ["Could not detect file format"]
@@ -176,6 +178,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["Professional CAD formats require commercial licensing"]
@@ -198,6 +201,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
@@ -215,6 +219,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
                 warnings: ["Could not detect file format"]
@@ -228,6 +233,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["Professional CAD formats require commercial licensing"]
@@ -250,6 +256,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
                 warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
@@ -333,6 +340,7 @@ class VectorImportManager {
         var errors: [VectorImportError] = []
         var warnings: [String] = []
         var shapes: [VectorShape] = []
+        var importedTextObjects: [VectorText] = []
         
         Log.fileOperation("📊 Importing SVG using professional SVG parser...", level: .info)
         if useExtremeValueHandling {
@@ -347,6 +355,7 @@ class VectorImportManager {
             // Parse SVG using professional XML parser
             let svgContent = try parseSVGContent(data, useExtremeValueHandling: useExtremeValueHandling)
             shapes = svgContent.shapes
+            importedTextObjects = svgContent.textObjects
             
             if !svgContent.missingFonts.isEmpty {
                 warnings.append("Missing fonts: \(svgContent.missingFonts.joined(separator: ", "))")
@@ -371,6 +380,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
+                textObjects: importedTextObjects,
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -383,6 +393,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -397,6 +408,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.parsingError("Failed to open image", line: nil)],
                 warnings: []
@@ -447,7 +459,7 @@ class VectorImportManager {
             sourceApplication: nil,
             documentVersion: nil
         )
-        return VectorImportResult(success: true, shapes: [rectShape], metadata: meta, errors: [], warnings: [])
+        return VectorImportResult(success: true, shapes: [rectShape], textObjects: [], metadata: meta, errors: [], warnings: [])
     }
     
     // MARK: - PDF Import (Professional Standard)
@@ -464,6 +476,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -476,6 +489,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -508,6 +522,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
+                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -520,6 +535,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -562,6 +578,7 @@ class VectorImportManager {
                 return VectorImportResult(
                     success: pdfResult.success,
                     shapes: pdfResult.shapes,
+                    textObjects: pdfResult.textObjects,
                     metadata: metadata,
                     errors: pdfResult.errors,
                     warnings: pdfResult.warnings + ["Imported via embedded PDF data"]
@@ -577,6 +594,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -616,6 +634,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: epsContent.shapes,
+                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -628,6 +647,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -685,6 +705,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: true,
                 shapes: shapes,
+                textObjects: [],
                 metadata: metadata,
                 errors: errors,
                 warnings: warnings
@@ -697,6 +718,7 @@ class VectorImportManager {
             return VectorImportResult(
                 success: false,
                 shapes: [],
+                textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
                 warnings: warnings
@@ -1128,7 +1150,18 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseText(attributes: attributeDict)
             
         case "tspan":
-            // Text span within text element
+            // Merge tspan class/style for typography overrides
+            var overlay = attributeDict
+            if let classAttr = attributeDict["class"], !classAttr.isEmpty {
+                applyCSSClasses(classAttr, into: &overlay)
+            }
+            if let style = attributeDict["style"], !style.isEmpty {
+                let styleDict = parseStyleAttribute(style)
+                for (k, v) in styleDict { overlay[k] = v }
+            }
+            if let fam = overlay["font-family"], !fam.isEmpty { currentTextAttributes["font-family"] = fam }
+            if let size = overlay["font-size"], !size.isEmpty { currentTextAttributes["font-size"] = size }
+            if let fill = overlay["fill"], !fill.isEmpty { currentTextAttributes["fill"] = fill }
             break
             
         case "linearGradient":
@@ -1230,12 +1263,45 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         Log.info("✅ CSS parsing complete - \(cssStyles.count) rules parsed", category: .fileOperations)
     }
+
+    // Apply space-separated CSS classes from a class attribute into an attribute dictionary
+    private func applyCSSClasses(_ classAttr: String, into attributes: inout [String: String]) {
+        let classNames = classAttr.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
+        for cls in classNames {
+            let selector = "." + cls
+            if let classStyles = cssStyles[selector] {
+                for (key, value) in classStyles {
+                    if attributes[key] == nil { attributes[key] = value }
+                }
+            }
+        }
+        // Handle comma-joined selectors like ".st3, .st4"
+        for (selector, styles) in cssStyles where selector.contains(",") {
+            let selectors = selector.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+            for cls in classNames {
+                if selectors.contains("." + cls) {
+                    for (key, value) in styles {
+                        if attributes[key] == nil { attributes[key] = value }
+                    }
+                }
+            }
+        }
+    }
     
     // MARK: - SVG Element Parsers
     
     private func parseText(attributes: [String: String]) {
         currentTextContent = ""
-        currentTextAttributes = attributes
+        // Merge class-based and inline styles for <text>
+        var merged = attributes
+        if let classAttr = attributes["class"], !classAttr.isEmpty {
+            applyCSSClasses(classAttr, into: &merged)
+        }
+        if let style = attributes["style"], !style.isEmpty {
+            let styleDict = parseStyleAttribute(style)
+            for (k, v) in styleDict { merged[k] = v }
+        }
+        currentTextAttributes = merged
         Log.fileOperation("🔤 Starting text element parsing", level: .info)
     }
     
@@ -1245,12 +1311,18 @@ class SVGParser: NSObject, XMLParserDelegate {
         let x = parseLength(currentTextAttributes["x"]) ?? 0
         let y = parseLength(currentTextAttributes["y"]) ?? 0
         let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
-        let fontFamily = currentTextAttributes["font-family"] ?? "Arial"
+        // Robust font-family extraction with fallback to Helvetica Neue if unrecognized
+        let rawFontFamily = extractFontFamily(from: currentTextAttributes)
+        let fontFamily = normalizeFontFamily(rawFontFamily)
         let fill = currentTextAttributes["fill"] ?? "black"
+        // Merge transform on text element with current transform
+        let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
+        let finalTextTransform = currentTransform.concatenating(textOwnTransform)
         
         let typography = TypographyProperties(
             fontFamily: fontFamily,
             fontSize: fontSize,
+            lineHeight: fontSize, // ensure visible baseline-to-baseline spacing on import
             strokeColor: .black,  // SVG import stroke fallback
             fillColor: parseColor(fill) ?? .black  // SVG import fill fallback
         )
@@ -1259,7 +1331,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
             typography: typography,
             position: CGPoint(x: x, y: y),
-            transform: currentTransform
+            transform: finalTextTransform
         )
         
         textObjects.append(textObject)
@@ -1267,6 +1339,47 @@ class SVGParser: NSObject, XMLParserDelegate {
         currentTextAttributes = [:]
         
         Log.fileOperation("📝 Created text object: '\(textObject.content)'", level: .info)
+    }
+
+    // Extract a font-family from either the explicit attribute or inline style
+    private func extractFontFamily(from attributes: [String: String]) -> String? {
+        if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return explicit
+        }
+        if let style = attributes["style"], !style.isEmpty {
+            // Parse CSS-style declarations: key:value; key:value;
+            let pairs = style.split(separator: ";")
+            for pair in pairs {
+                let parts = pair.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                if parts.count == 2, parts[0].lowercased() == "font-family" {
+                    return parts[1]
+                }
+            }
+        }
+        return nil
+    }
+
+    // Normalize and validate font-family; if none of the candidates are installed, use Helvetica Neue
+    private func normalizeFontFamily(_ rawFamily: String?) -> String {
+        // If not provided, default immediately
+        guard let raw = rawFamily?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return "Helvetica Neue"
+        }
+        // Split by commas to support CSS font-family lists
+        let candidates = raw.split(separator: ",").map { token -> String in
+            let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Strip single/double quotes
+            return trimmed.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+        }
+        let available = Set(NSFontManager.shared.availableFontFamilies.map { $0.lowercased() })
+        for name in candidates {
+            if available.contains(name.lowercased()) {
+                return name
+            }
+        }
+        // Nothing matched; fall back to Helvetica Neue
+        Log.fileOperation("⚠️ Font not found in system: \(raw). Falling back to Helvetica Neue.", level: .info)
+        return "Helvetica Neue"
     }
     
     private func parseSVGRoot(attributes: [String: String]) {
@@ -5514,6 +5627,52 @@ class FileOperations {
             
             importedLayer.addShape(centeredShape)
         }
+
+        // Add imported text objects (apply transform to position and scale font metrics)
+        if !result.textObjects.isEmpty {
+            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+            for text in result.textObjects {
+                var placedText = text
+                // Compose final transform with centering
+                let finalTransform = text.transform.concatenating(centeringTransform)
+                
+                // Transform position by full transform
+                let transformedPosition = CGPoint(x: text.position.x, y: text.position.y).applying(finalTransform)
+                placedText.position = transformedPosition
+                
+                // Extract approximate scale from transform (handles rotation+scale)
+                let scaleX = hypot(finalTransform.a, finalTransform.c)
+                let scaleY = hypot(finalTransform.b, finalTransform.d)
+                let averageScale = max(0.0001, (scaleX + scaleY) / 2.0)
+                
+                // Scale typography metrics to preserve visual size under viewBox scaling
+                var typography = placedText.typography
+                typography.fontSize *= averageScale
+                typography.lineHeight *= averageScale
+                typography.lineSpacing *= averageScale
+                typography.letterSpacing *= averageScale
+                typography.strokeWidth *= averageScale
+                placedText.typography = typography
+                
+                // Clear transform after baking into coordinates and metrics
+                placedText.transform = .identity
+                placedText.isLocked = false
+                placedText.isVisible = true
+                
+                // Associate with imported layer index
+                if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {
+                    placedText.layerIndex = importedIndex
+                } else {
+                    placedText.layerIndex = 2
+                }
+                
+                // Update bounds for proper selection box
+                placedText.updateBounds()
+                
+                // Add to document (global text object list)
+                document.textObjects.append(placedText)
+            }
+        }
         
         // Update the layer in the document
         if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {
@@ -5658,6 +5817,37 @@ class FileOperations {
             centeredShape.isVisible = true
             
             importedLayer.addShape(centeredShape)
+        }
+
+        // Add imported text objects (apply transform to position and scale font metrics)
+        if !result.textObjects.isEmpty {
+            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+            for text in result.textObjects {
+                var placedText = text
+                let finalTransform = text.transform.concatenating(centeringTransform)
+                let transformedPosition = CGPoint(x: text.position.x, y: text.position.y).applying(finalTransform)
+                placedText.position = transformedPosition
+                let scaleX = hypot(finalTransform.a, finalTransform.c)
+                let scaleY = hypot(finalTransform.b, finalTransform.d)
+                let averageScale = max(0.0001, (scaleX + scaleY) / 2.0)
+                var typography = placedText.typography
+                typography.fontSize *= averageScale
+                typography.lineHeight *= averageScale
+                typography.lineSpacing *= averageScale
+                typography.letterSpacing *= averageScale
+                typography.strokeWidth *= averageScale
+                placedText.typography = typography
+                placedText.transform = .identity
+                placedText.isLocked = false
+                placedText.isVisible = true
+                if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG (Extreme Value Handling)" }) {
+                    placedText.layerIndex = importedIndex
+                } else {
+                    placedText.layerIndex = 2
+                }
+                placedText.updateBounds()
+                document.textObjects.append(placedText)
+            }
         }
         
         // Update the layer in the document
