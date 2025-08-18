@@ -851,6 +851,10 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentTextContent = ""
     private var currentTextAttributes: [String: String] = [:]
     
+    // Multi-line text support
+    private var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
+    private var isInMultiLineText: Bool = false
+    
     // MARK: - Gradient Support
     private var gradientDefinitions: [String: VectorGradient] = [:]
     private var currentGradientId: String?
@@ -1150,6 +1154,9 @@ class SVGParser: NSObject, XMLParserDelegate {
             parseText(attributes: attributeDict)
             
         case "tspan":
+            // Mark that we're in multi-line text
+            isInMultiLineText = true
+            
             // Merge tspan class/style for typography overrides
             var overlay = attributeDict
             if let classAttr = attributeDict["class"], !classAttr.isEmpty {
@@ -1159,9 +1166,19 @@ class SVGParser: NSObject, XMLParserDelegate {
                 let styleDict = parseStyleAttribute(style)
                 for (k, v) in styleDict { overlay[k] = v }
             }
-            if let fam = overlay["font-family"], !fam.isEmpty { currentTextAttributes["font-family"] = fam }
-            if let size = overlay["font-size"], !size.isEmpty { currentTextAttributes["font-size"] = size }
-            if let fill = overlay["fill"], !fill.isEmpty { currentTextAttributes["fill"] = fill }
+            
+            // Store tspan attributes for later processing
+            let tspanX = parseLength(overlay["x"]) ?? 0
+            let tspanY = parseLength(overlay["y"]) ?? 0
+            
+            // Create a copy of current text attributes and merge with tspan overrides
+            var tspanAttributes = currentTextAttributes
+            if let fam = overlay["font-family"], !fam.isEmpty { tspanAttributes["font-family"] = fam }
+            if let size = overlay["font-size"], !size.isEmpty { tspanAttributes["font-size"] = size }
+            if let fill = overlay["fill"], !fill.isEmpty { tspanAttributes["fill"] = fill }
+            
+            // Store this tspan for later processing
+            currentTextSpans.append((content: "", attributes: tspanAttributes, x: tspanX, y: tspanY))
             break
             
         case "linearGradient":
@@ -1223,8 +1240,17 @@ class SVGParser: NSObject, XMLParserDelegate {
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         if currentElementName == "style" {
             currentStyleContent += string
-        } else if currentElementName == "text" || currentElementName == "tspan" {
+        } else if currentElementName == "text" {
             currentTextContent += string
+        } else if currentElementName == "tspan" {
+            // Add content to the current tspan
+            if !currentTextSpans.isEmpty {
+                let lastIndex = currentTextSpans.count - 1
+                currentTextSpans[lastIndex].content += string
+            } else {
+                // Fallback: add to main text content
+                currentTextContent += string
+            }
         }
     }
     
@@ -1292,6 +1318,9 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     private func parseText(attributes: [String: String]) {
         currentTextContent = ""
+        currentTextSpans.removeAll()
+        isInMultiLineText = false
+        
         // Merge class-based and inline styles for <text>
         var merged = attributes
         if let classAttr = attributes["class"], !classAttr.isEmpty {
@@ -1306,39 +1335,80 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     private func finishTextElement() {
-        guard !currentTextContent.isEmpty else { return }
+        // Handle multi-line text with tspan elements
+        if isInMultiLineText && !currentTextSpans.isEmpty {
+            let baseX = parseLength(currentTextAttributes["x"]) ?? 0
+            let baseY = parseLength(currentTextAttributes["y"]) ?? 0
+            let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
+            let finalTextTransform = currentTransform.concatenating(textOwnTransform)
+            
+            for (index, span) in currentTextSpans.enumerated() {
+                guard !span.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+                
+                let fontSize = parseLength(span.attributes["font-size"]) ?? 12
+                let rawFontFamily = extractFontFamily(from: span.attributes)
+                let fontFamily = normalizeFontFamily(rawFontFamily)
+                let fill = span.attributes["fill"] ?? "black"
+                
+                let typography = TypographyProperties(
+                    fontFamily: fontFamily,
+                    fontSize: fontSize,
+                    lineHeight: fontSize,
+                    strokeColor: .black,
+                    fillColor: parseColor(fill) ?? .black
+                )
+                
+                // Calculate position: base position + tspan offset
+                let spanX = baseX + span.x
+                let spanY = baseY + span.y
+                
+                let textObject = VectorText(
+                    content: span.content.trimmingCharacters(in: .whitespacesAndNewlines),
+                    typography: typography,
+                    position: CGPoint(x: spanX, y: spanY),
+                    transform: finalTextTransform
+                )
+                
+                textObjects.append(textObject)
+                Log.fileOperation("📝 Created multi-line text object \(index + 1): '\(textObject.content)'", level: .info)
+            }
+        } else {
+            // Handle single-line text
+            guard !currentTextContent.isEmpty else { return }
+            
+            let x = parseLength(currentTextAttributes["x"]) ?? 0
+            let y = parseLength(currentTextAttributes["y"]) ?? 0
+            let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
+            let rawFontFamily = extractFontFamily(from: currentTextAttributes)
+            let fontFamily = normalizeFontFamily(rawFontFamily)
+            let fill = currentTextAttributes["fill"] ?? "black"
+            let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
+            let finalTextTransform = currentTransform.concatenating(textOwnTransform)
+            
+            let typography = TypographyProperties(
+                fontFamily: fontFamily,
+                fontSize: fontSize,
+                lineHeight: fontSize,
+                strokeColor: .black,
+                fillColor: parseColor(fill) ?? .black
+            )
+            
+            let textObject = VectorText(
+                content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
+                typography: typography,
+                position: CGPoint(x: x, y: y),
+                transform: finalTextTransform
+            )
+            
+            textObjects.append(textObject)
+            Log.fileOperation("📝 Created single-line text object: '\(textObject.content)'", level: .info)
+        }
         
-        let x = parseLength(currentTextAttributes["x"]) ?? 0
-        let y = parseLength(currentTextAttributes["y"]) ?? 0
-        let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
-        // Robust font-family extraction with fallback to Helvetica Neue if unrecognized
-        let rawFontFamily = extractFontFamily(from: currentTextAttributes)
-        let fontFamily = normalizeFontFamily(rawFontFamily)
-        let fill = currentTextAttributes["fill"] ?? "black"
-        // Merge transform on text element with current transform
-        let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
-        let finalTextTransform = currentTransform.concatenating(textOwnTransform)
-        
-        let typography = TypographyProperties(
-            fontFamily: fontFamily,
-            fontSize: fontSize,
-            lineHeight: fontSize, // ensure visible baseline-to-baseline spacing on import
-            strokeColor: .black,  // SVG import stroke fallback
-            fillColor: parseColor(fill) ?? .black  // SVG import fill fallback
-        )
-        
-        let textObject = VectorText(
-            content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
-            typography: typography,
-            position: CGPoint(x: x, y: y),
-            transform: finalTextTransform
-        )
-        
-        textObjects.append(textObject)
+        // Reset state
         currentTextContent = ""
         currentTextAttributes = [:]
-        
-        Log.fileOperation("📝 Created text object: '\(textObject.content)'", level: .info)
+        currentTextSpans.removeAll()
+        isInMultiLineText = false
     }
 
     // Extract a font-family from either the explicit attribute or inline style

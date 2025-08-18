@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .st3 { font-family: Arial; font-size: 16px; fill: #000000; }
+    .st4 { font-family: Helvetica; font-size: 14px; fill: #333333; }
+    .st6 { font-family: Times; font-size: 18px; fill: #666666; }
+    .st20 { font-family: Arial; font-size: 20px; fill: #000000; }
+    .st21 { font-family: Arial; font-size: 16px; fill: #333333; }
+  </style>
+  
+  <!-- Test multi-line text like in SuperBox Schematic -->
+  <text transform="matrix(1 0 0 1 748.8677 54.3565)">
+    <tspan x="0" y="0" class="st3 st6">Lid </tspan>
+    <tspan x="-18.96" y="13.86" class="st3 st6">Upside</tspan>
+    <tspan x="-14.28" y="27.73" class="st3 st6">Down </tspan>
+    <tspan x="-41.77" y="41.59" class="st3 st6">"Battleship"</tspan>
+  </text>
+  
+  <!-- Test multi-line text with different styles -->
+  <text transform="matrix(1 0 0 1 707.1498 156.9841)">
+    <tspan x="0" y="0" class="st3 st6">Trigger and </tspan>
+    <tspan x="-11.13" y="13.86" class="st3 st6">Shoulder Side </tspan>
+    <tspan x="18.05" y="27.73" class="st3 st6">Buttons  </tspan>
+    <tspan x="-9.17" y="41.59" class="st3 st6">Do Not Invert</tspan>
+  </text>
+  
+  <!-- Test simple single-line text -->
+  <text transform="matrix(0.9618 0 0 1 503.3903 190.2524)" class="st3 st4">X</text>
+  
+  <!-- Test title text -->
+  <text transform="matrix(1 0 0 1 713.0973 512.6255)">
+    <tspan x="0" y="0" class="st20 st21">SuperBox64 </tspan>
+    <tspan x="-50.68" y="14.4" class="st20 st21">Arcade Button Wiring </tspan>
+  </text>
+  
+  <!-- Test copyright text -->
+  <text transform="matrix(1 0 0 1 16.7918 28.0532)">
+    <tspan x="0" y="0" class="st20 st21">© SuperBox64 2024</tspan>
+    <tspan x="0" y="14.4" class="st20 st21">All Rights Reserved </tspan>
+  </text>
+</svg>
