@@ -217,8 +217,17 @@ extension DrawingCanvas {
                 }
                 
             case .selected: // GREEN
-                // Start editing if font tool is active
-                if document.currentTool == .font {
+                // Double-click on green text field: switch to font tool and start editing
+                if isDoubleClick {
+                    // Switch to font tool
+                    document.currentTool = .font
+                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to font tool", level: .info)
+                    
+                    // Start editing the text
+                    startEditingText(textID: textID, at: .zero)
+                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to font tool)", level: .info)
+                } else if document.currentTool == .font {
+                    // Single click with font tool active - start editing
                     startEditingText(textID: textID, at: .zero)
                     Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
                 } else {

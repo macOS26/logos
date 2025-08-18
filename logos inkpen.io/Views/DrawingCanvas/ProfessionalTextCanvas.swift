@@ -384,6 +384,11 @@ struct ProfessionalTextBoxView: View {
                 .onTapGesture(count: 1) { location in
                     onTextBoxSelect(location)
                 }
+                .onTapGesture(count: 2) { location in
+                    // Double-click: call the proper interaction handler
+                    Log.info("🔧 DOUBLE-CLICK DETECTED on text box", category: .general)
+                    viewModel.handleTextBoxInteraction(textID: viewModel.textObject.id, isDoubleClick: true)
+                }
                 // REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally
                 // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
                 .allowsHitTesting(textBoxState != .blue)
@@ -1489,6 +1494,124 @@ class ProfessionalTextViewModel: ObservableObject {
         }
         
         return VectorPath(elements: elements, isClosed: false)
+    }
+    
+    // MARK: - Text Box Interaction Handler
+    func handleTextBoxInteraction(textID: UUID, isDoubleClick: Bool = false, isCornerClick: Bool = false) {
+        Log.fileOperation("🎯 TEXT BOX INTERACTION: textID=\(textID.uuidString.prefix(8)), doubleClick=\(isDoubleClick), cornerClick=\(isCornerClick)", level: .info)
+        
+        guard let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) else {
+            Log.error("❌ TEXT NOT FOUND: ID \(textID)", category: .error)
+            return
+        }
+        
+        let textObject = document.textObjects[textIndex]
+        let currentState = textObject.getState(in: document)
+        
+        Log.fileOperation("📊 CURRENT STATE: \(currentState.description)", level: .info)
+        Log.fileOperation("📊 CURRENT TOOL: \(document.currentTool.rawValue)", level: .info)
+        
+        // Check if text is locked
+        if textObject.isLocked {
+            Log.info("🚫 TEXT LOCKED: Cannot interact with locked text", category: .general)
+            return
+        }
+        
+        // Handle different interaction types
+        if isDoubleClick || isCornerClick {
+            // Double-click or corner click behavior
+            switch currentState {
+            case .unselected: // GRAY
+                // First select the text
+                document.selectedTextIDs = [textID]
+                document.selectedShapeIDs.removeAll()
+                Log.fileOperation("🎯 SELECTED TEXT: GRAY → GREEN", level: .info)
+                
+                // If font tool is active and this is a corner click, also start editing
+                if document.currentTool == .font && isCornerClick {
+                    startEditingText(textID: textID)
+                    Log.fileOperation("🎯 CORNER CLICK WITH FONT TOOL: GRAY → GREEN → BLUE", level: .info)
+                }
+                
+            case .selected: // GREEN
+                // Double-click on green text field: switch to font tool and start editing
+                if isDoubleClick {
+                    // Switch to font tool
+                    document.currentTool = .font
+                    Log.fileOperation("🔧 DOUBLE-CLICK: Switched to font tool", level: .info)
+                    
+                    // Start editing the text
+                    startEditingText(textID: textID)
+                    Log.fileOperation("🎯 DOUBLE-CLICK: GREEN → BLUE (switched to font tool)", level: .info)
+                } else if document.currentTool == .font {
+                    // Single click with font tool active - start editing
+                    startEditingText(textID: textID)
+                    Log.fileOperation("🎯 START EDITING: GREEN → BLUE", level: .info)
+                } else {
+                    Log.fileOperation("🎯 FONT TOOL NOT ACTIVE: Staying GREEN", level: .info)
+                }
+                
+            case .editing: // BLUE
+                // Already editing - do nothing
+                Log.fileOperation("🎯 ALREADY EDITING: Staying BLUE", level: .info)
+            }
+        } else {
+            // Single click behavior
+            switch currentState {
+            case .unselected: // GRAY
+                // Select the text
+                document.selectedTextIDs = [textID]
+                document.selectedShapeIDs.removeAll()
+                Log.fileOperation("🎯 SINGLE CLICK: GRAY → GREEN", level: .info)
+                
+            case .selected: // GREEN
+                // Already selected - no change on single click
+                Log.fileOperation("🎯 SINGLE CLICK: Staying GREEN", level: .info)
+                
+            case .editing: // BLUE
+                // Let NSTextView handle clicks during editing
+                Log.fileOperation("🎯 SINGLE CLICK: Staying BLUE (NSTextView handles)", level: .info)
+            }
+        }
+    }
+    
+    // MARK: - Start Editing Helper
+    private func startEditingText(textID: UUID) {
+        Log.fileOperation("✏️ STARTING EDIT MODE for textID: \(textID.uuidString.prefix(8))", level: .info)
+        
+        // Stop editing any other text boxes first
+        var editingCount = 0
+        for textIndex in document.textObjects.indices {
+            if document.textObjects[textIndex].isEditing {
+                document.textObjects[textIndex].isEditing = false
+                editingCount += 1
+            }
+        }
+        
+        if editingCount > 0 {
+            Log.fileOperation("🔄 STOPPED \(editingCount) text box(es) that were in edit mode", level: .info)
+        }
+        
+        // Find and start editing the target text
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            let textObject = document.textObjects[textIndex]
+            
+            Log.info("✏️ STARTING EDIT MODE:", category: .general)
+            Log.info("  - Text: '\(textObject.content)'", category: .general)
+            Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
+            Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
+            
+            // CRITICAL: Set editing state BEFORE updating selection
+            document.textObjects[textIndex].isEditing = true
+            
+            // Clear other selections and select this text
+            document.selectedShapeIDs.removeAll()
+            document.selectedTextIDs = [textID]
+            
+            Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
+        } else {
+            Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
+        }
     }
 }
 
