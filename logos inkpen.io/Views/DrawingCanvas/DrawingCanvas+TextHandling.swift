@@ -715,6 +715,14 @@ extension DrawingCanvas {
     
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
+        let hasEditingTextBox = document.textObjects.contains { $0.isEditing }
+        if hasEditingTextBox {
+            Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
+            Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
+            return
+        }
+        
         // CRITICAL FIX: Don't create new text boxes while existing ones are being resized
         // Check if drag started on a text box resize handle
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
@@ -770,6 +778,13 @@ extension DrawingCanvas {
     
     /// Finish text box drawing and create text with user-defined size
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
+        // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
+        let hasEditingTextBox = document.textObjects.contains { $0.isEditing }
+        if hasEditingTextBox {
+            Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
+            return
+        }
+        
         let startLocation = screenToCanvas(value.startLocation, geometry: geometry)
         let endLocation = screenToCanvas(value.location, geometry: geometry)
         
