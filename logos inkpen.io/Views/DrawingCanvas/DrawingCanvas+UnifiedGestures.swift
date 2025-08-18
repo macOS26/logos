@@ -16,9 +16,14 @@ extension DrawingCanvas {
     /// UNIFIED TAP HANDLER - Works consistently for all areas (Canvas + Pasteboard)
     /// Uses Drawing Canvas logic as the ideal template
     internal func handleUnifiedTap(at location: CGPoint, geometry: GeometryProxy) {
+        // FIXED: Ensure coordinate system is properly synchronized
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
-
+        // Validate coordinates to catch any sync issues
+        let validatedCanvasLocation = validateCanvasLocation(canvasLocation)
+        if validatedCanvasLocation != canvasLocation {
+            Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
+        }
         
         // Cancel bezier drawing for all tools except bezier pen
         if document.currentTool != .bezierPen && isBezierDrawing {
@@ -300,5 +305,25 @@ extension DrawingCanvas {
             let vectorColor = VectorColor.rgb(rgb)
             document.setActiveColor(vectorColor)
         }
+    }
+    
+    // MARK: - Coordinate System Validation
+    
+    /// FIXED: Validate canvas coordinates to ensure proper synchronization
+    private func validateCanvasLocation(_ location: CGPoint) -> CGPoint {
+        // Check for NaN or infinite values that could cause selection issues
+        if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
+            Log.error("❌ INVALID CANVAS COORDINATES: \(location) - using zero point", category: .error)
+            return .zero
+        }
+        
+        // Check for extreme values that might indicate coordinate system corruption
+        let maxReasonableValue: CGFloat = 1000000.0
+        if abs(location.x) > maxReasonableValue || abs(location.y) > maxReasonableValue {
+            Log.error("❌ EXTREME CANVAS COORDINATES: \(location) - using zero point", category: .error)
+            return .zero
+        }
+        
+        return location
     }
 } 

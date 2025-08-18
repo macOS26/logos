@@ -16,12 +16,19 @@ extension DrawingCanvas {
         Log.info("🎯 SELECTION TAP: Starting selection at location \(location)", category: .selection)
         Log.info("🎯 SELECTION TAP: Current tool is \(document.currentTool.rawValue)", category: .selection)
         
+        // FIXED: Ensure coordinate system is properly synchronized
+        // Add coordinate validation to catch any sync issues
+        let validatedLocation = validateAndCorrectLocation(location)
+        if validatedLocation != location {
+            Log.info("🎯 COORDINATE CORRECTION: Adjusted from \(location) to \(validatedLocation)", category: .selection)
+        }
+        
         // OPTION+CLICK WITH ARROW TOOL: Switch to Direct Selection mode (professional behavior)
         if isOptionPressed && document.currentTool == .selection {
             Log.info("🎯 OPTION+CLICK: Switching to Direct Selection tool and performing direct selection", category: .selection)
             document.currentTool = .directSelection
             // Perform direct selection at the click location
-            handleDirectSelectionTap(at: location)
+            handleDirectSelectionTap(at: validatedLocation)
             return
         }
         
@@ -39,8 +46,11 @@ extension DrawingCanvas {
                     if !shape.isVisible { continue }
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
-                    let tolerance: CGFloat = 8.0
-                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+                    
+                    // FIXED: Use zoom-aware tolerance for consistent hit detection
+                    let baseTolerance: CGFloat = 8.0
+                    let tolerance = max(2.0, baseTolerance / document.zoomLevel)
+                    let isHit = PathOperations.hitTest(shape.transformedPath, point: validatedLocation, tolerance: tolerance)
                     if isHit {
                         hitShape = shape
                         hitLayerIndex = layerIndex
@@ -80,13 +90,13 @@ extension DrawingCanvas {
         
         // CONTROL+CLICK WITH ARROW TOOL: Enter corner radius editing mode (professional style)
         if isControlPressed && document.currentTool == .selection {
-            Log.info("🎯 CONTROL+CLICK: Checking for rounded rectangle to enter corner radius mode", category: .selection)
+            Log.info("🎯 CONTROL+CLICK: Checking for corner radius editing...", category: .selection)
             
-            // Find the clicked shape first
-            var clickedShape: VectorShape? = nil
+            // Find the clicked shape using improved hit detection
+            var clickedShape: VectorShape?
             
-            // Search through layers from top to bottom (same logic as regular selection)
-            outerLoop: for layerIndex in document.layers.indices.reversed() {
+            // Search through layers from top to bottom
+            for layerIndex in document.layers.indices.reversed() {
                 let layer = document.layers[layerIndex]
                 if !layer.isVisible { continue }
                 
@@ -97,15 +107,16 @@ extension DrawingCanvas {
                     let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
                     if isBackgroundShape { continue }
                     
-                    // Simple bounds-based hit test for Control-Click
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
+                    // FIXED: Use consistent hit detection logic
+                    let isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                     
-                    if expandedBounds.contains(location) {
+                    if isHit {
                         clickedShape = shape
-                        break outerLoop
+                        break
                     }
                 }
+                
+                if clickedShape != nil { break }
             }
             
             // Check if the clicked shape is a rectangle-based shape that can have corner radius
@@ -156,7 +167,7 @@ extension DrawingCanvas {
         Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
         // Check for text objects when using selection tool or font tool
-        if (document.currentTool == .selection || document.currentTool == .font), let textID = findTextAt(location: location) {
+        if (document.currentTool == .selection || document.currentTool == .font), let textID = findTextAt(location: validatedLocation) {
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                 let textObject = document.textObjects[textIndex]
                 
@@ -209,160 +220,39 @@ extension DrawingCanvas {
         var hitShape: VectorShape?
         var hitLayerIndex: Int?
         
-        Log.info("🎯 SELECTION TAP: Looking for shapes at location \(location)", category: .selection)
+        Log.info("🎯 SELECTION TAP: Looking for shapes at location \(validatedLocation)", category: .selection)
         
         // Search through layers from top to bottom
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
             if !layer.isVisible { continue }
             
-            Log.info("🎯 SELECTION TAP: Checking layer \(layerIndex): '\(layer.name)' with \(layer.shapes.count) shapes", category: .selection)
+            Log.info("🎯 SELECTION TAP: Checking layer \(layerIndex) (\(layer.name))", category: .selection)
             
-            // Search through shapes from top to bottom (reverse order)
             for shape in layer.shapes.reversed() {
                 if !shape.isVisible { continue }
                 
-                Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)' (group: \(shape.isGroupContainer))", category: .selection)
+                Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)'", category: .selection)
                 
-                // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
-                
-                // FIXED: Proper hit testing logic for stroke vs filled shapes
-                var isHit = false
-                
-                // CRITICAL FIX: Background shapes (Canvas/Pasteboard) should NEVER be selectable
-                // They should always trigger deselection like clicking on empty space
+                // Skip background shapes
                 let isBackgroundShape = (shape.name == "Canvas Background" || shape.name == "Pasteboard Background")
-                
                 if isBackgroundShape {
-                    // SKIP background shapes entirely - they should not be selectable
-                    // This ensures clicking on Canvas/Pasteboard always deselects, never selects
-                    Log.info("  - Background shape '\(shape.name)' SKIPPED - not selectable", category: .selection)
+                    Log.info("🎯 SELECTION TAP: Skipping background shape", category: .selection)
                     continue
-                } else if shape.isGroupContainer {
-                    // GROUP HIT TESTING FIX: Check if we hit any of the grouped shapes
-                    Log.info("  - Group container: checking \(shape.groupedShapes.count) grouped shapes", category: .selection)
-                    for groupedShape in shape.groupedShapes {
-                        if !groupedShape.isVisible { continue }
-                        
-                        Log.info("    - Testing grouped shape '\(groupedShape.name)'", category: .selection)
-                        
-                        // OPTION KEY ENHANCEMENT: Use path-based selection for grouped shapes too
-                        if isOptionPressed {
-                            // Option key held: Use precise path-based hit testing only
-                            let tolerance: CGFloat = 8.0
-                            if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: tolerance) {
-                                isHit = true
-                                Log.info("      - ⌥ Option group path hit: YES", category: .selection)
-                                break
-                            } else {
-                                Log.info("      - ⌥ Option group path hit: NO", category: .selection)
-                            }
-                        } else {
-                            // Regular selection: Apply the same hit testing logic to grouped shapes
-                            let isStrokeOnly = groupedShape.fillStyle?.color == .clear || groupedShape.fillStyle == nil
-                            
-                            if isStrokeOnly && groupedShape.strokeStyle != nil {
-                                // Stroke-only shapes: Use stroke-based hit testing
-                                let strokeWidth = groupedShape.strokeStyle?.width ?? 1.0
-                                let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                                if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: strokeTolerance) {
-                                    isHit = true
-                                    Log.info("      - Stroke hit: YES", category: .selection)
-                                    break
-                                } else {
-                                    Log.info("      - Stroke hit: NO", category: .selection)
-                                }
-                            } else {
-                                // Regular grouped shapes: Use bounds + path hit testing
-                                let transformedBounds = groupedShape.bounds.applying(groupedShape.transform)
-                                let expandedBounds = transformedBounds.insetBy(dx: -8, dy: -8)
-                                
-                                if expandedBounds.contains(location) {
-                                    isHit = true
-                                    Log.info("      - Bounds hit: YES", category: .selection)
-                                    break
-                                } else if PathOperations.hitTest(groupedShape.transformedPath, point: location, tolerance: 8.0) {
-                                    isHit = true
-                                    Log.info("      - Path hit: YES", category: .selection)
-                                    break
-                                } else {
-                                    Log.info("      - Bounds hit: NO, Path hit: NO", category: .selection)
-                                }
-                            }
-                        }
-                    }
-                    Log.info("  - Group overall hit result: \(isHit)", category: .selection)
-                } else {
-                    // OPTION KEY ENHANCEMENT: Use path-based selection when Option key is held
-                    if isOptionPressed {
-                        // Option key held: Use precise path-based hit testing only
-                        let tolerance: CGFloat = 8.0
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
-                        Log.info("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
-                } else {
-                    // Regular selection: Use different logic for stroke vs filled
-                    // SPECIAL CASE: Raster image shapes should behave like filled rectangles (click inside selects)
-                    let isImageShape = ImageContentRegistry.containsImage(shape)
-                    let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-                    
-                    if isImageShape {
-                        // Treat images as filled rectangles for hit-testing
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
-                        if expandedBounds.contains(location) {
-                            isHit = true
-                            Log.info("  - Image bounds hit: YES", category: .selection)
-                        } else {
-                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            Log.info("  - Image path hit: \(isHit)", category: .selection)
-                        }
-                    } else if isStrokeOnly && shape.strokeStyle != nil {
-                        // Method 1: Stroke-only shapes - use stroke-based hit testing only
-                        let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                        let strokeTolerance = max(15.0, strokeWidth + 10.0)
-                        
-                        isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                        Log.info("  - Regular stroke hit test: \(isHit)", category: .selection)
-                    } else {
-                        // Method 2: Filled shapes - use bounds + path hit testing
-                        let transformedBounds = shape.bounds.applying(shape.transform)
-                        let expandedBounds = transformedBounds.insetBy(dx: -12, dy: -12)
-                        
-                        if expandedBounds.contains(location) {
-                            isHit = true
-                            Log.info("  - Regular bounds hit test: \(isHit)", category: .selection)
-                        } else {
-                            // Fallback: precise path hit test
-                            isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: 8.0)
-                            Log.info("  - Regular path hit test: \(isHit)", category: .selection)
-                        }
-                    }
                 }
-                }
+                
+                // FIXED: Use improved hit detection with consistent logic
+                let isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 
                 if isHit {
                     hitShape = shape
                     hitLayerIndex = layerIndex
-                    Log.info("🎯 SELECTION TAP: FOUND HIT - Shape '\(shape.name)' in layer \(layerIndex)", category: .selection)
-                    
-                    // Check if shape is locked BEFORE setting it as hit
-                    if layer.isLocked || shape.isLocked {
-                        let lockType = layer.isLocked ? "locked layer" : "locked object"
-                        Log.info("🚫 Shape '\(shape.name)' is on \(lockType) - deselecting everything", category: .selection)
-                        document.selectedShapeIDs.removeAll()
-                        document.selectedTextIDs.removeAll()
-                        document.objectWillChange.send()
-                        return
-                    }
-                    
+                    Log.info("✅ SELECTION TAP: Hit shape '\(shape.name)' on layer \(layerIndex)", category: .selection)
                     break
                 }
             }
+            
             if hitShape != nil { break }
-        }
-        
-        if hitShape == nil {
-            Log.info("🎯 SELECTION TAP: NO SHAPE HIT - will deselect", category: .selection)
         }
         
         if let shape = hitShape, let layerIndex = hitLayerIndex {
@@ -402,26 +292,166 @@ extension DrawingCanvas {
             // Force UI update
             document.objectWillChange.send()
         } else {
-            Log.info("❌ NO HIT: No objects found at location \(location)", category: .selection)
+            Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
             
-            // DESELECT ALL: Tap on empty area with selection tool
-            let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
-            isCornerRadiusEditMode = false // Exit corner radius mode when clicking empty space
-            syncDirectSelectionWithDocument()
+            // FIXED: Enhanced deselection logic - check if click is within any selection box
+            let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)
             
-            if wasSelected {
-                Log.info("🎯 DESELECTED: Cleared selection due to empty area tap", category: .selection)
+            if !isShiftPressed && !isCommandPressed {
+                let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+                
+                if isWithinSelectionBox {
+                    Log.info("🎯 CLICKED WITHIN SELECTION BOX: Keeping current selection", category: .selection)
+                } else {
+                    // Clicked outside all selection boxes - deselect everything
+                    document.selectedShapeIDs.removeAll()
+                    document.selectedTextIDs.removeAll()
+                    
+                    // Clear other selection modes when deselecting
+                    selectedPoints.removeAll()
+                    selectedHandles.removeAll()
+                    directSelectedShapeIDs.removeAll()
+                    syncDirectSelectionWithDocument()
+                    isCornerRadiusEditMode = false
+                    
+                    if wasSelected {
+                        Log.info("🎯 DESELECTED: Cleared all selections - clicked outside selection boxes", category: .selection)
+                    }
+                }
                 document.objectWillChange.send()
             }
         }
     }
     
-    /// Check if a shape is a rectangle-based shape that can have corner radius
+    // MARK: - Improved Hit Detection Helper
+    
+    /// FIXED: Centralized hit detection logic with precise selection behavior
+    private func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
+        // OPTION KEY ENHANCEMENT: Use path-based selection when Option key is held
+        if isOptionPressed {
+            // Option key held: Use precise path-based hit testing only
+            let baseTolerance: CGFloat = 8.0
+            let tolerance = max(2.0, baseTolerance / document.zoomLevel)
+            let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+            Log.info("  - ⌥ Option path-only hit test: \(isHit)", category: .selection)
+            return isHit
+        } else {
+            // FIXED: More precise selection behavior - only select when clicking exactly on objects
+            let isImageShape = ImageContentRegistry.containsImage(shape)
+            let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
+            
+            if isImageShape {
+                // Treat images as filled rectangles for hit-testing
+                let transformedBounds = shape.bounds.applying(shape.transform)
+                // FIXED: Use exact bounds, not expanded bounds for precise selection
+                if transformedBounds.contains(location) {
+                    Log.info("  - Image exact bounds hit: YES", category: .selection)
+                    return true
+                } else {
+                    // Fallback to path hit test for edge cases
+                    let baseTolerance: CGFloat = 4.0 // Reduced tolerance for more precision
+                    let tolerance = max(1.0, baseTolerance / document.zoomLevel)
+                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+                    Log.info("  - Image path hit: \(isHit)", category: .selection)
+                    return isHit
+                }
+            } else if isStrokeOnly && shape.strokeStyle != nil {
+                // Stroke-only shapes: Use precise stroke-based hit testing
+                let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                // FIXED: Reduced tolerance for more precise selection
+                let strokeTolerance = max(8.0, strokeWidth + 5.0) // Reduced from 15.0 to 8.0
+                
+                let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
+                Log.info("  - Precise stroke hit test: \(isHit) (tolerance: \(strokeTolerance))", category: .selection)
+                return isHit
+            } else {
+                // Filled shapes: Use exact bounds first, then precise path hit test
+                let transformedBounds = shape.bounds.applying(shape.transform)
+                
+                // FIXED: Use exact bounds for primary hit test, not expanded bounds
+                if transformedBounds.contains(location) {
+                    Log.info("  - Exact bounds hit: YES", category: .selection)
+                    return true
+                } else {
+                    // Fallback: precise path hit test with reduced tolerance
+                    let baseTolerance: CGFloat = 4.0 // Reduced from 8.0 to 4.0 for more precision
+                    let tolerance = max(1.0, baseTolerance / document.zoomLevel)
+                    let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: tolerance)
+                    Log.info("  - Precise path hit test: \(isHit) (tolerance: \(tolerance))", category: .selection)
+                    return isHit
+                }
+            }
+        }
+    }
+    
+         // MARK: - Coordinate System Validation
+     
+     /// FIXED: Validate and correct coordinate system issues
+     private func validateAndCorrectLocation(_ location: CGPoint) -> CGPoint {
+         // Check for NaN or infinite values that could cause selection issues
+         if location.x.isNaN || location.y.isNaN || location.x.isInfinite || location.y.isInfinite {
+             Log.error("❌ INVALID COORDINATES: \(location) - using zero point", category: .error)
+             return .zero
+         }
+         
+         // Check for extreme values that might indicate coordinate system corruption
+         let maxReasonableValue: CGFloat = 1000000.0
+         if abs(location.x) > maxReasonableValue || abs(location.y) > maxReasonableValue {
+             Log.error("❌ EXTREME COORDINATES: \(location) - using zero point", category: .error)
+             return .zero
+         }
+         
+         return location
+     }
+     
+         /// Check if a shape is a rectangle-based shape that can have corner radius
     private func isRectangleBasedShape(_ shape: VectorShape) -> Bool {
         let shapeName = shape.name.lowercased()
         return shapeName == "rectangle" || shapeName == "square" ||
                shapeName == "rounded rectangle" || shapeName == "pill"
+    }
+    
+    /// FIXED: Check if a location is within any existing selection box
+    private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
+        // Check selected shapes
+        for shapeID in document.selectedShapeIDs {
+            if let shape = findShapeByID(shapeID) {
+                let transformedBounds = shape.bounds.applying(shape.transform)
+                // Use a small tolerance for selection box detection
+                let selectionBoxBounds = transformedBounds.insetBy(dx: -2, dy: -2)
+                if selectionBoxBounds.contains(location) {
+                    return true
+                }
+            }
+        }
+        
+        // Check selected text objects
+        for textID in document.selectedTextIDs {
+            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
+                let textBounds = CGRect(
+                    x: textObj.position.x + textObj.bounds.minX,
+                    y: textObj.position.y + textObj.bounds.minY,
+                    width: textObj.bounds.width,
+                    height: textObj.bounds.height
+                )
+                // Use a small tolerance for selection box detection
+                let selectionBoxBounds = textBounds.insetBy(dx: -2, dy: -2)
+                if selectionBoxBounds.contains(location) {
+                    return true
+                }
+            }
+        }
+        
+        return false
+    }
+    
+    /// Helper function to find a shape by ID
+    private func findShapeByID(_ shapeID: UUID) -> VectorShape? {
+        for layer in document.layers {
+            if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+                return shape
+            }
+        }
+        return nil
     }
 } 

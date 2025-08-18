@@ -105,6 +105,16 @@ extension DrawingCanvas {
                 return nil // Consume the event to prevent system handling
             }
             
+            // HANDLE TAB KEY FOR DESELECT ALL
+            if let characters = event.charactersIgnoringModifiers,
+               characters == "\t" {
+                // Handle Tab key to deselect all objects
+                document.selectedShapeIDs.removeAll()
+                document.selectedTextIDs.removeAll()
+                Log.info("🎯 TAB KEY: Deselected all objects", category: .selection)
+                return nil // Consume the event to prevent system handling
+            }
+            
             // ALLOW TOOL SWITCHING SHORTCUTS to pass through
             // These are single key presses that should trigger tool switching
             let toolSwitchingKeys = Set(["a", "d", "c", "s", "r", "x", "w", "p", "f", "b", "m", "t", "l", "e", "o", "i", "h", "z", "g", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])

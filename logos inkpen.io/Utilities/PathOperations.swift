@@ -673,6 +673,18 @@ class PathOperations {
     // MARK: - PATH HIT TESTING COMPATIBILITY
     
     static func hitTest(_ path: CGPath, point: CGPoint, tolerance: CGFloat = 5.0) -> Bool {
+        // FIXED: Validate input parameters to prevent selection issues
+        guard !point.x.isNaN && !point.y.isNaN && !point.x.isInfinite && !point.y.isInfinite else {
+            return false
+        }
+        
+        guard tolerance > 0 && !tolerance.isNaN && !tolerance.isInfinite else {
+            return false
+        }
+        
+        // Check if path is valid
+        guard !path.isEmpty else { return false }
+        
         let bounds = path.boundingBoxOfPath.insetBy(dx: -tolerance, dy: -tolerance)
         guard bounds.contains(point) else { return false }
         
@@ -684,18 +696,35 @@ class PathOperations {
     }
     
     private static func isPointNearStroke(_ path: CGPath, point: CGPoint, tolerance: CGFloat) -> Bool {
+        // FIXED: Validate input parameters
+        guard !point.x.isNaN && !point.y.isNaN && !point.x.isInfinite && !point.y.isInfinite else {
+            return false
+        }
+        
+        guard tolerance > 0 && !tolerance.isNaN && !tolerance.isInfinite else {
+            return false
+        }
+        
         var isNear = false
         
         path.applyWithBlock { element in
             switch element.pointee.type {
             case .moveToPoint, .addLineToPoint:
                 let pathPoint = element.pointee.points[0]
+                // FIXED: Validate path point coordinates
+                guard !pathPoint.x.isNaN && !pathPoint.y.isNaN && !pathPoint.x.isInfinite && !pathPoint.y.isInfinite else {
+                    return
+                }
                 let distance = sqrt(pow(point.x - pathPoint.x, 2) + pow(point.y - pathPoint.y, 2))
                 if distance <= tolerance {
                     isNear = true
                 }
             case .addQuadCurveToPoint, .addCurveToPoint:
                 let pathPoint = element.pointee.points[element.pointee.type == .addQuadCurveToPoint ? 1 : 2]
+                // FIXED: Validate path point coordinates
+                guard !pathPoint.x.isNaN && !pathPoint.y.isNaN && !pathPoint.x.isInfinite && !pathPoint.y.isInfinite else {
+                    return
+                }
                 let distance = sqrt(pow(point.x - pathPoint.x, 2) + pow(point.y - pathPoint.y, 2))
                 if distance <= tolerance {
                     isNear = true

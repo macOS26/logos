@@ -1978,7 +1978,7 @@ struct logos_inken_ioApp: App {
                     Button("Deselect All") {
                         documentState?.deselectAll()
                     }
-                    .keyboardShortcut("a", modifiers: [.command, .shift])
+                    .keyboardShortcut(.tab)
                     .disabled(documentState?.hasSelection != true)
                 }
             }
