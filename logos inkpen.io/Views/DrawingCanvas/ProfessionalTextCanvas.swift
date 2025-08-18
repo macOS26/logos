@@ -847,8 +847,8 @@ struct ProfessionalResizeHandleView: View {
     var body: some View {
         Circle()
             .fill(Color.blue)
-            .stroke(Color.white, lineWidth: 1.0 / max(zoomLevel, 0.0001)) // Always ~1px on screen
-            .frame(width: 12, height: 12) // Made slightly bigger and more visible
+            .stroke(Color.white, lineWidth: 1.0) // Fixed stroke width - does not scale with zoom
+            .frame(width: 8, height: 8) // Fixed UI size - does not scale with artwork (same as other handles)
             .position(
                 x: viewModel.textBoxFrame.maxX + dragOffset.width + resizeOffset.width,
                 y: viewModel.textBoxFrame.maxY + dragOffset.height + resizeOffset.height

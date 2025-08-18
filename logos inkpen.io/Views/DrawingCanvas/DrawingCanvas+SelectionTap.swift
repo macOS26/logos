@@ -155,8 +155,8 @@ extension DrawingCanvas {
         
         Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
-        // Only run text hit-testing when using the Font tool to avoid noisy logs during normal selection
-        if document.currentTool == .font, let textID = findTextAt(location: location) {
+        // Check for text objects when using selection tool or font tool
+        if (document.currentTool == .selection || document.currentTool == .font), let textID = findTextAt(location: location) {
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
                 let textObject = document.textObjects[textIndex]
                 
