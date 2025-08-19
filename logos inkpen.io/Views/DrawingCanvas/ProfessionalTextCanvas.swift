@@ -1106,6 +1106,13 @@ class ProfessionalTextViewModel: ObservableObject {
             self.isEditing = textObject.isEditing
         }
         
+        // CURSOR POSITIONING: Sync cursor position from VectorText
+        if textObject.isEditing && textObject.cursorPosition != self.userInitiatedCursorPosition {
+            self.userInitiatedCursorPosition = textObject.cursorPosition
+            self.userInitiatedSelectionLength = 0
+            Log.info("🎯 CURSOR SYNC: Set userInitiatedCursorPosition = \(textObject.cursorPosition)", category: .general)
+        }
+        
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         // Line spacing is now handled separately in the typography properties
         

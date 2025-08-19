@@ -77,10 +77,12 @@ extension DrawingCanvas {
             startEditingText(textID: textID, at: canvasLocation)
             Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
             
-            // 3. Activate I-beam cursor at click location
+            // 3. Activate I-beam cursor and enter text editing mode
+            isTextEditingMode = true
             #if os(macOS)
             NSCursor.iBeam.set()
             Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+            Log.info("🎯 DOUBLE CLICK: Entered text editing mode - I-beam cursor will be maintained", category: .selection)
             #endif
             
             // Additional: Position cursor in text at click location

@@ -271,6 +271,9 @@ struct DrawingCanvas: View {
     @State internal var lastClickLocation: CGPoint = .zero
     @State internal var doubleClickTimeout: TimeInterval = 0.3 // 300ms timeout for double-click detection
     
+    // TEXT EDITING CURSOR STATE
+    @State internal var isTextEditingMode = false // Track when we're in text editing mode to maintain I-beam cursor
+    
     // ZOOM TOOL DRAG STATE (Scrubby zoom-style)
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0

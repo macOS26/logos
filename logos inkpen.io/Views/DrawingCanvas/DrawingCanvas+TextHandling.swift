@@ -161,6 +161,7 @@ extension DrawingCanvas {
             Log.info("  - Text: '\(textObject.content)'", category: .general)
             Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
             Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
+            Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
             document.textObjects[textIndex].isEditing = true
@@ -172,6 +173,17 @@ extension DrawingCanvas {
             // Update editing state
             isEditingText = true
             editingTextID = textID
+            
+            // Calculate cursor position at click location
+            let cursorPosition = calculateCursorPosition(in: textObject, at: location)
+            currentCursorPosition = cursorPosition
+            currentSelectionRange = NSRange(location: cursorPosition, length: 0)
+            
+            // CRITICAL: Also update the VectorText's cursor position directly
+            document.textObjects[textIndex].cursorPosition = cursorPosition
+            
+            Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
+            Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
             
             Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
         } else {
@@ -267,7 +279,9 @@ extension DrawingCanvas {
             y: tapLocation.y - textObj.position.y
         )
         
-        // Use Core Text to find the character index
+        Log.info("🎯 CURSOR CALC: Tap at (\(String(format: "%.1f", tapLocation.x)), \(String(format: "%.1f", tapLocation.y))), relative (\(String(format: "%.1f", relativePoint.x)), \(String(format: "%.1f", relativePoint.y)))", category: .general)
+        
+        // Create a temporary text layout similar to NSTextView to get accurate positioning
         let nsFont = textObj.typography.nsFont
         let attributes: [NSAttributedString.Key: Any] = [
             .font: nsFont,
@@ -275,11 +289,54 @@ extension DrawingCanvas {
         ]
         
         let attributedString = NSAttributedString(string: textObj.content, attributes: attributes)
-        let line = CTLineCreateWithAttributedString(attributedString)
         
-        // Get character index at the relative point
-        let index = CTLineGetStringIndexForPosition(line, relativePoint)
-        return max(0, min(textObj.content.count, index))
+        // Create text container with similar settings to NSTextView
+        let textContainer = NSTextContainer(containerSize: CGSize(
+            width: max(textObj.bounds.width, 200.0),
+            height: CGFloat.greatestFiniteMagnitude
+        ))
+        textContainer.lineFragmentPadding = 0
+        textContainer.lineBreakMode = .byWordWrapping
+        
+        // Create layout manager
+        let layoutManager = NSLayoutManager()
+        layoutManager.addTextContainer(textContainer)
+        
+        // Create text storage
+        let textStorage = NSTextStorage(attributedString: attributedString)
+        textStorage.addLayoutManager(layoutManager)
+        
+        // Ensure layout is complete
+        layoutManager.ensureLayout(for: textContainer)
+        
+        // Convert relative point to character index using layout manager
+        let characterIndex = layoutManager.characterIndex(
+            for: relativePoint,
+            in: textContainer,
+            fractionOfDistanceBetweenInsertionPoints: nil
+        )
+        
+        let finalIndex = max(0, min(textObj.content.count, characterIndex))
+        
+        Log.info("🎯 CURSOR CALC: Character index \(finalIndex) for text '\(textObj.content.prefix(20))'", category: .general)
+        
+        return finalIndex
+    }
+    
+    /// Update the text view model's cursor position for proper NSTextView synchronization
+    private func updateTextViewModelCursorPosition(textID: UUID, position: Int, length: Int) {
+        // ENHANCED: Store the desired cursor position in the text object itself temporarily
+        // This will be picked up by the view model when it syncs
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            // Store cursor position in a temporary property or use a custom approach
+            Log.info("🎯 TEXT VIEW MODEL: Storing cursor position \(position) for textID \(textID.uuidString.prefix(8))", category: .general)
+            
+            // For now, rely on the fact that the NSTextView will be created fresh when editing starts
+            // and we can set the cursor position at that time
+            
+            // Add a custom property to VectorText to track desired cursor position
+            // This is a temporary solution until we can implement a better architecture
+        }
     }
     
     // MARK: - Text Creation and Management
@@ -514,6 +571,14 @@ extension DrawingCanvas {
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
         
+        // Reset text editing cursor mode
+        isTextEditingMode = false
+        #if os(macOS)
+        // Reset cursor to default arrow when exiting text editing
+        NSCursor.arrow.set()
+        Log.info("🎯 TEXT EDITING: Exited text editing mode - reset cursor to arrow", category: .selection)
+        #endif
+        
         Log.info("✅ Finished text editing", category: .fileOperations)
     }
     
@@ -535,6 +600,14 @@ extension DrawingCanvas {
         editingTextID = nil
         currentCursorPosition = 0
         currentSelectionRange = NSRange(location: 0, length: 0)
+        
+        // Reset text editing cursor mode
+        isTextEditingMode = false
+        #if os(macOS)
+        // Reset cursor to default arrow when cancelling text editing
+        NSCursor.arrow.set()
+        Log.info("🎯 TEXT EDITING: Cancelled text editing mode - reset cursor to arrow", category: .selection)
+        #endif
         
         Log.error("❌ Cancelled text editing", category: .error)
     }

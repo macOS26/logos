@@ -22,7 +22,10 @@ extension DrawingCanvas {
             currentMousePosition = location
             #if os(macOS)
             // Maintain correct cursor while hovering over the canvas
-            if document.currentTool == .hand {
+            if isTextEditingMode {
+                // Keep I-beam cursor when in text editing mode
+                NSCursor.iBeam.set()
+            } else if document.currentTool == .hand {
                 switch isPanGestureActive {
                 case true: HandClosedCursor.set()
                 case false: HandOpenCursor.set()
