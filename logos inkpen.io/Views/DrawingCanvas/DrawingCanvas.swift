@@ -266,6 +266,11 @@ struct DrawingCanvas: View {
     @State internal var isZoomGestureActive = false
     @State internal var isPanGestureActive = false
     
+    // DOUBLE-CLICK DETECTION STATE
+    @State internal var lastClickTime: Date = Date.distantPast
+    @State internal var lastClickLocation: CGPoint = .zero
+    @State internal var doubleClickTimeout: TimeInterval = 0.3 // 300ms timeout for double-click detection
+    
     // ZOOM TOOL DRAG STATE (Scrubby zoom-style)
     @State internal var zoomToolDragStartPoint: CGPoint = .zero
     @State internal var zoomToolInitialZoomLevel: CGFloat = 1.0

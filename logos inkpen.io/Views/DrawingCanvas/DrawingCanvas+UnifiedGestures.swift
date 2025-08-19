@@ -11,6 +11,95 @@ import AppKit
 
 extension DrawingCanvas {
     
+    // MARK: - Advanced Click Detection
+    
+    /// Detect and log advanced click types (option+click, command+click, double click)
+    /// Shows current tool and green text box detection
+    internal func detectAdvancedClickTypes(at location: CGPoint, geometry: GeometryProxy, clickType: String) {
+        let canvasLocation = screenToCanvas(location, geometry: geometry)
+        
+        // Check for green text box (text that is selected but not editing)
+        let greenTextDetected = findTextAt(location: canvasLocation) != nil
+        
+        // Get current tool name
+        let currentToolName = document.currentTool.rawValue
+        
+        // Log the click detection
+        print("🎯 ADVANCED CLICK DETECTION:")
+        print("  - Click Type: \(clickType)")
+        print("  - Current Tool: \(currentToolName)")
+        print("  - Green Text Box Detected: \(greenTextDetected ? "YES" : "NO")")
+        print("  - Location: (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))")
+        print("  - Modifier Keys:")
+        print("    - Option (⌥): \(isOptionPressed ? "PRESSED" : "not pressed")")
+        print("    - Command (⌘): \(isCommandPressed ? "PRESSED" : "not pressed")")
+        print("    - Shift (⇧): \(isShiftPressed ? "PRESSED" : "not pressed")")
+        print("    - Control (⌃): \(isControlPressed ? "PRESSED" : "not pressed")")
+        
+        // Additional details for text detection
+        if greenTextDetected {
+            if let textID = findTextAt(location: canvasLocation),
+               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                let textObj = document.textObjects[textIndex]
+                print("  - Text Content: '\(textObj.content.prefix(50))'")
+                print("  - Text State: \(textObj.isEditing ? "BLUE (editing)" : "GREEN (selected)")")
+            }
+        }
+        
+        print("  - End Detection Report")
+        print("")
+    }
+    
+    /// Handle double-click events with advanced detection
+    internal func handleDoubleClick(at location: CGPoint, geometry: GeometryProxy) {
+        // DETECT ADVANCED CLICK TYPES FOR DOUBLE CLICK
+        var clickType = "Double Click"
+        if isOptionPressed && isCommandPressed {
+            clickType = "Option+Command+Double Click"
+        } else if isOptionPressed {
+            clickType = "Option+Double Click"
+        } else if isCommandPressed {
+            clickType = "Command+Double Click"
+        }
+        
+        // Call the advanced click detection
+        detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
+        
+        let canvasLocation = screenToCanvas(location, geometry: geometry)
+        
+        // Check if we're clicking on a text box
+        if let textID = findTextAt(location: canvasLocation) {
+            // 1. Switch to Font tool (Aa)
+            document.currentTool = .font
+            Log.info("🎯 DOUBLE CLICK: Switched to Font tool", category: .selection)
+            
+            // 2. Turn text box to blue edit mode
+            startEditingText(textID: textID, at: canvasLocation)
+            Log.info("🎯 DOUBLE CLICK: Activated blue edit mode for text", category: .selection)
+            
+            // 3. Activate I-beam cursor at click location
+            #if os(macOS)
+            NSCursor.iBeam.set()
+            Log.info("🎯 DOUBLE CLICK: Set I-beam cursor at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+            #endif
+            
+            // Additional: Position cursor in text at click location
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+                let textObj = document.textObjects[textIndex]
+                
+                // Calculate relative position within the text box
+                let relativeX = canvasLocation.x - textObj.position.x
+                let relativeY = canvasLocation.y - textObj.position.y
+                
+                Log.info("🎯 DOUBLE CLICK: Text cursor positioned at relative coordinates (\(String(format: "%.1f", relativeX)), \(String(format: "%.1f", relativeY)))", category: .selection)
+                Log.info("🎯 DOUBLE CLICK: Text content: '\(textObj.content)'", category: .selection)
+            }
+        } else {
+            // If not clicking on text, just log the double-click
+            Log.info("🎯 DOUBLE CLICK: No text box at location (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))", category: .selection)
+        }
+    }
+    
     // MARK: - Unified Gesture System
     
     /// UNIFIED TAP HANDLER - Works consistently for all areas (Canvas + Pasteboard)
@@ -24,6 +113,47 @@ extension DrawingCanvas {
         if validatedCanvasLocation != canvasLocation {
             Log.info("🎯 COORDINATE VALIDATION: Adjusted canvas location from \(canvasLocation) to \(validatedCanvasLocation)", category: .selection)
         }
+        
+        // DOUBLE-CLICK DETECTION
+        let currentTime = Date()
+        let timeSinceLastClick = currentTime.timeIntervalSince(lastClickTime)
+        let distanceFromLastClick = distance(location, lastClickLocation)
+        let isDoubleClick = timeSinceLastClick < doubleClickTimeout && distanceFromLastClick < 10.0 // 10px tolerance
+        
+        // Update click tracking
+        lastClickTime = currentTime
+        lastClickLocation = location
+        
+        // DETECT ADVANCED CLICK TYPES
+        var clickType = "Single Click"
+        if isDoubleClick {
+            if isOptionPressed && isCommandPressed {
+                clickType = "Option+Command+Double Click"
+            } else if isOptionPressed {
+                clickType = "Option+Double Click"
+            } else if isCommandPressed {
+                clickType = "Command+Double Click"
+            } else {
+                clickType = "Double Click"
+            }
+            
+            // Handle double-click immediately
+            Log.info("🎯 DOUBLE CLICK DETECTED at: \(location)", category: .selection)
+            handleDoubleClick(at: location, geometry: geometry)
+            return // Exit early for double-clicks
+        } else {
+            // Single click with modifiers
+            if isOptionPressed && isCommandPressed {
+                clickType = "Option+Command+Click"
+            } else if isOptionPressed {
+                clickType = "Option+Click"
+            } else if isCommandPressed {
+                clickType = "Command+Click"
+            }
+        }
+        
+        // Call the advanced click detection
+        detectAdvancedClickTypes(at: location, geometry: geometry, clickType: clickType)
         
         // Cancel bezier drawing for all tools except bezier pen
         if document.currentTool != .bezierPen && isBezierDrawing {
