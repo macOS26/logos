@@ -379,8 +379,8 @@ class PersistentGradientHUDManager {
                 Log.fileOperation("🎨 GRADIENT HUD: Found existing window: \(identifier)", level: .info)
                 
                 if !window.isVisible {
-                    window.tabbingMode = .disallowed
-                    window.makeKeyAndOrderFront(nil) // Show the window
+                    // 🔥 NEW: Safe window positioning
+                    safeShowWindow(window)
                 }
                 foundExistingWindow = true
                 break // Exit the loop once we find the gradient window
@@ -460,6 +460,69 @@ class PersistentGradientHUDManager {
     func getStableDocument() -> VectorDocument {
         return stableColorDocument
     }
+    
+    // 🔥 NEW: Display validation to prevent invalid display identifier errors
+    private func validateDisplayForWindow() -> Bool {
+        // Check if we have valid displays
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else {
+            Log.warning("🎨 GRADIENT HUD: No displays available", category: .general)
+            return false
+        }
+        
+        // Check if main display is valid
+        guard let mainScreen = NSScreen.main else {
+            Log.warning("🎨 GRADIENT HUD: Main display is invalid", category: .general)
+            return false
+        }
+        
+        // Validate display frame
+        let frame = mainScreen.frame
+        guard frame.width > 0 && frame.height > 0 && 
+              !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
+              !frame.width.isNaN && !frame.height.isNaN else {
+            Log.warning("🎨 GRADIENT HUD: Invalid display frame: \(frame)", category: .general)
+            return false
+        }
+        
+        return true
+    }
+    
+    // 🔥 NEW: Safe window showing with error handling
+    private func safeShowWindow(_ window: NSWindow) {
+        // Set window properties safely
+        window.tabbingMode = .disallowed
+        
+        // Validate window position before showing
+        let currentFrame = window.frame
+        let mainScreen = NSScreen.main ?? NSScreen.screens.first
+        
+        if let screen = mainScreen {
+            let screenFrame = screen.visibleFrame
+            
+            // Ensure window is within screen bounds
+            var newFrame = currentFrame
+            if newFrame.maxX > screenFrame.maxX {
+                newFrame.origin.x = screenFrame.maxX - newFrame.width
+            }
+            if newFrame.maxY > screenFrame.maxY {
+                newFrame.origin.y = screenFrame.maxY - newFrame.height
+            }
+            if newFrame.minX < screenFrame.minX {
+                newFrame.origin.x = screenFrame.minX
+            }
+            if newFrame.minY < screenFrame.minY {
+                newFrame.origin.y = screenFrame.minY
+            }
+            
+            if newFrame != currentFrame {
+                window.setFrame(newFrame, display: false)
+            }
+        }
+        
+        // Show window
+        window.makeKeyAndOrderFront(nil)
+    }
 } 
 
 // MARK: - Persistent Ink HUD Manager (for Ink Color Mixer)
@@ -480,12 +543,18 @@ class PersistentInkHUDManager {
         currentDocument = document
         isVisible = true
         
+        // 🔥 NEW: Validate display before showing window
+        if !validateDisplayForInkHUD() {
+            Log.warning("🖌️ INK HUD: Invalid display detected - using fallback positioning", category: .general)
+            // Continue with fallback positioning
+        }
+        
         var foundExistingWindow = false
         for window in NSApplication.shared.windows {
             if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
                 if !window.isVisible {
-                    window.tabbingMode = .disallowed
-                    window.makeKeyAndOrderFront(nil)
+                    // 🔥 NEW: Safe window positioning
+                    safeShowInkHUDWindow(window)
                 }
                 foundExistingWindow = true
                 break
@@ -504,5 +573,68 @@ class PersistentInkHUDManager {
             }
         }
         isVisible = false
+    }
+    
+    // 🔥 NEW: Display validation for Ink HUD
+    private func validateDisplayForInkHUD() -> Bool {
+        // Check if we have valid displays
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else {
+            Log.warning("🖌️ INK HUD: No displays available", category: .general)
+            return false
+        }
+        
+        // Check if main display is valid
+        guard let mainScreen = NSScreen.main else {
+            Log.warning("🖌️ INK HUD: Main display is invalid", category: .general)
+            return false
+        }
+        
+        // Validate display frame
+        let frame = mainScreen.frame
+        guard frame.width > 0 && frame.height > 0 && 
+              !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
+              !frame.width.isNaN && !frame.height.isNaN else {
+            Log.warning("🖌️ INK HUD: Invalid display frame: \(frame)", category: .general)
+            return false
+        }
+        
+        return true
+    }
+    
+    // 🔥 NEW: Safe window showing for Ink HUD
+    private func safeShowInkHUDWindow(_ window: NSWindow) {
+        // Set window properties safely
+        window.tabbingMode = .disallowed
+        
+        // Validate window position before showing
+        let currentFrame = window.frame
+        let mainScreen = NSScreen.main ?? NSScreen.screens.first
+        
+        if let screen = mainScreen {
+            let screenFrame = screen.visibleFrame
+            
+            // Ensure window is within screen bounds
+            var newFrame = currentFrame
+            if newFrame.maxX > screenFrame.maxX {
+                newFrame.origin.x = screenFrame.maxX - newFrame.width
+            }
+            if newFrame.maxY > screenFrame.maxY {
+                newFrame.origin.y = screenFrame.maxY - newFrame.height
+            }
+            if newFrame.minX < screenFrame.minX {
+                newFrame.origin.x = screenFrame.minX
+            }
+            if newFrame.minY < screenFrame.minY {
+                newFrame.origin.y = screenFrame.minY
+            }
+            
+            if newFrame != currentFrame {
+                window.setFrame(newFrame, display: false)
+            }
+        }
+        
+        // Show window
+        window.makeKeyAndOrderFront(nil)
     }
 }

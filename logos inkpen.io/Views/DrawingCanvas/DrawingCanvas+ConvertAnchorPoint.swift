@@ -305,24 +305,24 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, let control1, _):
-            // CRITICAL FIX: Collapse handles to anchor point (creates corner point)
+        case .curve(let to, _, _):
+            // CRITICAL FIX: Convert curve to line element (removes handles completely)
             let cornerPoint = VectorPoint(to.x, to.y)
             
-            // STEP 1: Collapse incoming handle (control2) to anchor point
-            elements[elementIndex] = .curve(to: cornerPoint, control1: control1, control2: cornerPoint)
+            // STEP 1: Convert current curve element to line element
+            elements[elementIndex] = .line(to: cornerPoint)
             
-            // STEP 2: Collapse outgoing handle (control1 of NEXT element) to anchor point
+            // STEP 2: Convert NEXT element to line if it's a curve (removes outgoing handle)
             if elementIndex + 1 < elements.count {
-                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
-                    elements[elementIndex + 1] = .curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
+                if case .curve(let nextTo, _, _) = elements[elementIndex + 1] {
+                    elements[elementIndex + 1] = .line(to: nextTo)
                 }
             }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles collapsed to anchor)", category: .fileOperations)
+            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles completely removed)", category: .fileOperations)
         default:
             break
         }
@@ -445,13 +445,13 @@ extension DrawingCanvas {
         
         switch element {
         case .quadCurve(let to, _):
-            // Convert quad curve to corner point (keep as curve structure)
+            // Convert quad curve to line element (completely removes handles)
             let cornerPoint = VectorPoint(to.x, to.y)
-            let newElement = PathElement.curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
+            let newElement = PathElement.line(to: cornerPoint)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            Log.info("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles collapsed to anchor)", category: .fileOperations)
+            Log.info("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles completely removed)", category: .fileOperations)
         default:
             break
         }
@@ -546,13 +546,38 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, let control1, _):
-            // Collapse incoming handle (control2) to anchor point
-            elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
+            // Check if outgoing handle is also collapsed (from next element)
+            var shouldConvertToLine = false
+            if elementIndex + 1 < elements.count {
+                if case .curve(_, let nextControl1, _) = elements[elementIndex + 1] {
+                    // Check if outgoing handle is collapsed to the current anchor point
+                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                    if outgoingHandleCollapsed {
+                        shouldConvertToLine = true
+                    }
+                }
+            }
+            
+            if shouldConvertToLine {
+                // Both handles are collapsed - convert to line element
+                elements[elementIndex] = .line(to: to)
+                
+                // Also convert next element to line if it's a curve
+                if elementIndex + 1 < elements.count {
+                    if case .curve(let nextTo, _, _) = elements[elementIndex + 1] {
+                        elements[elementIndex + 1] = .line(to: nextTo)
+                    }
+                }
+                
+                Log.info("✅ REMOVED INCOMING HANDLE: Converted to line element (both handles removed)", category: .fileOperations)
+            } else {
+                // Only incoming handle collapsed - keep as curve but collapse the handle
+                elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
+                Log.info("✅ REMOVED INCOMING HANDLE: Element \(elementIndex)", category: .fileOperations)
+            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            
-            Log.info("✅ REMOVED INCOMING HANDLE: Element \(elementIndex)", category: .fileOperations)
             
         default:
             break
@@ -573,13 +598,38 @@ extension DrawingCanvas {
         
         switch nextElement {
         case .curve(let to, _, let control2):
-            // Collapse outgoing handle (control1) to anchor point
-            elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
+            // Check if incoming handle is also collapsed (from current element)
+            var shouldConvertToLine = false
+            if elementIndex >= 0 && elementIndex < elements.count {
+                if case .curve(_, _, let currentControl2) = elements[elementIndex] {
+                    // Check if incoming handle is collapsed to the next anchor point
+                    let incomingHandleCollapsed = (abs(currentControl2.x - to.x) < 0.1 && abs(currentControl2.y - to.y) < 0.1)
+                    if incomingHandleCollapsed {
+                        shouldConvertToLine = true
+                    }
+                }
+            }
+            
+            if shouldConvertToLine {
+                // Both handles are collapsed - convert to line element
+                elements[elementIndex + 1] = .line(to: to)
+                
+                // Also convert current element to line if it's a curve
+                if elementIndex >= 0 && elementIndex < elements.count {
+                    if case .curve(let currentTo, _, _) = elements[elementIndex] {
+                        elements[elementIndex] = .line(to: currentTo)
+                    }
+                }
+                
+                Log.info("✅ REMOVED OUTGOING HANDLE: Converted to line element (both handles removed)", category: .fileOperations)
+            } else {
+                // Only outgoing handle collapsed - keep as curve but collapse the handle
+                elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
+                Log.info("✅ REMOVED OUTGOING HANDLE: Element \(elementIndex + 1)", category: .fileOperations)
+            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-            
-            Log.info("✅ REMOVED OUTGOING HANDLE: Element \(elementIndex + 1)", category: .fileOperations)
             
         default:
             break

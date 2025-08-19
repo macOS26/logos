@@ -1550,7 +1550,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         StderrFilter.shared.installFilter(suppressing: [
             "/private/var/db/DetachedSignatures",
             "os_unix.c:49448",
-            "cannot open file at line 49448"
+            "cannot open file at line 49448",
+            "invalid display identifier",
+            "display identifier"
         ])
         
         // Apply Apple Metal Performance HUD environment if enabled in preferences
@@ -1560,6 +1562,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             unsetenv("MTL_HUD_ENABLED")
         }
+        
+        // 🔥 NEW: Initialize display monitor to handle display changes
+        _ = DisplayMonitor.shared
         
         // SETUP: Global error handling for system-level issues
         setupGlobalErrorHandling()
@@ -1617,7 +1622,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 exceptionReason.contains("No such file or directory") ||
                 exceptionReason.contains("RenderBox") ||
                 exceptionReason.contains("metallib") ||
-                exceptionReason.contains("personaAttributes") {
+                exceptionReason.contains("personaAttributes") ||
+                exceptionReason.contains("invalid display identifier") ||
+                exceptionReason.contains("display identifier") {
                 Log.warning("📄 GlobalErrorHandler: System-level error detected - continuing gracefully", category: .startup)
                 return // Don't crash the app
             }
@@ -2728,4 +2735,106 @@ class ClipboardManager {
 struct ClipboardData: Codable {
     let shapes: [VectorShape]
     let texts: [VectorText]
+}
+
+// MARK: - Display Monitor for Handling Display Changes
+class DisplayMonitor: NSObject {
+    static let shared = DisplayMonitor()
+    
+    private override init() {
+        super.init()
+        setupDisplayMonitoring()
+    }
+    
+    private func setupDisplayMonitoring() {
+        // Monitor for display configuration changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(displayConfigurationChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+        
+        // Monitor for display connection changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(displayConfigurationChanged),
+            name: NSWindow.didChangeScreenNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func displayConfigurationChanged(_ notification: Notification) {
+        Log.info("🖥️ DisplayMonitor: Display configuration changed", category: .general)
+        
+        // Validate all displays after configuration change
+        validateDisplays()
+        
+        // Reposition any floating windows that might be on invalid displays
+        repositionFloatingWindows()
+    }
+    
+    private func validateDisplays() {
+        let screens = NSScreen.screens
+        Log.info("🖥️ DisplayMonitor: Found \(screens.count) displays", category: .general)
+        
+        for (index, screen) in screens.enumerated() {
+            let frame = screen.frame
+            let isValid = frame.width > 0 && frame.height > 0 && 
+                         !frame.origin.x.isNaN && !frame.origin.y.isNaN &&
+                         !frame.width.isNaN && !frame.height.isNaN
+            
+            if isValid {
+                Log.info("🖥️ DisplayMonitor: Display \(index) is valid - frame: \(frame)", category: .general)
+            } else {
+                Log.warning("🖥️ DisplayMonitor: Display \(index) has invalid frame: \(frame)", category: .general)
+            }
+        }
+    }
+    
+    private func repositionFloatingWindows() {
+        DispatchQueue.main.async {
+            // Get valid screen bounds
+            guard let mainScreen = NSScreen.main else {
+                Log.warning("🖥️ DisplayMonitor: No main screen available for window repositioning", category: .general)
+                return
+            }
+            
+            let screenFrame = mainScreen.visibleFrame
+            
+            // Reposition gradient HUD windows
+            for window in NSApplication.shared.windows {
+                if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
+                    if !screenFrame.intersects(window.frame) {
+                        Log.info("🖥️ DisplayMonitor: Repositioning gradient HUD window", category: .general)
+                        let newFrame = CGRect(
+                            x: screenFrame.minX + 50,
+                            y: screenFrame.minY + 50,
+                            width: window.frame.width,
+                            height: window.frame.height
+                        )
+                        window.setFrame(newFrame, display: true)
+                    }
+                }
+                
+                // Reposition ink HUD windows
+                if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
+                    if !screenFrame.intersects(window.frame) {
+                        Log.info("🖥️ DisplayMonitor: Repositioning ink HUD window", category: .general)
+                        let newFrame = CGRect(
+                            x: screenFrame.minX + 100,
+                            y: screenFrame.minY + 100,
+                            width: window.frame.width,
+                            height: window.frame.height
+                        )
+                        window.setFrame(newFrame, display: true)
+                    }
+                }
+            }
+        }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 }

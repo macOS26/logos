@@ -327,7 +327,7 @@ extension DrawingCanvas {
     private func updateTextViewModelCursorPosition(textID: UUID, position: Int, length: Int) {
         // ENHANCED: Store the desired cursor position in the text object itself temporarily
         // This will be picked up by the view model when it syncs
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+        if document.textObjects.firstIndex(where: { $0.id == textID }) != nil {
             // Store cursor position in a temporary property or use a custom approach
             Log.info("🎯 TEXT VIEW MODEL: Storing cursor position \(position) for textID \(textID.uuidString.prefix(8))", category: .general)
             
