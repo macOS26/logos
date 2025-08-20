@@ -253,7 +253,7 @@ struct ProfessionalTextCanvas: View {
         Log.info("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })", category: .general)
         
         // FIXED: Prioritize editing state correctly
-        if currentTextObject.isEditing && isTextToolActive {
+        if currentTextObject.isEditing {
             textBoxState = .blue
             Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)", category: .general)
         } else if hasTextViewFocus && isTextToolActive {
@@ -390,8 +390,8 @@ struct ProfessionalTextBoxView: View {
                     viewModel.handleTextBoxInteraction(textID: viewModel.textObject.id, isDoubleClick: true)
                 }
                 // REMOVED: Explicit drag gesture - let arrow tool handle all dragging naturally
-                // CRITICAL: Only allow interactions in GREEN mode, not BLUE (let NSTextView handle BLUE)
-                .allowsHitTesting(textBoxState != .blue)
+                // FIXED: Allow hit testing in all modes so arrow tool can select and move text objects
+                .allowsHitTesting(true)
             
             // REMOVED: Red corner circles were jumping around and awful
         }
@@ -429,8 +429,10 @@ struct ProfessionalTextContentView: View {
     
     var body: some View {
         // ALWAYS USE NSTextView for consistent rendering - just control editing state
-        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue)
-            .allowsHitTesting(textBoxState == .blue) // CRITICAL: Only allow NSTextView hits in BLUE mode, let drag gestures pass through in GREEN/GRAY
+        // CRITICAL FIX: Allow selection in both BLUE (editing) and GREEN (selected) states for drag operations
+        let isSelectable = textBoxState == .blue || textBoxState == .green
+        ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue, isSelectable: isSelectable)
+            .allowsHitTesting(false) // FIXED: Disable NSTextView hit testing to let arrow tool handle selection
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
@@ -443,6 +445,7 @@ struct ProfessionalTextContentView: View {
                 Log.info("  Font: \(viewModel.selectedFont.fontName) \(viewModel.selectedFont.pointSize)pt", category: .general)
                 Log.info("  Frame: \(viewModel.textBoxFrame)", category: .general)
                 Log.info("  Editing Allowed: \(textBoxState == .blue)", category: .general)
+                Log.info("  Selection Allowed: \(isSelectable)", category: .general)
             }
     }
 }
@@ -454,11 +457,13 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     @ObservedObject var viewModel: ProfessionalTextViewModel
     @State var isUpdatingFromTyping: Bool = false  // Prevents NSTextView reset during typing
     let isEditingAllowed: Bool // New parameter to control editing
+    let isSelectable: Bool // New parameter to control selection
     
     // Default initializer for backward compatibility
-    init(viewModel: ProfessionalTextViewModel, isEditingAllowed: Bool = true) {
+    init(viewModel: ProfessionalTextViewModel, isEditingAllowed: Bool = true, isSelectable: Bool = true) {
         self.viewModel = viewModel
         self.isEditingAllowed = isEditingAllowed
+        self.isSelectable = isSelectable
     }
     
     func makeNSView(context: Context) -> NSTextView {
@@ -466,7 +471,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // CRITICAL: Configure NSTextView to NEVER grow horizontally, only wrap text
         textView.isEditable = viewModel.isEditing && isEditingAllowed
-        textView.isSelectable = isEditingAllowed // CRITICAL: Only allow selection in BLUE mode
+        textView.isSelectable = isSelectable // CRITICAL: Allow selection in both BLUE and GREEN modes for drag operations
         textView.backgroundColor = NSColor.clear
         textView.textContainerInset = NSSize(width: 0, height: 0)
         textView.textContainer?.lineFragmentPadding = 0
@@ -499,10 +504,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
         textView.minSize = NSSize(width: fixedWidth, height: 50)
         
-        Log.info("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isEditingAllowed) for text: '\(viewModel.text)'", category: .general)
+        Log.info("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isSelectable) for text: '\(viewModel.text)'", category: .general)
         
         textView.allowsUndo = isEditingAllowed
-        textView.usesFindPanel = isEditingAllowed
+        textView.usesFindPanel = isSelectable
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
@@ -682,12 +687,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // PERFORMANCE: Only update editing properties if they actually changed
         let newIsEditable = viewModel.isEditing && isEditingAllowed
-        let newIsSelectable = isEditingAllowed
+        let newIsSelectable = isSelectable
         
         nsView.isEditable = viewModel.isEditing && isEditingAllowed
-        nsView.isSelectable = isEditingAllowed // CRITICAL: Only allow text selection in BLUE mode
+        nsView.isSelectable = isSelectable // CRITICAL: Allow selection in both BLUE and GREEN modes for drag operations
         
-        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)", level: .info)
+        Log.fileOperation("🔧 UPDATE NSTextView: textID=\(viewModel.textObject.id.uuidString.prefix(8)) isEditing=\(viewModel.isEditing) isEditingAllowed=\(isEditingAllowed) isSelectable=\(isSelectable) → isEditable=\(nsView.isEditable), isSelectable=\(nsView.isSelectable)", level: .info)
         
         
         if nsView.isEditable != newIsEditable {

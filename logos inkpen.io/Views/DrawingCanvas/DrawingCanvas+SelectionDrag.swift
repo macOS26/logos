@@ -18,6 +18,18 @@ extension DrawingCanvas {
             return
         }
         
+        // PROTECT LOCKED LAYERS FOR TEXT OBJECTS: Check each text object's individual layer
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
+               let textLayerIndex = document.textObjects[textIndex].layerIndex,
+               textLayerIndex >= 0 && textLayerIndex < document.layers.count {
+                if document.layers[textLayerIndex].isLocked {
+                    Log.info("🚫 Cannot move text on locked layer '\(document.layers[textLayerIndex].name)'", category: .general)
+                    return
+                }
+            }
+        }
+        
         // CRITICAL FIX: Save to undo stack BEFORE making any changes
         document.saveToUndoStack()
         
@@ -61,6 +73,17 @@ extension DrawingCanvas {
         // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
         if document.layers[layerIndex].isLocked {
             return
+        }
+        
+        // PROTECT LOCKED LAYERS FOR TEXT OBJECTS: Check each text object's individual layer
+        for textID in document.selectedTextIDs {
+            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
+               let textLayerIndex = document.textObjects[textIndex].layerIndex,
+               textLayerIndex >= 0 && textLayerIndex < document.layers.count {
+                if document.layers[textLayerIndex].isLocked {
+                    return
+                }
+            }
         }
         
         // PROFESSIONAL OBJECT DRAGGING: Perfect cursor-to-object synchronization
