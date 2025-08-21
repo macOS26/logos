@@ -3924,10 +3924,3 @@ class GradientStrokeNSView: NSView {
         print("   📐 World Corners: [\(worldSpaceCorners.map { "(\(String(format: "%.1f", $0.x)),\(String(format: "%.1f", $0.y)))" }.joined(separator: ", "))]")
         return worldSpaceCorners
     }
-
-// MARK: - View Extensions
-
-// MARK: - SVG Shape Renderer moved to LayerView+SVGRenderer.swift
-
-
-
