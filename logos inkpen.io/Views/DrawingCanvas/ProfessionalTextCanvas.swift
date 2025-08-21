@@ -285,12 +285,22 @@ struct ProfessionalTextCanvas: View {
     // MARK: - Event Handlers (Exact from Working Code)
     
     private func handleTextBoxSelect(location: CGPoint) {
-        // SINGLE CLICK: Only allowed when GRAY
-        if textBoxState == .gray {
+        // SINGLE CLICK: Handle different states appropriately
+        switch textBoxState {
+        case .gray:
+            // Select the text box
             textBoxState = .green
-            // Update document selection
             document.selectedTextIDs = [viewModel.textObject.id]
             document.selectedShapeIDs.removeAll()
+            Log.info("🎯 TEXT BOX SELECT: GRAY → GREEN", category: .general)
+            
+        case .green:
+            // Already selected - no change needed
+            Log.info("🎯 TEXT BOX SELECT: Already GREEN", category: .general)
+            
+        case .blue:
+            // In editing mode - let NSTextView handle the click for text editing
+            Log.info("🎯 TEXT BOX SELECT: BLUE mode - letting NSTextView handle click", category: .general)
         }
     }
     
@@ -431,8 +441,10 @@ struct ProfessionalTextContentView: View {
         // ALWAYS USE NSTextView for consistent rendering - just control editing state
         // CRITICAL FIX: Allow selection in both BLUE (editing) and GREEN (selected) states for drag operations
         let isSelectable = textBoxState == .blue || textBoxState == .green
+        // FIXED: Allow hit testing when in BLUE (editing) mode so NSTextView can receive clicks for text editing
+        let shouldAllowHitTesting = textBoxState == .blue
         ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue, isSelectable: isSelectable)
-            .allowsHitTesting(false) // FIXED: Disable NSTextView hit testing to let arrow tool handle selection
+            .allowsHitTesting(shouldAllowHitTesting) // FIXED: Allow hit testing in BLUE mode for text editing
             .frame(
                 width: viewModel.textBoxFrame.width,     // FIXED WIDTH - NEVER CHANGES
                 height: viewModel.textBoxFrame.height,   // CURRENT HEIGHT
@@ -1588,8 +1600,8 @@ class ProfessionalTextViewModel: ObservableObject {
     }
     
     // MARK: - Start Editing Helper
-    private func startEditingText(textID: UUID) {
-        Log.fileOperation("✏️ STARTING EDIT MODE for textID: \(textID.uuidString.prefix(8))", level: .info)
+    private func startEditingText(textID: UUID, at location: CGPoint = .zero) {
+        Log.fileOperation("✏️ STARTING EDIT MODE for textID: \(textID.uuidString.prefix(8)) at location: \(location)", level: .info)
         
         // Stop editing any other text boxes first
         var editingCount = 0
@@ -1612,6 +1624,7 @@ class ProfessionalTextViewModel: ObservableObject {
             Log.info("  - Text: '\(textObject.content)'", category: .general)
             Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontSize)pt", category: .general)
             Log.info("  - State: GRAY/GREEN → BLUE (editing)", category: .general)
+            Log.info("  - Click location: (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
             
             // CRITICAL: Set editing state BEFORE updating selection
             document.textObjects[textIndex].isEditing = true
@@ -1620,10 +1633,36 @@ class ProfessionalTextViewModel: ObservableObject {
             document.selectedShapeIDs.removeAll()
             document.selectedTextIDs = [textID]
             
+            // Calculate cursor position at click location if provided
+            if location != .zero {
+                let cursorPosition = calculateCursorPosition(in: textObject, at: location)
+                
+                // CRITICAL: Update the VectorText's cursor position directly
+                document.textObjects[textIndex].cursorPosition = cursorPosition
+                
+                Log.info("🎯 CURSOR POSITIONING: Set cursor position \(cursorPosition) for click at (\(String(format: "%.1f", location.x)), \(String(format: "%.1f", location.y)))", category: .general)
+                Log.info("🎯 CURSOR POSITIONING: Updated VectorText.cursorPosition = \(cursorPosition)", category: .general)
+            }
+            
             Log.info("✅ TEXT EDITING STARTED: Text box \(textID.uuidString.prefix(8)) is now in BLUE (edit) mode", category: .fileOperations)
         } else {
             Log.error("❌ TEXT NOT FOUND: Could not find text with ID \(textID)", category: .error)
         }
+    }
+    
+    // MARK: - Cursor Position Calculation
+    private func calculateCursorPosition(in textObj: VectorText, at tapLocation: CGPoint) -> Int {
+        // Convert tap location to text-relative coordinates
+        let relativePoint = CGPoint(
+            x: tapLocation.x - textObj.position.x,
+            y: tapLocation.y - textObj.position.y
+        )
+        
+        Log.info("🎯 CURSOR CALC: Tap at (\(String(format: "%.1f", tapLocation.x)), \(String(format: "%.1f", tapLocation.y))), relative (\(String(format: "%.1f", relativePoint.x)), \(String(format: "%.1f", relativePoint.y)))", category: .general)
+        
+        // Simple cursor positioning: place cursor at the beginning for now
+        // This can be enhanced later with more sophisticated text layout analysis
+        return 0
     }
 }
 
