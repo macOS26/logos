@@ -41,8 +41,8 @@ struct ShapeView: View {
                         ZStack {
                             // Fill - only show in color view mode (or always for Canvas)
                             if effectiveViewMode == .color,
-                               let fillStyle = groupedShape.fillStyle, 
-                               fillStyle.color != .clear {
+                               let fillStyle = groupedShape.fillStyle,
+                                fillStyle.color != .clear {
                                 renderFill(fillStyle: fillStyle, path: cachedPath, shape: groupedShape)
                             }
                             
@@ -104,7 +104,7 @@ struct ShapeView: View {
                     )
                     // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
                     // This prevents the jumping effect when moving scaled/rotated images
-                    .offset(x: isSelected ? dragPreviewDelta.x : 0, 
+                    .offset(x: isSelected ? dragPreviewDelta.x : 0,
                             y: isSelected ? dragPreviewDelta.y : 0)
                 } else if shape.linkedImagePath != nil || shape.embeddedImageData != nil {
                     // Attempt late hydration if not yet in registry
@@ -114,7 +114,7 @@ struct ShapeView: View {
                         let pathBounds = shape.path.cgPath.boundingBoxOfPath
                         let transformedBounds = pathBounds.applying(shape.transform)
                         
-
+                        
                         
                         ImageNSView(
                             image: hydrated,
@@ -124,7 +124,7 @@ struct ShapeView: View {
                         )
                         // CRITICAL FIX: For images with transforms, apply preview offset in canvas space
                         // This prevents the jumping effect when moving scaled/rotated images
-                        .offset(x: isSelected ? dragPreviewDelta.x : 0, 
+                        .offset(x: isSelected ? dragPreviewDelta.x : 0,
                                 y: isSelected ? dragPreviewDelta.y : 0)
                     } else {
                         // Optional visual placeholder (dashed rect) when link missing
@@ -142,7 +142,7 @@ struct ShapeView: View {
                     
                     // BAKE IN THE TRANSFORMATION for individual shapes (cached)
                     let finalPath = originalPath.applying(shape.transform)
-
+                    
                     // Fill - use the cached pre-transformed path
                     if effectiveViewMode == .color,
                        let fillStyle = shape.fillStyle,
@@ -175,7 +175,7 @@ struct ShapeView: View {
         // ULTRA FAST 60FPS: Apply drag preview offset - trigger ensures efficient updates
         // CRITICAL FIX: For images, the preview offset is applied at the ImageNSView level in canvas space
         // For other shapes, apply the offset at the view level in screen space
-        .offset(x: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.x * zoomLevel : 0, 
+        .offset(x: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.x * zoomLevel : 0,
                 y: isSelected && !ImageContentRegistry.containsImage(shape) ? dragPreviewDelta.y * zoomLevel : 0)
         .id(dragPreviewTrigger) // Force efficient re-render when trigger changes
         .opacity(shape.opacity)
@@ -220,10 +220,10 @@ struct ShapeView: View {
                     dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
                 )
                 renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
-                .mask(
-                    // Mask to shape interior only
-                    path.fill(Color.black) // Black reveals, transparent hides
-                )
+                    .mask(
+                        // Mask to shape interior only
+                        path.fill(Color.black) // Black reveals, transparent hides
+                    )
             } else {
                 // For solid color strokes, use the original approach
                 let doubleWidthStyle = SwiftUI.StrokeStyle(
@@ -234,10 +234,10 @@ struct ShapeView: View {
                     dash: swiftUIStrokeStyle.dash.map { $0 * 2 } // Scale dash pattern accordingly
                 )
                 renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStyle, shape: shape)
-                .mask(
-                    // Mask to shape interior only
-                    path.fill(Color.black) // Black reveals, transparent hides
-                )
+                    .mask(
+                        // Mask to shape interior only
+                        path.fill(Color.black) // Black reveals, transparent hides
+                    )
             }
             
         case .outside:
@@ -247,14 +247,14 @@ struct ShapeView: View {
                 let boundingBox = path.cgPath.boundingBoxOfPath
                 let expansion = max(strokeStyle.width * 4, 1000)
                 let largeRect = boundingBox.insetBy(dx: -expansion, dy: -expansion)
-
+                
                 // Build a mask that reveals only the area outside the shape path
                 let outsideMask = Path { maskPath in
                     maskPath.addRect(largeRect)
                     maskPath.addPath(path)
                 }
-                .fill(Color.black, style: SwiftUI.FillStyle(eoFill: true))
-
+                    .fill(Color.black, style: SwiftUI.FillStyle(eoFill: true))
+                
                 if strokeStyle.isGradient {
                     // For gradient strokes, keep gradient coordinates stable via a centered style, then mask to outside
                     let adjustedStrokeStyle = StrokeStyle(
@@ -275,7 +275,7 @@ struct ShapeView: View {
                         miterLimit: swiftUIStrokeStyle.miterLimit,
                         dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
                     )
-
+                    
                     renderStrokeColor(strokeStyle: adjustedStrokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                         .mask(outsideMask)
                         .opacity(strokeStyle.opacity)
@@ -288,12 +288,12 @@ struct ShapeView: View {
                         miterLimit: swiftUIStrokeStyle.miterLimit,
                         dash: swiftUIStrokeStyle.dash.map { $0 * 2 }
                     )
-
+                    
                     renderStrokeColor(strokeStyle: strokeStyle, path: path, swiftUIStyle: doubleWidthStrokeStyle, shape: shape)
                         .mask(outsideMask)
                         .opacity(strokeStyle.opacity)
                 }
-
+                
                 // Draw the fill normally (no opaque underlay), preserving its alpha
                 if let fillStyle = shape.fillStyle, fillStyle.color != .clear {
                     renderFill(fillStyle: fillStyle, path: path, shape: shape)
@@ -301,15 +301,7 @@ struct ShapeView: View {
             }
         }
     }
-    
-    // Uses shared `addPathElements` from Utilities/PathElementUtils.swift
-}
 
-// MARK: - Gradient Rendering Helper Functions
-
-/// Helper functions to convert VectorGradient to SwiftUI gradient objects
-extension ShapeView {
-    
     /// Creates appropriate fill rendering based on VectorColor type
     @ViewBuilder
     private func renderFill(fillStyle: FillStyle, path: Path, shape: VectorShape) -> some View {
@@ -339,5 +331,35 @@ extension ShapeView {
             path.stroke(strokeStyle.color.color, style: swiftUIStyle)
         }
     }
-
+    
+    // Helper function to create pre-transformed paths for clipping masks
+    private func createPreTransformedPath(for shape: VectorShape) -> CGPath {
+    let path = CGMutablePath()
+        
+        // Add path elements
+        for element in shape.path.elements {
+            switch element {
+            case .move(let to):
+                path.move(to: to.cgPoint)
+            case .line(let to):
+                path.addLine(to: to.cgPoint)
+            case .curve(let to, let control1, let control2):
+                path.addCurve(to: to.cgPoint, control1: control1.cgPoint, control2: control2.cgPoint)
+            case .quadCurve(let to, let control):
+                path.addQuadCurve(to: to.cgPoint, control: control.cgPoint)
+            case .close:
+                path.closeSubpath()
+            }
+        }
+        
+        // RESTORE: Apply shape transform for proper positioning
+        // The paths need to include transforms to align with the image
+        if !shape.transform.isIdentity {
+            let transformedPath = CGMutablePath()
+            transformedPath.addPath(path, transform: shape.transform)
+            return transformedPath
+        }
+        
+        return path
+    }
 }
