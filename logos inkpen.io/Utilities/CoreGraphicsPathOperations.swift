@@ -914,8 +914,3 @@ public class CoreGraphicsPathOperations {
         return cropWithShapeTracking(paths, using: fillRule).map { $0.0 }
     }
 }
-
- 
-
-
-

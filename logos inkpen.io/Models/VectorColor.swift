@@ -1,19 +1,83 @@
 //
-//  DocumentIconGenerator.swift
+//  VectorColor.swift
 //  logos inkpen.io
 //
-//  Generates document icons and previews for .inkpen files
+//  Created by Todd Bruss on 8/22/25.
 //
 
-import Foundation
-import AppKit
-import UniformTypeIdentifiers
 import CoreGraphics
+import SwiftUI
 
-
-// MARK: - VectorColor SVG Extension
-
-extension VectorColor {
+// MARK: - Vector Color
+enum VectorColor: Codable, Hashable {
+    case rgb(RGBColor)
+    case cmyk(CMYKColor)
+    case hsb(HSBColorModel)
+    case pantone(PantoneLibraryColor) // Pantone library colors
+    case spot(SPOTColor)              // New SPOT colors
+    case appleSystem(AppleSystemColor)
+    case gradient(VectorGradient)     // Gradient support
+    case clear
+    case black
+    case white
+    
+    var color: Color {
+        switch self {
+        case .rgb(let rgb):
+            return rgb.color
+        case .cmyk(let cmyk):
+            return cmyk.color
+        case .hsb(let hsb):
+            return hsb.color
+        case .pantone(let pantone):
+            return pantone.color
+        case .spot(let spot):
+            return spot.color
+        case .appleSystem(let systemColor):
+            return systemColor.color
+        case .gradient(let gradient):
+            // For gradients, return the first stop color as a fallback (already VectorColor → Color path will hit working space)
+            return gradient.stops.first?.color.color ?? Color.black
+        case .clear:
+            return Color.clear
+        case .black:
+            return Color.black
+        case .white:
+            return Color.white
+        }
+    }
+    
+    var cgColor: CGColor {
+        switch self {
+        case .rgb(let rgb):
+            return rgb.cgColor
+        case .cmyk(let cmyk):
+            return cmyk.rgbColor.cgColor
+        case .hsb(let hsb):
+            return hsb.rgbColor.cgColor
+        case .pantone(let pantone):
+            return ColorManager.shared.convert(pantone.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG)
+        case .spot(let spot):
+            return ColorManager.shared.convert(spot.rgbEquivalent.cgColor, to: ColorManager.shared.displayP3CG)
+        case .appleSystem(let systemColor):
+            return systemColor.rgbEquivalent.cgColor
+        case .gradient(let gradient):
+            // For gradients, return the first stop color as a fallback
+            return gradient.stops.first?.color.cgColor ?? CGColor(red: 0, green: 0, blue: 0, alpha: 1)
+        case .clear:
+            return CGColor(red: 0, green: 0, blue: 0, alpha: 0)
+        case .black:
+            return CGColor(red: 0, green: 0, blue: 0, alpha: 1)
+        case .white:
+            return CGColor(red: 1, green: 1, blue: 1, alpha: 1)
+        }
+    }
+    
+    // Basic colors available in all modes
+    static let basicColors: [VectorColor] = [
+        .black, .white, .clear
+    ]
+    
     var svgColor: String {
         switch self {
         case .clear:

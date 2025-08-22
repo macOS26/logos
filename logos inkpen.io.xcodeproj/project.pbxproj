@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		EA9F544D2E58E9BE00AA3A01 /* ImportResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA9F544C2E58E9BE00AA3A01 /* ImportResultView.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		EAC969B92E2416ED0093AB2A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -25,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		EA92EDBF2E3057AB0041D438 /* Test.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Test.xcodeproj; sourceTree = "<group>"; };
+		EA9F544C2E58E9BE00AA3A01 /* ImportResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportResultView.swift; sourceTree = "<group>"; };
 		EAC969AA2E2416EC0093AB2A /* logos inkpen.io.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "logos inkpen.io.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC969B82E2416ED0093AB2A /* logos inkpen.ioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EAC969C22E2416ED0093AB2A /* logos inkpen.ioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "logos inkpen.ioUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -87,6 +92,7 @@
 				EAC969BB2E2416ED0093AB2A /* logos inkpen.ioTests */,
 				EAC969C52E2416ED0093AB2A /* logos inkpen.ioUITests */,
 				EAC969AB2E2416EC0093AB2A /* Products */,
+				EA9F544C2E58E9BE00AA3A01 /* ImportResultView.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -252,6 +258,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA9F544D2E58E9BE00AA3A01 /* ImportResultView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

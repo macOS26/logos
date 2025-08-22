@@ -617,4 +617,18 @@ struct ProfessionalBezierFactory {
         
         return [startPoint, control1, control2, endPoint]
     }
-} 
+}
+
+// MARK: - Professional Extensions
+extension ProfessionalBezierMathematics.ContinuityType {
+    var priority: Int {
+        switch self {
+        case .none: return 0
+        case .c0: return 1
+        case .g1: return 2
+        case .c1: return 3
+        case .g2: return 4
+        case .c2: return 5
+        }
+    }
+}

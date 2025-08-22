@@ -2,17 +2,7 @@ import Metal
 import MetalKit
 import Foundation
 
-enum MetalError: Error {
-    case libraryCreationFailed
-    case pipelineCreationFailed
-    case deviceNotAvailable
-    case commandBufferCreationFailed
-    case computeEncoderCreationFailed
-    case bufferCreationFailed
-    case pipelineNotAvailable
-    case shaderCompilationFailed
-    case operationFailed(String)
-}
+
 
 /// Phase 2: Metal Compute Shaders for GPU-accelerated Core Graphics math
 class MetalComputeEngine {
@@ -1262,25 +1252,6 @@ class MetalComputeEngine {
     }
 }
 
-// MARK: - Metal Data Structures
-
-struct Point2D {
-    let x: Float
-    let y: Float
-}
-
-enum TrigonometricFunction: Int {
-    case sine = 0
-    case cosine = 1
-    case tangent = 2
-    case atan2 = 3
-}
-
-private struct PolygonParams {
-    let radius: Float
-    let sides: UInt32
-    let startAngle: Float
-}
 
 // Note: Shaders are now in MetalComputeShaders.metal file
 // This provides better syntax highlighting and IDE support

@@ -657,21 +657,3 @@ extension VectorDocument {
     }
 }
 
-extension DocumentSettings {
-    
-    /// Create settings with professional defaults
-    static func professional(width: CGFloat, height: CGFloat, unit: MeasurementUnit, dpi: Double = 72) -> DocumentSettings {
-        return DocumentSettings(
-            width: width,
-            height: height,
-            unit: unit,
-            colorMode: .rgb,
-            resolution: dpi,
-            showRulers: true,
-            showGrid: false,
-            snapToGrid: true,
-            gridSpacing: unit == .pixels ? 10 : 0.125,
-            backgroundColor: VectorColor.white
-        )
-    }
-} 

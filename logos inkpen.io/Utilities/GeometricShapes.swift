@@ -9,7 +9,6 @@ import Foundation
 import CoreGraphics
 
 class GeometricShapes {
-    
     // MARK: - Rectangle
     static func createRectangle(origin: CGPoint, size: CGSize, cornerRadius: CGFloat = 0) -> VectorPath {
         let rect = CGRect(origin: origin, size: size)
