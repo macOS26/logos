@@ -50,19 +50,7 @@ struct NewDocumentSetupView: View {
         }
         .background(Color.ui.windowBackground)
         .onAppear {
-            // Check if there are already document windows open - if so, hide this setup window
-            let documentWindows = NSApplication.shared.windows.filter { window in
-                return window.title != "Document Setup" && window.title != ""
-            }
-            
-            if !documentWindows.isEmpty {
-                // There are document windows, so hide this setup window
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    dismissWindow()
-                }
-                return
-            }
-            
+            // Generate document preview when window appears
             generateDocumentPreview()
         }
     }

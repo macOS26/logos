@@ -537,9 +537,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         let path = VectorPath(elements: elements, isClosed: true)
         return VectorShape(name: "Star", path: path, geometricType: .star, strokeStyle: StrokeStyle(placement: .center), fillStyle: FillStyle(color: .white))
     }
-    
-    // MARK: - Backward Compatibility for Corner Radius
-    
+        
     /// Custom decoder to handle documents created before corner radius feature
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

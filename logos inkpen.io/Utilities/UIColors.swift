@@ -275,30 +275,3 @@ extension Color {
         UIColors.shared
     }
 }
-
-// MARK: - Backward Compatibility Helpers
-
-extension UIColors {
-    /// Common gray patterns used throughout the app
-    struct GrayPattern {
-        static let light = Color.gray.opacity(0.1)
-        static let medium = Color.gray.opacity(0.2)
-        static let border = Color.gray.opacity(0.3)
-        static let stroke = Color.gray.opacity(0.5)
-    }
-    
-    /// Common blue patterns used throughout the app
-    struct BluePattern {
-        static let background = Color.blue.opacity(0.1)
-        static let highlight = Color.blue.opacity(0.05)
-        static let active = Color.blue.opacity(0.6)
-        static let selection = Color.blue.opacity(0.8)
-    }
-    
-    /// Common overlay patterns
-    struct OverlayPattern {
-        static let dark = Color.black.opacity(0.8)
-        static let darkModal = Color.black.opacity(0.9)
-        static let light = Color.black.opacity(0.3)
-    }
-}

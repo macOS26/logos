@@ -1639,34 +1639,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     
     private func configureWindowsAsync() async {
-        // Add a delay to let the app fully initialize and check for existing document windows
+        // Add a delay to let the app fully initialize
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
         
         await MainActor.run {
-            // Check if we have any document windows open
-            let documentWindows = NSApplication.shared.windows.filter { window in
-                // Check if this is a document window (not the onboarding window)
-                return window.title != "Document Setup" && window.title != ""
-            }
-            
-            // If we have document windows open, close the onboarding window
-            if !documentWindows.isEmpty {
-                // Close the onboarding window if it exists
-                if let onboardingWindow = NSApplication.shared.windows.first(where: { $0.title == "Document Setup" }) {
-                    onboardingWindow.close()
-                    Log.info("📄 App: Document windows detected at launch - closing onboarding setup window", category: .startup)
-                }
-                
-                // Also check if there are any other setup windows that might be visible
-                NSApplication.shared.windows.forEach { window in
-                    if window.title == "Document Setup" {
-                        window.close()
-                        Log.info("📄 App: Closed additional setup window", category: .startup)
-                    }
-                }
-            } else {
-                Log.info("📄 App: No document windows detected at launch - keeping onboarding setup window", category: .startup)
-            }
+            // Auto-hiding behavior disabled - new document setup window will remain open
+            Log.info("📄 App: Auto-hiding behavior disabled - new document setup window will remain open", category: .startup)
             
             // Adjust any Apple Metal HUD carrier view if present in visible windows
             NSApplication.shared.windows.forEach { window in
