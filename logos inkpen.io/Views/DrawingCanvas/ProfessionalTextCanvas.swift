@@ -471,7 +471,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     let isEditingAllowed: Bool // New parameter to control editing
     let isSelectable: Bool // New parameter to control selection
     
-    // Default initializer for backward compatibility
     init(viewModel: ProfessionalTextViewModel, isEditingAllowed: Bool = true, isSelectable: Bool = true) {
         self.viewModel = viewModel
         self.isEditingAllowed = isEditingAllowed

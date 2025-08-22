@@ -564,7 +564,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         warpEnvelope = try container.decode([CGPoint].self, forKey: .warpEnvelope)
         originalEnvelope = try container.decode([CGPoint].self, forKey: .originalEnvelope)
         
-        // NEW: Decode corner radius properties with defaults for backward compatibility
+        // Decode corner radius properties with defaults
         isRoundedRectangle = try container.decodeIfPresent(Bool.self, forKey: .isRoundedRectangle) ?? false
         originalBounds = try container.decodeIfPresent(CGRect.self, forKey: .originalBounds)
         cornerRadii = try container.decodeIfPresent([Double].self, forKey: .cornerRadii) ?? []
