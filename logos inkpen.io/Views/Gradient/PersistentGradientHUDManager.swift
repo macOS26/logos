@@ -329,3 +329,26 @@ class PersistentInkHUDManager {
         window.makeKeyAndOrderFront(nil)
     }
 }
+
+// MARK: - Gradient Editing State
+
+struct GradientEditingState {
+    let gradientId: UUID // ID to track which gradient is being edited
+    let stopIndex: Int   // Which color stop is being edited
+    let onColorSelected: (VectorColor) -> Void // Callback when color is selected
+    
+    init(gradientId: UUID, stopIndex: Int, onColorSelected: @escaping (VectorColor) -> Void) {
+        self.gradientId = gradientId
+        self.stopIndex = stopIndex
+        self.onColorSelected = onColorSelected
+    }
+}
+
+struct GradientHUDData {
+    let document: VectorDocument
+    let editingGradientStopId: UUID?
+    let editingGradientStopColor: VectorColor
+    let currentGradient: VectorGradient?
+    let updateStopColor: (UUID, VectorColor) -> Void
+    let turnOffEditingState: () -> Void
+}
