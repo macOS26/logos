@@ -274,31 +274,3 @@ struct ToolDockButton: View {
         return tool.iconName
     }
 }
-
-// MARK: - Legacy HUD Manager (for backward compatibility)
-class StarToolHUDManager: ObservableObject {
-    @Published var selectedVariant: StarVariant = .fivePoint
-    @Published var isHUDVisible: Bool = false
-    var starButtonFrame: CGRect = .zero
-    
-    func showHUD() {
-        guard starButtonFrame != .zero else {
-            Log.info("⭐ Cannot show HUD - no button frame", category: .general)
-            return
-        }
-        
-        isHUDVisible = true
-        Log.info("⭐ HUD visibility set to true", category: .general)
-    }
-    
-    func hideHUD() {
-        isHUDVisible = false
-        Log.info("⭐ HUD visibility set to false", category: .general)
-    }
-    
-    func selectVariant(_ variant: StarVariant) {
-        selectedVariant = variant
-        hideHUD()
-        Log.info("⭐ HUD: Selected star variant: \(variant.rawValue)", category: .general)
-    }
-}

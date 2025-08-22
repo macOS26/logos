@@ -684,7 +684,6 @@ struct ToolItem {
 
 struct VerticalToolbar: View {
     @ObservedObject var document: VectorDocument
-    @StateObject private var starHUDManager = StarToolHUDManager()
     @StateObject private var toolGroupManager = ToolGroupManager.shared
 
     // MARK: - Tool Group Functions
@@ -704,12 +703,12 @@ struct VerticalToolbar: View {
         } else if toolItem.tool == .star, let starVariant = toolItem.starVariant {
             // Use specific star variant custom icon
             starVariant.iconView(
-                isSelected: document.currentTool == .star && starHUDManager.selectedVariant == starVariant,
-                color: (document.currentTool == .star && starHUDManager.selectedVariant == starVariant) ? .white : .primary
+                isSelected: document.currentTool == .star && toolGroupManager.selectedVariant == starVariant,
+                color: (document.currentTool == .star && toolGroupManager.selectedVariant == starVariant) ? .white : .primary
             )
         } else if toolItem.tool == .star {
             // Use selected star variant custom icon
-            starHUDManager.selectedVariant.iconView(
+            toolGroupManager.selectedVariant.iconView(
                 isSelected: document.currentTool == toolItem.tool,
                 color: document.currentTool == toolItem.tool ? .white : .primary
             )
@@ -798,7 +797,7 @@ struct VerticalToolbar: View {
             } else {
                 // Collapsed state shows the group's selected tool (falls back to primary)
                 if primaryTool == .star {
-                    toolsToShow.append(ToolItem(tool: .star, starVariant: starHUDManager.selectedVariant))
+                    toolsToShow.append(ToolItem(tool: .star, starVariant: toolGroupManager.selectedVariant))
                 } else {
                     let selectedTool = toolGroupManager.selectedToolByGroup[groupName] ?? primaryTool
                     toolsToShow.append(ToolItem(tool: selectedTool, starVariant: nil))
@@ -820,7 +819,7 @@ struct VerticalToolbar: View {
     
     private func isToolSelected(_ toolItem: ToolItem) -> Bool {
         if let starVariant = toolItem.starVariant {
-            return document.currentTool == .star && starHUDManager.selectedVariant == starVariant
+            return document.currentTool == .star && toolGroupManager.selectedVariant == starVariant
         } else {
             return document.currentTool == toolItem.tool
         }
@@ -838,7 +837,6 @@ struct VerticalToolbar: View {
                                 // Handle tool selection
                                 if let starVariant = toolItem.starVariant {
                                     toolGroupManager.selectStarVariant(starVariant)
-                                    starHUDManager.selectedVariant = starVariant
                                     document.currentTool = .star
                                     // Update tool group manager state
                                     toolGroupManager.currentToolInGroup = .star
@@ -888,7 +886,6 @@ struct VerticalToolbar: View {
                                         // Handle tool selection
                                         if let starVariant = toolItem.starVariant {
                                             toolGroupManager.selectStarVariant(starVariant)
-                                            starHUDManager.selectedVariant = starVariant
                                             document.currentTool = .star
                                             // Update tool group manager state
                                             toolGroupManager.currentToolInGroup = .star
@@ -1000,7 +997,7 @@ struct VerticalToolbar: View {
         case .acuteTriangle:
             return "Acute Triangle Tool (⇧A) - Draw triangles with all angles less than 90°"
         case .star:
-            return "Star Tool (⇧S) - Draw \(starHUDManager.selectedVariant.rawValue) (Long press for more variants)"
+            return "Star Tool (⇧S) - Draw \(toolGroupManager.selectedVariant.rawValue) (Long press for more variants)"
         case .polygon:
             return "Polygon Tool (⌥P) - Draw polygon shapes"
         case .pentagon:
