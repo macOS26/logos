@@ -13,11 +13,8 @@ extension DrawingCanvas {
         Log.fileOperation("🎯 SELECT OBJECT AT: \(location) - using unified selection logic", level: .info)
         handleSelectionTap(at: location)
     }
-}
 
-extension DrawingCanvas {
-    // Coincident smooth point handling functions moved to CoincidentPointHandling.swift
-    
+    // Coincident smooth point handling functions moved to CoincidentPointHandling.swift    
     internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
         // Check if the location is on any of the currently selected objects (shapes or text)
         
