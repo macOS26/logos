@@ -2819,9 +2819,6 @@ class VectorDocument: ObservableObject, Codable {
         // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
         syncLegacyArraysFromUnified()
         
-        // CRITICAL FIX: Update unified objects ordering to maintain selection state
-        updateUnifiedObjectsOrdering()
-        
         Log.info("⬆️⬆️ Brought to front \(selectedObjectIDs.count) objects", category: .general)
     }
     
@@ -2962,9 +2959,6 @@ class VectorDocument: ObservableObject, Codable {
         
         // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
         syncLegacyArraysFromUnified()
-        
-        // CRITICAL FIX: Update unified objects ordering to maintain selection state
-        updateUnifiedObjectsOrdering()
         
         Log.info("⬇️⬇️ Sent to back \(selectedObjectIDs.count) objects", category: .general)
     }
