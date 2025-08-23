@@ -2722,100 +2722,170 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Object Arrangement Methods
     
-    /// Bring selected shapes to front
+    /// Bring selected objects to front (unified system)
     func bringSelectedToFront() {
-        guard let layerIndex = selectedLayerIndex,
-              !selectedShapeIDs.isEmpty else { return }
+        guard !selectedObjectIDs.isEmpty else { return }
         
         saveToUndoStack()
         
-        // Get selected shapes and remove them from current positions
-        var shapes = layers[layerIndex].shapes
-        let selectedShapes = shapes.filter { selectedShapeIDs.contains($0.id) }
-        shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        // Process each layer to bring selected objects to front
+        for layerIndex in layers.indices {
+            var layerShapes = layers[layerIndex].shapes
+            var selectedShapesFromLayer: [VectorShape] = []
+            
+            // Find selected shapes in this layer
+            for objectID in selectedObjectIDs {
+                if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+                   unifiedObject.layerIndex == layerIndex,
+                   case .shape(let shape) = unifiedObject.objectType {
+                    if let shapeIndex = layerShapes.firstIndex(where: { $0.id == shape.id }) {
+                        selectedShapesFromLayer.append(layerShapes[shapeIndex])
+                        layerShapes.remove(at: shapeIndex)
+                    }
+                }
+            }
+            
+            // Add selected shapes to the end (front)
+            layerShapes.append(contentsOf: selectedShapesFromLayer)
+            layers[layerIndex].shapes = layerShapes
+        }
         
-        // Add selected shapes to the end (front)
-        shapes.append(contentsOf: selectedShapes)
+        // Handle text objects (they're not layer-specific in the shapes array)
+        var selectedTextObjects: [VectorText] = []
+        var remainingTextObjects = textObjects
         
-        layers[layerIndex].shapes = shapes
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+               case .text(let text) = unifiedObject.objectType {
+                if let textIndex = remainingTextObjects.firstIndex(where: { $0.id == text.id }) {
+                    selectedTextObjects.append(remainingTextObjects[textIndex])
+                    remainingTextObjects.remove(at: textIndex)
+                }
+            }
+        }
+        
+        // Add selected text objects to the end (front)
+        textObjects = remainingTextObjects + selectedTextObjects
         
         // CRITICAL FIX: Update unified objects to reflect the new ordering
         updateUnifiedObjectsOrdering()
         
-        Log.info("⬆️⬆️ Brought to front \(selectedShapeIDs.count) objects", category: .general)
+        Log.info("⬆️⬆️ Brought to front \(selectedObjectIDs.count) objects", category: .general)
     }
     
-    /// Bring selected shapes forward
+    /// Bring selected objects forward (unified system)
     func bringSelectedForward() {
-        guard let layerIndex = selectedLayerIndex,
-              !selectedShapeIDs.isEmpty else { return }
+        guard !selectedObjectIDs.isEmpty else { return }
         
         saveToUndoStack()
         
-        // Move each selected shape forward by one position
-        var shapes = layers[layerIndex].shapes
-        
-        // Process from back to front to avoid index conflicts
-        for i in (0..<shapes.count).reversed() {
-            if selectedShapeIDs.contains(shapes[i].id) && i < shapes.count - 1 {
-                shapes.swapAt(i, i + 1)
+        // Process each layer to bring selected objects forward
+        for layerIndex in layers.indices {
+            var layerShapes = layers[layerIndex].shapes
+            
+            // Process from back to front to avoid index conflicts
+            for i in (0..<layerShapes.count).reversed() {
+                let shapeID = layerShapes[i].id
+                if selectedObjectIDs.contains(where: { objectID in
+                    guard let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+                          unifiedObject.layerIndex == layerIndex,
+                          case .shape(let shape) = unifiedObject.objectType else { return false }
+                    return shape.id == shapeID
+                }) && i < layerShapes.count - 1 {
+                    layerShapes.swapAt(i, i + 1)
+                }
             }
+            
+            layers[layerIndex].shapes = layerShapes
         }
-        
-        layers[layerIndex].shapes = shapes
         
         // CRITICAL FIX: Update unified objects to reflect the new ordering
         updateUnifiedObjectsOrdering()
         
-        Log.info("⬆️ Brought forward \(selectedShapeIDs.count) objects", category: .general)
+        Log.info("⬆️ Brought forward \(selectedObjectIDs.count) objects", category: .general)
     }
     
-    /// Send selected shapes backward
+    /// Send selected objects backward (unified system)
     func sendSelectedBackward() {
-        guard let layerIndex = selectedLayerIndex,
-              !selectedShapeIDs.isEmpty else { return }
+        guard !selectedObjectIDs.isEmpty else { return }
         
         saveToUndoStack()
         
-        // Move each selected shape backward by one position
-        var shapes = layers[layerIndex].shapes
+        // Process each layer to send selected objects backward
+        for layerIndex in layers.indices {
+            var layerShapes = layers[layerIndex].shapes
+            
+            // Process from front to back to avoid index conflicts
+            for i in 0..<layerShapes.count {
+                let shapeID = layerShapes[i].id
+                if selectedObjectIDs.contains(where: { objectID in
+                    guard let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+                          unifiedObject.layerIndex == layerIndex,
+                          case .shape(let shape) = unifiedObject.objectType else { return false }
+                    return shape.id == shapeID
+                }) && i > 0 {
+                    layerShapes.swapAt(i, i - 1)
+                }
+            }
+            
+            layers[layerIndex].shapes = layerShapes
+        }
         
-        // Process from front to back to avoid index conflicts
-        for i in 0..<shapes.count {
-            if selectedShapeIDs.contains(shapes[i].id) && i > 0 {
-                shapes.swapAt(i, i - 1)
+        // CRITICAL FIX: Update unified objects to reflect the new ordering
+        updateUnifiedObjectsOrdering()
+        
+        Log.info("⬇️ Sent backward \(selectedObjectIDs.count) objects", category: .general)
+    }
+    
+    /// Send selected objects to back (unified system)
+    func sendSelectedToBack() {
+        guard !selectedObjectIDs.isEmpty else { return }
+        
+        saveToUndoStack()
+        
+        // Process each layer to send selected objects to back
+        for layerIndex in layers.indices {
+            var layerShapes = layers[layerIndex].shapes
+            var selectedShapesFromLayer: [VectorShape] = []
+            
+            // Find selected shapes in this layer
+            for objectID in selectedObjectIDs {
+                if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+                   unifiedObject.layerIndex == layerIndex,
+                   case .shape(let shape) = unifiedObject.objectType {
+                    if let shapeIndex = layerShapes.firstIndex(where: { $0.id == shape.id }) {
+                        selectedShapesFromLayer.append(layerShapes[shapeIndex])
+                        layerShapes.remove(at: shapeIndex)
+                    }
+                }
+            }
+            
+            // Insert selected shapes at the beginning (back)
+            layerShapes.insert(contentsOf: selectedShapesFromLayer, at: 0)
+            layers[layerIndex].shapes = layerShapes
+        }
+        
+        // Handle text objects (they're not layer-specific in the shapes array)
+        var selectedTextObjects: [VectorText] = []
+        var remainingTextObjects = textObjects
+        
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
+               case .text(let text) = unifiedObject.objectType {
+                if let textIndex = remainingTextObjects.firstIndex(where: { $0.id == text.id }) {
+                    selectedTextObjects.append(remainingTextObjects[textIndex])
+                    remainingTextObjects.remove(at: textIndex)
+                }
             }
         }
         
-        layers[layerIndex].shapes = shapes
+        // Insert selected text objects at the beginning (back)
+        textObjects = selectedTextObjects + remainingTextObjects
         
         // CRITICAL FIX: Update unified objects to reflect the new ordering
         updateUnifiedObjectsOrdering()
         
-        Log.info("⬇️ Sent backward \(selectedShapeIDs.count) objects", category: .general)
-    }
-    
-    /// Send selected shapes to back
-    func sendSelectedToBack() {
-        guard let layerIndex = selectedLayerIndex,
-              !selectedShapeIDs.isEmpty else { return }
-        
-        saveToUndoStack()
-        
-        // Get selected shapes and remove them from current positions
-        var shapes = layers[layerIndex].shapes
-        let selectedShapes = shapes.filter { selectedShapeIDs.contains($0.id) }
-        shapes.removeAll { selectedShapeIDs.contains($0.id) }
-        
-        // Insert selected shapes at the beginning (back)
-        shapes.insert(contentsOf: selectedShapes, at: 0)
-        
-        layers[layerIndex].shapes = shapes
-        
-        // CRITICAL FIX: Update unified objects to reflect the new ordering
-        updateUnifiedObjectsOrdering()
-        
-        Log.info("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects", category: .general)
+        Log.info("⬇️⬇️ Sent to back \(selectedObjectIDs.count) objects", category: .general)
     }
     
     /// CRITICAL FIX: Update unified objects ordering to match layer ordering
