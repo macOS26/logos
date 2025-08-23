@@ -205,7 +205,11 @@ extension DrawingCanvas {
             case .text(let text):
                 if !text.isVisible || text.isLocked { continue }
                 
-                Log.info("🎯 SELECTION TAP: Testing text object", category: .selection)
+                Log.info("🎯 SELECTION TAP: Testing text object '\(text.content.prefix(20))'", category: .selection)
+                Log.info("  - Text ID: \(text.id)", category: .selection)
+                Log.info("  - Text position: \(text.position)", category: .selection)
+                Log.info("  - Text bounds: \(text.bounds)", category: .selection)
+                Log.info("  - Click location: \(validatedLocation)", category: .selection)
                 
                 // Use the same hit testing logic as findTextAt
                 let textContentArea = CGRect(
@@ -224,9 +228,25 @@ extension DrawingCanvas {
                 
                 let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
                 
-                isHit = textContentArea.contains(validatedLocation) || 
-                        exactBounds.contains(validatedLocation) || 
-                        expandedBounds.contains(validatedLocation)
+                Log.info("  - Content area: \(textContentArea)", category: .selection)
+                Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
+                Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
+                
+                let contentHit = textContentArea.contains(validatedLocation)
+                let exactHit = exactBounds.contains(validatedLocation)
+                let expandedHit = expandedBounds.contains(validatedLocation)
+                
+                Log.info("  - Content hit: \(contentHit)", category: .selection)
+                Log.info("  - Exact hit: \(exactHit)", category: .selection)
+                Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
+                
+                isHit = contentHit || exactHit || expandedHit
+                
+                if isHit {
+                    Log.info("✅ TEXT HIT: Text object selected", category: .selection)
+                } else {
+                    Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
+                }
             }
             
             if isHit {
@@ -274,6 +294,9 @@ extension DrawingCanvas {
             
             // Update selected layer
             document.selectedLayerIndex = objectToSelect.layerIndex
+            
+            // CRITICAL FIX: Sync selection arrays for compatibility
+            document.syncSelectionArrays()
             
             // Force UI update
             document.objectWillChange.send()
