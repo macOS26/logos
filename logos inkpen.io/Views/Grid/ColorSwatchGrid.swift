@@ -22,82 +22,79 @@ struct ColorSwatchGrid: View {
         GridItem(.fixed(10), spacing: 1)
     ]
     
-    // FIXED: Show current colors from text OR shapes
+    // REFACTORED: Use unified objects system for current fill color
     private var currentFillColor: VectorColor {
-        // PRIORITY 1: If text objects are selected, show their fill color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.fillColor
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.fillColor
+            case .shape(let shape):
+                if let fillStyle = shape.fillStyle {
+                    return fillStyle.color
+                }
+            }
         }
         
-        // PRIORITY 2: If shapes are selected, show their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let fillStyle = shape.fillStyle {
-            // FIXED: Show the actual gradient, not default color
-            return fillStyle.color
-        }
-        
-        // PRIORITY 3: Show default color for new shapes
+        // Show default color for new shapes
         return document.defaultFillColor
     }
     
-    // FIXED: Show current colors from text OR shapes  
+    // REFACTORED: Use unified objects system for current stroke color
     private var currentStrokeColor: VectorColor {
-        // PRIORITY 1: If text objects are selected, show their stroke color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.strokeColor
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.strokeColor
+            case .shape(let shape):
+                if let strokeStyle = shape.strokeStyle {
+                    return strokeStyle.color
+                }
+            }
         }
         
-        // PRIORITY 2: If shapes are selected, show their color
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let strokeColor = shape.strokeStyle?.color {
-            return strokeColor
-        }
-        
-        // PRIORITY 3: Show default color for new shapes
+        // Show default color for new shapes
         return document.defaultStrokeColor
     }
     
-    // Get current fill opacity (from text OR shapes)
+    // REFACTORED: Use unified objects system for current fill opacity
     private var currentFillOpacity: Double {
-        // PRIORITY 1: If text objects are selected, show their fill opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.fillOpacity
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.fillOpacity
+            case .shape(let shape):
+                if let fillStyle = shape.fillStyle {
+                    return fillStyle.opacity
+                }
+            }
         }
         
-        // PRIORITY 2: If shapes are selected, show their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.fillStyle?.opacity {
-            return opacity
-        }
-        
-        // PRIORITY 3: Show default opacity
+        // Show default opacity
         return document.defaultFillOpacity
     }
     
-    // Get current stroke opacity (from text OR shapes)
+    // REFACTORED: Use unified objects system for current stroke opacity
     private var currentStrokeOpacity: Double {
-        // PRIORITY 1: If text objects are selected, show their stroke opacity
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.strokeOpacity
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.strokeOpacity
+            case .shape(let shape):
+                if let strokeStyle = shape.strokeStyle {
+                    return strokeStyle.opacity
+                }
+            }
         }
         
-        // PRIORITY 2: If shapes are selected, show their opacity
-        if let layerIndex = document.selectedLayerIndex,
-           let firstSelectedID = document.selectedShapeIDs.first,
-           let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }),
-           let opacity = shape.strokeStyle?.opacity {
-            return opacity
-        }
+        // Show default opacity
         return document.defaultStrokeOpacity
     }
     
