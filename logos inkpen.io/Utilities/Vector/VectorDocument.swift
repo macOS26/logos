@@ -2988,7 +2988,10 @@ class VectorDocument: ObservableObject, Codable {
             case .shape(let shape):
                 layers[unifiedObject.layerIndex].shapes.append(shape)
             case .text(let text):
-                textObjects.append(text)
+                // CRITICAL FIX: Ensure text objects are not in editing mode when syncing
+                var updatedText = text
+                updatedText.isEditing = false
+                textObjects.append(updatedText)
             }
         }
         
