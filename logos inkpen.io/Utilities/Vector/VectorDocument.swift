@@ -1206,6 +1206,39 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll()
     }
     
+    // CRITICAL FIX: Unified deletion method that works with unified objects system
+    func removeSelectedObjects() {
+        saveToUndoStack()
+        
+        // Get the objects to delete from unified system
+        let objectsToDelete = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        
+        // Remove from legacy arrays first
+        for objectToDelete in objectsToDelete {
+            switch objectToDelete.objectType {
+            case .shape(let shape):
+                // Remove from layers array
+                if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
+                    layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+                }
+            case .text(let text):
+                // Remove from textObjects array
+                textObjects.removeAll { $0.id == text.id }
+            }
+        }
+        
+        // Remove from unified objects array
+        unifiedObjects.removeAll { selectedObjectIDs.contains($0.id) }
+        
+        // Clear selection
+        selectedObjectIDs.removeAll()
+        
+        // Sync legacy selection arrays
+        syncSelectionArrays()
+        
+        Log.fileOperation("🗑️ UNIFIED: Deleted \(objectsToDelete.count) objects", level: .info)
+    }
+    
     /// Gets all currently selected shapes across all layers
     func getSelectedShapes() -> [VectorShape] {
         var selectedShapes: [VectorShape] = []

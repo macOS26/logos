@@ -401,12 +401,8 @@ class DocumentState: ObservableObject {
         guard let document = document else { return }
         document.saveToUndoStack()
         
-        if !document.selectedShapeIDs.isEmpty {
-            document.removeSelectedShapes()
-        }
-        if !document.selectedTextIDs.isEmpty {
-            document.removeSelectedText()
-        }
+        // CRITICAL FIX: Use unified objects system for deletion
+        document.removeSelectedObjects()
         
         updateAllStates()
         Log.info("🗑️ MENU: Deleted selected objects", category: .general)
