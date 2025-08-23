@@ -1290,45 +1290,45 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Selects a shape by its ID (clears other selections)
     func selectShape(_ shapeID: UUID) {
-        selectedShapeIDs = [shapeID]
-        selectedTextIDs.removeAll() // Clear text selection (mutually exclusive)
+        // Find the unified object for this shape
+        if let unifiedObject = unifiedObjects.first(where: { 
+            if case .shape(let shape) = $0.objectType {
+                return shape.id == shapeID
+            }
+            return false
+        }) {
+            selectedObjectIDs = [unifiedObject.id]
+            syncSelectionArrays() // Keep legacy arrays in sync
+        }
     }
     
     /// Adds a shape to the current selection (multi-select)
     func addToSelection(_ shapeID: UUID) {
-        selectedShapeIDs.insert(shapeID)
-        selectedTextIDs.removeAll() // Clear text selection (mutually exclusive)
+        // Find the unified object for this shape
+        if let unifiedObject = unifiedObjects.first(where: { 
+            if case .shape(let shape) = $0.objectType {
+                return shape.id == shapeID
+            }
+            return false
+        }) {
+            selectedObjectIDs.insert(unifiedObject.id)
+            syncSelectionArrays() // Keep legacy arrays in sync
+        }
     }
     
     /// PROFESSIONAL SELECT ALL
     func selectAll() {
         guard let layerIndex = selectedLayerIndex else { return }
         
-        // Select all visible, unlocked shapes on current layer
-        var allShapeIDs: Set<UUID> = []
-        for shape in layers[layerIndex].shapes {
-            if shape.isVisible && !shape.isLocked {
-                allShapeIDs.insert(shape.id)
-            }
+        // Get all visible, unlocked objects for this layer from unified array
+        let layerObjects = unifiedObjects.filter { 
+            $0.layerIndex == layerIndex && $0.isVisible && !$0.isLocked 
         }
         
-        // Also select all visible, unlocked text objects
-        var allTextIDs: Set<UUID> = []
-        for textObj in textObjects {
-            if textObj.isVisible && !textObj.isLocked {
-                allTextIDs.insert(textObj.id)
-            }
-        }
-        
-        // Professional behavior: If shapes exist, select shapes; otherwise select text
-        if !allShapeIDs.isEmpty {
-            selectedShapeIDs = allShapeIDs
-            selectedTextIDs.removeAll() // Mutually exclusive
-            Log.fileOperation("🎯 SELECT ALL: Selected \(allShapeIDs.count) shapes", level: .info)
-        } else if !allTextIDs.isEmpty {
-            selectedTextIDs = allTextIDs
-            selectedShapeIDs.removeAll() // Mutually exclusive
-            Log.fileOperation("🎯 SELECT ALL: Selected \(allTextIDs.count) text objects", level: .info)
+        if !layerObjects.isEmpty {
+            selectedObjectIDs = Set(layerObjects.map { $0.id })
+            syncSelectionArrays() // Keep legacy arrays in sync
+            Log.fileOperation("🎯 SELECT ALL: Selected \(layerObjects.count) objects", level: .info)
         } else {
             Log.fileOperation("🎯 SELECT ALL: No selectable objects found", level: .info)
         }
@@ -1338,28 +1338,43 @@ class VectorDocument: ObservableObject, Codable {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
         
-        let shapesToDuplicate = layers[layerIndex].shapes.filter { selectedShapeIDs.contains($0.id) }
-        var newShapeIDs: Set<UUID> = []
-        
-        for shape in shapesToDuplicate {
-            var newShape = shape
-            newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate
-            // Duplicate raster content mapping when present
-            if ImageContentRegistry.containsImage(shape),
-               let image = ImageContentRegistry.image(for: shape.id) {
-                ImageContentRegistry.register(image: image, for: newShape.id)
-            }
+        // Get selected shapes from unified array
+        let selectedShapes = unifiedObjects.filter { unifiedObject in
+            guard selectedObjectIDs.contains(unifiedObject.id) && 
+                  unifiedObject.layerIndex == layerIndex else { return false }
             
-            // PROFESSIONAL COORDINATE SYSTEM: Apply offset to actual coordinates instead of using transform
-            // This ensures object origin follows object position
-            let offsetTransform = CGAffineTransform(translationX: 10, y: 10)
-            newShape = applyTransformToShapeCoordinates(shape: newShape, transform: offsetTransform)
-            newShape.updateBounds()
-            layers[layerIndex].addShape(newShape)
-            newShapeIDs.insert(newShape.id)
+            if case .shape = unifiedObject.objectType {
+                return true
+            } else {
+                return false
+            }
         }
         
+        var newShapeIDs: Set<UUID> = []
+        
+        for unifiedObject in selectedShapes {
+            if case .shape(let shape) = unifiedObject.objectType {
+                var newShape = shape
+                newShape.id = UUID() // 🎯 CRITICAL: Generate new ID for duplicate
+                // Duplicate raster content mapping when present
+                if ImageContentRegistry.containsImage(shape),
+                   let image = ImageContentRegistry.image(for: shape.id) {
+                    ImageContentRegistry.register(image: image, for: newShape.id)
+                }
+                
+                // PROFESSIONAL COORDINATE SYSTEM: Apply offset to actual coordinates instead of using transform
+                // This ensures object origin follows object position
+                let offsetTransform = CGAffineTransform(translationX: 10, y: 10)
+                newShape = applyTransformToShapeCoordinates(shape: newShape, transform: offsetTransform)
+                newShape.updateBounds()
+                layers[layerIndex].addShape(newShape)
+                newShapeIDs.insert(newShape.id)
+            }
+        }
+        
+        // Update selection to the new shapes
         selectedShapeIDs = newShapeIDs
+        syncUnifiedSelectionFromLegacy() // Keep unified array in sync
     }
     
     /// PROFESSIONAL COORDINATE SYSTEM: Apply transform to shape coordinates
@@ -1635,14 +1650,16 @@ class VectorDocument: ObservableObject, Codable {
     }
     
     func selectTextAt(_ point: CGPoint) -> VectorText? {
-        // Search from top to bottom (last drawn first)
-        for textObj in textObjects.reversed() {
-            if textObj.isVisible && !textObj.isLocked {
-                let transformedBounds = textObj.bounds.applying(textObj.transform)
-                if transformedBounds.contains(point) {
-                    selectedTextIDs = [textObj.id]
-                    selectedShapeIDs.removeAll() // Clear shape selection
-                    return textObj
+        // Search from top to bottom (last drawn first) using unified objects
+        for unifiedObject in unifiedObjects.reversed() {
+            if case .text(let textObj) = unifiedObject.objectType {
+                if textObj.isVisible && !textObj.isLocked {
+                    let transformedBounds = textObj.bounds.applying(textObj.transform)
+                    if transformedBounds.contains(point) {
+                        selectedObjectIDs = [unifiedObject.id]
+                        syncSelectionArrays() // Keep legacy arrays in sync
+                        return textObj
+                    }
                 }
             }
         }
@@ -1662,6 +1679,7 @@ class VectorDocument: ObservableObject, Codable {
         textObjects.removeAll()
         
         // Clear all selections
+        selectedObjectIDs.removeAll()
         selectedShapeIDs.removeAll()
         selectedTextIDs.removeAll()
         
