@@ -1065,12 +1065,41 @@ class VectorDocument: ObservableObject, Codable {
     
 
 
+    // MARK: - Unified Object Management
+    /// Gets the next available orderID for a layer
+    private func getNextOrderID(for layerIndex: Int) -> Int {
+        let existingOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .map { $0.orderID }
+        
+        return existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? -1) + 1
+    }
+    
+    /// Adds a shape to the unified objects system
+    func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        let orderID = getNextOrderID(for: layerIndex)
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
+    /// Adds a text object to the unified objects system
+    func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        let orderID = getNextOrderID(for: layerIndex)
+        let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
     // MARK: - Shape Management
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
         layers[layerIndex].addShape(shape)
+        
+        // Add to unified system
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+        
         selectedShapeIDs = [shape.id]
+        selectedObjectIDs = [shape.id]
     }
     
     func removeSelectedShapes() {
@@ -1365,7 +1394,14 @@ class VectorDocument: ObservableObject, Codable {
     func addText(_ text: VectorText) {
         saveToUndoStack()
         textObjects.append(text)
+        
+        // Add to unified system with current layer
+        if let layerIndex = selectedLayerIndex {
+            addTextToUnifiedSystem(text, layerIndex: layerIndex)
+        }
+        
         selectedTextIDs = [text.id]
+        selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
     }
     
@@ -1388,7 +1424,11 @@ class VectorDocument: ObservableObject, Codable {
         modifiedText.layerIndex = layerIndex
         textObjects[textObjects.count - 1] = modifiedText
         
+        // Add to unified system
+        addTextToUnifiedSystem(modifiedText, layerIndex: layerIndex)
+        
         selectedTextIDs = [text.id]
+        selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
         selectedLayerIndex = layerIndex // Select the layer we added text to
         
