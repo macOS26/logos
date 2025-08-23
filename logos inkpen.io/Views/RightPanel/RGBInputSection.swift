@@ -408,6 +408,9 @@ struct RGBInputSection: View {
             }
         }
         
+        // CRITICAL FIX: Sync unified objects for live color updates
+        document.syncUnifiedObjectsAfterPropertyChange()
+        
         // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
         // Log.fileOperation("🎨 RGB INPUT: Updated \(document.activeColorTarget) color: \(vectorColor)", level: .info)

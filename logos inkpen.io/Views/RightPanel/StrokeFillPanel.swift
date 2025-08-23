@@ -275,6 +275,9 @@ struct StrokeFillPanel: View {
                 }
             }
         }
+        
+        // CRITICAL FIX: Sync unified objects for live color updates
+        document.syncUnifiedObjectsAfterPropertyChange()
     }
     
     private func updateFillOpacity(_ opacity: Double) {

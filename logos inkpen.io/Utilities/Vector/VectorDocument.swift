@@ -2124,6 +2124,9 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
         }
+        
+        // CRITICAL FIX: Sync unified objects for live color updates
+        syncUnifiedObjectsAfterPropertyChange()
     }
     
     func removeColorSwatch(_ color: VectorColor) {
@@ -2824,6 +2827,41 @@ class VectorDocument: ObservableObject, Codable {
         syncUnifiedSelectionFromLegacy()
         
         Log.fileOperation("🔧 UNIFIED OBJECTS: Updated ordering to match layer changes", level: .info)
+    }
+    
+    /// CRITICAL FIX: Sync unified objects when shape properties change (colors, etc.)
+    func syncUnifiedObjectsAfterPropertyChange() {
+        // Update unified objects to reflect property changes in layers
+        for i in unifiedObjects.indices {
+            let unifiedObject = unifiedObjects[i]
+            
+            switch unifiedObject.objectType {
+            case .shape(let oldShape):
+                // Find the updated shape in the layers array
+                if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
+                   let updatedShape = layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
+                    // Update the unified object with the changed shape
+                    unifiedObjects[i] = VectorObject(
+                        shape: updatedShape,
+                        layerIndex: unifiedObject.layerIndex,
+                        orderID: unifiedObject.orderID
+                    )
+                }
+                
+            case .text(let oldText):
+                // Find the updated text in the textObjects array
+                if let updatedText = textObjects.first(where: { $0.id == oldText.id }) {
+                    // Update the unified object with the changed text
+                    unifiedObjects[i] = VectorObject(
+                        text: updatedText,
+                        layerIndex: unifiedObject.layerIndex,
+                        orderID: unifiedObject.orderID
+                    )
+                }
+            }
+        }
+        
+        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced after property changes", level: .info)
     }
     
     // MARK: - Object Grouping Methods
