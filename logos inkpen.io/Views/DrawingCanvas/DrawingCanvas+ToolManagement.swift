@@ -63,8 +63,8 @@ extension DrawingCanvas {
             document.textObjects[textIndex].isEditing = false
         }
         
-        // Keep text selected (GREEN state)
-        document.selectedTextIDs = [textID]
+        // Keep text selected (GREEN state) - REFACTORED: Use unified objects system
+        document.selectedObjectIDs = [textID]
         
         // Clear editing flags
         isEditingText = false
@@ -84,10 +84,10 @@ extension DrawingCanvas {
         
         // CASE 1: Switching TO Arrow Tool (Selection)
         if newTool == .selection {
-            // Convert direct selection to regular selection
+            // Convert direct selection to regular selection - REFACTORED: Use unified objects system
             if !directSelectedShapeIDs.isEmpty {
                 Log.info("🎯 Converting direct selection to regular selection", category: .selection)
-                document.selectedShapeIDs = directSelectedShapeIDs
+                document.selectedObjectIDs = directSelectedShapeIDs
                 // Clear direct selection state
                 directSelectedShapeIDs.removeAll()
                 selectedPoints.removeAll()
@@ -98,13 +98,12 @@ extension DrawingCanvas {
         
         // CASE 2: Switching TO Direct Selection Tool
         else if newTool == .directSelection {
-            // Convert regular selection to direct selection
-            if !document.selectedShapeIDs.isEmpty {
+            // Convert regular selection to direct selection - REFACTORED: Use unified objects system
+            if !document.selectedObjectIDs.isEmpty {
                 Log.info("🎯 Converting regular selection to direct selection", category: .selection)
-                directSelectedShapeIDs = document.selectedShapeIDs
+                directSelectedShapeIDs = document.selectedObjectIDs
                 // Clear regular selection
-                document.selectedShapeIDs.removeAll()
-                document.selectedTextIDs.removeAll()
+                document.selectedObjectIDs.removeAll()
                 // Don't select individual points/handles yet - let user click to refine
             }
             // Keep existing direct selection if switching from convert point tool
@@ -115,13 +114,12 @@ extension DrawingCanvas {
         
         // CASE 3: Switching TO Convert Point Tool
         else if newTool == .convertAnchorPoint {
-            // Convert regular selection to direct selection (same as direct selection tool)
-            if !document.selectedShapeIDs.isEmpty {
+            // Convert regular selection to direct selection (same as direct selection tool) - REFACTORED: Use unified objects system
+            if !document.selectedObjectIDs.isEmpty {
                 Log.info("🎯 Converting regular selection to direct selection for convert point tool", category: .selection)
-                directSelectedShapeIDs = document.selectedShapeIDs
+                directSelectedShapeIDs = document.selectedObjectIDs
                 // Clear regular selection
-                document.selectedShapeIDs.removeAll()
-                document.selectedTextIDs.removeAll()
+                document.selectedObjectIDs.removeAll()
             }
             // Keep existing direct selection if switching from direct selection tool
             else if oldTool == .directSelection {
@@ -132,10 +130,9 @@ extension DrawingCanvas {
         // CASE 4: Switching AWAY from direct selection tools to other tools (not arrow)
         else if (oldTool == .directSelection || oldTool == .convertAnchorPoint) && 
                  newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint {
-            // Clear all selection state when switching to drawing tools
+            // Clear all selection state when switching to drawing tools - REFACTORED: Use unified objects system
             Log.info("🎯 Switching to drawing tool - clearing all selections", category: .selection)
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
+            document.selectedObjectIDs.removeAll()
             directSelectedShapeIDs.removeAll()
             selectedPoints.removeAll()
             selectedHandles.removeAll()
