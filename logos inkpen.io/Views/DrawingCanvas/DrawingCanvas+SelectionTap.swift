@@ -367,13 +367,13 @@ extension DrawingCanvas {
                     return isHit
                 }
             } else if isStrokeOnly && shape.strokeStyle != nil {
-                // Stroke-only shapes: Use precise stroke-based hit testing
+                // CRITICAL FIX: Stroke-only shapes need proper stroke width tolerance
                 let strokeWidth = shape.strokeStyle?.width ?? 1.0
-                // FIXED: Reduced tolerance for more precise selection
-                let strokeTolerance = max(8.0, strokeWidth + 5.0) // Reduced from 15.0 to 8.0
+                // Use stroke width + generous padding for easy selection
+                let strokeTolerance = max(12.0, strokeWidth + 8.0) // Increased tolerance for better UX
                 
                 let isHit = PathOperations.hitTest(shape.transformedPath, point: location, tolerance: strokeTolerance)
-                Log.info("  - Precise stroke hit test: \(isHit) (tolerance: \(strokeTolerance))", category: .selection)
+                Log.info("  - Stroke hit test: \(isHit) (stroke width: \(strokeWidth), tolerance: \(strokeTolerance))", category: .selection)
                 return isHit
             } else {
                 // Filled shapes: Use exact bounds first, then precise path hit test

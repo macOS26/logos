@@ -81,20 +81,33 @@ struct SelectionOutline: View {
             // Regular shapes: use the actual rendered path with transform baked-in
             // Group containers: transform group bounds corners
             let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
-            let center = CGPoint(x: baseBounds.midX, y: baseBounds.midY)
+            
+            // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
+            let strokeExpandedBounds: CGRect = {
+                let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
+                if isStrokeOnly && shape.strokeStyle != nil {
+                    let strokeWidth = shape.strokeStyle?.width ?? 1.0
+                    let strokeExpansion = strokeWidth / 2.0 // Half stroke width on each side
+                    return baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
+                } else {
+                    return baseBounds
+                }
+            }()
+            
+            let center = CGPoint(x: strokeExpandedBounds.midX, y: strokeExpandedBounds.midY)
             let transformedBounds: CGRect = {
                 // Robust bounds: transform all four corners, regardless of type (works for images too)
                 let t = shape.transform
                 let corners = [
-                    CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                    CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                    CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                    CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
+                    CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.minY).applying(t),
+                    CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.minY).applying(t),
+                    CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.maxY).applying(t),
+                    CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.maxY).applying(t)
                 ]
-                let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-                let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-                let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-                let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
+                let minX = corners.map { $0.x }.min() ?? strokeExpandedBounds.minX
+                let minY = corners.map { $0.y }.min() ?? strokeExpandedBounds.minY
+                let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
+                let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
                 return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             }()
             
