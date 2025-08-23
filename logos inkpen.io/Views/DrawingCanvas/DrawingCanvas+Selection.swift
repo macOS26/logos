@@ -16,34 +16,33 @@ extension DrawingCanvas {
 
     // Coincident smooth point handling functions moved to CoincidentPointHandling.swift    
     internal func isDraggingSelectedObject(at location: CGPoint) -> Bool {
-        // Check if the location is on any of the currently selected objects (shapes or text)
+        // REFACTORED: Use unified objects system for selection checking
         
-        // Check selected text objects first
-        for textID in document.selectedTextIDs {
-            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
-                if !textObj.isVisible || textObj.isLocked { continue }
-                
-                // Use exact same coordinate system as selection box
-                let absoluteBounds = CGRect(
-                    x: textObj.position.x + textObj.bounds.minX,
-                    y: textObj.position.y + textObj.bounds.minY,
-                    width: textObj.bounds.width,
-                    height: textObj.bounds.height
-                )
-                
-                if absoluteBounds.contains(location) {
-                    return true
-                }
-            }
-        }
-        
-        // Check selected shapes
-        for layerIndex in document.layers.indices {
-            let layer = document.layers[layerIndex]
-            if !layer.isVisible { continue }
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shape = layer.shapes.first(where: { $0.id == shapeID }) {
+        // Check all selected objects (shapes and text) using unified objects
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .text(let textObj):
+                    if !textObj.isVisible || textObj.isLocked { continue }
+                    
+                    // Use exact same coordinate system as selection box
+                    let absoluteBounds = CGRect(
+                        x: textObj.position.x + textObj.bounds.minX,
+                        y: textObj.position.y + textObj.bounds.minY,
+                        width: textObj.bounds.width,
+                        height: textObj.bounds.height
+                    )
+                    
+                    if absoluteBounds.contains(location) {
+                        return true
+                    }
+                    
+                case .shape(let shape):
+                    // Check if the shape's layer is visible
+                    if unifiedObject.layerIndex >= document.layers.count || !document.layers[unifiedObject.layerIndex].isVisible {
+                        continue
+                    }
+                    
                     // PASTEBOARD BEHAVES EXACTLY LIKE CANVAS: Allow hit testing, handle via locked behavior
                     
                     // Use the same improved hit testing logic as selection
