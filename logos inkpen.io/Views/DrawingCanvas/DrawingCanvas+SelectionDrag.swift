@@ -10,22 +10,26 @@ import SwiftUI
 extension DrawingCanvas {
     internal func startSelectionDrag() {
         guard let layerIndex = document.selectedLayerIndex,
-              (!document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty) else { return }
+              !document.selectedObjectIDs.isEmpty else { return }
         
-        // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
-        if document.layers[layerIndex].isLocked {
-            Log.info("🚫 Cannot move objects on locked layer '\(document.layers[layerIndex].name)'", category: .general)
-            return
-        }
+        // REFACTORED: Use unified objects system for selection checking
+        let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
         
-        // PROTECT LOCKED LAYERS FOR TEXT OBJECTS: Check each text object's individual layer
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
-               let textLayerIndex = document.textObjects[textIndex].layerIndex,
-               textLayerIndex >= 0 && textLayerIndex < document.layers.count {
-                if document.layers[textLayerIndex].isLocked {
-                    Log.info("🚫 Cannot move text on locked layer '\(document.layers[textLayerIndex].name)'", category: .general)
+        // PROTECT LOCKED LAYERS: Check all selected objects for locked layers
+        for unifiedObject in selectedObjects {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                if unifiedObject.layerIndex >= document.layers.count || document.layers[unifiedObject.layerIndex].isLocked {
+                    Log.info("🚫 Cannot move shape on locked layer '\(document.layers[unifiedObject.layerIndex].name)'", category: .general)
                     return
+                }
+            case .text(let textObj):
+                if let textLayerIndex = textObj.layerIndex,
+                   textLayerIndex >= 0 && textLayerIndex < document.layers.count {
+                    if document.layers[textLayerIndex].isLocked {
+                        Log.info("🚫 Cannot move text on locked layer '\(document.layers[textLayerIndex].name)'", category: .general)
+                        return
+                    }
                 }
             }
         }
@@ -37,51 +41,51 @@ extension DrawingCanvas {
         // This matches the precision approach used by the hand tool
         initialObjectPositions.removeAll()
         
-        // Store initial positions AND transforms for shapes (CRITICAL FIX FOR JITTER)
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
-                
+        // Store initial positions AND transforms for all selected objects
+        for unifiedObject in selectedObjects {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
                 // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
                 // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
                 let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 let centerX = bounds.midX
                 let centerY = bounds.midY
-                initialObjectPositions[shapeID] = CGPoint(x: centerX, y: centerY)
+                initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
                 
                 // CRITICAL FIX: Store initial transform to prevent jitter
-                initialObjectTransforms[shapeID] = shape.transform
-            }
-        }
-        
-        // Store initial positions for text objects
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let textObj = document.textObjects[textIndex]
+                initialObjectTransforms[unifiedObject.id] = shape.transform
+                
+            case .text(let textObj):
                 // Store the text baseline position
-                initialObjectPositions[textID] = textObj.position
+                initialObjectPositions[unifiedObject.id] = textObj.position
             }
         }
         
-        Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(document.selectedShapeIDs.count) shapes and \(document.selectedTextIDs.count) text objects", level: .info)
+        let shapeCount = selectedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
+        let textCount = selectedObjects.filter { if case .text = $0.objectType { return true } else { return false } }.count
+        Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(shapeCount) shapes and \(textCount) text objects", level: .info)
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
         guard let layerIndex = document.selectedLayerIndex,
-              (!document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty) else { return }
+              !document.selectedObjectIDs.isEmpty else { return }
         
-        // PROTECT LOCKED LAYERS: Don't allow moving objects on locked layers
-        if document.layers[layerIndex].isLocked {
-            return
-        }
+        // REFACTORED: Use unified objects system for selection checking
+        let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
         
-        // PROTECT LOCKED LAYERS FOR TEXT OBJECTS: Check each text object's individual layer
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
-               let textLayerIndex = document.textObjects[textIndex].layerIndex,
-               textLayerIndex >= 0 && textLayerIndex < document.layers.count {
-                if document.layers[textLayerIndex].isLocked {
+        // PROTECT LOCKED LAYERS: Check all selected objects for locked layers
+        for unifiedObject in selectedObjects {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                if unifiedObject.layerIndex >= document.layers.count || document.layers[unifiedObject.layerIndex].isLocked {
                     return
+                }
+            case .text(let textObj):
+                if let textLayerIndex = textObj.layerIndex,
+                   textLayerIndex >= 0 && textLayerIndex < document.layers.count {
+                    if document.layers[textLayerIndex].isLocked {
+                        return
+                    }
                 }
             }
         }
@@ -104,10 +108,8 @@ extension DrawingCanvas {
         )
         
         // CRITICAL FIX: For clipping masks, move the image shape DURING drag for live preview
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
-                
+        for unifiedObject in selectedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
                 // CLIPPING MASK PREVIEW: Use same preview system as regular objects
                 // Don't modify actual document during drag - use currentDragDelta for preview
                 if shape.isClippingPath {
@@ -143,28 +145,30 @@ extension DrawingCanvas {
             // This ensures smooth 60fps preview during drag, then commits changes once
             guard let layerIndex = document.selectedLayerIndex else { return }
             
-            // Apply drag delta to shapes
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    let shape = document.layers[layerIndex].shapes[shapeIndex]
-                    
-                    // CLIPPING MASK MOVEMENT: Use normal drag system (preview already handled movement)
-                    if shape.isClippingPath {
-                        // Clipping masks use the same drag system as regular shapes
-                        // The preview system already showed the movement, so just apply normal coordinates
-                        applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
-                    } else {
-                        // Regular shape movement
-                        applyDragDeltaToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
-                    }
-                }
-            }
+            // REFACTORED: Use unified objects system for applying drag delta
+            let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
             
-            // Apply drag delta to text objects
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    document.textObjects[textIndex].position.x += currentDragDelta.x
-                    document.textObjects[textIndex].position.y += currentDragDelta.y
+            // Apply drag delta to all selected objects
+            for unifiedObject in selectedObjects {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    if let shapeIndex = document.layers[unifiedObject.layerIndex].shapes.firstIndex(where: { $0.id == unifiedObject.id }) {
+                        // CLIPPING MASK MOVEMENT: Use normal drag system (preview already handled movement)
+                        if shape.isClippingPath {
+                            // Clipping masks use the same drag system as regular shapes
+                            // The preview system already showed the movement, so just apply normal coordinates
+                            applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
+                        } else {
+                            // Regular shape movement
+                            applyDragDeltaToShapeCoordinates(layerIndex: unifiedObject.layerIndex, shapeIndex: shapeIndex, delta: currentDragDelta)
+                        }
+                    }
+                    
+                case .text(let textObj):
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
+                        document.textObjects[textIndex].position.x += currentDragDelta.x
+                        document.textObjects[textIndex].position.y += currentDragDelta.y
+                    }
                 }
             }
             
