@@ -268,11 +268,15 @@ struct TransformBoxHandles: View {
         isScaling = false
         document.isHandleScalingActive = false
         
-        // CRITICAL FIX: Use unified object system to find the shape
-        if let unifiedObject = document.unifiedObjects.first(where: { $0.id == shape.id }),
-           case .shape(let targetShape) = unifiedObject.objectType,
-           let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == targetShape.id }) {
+        // CRITICAL FIX: Find the unified object that contains this specific shape
+        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == shape.id
+            }
+            return false
+        }),
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
             if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
@@ -287,6 +291,9 @@ struct TransformBoxHandles: View {
             previewTransform = .identity
             // Force UI refresh to reflect committed transform
             document.objectWillChange.send()
+            
+            // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
+            document.syncUnifiedObjectsAfterPropertyChange()
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }

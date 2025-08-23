@@ -390,11 +390,15 @@ struct ScaleHandles: View {
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Professional behavior)
         
-        // CRITICAL FIX: Use unified object system to find the shape
-        if let unifiedObject = document.unifiedObjects.first(where: { $0.id == shape.id }),
-           case .shape(let targetShape) = unifiedObject.objectType,
-           let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == targetShape.id }) {
+        // CRITICAL FIX: Find the unified object that contains this specific shape
+        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == shape.id
+            }
+            return false
+        }),
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
@@ -413,6 +417,9 @@ struct ScaleHandles: View {
             finalMarqueeBounds = .zero // Hide marquee
             
             Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
+            
+            // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
+            document.syncUnifiedObjectsAfterPropertyChange()
             
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
             // This updates the points to match the scaled object positions
