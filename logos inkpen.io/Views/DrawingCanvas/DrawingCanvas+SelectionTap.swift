@@ -166,58 +166,7 @@ extension DrawingCanvas {
         
         Log.info("🔍 SELECTION TAP: Tool check passed, looking for objects...", category: .selection)
         
-        // Check for text objects when using selection tool or font tool
-        if (document.currentTool == .selection || document.currentTool == .font), let textID = findTextAt(location: validatedLocation) {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let textObject = document.textObjects[textIndex]
-                
-                // PRINT TEXT BOX SETTINGS AS REQUESTED BY USER
-                Log.info("🎯 ARROW TOOL SELECTED TEXT BOX UUID: \(textID.uuidString.prefix(8))", category: .selection)
-                Log.info("📝 CONTENT: '\(textObject.content)'", category: .selection)
-                Log.info("🎨 TYPOGRAPHY SETTINGS:", category: .selection)
-                Log.info("  - Font: \(textObject.typography.fontFamily) \(textObject.typography.fontWeight.rawValue) \(textObject.typography.fontStyle.rawValue)", category: .selection)
-                Log.info("  - Size: \(textObject.typography.fontSize)pt", category: .selection)
-                Log.info("  - Line Height: \(textObject.typography.lineHeight)pt", category: .selection)
-                Log.info("  - Line Spacing: \(textObject.typography.lineSpacing)pt", category: .selection)
-                Log.info("  - Alignment: \(textObject.typography.alignment.rawValue)", category: .selection)
-                Log.info("  - Fill Color: \(textObject.typography.fillColor)", category: .selection)
-                Log.info("📦 BOUNDS: \(textObject.bounds)", category: .selection)
-                Log.info("📍 POSITION: \(textObject.position)", category: .selection)
-                Log.info("🔄 STATES: isEditing=\(textObject.isEditing), isVisible=\(textObject.isVisible), isLocked=\(textObject.isLocked)", category: .selection)
-                
-                // Check if text is locked
-                if textObject.isLocked {
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
-                    document.objectWillChange.send()
-                    return
-                }
-                
-                // Select the text object
-                if isShiftPressed {
-                    // SHIFT+CLICK: Add to selection
-                    document.selectedTextIDs.insert(textID)
-                } else if isCommandPressed {
-                    // CMD+CLICK: Toggle selection
-                    if document.selectedTextIDs.contains(textID) {
-                        document.selectedTextIDs.remove(textID)
-                    } else {
-                        document.selectedTextIDs.insert(textID)
-                    }
-                } else {
-                    // REGULAR CLICK: Replace selection
-                    document.selectedTextIDs = [textID]
-                    document.selectedShapeIDs.removeAll() // Clear shape selection
-                }
-                
-                            // Sync selection arrays for compatibility
-            document.syncSelectionArrays()
-            
-            // Force UI update
-            document.objectWillChange.send()
-                return
-            }
-        }
+        // REMOVED: Old text selection path - now using unified objects system only
         
         // Find object at location across all visible layers using unified system
         var hitObject: VectorObject?

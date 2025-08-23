@@ -2735,6 +2735,10 @@ class VectorDocument: ObservableObject, Codable {
         shapes.append(contentsOf: selectedShapes)
         
         layers[layerIndex].shapes = shapes
+        
+        // CRITICAL FIX: Update unified objects to reflect the new ordering
+        updateUnifiedObjectsOrdering()
+        
         Log.info("⬆️⬆️ Brought to front \(selectedShapeIDs.count) objects", category: .general)
     }
     
@@ -2756,6 +2760,10 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         layers[layerIndex].shapes = shapes
+        
+        // CRITICAL FIX: Update unified objects to reflect the new ordering
+        updateUnifiedObjectsOrdering()
+        
         Log.info("⬆️ Brought forward \(selectedShapeIDs.count) objects", category: .general)
     }
     
@@ -2777,6 +2785,10 @@ class VectorDocument: ObservableObject, Codable {
         }
         
         layers[layerIndex].shapes = shapes
+        
+        // CRITICAL FIX: Update unified objects to reflect the new ordering
+        updateUnifiedObjectsOrdering()
+        
         Log.info("⬇️ Sent backward \(selectedShapeIDs.count) objects", category: .general)
     }
     
@@ -2796,7 +2808,22 @@ class VectorDocument: ObservableObject, Codable {
         shapes.insert(contentsOf: selectedShapes, at: 0)
         
         layers[layerIndex].shapes = shapes
+        
+        // CRITICAL FIX: Update unified objects to reflect the new ordering
+        updateUnifiedObjectsOrdering()
+        
         Log.info("⬇️⬇️ Sent to back \(selectedShapeIDs.count) objects", category: .general)
+    }
+    
+    /// CRITICAL FIX: Update unified objects ordering to match layer ordering
+    private func updateUnifiedObjectsOrdering() {
+        // Re-populate unified objects to reflect any changes in layer ordering
+        populateUnifiedObjectsFromLayers()
+        
+        // Re-sync selection to maintain selected objects
+        syncUnifiedSelectionFromLegacy()
+        
+        Log.fileOperation("🔧 UNIFIED OBJECTS: Updated ordering to match layer changes", level: .info)
     }
     
     // MARK: - Object Grouping Methods

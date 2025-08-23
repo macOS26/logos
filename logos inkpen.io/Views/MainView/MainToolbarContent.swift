@@ -434,79 +434,19 @@ struct MainToolbarContent: ToolbarContent {
     // MARK: - Professional Object Management Functions (Industry Standards)
     
     private func bringSelectedToFront() {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Get selected shapes and remove them from current positions
-        var shapes = document.layers[layerIndex].shapes
-        let selectedShapes = shapes.filter { document.selectedShapeIDs.contains($0.id) }
-        shapes.removeAll { document.selectedShapeIDs.contains($0.id) }
-        
-        // Add selected shapes to the end (front)
-        shapes.append(contentsOf: selectedShapes)
-        
-        document.layers[layerIndex].shapes = shapes
-        Log.info("⬆️⬆️ Brought to front \(document.selectedShapeIDs.count) objects", category: .shapes)
+        document.bringSelectedToFront()
     }
     
     private func bringSelectedForward() {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Move each selected shape forward by one position
-        var shapes = document.layers[layerIndex].shapes
-        
-        // Process from back to front to avoid index conflicts
-        for i in (0..<shapes.count).reversed() {
-            if document.selectedShapeIDs.contains(shapes[i].id) && i < shapes.count - 1 {
-                shapes.swapAt(i, i + 1)
-            }
-        }
-        
-        document.layers[layerIndex].shapes = shapes
-        Log.info("⬆️ Brought forward \(document.selectedShapeIDs.count) objects", category: .shapes)
+        document.bringSelectedForward()
     }
     
     private func sendSelectedBackward() {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Move each selected shape backward by one position
-        var shapes = document.layers[layerIndex].shapes
-        
-        // Process from front to back to avoid index conflicts
-        for i in 0..<shapes.count {
-            if document.selectedShapeIDs.contains(shapes[i].id) && i > 0 {
-                shapes.swapAt(i, i - 1)
-            }
-        }
-        
-        document.layers[layerIndex].shapes = shapes
-        Log.info("⬇️ Sent backward \(document.selectedShapeIDs.count) objects", category: .shapes)
+        document.sendSelectedBackward()
     }
     
     private func sendSelectedToBack() {
-        guard let layerIndex = document.selectedLayerIndex,
-              !document.selectedShapeIDs.isEmpty else { return }
-        
-        document.saveToUndoStack()
-        
-        // Get selected shapes and remove them from current positions
-        var shapes = document.layers[layerIndex].shapes
-        let selectedShapes = shapes.filter { document.selectedShapeIDs.contains($0.id) }
-        shapes.removeAll { document.selectedShapeIDs.contains($0.id) }
-        
-        // Insert selected shapes at the beginning (back)
-        shapes.insert(contentsOf: selectedShapes, at: 0)
-        
-        document.layers[layerIndex].shapes = shapes
-        Log.info("⬇️⬇️ Sent to back \(document.selectedShapeIDs.count) objects", category: .shapes)
+        document.sendSelectedToBack()
     }
     
     private func lockSelectedObjects() {
