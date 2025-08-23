@@ -92,12 +92,13 @@ struct MainToolbarContent: ToolbarContent {
     }
     
     private func hasSelectedPathsToClose() -> Bool {
-        // Check if any selected shapes have open paths that can be closed
-        guard !document.selectedShapeIDs.isEmpty else { return false }
+        // REFACTORED: Use unified objects system for path closing check
+        guard !document.selectedObjectIDs.isEmpty else { return false }
         
-        for layer in document.layers {
-            for shape in layer.shapes {
-                if document.selectedShapeIDs.contains(shape.id) {
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
                     // Check if path has no close element and has enough points to close
                     let hasCloseElement = shape.path.elements.contains { element in
                         if case .close = element { return true }
@@ -114,6 +115,9 @@ struct MainToolbarContent: ToolbarContent {
                     if !hasCloseElement && pointCount >= 3 {
                         return true
                     }
+                case .text:
+                    // Text objects don't have paths to close
+                    continue
                 }
             }
         }
@@ -121,38 +125,44 @@ struct MainToolbarContent: ToolbarContent {
     }
     
     private func closeSelectedPaths() {
-        // Close paths for selected shapes only
+        // REFACTORED: Use unified objects system for path closing
         document.saveToUndoStack()
         
-        for layerIndex in document.layers.indices {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
-                
-                // Only close if this shape is selected
-                if document.selectedShapeIDs.contains(shape.id) {
-                    // Check if path is open and has enough points
-                    let hasCloseElement = shape.path.elements.contains { element in
-                        if case .close = element { return true }
-                        return false
-                    }
-                    
-                    let pointCount = shape.path.elements.filter { element in
-                        switch element {
-                        case .move, .line, .curve, .quadCurve: return true
-                        case .close: return false
-                        }
-                    }.count
-                    
-                    if !hasCloseElement && pointCount >= 3 {
-                        // Add close element
-                        var newElements = shape.path.elements
-                        newElements.append(.close)
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                         
-                        let newPath = VectorPath(elements: newElements, isClosed: true)
-                        document.layers[layerIndex].shapes[shapeIndex].path = newPath
-                        document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                        Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
+                        // Check if path is open and has enough points
+                        let hasCloseElement = shape.path.elements.contains { element in
+                            if case .close = element { return true }
+                            return false
+                        }
+                        
+                        let pointCount = shape.path.elements.filter { element in
+                            switch element {
+                            case .move, .line, .curve, .quadCurve: return true
+                            case .close: return false
+                            }
+                        }.count
+                        
+                        if !hasCloseElement && pointCount >= 3 {
+                            // Add close element
+                            var newElements = shape.path.elements
+                            newElements.append(.close)
+                            
+                            let newPath = VectorPath(elements: newElements, isClosed: true)
+                            document.layers[layerIndex].shapes[shapeIndex].path = newPath
+                            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                            Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
+                        }
                     }
+                case .text:
+                    // Text objects don't have paths to close
+                    continue
                 }
             }
         }
@@ -406,26 +416,27 @@ struct MainToolbarContent: ToolbarContent {
     }
 
     private func getSelectionBoundsForDocument() -> CGRect? {
+        // REFACTORED: Use unified objects system for selection bounds
         var combinedBounds: CGRect?
-        // Shapes in user layers only (>= 2)
-        for (layerIndex, layer) in document.layers.enumerated() where layerIndex >= 2 {
-            for shape in layer.shapes {
-                if document.selectedShapeIDs.contains(shape.id) {
-                    let shapeBounds = shape.bounds.applying(shape.transform)
-                    combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
+        
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                // Only include objects in user layers (>= 2)
+                if unifiedObject.layerIndex >= 2 {
+                    switch unifiedObject.objectType {
+                    case .shape(let shape):
+                        let shapeBounds = shape.bounds.applying(shape.transform)
+                        combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
+                    case .text(let textObj):
+                        let textBounds = CGRect(
+                            x: textObj.position.x + textObj.bounds.minX,
+                            y: textObj.position.y + textObj.bounds.minY,
+                            width: textObj.bounds.width,
+                            height: textObj.bounds.height
+                        ).applying(textObj.transform)
+                        combinedBounds = combinedBounds.map { $0.union(textBounds) } ?? textBounds
+                    }
                 }
-            }
-        }
-        // Text in user layers only
-        for textObj in document.textObjects {
-            if document.selectedTextIDs.contains(textObj.id), let li = textObj.layerIndex, li >= 2 {
-                let textBounds = CGRect(
-                    x: textObj.position.x + textObj.bounds.minX,
-                    y: textObj.position.y + textObj.bounds.minY,
-                    width: textObj.bounds.width,
-                    height: textObj.bounds.height
-                ).applying(textObj.transform)
-                combinedBounds = combinedBounds.map { $0.union(textBounds) } ?? textBounds
             }
         }
         return combinedBounds
@@ -450,27 +461,29 @@ struct MainToolbarContent: ToolbarContent {
     }
     
     private func lockSelectedObjects() {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        
+        // REFACTORED: Use unified objects system for locking
         document.saveToUndoStack()
         
-        // Lock selected shapes
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].isLocked = true
-            }
-        }
-        
-        // Lock selected text objects
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].isLocked = true
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and lock it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        document.layers[layerIndex].shapes[shapeIndex].isLocked = true
+                    }
+                case .text(let text):
+                    // Find the text in the textObjects array and lock it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].isLocked = true
+                    }
+                }
             }
         }
         
         // Clear selection (locked objects can't be selected)
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
         
         Log.info("🔒 Locked selected objects", category: .shapes)
     }
@@ -494,27 +507,29 @@ struct MainToolbarContent: ToolbarContent {
     }
     
     private func hideSelectedObjects() {
-        guard let layerIndex = document.selectedLayerIndex else { return }
-        
+        // REFACTORED: Use unified objects system for hiding
         document.saveToUndoStack()
         
-        // Hide selected shapes
-        for shapeID in document.selectedShapeIDs {
-            if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                document.layers[layerIndex].shapes[shapeIndex].isVisible = false
-            }
-        }
-        
-        // Hide selected text objects
-        for textID in document.selectedTextIDs {
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                document.textObjects[textIndex].isVisible = false
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and hide it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        document.layers[layerIndex].shapes[shapeIndex].isVisible = false
+                    }
+                case .text(let text):
+                    // Find the text in the textObjects array and hide it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].isVisible = false
+                    }
+                }
             }
         }
         
         // Clear selection (hidden objects can't be selected)
-        document.selectedShapeIDs.removeAll()
-        document.selectedTextIDs.removeAll()
+        document.selectedObjectIDs.removeAll()
         
         Log.info("👁️‍🗨️ Hidden selected objects", category: .shapes)
     }
