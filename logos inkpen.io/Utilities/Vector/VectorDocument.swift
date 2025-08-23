@@ -12,13 +12,13 @@ import AppKit
 
 // MARK: - Unified Object System
 /// Represents any object that can be placed on a layer with proper ordering
-struct VectorObject: Identifiable, Codable {
+struct VectorObject: Identifiable, Codable, Hashable {
     let id: UUID
     let orderID: Int // Unique ordering within layer - no two objects on same layer can have same orderID
     let layerIndex: Int // Which layer this object belongs to
     let objectType: ObjectType
     
-    enum ObjectType: Codable {
+    enum ObjectType: Codable, Hashable {
         case shape(VectorShape)
         case text(VectorText)
     }
