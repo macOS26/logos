@@ -1694,6 +1694,7 @@ class VectorDocument: ObservableObject, Codable {
             textObjects[index].content = content
             // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
             // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
+            syncUnifiedObjectsAfterPropertyChange()
         }
     }
     
@@ -1714,6 +1715,7 @@ class VectorDocument: ObservableObject, Codable {
             update(&textObjects[index].typography)
             // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now  
             // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
+            syncUnifiedObjectsAfterPropertyChange()
         }
     }
     
