@@ -249,11 +249,7 @@ struct ShearHandles: View {
         isShearing = true
         
         Log.info("   📊 PIN-POINT SHEAR preview updated:", category: .general)
-        print("      Shear factors: X=\(String(format: "%.3f", shearX)), Y=\(String(format: "%.3f", shearY))")
-        print("      📍 Original anchor: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
-        print("      📐 Would move to: (\(String(format: "%.1f", sheared_anchor.x)), \(String(format: "%.1f", sheared_anchor.y)))")
-        print("      🔧 Compensation: (\(String(format: "%.1f", anchor.x - sheared_anchor.x)), \(String(format: "%.1f", anchor.y - sheared_anchor.y)))")
-        print("      🔒 RESULT: Pin point stays at (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y)))")
+        // Removed excessive logging during drag operations
     }
     
     private func finishShear() {
@@ -435,7 +431,7 @@ struct ShearHandles: View {
         } else {
             // Center point
             shearAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔴 LOCKED PIN: Set to center point at (\(String(format: "%.1f", shearAnchorPoint.x)), \(String(format: "%.1f", shearAnchorPoint.y)))")
+            // Removed excessive logging during drag operations
         }
     }
     
@@ -491,13 +487,13 @@ struct ShearHandles: View {
         if isShiftPressed {
             if abs(shearFactorX) > abs(shearFactorY) {
                 finalShearY = 0
-                print("🔄 SHEARING AWAY FROM PIN: X=\(String(format: "%.3f", finalShearX)), Y=0 (shift constrained - horizontal)")
+                // Removed excessive logging during drag operations
             } else {
                 finalShearX = 0
-                print("🔄 SHEARING AWAY FROM PIN: X=0, Y=\(String(format: "%.3f", finalShearY)) (shift constrained - vertical)")
+                // Removed excessive logging during drag operations
             }
         } else {
-            print("🔄 SHEARING AWAY FROM PIN: X=\(String(format: "%.3f", finalShearX)), Y=\(String(format: "%.3f", finalShearY))")
+            // Removed excessive logging during drag operations
         }
         
         // Apply preview shearing with the LOCKED PIN POINT as anchor (it stays stationary)
@@ -525,7 +521,7 @@ struct ShearHandles: View {
         // SHEAR START: Minimal logging for performance
         
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     private func updatePathPointsAfterShear() {
@@ -568,8 +564,7 @@ struct ShearHandles: View {
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
         pointsRefreshTrigger += 1
         
-        print("🔄 FORCE UPDATED shear points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
-        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     // MARK: - Key Event Monitoring

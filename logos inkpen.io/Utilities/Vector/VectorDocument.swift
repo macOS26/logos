@@ -1135,7 +1135,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        Log.fileOperation("🔧 POPULATED UNIFIED OBJECTS: \(unifiedObjects.count) objects from \(layers.count) layers with TRUE unified ordering", level: .info)
+        // Removed excessive logging during drag operations
     }
     
     /// Sync selection arrays to maintain compatibility with existing code
@@ -3160,7 +3160,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced with property changes and removed deleted objects", level: .info)
+        // Removed excessive logging during drag operations
     }
     
     // MARK: - Object Grouping Methods

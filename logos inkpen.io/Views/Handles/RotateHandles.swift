@@ -275,8 +275,7 @@ struct RotateHandles: View {
             rotationAngle = round(rotationAngle / increment) * increment
         }
         
-        print("🔄 ROTATING: angle=\(String(format: "%.1f", rotationAngle * 180 / .pi))°, shift=\(isShiftPressed)")
-        print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
+        // Removed excessive logging during drag operations
         
         calculatePreviewRotation(angle: rotationAngle, anchor: rotationAnchorPoint)
     }
@@ -296,13 +295,13 @@ struct RotateHandles: View {
         if let pointIndex = anchorPointIndex {
             let point = pathPoints[pointIndex]
             rotationAnchorPoint = CGPoint(x: point.x, y: point.y)
-            print("🔄 ROTATION START: Anchored to path point \(pointIndex) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y))) - AUTO-SELECTED GREEN")
+            // Removed excessive logging during drag operations
         } else {
             rotationAnchorPoint = CGPoint(x: centerPoint.x, y: centerPoint.y)
-            print("🔄 ROTATION START: Anchored to center point at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y))) - AUTO-SELECTED GREEN")
+            // Removed excessive logging during drag operations
         }
         
-        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", bounds.minX)), \(String(format: "%.1f", bounds.minY))) → (\(String(format: "%.1f", bounds.maxX)), \(String(format: "%.1f", bounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     private func updatePathPointsAfterRotation() {
@@ -328,8 +327,7 @@ struct RotateHandles: View {
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
         pointsRefreshTrigger += 1
         
-        print("🔄 FORCE UPDATED rotation points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
-        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+        // Removed excessive logging during drag operations
         Log.info("   🔄 View refresh trigger: \(pointsRefreshTrigger)", category: .general)
     }
     
@@ -489,8 +487,7 @@ struct RotateHandles: View {
         // This prevents anchor drift after multiple transformations
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         rotationAnchorPoint = getRotationAnchorPoint(for: document.rotationAnchor, in: originalBounds, cornerIndex: cornerIndex)
-        print("🔄 ROTATION START: Corner \(cornerIndex) → Anchor mode: \(document.rotationAnchor.displayName) at (\(String(format: "%.1f", rotationAnchorPoint.x)), \(String(format: "%.1f", rotationAnchorPoint.y)))")
-        print("   📐 Using ORIGINAL bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     private func calculatePreviewRotation(angle: CGFloat, anchor: CGPoint) {
@@ -506,12 +503,7 @@ struct RotateHandles: View {
         // MARQUEE PREVIEW: Ensure isRotating is true for marquee visibility
         isRotating = true
         
-        // ROTATION LOGGING: Track rotation details
-        Log.info("   🔄 ROTATION PREVIEW:", category: .general)
-        print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.rotationAnchor.displayName)")
-        print("      Rotation angle: \(String(format: "%.1f", angle * 180 / .pi))°")
-        
-        print("   📊 Rotation preview updated: angle=\(String(format: "%.1f", angle * 180 / .pi))° - showing ROTATED SHAPE outline")
+        // Removed excessive logging during drag operations
         
         // Force UI update for preview rendering (without applying to shape)
         document.objectWillChange.send()
@@ -522,8 +514,7 @@ struct RotateHandles: View {
         isRotating = false
         document.isHandleScalingActive = false
         
-        Log.info("🏁 ROTATION FINISH: Applying final transform to coordinates", category: .general)
-        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        // Removed excessive logging during drag operations
         
         // CRITICAL FIX: Find the unified object that contains this specific shape
         if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
@@ -536,7 +527,7 @@ struct RotateHandles: View {
         let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
-            print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            // Removed excessive logging during drag operations
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
             document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
@@ -545,7 +536,7 @@ struct RotateHandles: View {
             applyRotationTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
-            print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+            // Removed excessive logging during drag operations
             
             // Reset preview transform
             previewTransform = .identity

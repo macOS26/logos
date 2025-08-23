@@ -586,25 +586,44 @@ struct EnvelopeHandles: View {
         updateShapeWithCurrentWarp()
         
         // BOUNDS UPDATE: Now that warping is finished, update bounds properly
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        // CRITICAL FIX: Find the unified object that contains this specific shape
+        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == shape.id
+            }
+            return false
+        }),
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             if document.layers[layerIndex].shapes[shapeIndex].isGroup {
                 for i in 0..<document.layers[layerIndex].shapes[shapeIndex].groupedShapes.count {
                     document.layers[layerIndex].shapes[shapeIndex].groupedShapes[i].updateBounds()
                 }
             }
+        } else {
+            Log.error("❌ WARP FAILED: Could not find shape in unified objects system", category: .error)
         }
         
         print("   Current envelope: TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
         
         // Keep preview for visual feedback but refresh it for next transformation
         calculateEnvelopeWarpPreview()
+        
+        // CRITICAL FIX: Sync unified objects after warping to ensure UI updates
+        document.syncUnifiedObjectsAfterPropertyChange()
     }
     
     private func updateShapeWithCurrentWarp() {
-        guard let layerIndex = document.selectedLayerIndex,
-              let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { return }
+        // CRITICAL FIX: Find the unified object that contains this specific shape
+        guard let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == shape.id
+            }
+            return false
+        }),
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) else { return }
         
         let currentShape = document.layers[layerIndex].shapes[shapeIndex]
         
@@ -700,6 +719,9 @@ struct EnvelopeHandles: View {
         print("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
         
         document.objectWillChange.send()
+        
+        // CRITICAL FIX: Sync unified objects after warping to ensure UI updates
+        document.syncUnifiedObjectsAfterPropertyChange()
     }
     
     private func commitEnvelopeWarp() {

@@ -363,14 +363,10 @@ struct ScaleHandles: View {
             let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
             scaleX = uniformScale
             scaleY = uniformScale
-            print("🔀 PROPORTIONAL SCALING: Shift held - uniform scale \(String(format: "%.3f", uniformScale))")
+            // Removed excessive logging during drag operations
         }
         
-        // Professional logging for tracking
-        print("🔢 SCALING: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))\(isShiftPressed ? " (PROPORTIONAL)" : "")")
-        print("   🖱️ Cursor: (\(String(format: "%.1f", currentLocation.x)), \(String(format: "%.1f", currentLocation.y))) → Distance: (\(String(format: "%.1f", currentDistance.x)), \(String(format: "%.1f", currentDistance.y)))")
-        print("   ⚓ Anchor screen: (\(String(format: "%.1f", anchorScreenX)), \(String(format: "%.1f", anchorScreenY)))")
-        print("   🎯 Adaptive thresholds: X=\(String(format: "%.1f", adaptiveMinDistanceX))pt, Y=\(String(format: "%.1f", adaptiveMinDistanceY))pt (based on bounds: \(String(format: "%.1f", baseBounds.width))×\(String(format: "%.1f", baseBounds.height)))")
+        // Removed excessive logging during drag operations
         
         // Apply preview scaling
         calculatePreviewTransform(scaleX: scaleX, scaleY: scaleY, anchor: scalingAnchorPoint)
@@ -383,9 +379,7 @@ struct ScaleHandles: View {
         isScaling = false
         document.isHandleScalingActive = false // CRITICAL: Re-enable canvas drag gestures
         
-        Log.info("🏁 SCALING FINISH: Applying final transform to coordinates", category: .general)
-        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
-        print("   🎯 FINAL MARQUEE: Bounds (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
+        // Removed excessive logging during drag operations
         
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Professional behavior)
@@ -401,7 +395,7 @@ struct ScaleHandles: View {
         let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
-            print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
+            // Removed excessive logging during drag operations
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
             document.layers[layerIndex].shapes[shapeIndex].transform = initialTransform
@@ -410,7 +404,7 @@ struct ScaleHandles: View {
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
             let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
-            print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+            // Removed excessive logging during drag operations
             
             // Reset preview transform and marquee bounds
             previewTransform = .identity
@@ -627,9 +621,9 @@ struct ScaleHandles: View {
             let uniformScale = max(scaleX, scaleY) // Use the larger scale factor
             scaleX = uniformScale
             scaleY = uniformScale
-            print("🔢 SCALING AWAY FROM PIN: Uniform scale \(String(format: "%.3f", uniformScale)) (shift pressed)")
+            // Removed excessive logging during drag operations
         } else {
-            print("🔢 SCALING AWAY FROM PIN: scaleX=\(String(format: "%.3f", scaleX)), scaleY=\(String(format: "%.3f", scaleY))")
+            // Removed excessive logging during drag operations
         }
         
         // Apply preview scaling with the LOCKED PIN POINT as anchor (it stays stationary)
@@ -657,7 +651,7 @@ struct ScaleHandles: View {
         // SCALING START: Minimal logging for performance
         
         let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        print("   📐 Original bounds: (\(String(format: "%.1f", originalBounds.minX)), \(String(format: "%.1f", originalBounds.minY))) → (\(String(format: "%.1f", originalBounds.maxX)), \(String(format: "%.1f", originalBounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     private func updatePathPointsAfterScaling() {
@@ -701,8 +695,7 @@ struct ScaleHandles: View {
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points
         pointsRefreshTrigger += 1
         
-        print("🔄 FORCE UPDATED scale points - \(pathPoints.count) path points + center at (\(String(format: "%.1f", centerPoint.x)), \(String(format: "%.1f", centerPoint.y)))")
-        print("   📐 New bounds: (\(String(format: "%.1f", newBounds.minX)), \(String(format: "%.1f", newBounds.minY))) → (\(String(format: "%.1f", newBounds.maxX)), \(String(format: "%.1f", newBounds.maxY)))")
+        // Removed excessive logging during drag operations
     }
     
     // MARK: - Key Event Monitoring
@@ -888,18 +881,13 @@ struct ScaleHandles: View {
         // MARQUEE PREVIEW: Ensure isScaling is true for marquee visibility
         isScaling = true
         
-        // MARQUEE LOGGING: Track marquee position vs anchor
-        Log.info("   🎯 MARQUEE PREVIEW:", category: .general)
-        print("      Original bounds: (\(String(format: "%.1f", currentBounds.minX)), \(String(format: "%.1f", currentBounds.minY))) → (\(String(format: "%.1f", currentBounds.maxX)), \(String(format: "%.1f", currentBounds.maxY)))")
-        print("      Final marquee bounds: (\(String(format: "%.1f", finalMarqueeBounds.minX)), \(String(format: "%.1f", finalMarqueeBounds.minY))) → (\(String(format: "%.1f", finalMarqueeBounds.maxX)), \(String(format: "%.1f", finalMarqueeBounds.maxY)))")
-        print("      Anchor point: (\(String(format: "%.1f", anchor.x)), \(String(format: "%.1f", anchor.y))) - \(document.scalingAnchor.displayName)")
-        print("      Scale factors: X=\(String(format: "%.3f", scaleX)), Y=\(String(format: "%.3f", scaleY))")
+        // Removed excessive logging during drag operations
         
         // CRITICAL FIX: DON'T apply preview to actual shape during dragging (like rectangle tool)
         // This prevents the transformation box from scaling and eliminates drift
         // The preview will be applied only at the end in finishScaling
         
-        print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
+        // Removed excessive logging during drag operations
         
         // Force UI update for preview rendering (without applying to shape)
         document.objectWillChange.send()

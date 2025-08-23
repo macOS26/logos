@@ -312,7 +312,7 @@ extension DrawingCanvas {
         // FIXED: Always handle as completed drag - NO conversion to tap
         // This prevents drags from getting "lost" mid-operation
         let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
-        print("🎯 UNIFIED: Drag ended - handling as completed drag operation (\(String(format: "%.1f", dragDistance))px)")
+        // Removed excessive logging during drag operations
         
         // Handle as completed drag
         switch document.currentTool {

@@ -127,7 +127,7 @@ extension DrawingCanvas {
             initialObjectTransforms.removeAll()
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
-            Log.fileOperation("🎯 SELECTION DRAG: CANCELLED - Handle scaling was active, no transforms applied", level: .info)
+            // Removed excessive logging during drag operations
             return
         }
         
@@ -514,6 +514,6 @@ extension DrawingCanvas {
             }
         }
         
-        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced with moved shapes and text objects", level: .info)
+        // Removed excessive logging during drag operations
     }
 } 
