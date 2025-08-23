@@ -119,7 +119,7 @@ extension DrawingCanvas {
                 document: document,
                 zoomLevel: document.zoomLevel,
                 canvasOffset: document.canvasOffset,
-                selectedShapeIDs: document.selectedShapeIDs,
+                selectedObjectIDs: document.selectedObjectIDs,
                 viewMode: document.viewMode,
                 isShiftPressed: self.isShiftPressed,
                 dragPreviewDelta: currentDragDelta,

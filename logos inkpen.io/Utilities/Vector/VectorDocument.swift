@@ -1135,6 +1135,53 @@ class VectorDocument: ObservableObject, Codable {
         Log.fileOperation("🔧 POPULATED UNIFIED OBJECTS: \(unifiedObjects.count) objects from \(layers.count) layers with TRUE unified ordering", level: .info)
     }
     
+    /// Sync selection arrays to maintain compatibility with existing code
+    func syncSelectionArrays() {
+        // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs
+        selectedShapeIDs.removeAll()
+        selectedTextIDs.removeAll()
+        
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    selectedShapeIDs.insert(shape.id)
+                case .text(let text):
+                    selectedTextIDs.insert(text.id)
+                }
+            }
+        }
+    }
+    
+    /// Sync unified selection from legacy selection arrays
+    func syncUnifiedSelectionFromLegacy() {
+        selectedObjectIDs.removeAll()
+        
+        // Add selected shapes
+        for shapeID in selectedShapeIDs {
+            if let unifiedObject = unifiedObjects.first(where: { 
+                if case .shape(let shape) = $0.objectType {
+                    return shape.id == shapeID
+                }
+                return false
+            }) {
+                selectedObjectIDs.insert(unifiedObject.id)
+            }
+        }
+        
+        // Add selected text objects
+        for textID in selectedTextIDs {
+            if let unifiedObject = unifiedObjects.first(where: { 
+                if case .text(let text) = $0.objectType {
+                    return text.id == textID
+                }
+                return false
+            }) {
+                selectedObjectIDs.insert(unifiedObject.id)
+            }
+        }
+    }
+    
     // MARK: - Shape Management
     func addShape(_ shape: VectorShape) {
         guard let layerIndex = selectedLayerIndex else { return }
@@ -1146,6 +1193,7 @@ class VectorDocument: ObservableObject, Codable {
         
         selectedShapeIDs = [shape.id]
         selectedObjectIDs = [shape.id]
+        syncSelectionArrays()
     }
     
     func removeSelectedShapes() {
@@ -1463,6 +1511,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedTextIDs = [text.id]
         selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
+        syncSelectionArrays()
     }
     
     func addTextToLayer(_ text: VectorText, layerIndex: Int?) {
@@ -1491,6 +1540,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedObjectIDs = [text.id]
         selectedShapeIDs.removeAll() // Clear shape selection (mutually exclusive)
         selectedLayerIndex = layerIndex // Select the layer we added text to
+        syncSelectionArrays()
         
         Log.fileOperation("📝 Added editable text to layer \(layerIndex) (\(layers[layerIndex].name))", level: .info)
     }

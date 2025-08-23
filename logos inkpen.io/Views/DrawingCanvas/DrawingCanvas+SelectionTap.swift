@@ -210,26 +210,35 @@ extension DrawingCanvas {
                     document.selectedShapeIDs.removeAll() // Clear shape selection
                 }
                 
-                // Force UI update
-                document.objectWillChange.send()
+                            // Sync selection arrays for compatibility
+            document.syncSelectionArrays()
+            
+            // Force UI update
+            document.objectWillChange.send()
                 return
             }
         }
         
-        // Find shape at location across all visible layers
-        var hitShape: VectorShape?
-        var hitLayerIndex: Int?
+        // Find object at location across all visible layers using unified system
+        var hitObject: VectorObject?
         
-        Log.info("🎯 SELECTION TAP: Looking for shapes at location \(validatedLocation)", category: .selection)
+        Log.info("🎯 SELECTION TAP: Looking for objects at location \(validatedLocation)", category: .selection)
         
-        // Search through layers from top to bottom
-        for layerIndex in document.layers.indices.reversed() {
-            let layer = document.layers[layerIndex]
-            if !layer.isVisible { continue }
+        // Search through unified objects from top to bottom (reverse order for proper stacking)
+        let objectsInOrder = document.getObjectsInStackingOrder()
+        for unifiedObject in objectsInOrder.reversed() {
+            // Check if the layer is visible
+            if unifiedObject.layerIndex < document.layers.count {
+                let layer = document.layers[unifiedObject.layerIndex]
+                if !layer.isVisible { continue }
+            }
             
-            Log.info("🎯 SELECTION TAP: Checking layer \(layerIndex) (\(layer.name))", category: .selection)
+            Log.info("🎯 SELECTION TAP: Testing object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
             
-            for shape in layer.shapes.reversed() {
+            var isHit = false
+            
+            switch unifiedObject.objectType {
+            case .shape(let shape):
                 if !shape.isVisible { continue }
                 
                 Log.info("🎯 SELECTION TAP: Testing shape '\(shape.name)'", category: .selection)
@@ -241,53 +250,81 @@ extension DrawingCanvas {
                     continue
                 }
                 
-                // FIXED: Use improved hit detection with consistent logic
-                let isHit = performShapeHitTest(shape: shape, at: validatedLocation)
+                // Use improved hit detection with consistent logic
+                isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 
-                if isHit {
-                    hitShape = shape
-                    hitLayerIndex = layerIndex
-                    Log.info("✅ SELECTION TAP: Hit shape '\(shape.name)' on layer \(layerIndex)", category: .selection)
-                    break
-                }
+            case .text(let text):
+                if !text.isVisible || text.isLocked { continue }
+                
+                Log.info("🎯 SELECTION TAP: Testing text object", category: .selection)
+                
+                // Use the same hit testing logic as findTextAt
+                let textContentArea = CGRect(
+                    x: text.position.x,
+                    y: text.position.y,
+                    width: max(text.bounds.width, 200.0),
+                    height: max(text.bounds.height, 60.0)
+                )
+                
+                let exactBounds = CGRect(
+                    x: text.position.x + text.bounds.minX,
+                    y: text.position.y + text.bounds.minY,
+                    width: text.bounds.width,
+                    height: text.bounds.height
+                )
+                
+                let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+                
+                isHit = textContentArea.contains(validatedLocation) || 
+                        exactBounds.contains(validatedLocation) || 
+                        expandedBounds.contains(validatedLocation)
             }
             
-            if hitShape != nil { break }
+            if isHit {
+                hitObject = unifiedObject
+                Log.info("✅ SELECTION TAP: Hit object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
+                break
+            }
         }
         
-        if let shape = hitShape, let layerIndex = hitLayerIndex {
-            Log.info("✅ SELECTION SUCCESS: Selected shape '\(shape.name)' on layer \(layerIndex)", category: .selection)
+        if let hitObject = hitObject {
+            Log.info("✅ SELECTION SUCCESS: Selected object '\(hitObject.id)' on layer \(hitObject.layerIndex)", category: .selection)
             
-            // CRITICAL FIX: Clear text selection when selecting shapes
-            document.selectedTextIDs.removeAll()
+            var objectToSelect = hitObject
             
-            // CLIPPING MASK SELECTION LOGIC: If this shape is clipped by another shape, select the mask instead
-            var shapeToSelect = shape
-            if let clippedByShapeID = shape.clippedByShapeID {
-                // This shape is clipped by another shape - find the mask shape
-                if let maskShape = document.layers[layerIndex].shapes.first(where: { $0.id == clippedByShapeID }) {
-                    Log.info("🎭 CLIPPING MASK: Shape '\(shape.name)' is clipped by '\(maskShape.name)' - selecting mask instead", category: .selection)
-                    shapeToSelect = maskShape
+            // Handle clipping mask logic for shapes
+            if case .shape(let shape) = hitObject.objectType {
+                if let clippedByShapeID = shape.clippedByShapeID {
+                    // This shape is clipped by another shape - find the mask shape in unified objects
+                    if let maskObject = document.unifiedObjects.first(where: { 
+                        if case .shape(let maskShape) = $0.objectType {
+                            return maskShape.id == clippedByShapeID
+                        }
+                        return false
+                    }) {
+                        Log.info("🎭 CLIPPING MASK: Shape is clipped by another shape - selecting mask instead", category: .selection)
+                        objectToSelect = maskObject
+                    }
                 }
             }
             
             if isShiftPressed {
                 // SHIFT+CLICK: Add to selection
-                document.selectedShapeIDs.insert(shapeToSelect.id)
+                document.selectedObjectIDs.insert(objectToSelect.id)
             } else if isCommandPressed {
                 // CMD+CLICK: Toggle selection
-                if document.selectedShapeIDs.contains(shapeToSelect.id) {
-                    document.selectedShapeIDs.remove(shapeToSelect.id)
+                if document.selectedObjectIDs.contains(objectToSelect.id) {
+                    document.selectedObjectIDs.remove(objectToSelect.id)
                 } else {
-                    document.selectedShapeIDs.insert(shapeToSelect.id)
+                    document.selectedObjectIDs.insert(objectToSelect.id)
                 }
             } else {
                 // REGULAR CLICK: Replace selection
-                document.selectedShapeIDs = [shapeToSelect.id]
+                document.selectedObjectIDs = [objectToSelect.id]
             }
             
             // Update selected layer
-            document.selectedLayerIndex = layerIndex
+            document.selectedLayerIndex = objectToSelect.layerIndex
             
             // Force UI update
             document.objectWillChange.send()
@@ -298,14 +335,16 @@ extension DrawingCanvas {
             let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)
             
             if !isShiftPressed && !isCommandPressed {
-                let wasSelected = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+                let wasSelected = !document.selectedObjectIDs.isEmpty
                 
                 if isWithinSelectionBox {
                     Log.info("🎯 CLICKED WITHIN SELECTION BOX: Keeping current selection", category: .selection)
                 } else {
                     // Clicked outside all selection boxes - deselect everything
-                    document.selectedShapeIDs.removeAll()
-                    document.selectedTextIDs.removeAll()
+                    document.selectedObjectIDs.removeAll()
+                    
+                    // Sync selection arrays for compatibility
+                    document.syncSelectionArrays()
                     
                     // Clear other selection modes when deselecting
                     selectedPoints.removeAll()
@@ -413,31 +452,30 @@ extension DrawingCanvas {
     
     /// FIXED: Check if a location is within any existing selection box
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
-        // Check selected shapes
-        for shapeID in document.selectedShapeIDs {
-            if let shape = findShapeByID(shapeID) {
-                let transformedBounds = shape.bounds.applying(shape.transform)
-                // Use a small tolerance for selection box detection
-                let selectionBoxBounds = transformedBounds.insetBy(dx: -2, dy: -2)
-                if selectionBoxBounds.contains(location) {
-                    return true
-                }
-            }
-        }
-        
-        // Check selected text objects
-        for textID in document.selectedTextIDs {
-            if let textObj = document.textObjects.first(where: { $0.id == textID }) {
-                let textBounds = CGRect(
-                    x: textObj.position.x + textObj.bounds.minX,
-                    y: textObj.position.y + textObj.bounds.minY,
-                    width: textObj.bounds.width,
-                    height: textObj.bounds.height
-                )
-                // Use a small tolerance for selection box detection
-                let selectionBoxBounds = textBounds.insetBy(dx: -2, dy: -2)
-                if selectionBoxBounds.contains(location) {
-                    return true
+        // Check selected objects using unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    let transformedBounds = shape.bounds.applying(shape.transform)
+                    // Use a small tolerance for selection box detection
+                    let selectionBoxBounds = transformedBounds.insetBy(dx: -2, dy: -2)
+                    if selectionBoxBounds.contains(location) {
+                        return true
+                    }
+                    
+                case .text(let text):
+                    let textBounds = CGRect(
+                        x: text.position.x + text.bounds.minX,
+                        y: text.position.y + text.bounds.minY,
+                        width: text.bounds.width,
+                        height: text.bounds.height
+                    )
+                    // Use a small tolerance for selection box detection
+                    let selectionBoxBounds = textBounds.insetBy(dx: -2, dy: -2)
+                    if selectionBoxBounds.contains(location) {
+                        return true
+                    }
                 }
             }
         }

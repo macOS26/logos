@@ -11,7 +11,7 @@ struct UnifiedObjectView: View {
     @ObservedObject var document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let selectedShapeIDs: Set<UUID>
+    let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let isShiftPressed: Bool
     let dragPreviewDelta: CGPoint
@@ -30,7 +30,7 @@ struct UnifiedObjectView: View {
                     document: document,
                     zoomLevel: zoomLevel,
                     canvasOffset: canvasOffset,
-                    selectedShapeIDs: selectedShapeIDs,
+                    selectedObjectIDs: selectedObjectIDs,
                     viewMode: viewMode,
                     dragPreviewDelta: dragPreviewDelta,
                     dragPreviewTrigger: dragPreviewTrigger
@@ -46,7 +46,7 @@ struct UnifiedObjectContentView: View {
     let document: VectorDocument
     let zoomLevel: Double
     let canvasOffset: CGPoint
-    let selectedShapeIDs: Set<UUID>
+    let selectedObjectIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
     let dragPreviewTrigger: Bool
@@ -59,7 +59,7 @@ struct UnifiedObjectContentView: View {
                 shape: shape,
                 zoomLevel: zoomLevel,
                 canvasOffset: canvasOffset,
-                isSelected: selectedShapeIDs.contains(shape.id),
+                isSelected: selectedObjectIDs.contains(unifiedObject.id),
                 viewMode: viewMode,
                 isCanvasLayer: unifiedObject.layerIndex == 1, // Canvas layer is index 1
                 isPasteboardLayer: unifiedObject.layerIndex == 0, // Pasteboard layer is index 0
