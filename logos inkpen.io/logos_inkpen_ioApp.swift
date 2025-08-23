@@ -260,41 +260,74 @@ class DocumentState: ObservableObject {
             return
         }
         
-        // AUTOMATIC STATE CALCULATION
+        // AUTOMATIC STATE CALCULATION - REFACTORED: Use unified objects system
         canUndo = !document.undoStack.isEmpty
         canRedo = !document.redoStack.isEmpty
-        hasSelection = !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+        hasSelection = !document.selectedObjectIDs.isEmpty
         canCut = hasSelection
         canCopy = hasSelection
         canPaste = ClipboardManager.shared.canPaste()
-        canGroup = document.selectedShapeIDs.count > 1
-        canUngroup = document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroupContainer == true
+        
+        // REFACTORED: Use unified objects system for selection-based operations
+        func isShape(_ unifiedObject: VectorObject) -> Bool {
+            switch unifiedObject.objectType {
+            case .shape: return true
+            case .text: return false
+            }
         }
-        canFlatten = document.selectedShapeIDs.count > 1
-        canUnflatten = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isGroup == true
+        
+        let selectedShapes = document.unifiedObjects.filter { unifiedObject in
+            document.selectedObjectIDs.contains(unifiedObject.id) && isShape(unifiedObject)
         }
-        canMakeCompoundPath = document.selectedShapeIDs.count > 1
-        canReleaseCompoundPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
+        let selectedShapeCount = selectedShapes.count
+        
+        canGroup = selectedShapeCount > 1
+        canUngroup = selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isGroupContainer
+            }
+            return false
         }
-        canMakeLoopingPath = document.selectedShapeIDs.count > 1
-        canReleaseLoopingPath = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isCompoundPath == true
+        canFlatten = selectedShapeCount > 1
+        canUnflatten = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isGroup
+            }
+            return false
         }
-        canUnwrapWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
+        canMakeCompoundPath = selectedShapeCount > 1
+        canReleaseCompoundPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isCompoundPath
+            }
+            return false
         }
-        canExpandWarpObject = document.selectedShapeIDs.count == 1 && document.selectedShapeIDs.contains { shapeID in
-            document.layers.flatMap(\.shapes).first { $0.id == shapeID }?.isWarpObject == true
+        canMakeLoopingPath = selectedShapeCount > 1
+        canReleaseLoopingPath = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isCompoundPath
+            }
+            return false
+        }
+        canUnwrapWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isWarpObject
+            }
+            return false
+        }
+        canExpandWarpObject = selectedShapeCount == 1 && selectedShapes.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isWarpObject
+            }
+            return false
         }
         // Links menu enablement: any selected shape with a linked image or a raster image in registry
         canEmbedLinkedImages = {
-            let selected = document.getShapesByIds(document.selectedShapeIDs)
-            for s in selected {
-                if s.linkedImagePath != nil { return true }
-                if ImageContentRegistry.containsImage(s) { return true }
+            for unifiedObject in selectedShapes {
+                if case .shape(let shape) = unifiedObject.objectType {
+                    if shape.linkedImagePath != nil { return true }
+                    if ImageContentRegistry.containsImage(shape) { return true }
+                }
             }
             return false
         }()
@@ -330,12 +363,13 @@ class DocumentState: ObservableObject {
                     if result.success {
                         document.saveToUndoStack()
                         if let layerIndex = document.selectedLayerIndex ?? (document.layers.indices.first) {
-                            var newShapeIDs: Set<UUID> = []
+                            var newObjectIDs: Set<UUID> = []
                             for shape in result.shapes {
                                 document.layers[layerIndex].addShape(shape)
-                                newShapeIDs.insert(shape.id)
+                                newObjectIDs.insert(shape.id)
                             }
-                            document.selectedShapeIDs = newShapeIDs
+                            // REFACTORED: Use unified objects system for selection
+                            document.selectedObjectIDs = newObjectIDs
                         }
                         self.updateAllStates()
                     } else {
@@ -392,8 +426,8 @@ class DocumentState: ObservableObject {
     }
     
     func deselectAll() {
-        document?.selectedShapeIDs.removeAll()
-        document?.selectedTextIDs.removeAll()
+        // REFACTORED: Use unified objects system for deselection
+        document?.selectedObjectIDs.removeAll()
         updateAllStates()
     }
     
@@ -2577,27 +2611,26 @@ class ClipboardManager {
     
     func cut(from document: VectorDocument) {
         copy(from: document)
-        // Remove selected objects after copying
-        if !document.selectedShapeIDs.isEmpty {
-            document.removeSelectedShapes()
-        } else if !document.selectedTextIDs.isEmpty {
-            document.removeSelectedText()
-        }
+        // REFACTORED: Use unified objects system for deletion
+        document.removeSelectedObjects()
     }
     
     func copy(from document: VectorDocument) {
-        // Get selected objects
+        // REFACTORED: Use unified objects system for copying
         var shapesToCopy: [VectorShape] = []
         var textToCopy: [VectorText] = []
         
-        // Collect selected shapes
-        if let layerIndex = document.selectedLayerIndex {
-            let layer = document.layers[layerIndex]
-            shapesToCopy = layer.shapes.filter { document.selectedShapeIDs.contains($0.id) }
+        // Collect selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    shapesToCopy.append(shape)
+                case .text(let text):
+                    textToCopy.append(text)
+                }
+            }
         }
-        
-        // Collect selected text
-        textToCopy = document.textObjects.filter { document.selectedTextIDs.contains($0.id) }
         
         // Create clipboard data
         let clipboardData = ClipboardData(shapes: shapesToCopy, texts: textToCopy)
@@ -2621,9 +2654,8 @@ class ClipboardManager {
             
             document.saveToUndoStack()
             
-            // Clear current selection
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
+            // REFACTORED: Use unified objects system for selection
+            document.selectedObjectIDs.removeAll()
             
             // Add shapes to current layer at EXACT original coordinates
             if let layerIndex = document.selectedLayerIndex {
@@ -2632,7 +2664,7 @@ class ClipboardManager {
                     newShape.id = UUID()
                     // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                     document.layers[layerIndex].shapes.append(newShape)
-                    document.selectedShapeIDs.insert(newShape.id)
+                    document.selectedObjectIDs.insert(newShape.id)
                 }
             }
             
@@ -2642,7 +2674,7 @@ class ClipboardManager {
                 newText.id = UUID()
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
-                document.selectedTextIDs.insert(newText.id)
+                document.selectedObjectIDs.insert(newText.id)
             }
             
             Log.info("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
@@ -2659,20 +2691,19 @@ class ClipboardManager {
             
             document.saveToUndoStack()
             
-            // Clear current selection
-            let originalSelectedShapeIDs = document.selectedShapeIDs
-            document.selectedShapeIDs.removeAll()
-            document.selectedTextIDs.removeAll()
+            // REFACTORED: Use unified objects system for selection
+            let originalSelectedObjectIDs = document.selectedObjectIDs
+            document.selectedObjectIDs.removeAll()
             
             // Add shapes to current layer BEHIND selected objects
             if let layerIndex = document.selectedLayerIndex {
                 // Find the lowest index of any selected shape to paste behind it
                 var insertIndex = 0
                 
-                if !originalSelectedShapeIDs.isEmpty {
+                if !originalSelectedObjectIDs.isEmpty {
                     // Find the first (lowest z-order) selected shape
                     for (index, shape) in document.layers[layerIndex].shapes.enumerated() {
-                        if originalSelectedShapeIDs.contains(shape.id) {
+                        if originalSelectedObjectIDs.contains(shape.id) {
                             insertIndex = index
                             break
                         }
@@ -2685,7 +2716,7 @@ class ClipboardManager {
                     newShape.id = UUID()
                     // PASTE IN BACK: Insert at specific index to place behind selected objects
                     document.layers[layerIndex].shapes.insert(newShape, at: insertIndex + offset)
-                    document.selectedShapeIDs.insert(newShape.id)
+                    document.selectedObjectIDs.insert(newShape.id)
                 }
             }
             
@@ -2695,7 +2726,7 @@ class ClipboardManager {
                 newText.id = UUID()
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
-                document.selectedTextIDs.insert(newText.id)
+                document.selectedObjectIDs.insert(newText.id)
             }
             
             Log.info("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
