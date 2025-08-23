@@ -317,74 +317,80 @@ struct ColorSwatchGrid: View {
     }
     
     private func applyFillColorToSelected(_ color: VectorColor) {
-        // Apply to selected shapes
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+        // CRITICAL FIX: Use unified selection system
+        var hasChanges = false
+        
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                        }
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.fillColor = color
+                        document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
+                        hasChanges = true
                     }
                 }
             }
         }
         
-        // FIXED: Also apply to selected text objects - SAME LOGIC AS STROKE
-        if !document.selectedTextIDs.isEmpty {
-            if !document.selectedShapeIDs.isEmpty {
-                // Don't save to undo stack twice
-            } else {
-                document.saveToUndoStack()
-            }
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    // MATCH STROKE LOGIC: Always ensure fill is active when setting fill color
-                    document.textObjects[textIndex].typography.fillColor = color
-                    document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
-                    document.textObjects[textIndex].updateBounds()
-
-                }
-            }
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
+            document.saveToUndoStack()
+            document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
         }
     }
     
     private func applyStrokeColorToSelected(_ color: VectorColor) {
-        // Apply to selected shapes
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+        // CRITICAL FIX: Use unified selection system
+        var hasChanges = false
+        
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                        }
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.hasStroke = true
+                        document.textObjects[textIndex].typography.strokeColor = color
+                        document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity
+                        hasChanges = true
                     }
                 }
             }
         }
         
-        // FIXED: Also apply to selected text objects
-        if !document.selectedTextIDs.isEmpty {
-            if !document.selectedShapeIDs.isEmpty {
-                // Don't save to undo stack twice
-            } else {
-                document.saveToUndoStack()
-            }
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    document.textObjects[textIndex].typography.hasStroke = true
-                    document.textObjects[textIndex].typography.strokeColor = color
-                    document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity
-                    document.textObjects[textIndex].updateBounds()
-                }
-            }
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
+            document.saveToUndoStack()
+            document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
         }
     }
