@@ -2765,8 +2765,8 @@ class VectorDocument: ObservableObject, Codable {
             var newLayerShapes: [VectorShape] = []
             var newTextObjects: [VectorText] = []
             
-            // First add selected objects (they go to the front - get lower orderIDs)
-            for obj in selectedObjectsInLayer {
+            // First add unselected objects (they stay in back - get lower orderIDs)
+            for obj in unselectedObjectsInLayer {
                 if obj.isText {
                     newTextObjects.append(obj.object as! VectorText)
                 } else {
@@ -2774,8 +2774,8 @@ class VectorDocument: ObservableObject, Codable {
                 }
             }
             
-            // Then add unselected objects (they stay in back - get higher orderIDs)
-            for obj in unselectedObjectsInLayer {
+            // Then add selected objects (they go to the front - get higher orderIDs)
+            for obj in selectedObjectsInLayer {
                 if obj.isText {
                     newTextObjects.append(obj.object as! VectorText)
                 } else {
