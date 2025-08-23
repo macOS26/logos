@@ -9,11 +9,15 @@ struct StableInkHUDContent: View {
             VStack(spacing: 0) {
                 // Reuse ColorPanel logic exactly like the right panel (no gradient editing)
                 ColorPanel(document: document, onColorSelected: { color in
-                    // Apply to active target (adding to swatches is done explicitly via buttons in the panel)
+                    // Apply to active target (both default AND selected objects, like Right Panel)
                     if document.activeColorTarget == .stroke {
                         document.defaultStrokeColor = color
+                        // CRITICAL FIX: Also apply to selected objects like Right Panel does
+                        document.setActiveColor(color)
                     } else {
                         document.defaultFillColor = color
+                        // CRITICAL FIX: Also apply to selected objects like Right Panel does
+                        document.setActiveColor(color)
                     }
                 }, showGradientEditing: false)
                 .frame(maxWidth: 350, maxHeight: 520)
