@@ -2669,6 +2669,8 @@ class ClipboardManager {
                     newShape.id = UUID()
                     // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                     document.layers[layerIndex].shapes.append(newShape)
+                    // CRITICAL FIX: Add to unified objects system for visibility
+                    document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
                     document.selectedObjectIDs.insert(newShape.id)
                 }
             }
@@ -2679,8 +2681,13 @@ class ClipboardManager {
                 newText.id = UUID()
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
+                // CRITICAL FIX: Add to unified objects system for visibility
+                document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
                 document.selectedObjectIDs.insert(newText.id)
             }
+            
+            // CRITICAL FIX: Sync selection arrays for compatibility
+            document.syncSelectionArrays()
             
             Log.info("📋 Pasted \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
@@ -2721,6 +2728,8 @@ class ClipboardManager {
                     newShape.id = UUID()
                     // PASTE IN BACK: Insert at specific index to place behind selected objects
                     document.layers[layerIndex].shapes.insert(newShape, at: insertIndex + offset)
+                    // CRITICAL FIX: Add to unified objects system for visibility
+                    document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
                     document.selectedObjectIDs.insert(newShape.id)
                 }
             }
@@ -2731,8 +2740,13 @@ class ClipboardManager {
                 newText.id = UUID()
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
+                // CRITICAL FIX: Add to unified objects system for visibility
+                document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
                 document.selectedObjectIDs.insert(newText.id)
             }
+            
+            // CRITICAL FIX: Sync selection arrays for compatibility
+            document.syncSelectionArrays()
             
             Log.info("📋 Pasted in back: \(clipboardData.shapes.count) shapes and \(clipboardData.texts.count) text objects at original coordinates", category: .general)
         } catch {
