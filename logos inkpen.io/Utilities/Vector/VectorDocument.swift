@@ -21,6 +21,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var selectedShapeIDs: Set<UUID> = []
     @Published var selectedTextIDs: Set<UUID> = [] // PROFESSIONAL TEXT SUPPORT
     
+    // NEW: Unified object system for proper layer ordering
+    @Published var selectedObjectIDs: Set<UUID> = [] // Unified selection for both shapes and text
+    
     // Direct selection state (managed by DrawingCanvas, used by panels)
     @Published var directSelectedShapeIDs: Set<UUID> = []
     
