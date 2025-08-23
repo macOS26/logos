@@ -9,6 +9,11 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func cancelBezierDrawing() {
+        // CRITICAL FIX: Ensure incomplete paths get proper colors before canceling
+        if let activeBezierShape = activeBezierShape {
+            ensureIncompletePathHasProperColors(shape: activeBezierShape)
+        }
+        
         isBezierDrawing = false
         bezierPath = nil
         bezierPoints.removeAll()
@@ -19,6 +24,40 @@ extension DrawingCanvas {
         showClosePathHint = false
         showContinuePathHint = false
         activeBezierShape = nil // Clear the real shape reference
+    }
+    
+    /// CRITICAL FIX: Ensure incomplete paths have proper fill and stroke colors
+    private func ensureIncompletePathHasProperColors(shape: VectorShape) {
+        guard let layerIndex = document.selectedLayerIndex else { return }
+        
+        // Find the shape in the document and ensure it has proper colors
+        for shapeIndex in document.layers[layerIndex].shapes.indices {
+            if document.layers[layerIndex].shapes[shapeIndex].id == shape.id {
+                // Ensure stroke has proper colors and is visible
+                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
+                    color: document.defaultStrokeColor,
+                    width: document.defaultStrokeWidth,
+                    placement: document.defaultStrokePlacement,
+                    dashPattern: [],
+                    lineCap: document.defaultStrokeLineCap,
+                    lineJoin: document.defaultStrokeLineJoin,
+                    miterLimit: document.defaultStrokeMiterLimit,
+                    opacity: document.defaultStrokeOpacity
+                )
+                
+                // Ensure fill has proper colors and is visible
+                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
+                    color: document.defaultFillColor,
+                    opacity: document.defaultFillOpacity
+                )
+                
+                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                break
+            }
+        }
+        
+        // Force UI update
+        document.objectWillChange.send()
     }
     
     internal func handleBezierPenTap(at location: CGPoint) {
@@ -67,9 +106,11 @@ extension DrawingCanvas {
                     let strokeStyle = StrokeStyle(
                         color: document.defaultStrokeColor,
                         width: document.defaultStrokeWidth, // Use user's default stroke width
+                        placement: document.defaultStrokePlacement, // Use user's default placement
+                        dashPattern: [], // No dash pattern during drawing
                         lineCap: document.defaultStrokeLineCap, // Use user's default line cap
                         lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
-                        miterLimit: document.defaultStrokeMiterLimit, // Use user's default line join
+                        miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
                         opacity: document.defaultStrokeOpacity
                     )
                     let fillStyle = FillStyle(
@@ -112,6 +153,8 @@ extension DrawingCanvas {
                 let strokeStyle = StrokeStyle(
                     color: document.defaultStrokeColor,
                     width: document.defaultStrokeWidth, // Use user's default stroke width
+                    placement: document.defaultStrokePlacement, // Use user's default placement
+                    dashPattern: [], // No dash pattern during drawing
                     lineCap: document.defaultStrokeLineCap, // Use user's default line cap
                     lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
                     miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
@@ -405,13 +448,18 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
                     color: document.defaultStrokeColor,
                     width: document.defaultStrokeWidth, // Use user's default stroke width
+                    placement: document.defaultStrokePlacement, // Use user's default placement
+                    dashPattern: [], // No dash pattern during drawing
+                    lineCap: document.defaultStrokeLineCap, // Use user's default line cap
+                    lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+                    miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
                     opacity: document.defaultStrokeOpacity
                 )
                 
-                // REAL-TIME FILL WITH OPACITY: Show entire fill while drawing! (BETTER THAN ADOBE!)
+                // CRITICAL FIX: Ensure fill and stroke are visible during drawing for incomplete paths
                 document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
                     color: document.defaultFillColor,
-                    opacity: 0.4 // Semi-transparent fill during drawing
+                    opacity: document.defaultFillOpacity // Use full opacity during drawing for visibility
                 )
                 
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -424,8 +472,17 @@ extension DrawingCanvas {
     }
 
     internal func finishBezierPath() {
-        guard let activeBezierShape = activeBezierShape, bezierPoints.count >= 2 else {
-            Log.info("Cannot finish bezier path - insufficient points or no active shape", category: .general)
+        guard let activeBezierShape = activeBezierShape else {
+            Log.info("Cannot finish bezier path - no active shape", category: .general)
+            cancelBezierDrawing()
+            return
+        }
+        
+        // CRITICAL FIX: Apply colors even for incomplete paths (1 point)
+        // This ensures stroke and fill are visible even if path is incomplete
+        if bezierPoints.count < 2 {
+            Log.info("Incomplete bezier path with \(bezierPoints.count) points - applying colors before canceling", category: .general)
+            ensureIncompletePathHasProperColors(shape: activeBezierShape)
             cancelBezierDrawing()
             return
         }
@@ -439,6 +496,11 @@ extension DrawingCanvas {
                     document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
                         color: document.defaultStrokeColor,
                         width: document.defaultStrokeWidth, // Use user's default stroke width
+                        placement: document.defaultStrokePlacement, // Use user's default placement
+                        dashPattern: [], // No dash pattern for finished paths
+                        lineCap: document.defaultStrokeLineCap, // Use user's default line cap
+                        lineJoin: document.defaultStrokeLineJoin, // Use user's default line join
+                        miterLimit: document.defaultStrokeMiterLimit, // Use user's default miter limit
                         opacity: document.defaultStrokeOpacity
                     )
                     // FINAL FILL: Make fully opaque when path is finished
