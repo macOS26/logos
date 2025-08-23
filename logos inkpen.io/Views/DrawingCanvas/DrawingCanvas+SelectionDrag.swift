@@ -168,6 +168,9 @@ extension DrawingCanvas {
                 }
             }
             
+            // CRITICAL FIX: Sync unified objects with moved shapes
+            syncUnifiedObjectsAfterMovement()
+            
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points
             let movedObjects = initialObjectPositions.count
@@ -482,5 +485,40 @@ extension DrawingCanvas {
         }
         
         Log.info("✅ Shape coordinates updated after movement - object origin stays with object", category: .fileOperations)
+    }
+    
+    /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
+    private func syncUnifiedObjectsAfterMovement() {
+        // Update unified objects to reflect changes in layers and textObjects
+        for i in document.unifiedObjects.indices {
+            let unifiedObject = document.unifiedObjects[i]
+            
+            switch unifiedObject.objectType {
+            case .shape(let oldShape):
+                // Find the updated shape in the layers array
+                if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                   let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
+                    // Update the unified object with the moved shape
+                    document.unifiedObjects[i] = VectorObject(
+                        shape: updatedShape,
+                        layerIndex: unifiedObject.layerIndex,
+                        orderID: unifiedObject.orderID
+                    )
+                }
+                
+            case .text(let oldText):
+                // Find the updated text in the textObjects array
+                if let updatedText = document.textObjects.first(where: { $0.id == oldText.id }) {
+                    // Update the unified object with the moved text
+                    document.unifiedObjects[i] = VectorObject(
+                        text: updatedText,
+                        layerIndex: unifiedObject.layerIndex,
+                        orderID: unifiedObject.orderID
+                    )
+                }
+            }
+        }
+        
+        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced with moved shapes and text objects", level: .info)
     }
 } 
