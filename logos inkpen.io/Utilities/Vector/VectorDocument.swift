@@ -10,6 +10,52 @@ import CoreGraphics
 import CoreText
 import AppKit
 
+// MARK: - Unified Object System
+/// Represents any object that can be placed on a layer with proper ordering
+struct VectorObject: Identifiable, Codable {
+    let id: UUID
+    let orderID: Int // Unique ordering within layer - no two objects on same layer can have same orderID
+    let layerIndex: Int // Which layer this object belongs to
+    let objectType: ObjectType
+    
+    enum ObjectType: Codable {
+        case shape(VectorShape)
+        case text(VectorText)
+    }
+    
+    init(shape: VectorShape, layerIndex: Int, orderID: Int) {
+        self.id = shape.id
+        self.orderID = orderID
+        self.layerIndex = layerIndex
+        self.objectType = .shape(shape)
+    }
+    
+    init(text: VectorText, layerIndex: Int, orderID: Int) {
+        self.id = text.id
+        self.orderID = orderID
+        self.layerIndex = layerIndex
+        self.objectType = .text(text)
+    }
+    
+    var isVisible: Bool {
+        switch objectType {
+        case .shape(let shape):
+            return shape.isVisible
+        case .text(let text):
+            return text.isVisible
+        }
+    }
+    
+    var isLocked: Bool {
+        switch objectType {
+        case .shape(let shape):
+            return shape.isLocked
+        case .text(let text):
+            return text.isLocked
+        }
+    }
+}
+
 // MARK: - Vector Document
 class VectorDocument: ObservableObject, Codable {
     @Published var settings: DocumentSettings
@@ -35,6 +81,10 @@ class VectorDocument: ObservableObject, Codable {
     // CRITICAL FIX: Shared state to prevent double transformations  
     @Published var isHandleScalingActive = false // Set by SelectionHandles, checked by canvas gesture
     @Published var textObjects: [VectorText] = [] // PROFESSIONAL TEXT OBJECTS
+    
+    // NEW: Unified objects array for proper layer ordering
+    @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
+    
     @Published var currentTool: DrawingTool = .brush
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection
