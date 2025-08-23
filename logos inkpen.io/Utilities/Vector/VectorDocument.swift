@@ -1159,6 +1159,20 @@ class VectorDocument: ObservableObject, Codable {
         return getShapesByIds(activeShapeIDs)
     }
     
+    /// Gets all objects in proper layer stacking order (bottom→top, then by orderID within layer)
+    func getObjectsInStackingOrder() -> [VectorObject] {
+        return unifiedObjects
+            .filter { $0.isVisible }
+            .sorted { obj1, obj2 in
+                // First sort by layer index (bottom to top)
+                if obj1.layerIndex != obj2.layerIndex {
+                    return obj1.layerIndex < obj2.layerIndex
+                }
+                // Then sort by orderID within the same layer
+                return obj1.orderID < obj2.orderID
+            }
+    }
+    
     /// Gets all currently selected shapes in correct STACKING ORDER (bottom→top)
     /// This is critical for pathfinder operations
     func getSelectedShapesInStackingOrder() -> [VectorShape] {
