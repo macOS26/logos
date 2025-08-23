@@ -24,30 +24,7 @@ extension DrawingCanvas {
         // Get current tool name
         let currentToolName = document.currentTool.rawValue
         
-        // Log the click detection
-        print("🎯 ADVANCED CLICK DETECTION:")
-        print("  - Click Type: \(clickType)")
-        print("  - Current Tool: \(currentToolName)")
-        print("  - Green Text Box Detected: \(greenTextDetected ? "YES" : "NO")")
-        print("  - Location: (\(String(format: "%.1f", canvasLocation.x)), \(String(format: "%.1f", canvasLocation.y)))")
-        print("  - Modifier Keys:")
-        print("    - Option (⌥): \(isOptionPressed ? "PRESSED" : "not pressed")")
-        print("    - Command (⌘): \(isCommandPressed ? "PRESSED" : "not pressed")")
-        print("    - Shift (⇧): \(isShiftPressed ? "PRESSED" : "not pressed")")
-        print("    - Control (⌃): \(isControlPressed ? "PRESSED" : "not pressed")")
-        
-        // Additional details for text detection
-        if greenTextDetected {
-            if let textID = findTextAt(location: canvasLocation),
-               let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                let textObj = document.textObjects[textIndex]
-                print("  - Text Content: '\(textObj.content.prefix(50))'")
-                print("  - Text State: \(textObj.isEditing ? "BLUE (editing)" : "GREEN (selected)")")
-            }
-        }
-        
-        print("  - End Detection Report")
-        print("")
+        // Advanced click detection - reduced logging for performance
     }
     
     /// Handle double-click events with advanced detection
@@ -385,7 +362,6 @@ extension DrawingCanvas {
                 selectionDragStart = value.startLocation
                 startSelectionDrag()
                 isDrawing = true
-                print("🎯 UNIFIED SELECTION DRAG: Started at cursor position (\(String(format: "%.1f", selectionDragStart.x)), \(String(format: "%.1f", selectionDragStart.y)))")
             }
         }
         

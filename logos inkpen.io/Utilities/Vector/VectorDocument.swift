@@ -1199,6 +1199,16 @@ class VectorDocument: ObservableObject, Codable {
         syncSelectionArrays()
     }
     
+    /// Add shape to a specific layer with unified system support
+    func addShape(_ shape: VectorShape, to layerIndex: Int) {
+        guard layerIndex >= 0 && layerIndex < layers.count else { return }
+        saveToUndoStack()
+        layers[layerIndex].addShape(shape)
+        
+        // Add to unified system
+        addShapeToUnifiedSystem(shape, layerIndex: layerIndex)
+    }
+    
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
@@ -1400,7 +1410,7 @@ class VectorDocument: ObservableObject, Codable {
                 let offsetTransform = CGAffineTransform(translationX: 10, y: 10)
                 newShape = applyTransformToShapeCoordinates(shape: newShape, transform: offsetTransform)
                 newShape.updateBounds()
-                layers[layerIndex].addShape(newShape)
+                addShape(newShape, to: layerIndex)
                 newShapeIDs.insert(newShape.id)
             }
         }
@@ -3115,19 +3125,35 @@ class VectorDocument: ObservableObject, Codable {
     /// CRITICAL FIX: Sync unified objects when shape properties change (colors, etc.)
     func syncUnifiedObjectsAfterPropertyChange() {
         // CRITICAL FIX: Remove unified objects that no longer exist in legacy arrays
+        let beforeCount = unifiedObjects.count
         unifiedObjects.removeAll { unifiedObject in
             switch unifiedObject.objectType {
             case .shape(let shape):
                 // Check if shape still exists in layers array
                 if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
-                    return !layers[layerIndex].shapes.contains { $0.id == shape.id }
+                    let exists = layers[layerIndex].shapes.contains { $0.id == shape.id }
+                    if !exists {
+                        Log.info("🗑️ SYNC: Removing unified object for deleted shape '\(shape.name)' (ID: \(shape.id.uuidString.prefix(8)))", category: .general)
+                    }
+                    return !exists
                 } else {
+                    Log.info("🗑️ SYNC: Removing unified object for shape in non-existent layer", category: .general)
                     return true // Remove if layer doesn't exist
                 }
             case .text(let text):
                 // Check if text still exists in textObjects array
-                return !textObjects.contains { $0.id == text.id }
+                let exists = textObjects.contains { $0.id == text.id }
+                if !exists {
+                    Log.info("🗑️ SYNC: Removing unified object for deleted text '\(text.content.prefix(20))' (ID: \(text.id.uuidString.prefix(8)))", category: .general)
+                }
+                return !exists
             }
+        }
+        
+        let afterRemovalCount = unifiedObjects.count
+        let removedCount = beforeCount - afterRemovalCount
+        if removedCount > 0 {
+            Log.info("🧹 SYNC: Removed \(removedCount) orphaned unified objects", category: .general)
         }
         
         // Update unified objects to reflect property changes in layers
@@ -3160,7 +3186,37 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // Removed excessive logging during drag operations
+        // CRITICAL FIX: Ensure all text objects are in unified system
+        let textUnifiedObjects = unifiedObjects.filter { unifiedObject in
+            if case .text = unifiedObject.objectType {
+                return true
+            }
+            return false
+        }
+        
+        let missingTextObjects = textObjects.filter { text in
+            !textUnifiedObjects.contains { unifiedObject in
+                if case .text(let unifiedText) = unifiedObject.objectType {
+                    return unifiedText.id == text.id
+                }
+                return false
+            }
+        }
+        
+        if !missingTextObjects.isEmpty {
+            Log.info("🔧 SYNC: Found \(missingTextObjects.count) text objects missing from unified system", category: .general)
+            for text in missingTextObjects {
+                Log.info("  - Adding missing text: '\(text.content.prefix(20))' (ID: \(text.id.uuidString.prefix(8)))", category: .general)
+                addTextToUnifiedSystem(text, layerIndex: text.layerIndex ?? (selectedLayerIndex ?? 2))
+            }
+        }
+    }
+    
+    /// CRITICAL FIX: Force complete resync of unified objects system
+    func forceResyncUnifiedObjects() {
+        Log.info("🔧 FORCE RESYNC: Rebuilding unified objects system", category: .general)
+        populateUnifiedObjectsFromLayers()
+        Log.info("🔧 FORCE RESYNC: Unified objects system rebuilt with \(unifiedObjects.count) objects", category: .general)
     }
     
     // MARK: - Object Grouping Methods

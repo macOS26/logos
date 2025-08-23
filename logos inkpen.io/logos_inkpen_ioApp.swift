@@ -365,11 +365,13 @@ class DocumentState: ObservableObject {
                         if let layerIndex = document.selectedLayerIndex ?? (document.layers.indices.first) {
                             var newObjectIDs: Set<UUID> = []
                             for shape in result.shapes {
-                                document.layers[layerIndex].addShape(shape)
+                                // CRITICAL FIX: Use VectorDocument.addShape to ensure unified system is updated
+                                document.addShape(shape, to: layerIndex)
                                 newObjectIDs.insert(shape.id)
                             }
                             // REFACTORED: Use unified objects system for selection
                             document.selectedObjectIDs = newObjectIDs
+                            document.syncSelectionArrays()
                         }
                         self.updateAllStates()
                     } else {
@@ -1088,17 +1090,20 @@ struct DocumentBasedMainView: View {
                     // CRITICAL FIX: Save to undo stack ONCE before importing all shapes
                     document.saveToUndoStack()
                     
-                    // Add imported shapes to current layer without individual undo saves
+                    // Add imported shapes to current layer using proper VectorDocument method
                     guard let layerIndex = document.selectedLayerIndex else { return }
                     var newShapeIDs: Set<UUID> = []
                     
                     for shape in result.shapes {
-                        document.layers[layerIndex].addShape(shape)
+                        // CRITICAL FIX: Use VectorDocument.addShape to ensure unified system is updated
+                        document.addShape(shape, to: layerIndex)
                         newShapeIDs.insert(shape.id)
                     }
                     
-                    // Select all imported shapes
+                    // Select all imported shapes and sync unified system
                     document.selectedShapeIDs = newShapeIDs
+                    document.selectedObjectIDs = newShapeIDs
+                    document.syncSelectionArrays()
                     
                     Log.info("✅ Import successful: \(result.shapes.count) shapes imported and added to undo stack", category: .fileOperations)
                     

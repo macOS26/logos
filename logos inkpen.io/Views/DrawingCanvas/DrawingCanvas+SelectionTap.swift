@@ -175,11 +175,16 @@ extension DrawingCanvas {
         
         // Search through unified objects from top to bottom (reverse order for proper stacking)
         let objectsInOrder = document.getObjectsInStackingOrder()
+        Log.info("🎯 SELECTION TAP: Found \(objectsInOrder.count) objects in stacking order", category: .selection)
+        
         for unifiedObject in objectsInOrder.reversed() {
             // Check if the layer is visible
             if unifiedObject.layerIndex < document.layers.count {
                 let layer = document.layers[unifiedObject.layerIndex]
-                if !layer.isVisible { continue }
+                if !layer.isVisible { 
+                    Log.info("🎯 SELECTION TAP: Skipping object '\(unifiedObject.id)' - layer \(unifiedObject.layerIndex) not visible", category: .selection)
+                    continue 
+                }
             }
             
             Log.info("🎯 SELECTION TAP: Testing object '\(unifiedObject.id)' on layer \(unifiedObject.layerIndex)", category: .selection)
@@ -203,13 +208,18 @@ extension DrawingCanvas {
                 isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 
             case .text(let text):
-                if !text.isVisible || text.isLocked { continue }
-                
                 Log.info("🎯 SELECTION TAP: Testing text object '\(text.content.prefix(20))'", category: .selection)
                 Log.info("  - Text ID: \(text.id)", category: .selection)
                 Log.info("  - Text position: \(text.position)", category: .selection)
                 Log.info("  - Text bounds: \(text.bounds)", category: .selection)
+                Log.info("  - Text isVisible: \(text.isVisible)", category: .selection)
+                Log.info("  - Text isLocked: \(text.isLocked)", category: .selection)
                 Log.info("  - Click location: \(validatedLocation)", category: .selection)
+                
+                if !text.isVisible || text.isLocked { 
+                    Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
+                    continue 
+                }
                 
                 // Use the same hit testing logic as findTextAt
                 let textContentArea = CGRect(
@@ -302,6 +312,12 @@ extension DrawingCanvas {
             document.objectWillChange.send()
         } else {
             Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
+            
+            // CRITICAL FIX: If no objects found and we have text objects, try to force resync
+            if !document.textObjects.isEmpty {
+                Log.info("🔧 SELECTION FIX: No objects found but text objects exist - attempting force resync", category: .selection)
+                document.forceResyncUnifiedObjects()
+            }
             
             // FIXED: Enhanced deselection logic - check if click is within any selection box
             let isWithinSelectionBox = isLocationWithinSelectionBox(validatedLocation)

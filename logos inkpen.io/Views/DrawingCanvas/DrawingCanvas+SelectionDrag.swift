@@ -176,8 +176,7 @@ extension DrawingCanvas {
             selectionDragStart = CGPoint.zero
             currentDragDelta = .zero
             
-            Log.fileOperation("🎯 SELECTION DRAG: Completed successfully - moved \(movedObjects) objects", level: .info)
-            Log.info("   State reset - ready for next drag operation", category: .general)
+            // Selection drag completed - reduced logging for performance
         }
     }
     

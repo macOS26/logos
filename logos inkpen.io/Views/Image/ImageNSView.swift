@@ -62,14 +62,6 @@ class ImageNSViewClass: NSView {
         // Apply opacity
         context.setAlpha(CGFloat(opacity))
         
-        // DEBUG LOGGING: Track image placement and movement
-        print("🖼️ IMAGE NSVIEW DRAW:")
-        print("   📊 Image bounds: \(imageBounds)")
-        print("   📍 Image origin: \(imageBounds.origin)")
-        print("   📏 Image size: \(imageBounds.size)")
-        print("   🎨 Fill style: \(fillStyle != nil ? "Present" : "None")")
-        print("   🔍 Opacity: \(opacity)")
-        
         // FIXED: Flip image vertically without changing coordinate system
         // This keeps the bounds correct while fixing the image orientation
         context.translateBy(x: imageBounds.minX, y: imageBounds.maxY)
@@ -84,15 +76,10 @@ class ImageNSViewClass: NSView {
             
             // Draw the image with transparency support
             context.draw(cgImage, in: CGRect(origin: .zero, size: imageBounds.size))
-            print("   ✅ Image drawn at: \(imageBounds) with vertical flip")
-        } else {
-            print("   ❌ Failed to get CGImage")
         }
         
         // Apply fill colorization if specified (simplified approach)
         if let fillStyle = fillStyle, fillStyle.color != .clear {
-            print("   🎨 Applying fill colorization: \(fillStyle.color)")
-            
             // Use a simple blend mode approach instead of complex pixel manipulation
             context.setBlendMode(.lighten)
             context.setFillColor(fillStyle.color.cgColor)
@@ -100,8 +87,6 @@ class ImageNSViewClass: NSView {
             
             // Fill the image bounds with the color
             context.fill(CGRect(origin: .zero, size: imageBounds.size))
-            
-            print("   ✅ Fill colorization applied with blend mode: \(fillStyle.blendMode) and opacity: \(fillStyle.opacity)")
         }
         
         context.restoreGState()

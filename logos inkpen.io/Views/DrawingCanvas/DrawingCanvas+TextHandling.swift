@@ -125,11 +125,11 @@ extension DrawingCanvas {
                 Log.info("✅ TEXT HIT: Found text '\(textObj.content.prefix(20))' at location", category: .fileOperations)
                 return textObj.id
             } else {
-                Log.error("❌ TEXT MISS: Location not in any hit area", category: .error)
+                // Text miss - no need to log every miss
             }
         }
         
-        Log.error("❌ NO TEXT: No text found at location \(location)", category: .error)
+        // No text found - no need to log every miss
         return nil
     }
     

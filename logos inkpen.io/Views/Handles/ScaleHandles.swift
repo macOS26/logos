@@ -37,23 +37,13 @@ struct ScaleHandles: View {
     
     // CRITICAL FIX: Calculate bounds outside body property to avoid build errors
     private var calculatedBounds: CGRect {
-        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
-            // For transformed images, calculate bounds the same way as transform box handles
-            let baseBounds = shape.bounds
-            let t = shape.transform
-            let corners = [
-                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-            ]
-            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-            return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        if ImageContentRegistry.containsImage(shape) {
+            // For ALL images, calculate bounds the same way as ShapeView renders them
+            // This matches the actual image positioning: pathBounds.applying(shape.transform)
+            let pathBounds = shape.path.cgPath.boundingBoxOfPath
+            return pathBounds.applying(shape.transform)
         } else {
-            // For regular shapes and untransformed images, use existing logic
+            // For regular shapes, use existing logic
             return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         }
     }
@@ -461,25 +451,15 @@ struct ScaleHandles: View {
         }
         
         // Update center point based on current bounds
-        // CRITICAL FIX: For images with transforms, use the same bounds calculation as transform box handles
+        // CRITICAL FIX: For ALL images, use the same bounds calculation as ShapeView rendering
         let bounds: CGRect
-        if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
-            // For transformed images, calculate bounds the same way as transform box handles
-            let baseBounds = shape.bounds
-            let t = shape.transform
-            let corners = [
-                CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-            ]
-            let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-            let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-            let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-            let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-            bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        if ImageContentRegistry.containsImage(shape) {
+            // For ALL images, calculate bounds the same way as ShapeView renders them
+            // This matches the actual image positioning: pathBounds.applying(shape.transform)
+            let pathBounds = shape.path.cgPath.boundingBoxOfPath
+            bounds = pathBounds.applying(shape.transform)
         } else {
-            // For regular shapes and untransformed images, use existing logic
+            // For regular shapes, use existing logic
             bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
         }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
@@ -538,25 +518,14 @@ struct ScaleHandles: View {
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
-                // CRITICAL FIX: Use the same bounds calculation for consistency
+                // CRITICAL FIX: Use the same bounds calculation as ShapeView rendering
                 let bounds: CGRect
-                if ImageContentRegistry.containsImage(shape) && !shape.transform.isIdentity {
-                    // For transformed images, calculate bounds the same way as transform box handles
-                    let baseBounds = shape.bounds
-                    let t = shape.transform
-                    let corners = [
-                        CGPoint(x: baseBounds.minX, y: baseBounds.minY).applying(t),
-                        CGPoint(x: baseBounds.maxX, y: baseBounds.minY).applying(t),
-                        CGPoint(x: baseBounds.maxX, y: baseBounds.maxY).applying(t),
-                        CGPoint(x: baseBounds.minX, y: baseBounds.maxY).applying(t)
-                    ]
-                    let minX = corners.map { $0.x }.min() ?? baseBounds.minX
-                    let minY = corners.map { $0.y }.min() ?? baseBounds.minY
-                    let maxX = corners.map { $0.x }.max() ?? baseBounds.maxX
-                    let maxY = corners.map { $0.y }.max() ?? baseBounds.maxY
-                    bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+                if ImageContentRegistry.containsImage(shape) {
+                    // For ALL images, calculate bounds the same way as ShapeView renders them
+                    let pathBounds = shape.path.cgPath.boundingBoxOfPath
+                    bounds = pathBounds.applying(shape.transform)
                 } else {
-                    // For regular shapes and untransformed images, use existing logic
+                    // For regular shapes, use existing logic
                     bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
                 }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)

@@ -168,7 +168,6 @@ struct ProfessionalTextCanvas: View {
             // CRITICAL FIX: Ensure VectorText bounds match text canvas on initial appearance
             // This fixes the selection box when text is first created
             viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-            Log.fileOperation("🎯 TEXT CANVAS APPEAR: Updated VectorText bounds to match text canvas", level: .info)
         }
         .onChange(of: document.currentTool) { oldTool, newTool in
             // NEW: When user selects type tool and this text box is GREEN (selected), change to BLUE (editing)
@@ -240,17 +239,7 @@ struct ProfessionalTextCanvas: View {
         let hasTextViewFocus = NSApp.keyWindow?.firstResponder is NSTextView
         let isThisTextSelected = selectedIDs.contains(currentTextObject.id) // Use current document object
         
-        Log.info("🔍 STATE CHECK: textID=\(currentTextObject.id.uuidString.prefix(8))", category: .general)
-        Log.info("  - viewModel.isEditing: \(viewModel.isEditing)", category: .general)
-        Log.info("  - currentTextObject.isEditing: \(currentTextObject.isEditing)", category: .general)
-        Log.info("  - hasTextViewFocus: \(hasTextViewFocus)", category: .general)
-        Log.info("  - isTextToolActive: \(isTextToolActive)", category: .general)
-        Log.info("  - isThisTextSelected: \(isThisTextSelected)", category: .general)
-        Log.info("  - currentTool: \(document.currentTool.rawValue)", category: .general)
-        Log.info("  - selectedIDs count: \(selectedIDs.count)", category: .general)
-        Log.info("  - selectedIDs: \(selectedIDs.map { $0.uuidString.prefix(8) })", category: .general)
-        Log.info("  - currentTextObject.id: \(currentTextObject.id.uuidString.prefix(8))", category: .general)
-        Log.info("  - document.selectedTextIDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })", category: .general)
+        // State check - reduced logging for performance
         
         // FIXED: Prioritize editing state correctly
         if currentTextObject.isEditing {
@@ -271,13 +260,12 @@ struct ProfessionalTextCanvas: View {
         }
         
         if oldState != textBoxState {
-            Log.fileOperation("🎯 TEXT BOX STATE CHANGE: \(oldState) → \(textBoxState) for text: '\(currentTextObject.content)' (tool: \(document.currentTool.rawValue), focus: \(hasTextViewFocus))", level: .info)
+            // Text box state changed - reduced logging for performance
             
             // CRITICAL FIX: Update VectorText bounds when exiting editing mode
             // This ensures selection box matches text canvas when switching states
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
-                Log.fileOperation("🔄 STATE CHANGE: Updated VectorText bounds (exiting editing mode)", level: .info)
             }
         }
     }
@@ -452,12 +440,7 @@ struct ProfessionalTextContentView: View {
             )
             .clipped()  // CRITICAL: Clip any overflow to prevent horizontal expansion
             .onAppear {
-                print("🎯 NSTextView MODE (\(textBoxState == .blue ? "BLUE-EDITING" : "GREEN/GRAY-READONLY")):")
-                Log.info("  Content: '\(viewModel.text)'", category: .general)
-                Log.info("  Font: \(viewModel.selectedFont.fontName) \(viewModel.selectedFont.pointSize)pt", category: .general)
-                Log.info("  Frame: \(viewModel.textBoxFrame)", category: .general)
-                Log.info("  Editing Allowed: \(textBoxState == .blue)", category: .general)
-                Log.info("  Selection Allowed: \(isSelectable)", category: .general)
+                // Text view appeared - no need for verbose logging
             }
     }
 }
@@ -514,8 +497,6 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainer?.lineBreakMode = .byWordWrapping
         textView.maxSize = NSSize(width: fixedWidth, height: CGFloat.greatestFiniteMagnitude)
         textView.minSize = NSSize(width: fixedWidth, height: 50)
-        
-        Log.info("📏 NSTextView CONFIGURED: Fixed width=\(fixedWidth)pt, editing=\(isEditingAllowed), selectable=\(isSelectable) for text: '\(viewModel.text)'", category: .general)
         
         textView.allowsUndo = isEditingAllowed
         textView.usesFindPanel = isSelectable
@@ -1479,11 +1460,8 @@ class ProfessionalTextViewModel: ObservableObject {
             return
         }
         
-        // Add to the target layer
-        document.layers[targetLayerIndex].addShape(outlineShape)
-        
-        // CRITICAL: Add to unified objects system for proper UI rendering
-        document.addShapeToUnifiedSystem(outlineShape, layerIndex: targetLayerIndex)
+        // Add to the target layer with unified system support
+        document.addShape(outlineShape, to: targetLayerIndex)
         
         Log.info("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method", category: .fileOperations)
         Log.fileOperation("🎯 ADDED OUTLINE SHAPE: '\(outlineShape.name)' to layer '\(document.layers[targetLayerIndex].name)'", level: .info)
