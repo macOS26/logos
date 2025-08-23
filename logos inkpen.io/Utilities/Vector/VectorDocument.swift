@@ -2816,8 +2816,8 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
-        syncLegacyArraysFromUnified()
+        // CRITICAL FIX: No more rebuilding arrays - just work with unifiedObjects directly
+        // syncLegacyArraysFromUnified() - REMOVED to prevent object corruption
         
         Log.info("⬆️⬆️ Brought to front \(selectedObjectIDs.count) objects", category: .general)
     }
@@ -2957,8 +2957,8 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
-        syncLegacyArraysFromUnified()
+        // CRITICAL FIX: No more rebuilding arrays - just work with unifiedObjects directly
+        // syncLegacyArraysFromUnified() - REMOVED to prevent object corruption
         
         Log.info("⬇️⬇️ Sent to back \(selectedObjectIDs.count) objects", category: .general)
     }
@@ -2976,6 +2976,10 @@ class VectorDocument: ObservableObject, Codable {
     
     /// CRITICAL FIX: Sync legacy arrays from unified objects array
     private func syncLegacyArraysFromUnified() {
+        // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
+        let originalTextObjects = textObjects
+        let originalShapes = layers.map { $0.shapes }
+        
         // Clear existing legacy arrays
         for layerIndex in layers.indices {
             layers[layerIndex].shapes.removeAll()
@@ -2986,12 +2990,23 @@ class VectorDocument: ObservableObject, Codable {
         for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                layers[unifiedObject.layerIndex].shapes.append(shape)
+                // Use original shape from layers array to preserve all state
+                if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
+                    layers[unifiedObject.layerIndex].shapes.append(originalShape)
+                } else {
+                    layers[unifiedObject.layerIndex].shapes.append(shape)
+                }
             case .text(let text):
-                // CRITICAL FIX: Ensure text objects are not in editing mode when syncing
-                var updatedText = text
-                updatedText.isEditing = false
-                textObjects.append(updatedText)
+                // Use original text object to preserve all state, but ensure isEditing = false
+                if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
+                    var updatedText = originalText
+                    updatedText.isEditing = false
+                    textObjects.append(updatedText)
+                } else {
+                    var updatedText = text
+                    updatedText.isEditing = false
+                    textObjects.append(updatedText)
+                }
             }
         }
         
