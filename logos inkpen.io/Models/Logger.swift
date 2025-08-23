@@ -43,6 +43,7 @@ struct Log {
     // Simple spam suppression - count occurrences and block after 3 times
     private static var messageCounters: [String: Int] = [:]
     private static let maxRepeatedMessages = 3
+    private static let counterQueue = DispatchQueue(label: "com.logos.logger.counters", qos: .utility)
     
     // Font-related patterns that should always be logged
     private static let fontRelatedPatterns = [
@@ -79,12 +80,15 @@ struct Log {
         // Create a simplified key for the message (remove variable data like timestamps, coordinates, UUIDs)
         let messageKey = simplifyMessageForCounting(message)
         
-        // Update counter
-        let currentCount = messageCounters[messageKey, default: 0] + 1
-        messageCounters[messageKey] = currentCount
-        
-        // Suppress if we've seen this message more than maxRepeatedMessages times
-        return currentCount > maxRepeatedMessages
+        // Thread-safe counter update using serial queue
+        return counterQueue.sync {
+            // Update counter
+            let currentCount = messageCounters[messageKey, default: 0] + 1
+            messageCounters[messageKey] = currentCount
+            
+            // Suppress if we've seen this message more than maxRepeatedMessages times
+            return currentCount > maxRepeatedMessages
+        }
     }
     
     // Simplify message for counting by removing variable data

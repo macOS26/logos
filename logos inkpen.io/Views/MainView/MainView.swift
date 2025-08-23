@@ -356,6 +356,9 @@ struct MainView: View {
         document.selectedTextIDs = importedDoc.selectedTextIDs
         document.textObjects = importedDoc.textObjects
         
+        // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
+        document.syncUnifiedObjectsAfterPropertyChange()
+        
         // Reset tool and view states for the new document
         document.currentTool = appState.defaultTool
         document.viewMode = .color
@@ -439,6 +442,9 @@ struct MainView: View {
                         // DON'T copy zoom/offset - we'll set them to fit-to-page
                         document.showRulers = loadedDocument.showRulers
                         document.snapToGrid = loadedDocument.snapToGrid
+                        
+                        // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
+                        document.syncUnifiedObjectsAfterPropertyChange()
                         
                         // Update current document URL
                         currentDocumentURL = url
