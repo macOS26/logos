@@ -2125,31 +2125,58 @@ class VectorDocument: ObservableObject, Codable {
             defaultStrokeColor = color
         }
         
-        // Apply to selected shapes if any
-        guard let layerIndex = selectedLayerIndex else { return }
+        // REFACTORED: Use unified objects system for color application
+        var hasChanges = false
         
-        for shapeID in selectedShapeIDs {
-            if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                saveToUndoStack()
-                switch activeColorTarget {
-                case .fill:
-                    if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                    } else {
-                        layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+        // Apply to selected objects from unified system
+        for objectID in selectedObjectIDs {
+            if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        saveToUndoStack()
+                        switch activeColorTarget {
+                        case .fill:
+                            if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                            } else {
+                                layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                            }
+                        case .stroke:
+                            if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
+                            } else {
+                                layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                            }
+                        }
+                        hasChanges = true
                     }
-                case .stroke:
-                    if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
-                    } else {
-                        layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = textObjects.firstIndex(where: { $0.id == text.id }) {
+                        saveToUndoStack()
+                        switch activeColorTarget {
+                        case .fill:
+                            textObjects[textIndex].typography.fillColor = color
+                            textObjects[textIndex].typography.fillOpacity = defaultFillOpacity
+                        case .stroke:
+                            textObjects[textIndex].typography.hasStroke = true
+                            textObjects[textIndex].typography.strokeColor = color
+                            textObjects[textIndex].typography.strokeOpacity = defaultStrokeOpacity
+                        }
+                        hasChanges = true
                     }
                 }
             }
         }
         
         // CRITICAL FIX: Sync unified objects for live color updates
-        syncUnifiedObjectsAfterPropertyChange()
+        if hasChanges {
+            syncUnifiedObjectsAfterPropertyChange()
+        }
     }
     
     func removeColorSwatch(_ color: VectorColor) {
