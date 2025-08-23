@@ -2731,77 +2731,73 @@ class VectorDocument: ObservableObject, Codable {
         
         saveToUndoStack()
         
-        // CRITICAL FIX: Create a truly unified arrangement system
-        // We need to work with both shapes and text objects together, not separately
-        
-        // First, collect all objects for each layer with their current order
+        // CRITICAL FIX: Work directly with unified objects and orderID values
+        // Group objects by layer and reorder within each layer
         for layerIndex in layers.indices {
-            var allLayerObjects: [(id: UUID, isText: Bool, object: Any)] = []
+            // Get all objects for this layer from unified array
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
             
-            // Add shapes from this layer
-            for shape in layers[layerIndex].shapes {
-                allLayerObjects.append((id: shape.id, isText: false, object: shape))
-            }
+            // Separate selected and unselected objects
+            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            let unselectedObjects = layerObjects.filter { !selectedObjectIDs.contains($0.id) }
             
-            // Add text objects that belong to this layer
-            for text in textObjects {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    allLayerObjects.append((id: text.id, isText: true, object: text))
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    allLayerObjects.append((id: text.id, isText: true, object: text))
-                }
-            }
+            guard !selectedObjects.isEmpty else { continue }
             
-            // Find selected objects in this layer
-            let selectedObjectsInLayer = allLayerObjects.filter { obj in
-                selectedObjectIDs.contains(obj.id)
-            }
+            // Get current orderID range for this layer
+            let currentOrderIDs = layerObjects.map { $0.orderID }
+            let minOrderID = currentOrderIDs.min() ?? 0
+            let maxOrderID = currentOrderIDs.max() ?? 0
+            let totalObjects = layerObjects.count
             
-            let unselectedObjectsInLayer = allLayerObjects.filter { obj in
-                !selectedObjectIDs.contains(obj.id)
-            }
+            // Assign new orderIDs: unselected objects get lower orderIDs (back), selected get higher (front)
+            var newOrderID = minOrderID
             
-            // Reconstruct the layer with selected objects at the front
-            var newLayerShapes: [VectorShape] = []
-            var newTextObjects: [VectorText] = []
-            
-            // First add unselected objects (they stay in back - get lower orderIDs)
-            for obj in unselectedObjectsInLayer {
-                if obj.isText {
-                    newTextObjects.append(obj.object as! VectorText)
-                } else {
-                    newLayerShapes.append(obj.object as! VectorShape)
-                }
-            }
-            
-            // Then add selected objects (they go to the front - get higher orderIDs)
-            for obj in selectedObjectsInLayer {
-                if obj.isText {
-                    newTextObjects.append(obj.object as! VectorText)
-                } else {
-                    newLayerShapes.append(obj.object as! VectorShape)
-                }
-            }
-            
-            // Update the layer shapes
-            layers[layerIndex].shapes = newLayerShapes
-            
-            // Update text objects for this layer
-            for (index, text) in textObjects.enumerated() {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    if let newText = newTextObjects.first(where: { $0.id == text.id }) {
-                        textObjects[index] = newText
+            // First assign orderIDs to unselected objects (they stay in back)
+            for unselectedObject in unselectedObjects {
+                if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
+                    switch unselectedObject.objectType {
+                    case .shape(let shape):
+                        unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: unselectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
+                    case .text(let text):
+                        unifiedObjects[index] = VectorObject(
+                            text: text,
+                            layerIndex: unselectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
                     }
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    if let newText = newTextObjects.first(where: { $0.id == text.id }) {
-                        textObjects[index] = newText
+                    newOrderID += 1
+                }
+            }
+            
+            // Then assign orderIDs to selected objects (they go to the front)
+            for selectedObject in selectedObjects {
+                if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
+                    switch selectedObject.objectType {
+                    case .shape(let shape):
+                        unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: selectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
+                    case .text(let text):
+                        unifiedObjects[index] = VectorObject(
+                            text: text,
+                            layerIndex: selectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
                     }
+                    newOrderID += 1
                 }
             }
         }
         
-        // CRITICAL FIX: Update unified objects to reflect the new ordering
-        updateUnifiedObjectsOrdering()
+        // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
+        syncLegacyArraysFromUnified()
         
         Log.info("⬆️⬆️ Brought to front \(selectedObjectIDs.count) objects", category: .general)
     }
@@ -2876,77 +2872,73 @@ class VectorDocument: ObservableObject, Codable {
         
         saveToUndoStack()
         
-        // CRITICAL FIX: Create a truly unified arrangement system
-        // We need to work with both shapes and text objects together, not separately
-        
-        // First, collect all objects for each layer with their current order
+        // CRITICAL FIX: Work directly with unified objects and orderID values
+        // Group objects by layer and reorder within each layer
         for layerIndex in layers.indices {
-            var allLayerObjects: [(id: UUID, isText: Bool, object: Any)] = []
+            // Get all objects for this layer from unified array
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
             
-            // Add shapes from this layer
-            for shape in layers[layerIndex].shapes {
-                allLayerObjects.append((id: shape.id, isText: false, object: shape))
-            }
+            // Separate selected and unselected objects
+            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            let unselectedObjects = layerObjects.filter { !selectedObjectIDs.contains($0.id) }
             
-            // Add text objects that belong to this layer
-            for text in textObjects {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    allLayerObjects.append((id: text.id, isText: true, object: text))
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    allLayerObjects.append((id: text.id, isText: true, object: text))
-                }
-            }
+            guard !selectedObjects.isEmpty else { continue }
             
-            // Find selected objects in this layer
-            let selectedObjectsInLayer = allLayerObjects.filter { obj in
-                selectedObjectIDs.contains(obj.id)
-            }
+            // Get current orderID range for this layer
+            let currentOrderIDs = layerObjects.map { $0.orderID }
+            let minOrderID = currentOrderIDs.min() ?? 0
+            let maxOrderID = currentOrderIDs.max() ?? 0
+            let totalObjects = layerObjects.count
             
-            let unselectedObjectsInLayer = allLayerObjects.filter { obj in
-                !selectedObjectIDs.contains(obj.id)
-            }
+            // Assign new orderIDs: selected objects get lower orderIDs (back), unselected get higher (front)
+            var newOrderID = minOrderID
             
-            // Reconstruct the layer with selected objects at the back
-            var newLayerShapes: [VectorShape] = []
-            var newTextObjects: [VectorText] = []
-            
-            // First add selected objects (they go to the back)
-            for obj in selectedObjectsInLayer {
-                if obj.isText {
-                    newTextObjects.append(obj.object as! VectorText)
-                } else {
-                    newLayerShapes.append(obj.object as! VectorShape)
-                }
-            }
-            
-            // Then add unselected objects (they stay in front)
-            for obj in unselectedObjectsInLayer {
-                if obj.isText {
-                    newTextObjects.append(obj.object as! VectorText)
-                } else {
-                    newLayerShapes.append(obj.object as! VectorShape)
-                }
-            }
-            
-            // Update the layer shapes
-            layers[layerIndex].shapes = newLayerShapes
-            
-            // Update text objects for this layer
-            for (index, text) in textObjects.enumerated() {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    if let newText = newTextObjects.first(where: { $0.id == text.id }) {
-                        textObjects[index] = newText
+            // First assign orderIDs to selected objects (they go to the back)
+            for selectedObject in selectedObjects {
+                if let index = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }) {
+                    switch selectedObject.objectType {
+                    case .shape(let shape):
+                        unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: selectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
+                    case .text(let text):
+                        unifiedObjects[index] = VectorObject(
+                            text: text,
+                            layerIndex: selectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
                     }
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    if let newText = newTextObjects.first(where: { $0.id == text.id }) {
-                        textObjects[index] = newText
+                    newOrderID += 1
+                }
+            }
+            
+            // Then assign orderIDs to unselected objects (they stay in front)
+            for unselectedObject in unselectedObjects {
+                if let index = unifiedObjects.firstIndex(where: { $0.id == unselectedObject.id }) {
+                    switch unselectedObject.objectType {
+                    case .shape(let shape):
+                        unifiedObjects[index] = VectorObject(
+                            shape: shape,
+                            layerIndex: unselectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
+                    case .text(let text):
+                        unifiedObjects[index] = VectorObject(
+                            text: text,
+                            layerIndex: unselectedObject.layerIndex,
+                            orderID: newOrderID
+                        )
                     }
+                    newOrderID += 1
                 }
             }
         }
         
-        // CRITICAL FIX: Update unified objects to reflect the new ordering
-        updateUnifiedObjectsOrdering()
+        // CRITICAL FIX: Sync the legacy arrays to match the new unified ordering
+        syncLegacyArraysFromUnified()
         
         Log.info("⬇️⬇️ Sent to back \(selectedObjectIDs.count) objects", category: .general)
     }
@@ -2960,6 +2952,27 @@ class VectorDocument: ObservableObject, Codable {
         syncUnifiedSelectionFromLegacy()
         
         Log.fileOperation("🔧 UNIFIED OBJECTS: Updated ordering to match layer changes", level: .info)
+    }
+    
+    /// CRITICAL FIX: Sync legacy arrays from unified objects array
+    private func syncLegacyArraysFromUnified() {
+        // Clear existing legacy arrays
+        for layerIndex in layers.indices {
+            layers[layerIndex].shapes.removeAll()
+        }
+        textObjects.removeAll()
+        
+        // Rebuild legacy arrays from unified objects, maintaining order
+        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                layers[unifiedObject.layerIndex].shapes.append(shape)
+            case .text(let text):
+                textObjects.append(text)
+            }
+        }
+        
+        Log.fileOperation("🔧 LEGACY ARRAYS: Synced from unified objects", level: .info)
     }
     
     /// CRITICAL FIX: Sync unified objects when shape properties change (colors, etc.)
