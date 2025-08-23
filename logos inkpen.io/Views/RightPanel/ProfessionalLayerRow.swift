@@ -190,44 +190,46 @@ struct ProfessionalLayerRow: View {
             // Expanded Object List (Professional Style)
             if isExpanded {
                 VStack(spacing: 0) {
-                    // Shape Objects
-                    ForEach(Array(layer.shapes.indices.reversed().enumerated()), id: \.element) { visualIndex, shapeIndex in
-                        let shape = layer.shapes[shapeIndex]
-                        
-                        ObjectRow(
-                            objectType: .shape,
-                            objectId: shape.id,
-                            name: shape.name,
-                            isSelected: document.selectedShapeIDs.contains(shape.id),
-                            isVisible: shape.isVisible,
-                            isLocked: shape.isLocked,
-                            onSelect: {
-                                document.selectedShapeIDs = [shape.id]
-                                document.selectedTextIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
-                    }
+                    // CRITICAL FIX: Use unified objects to show true intermixed order
+                    let layerObjects = document.unifiedObjects
+                        .filter { $0.layerIndex == layerIndex }
+                        .sorted { $0.orderID > $1.orderID } // Reverse order for display (front to back)
                     
-                    // Text Objects that belong to this layer
-                    ForEach(document.textObjects.filter { $0.layerIndex == layerIndex }, id: \.id) { textObj in
-                        ObjectRow(
-                            objectType: .text,
-                            objectId: textObj.id,
-                            name: textObj.content.isEmpty ? "" : textObj.content,
-                            isSelected: document.selectedTextIDs.contains(textObj.id),
-                            isVisible: textObj.isVisible,
-                            isLocked: textObj.isLocked,
-                            onSelect: {
-                                document.selectedTextIDs = [textObj.id]
-                                document.selectedShapeIDs.removeAll()
-                                document.selectedLayerIndex = layerIndex
-                            },
-                            layerIndex: layerIndex,
-                            document: document
-                        )
+                    ForEach(layerObjects, id: \.id) { unifiedObject in
+                        switch unifiedObject.objectType {
+                        case .shape(let shape):
+                            ObjectRow(
+                                objectType: .shape,
+                                objectId: shape.id,
+                                name: shape.name,
+                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                isVisible: shape.isVisible,
+                                isLocked: shape.isLocked,
+                                onSelect: {
+                                    document.selectedObjectIDs = [unifiedObject.id]
+                                    document.syncSelectionArrays()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                layerIndex: layerIndex,
+                                document: document
+                            )
+                        case .text(let text):
+                            ObjectRow(
+                                objectType: .text,
+                                objectId: text.id,
+                                name: text.content.isEmpty ? "Text" : text.content,
+                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                isVisible: text.isVisible,
+                                isLocked: text.isLocked,
+                                onSelect: {
+                                    document.selectedObjectIDs = [unifiedObject.id]
+                                    document.syncSelectionArrays()
+                                    document.selectedLayerIndex = layerIndex
+                                },
+                                layerIndex: layerIndex,
+                                document: document
+                            )
+                        }
                     }
                 }
                 .padding(.leading, 20) // Indent objects under layer
