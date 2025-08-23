@@ -193,7 +193,7 @@ struct ProfessionalLayerRow: View {
                     // CRITICAL FIX: Use unified objects to show true intermixed order
                     let layerObjects = document.unifiedObjects
                         .filter { $0.layerIndex == layerIndex }
-                        .sorted { $0.orderID > $1.orderID } // Reverse order for display (front to back)
+                        .sorted { $0.orderID < $1.orderID } // Front to back order (lower orderID = front, higher orderID = back)
                     
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         switch unifiedObject.objectType {
