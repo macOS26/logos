@@ -40,6 +40,21 @@ struct Log {
     // Create loggers for each category
     private static var loggers: [LogCategory: Logger] = [:]
     
+    // Simple spam suppression - count occurrences and block after 3 times
+    private static var messageCounters: [String: Int] = [:]
+    private static let maxRepeatedMessages = 3
+    
+    // Font-related patterns that should always be logged
+    private static let fontRelatedPatterns = [
+        "FONT",
+        "TYPOGRAPHY", 
+        "TEXT BOX",
+        "🔤",
+        "FONT PANEL",
+        "FONT SETTINGS",
+        "FONT FAMILY"
+    ]
+    
     private static func logger(for category: LogCategory) -> Logger {
         if let existing = loggers[category] {
             return existing
@@ -50,30 +65,95 @@ struct Log {
         return logger
     }
     
+    // Check if message should be suppressed due to spam (more than 3 occurrences and not font-related)
+    private static func shouldSuppressMessage(_ message: String) -> Bool {
+        // Always allow font-related messages
+        let isFontRelated = fontRelatedPatterns.contains { pattern in
+            message.uppercased().contains(pattern)
+        }
+        
+        if isFontRelated {
+            return false
+        }
+        
+        // Create a simplified key for the message (remove variable data like timestamps, coordinates, UUIDs)
+        let messageKey = simplifyMessageForCounting(message)
+        
+        // Update counter
+        let currentCount = messageCounters[messageKey, default: 0] + 1
+        messageCounters[messageKey] = currentCount
+        
+        // Suppress if we've seen this message more than maxRepeatedMessages times
+        return currentCount > maxRepeatedMessages
+    }
+    
+    // Simplify message for counting by removing variable data
+    private static func simplifyMessageForCounting(_ message: String) -> String {
+        var simplified = message
+        
+        // Remove coordinates like (123.45, 678.90)
+        simplified = simplified.replacingOccurrences(of: #"\([0-9.-]+,\s*[0-9.-]+\)"#, with: "(X,Y)", options: .regularExpression)
+        
+        // Remove UUIDs like 82593F46 or longer UUIDs
+        simplified = simplified.replacingOccurrences(of: #"[A-F0-9]{8}(-[A-F0-9]{4}){3}-[A-F0-9]{12}"#, with: "UUID", options: .regularExpression)
+        simplified = simplified.replacingOccurrences(of: #"[A-F0-9]{8}"#, with: "UUID", options: .regularExpression)
+        
+        // Remove numbers like textID=82593F46
+        simplified = simplified.replacingOccurrences(of: #"textID=[A-F0-9]+"#, with: "textID=UUID", options: .regularExpression)
+        
+        // Remove frame coordinates like frame: (0.0, 0.0, 1920.0, 1080.0)
+        simplified = simplified.replacingOccurrences(of: #"frame:\s*\([0-9.-]+,\s*[0-9.-]+,\s*[0-9.-]+,\s*[0-9.-]+\)"#, with: "frame: (X,Y,W,H)", options: .regularExpression)
+        
+        // Remove position= coordinates
+        simplified = simplified.replacingOccurrences(of: #"position=[0-9]+"#, with: "position=N", options: .regularExpression)
+        
+        // Remove length= numbers
+        simplified = simplified.replacingOccurrences(of: #"length=[0-9]+"#, with: "length=N", options: .regularExpression)
+        
+        return simplified
+    }
+    
     // Main logging methods
     static func debug(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
         #if DEBUG
+        // Check for spam suppression
+        if shouldSuppressMessage(message) {
+            return
+        }
+        
         let logger = logger(for: category)
         logger.debug("\(message, privacy: .public)")
         #endif
     }
     
     static func info(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
+        // Check for spam suppression first
+        if shouldSuppressMessage(message) {
+            return
+        }
+        
         let logger = logger(for: category)
         logger.info("\(message, privacy: .public)")
     }
     
     static func warning(_ message: String, category: LogCategory = .general, file: String = #file, function: String = #function, line: Int = #line) {
+        // Check for spam suppression first
+        if shouldSuppressMessage(message) {
+            return
+        }
+        
         let logger = logger(for: category)
         logger.warning("\(message, privacy: .public)")
     }
     
     static func error(_ message: String, category: LogCategory = .error, file: String = #file, function: String = #function, line: Int = #line) {
+        // Don't suppress errors - they're important
         let logger = logger(for: category)
         logger.error("\(message, privacy: .public)")
     }
     
     static func fault(_ message: String, category: LogCategory = .error, file: String = #file, function: String = #function, line: Int = #line) {
+        // Don't suppress faults - they're critical
         let logger = logger(for: category)
         logger.fault("\(message, privacy: .public)")
     }

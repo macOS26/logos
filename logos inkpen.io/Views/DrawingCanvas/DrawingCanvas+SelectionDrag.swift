@@ -9,7 +9,7 @@ import SwiftUI
 
 extension DrawingCanvas {
     internal func startSelectionDrag() {
-        guard let layerIndex = document.selectedLayerIndex,
+        guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
         
         // REFACTORED: Use unified objects system for selection checking
@@ -18,19 +18,14 @@ extension DrawingCanvas {
         // PROTECT LOCKED LAYERS: Check all selected objects for locked layers
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .shape:
                 if unifiedObject.layerIndex >= document.layers.count || document.layers[unifiedObject.layerIndex].isLocked {
                     Log.info("🚫 Cannot move shape on locked layer '\(document.layers[unifiedObject.layerIndex].name)'", category: .general)
                     return
                 }
-            case .text(let textObj):
-                if let textLayerIndex = textObj.layerIndex,
-                   textLayerIndex >= 0 && textLayerIndex < document.layers.count {
-                    if document.layers[textLayerIndex].isLocked {
-                        Log.info("🚫 Cannot move text on locked layer '\(document.layers[textLayerIndex].name)'", category: .general)
-                        return
-                    }
-                }
+            case .text:
+                // Text objects don't have layer restrictions for movement
+                break
             }
         }
         
@@ -67,7 +62,7 @@ extension DrawingCanvas {
     }
     
     internal func handleSelectionDrag(value: DragGesture.Value, geometry: GeometryProxy) {
-        guard let layerIndex = document.selectedLayerIndex,
+        guard let _ = document.selectedLayerIndex,
               !document.selectedObjectIDs.isEmpty else { return }
         
         // REFACTORED: Use unified objects system for selection checking
@@ -76,17 +71,13 @@ extension DrawingCanvas {
         // PROTECT LOCKED LAYERS: Check all selected objects for locked layers
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
-            case .shape(let shape):
+            case .shape:
                 if unifiedObject.layerIndex >= document.layers.count || document.layers[unifiedObject.layerIndex].isLocked {
                     return
                 }
-            case .text(let textObj):
-                if let textLayerIndex = textObj.layerIndex,
-                   textLayerIndex >= 0 && textLayerIndex < document.layers.count {
-                    if document.layers[textLayerIndex].isLocked {
-                        return
-                    }
-                }
+            case .text:
+                // Text objects don't have layer restrictions for movement
+                break
             }
         }
         
@@ -143,7 +134,7 @@ extension DrawingCanvas {
         if !initialObjectPositions.isEmpty && currentDragDelta != .zero {
             // BLAZING FAST FINISH: Apply accumulated drag delta to actual coordinates at the end
             // This ensures smooth 60fps preview during drag, then commits changes once
-            guard let layerIndex = document.selectedLayerIndex else { return }
+            guard let _ = document.selectedLayerIndex else { return }
             
             // REFACTORED: Use unified objects system for applying drag delta
             let selectedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
@@ -164,7 +155,7 @@ extension DrawingCanvas {
                         }
                     }
                     
-                case .text(let textObj):
+                case .text:
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
                         document.textObjects[textIndex].position.x += currentDragDelta.x
                         document.textObjects[textIndex].position.y += currentDragDelta.y

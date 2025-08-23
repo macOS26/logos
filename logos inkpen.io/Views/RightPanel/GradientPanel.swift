@@ -645,7 +645,7 @@ struct GradientFillSection: View {
                         hasChanges = true
                     }
                     
-                case .text(let text):
+                case .text:
                     // Note: Text objects don't support gradients directly
                     // Could implement gradient text rendering in the future
                     Log.fileOperation("🎨 GRADIENT PANEL: Text objects don't support gradients yet", level: .info)

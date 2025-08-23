@@ -1651,35 +1651,78 @@ class VectorDocument: ObservableObject, Codable {
         let selectedTexts = textObjects.filter { selectedTextIDs.contains($0.id) }
         var newShapeIDs: Set<UUID> = []
         
+        // CRITICAL FIX: Track total shapes across all layers before conversion
+        let totalShapesBefore = layers.reduce(0) { $0 + $1.shapes.count }
+        
         for textObj in selectedTexts {
             // CRITICAL: Use ProfessionalTextCanvas convertToPath logic instead of VectorText.convertToOutlines()
             let viewModel = ProfessionalTextViewModel(textObject: textObj, document: self)
             
-            // Store current shape count to track new shapes
-            let currentShapeCount = layers[selectedLayerIndex ?? 0].shapes.count
-            
             // Call the new word-by-word convertToPath method
             viewModel.convertToPath()
-            
-            // Track new shapes created by conversion
-            let newShapeCount = layers[selectedLayerIndex ?? 0].shapes.count
-            if newShapeCount > currentShapeCount {
-                let newShape = layers[selectedLayerIndex ?? 0].shapes[newShapeCount - 1]
-                newShapeIDs.insert(newShape.id)
-            }
         }
         
-        // CHARACTER-BY-CHARACTER NORMALIZATION: Already done during Core Text processing
-        if !newShapeIDs.isEmpty {
+        // CRITICAL FIX: Track total shapes across all layers after conversion
+        let totalShapesAfter = layers.reduce(0) { $0 + $1.shapes.count }
+        let newShapesCreated = totalShapesAfter - totalShapesBefore
+        
+        if newShapesCreated > 0 {
+            // Find the newly created shapes by comparing before/after
+            var allShapesAfter: [VectorShape] = []
+            for layer in layers {
+                allShapesAfter.append(contentsOf: layer.shapes)
+            }
+            
+            // Get the last N shapes (where N = newShapesCreated)
+            let newShapes = Array(allShapesAfter.suffix(newShapesCreated))
+            newShapeIDs = Set(newShapes.map { $0.id })
+            
             selectedShapeIDs = newShapeIDs
             Log.info("✅ TEXT TO OUTLINES: \(newShapeIDs.count) text object(s) converted with character-by-character normalization", category: .fileOperations)
+        } else {
+            Log.error("❌ TEXT TO OUTLINES FAILED: No new shapes were created", category: .error)
         }
         
         // Remove the original text objects
+        let removedTextCount = textObjects.count
         textObjects.removeAll { selectedTextIDs.contains($0.id) }
+        let actuallyRemovedCount = removedTextCount - textObjects.count
+        
+        Log.fileOperation("🗑️ TEXT REMOVAL: Removed \(actuallyRemovedCount) text objects from textObjects array", level: .info)
+        
         selectedTextIDs.removeAll()
         
+        // Sync unified objects after text removal
+        syncUnifiedObjectsAfterPropertyChange()
+        
+        // CRITICAL: Force cleanup of any remaining unified objects that reference deleted text
+        cleanupUnifiedObjectsAfterTextConversion()
+        
         Log.info("✅ TEXT TO OUTLINES COMPLETE: Bezier handles now visible with Direct Selection Tool (A)", category: .fileOperations)
+    }
+    
+    /// CRITICAL: Clean up unified objects after text conversion to ensure deleted text doesn't remain in UI
+    private func cleanupUnifiedObjectsAfterTextConversion() {
+        let beforeCount = unifiedObjects.count
+        
+        // Remove any unified objects that reference text objects that no longer exist
+        unifiedObjects.removeAll { unifiedObject in
+            if case .text(let text) = unifiedObject.objectType {
+                let textStillExists = textObjects.contains { $0.id == text.id }
+                if !textStillExists {
+                    Log.fileOperation("🗑️ CLEANUP: Removing unified object for deleted text '\(text.content)' (ID: \(text.id.uuidString.prefix(8)))", level: .info)
+                }
+                return !textStillExists
+            }
+            return false
+        }
+        
+        let afterCount = unifiedObjects.count
+        let removedCount = beforeCount - afterCount
+        
+        if removedCount > 0 {
+            Log.fileOperation("🧹 UNIFIED OBJECTS CLEANUP: Removed \(removedCount) orphaned text references", level: .info)
+        }
     }
     
     func selectTextAt(_ point: CGPoint) -> VectorText? {
@@ -2827,8 +2870,6 @@ class VectorDocument: ObservableObject, Codable {
             // Get current orderID range for this layer
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
-            let maxOrderID = currentOrderIDs.max() ?? 0
-            let totalObjects = layerObjects.count
             
             // Assign new orderIDs: unselected objects get lower orderIDs (back), selected get higher (front)
             var newOrderID = minOrderID
@@ -2968,8 +3009,6 @@ class VectorDocument: ObservableObject, Codable {
             // Get current orderID range for this layer
             let currentOrderIDs = layerObjects.map { $0.orderID }
             let minOrderID = currentOrderIDs.min() ?? 0
-            let maxOrderID = currentOrderIDs.max() ?? 0
-            let totalObjects = layerObjects.count
             
             // Assign new orderIDs: selected objects get lower orderIDs (back), unselected get higher (front)
             var newOrderID = minOrderID
@@ -3075,6 +3114,22 @@ class VectorDocument: ObservableObject, Codable {
     
     /// CRITICAL FIX: Sync unified objects when shape properties change (colors, etc.)
     func syncUnifiedObjectsAfterPropertyChange() {
+        // CRITICAL FIX: Remove unified objects that no longer exist in legacy arrays
+        unifiedObjects.removeAll { unifiedObject in
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                // Check if shape still exists in layers array
+                if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
+                    return !layers[layerIndex].shapes.contains { $0.id == shape.id }
+                } else {
+                    return true // Remove if layer doesn't exist
+                }
+            case .text(let text):
+                // Check if text still exists in textObjects array
+                return !textObjects.contains { $0.id == text.id }
+            }
+        }
+        
         // Update unified objects to reflect property changes in layers
         for i in unifiedObjects.indices {
             let unifiedObject = unifiedObjects[i]
@@ -3105,7 +3160,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced after property changes", level: .info)
+        Log.fileOperation("🔧 UNIFIED OBJECTS: Synced with property changes and removed deleted objects", level: .info)
     }
     
     // MARK: - Object Grouping Methods

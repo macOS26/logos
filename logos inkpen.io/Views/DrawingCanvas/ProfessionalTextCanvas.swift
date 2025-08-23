@@ -1456,22 +1456,61 @@ class ProfessionalTextViewModel: ObservableObject {
             isGroup: false
         )
         
-        // Add to the current layer
-        if let layerIndex = document.selectedLayerIndex {
-            document.layers[layerIndex].addShape(outlineShape)
-            
-            Log.info("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method", category: .fileOperations)
-            
-            // Select the converted shape
-            document.selectedShapeIDs = [outlineShape.id]
-            document.selectedTextIDs.removeAll()
-            
-            // Remove original text object
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-                document.textObjects.remove(at: textIndex)
-                Log.info("🗑️ REMOVED ORIGINAL TEXT OBJECT", category: .general)
+        // CRITICAL FIX: Handle case where no layer is selected
+        let targetLayerIndex: Int
+        if let selectedLayerIndex = document.selectedLayerIndex {
+            targetLayerIndex = selectedLayerIndex
+            Log.fileOperation("🎯 USING SELECTED LAYER: Index \(targetLayerIndex) ('\(document.layers[targetLayerIndex].name)')", level: .info)
+        } else {
+            // Fallback to first available working layer (skip pasteboard and canvas layers)
+            if document.layers.count > 2 {
+                targetLayerIndex = 2 // First working layer (index 2)
+                document.selectedLayerIndex = targetLayerIndex
+                Log.fileOperation("🎯 NO LAYER SELECTED: Using fallback layer index \(targetLayerIndex) ('\(document.layers[targetLayerIndex].name)')", level: .info)
+            } else {
+                Log.error("❌ CONVERT TO OUTLINES FAILED: No suitable layer available", category: .error)
+                return
             }
         }
+        
+        // Check if target layer is locked
+        if document.layers[targetLayerIndex].isLocked {
+            Log.error("❌ CONVERT TO OUTLINES FAILED: Target layer '\(document.layers[targetLayerIndex].name)' is locked", category: .error)
+            return
+        }
+        
+        // Add to the target layer
+        document.layers[targetLayerIndex].addShape(outlineShape)
+        
+        // CRITICAL: Add to unified objects system for proper UI rendering
+        document.addShapeToUnifiedSystem(outlineShape, layerIndex: targetLayerIndex)
+        
+        Log.info("✅ MULTILINE TEXT CONVERSION COMPLETE: Using original working method", category: .fileOperations)
+        Log.fileOperation("🎯 ADDED OUTLINE SHAPE: '\(outlineShape.name)' to layer '\(document.layers[targetLayerIndex].name)'", level: .info)
+        
+        // Select the converted shape
+        document.selectedShapeIDs = [outlineShape.id]
+        document.selectedTextIDs.removeAll()
+        
+        // Remove original text object
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
+            let removedText = document.textObjects.remove(at: textIndex)
+            Log.info("🗑️ REMOVED ORIGINAL TEXT OBJECT: '\(removedText.content)' (ID: \(removedText.id.uuidString.prefix(8)))", category: .general)
+            
+            // CRITICAL: Also remove from unified objects system
+            document.unifiedObjects.removeAll { unifiedObject in
+                if case .text(let text) = unifiedObject.objectType {
+                    return text.id == textObject.id
+                }
+                return false
+            }
+            Log.info("🗑️ REMOVED FROM UNIFIED OBJECTS: Text object \(textObject.id.uuidString.prefix(8))", category: .general)
+        } else {
+            Log.error("❌ TEXT REMOVAL FAILED: Could not find text object with ID \(textObject.id.uuidString.prefix(8))", category: .error)
+        }
+        
+        // Force UI update
+        document.objectWillChange.send()
     }
     
     // MARK: - Core Graphics Path Conversion Helper

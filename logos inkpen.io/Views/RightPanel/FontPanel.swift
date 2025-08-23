@@ -793,11 +793,64 @@ struct FontPanel: View {
     // REMOVED: stroke support functions - keeping only fill
     
     private func convertSelectedTextToOutlines() {
-        guard !document.selectedTextIDs.isEmpty else { return }
+        guard !document.selectedTextIDs.isEmpty else { 
+            Log.error("❌ CONVERT TO OUTLINES: No text selected", category: .error)
+            return 
+        }
+        
+        Log.fileOperation("🎯 FONT PANEL: Starting text to outlines conversion", level: .info)
+        Log.info("   Selected text IDs: \(document.selectedTextIDs.map { $0.uuidString.prefix(8) })", category: .general)
+        Log.info("   Selected layer index: \(document.selectedLayerIndex ?? -1)", category: .general)
+        Log.info("   Total layers: \(document.layers.count)", category: .general)
+        
+        // Check if we have a valid layer selection
+        if let layerIndex = document.selectedLayerIndex {
+            if layerIndex >= 0 && layerIndex < document.layers.count {
+                let layer = document.layers[layerIndex]
+                Log.info("   Target layer: '\(layer.name)' (locked: \(layer.isLocked))", category: .general)
+                
+                if layer.isLocked {
+                    Log.error("❌ CONVERT TO OUTLINES FAILED: Selected layer '\(layer.name)' is locked", category: .error)
+                    return
+                }
+            } else {
+                Log.error("❌ CONVERT TO OUTLINES FAILED: Invalid layer index \(layerIndex)", category: .error)
+                return
+            }
+        } else {
+            Log.info("   No layer selected - will use fallback layer", category: .general)
+        }
         
         // Use the CORRECT method that calls YOUR multi-line Core Text implementation
         document.convertSelectedTextToOutlines()
         
         Log.fileOperation("🎯 FONT PANEL: Converting text to vector outlines using YOUR multi-line Core Text implementation", level: .info)
+        
+        // VERIFICATION: Check if text was actually removed
+        let remainingTextCount = document.textObjects.count
+        Log.fileOperation("🎯 VERIFICATION: \(remainingTextCount) text objects remaining after conversion", level: .info)
+        
+        if remainingTextCount > 0 {
+            Log.info("📋 REMAINING TEXT OBJECTS:", category: .general)
+            for (index, textObj) in document.textObjects.enumerated() {
+                Log.info("   \(index): '\(textObj.content)' (ID: \(textObj.id.uuidString.prefix(8)))", category: .general)
+            }
+        }
+        
+        // FINAL VERIFICATION: Check unified objects system
+        let textUnifiedObjects = document.unifiedObjects.filter { unifiedObject in
+            if case .text = unifiedObject.objectType {
+                return true
+            }
+            return false
+        }
+        
+        Log.fileOperation("🎯 FINAL VERIFICATION: \(textUnifiedObjects.count) text objects in unified system", level: .info)
+        
+        if textUnifiedObjects.count != remainingTextCount {
+            Log.error("❌ UNIFIED OBJECTS MISMATCH: \(textUnifiedObjects.count) in unified system vs \(remainingTextCount) in textObjects array", category: .error)
+        } else {
+            Log.info("✅ UNIFIED OBJECTS VERIFICATION: Text objects properly synchronized", category: .general)
+        }
     }
 } 
