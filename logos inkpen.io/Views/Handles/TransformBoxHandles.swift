@@ -267,8 +267,13 @@ struct TransformBoxHandles: View {
     private func endScaling() {
         isScaling = false
         document.isHandleScalingActive = false
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        
+        // CRITICAL FIX: Use unified object system to find the shape
+        if let unifiedObject = document.unifiedObjects.first(where: { $0.id == shape.id }),
+           case .shape(let targetShape) = unifiedObject.objectType,
+           let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == targetShape.id }) {
+            
             // SPECIAL-CASE RASTER IMAGES: Keep transforms on transform property instead of baking into path
             if ImageContentRegistry.containsImage(document.layers[layerIndex].shapes[shapeIndex]) {
                 // Commit the preview transform as the shape.transform
@@ -282,6 +287,8 @@ struct TransformBoxHandles: View {
             previewTransform = .identity
             // Force UI refresh to reflect committed transform
             document.objectWillChange.send()
+        } else {
+            Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
     }
 

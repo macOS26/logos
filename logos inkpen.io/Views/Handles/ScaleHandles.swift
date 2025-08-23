@@ -389,8 +389,12 @@ struct ScaleHandles: View {
         
         // PROFESSIONAL SCALING FIX: Apply the final preview transform to coordinates
         // This ensures object origin stays with object after scaling (Professional behavior)
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        
+        // CRITICAL FIX: Use unified object system to find the shape
+        if let unifiedObject = document.unifiedObjects.first(where: { $0.id == shape.id }),
+           case .shape(let targetShape) = unifiedObject.objectType,
+           let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == targetShape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
@@ -415,6 +419,8 @@ struct ScaleHandles: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterScaling()
             }
+        } else {
+            Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }
     }
     
@@ -527,7 +533,7 @@ struct ScaleHandles: View {
                 // Path point
                 let point = pathPoints[index]
                 scalingAnchorPoint = CGPoint(x: point.x, y: point.y)
-                print("�� LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
+                print("🔴 LOCKED PIN: Set to path point \(index) at (\(String(format: "%.1f", point.x)), \(String(format: "%.1f", point.y)))")
             } else {
                 // Bounds corner point
                 let cornerIndex = index - pathPoints.count
