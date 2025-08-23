@@ -525,10 +525,15 @@ struct RotateHandles: View {
         Log.info("🏁 ROTATION FINISH: Applying final transform to coordinates", category: .general)
         print("   📊 Preview transform: [\(String(format: "%.3f", previewTransform.a)), \(String(format: "%.3f", previewTransform.b)), \(String(format: "%.3f", previewTransform.c)), \(String(format: "%.3f", previewTransform.d)), \(String(format: "%.1f", previewTransform.tx)), \(String(format: "%.1f", previewTransform.ty))]")
         
-        // CRITICAL FIX: Apply rotation to actual coordinates, not just transform
-        // This ensures object origin stays with object after rotation (Professional behavior)
-        if let layerIndex = document.selectedLayerIndex,
-           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+        // CRITICAL FIX: Find the unified object that contains this specific shape
+        if let unifiedObject = document.unifiedObjects.first(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == shape.id
+            }
+            return false
+        }),
+        let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
             let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
             print("   📐 Old bounds: (\(String(format: "%.1f", oldBounds.minX)), \(String(format: "%.1f", oldBounds.minY))) → (\(String(format: "%.1f", oldBounds.maxX)), \(String(format: "%.1f", oldBounds.maxY)))")
@@ -547,11 +552,16 @@ struct RotateHandles: View {
             
             Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
+            // CRITICAL FIX: Sync unified objects after rotation to ensure UI updates
+            document.syncUnifiedObjectsAfterPropertyChange()
+            
             // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
             // This updates the points to match the rotated object positions
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.updatePathPointsAfterRotation()
             }
+        } else {
+            Log.error("❌ ROTATION FAILED: Could not find shape in unified objects system", category: .error)
         }
         
         previewTransform = .identity
