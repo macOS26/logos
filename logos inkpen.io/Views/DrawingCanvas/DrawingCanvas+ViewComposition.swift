@@ -114,36 +114,17 @@ extension DrawingCanvas {
                 GridView(document: document, geometry: geometry)
             }
             
-            // Render all layers and shapes (including the canvas layer!)
-            ForEach(document.layers.indices, id: \.self) { layerIndex in
-                if document.layers[layerIndex].isVisible {
-                    LayerView(
-                        layer: document.layers[layerIndex],
-                        zoomLevel: document.zoomLevel,
-                        canvasOffset: document.canvasOffset,
-                        selectedShapeIDs: document.selectedShapeIDs,
-                        viewMode: document.viewMode,
-                        isShiftPressed: self.isShiftPressed,
-                        dragPreviewDelta: currentDragDelta,
-                        dragPreviewTrigger: dragPreviewUpdateTrigger
-                    )
-                }
-            }
-            
-            // RENDER TEXT OBJECTS using STABLE view model lifecycle
-            ForEach(document.textObjects.indices, id: \.self) { textIndex in
-                let textObj = document.textObjects[textIndex]
-                if textObj.isVisible {
-                    StableProfessionalTextCanvas(
-                        document: document,
-                        textObjectID: textObj.id,
-                        dragPreviewDelta: currentDragDelta,
-                        dragPreviewTrigger: dragPreviewUpdateTrigger
-                    )
-                        .id(textObj.id) // Important: Use the text object ID as the view ID
-                        .allowsHitTesting(true) // CRITICAL: Ensure hit testing for resize handles
-                }
-            }
+            // NEW: Unified object rendering for proper layer ordering
+            UnifiedObjectView(
+                document: document,
+                zoomLevel: document.zoomLevel,
+                canvasOffset: document.canvasOffset,
+                selectedShapeIDs: document.selectedShapeIDs,
+                viewMode: document.viewMode,
+                isShiftPressed: self.isShiftPressed,
+                dragPreviewDelta: currentDragDelta,
+                dragPreviewTrigger: dragPreviewUpdateTrigger
+            )
             
             canvasOverlays(geometry: geometry)
         }

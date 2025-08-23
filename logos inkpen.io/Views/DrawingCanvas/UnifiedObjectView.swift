@@ -15,7 +15,7 @@ struct UnifiedObjectView: View {
     let viewMode: ViewMode
     let isShiftPressed: Bool
     let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: UUID
+    let dragPreviewTrigger: Bool
     
     private var objects: [VectorObject] {
         document.getObjectsInStackingOrder()
@@ -49,7 +49,7 @@ struct UnifiedObjectContentView: View {
     let selectedShapeIDs: Set<UUID>
     let viewMode: ViewMode
     let dragPreviewDelta: CGPoint
-    let dragPreviewTrigger: UUID
+    let dragPreviewTrigger: Bool
     
     var body: some View {
         switch unifiedObject.objectType {
@@ -64,7 +64,7 @@ struct UnifiedObjectContentView: View {
                 isCanvasLayer: unifiedObject.layerIndex == 1, // Canvas layer is index 1
                 isPasteboardLayer: unifiedObject.layerIndex == 0, // Pasteboard layer is index 0
                 dragPreviewDelta: dragPreviewDelta,
-                dragPreviewTrigger: dragPreviewTrigger != UUID() // Convert UUID to Bool
+                dragPreviewTrigger: dragPreviewTrigger
             )
             
         case .text(let text):
@@ -73,7 +73,7 @@ struct UnifiedObjectContentView: View {
                 document: document,
                 textObjectID: text.id,
                 dragPreviewDelta: dragPreviewDelta,
-                dragPreviewTrigger: dragPreviewTrigger != UUID() // Convert UUID to Bool
+                dragPreviewTrigger: dragPreviewTrigger
             )
             .id(text.id)
             .allowsHitTesting(true)
