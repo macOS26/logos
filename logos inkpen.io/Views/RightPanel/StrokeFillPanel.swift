@@ -28,76 +28,96 @@ struct StrokeFillPanel: View {
     @ObservedObject var document: VectorDocument
     @Environment(AppState.self) private var appState
     
-    // FIXED: Show current colors - from selected shapes or defaults for new shapes
+    // REFACTORED: Use unified objects system for current stroke/fill colors
     private var selectedStrokeColor: VectorColor {
-        // FIXED: Support both text and shapes  
-        // If text objects are selected, show their stroke color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.strokeColor
-        }
-        
-        // If shapes are selected (regular or direct), show their color, otherwise show default
-        let activeShapes = document.getActiveShapes()
-        if let firstShape = activeShapes.first,
-           let strokeColor = firstShape.strokeStyle?.color {
-            return strokeColor
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.strokeColor
+            case .shape(let shape):
+                if let strokeColor = shape.strokeStyle?.color {
+                    return strokeColor
+                }
+            }
         }
         return document.defaultStrokeColor  // Show default color for new shapes
     }
     
     private var selectedFillColor: VectorColor {
-        // FIXED: Support both text and shapes
-        // If text objects are selected, show their fill color
-        if let firstSelectedTextID = document.selectedTextIDs.first,
-           let textObject = document.textObjects.first(where: { $0.id == firstSelectedTextID }) {
-            return textObject.typography.fillColor
-        }
-        
-        // If shapes are selected (regular or direct), show their color, otherwise show default
-        let activeShapes = document.getActiveShapes()
-        if let firstShape = activeShapes.first,
-           let fillStyle = firstShape.fillStyle {
-            // FIXED: Show the actual gradient, not default color
-            return fillStyle.color
+        // Get the first selected object from unified system
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.fillColor
+            case .shape(let shape):
+                if let fillStyle = shape.fillStyle {
+                    return fillStyle.color
+                }
+            }
         }
         return document.defaultFillColor  // Show default color for new shapes
     }
     
     private var strokeWidth: Double {
-        // If shapes are selected (regular or direct), show their stroke width, otherwise show default for new shapes
-        let activeShapes = document.getActiveShapes()
-        guard let firstShape = activeShapes.first else {
-            return document.defaultStrokeWidth // Show default width for new shapes
+        // REFACTORED: Use unified objects system for stroke width
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.strokeWidth
+            case .shape(let shape):
+                return shape.strokeStyle?.width ?? document.defaultStrokeWidth
+            }
         }
-        return firstShape.strokeStyle?.width ?? document.defaultStrokeWidth
+        return document.defaultStrokeWidth // Show default width for new shapes
     }
     
     private var strokePlacement: StrokePlacement {
-        let activeShapes = document.getActiveShapes()
-        guard let firstShape = activeShapes.first else {
-            return .center
+        // REFACTORED: Use unified objects system for stroke placement
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(_):
+                return .center // Text objects don't have stroke placement - use default
+            case .shape(let shape):
+                return shape.strokeStyle?.placement ?? .center
+            }
         }
-        return firstShape.strokeStyle?.placement ?? .center
+        return .center
     }
     
     private var fillOpacity: Double {
-        // If shapes are selected (regular or direct), show their opacity, otherwise show default
-        let activeShapes = document.getActiveShapes()
-        if let firstShape = activeShapes.first,
-           let opacity = firstShape.fillStyle?.opacity {
-            return opacity
+        // REFACTORED: Use unified objects system for fill opacity
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.fillOpacity
+            case .shape(let shape):
+                if let opacity = shape.fillStyle?.opacity {
+                    return opacity
+                }
+            }
         }
         return document.defaultFillOpacity  // Show default opacity for new shapes
     }
     
     // PROFESSIONAL STROKE TRANSPARENCY (Professional Standard)
     private var strokeOpacity: Double {
-        // If shapes are selected (regular or direct), show their opacity, otherwise show default
-        let activeShapes = document.getActiveShapes()
-        if let firstShape = activeShapes.first,
-           let opacity = firstShape.strokeStyle?.opacity {
-            return opacity
+        // REFACTORED: Use unified objects system for stroke opacity
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(let text):
+                return text.typography.strokeOpacity
+            case .shape(let shape):
+                if let opacity = shape.strokeStyle?.opacity {
+                    return opacity
+                }
+            }
         }
         return document.defaultStrokeOpacity  // Show default opacity for new shapes
     }
@@ -106,55 +126,80 @@ struct StrokeFillPanel: View {
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Professional Standard)
     private var strokeLineJoin: CGLineJoin {
-        let activeShapes = document.getActiveShapes()
-        guard let firstShape = activeShapes.first else {
-            return document.defaultStrokeLineJoin
+        // REFACTORED: Use unified objects system for stroke line join
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(_):
+                return document.defaultStrokeLineJoin // Text objects don't have line join - use default
+            case .shape(let shape):
+                return shape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
+            }
         }
-        return firstShape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
+        return document.defaultStrokeLineJoin
     }
     
     // PROFESSIONAL ENDCAP SUPPORT (Professional Standard)
     private var strokeLineCap: CGLineCap {
-        let activeShapes = document.getActiveShapes()
-        guard let firstShape = activeShapes.first else {
-            return document.defaultStrokeLineCap
+        // REFACTORED: Use unified objects system for stroke line cap
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(_):
+                return document.defaultStrokeLineCap // Text objects don't have line cap - use default
+            case .shape(let shape):
+                return shape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
+            }
         }
-        return firstShape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
+        return document.defaultStrokeLineCap
     }
     
     // PROFESSIONAL MITER LIMIT SUPPORT (Professional Standard)
     private var strokeMiterLimit: Double {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstSelectedID = document.selectedShapeIDs.first,
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstSelectedID }) else {
-            return document.defaultStrokeMiterLimit
+        // REFACTORED: Use unified objects system for stroke miter limit
+        if let firstSelectedObjectID = document.selectedObjectIDs.first,
+           let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
+            switch unifiedObject.objectType {
+            case .text(_):
+                return document.defaultStrokeMiterLimit // Text objects don't have miter limit - use default
+            case .shape(let shape):
+                return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
+            }
         }
-        return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
+        return document.defaultStrokeMiterLimit
     }
     
     // IMAGE OPACITY SUPPORT
     private var hasSelectedImages: Bool {
-        guard let layerIndex = document.selectedLayerIndex else { return false }
-        return document.selectedShapeIDs.contains { shapeID in
-            if let shape = document.layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
-                return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+        // REFACTORED: Use unified objects system for image detection
+        return document.selectedObjectIDs.contains { objectID in
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .text(_):
+                    return false // Text objects don't contain images
+                case .shape(let shape):
+                    return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                }
             }
             return false
         }
     }
     
     private var selectedImageOpacity: Double {
-        guard let layerIndex = document.selectedLayerIndex,
-              let firstImageShapeID = document.selectedShapeIDs.first(where: { shapeID in
-                  if let shape = document.layers[layerIndex].shapes.first(where: { $0.id == shapeID }) {
-                      return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
-                  }
-                  return false
-              }),
-              let shape = document.layers[layerIndex].shapes.first(where: { $0.id == firstImageShapeID }) else {
-            return 1.0
+        // REFACTORED: Use unified objects system for image opacity
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .text(_):
+                    continue // Text objects don't contain images
+                case .shape(let shape):
+                    if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                        return shape.opacity
+                    }
+                }
+            }
         }
-        return shape.opacity
+        return 1.0
     }
     
     var body: some View {
@@ -212,7 +257,7 @@ struct StrokeFillPanel: View {
                     )
                     
                     // Expand Stroke Button - Only show when shapes selected
-                    if !document.selectedShapeIDs.isEmpty {
+                    if !document.selectedObjectIDs.isEmpty {
                         Button("Expand Stroke") {
                             document.outlineSelectedStrokes()
                         }
@@ -239,45 +284,46 @@ struct StrokeFillPanel: View {
         }
     }
     
-    // FIXED: Update methods - update selected shapes AND set default for new shapes
+    // REFACTORED: Update methods - use unified objects system
     private func updateFillColor(_ color: VectorColor) {
         // ALWAYS update the default color for new shapes
         document.defaultFillColor = color
         Log.fileOperation("🎨 Set default fill color: \(color)", level: .info)
         
-        // FIXED: Update selected text objects first
-        if !document.selectedTextIDs.isEmpty {
+        // REFACTORED: Use unified objects system for color application
+        var hasChanges = false
+        
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                        }
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.fillColor = color
+                        hasChanges = true
+                    }
+                }
+            }
+        }
+        
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
             document.saveToUndoStack()
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    document.textObjects[textIndex].typography.fillColor = color
-                    // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-                    // document.textObjects[textIndex].updateBounds() - REMOVED
-                }
-            }
+            document.syncUnifiedObjectsAfterPropertyChange()
         }
-        
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            if document.selectedTextIDs.isEmpty {
-                // Only save to undo stack if we didn't already save for text
-                document.saveToUndoStack()
-            }
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
-                } else {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                }
-                }
-            }
-        }
-        
-        // CRITICAL FIX: Sync unified objects for live color updates
-        document.syncUnifiedObjectsAfterPropertyChange()
     }
     
     private func updateFillOpacity(_ opacity: Double) {
@@ -285,22 +331,40 @@ struct StrokeFillPanel: View {
         document.defaultFillOpacity = opacity
         Log.fileOperation("🎨 Set default fill opacity: \(Int(opacity * 100))%", level: .info)
         
-        // If there are selected shapes, update them too
-        if let layerIndex = document.selectedLayerIndex, !document.selectedShapeIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for shapeID in document.selectedShapeIDs {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
-                    } else {
-                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+        // REFACTORED: Use unified objects system for opacity application
+        var hasChanges = false
+        
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
+                        } else {
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+                        }
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.fillOpacity = opacity
+                        hasChanges = true
                     }
                 }
             }
         }
         
-
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
+            document.saveToUndoStack()
+            document.syncUnifiedObjectsAfterPropertyChange()
+        }
     }
     
     private func updateStrokeColor(_ color: VectorColor) {
@@ -308,44 +372,41 @@ struct StrokeFillPanel: View {
         document.defaultStrokeColor = color
         Log.fileOperation("🎨 Set default stroke color: \(color)", level: .info)
         
-        // FIXED: Update selected text objects first  
-        if !document.selectedTextIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for textID in document.selectedTextIDs {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-                    document.textObjects[textIndex].typography.hasStroke = true
-                    document.textObjects[textIndex].typography.strokeColor = color
-                    // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
-                    // document.textObjects[textIndex].updateBounds() - REMOVED
-                }
-            }
-        }
+        // REFACTORED: Use unified objects system for stroke color application
+        var hasChanges = false
         
-        // If there are active shapes (regular or direct selection), update them too
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            if document.selectedTextIDs.isEmpty {
-                // Only save to undo stack if we didn't already save for text
-                document.saveToUndoStack()
-            }
-            
-            for shapeID in activeShapeIDs {
-                // Find the shape across all layers
-                for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
                         }
-                        break // Found the shape, no need to check other layers
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.hasStroke = true
+                        document.textObjects[textIndex].typography.strokeColor = color
+                        hasChanges = true
                     }
                 }
             }
         }
         
-
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
+            document.saveToUndoStack()
+            document.syncUnifiedObjectsAfterPropertyChange()
+        }
     }
     
     private func updateStrokeWidth(_ width: Double) {
@@ -353,24 +414,39 @@ struct StrokeFillPanel: View {
         document.defaultStrokeWidth = width
         Log.fileOperation("🎨 Set default stroke width: \(width)pt", level: .info)
         
-        // If there are active shapes (regular or direct selection), update them too
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if !activeShapeIDs.isEmpty {
-            document.saveToUndoStack()
-            
-            for shapeID in activeShapeIDs {
-                // Find the shape across all layers
-                for layerIndex in document.layers.indices {
-                    if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+        // REFACTORED: Use unified objects system for stroke width application
+        var hasChanges = false
+        
+        // Apply to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                         if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
                         } else {
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
                         }
-                        break // Found the shape, no need to check other layers
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        document.textObjects[textIndex].typography.strokeWidth = width
+                        hasChanges = true
                     }
                 }
             }
+        }
+        
+        // Save to undo stack and sync if we made changes
+        if hasChanges {
+            document.saveToUndoStack()
+            document.syncUnifiedObjectsAfterPropertyChange()
         }
     }
     
