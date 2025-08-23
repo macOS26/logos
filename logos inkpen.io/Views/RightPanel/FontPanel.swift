@@ -335,6 +335,7 @@ struct FontPanel: View {
                                             .background(currentTextAlignment == .left ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
+                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Left")
                                     
@@ -354,6 +355,7 @@ struct FontPanel: View {
                                             .background(currentTextAlignment == .center ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
+                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Center")
                                     
@@ -373,6 +375,7 @@ struct FontPanel: View {
                                             .background(currentTextAlignment == .right ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
+                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Right")
                                     
@@ -392,6 +395,7 @@ struct FontPanel: View {
                                             .background(currentTextAlignment == .justified ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
+                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Justify")
                                     
