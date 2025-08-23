@@ -410,6 +410,9 @@ class VectorDocument: ObservableObject, Codable {
         // Create canvas layer + default working layer
         createCanvasAndWorkingLayers()
         
+        // CRITICAL: Populate unified objects array with existing shapes
+        populateUnifiedObjectsFromLayers()
+        
         // Set the selected layer index to working layer (not canvas or pasteboard)
         self.selectedLayerIndex = 2 // Working layer is now at index 2
         Log.fileOperation("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)", level: .info)
@@ -873,6 +876,8 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeLineCap = try container.decodeIfPresent(CGLineCap.self, forKey: .defaultStrokeLineCap) ?? .butt
         defaultStrokeMiterLimit = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeMiterLimit) ?? 10.0
         
+        // CRITICAL: Populate unified objects array when loading from saved document
+        populateUnifiedObjectsFromLayers()
     }
     
 
@@ -1087,6 +1092,47 @@ class VectorDocument: ObservableObject, Codable {
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
+    }
+    
+    /// Populates the unified objects array from existing layers and text objects
+    /// CRITICAL: This creates a truly unified ordering where text and shapes can be intermixed
+    private func populateUnifiedObjectsFromLayers() {
+        unifiedObjects.removeAll()
+        
+        // For each layer, we need to create a unified ordering of ALL objects (shapes + text)
+        for (layerIndex, layer) in layers.enumerated() {
+            var layerObjects: [(object: Any, isText: Bool)] = []
+            
+            // Add all shapes from this layer
+            for shape in layer.shapes {
+                layerObjects.append((object: shape, isText: false))
+            }
+            
+            // Add all text objects that belong to this layer
+            for text in textObjects {
+                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
+                    layerObjects.append((object: text, isText: true))
+                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
+                    // Legacy text objects without layer assignment go to working layer
+                    layerObjects.append((object: text, isText: true))
+                }
+            }
+            
+            // Now create unified objects with sequential orderIDs within this layer
+            for (orderID, item) in layerObjects.enumerated() {
+                if item.isText {
+                    let text = item.object as! VectorText
+                    let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
+                    unifiedObjects.append(unifiedObject)
+                } else {
+                    let shape = item.object as! VectorShape
+                    let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                    unifiedObjects.append(unifiedObject)
+                }
+            }
+        }
+        
+        Log.fileOperation("🔧 POPULATED UNIFIED OBJECTS: \(unifiedObjects.count) objects from \(layers.count) layers with TRUE unified ordering", level: .info)
     }
     
     // MARK: - Shape Management
