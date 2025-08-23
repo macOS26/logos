@@ -1101,28 +1101,28 @@ class VectorDocument: ObservableObject, Codable {
         
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
         for (layerIndex, layer) in layers.enumerated() {
-            var layerObjects: [(object: Any, isText: Bool, originalIndex: Int)] = []
+            var layerObjects: [(object: Any, isText: Bool)] = []
             
-            // Add all shapes from this layer with their original indices
-            for (shapeIndex, shape) in layer.shapes.enumerated() {
-                layerObjects.append((object: shape, isText: false, originalIndex: shapeIndex))
+            // Add all shapes from this layer in their current order
+            for shape in layer.shapes {
+                layerObjects.append((object: shape, isText: false))
             }
             
             // Add all text objects that belong to this layer
-            for (textIndex, text) in textObjects.enumerated() {
+            for text in textObjects {
                 if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    layerObjects.append((object: text, isText: true, originalIndex: textIndex))
+                    layerObjects.append((object: text, isText: true))
                 } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
                     // Legacy text objects without layer assignment go to working layer
-                    layerObjects.append((object: text, isText: true, originalIndex: textIndex))
+                    layerObjects.append((object: text, isText: true))
                 }
             }
             
-            // Sort by original index to maintain the true order from the arrays
-            layerObjects.sort { $0.originalIndex < $1.originalIndex }
-            
             // Now create unified objects with sequential orderIDs within this layer
-            for (orderID, item) in layerObjects.enumerated() {
+            // Higher orderID = front, so we assign orderIDs in reverse order
+            for (arrayIndex, item) in layerObjects.enumerated() {
+                let orderID = layerObjects.count - 1 - arrayIndex // Reverse order: last item gets highest orderID (front)
+                
                 if item.isText {
                     let text = item.object as! VectorText
                     let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
