@@ -623,19 +623,40 @@ struct GradientFillSection: View {
     func applyGradientToSelectedShapes() {
         guard let gradient = currentGradient else { return }
         
-        let activeShapeIDs = document.getActiveShapeIDs()
-        if activeShapeIDs.isEmpty { return }
+        // REFACTORED: Use unified objects system for gradient application
+        var hasChanges = false
         
-        // Note: Undo stack saving is now handled by individual controls on mouse up/editing end
-        
-        for shapeID in activeShapeIDs {
-            // Find the shape across all layers
-            for layerIndex in document.layers.indices {
-                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
-                    document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
-                    break // Found the shape, no need to check other layers
+        // Apply gradient to selected objects from unified system
+        for objectID in document.selectedObjectIDs {
+            if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    // Find the shape in the layers array and update it
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        
+                        // Apply gradient based on active color target (fill or stroke)
+                        switch document.activeColorTarget {
+                        case .fill:
+                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                        case .stroke:
+                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                        }
+                        hasChanges = true
+                    }
+                    
+                case .text(let text):
+                    // Note: Text objects don't support gradients directly
+                    // Could implement gradient text rendering in the future
+                    Log.fileOperation("🎨 GRADIENT PANEL: Text objects don't support gradients yet", level: .info)
                 }
             }
+        }
+        
+        // Sync unified objects if we made changes
+        if hasChanges {
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
         }
     }
     
