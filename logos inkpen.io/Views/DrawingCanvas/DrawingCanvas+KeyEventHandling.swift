@@ -105,12 +105,19 @@ extension DrawingCanvas {
                 return nil // Consume the event to prevent system handling
             }
             
-            // HANDLE TAB KEY FOR DESELECT ALL
+            // HANDLE TAB KEY FOR DESELECT ALL AND BEZIER CURVE CANCELLATION
             if let characters = event.charactersIgnoringModifiers,
                characters == "\t" {
                 // Handle Tab key to deselect all objects
                 document.selectedShapeIDs.removeAll()
                 document.selectedTextIDs.removeAll()
+                
+                // CRITICAL FIX: Finish bezier drawing when using bezier pen tool (create unclosed object)
+                if document.currentTool == .bezierPen && isBezierDrawing {
+                    Log.info("🎯 TAB KEY: Finished bezier drawing (unclosed object)", category: .selection)
+                    finishBezierPath()
+                }
+                
                 Log.info("🎯 TAB KEY: Deselected all objects", category: .selection)
                 return nil // Consume the event to prevent system handling
             }

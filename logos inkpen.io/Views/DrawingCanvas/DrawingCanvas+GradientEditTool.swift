@@ -203,11 +203,13 @@ extension DrawingCanvas {
             updatedShape.fillStyle = FillStyle(color: .gradient(newGradient))
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
             
-            // CRITICAL: Force UI refresh by triggering document change
-            // This ensures the StrokeFillPanel updates its gradient display
+            // CRITICAL FIX: Sync unified objects system and force UI refresh
+            document.syncUnifiedObjectsAfterPropertyChange()
             DispatchQueue.main.async {
                 self.document.objectWillChange.send()
             }
+            
+            Log.fileOperation("🎨 GRADIENT TOOL: Updated shape gradient for \(shape.id.uuidString.prefix(8))", level: .info)
         }
     }
     

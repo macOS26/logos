@@ -91,45 +91,31 @@ extension DrawingCanvas {
         for textObj in document.textObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
-            // IMPROVED: Use a much more generous hit area that covers the entire text content
-            // This makes it easy to click anywhere inside the text to select it
+            // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
+            // This allows easy deselection by clicking outside the text
             
-            // Method 1: Use the actual text position and create a generous content area
-            let textContentArea = CGRect(
-                x: textObj.position.x,
-                y: textObj.position.y,
-                width: max(textObj.bounds.width, 200.0), // Minimum 200pt width for easy clicking
-                height: max(textObj.bounds.height, 60.0)  // Minimum 60pt height for easy clicking
-            )
-            
-            // Method 2: Also check the exact bounds area (for edge cases)
-            let exactBounds = CGRect(
+            // Calculate the actual text bounds in canvas coordinates
+            let textBounds = CGRect(
                 x: textObj.position.x + textObj.bounds.minX,
                 y: textObj.position.y + textObj.bounds.minY,
                 width: textObj.bounds.width,
                 height: textObj.bounds.height
             )
             
-            // Method 3: Create an expanded bounds area with generous tolerance
-            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20) // Much larger tolerance
+            // Use exact bounds with zero tolerance for precise hit testing
+            let hitArea = textBounds
             
             Log.info("🔍 TEXT CHECK: '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))", category: .general)
-            Log.info("  - Content area: \(textContentArea)", category: .general)
-            Log.info("  - Exact bounds: \(exactBounds)", category: .general)
-            Log.info("  - Expanded bounds: \(expandedBounds)", category: .general)
+            Log.info("  - Text bounds: \(textBounds)", category: .general)
+            Log.info("  - Hit area: \(hitArea)", category: .general)
             
-            // Hit test using any of the three methods (most generous approach)
-            if textContentArea.contains(location) || 
-               exactBounds.contains(location) || 
-               expandedBounds.contains(location) {
+            // Hit test using precise bounds with minimal tolerance
+            if hitArea.contains(location) {
                 Log.info("✅ TEXT HIT: Found text '\(textObj.content.prefix(20))' at location", category: .fileOperations)
                 return textObj.id
-            } else {
-                // Text miss - no need to log every miss
             }
         }
         
-        // No text found - no need to log every miss
         return nil
     }
     
@@ -929,12 +915,12 @@ extension DrawingCanvas {
             Log.info("  - Checking text '\(textObj.content.prefix(20))' UUID: \(textObj.id.uuidString.prefix(8))", category: .general)
             Log.info("    Position: \(textObj.position), Bounds: \(textObj.bounds)", category: .general)
             
-            // Calculate text box bounds in canvas coordinates
+            // Calculate text box bounds in canvas coordinates (use actual bounds)
             let textBounds = CGRect(
-                x: textObj.position.x,
-                y: textObj.position.y,
-                width: max(textObj.bounds.width, 200.0),  // Use generous minimum width
-                height: max(textObj.bounds.height, 60.0)   // Use generous minimum height
+                x: textObj.position.x + textObj.bounds.minX,
+                y: textObj.position.y + textObj.bounds.minY,
+                width: textObj.bounds.width,
+                height: textObj.bounds.height
             )
             
             // Define all potential resize handle positions (8 handles around the text box)
@@ -963,7 +949,7 @@ extension DrawingCanvas {
             
             // ADDITIONAL CHECK: Also consider clicks near the text box edges as potential resize operations
             // This prevents accidental text creation when clicking near text boxes
-            let edgeTolerance: Double = 25.0
+            let edgeTolerance: Double = 10.0  // Reduced from 25.0 for more accurate detection
             let expandedBounds = textBounds.insetBy(dx: -edgeTolerance, dy: -edgeTolerance)
             
             if expandedBounds.contains(location) && !textBounds.insetBy(dx: edgeTolerance, dy: edgeTolerance).contains(location) {

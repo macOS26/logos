@@ -639,8 +639,10 @@ struct GradientFillSection: View {
                         switch document.activeColorTarget {
                         case .fill:
                             document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                            Log.fileOperation("🎨 GRADIENT PANEL: Applied fill gradient to shape \(shape.id.uuidString.prefix(8))", level: .info)
                         case .stroke:
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                            Log.fileOperation("🎨 GRADIENT PANEL: Applied stroke gradient to shape \(shape.id.uuidString.prefix(8))", level: .info)
                         }
                         hasChanges = true
                     }
@@ -656,7 +658,10 @@ struct GradientFillSection: View {
         // Sync unified objects if we made changes
         if hasChanges {
             document.syncUnifiedObjectsAfterPropertyChange()
-            document.objectWillChange.send()
+            // CRITICAL FIX: Force immediate UI refresh for gradient changes
+            DispatchQueue.main.async {
+                self.document.objectWillChange.send()
+            }
         }
     }
     

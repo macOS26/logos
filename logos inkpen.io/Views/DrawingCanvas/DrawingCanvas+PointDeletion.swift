@@ -118,6 +118,10 @@ extension DrawingCanvas {
                         opacity: document.defaultFillOpacity // Full opacity (usually 1.0)
                     )
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    
+                    // CRITICAL FIX: Update the unified objects system to ensure the shape is visible
+                    // The shape exists in layers but might not be visible due to unified system not being updated
+                    document.syncUnifiedObjectsAfterPropertyChange()
                     break
                 }
             }
@@ -128,6 +132,9 @@ extension DrawingCanvas {
         Log.info("Path elements: \(closedPath.elements.count) (including close)", category: .general)
         Log.info("Curve data preserved: \(closedPath.elements.compactMap { if case .curve = $0 { return 1 } else { return nil } }.count) curves", category: .general)
         Log.fileOperation("🎨 PEN TOOL CLOSED PATH COLORS: stroke=\(document.defaultStrokeColor), fill=\(document.defaultFillColor)", level: .info)
+        
+        // CRITICAL FIX: Force UI update to ensure the closed shape is immediately visible
+        document.objectWillChange.send()
         
         // TRACING WORKFLOW IMPROVEMENT: Don't auto-switch tools to allow continuous pen tool usage
         // This allows users to trace multiple objects without tool interruption
