@@ -93,7 +93,7 @@ class VectorDocument: ObservableObject, Codable {
     @Published var colorChangeNotification: UUID = UUID() // Changes when colors are updated to notify active tools
     @Published var lastColorChangeType: ColorChangeType = .fillOpacity // What type of change occurred
     
-    private let maxUndoStackSize = 50
+    internal let maxUndoStackSize = 50
     
     // MARKER SETTINGS (Felt-tip marker specific)
     @Published var currentMarkerPressureSensitivity: Double = 0.6 // Marker pressure sensitivity (0.0-1.0)
@@ -355,90 +355,7 @@ class VectorDocument: ObservableObject, Codable {
     
 
     
-    // MARK: - Undo/Redo
-    func saveToUndoStack() {
-        // Create a copy of the current state
-        do {
-            let data = try JSONEncoder().encode(self)
-            let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
-            undoStack.append(copy)
-            
-            // Limit undo stack size
-            if undoStack.count > maxUndoStackSize {
-                undoStack.removeFirst()
-            }
-            
-            // Clear redo stack when a new action is performed
-            redoStack.removeAll()
-        } catch {
-            Log.info("Error saving to undo stack: \(error)", category: .general)
-        }
-    }
-    
-    func undo() {
-        guard !undoStack.isEmpty else { return }
-        
-        // Save current state to redo stack
-        do {
-            let data = try JSONEncoder().encode(self)
-            let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
-            redoStack.append(copy)
-        } catch {
-            Log.info("Error saving to redo stack: \(error)", category: .general)
-        }
-        
-        // Restore previous state
-        let previousState = undoStack.removeLast()
-        settings = previousState.settings
-        layers = previousState.layers
-        rgbSwatches = previousState.rgbSwatches
-        cmykSwatches = previousState.cmykSwatches
-        hsbSwatches = previousState.hsbSwatches
-        selectedLayerIndex = previousState.selectedLayerIndex
-        selectedShapeIDs = previousState.selectedShapeIDs
-        currentTool = previousState.currentTool
-        zoomLevel = previousState.zoomLevel
-        canvasOffset = previousState.canvasOffset
-        showRulers = previousState.showRulers
-        snapToGrid = previousState.snapToGrid
-    }
-    
-    func redo() {
-        guard !redoStack.isEmpty else { return }
-        
-        // Save current state to undo stack WITHOUT clearing redo stack
-        do {
-            let data = try JSONEncoder().encode(self)
-            let copy = try JSONDecoder().decode(VectorDocument.self, from: data)
-            undoStack.append(copy)
-            
-            // Limit undo stack size
-            if undoStack.count > maxUndoStackSize {
-                undoStack.removeFirst()
-            }
-        } catch {
-            Log.info("Error saving to undo stack: \(error)", category: .general)
-        }
-        
-        // Restore next state (double-check the stack isn't empty)
-        guard !redoStack.isEmpty else { 
-            Log.info("Warning: Redo stack became empty during redo operation", category: .general)
-            return 
-        }
-        let nextState = redoStack.removeLast()
-        settings = nextState.settings
-        layers = nextState.layers
-        rgbSwatches = nextState.rgbSwatches
-        cmykSwatches = nextState.cmykSwatches
-        hsbSwatches = nextState.hsbSwatches
-        selectedLayerIndex = nextState.selectedLayerIndex
-        selectedShapeIDs = nextState.selectedShapeIDs
-        currentTool = nextState.currentTool
-        zoomLevel = nextState.zoomLevel
-        canvasOffset = nextState.canvasOffset
-        showRulers = nextState.showRulers
-        snapToGrid = nextState.snapToGrid
-    }
+
     
     // MARK: - Professional Text Management
     func addText(_ text: VectorText) {
