@@ -942,40 +942,47 @@ class ClipboardManager {
                     }
                 }
                 
-                // Find the lowest index of any selected shape to paste behind it
-                var insertIndex = 0
+                // Find the lowest orderID of any selected object (shape or text) to paste behind it
+                var targetOrderID = 0
                 
                 if !originalSelectedObjectIDs.isEmpty {
-                    // Find the first (lowest z-order) selected shape
-                    for (index, shape) in document.layers[layerIndex].shapes.enumerated() {
-                        if originalSelectedObjectIDs.contains(shape.id) {
-                            insertIndex = index
-                            break
-                        }
+                    // Find the lowest orderID among selected objects in this layer
+                    let selectedObjectsInLayer = document.unifiedObjects.filter { 
+                        originalSelectedObjectIDs.contains($0.id) && $0.layerIndex == layerIndex 
+                    }
+                    if let lowestOrderID = selectedObjectsInLayer.map({ $0.orderID }).min() {
+                        targetOrderID = lowestOrderID
                     }
                 }
                 
-                // Insert shapes at the calculated index (behind selected objects)
+                // Insert shapes with proper orderID to place them behind selected objects
                 for (offset, shape) in clipboardData.shapes.enumerated() {
                     var newShape = shape
                     newShape.id = UUID()
-                    // PASTE IN BACK: Insert at specific index to place behind selected objects
-                    document.layers[layerIndex].shapes.insert(newShape, at: insertIndex + offset)
-                    // CRITICAL FIX: Add to unified objects system for visibility
-                    document.addShapeToUnifiedSystem(newShape, layerIndex: layerIndex)
+                    
+                    // Add to layer first
+                    document.layers[layerIndex].shapes.append(newShape)
+                    
+                    // Add to unified objects system with orderID that places it behind selected objects
+                    let newOrderID = targetOrderID - offset - 1  // SUBTRACT to place behind
+                    let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: newOrderID)
+                    document.unifiedObjects.append(unifiedObject)
                     document.selectedObjectIDs.insert(newShape.id)
                 }
-            }
-            
-            // Add text objects at EXACT original coordinates (text doesn't have z-order within shapes)
-            for text in clipboardData.texts {
-                var newText = text
-                newText.id = UUID()
-                // PASTE AT EXACT ORIGINAL COORDINATES - no offset
-                document.textObjects.append(newText)
-                // CRITICAL FIX: Add to unified objects system for visibility
-                document.addTextToUnifiedSystem(newText, layerIndex: document.selectedLayerIndex ?? 2)
-                document.selectedObjectIDs.insert(newText.id)
+                
+                // Add text objects with proper orderID to place them behind selected objects
+                for (offset, text) in clipboardData.texts.enumerated() {
+                    var newText = text
+                    newText.id = UUID()
+                    // PASTE AT EXACT ORIGINAL COORDINATES - no offset
+                    document.textObjects.append(newText)
+                    
+                    // Add to unified objects system with orderID that places it behind selected objects
+                    let newOrderID = targetOrderID - clipboardData.shapes.count - offset - 1  // SUBTRACT to place behind
+                    let unifiedObject = VectorObject(text: newText, layerIndex: layerIndex, orderID: newOrderID)
+                    document.unifiedObjects.append(unifiedObject)
+                    document.selectedObjectIDs.insert(newText.id)
+                }
             }
             
             // CRITICAL FIX: Sync selection arrays for compatibility

@@ -2979,28 +2979,71 @@ class VectorDocument: ObservableObject, Codable {
         
         saveToUndoStack()
         
-        // Process each layer to bring selected objects forward
+        // CRITICAL FIX: Work directly with unified objects and orderID values like sendSelectedToBack
+        // Group objects by layer and reorder within each layer
         for layerIndex in layers.indices {
-            var layerShapes = layers[layerIndex].shapes
+            // Get all objects for this layer from unified array
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
             
-            // Process from back to front to avoid index conflicts
-            for i in (0..<layerShapes.count).reversed() {
-                let shapeID = layerShapes[i].id
-                if selectedObjectIDs.contains(where: { objectID in
-                    guard let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
-                          unifiedObject.layerIndex == layerIndex,
-                          case .shape(let shape) = unifiedObject.objectType else { return false }
-                    return shape.id == shapeID
-                }) && i < layerShapes.count - 1 {
-                    layerShapes.swapAt(i, i + 1)
+            // Separate selected and unselected objects
+            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            
+            guard !selectedObjects.isEmpty else { continue }
+            
+            // Sort objects by orderID to get current stacking order (back to front)
+            let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+            
+            // For each selected object, try to move it one step forward
+            for selectedObject in selectedObjects {
+                // Find the object that's currently in front of this selected object
+                if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
+                   currentIndex < sortedLayerObjects.count - 1 {
+                    // Get the object that's currently in front of this one
+                    let objectInFront = sortedLayerObjects[currentIndex + 1]
+                    
+                    // Swap their orderIDs
+                    if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
+                       let frontIndex = unifiedObjects.firstIndex(where: { $0.id == objectInFront.id }) {
+                        
+                        // Get the current orderIDs
+                        let selectedOrderID = unifiedObjects[selectedIndex].orderID
+                        let frontOrderID = unifiedObjects[frontIndex].orderID
+                        
+                        // Swap the orderIDs
+                        switch selectedObject.objectType {
+                        case .shape(let shape):
+                            unifiedObjects[selectedIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: selectedObject.layerIndex,
+                                orderID: frontOrderID
+                            )
+                        case .text(let text):
+                            unifiedObjects[selectedIndex] = VectorObject(
+                                text: text,
+                                layerIndex: selectedObject.layerIndex,
+                                orderID: frontOrderID
+                            )
+                        }
+                        
+                        switch objectInFront.objectType {
+                        case .shape(let shape):
+                            unifiedObjects[frontIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: objectInFront.layerIndex,
+                                orderID: selectedOrderID
+                            )
+                        case .text(let text):
+                            unifiedObjects[frontIndex] = VectorObject(
+                                text: text,
+                                layerIndex: objectInFront.layerIndex,
+                                orderID: selectedOrderID
+                            )
+                        }
+                    }
                 }
             }
-            
-            layers[layerIndex].shapes = layerShapes
         }
-        
-        // CRITICAL FIX: Update unified objects to reflect the new ordering
-        updateUnifiedObjectsOrdering()
         
         Log.info("⬆️ Brought forward \(selectedObjectIDs.count) objects", category: .general)
     }
@@ -3011,28 +3054,71 @@ class VectorDocument: ObservableObject, Codable {
         
         saveToUndoStack()
         
-        // Process each layer to send selected objects backward
+        // CRITICAL FIX: Work directly with unified objects and orderID values like sendSelectedToBack
+        // Group objects by layer and reorder within each layer
         for layerIndex in layers.indices {
-            var layerShapes = layers[layerIndex].shapes
+            // Get all objects for this layer from unified array
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
             
-            // Process from front to back to avoid index conflicts
-            for i in 0..<layerShapes.count {
-                let shapeID = layerShapes[i].id
-                if selectedObjectIDs.contains(where: { objectID in
-                    guard let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }),
-                          unifiedObject.layerIndex == layerIndex,
-                          case .shape(let shape) = unifiedObject.objectType else { return false }
-                    return shape.id == shapeID
-                }) && i > 0 {
-                    layerShapes.swapAt(i, i - 1)
+            // Separate selected and unselected objects
+            let selectedObjects = layerObjects.filter { selectedObjectIDs.contains($0.id) }
+            
+            guard !selectedObjects.isEmpty else { continue }
+            
+            // Sort objects by orderID to get current stacking order (back to front)
+            let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+            
+            // For each selected object, try to move it one step backward
+            for selectedObject in selectedObjects {
+                // Find the object that's currently behind this selected object
+                if let currentIndex = sortedLayerObjects.firstIndex(where: { $0.id == selectedObject.id }),
+                   currentIndex > 0 {
+                    // Get the object that's currently behind this one
+                    let objectBehind = sortedLayerObjects[currentIndex - 1]
+                    
+                    // Swap their orderIDs
+                    if let selectedIndex = unifiedObjects.firstIndex(where: { $0.id == selectedObject.id }),
+                       let behindIndex = unifiedObjects.firstIndex(where: { $0.id == objectBehind.id }) {
+                        
+                        // Get the current orderIDs
+                        let selectedOrderID = unifiedObjects[selectedIndex].orderID
+                        let behindOrderID = unifiedObjects[behindIndex].orderID
+                        
+                        // Swap the orderIDs
+                        switch selectedObject.objectType {
+                        case .shape(let shape):
+                            unifiedObjects[selectedIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: selectedObject.layerIndex,
+                                orderID: behindOrderID
+                            )
+                        case .text(let text):
+                            unifiedObjects[selectedIndex] = VectorObject(
+                                text: text,
+                                layerIndex: selectedObject.layerIndex,
+                                orderID: behindOrderID
+                            )
+                        }
+                        
+                        switch objectBehind.objectType {
+                        case .shape(let shape):
+                            unifiedObjects[behindIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: objectBehind.layerIndex,
+                                orderID: selectedOrderID
+                            )
+                        case .text(let text):
+                            unifiedObjects[behindIndex] = VectorObject(
+                                text: text,
+                                layerIndex: objectBehind.layerIndex,
+                                orderID: selectedOrderID
+                            )
+                        }
+                    }
                 }
             }
-            
-            layers[layerIndex].shapes = layerShapes
         }
-        
-        // CRITICAL FIX: Update unified objects to reflect the new ordering
-        updateUnifiedObjectsOrdering()
         
         Log.info("⬇️ Sent backward \(selectedObjectIDs.count) objects", category: .general)
     }
