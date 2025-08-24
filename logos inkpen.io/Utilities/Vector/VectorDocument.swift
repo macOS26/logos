@@ -1212,8 +1212,28 @@ class VectorDocument: ObservableObject, Codable {
     func removeSelectedShapes() {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
-        layers[layerIndex].shapes.removeAll { selectedShapeIDs.contains($0.id) }
+        
+        // CRITICAL PROTECTION: Filter out background shapes that should never be deleted
+        let shapesToRemove = layers[layerIndex].shapes.filter { shape in
+            if selectedShapeIDs.contains(shape.id) {
+                // NEVER allow deletion of Canvas or Pasteboard background shapes
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
+                    return false
+                }
+                return true
+            }
+            return false
+        }
+        
+        // Remove only the non-protected shapes
+        for shape in shapesToRemove {
+            layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+        }
+        
         selectedShapeIDs.removeAll()
+        
+        Log.fileOperation("🗑️ SHAPES: Deleted \(shapesToRemove.count) shapes (protected background shapes)", level: .info)
     }
     
     // CRITICAL FIX: Unified deletion method that works with unified objects system
@@ -1223,8 +1243,28 @@ class VectorDocument: ObservableObject, Codable {
         // Get the objects to delete from unified system
         let objectsToDelete = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
         
+        // CRITICAL PROTECTION: Filter out background shapes that should never be deleted
+        let protectedObjects = objectsToDelete.filter { objectToDelete in
+            switch objectToDelete.objectType {
+            case .shape(let shape):
+                // NEVER allow deletion of Canvas or Pasteboard background shapes
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    Log.error("🚫 PROTECTED: Attempted to delete protected background shape '\(shape.name)' - BLOCKED", category: .error)
+                    return false
+                }
+                return true
+            case .text:
+                return true
+            }
+        }
+        
+        if protectedObjects.count != objectsToDelete.count {
+            let blockedCount = objectsToDelete.count - protectedObjects.count
+            Log.error("🚫 PROTECTION: Blocked deletion of \(blockedCount) protected background shapes", category: .error)
+        }
+        
         // Remove from legacy arrays first
-        for objectToDelete in objectsToDelete {
+        for objectToDelete in protectedObjects {
             switch objectToDelete.objectType {
             case .shape(let shape):
                 // Remove from layers array
@@ -1246,7 +1286,7 @@ class VectorDocument: ObservableObject, Codable {
         // Sync legacy selection arrays
         syncSelectionArrays()
         
-        Log.fileOperation("🗑️ UNIFIED: Deleted \(objectsToDelete.count) objects", level: .info)
+        Log.fileOperation("🗑️ UNIFIED: Deleted \(protectedObjects.count) objects (protected \(objectsToDelete.count - protectedObjects.count) background shapes)", level: .info)
     }
     
     /// Gets all currently selected shapes across all layers
@@ -3129,6 +3169,12 @@ class VectorDocument: ObservableObject, Codable {
         unifiedObjects.removeAll { unifiedObject in
             switch unifiedObject.objectType {
             case .shape(let shape):
+                // CRITICAL PROTECTION: Never remove Canvas or Pasteboard background shapes
+                if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
+                    Log.info("🛡️ PROTECTED: Preserving background shape '\(shape.name)' in unified system", category: .general)
+                    return false // Never remove background shapes
+                }
+                
                 // Check if shape still exists in layers array
                 if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil {
                     let exists = layers[layerIndex].shapes.contains { $0.id == shape.id }
@@ -3162,6 +3208,12 @@ class VectorDocument: ObservableObject, Codable {
             
             switch unifiedObject.objectType {
             case .shape(let oldShape):
+                // CRITICAL PROTECTION: Never modify Canvas or Pasteboard background shapes
+                if oldShape.name == "Canvas Background" || oldShape.name == "Pasteboard Background" {
+                    Log.info("🛡️ PROTECTED: Skipping property update for background shape '\(oldShape.name)'", category: .general)
+                    continue // Skip updating background shapes
+                }
+                
                 // Find the updated shape in the layers array
                 if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
                    let updatedShape = layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
@@ -3217,6 +3269,29 @@ class VectorDocument: ObservableObject, Codable {
         Log.info("🔧 FORCE RESYNC: Rebuilding unified objects system", category: .general)
         populateUnifiedObjectsFromLayers()
         Log.info("🔧 FORCE RESYNC: Unified objects system rebuilt with \(unifiedObjects.count) objects", category: .general)
+    }
+    
+    /// CRITICAL FIX: Restore Canvas and Pasteboard layers if they get corrupted
+    func restoreSystemLayers() {
+        Log.info("🔧 SYSTEM RESTORE: Checking and restoring Canvas and Pasteboard layers", category: .general)
+        
+        // Check if Canvas layer exists and has background shape
+        if layers.count < 2 || layers[1].name != "Canvas" || 
+           !layers[1].shapes.contains(where: { $0.name == "Canvas Background" }) {
+            Log.error("🚨 SYSTEM RESTORE: Canvas layer corrupted - recreating", category: .error)
+            createCanvasAndWorkingLayers()
+            return
+        }
+        
+        // Check if Pasteboard layer exists and has background shape
+        if layers.count < 1 || layers[0].name != "Pasteboard" || 
+           !layers[0].shapes.contains(where: { $0.name == "Pasteboard Background" }) {
+            Log.error("🚨 SYSTEM RESTORE: Pasteboard layer corrupted - recreating", category: .error)
+            createCanvasAndWorkingLayers()
+            return
+        }
+        
+        Log.info("✅ SYSTEM RESTORE: Canvas and Pasteboard layers are intact", category: .general)
     }
     
     // MARK: - Object Grouping Methods
