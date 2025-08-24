@@ -25,9 +25,7 @@ class SystemErrorHandler {
             errorDescription.contains("/private/var/db/") ||
             errorDescription.contains("no such file or directory") {
             
-                    Log.warning("📄 SystemErrorHandler: Detected system directory access error - \(errorDescription)", category: .startup)
-        Log.warning("📄 SystemErrorHandler: This is likely a code signing verification issue in development", category: .startup)
-        Log.warning("📄 SystemErrorHandler: Continuing app initialization gracefully", category: .startup)
+            // Logging removed
             return true // Error handled
         }
         
@@ -35,8 +33,7 @@ class SystemErrorHandler {
         if errorDescription.contains("renderbox") ||
             errorDescription.contains("metallib") ||
             errorDescription.contains("mach-o") {
-                    Log.warning("📄 SystemErrorHandler: Detected RenderBox/Metal framework error - \(errorDescription)", category: .startup)
-        Log.warning("📄 SystemErrorHandler: This is a system framework loading issue - continuing gracefully", category: .startup)
+            // Logging removed
             return true // Error handled
         }
         
@@ -44,22 +41,21 @@ class SystemErrorHandler {
         if errorDescription.contains("personaattributes") ||
             errorDescription.contains("persona type") ||
             errorDescription.contains("operation not permitted") {
-                    Log.warning("📄 SystemErrorHandler: Detected persona attributes error - \(errorDescription)", category: .startup)
-        Log.warning("📄 SystemErrorHandler: This is a system permission issue - continuing gracefully", category: .startup)
+            // Logging removed
             return true // Error handled
         }
         
         // Check for other common system-level errors that shouldn't block the app
         if errorDomain == "NSCocoaErrorDomain" &&
             (errorDescription.contains("file system") || errorDescription.contains("permission")) {
-            Log.warning("📄 SystemErrorHandler: Detected file system permission error - continuing gracefully", category: .startup)
+            // Logging removed
             return true // Error handled
         }
         
         // Check for NSPOSIXErrorDomain errors with specific codes
         if errorDomain == "NSPOSIXErrorDomain" &&
             (errorCode == 1 || errorCode == 2) { // Operation not permitted, No such file or directory
-            Log.warning("📄 SystemErrorHandler: Detected POSIX error (code \(errorCode)) - continuing gracefully", category: .startup)
+            // Logging removed
             return true // Error handled
         }
         

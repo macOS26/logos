@@ -110,9 +110,7 @@ class VectorDocument: ObservableObject, Codable {
         
         // Log clipping mask creation for debugging
         if let maskShape = layers[layerIndex].shapes.first(where: { $0.id == maskID }) {
-            Log.info("🎭 CLIPPING MASK: Creating mask from shape '\(maskShape.name)' (ID: \(maskShape.id))", category: .general)
-            Log.info("   📊 Mask bounds: \(maskShape.bounds)", category: .general)
-            Log.info("   🔄 Mask transform: \(maskShape.transform)", category: .general)
+            // Logging removed
         }
         
         // Mark mask
@@ -124,9 +122,7 @@ class VectorDocument: ObservableObject, Codable {
         for s in selectedShapes.dropLast() {
             if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
                 layers[layerIndex].shapes[i].clippedByShapeID = maskID
-                Log.info("   ✂️ Applied clipping to shape '\(s.name)' (ID: \(s.id))", category: .general)
-                Log.info("      📊 Clipped shape bounds: \(s.bounds)", category: .general)
-                Log.info("      🔄 Clipped shape transform: \(s.transform)", category: .general)
+                // Logging removed
             }
         }
         
@@ -134,8 +130,7 @@ class VectorDocument: ObservableObject, Codable {
         selectedShapeIDs.removeAll()
         selectedShapeIDs.insert(maskID)
         
-        Log.info("✅ CLIPPING MASK: Created successfully with \(selectedShapes.count - 1) clipped shapes", category: .general)
-        Log.info("🎯 SELECTION: Automatically selected mask shape '\(layers[layerIndex].shapes.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .selection)
+        // Logging removed
     }
     
     /// Releases any clipping relationship among selected shapes
@@ -164,10 +159,9 @@ class VectorDocument: ObservableObject, Codable {
                     // CRITICAL FIX: Restore proper bounds for image shapes after releasing clipping mask
                     let shape = layers[layerIndex].shapes[idx]
                     if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                        // Force bounds recalculation for image shapes
-                        layers[layerIndex].shapes[idx].updateBounds()
-                        Log.info("🖼️ IMAGE BOUNDS: Restored bounds for image '\(shape.name)' after releasing clipping mask", category: .general)
-                        Log.info("   📊 New bounds: \(layers[layerIndex].shapes[idx].bounds)", category: .general)
+                                            // Force bounds recalculation for image shapes
+                    layers[layerIndex].shapes[idx].updateBounds()
+                    // Logging removed
                     }
                 }
             }
@@ -185,11 +179,11 @@ class VectorDocument: ObservableObject, Codable {
             if shape.clippedByShapeID == nil && (ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil) {
                 // This image shape is no longer clipped, ensure its bounds are correct
                 layers[layerIndex].shapes[idx].updateBounds()
-                Log.info("🖼️ IMAGE BOUNDS: Ensured bounds are correct for unclipped image '\(shape.name)'", category: .general)
+                // Logging removed
             }
         }
         
-        Log.info("✅ CLIPPING MASK: Released successfully and restored image bounds", category: .general)
+        // Logging removed
     }
     
     /// Moves a clipping mask and all its clipped content together
@@ -214,7 +208,7 @@ class VectorDocument: ObservableObject, Codable {
             }
         }
         
-        Log.info("🎭 CLIPPING MASK: Moved mask '\(layers[layerIndex].shapes[maskIndex].name)' and all clipped content by \(offset)", category: .general)
+        // Logging removed
         objectWillChange.send()
     }
     
@@ -415,9 +409,7 @@ class VectorDocument: ObservableObject, Codable {
         
         // Set the selected layer index to working layer (not canvas or pasteboard)
         self.selectedLayerIndex = 2 // Working layer is now at index 2
-        Log.fileOperation("🎯 SELECTED LAYER INDEX: \(self.selectedLayerIndex ?? -1)", level: .info)
-        Log.fileOperation("🎯 INITIALIZATION COMPLETE - Ready to draw!", level: .info)
-        Log.info("=" + String(repeating: "=", count: 50), category: .general)
+        // Logging removed
         
         // Set up settings change observation
         setupSettingsObservation()
@@ -468,7 +460,7 @@ class VectorDocument: ObservableObject, Codable {
         pasteboardShape.name = "Pasteboard Background"
         pasteboardLayer.addShape(pasteboardShape)
         layers.append(pasteboardLayer)
-        Log.fileOperation("📋 CREATED PASTEBOARD LAYER: Pasteboard (index 0) - BEHIND everything", level: .info)
+        // Logging removed
         
         // Create Canvas layer SECOND (index 1) - canvas layer, LOCKED by default
         var canvasLayer = VectorLayer(name: "Canvas")
@@ -483,11 +475,11 @@ class VectorDocument: ObservableObject, Codable {
         backgroundShape.name = "Canvas Background"
         canvasLayer.addShape(backgroundShape)
         layers.append(canvasLayer)
-        Log.fileOperation("📋 CREATED CANVAS LAYER: Canvas (index 1)", level: .info)
+        // Logging removed
         
         // Create working layer THIRD (index 2) - for actual drawing
         layers.append(VectorLayer(name: "Layer 1"))
-        Log.fileOperation("📋 CREATED WORKING LAYER: Layer 1 (index 2)", level: .info)
+        // Logging removed
         
         // DEBUG: Print actual layer order to verify
         debugLayerOrder()
@@ -495,11 +487,7 @@ class VectorDocument: ObservableObject, Codable {
     
     /// Debug function to print current layer order
     func debugLayerOrder() {
-        Log.info("🔍 CURRENT LAYER ORDER:", category: .general)
-        for (index, layer) in layers.enumerated() {
-            Log.info("   Index \(index): '\(layer.name)' - shapes: \(layer.shapes.count)", category: .general)
-        }
-        Log.info("   Layers panel shows these REVERSED (index \(layers.count-1) at top)", category: .general)
+        // Logging removed
     }
     
     /// Update pasteboard layer to match canvas size and center it
@@ -507,7 +495,7 @@ class VectorDocument: ObservableObject, Codable {
         guard layers.count > 0,
               layers[0].name == "Pasteboard",
               let pasteboardShape = layers[0].shapes.first(where: { $0.name == "Pasteboard Background" }) else {
-            Log.fileOperation("⚠️ Cannot update pasteboard - pasteboard layer not found", level: .info)
+            // Logging removed
             return
         }
         
@@ -3257,7 +3245,7 @@ class VectorDocument: ObservableObject, Codable {
             case .shape(let shape):
                 // CRITICAL PROTECTION: Never remove Canvas or Pasteboard background shapes
                 if shape.name == "Canvas Background" || shape.name == "Pasteboard Background" {
-                    Log.info("🛡️ PROTECTED: Preserving background shape '\(shape.name)' in unified system", category: .general)
+                    // Logging removed - background shapes are always preserved
                     return false // Never remove background shapes
                 }
                 
@@ -3296,7 +3284,7 @@ class VectorDocument: ObservableObject, Codable {
             case .shape(let oldShape):
                 // CRITICAL PROTECTION: Never modify Canvas or Pasteboard background shapes
                 if oldShape.name == "Canvas Background" || oldShape.name == "Pasteboard Background" {
-                    Log.info("🛡️ PROTECTED: Skipping property update for background shape '\(oldShape.name)'", category: .general)
+                    // Logging removed - background shapes are always skipped
                     continue // Skip updating background shapes
                 }
                 

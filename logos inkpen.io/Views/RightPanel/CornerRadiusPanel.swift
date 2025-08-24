@@ -161,17 +161,25 @@ struct CornerRadiusPanel: View {
             updatedRadii[index] = max(0.0, value) // Ensure non-negative
             shape.cornerRadii = updatedRadii
             
-            // Regenerate path from original bounds + new radii
-            if let originalBounds = shape.originalBounds {
-                let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
-                    rect: originalBounds,
-                    cornerRadii: updatedRadii
-                )
-                shape.path = newPath
-                shape.updateBounds()
-            }
+            // Regenerate path from current bounds + new radii
+            let currentBounds = shape.path.cgPath.boundingBox
+            let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
+                rect: currentBounds,
+                cornerRadii: updatedRadii
+            )
+            shape.path = newPath
+            shape.updateBounds()
+            
+            // Update originalBounds to current bounds for consistency
+            shape.originalBounds = currentBounds
             
             document.layers[layerIndex].shapes[shapeIndex] = shape
+            
+            // CRITICAL FIX: Sync unified objects and force UI refresh
+            document.syncUnifiedObjectsAfterPropertyChange()
+            DispatchQueue.main.async {
+                self.document.objectWillChange.send()
+            }
         }
     }
     

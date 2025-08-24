@@ -708,20 +708,40 @@ struct EnvelopeHandles: View {
                 warpObject.updateBounds()
             }
             
-            document.layers[layerIndex].shapes[shapeIndex] = warpObject
-            document.selectedShapeIDs.remove(currentShape.id)
-            document.selectedShapeIDs.insert(warpObject.id)
-            
-            Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
+                    document.layers[layerIndex].shapes[shapeIndex] = warpObject
+        
+        // CRITICAL FIX: Update selection to use unified objects system
+        document.selectedObjectIDs.remove(currentShape.id)
+        document.selectedObjectIDs.insert(warpObject.id)
+        
+        // CRITICAL FIX: Manually update unified objects system for shape replacement
+        // Don't use syncUnifiedObjectsAfterPropertyChange() as it's designed for property changes, not shape replacements
+        if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
+            if case .shape(let targetShape) = unifiedObject.objectType {
+                return targetShape.id == currentShape.id
+            }
+            return false
+        }) {
+            // Replace the unified object with the new warp object
+            document.unifiedObjects[unifiedObjectIndex] = VectorObject(
+                shape: warpObject,
+                layerIndex: unifiedObject.layerIndex,
+                orderID: unifiedObject.orderID
+            )
+            Log.info("   🔧 UNIFIED OBJECTS: Replaced original shape with warp object", category: .general)
+        } else {
+            // Fallback: Add the warp object to unified system if not found
+            document.addShapeToUnifiedSystem(warpObject, layerIndex: layerIndex)
+            Log.info("   🔧 UNIFIED OBJECTS: Added warp object to unified system", category: .general)
         }
         
-        // Log final warp state
-        print("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
-        
-        document.objectWillChange.send()
-        
-        // CRITICAL FIX: Sync unified objects after warping to ensure UI updates
-        document.syncUnifiedObjectsAfterPropertyChange()
+        Log.info("   🎯 First-time warp completed - created new warp object", category: .general)
+    }
+    
+    // Log final warp state
+    print("🏁 WARP COMPLETED: Final envelope TL(\(String(format: "%.1f", warpedCorners[0].x)), \(String(format: "%.1f", warpedCorners[0].y))), TR(\(String(format: "%.1f", warpedCorners[1].x)), \(String(format: "%.1f", warpedCorners[1].y))), BR(\(String(format: "%.1f", warpedCorners[2].x)), \(String(format: "%.1f", warpedCorners[2].y))), BL(\(String(format: "%.1f", warpedCorners[3].x)), \(String(format: "%.1f", warpedCorners[3].y)))")
+    
+    document.objectWillChange.send()
     }
     
     private func commitEnvelopeWarp() {

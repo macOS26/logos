@@ -89,7 +89,7 @@ extension DrawingCanvas {
             draggedCornerIndex = cornerIndex
             cornerDragStart = value.startLocation
             initialCornerRadius = shape.cornerRadii[safe: cornerIndex] ?? 0.0
-            Log.fileOperation("🔧 CORNER RADIUS TOOL: Started dragging corner \(cornerIndex)", level: .info)
+            // Logging removed
         }
         
         // Perfect mouse tracking: Handle follows mouse exactly
@@ -132,7 +132,7 @@ extension DrawingCanvas {
             // Proportional corner radius: When shift is held, make all corners proportional
             let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
             if isShiftCurrentlyPressed {
-                Log.fileOperation("🔄 CORNER RADIUS TOOL PROPORTIONAL: Shift detected", level: .info)
+                // Logging removed
                 
                 // Get all current corner radii
                 var allRadii = shape.cornerRadii
@@ -154,7 +154,7 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    print("🔄 CORNER RADIUS TOOL: Ratio mode - scaling by \(String(format: "%.3f", ratio))")
+                    // Logging removed
                 } else {
                     // Uniform mode: When starting from 0, set ALL corners to the same radius
                     for i in 0..<4 {
@@ -162,7 +162,7 @@ extension DrawingCanvas {
                         allRadii[i] = constrainedRadius
                     }
                     
-                    print("🔄 CORNER RADIUS TOOL: Uniform mode - setting all corners to \(String(format: "%.1f", newRadius))pt")
+                    // Logging removed
                 }
                 
                 // Update all corner radii proportionally
@@ -193,7 +193,7 @@ extension DrawingCanvas {
                 if abs(currentRadius - roundedRadius) > 0.01 {
                     let isShiftCurrentlyPressed = isShiftPressed || NSEvent.modifierFlags.contains(.shift)
                     if isShiftCurrentlyPressed {
-                        Log.fileOperation("🔄 CORNER RADIUS TOOL ROUNDING: Shift detected during finish", level: .info)
+                        // Logging removed
                         // Proportional rounding: Round all corners proportionally when shift is held
                         var allRadii = selectedShape.cornerRadii
                         while allRadii.count < 4 {
@@ -211,7 +211,7 @@ extension DrawingCanvas {
                                 allRadii[i] = round(originalCornerRadius * ratio)
                             }
                             
-                            Log.fileOperation("🔄 CORNER RADIUS TOOL: Proportional rounding ratio mode", level: .info)
+                            // Logging removed
                         } else {
                             // Uniform mode: When starting from 0, set ALL corners to the same radius
                             for i in 0..<4 {

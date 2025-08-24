@@ -535,6 +535,12 @@ extension DrawingCanvas {
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
                 break
             }
         }
@@ -576,6 +582,12 @@ extension DrawingCanvas {
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
                 break
             }
         }
@@ -614,6 +626,12 @@ extension DrawingCanvas {
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
                 break
             }
         }

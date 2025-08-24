@@ -267,20 +267,26 @@ struct CornerRadiusToolbar: View {
                 
                 shape.cornerRadii = updatedRadii
                 
-                // Regenerate path with corner radius
-                if let originalBounds = shape.originalBounds {
-                    let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
-                        rect: originalBounds,
-                        cornerRadii: updatedRadii
-                    )
-                    shape.path = newPath
-                    shape.updateBounds()
-                } else {
-                    Log.fileOperation("⚠️ No originalBounds - cannot regenerate path with corner radius", level: .info)
-                }
+                // Regenerate path with corner radius using current bounds
+                let currentBounds = shape.path.cgPath.boundingBox
+                let newPath = GeometricShapes.createRoundedRectPathWithIndividualCorners(
+                    rect: currentBounds,
+                    cornerRadii: updatedRadii
+                )
+                shape.path = newPath
+                shape.updateBounds()
+                
+                // Update originalBounds to current bounds for consistency
+                shape.originalBounds = currentBounds
                 
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
                 
                 print("🔄 Updated corner \(index + 1) radius to \(String(format: "%.1f", value))pt")
                 break

@@ -1029,7 +1029,7 @@ class DisplayMonitor: NSObject {
     }
     
     @objc private func displayConfigurationChanged(_ notification: Notification) {
-        Log.info("🖥️ DisplayMonitor: Display configuration changed", category: .general)
+        // Logging removed
         
         // Validate all displays after configuration change
         validateDisplays()
@@ -1040,7 +1040,7 @@ class DisplayMonitor: NSObject {
     
     private func validateDisplays() {
         let screens = NSScreen.screens
-        Log.info("🖥️ DisplayMonitor: Found \(screens.count) displays", category: .general)
+        // Logging removed
         
         for (index, screen) in screens.enumerated() {
             let frame = screen.frame
@@ -1049,9 +1049,9 @@ class DisplayMonitor: NSObject {
                          !frame.width.isNaN && !frame.height.isNaN
             
             if isValid {
-                Log.info("🖥️ DisplayMonitor: Display \(index) is valid - frame: \(frame)", category: .general)
+                // Logging removed
             } else {
-                Log.warning("🖥️ DisplayMonitor: Display \(index) has invalid frame: \(frame)", category: .general)
+                // Logging removed
             }
         }
     }
@@ -1060,7 +1060,7 @@ class DisplayMonitor: NSObject {
         DispatchQueue.main.async {
             // Get valid screen bounds
             guard let mainScreen = NSScreen.main else {
-                Log.warning("🖥️ DisplayMonitor: No main screen available for window repositioning", category: .general)
+                // Logging removed
                 return
             }
             
@@ -1070,7 +1070,7 @@ class DisplayMonitor: NSObject {
             for window in NSApplication.shared.windows {
                 if let identifier = window.identifier?.rawValue, identifier.starts(with: "gradient-hud") {
                     if !screenFrame.intersects(window.frame) {
-                        Log.info("🖥️ DisplayMonitor: Repositioning gradient HUD window", category: .general)
+                        // Logging removed
                         let newFrame = CGRect(
                             x: screenFrame.minX + 50,
                             y: screenFrame.minY + 50,
@@ -1084,7 +1084,7 @@ class DisplayMonitor: NSObject {
                 // Reposition ink HUD windows
                 if let identifier = window.identifier?.rawValue, identifier.starts(with: "ink-hud") {
                     if !screenFrame.intersects(window.frame) {
-                        Log.info("🖥️ DisplayMonitor: Repositioning ink HUD window", category: .general)
+                        // Logging removed
                         let newFrame = CGRect(
                             x: screenFrame.minX + 100,
                             y: screenFrame.minY + 100,

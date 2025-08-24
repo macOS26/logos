@@ -179,16 +179,21 @@ extension DrawingCanvas {
             let cornerRadius = min(normalizedRect.width, normalizedRect.height) / 2 // Half of smallest dimension
             currentPath = createRoundedRectPath(rect: normalizedRect, cornerRadius: cornerRadius)
         case .circle:
-            // FIXED: Pin circle from start point like rectangle tool
+            // FIXED: Create perfect circle with 1:1 aspect ratio like square tool
             let dragDeltaX = currentLocation.x - startPoint.x
             let dragDeltaY = currentLocation.y - startPoint.y
-            let rect = CGRect(
+            
+            // Use the larger absolute delta to maintain circular proportions
+            let size = max(abs(dragDeltaX), abs(dragDeltaY))
+            
+            // Create perfect circle that grows from startPoint in direction of cursor
+            let circleRect = CGRect(
                 x: startPoint.x,
                 y: startPoint.y,
-                width: dragDeltaX,
-                height: dragDeltaY
+                width: dragDeltaX >= 0 ? size : -size,
+                height: dragDeltaY >= 0 ? size : -size
             )
-            currentPath = createCirclePath(rect: rect)
+            currentPath = createCirclePath(rect: circleRect)
         case .ellipse:
             // FIXED: Pin ellipse from start point like rectangle tool
             let dragDeltaX = currentLocation.x - startPoint.x
