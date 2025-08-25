@@ -273,7 +273,7 @@ class VectorDocument: ObservableObject, Codable {
     
     // MARK: - Codable Implementation
     enum CodingKeys: CodingKey {
-        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit
+        case settings, layers, rgbSwatches, cmykSwatches, hsbSwatches, selectedLayerIndex, selectedShapeIDs, selectedTextIDs, textObjects, currentTool, viewMode, zoomLevel, canvasOffset, showRulers, snapToGrid, defaultFillColor, defaultStrokeColor, defaultFillOpacity, defaultStrokeOpacity, defaultStrokeWidth, defaultStrokePlacement, defaultStrokeLineJoin, defaultStrokeLineCap, defaultStrokeMiterLimit, unifiedObjects
     }
     
     required init(from decoder: Decoder) throws {
@@ -311,8 +311,13 @@ class VectorDocument: ObservableObject, Codable {
         defaultStrokeLineCap = try container.decodeIfPresent(CGLineCap.self, forKey: .defaultStrokeLineCap) ?? .butt
         defaultStrokeMiterLimit = try container.decodeIfPresent(Double.self, forKey: .defaultStrokeMiterLimit) ?? 10.0
         
-        // CRITICAL: Populate unified objects array when loading from saved document
-        populateUnifiedObjectsFromLayers()
+        // CRITICAL FIX: Load unified objects array to preserve order during undo/redo
+        unifiedObjects = try container.decodeIfPresent([VectorObject].self, forKey: .unifiedObjects) ?? []
+        
+        // CRITICAL FIX: Only populate unified objects if they don't exist (for new documents)
+        if unifiedObjects.isEmpty {
+            populateUnifiedObjectsFromLayers()
+        }
     }
     
 
@@ -346,6 +351,7 @@ class VectorDocument: ObservableObject, Codable {
         try container.encode(defaultStrokeLineJoin, forKey: .defaultStrokeLineJoin)
         try container.encode(defaultStrokeLineCap, forKey: .defaultStrokeLineCap)
         try container.encode(defaultStrokeMiterLimit, forKey: .defaultStrokeMiterLimit)
+        try container.encode(unifiedObjects, forKey: .unifiedObjects)
     }
     
 

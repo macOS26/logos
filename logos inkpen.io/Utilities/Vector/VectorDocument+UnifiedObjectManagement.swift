@@ -58,6 +58,24 @@ extension VectorDocument {
                 unifiedObjects.append(unifiedObject)
                 return
             }
+            
+            // CRITICAL FIX: If no existing object found during undo/redo, try to find a similar text object
+            // with the same content and position to estimate the correct orderID
+            let similarTextObjects = unifiedObjects.filter { 
+                if case .text(let existingText) = $0.objectType {
+                    return existingText.content == text.content && 
+                           existingText.position == text.position &&
+                           $0.layerIndex == layerIndex
+                }
+                return false
+            }
+            
+            if let similarObject = similarTextObjects.first {
+                // Use the orderID of the similar object to maintain relative positioning
+                let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: similarObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
         }
         
         let orderID = getNextOrderID(for: layerIndex)

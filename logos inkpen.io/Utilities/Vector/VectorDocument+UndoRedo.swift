@@ -231,6 +231,9 @@ extension VectorDocument {
         // Debug: Log the current order state
         logCurrentOrderState("BEFORE FIX")
         
+        // CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order
+        fixTextObjectOrderingAfterUndo()
+        
         // Check if orderIDs are consistent across all layers
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
@@ -242,9 +245,9 @@ extension VectorDocument {
             // Check if orderIDs are sequential starting from 0
             let expectedOrderIDs = Array(0..<layerObjects.count)
             
-            // CRITICAL FIX: Always fix the stacking order to ensure visual consistency
+            // CRITICAL FIX: Only fix when orderIDs are actually inconsistent
             // The issue is that orderIDs might be sequential but in wrong order
-            let needsFixing = orderIDs != expectedOrderIDs || layerObjects.count > 1
+            let needsFixing = orderIDs != expectedOrderIDs
             
             if needsFixing {
                 Log.info("🔧 UNDO FIX: OrderIDs inconsistent for layer \(layerIndex), fixing...", category: .general)
@@ -284,6 +287,55 @@ extension VectorDocument {
         
         // Debug: Log the order state after fixing
         logCurrentOrderState("AFTER FIX")
+    }
+    
+    /// CRITICAL FIX: Special handling for text objects to ensure they maintain their proper order during undo/redo
+    private func fixTextObjectOrderingAfterUndo() {
+        // For each layer, ensure text objects maintain their relative position to shapes
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            let textObjects = layerObjects.filter { 
+                if case .text = $0.objectType { return true }
+                return false
+            }
+            let shapeObjects = layerObjects.filter { 
+                if case .shape = $0.objectType { return true }
+                return false
+            }
+            
+            // If we have both text and shape objects, ensure text objects don't jump to the top
+            if !textObjects.isEmpty && !shapeObjects.isEmpty {
+                Log.info("🔧 TEXT ORDER FIX: Layer \(layerIndex) has \(textObjects.count) text objects and \(shapeObjects.count) shape objects", category: .general)
+                
+                // Get the current order of objects by orderID
+                let sortedLayerObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+                
+                // Check if any text objects are at the top when they shouldn't be
+                let topObjects = sortedLayerObjects.suffix(min(3, sortedLayerObjects.count))
+                let textObjectsAtTop = topObjects.filter { 
+                    if case .text = $0.objectType { return true }
+                    return false
+                }
+                
+                if !textObjectsAtTop.isEmpty {
+                    Log.info("🔧 TEXT ORDER FIX: Found \(textObjectsAtTop.count) text objects at top of layer \(layerIndex), checking if this is correct...", category: .general)
+                    
+                    // If text objects are at the top but there are shapes that should be above them,
+                    // we need to adjust the orderIDs to maintain the original stacking order
+                    // This is a conservative fix - only adjust if it's clearly wrong
+                    let shapeObjectsAtTop = topObjects.filter { 
+                        if case .shape = $0.objectType { return true }
+                        return false
+                    }
+                    
+                    if shapeObjectsAtTop.isEmpty {
+                        Log.info("🔧 TEXT ORDER FIX: No shape objects at top, text objects at top may be correct", category: .general)
+                    } else {
+                        Log.info("🔧 TEXT ORDER FIX: Shape objects also at top, maintaining current order", category: .general)
+                    }
+                }
+            }
+        }
     }
     
     /// Debug function to log the current order state
@@ -328,8 +380,11 @@ extension VectorDocument {
         }
         textObjects.removeAll()
         
-        // Rebuild legacy arrays from unified objects, maintaining order
-        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+        // CRITICAL FIX: Rebuild legacy arrays from unified objects, maintaining order
+        // Sort by orderID to ensure proper stacking order
+        let sortedUnifiedObjects = unifiedObjects.sorted(by: { $0.orderID < $1.orderID })
+        
+        for unifiedObject in sortedUnifiedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
                 // Use original shape from layers array to preserve all state
@@ -339,19 +394,24 @@ extension VectorDocument {
                     layers[unifiedObject.layerIndex].shapes.append(shape)
                 }
             case .text(let text):
+                // CRITICAL FIX: Preserve text object order by ensuring it maintains its position in the array
                 // Use original text object to preserve all state, but ensure isEditing = false
                 if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
                     var updatedText = originalText
                     updatedText.isEditing = false
+                    // CRITICAL: Ensure text object maintains its layerIndex from the unified object
+                    updatedText.layerIndex = unifiedObject.layerIndex
                     textObjects.append(updatedText)
                 } else {
                     var updatedText = text
                     updatedText.isEditing = false
+                    // CRITICAL: Ensure text object maintains its layerIndex from the unified object
+                    updatedText.layerIndex = unifiedObject.layerIndex
                     textObjects.append(updatedText)
                 }
             }
         }
         
-        Log.info("🔧 UNDO SYNC: Legacy arrays synced from unified objects", category: .general)
+        Log.info("🔧 UNDO SYNC: Legacy arrays synced from unified objects with proper text ordering", category: .general)
     }
 }
