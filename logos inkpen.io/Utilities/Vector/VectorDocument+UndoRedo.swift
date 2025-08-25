@@ -50,11 +50,64 @@ extension VectorDocument {
         hsbSwatches = previousState.hsbSwatches
         selectedLayerIndex = previousState.selectedLayerIndex
         selectedShapeIDs = previousState.selectedShapeIDs
+        selectedTextIDs = previousState.selectedTextIDs
+        selectedObjectIDs = previousState.selectedObjectIDs
+        textObjects = previousState.textObjects
+        unifiedObjects = previousState.unifiedObjects
         currentTool = previousState.currentTool
         zoomLevel = previousState.zoomLevel
         canvasOffset = previousState.canvasOffset
         showRulers = previousState.showRulers
         snapToGrid = previousState.snapToGrid
+        showGrid = previousState.showGrid
+        gridSpacing = previousState.gridSpacing
+        backgroundColor = previousState.backgroundColor
+        viewMode = previousState.viewMode
+        defaultFillColor = previousState.defaultFillColor
+        defaultStrokeColor = previousState.defaultStrokeColor
+        defaultFillOpacity = previousState.defaultFillOpacity
+        defaultStrokeOpacity = previousState.defaultStrokeOpacity
+        defaultStrokeWidth = previousState.defaultStrokeWidth
+        defaultStrokePlacement = previousState.defaultStrokePlacement
+        defaultStrokeLineJoin = previousState.defaultStrokeLineJoin
+        defaultStrokeLineCap = previousState.defaultStrokeLineCap
+        defaultStrokeMiterLimit = previousState.defaultStrokeMiterLimit
+        activeColorTarget = previousState.activeColorTarget
+        colorChangeNotification = previousState.colorChangeNotification
+        lastColorChangeType = previousState.lastColorChangeType
+        currentBrushThickness = previousState.currentBrushThickness
+        currentBrushPressureSensitivity = previousState.currentBrushPressureSensitivity
+        currentBrushTaper = previousState.currentBrushTaper
+        currentBrushSmoothingTolerance = previousState.currentBrushSmoothingTolerance
+        hasPressureInput = previousState.hasPressureInput
+        brushApplyNoStroke = previousState.brushApplyNoStroke
+        brushRemoveOverlap = previousState.brushRemoveOverlap
+        currentMarkerPressureSensitivity = previousState.currentMarkerPressureSensitivity
+        currentMarkerSmoothingTolerance = previousState.currentMarkerSmoothingTolerance
+        currentMarkerTipSize = previousState.currentMarkerTipSize
+        currentMarkerOpacity = previousState.currentMarkerOpacity
+        currentMarkerFeathering = previousState.currentMarkerFeathering
+        currentMarkerTaperStart = previousState.currentMarkerTaperStart
+        currentMarkerTaperEnd = previousState.currentMarkerTaperEnd
+        markerUseFillAsStroke = previousState.markerUseFillAsStroke
+        markerApplyNoStroke = previousState.markerApplyNoStroke
+        markerRemoveOverlap = previousState.markerRemoveOverlap
+        scalingAnchor = previousState.scalingAnchor
+        rotationAnchor = previousState.rotationAnchor
+        shearAnchor = previousState.shearAnchor
+        isHandleScalingActive = previousState.isHandleScalingActive
+        zoomRequest = previousState.zoomRequest
+        fontManager = previousState.fontManager
+        pasteboard = previousState.pasteboard
+        layerIndex = previousState.layerIndex
+        directSelectedShapeIDs = previousState.directSelectedShapeIDs
+        
+        // CRITICAL: Sync unified objects system after state restoration
+        syncUnifiedObjectsAfterPropertyChange()
+        syncSelectionArrays()
+        objectWillChange.send()
+        
+        Log.info("✅ Undo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
     
     func redo() {
@@ -87,10 +140,63 @@ extension VectorDocument {
         hsbSwatches = nextState.hsbSwatches
         selectedLayerIndex = nextState.selectedLayerIndex
         selectedShapeIDs = nextState.selectedShapeIDs
+        selectedTextIDs = nextState.selectedTextIDs
+        selectedObjectIDs = nextState.selectedObjectIDs
+        textObjects = nextState.textObjects
+        unifiedObjects = nextState.unifiedObjects
         currentTool = nextState.currentTool
         zoomLevel = nextState.zoomLevel
         canvasOffset = nextState.canvasOffset
         showRulers = nextState.showRulers
         snapToGrid = nextState.snapToGrid
+        showGrid = nextState.showGrid
+        gridSpacing = nextState.gridSpacing
+        backgroundColor = nextState.backgroundColor
+        viewMode = nextState.viewMode
+        defaultFillColor = nextState.defaultFillColor
+        defaultStrokeColor = nextState.defaultStrokeColor
+        defaultFillOpacity = nextState.defaultFillOpacity
+        defaultStrokeOpacity = nextState.defaultStrokeOpacity
+        defaultStrokeWidth = nextState.defaultStrokeWidth
+        defaultStrokePlacement = nextState.defaultStrokePlacement
+        defaultStrokeLineJoin = nextState.defaultStrokeLineJoin
+        defaultStrokeLineCap = nextState.defaultStrokeLineCap
+        defaultStrokeMiterLimit = nextState.defaultStrokeMiterLimit
+        activeColorTarget = nextState.activeColorTarget
+        colorChangeNotification = nextState.colorChangeNotification
+        lastColorChangeType = nextState.lastColorChangeType
+        currentBrushThickness = nextState.currentBrushThickness
+        currentBrushPressureSensitivity = nextState.currentBrushPressureSensitivity
+        currentBrushTaper = nextState.currentBrushTaper
+        currentBrushSmoothingTolerance = nextState.currentBrushSmoothingTolerance
+        hasPressureInput = nextState.hasPressureInput
+        brushApplyNoStroke = nextState.brushApplyNoStroke
+        brushRemoveOverlap = nextState.brushRemoveOverlap
+        currentMarkerPressureSensitivity = nextState.currentMarkerPressureSensitivity
+        currentMarkerSmoothingTolerance = nextState.currentMarkerSmoothingTolerance
+        currentMarkerTipSize = nextState.currentMarkerTipSize
+        currentMarkerOpacity = nextState.currentMarkerOpacity
+        currentMarkerFeathering = nextState.currentMarkerFeathering
+        currentMarkerTaperStart = nextState.currentMarkerTaperStart
+        currentMarkerTaperEnd = nextState.currentMarkerTaperEnd
+        markerUseFillAsStroke = nextState.markerUseFillAsStroke
+        markerApplyNoStroke = nextState.markerApplyNoStroke
+        markerRemoveOverlap = nextState.markerRemoveOverlap
+        scalingAnchor = nextState.scalingAnchor
+        rotationAnchor = nextState.rotationAnchor
+        shearAnchor = nextState.shearAnchor
+        isHandleScalingActive = nextState.isHandleScalingActive
+        zoomRequest = nextState.zoomRequest
+        fontManager = nextState.fontManager
+        pasteboard = nextState.pasteboard
+        layerIndex = nextState.layerIndex
+        directSelectedShapeIDs = nextState.directSelectedShapeIDs
+        
+        // CRITICAL: Sync unified objects system after state restoration
+        syncUnifiedObjectsAfterPropertyChange()
+        syncSelectionArrays()
+        objectWillChange.send()
+        
+        Log.info("✅ Redo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
     }
 }
