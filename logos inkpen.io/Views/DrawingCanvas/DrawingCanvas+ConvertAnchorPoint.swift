@@ -268,6 +268,10 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
             Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure", category: .fileOperations)
             
         case .move(let to):
@@ -283,6 +287,10 @@ extension DrawingCanvas {
                     
                     document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    
+                    // CRITICAL FIX: Sync unified objects system after path changes
+                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.objectWillChange.send()
                     
                     Log.info("✅ ADDED OUTGOING HANDLE to move point", category: .fileOperations)
                 }
@@ -306,23 +314,21 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, _):
-            // CRITICAL FIX: Convert curve to line element (removes handles completely)
+            // FIXED: Only convert the current point to a corner point
+            // Don't affect adjacent points - they should keep their handles
             let cornerPoint = VectorPoint(to.x, to.y)
             
-            // STEP 1: Convert current curve element to line element
+            // Convert current curve element to line element (removes handles for this point only)
             elements[elementIndex] = .line(to: cornerPoint)
-            
-            // STEP 2: Convert NEXT element to line if it's a curve (removes outgoing handle)
-            if elementIndex + 1 < elements.count {
-                if case .curve(let nextTo, _, _) = elements[elementIndex + 1] {
-                    elements[elementIndex + 1] = .line(to: nextTo)
-                }
-            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
-            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (handles completely removed)", category: .fileOperations)
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (only current point affected)", category: .fileOperations)
         default:
             break
         }
@@ -427,6 +433,10 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
             Log.info("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles", category: .fileOperations)
         default:
             break
@@ -450,6 +460,10 @@ extension DrawingCanvas {
             let newElement = PathElement.line(to: cornerPoint)
             document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex] = newElement
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
             
             Log.info("✅ CONVERTED QUAD CURVE TO CORNER POINT (handles completely removed)", category: .fileOperations)
         default:
@@ -546,38 +560,18 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, let control1, _):
-            // Check if outgoing handle is also collapsed (from next element)
-            var shouldConvertToLine = false
-            if elementIndex + 1 < elements.count {
-                if case .curve(_, let nextControl1, _) = elements[elementIndex + 1] {
-                    // Check if outgoing handle is collapsed to the current anchor point
-                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                    if outgoingHandleCollapsed {
-                        shouldConvertToLine = true
-                    }
-                }
-            }
-            
-            if shouldConvertToLine {
-                // Both handles are collapsed - convert to line element
-                elements[elementIndex] = .line(to: to)
-                
-                // Also convert next element to line if it's a curve
-                if elementIndex + 1 < elements.count {
-                    if case .curve(let nextTo, _, _) = elements[elementIndex + 1] {
-                        elements[elementIndex + 1] = .line(to: nextTo)
-                    }
-                }
-                
-                Log.info("✅ REMOVED INCOMING HANDLE: Converted to line element (both handles removed)", category: .fileOperations)
-            } else {
-                // Only incoming handle collapsed - keep as curve but collapse the handle
-                elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
-                Log.info("✅ REMOVED INCOMING HANDLE: Element \(elementIndex)", category: .fileOperations)
-            }
+            // FIXED: Only collapse the incoming handle to the anchor point
+            // Don't affect adjacent elements - they should keep their handles
+            elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ REMOVED INCOMING HANDLE: Collapsed handle to anchor point only", category: .fileOperations)
             
         default:
             break
@@ -598,38 +592,18 @@ extension DrawingCanvas {
         
         switch nextElement {
         case .curve(let to, _, let control2):
-            // Check if incoming handle is also collapsed (from current element)
-            var shouldConvertToLine = false
-            if elementIndex >= 0 && elementIndex < elements.count {
-                if case .curve(_, _, let currentControl2) = elements[elementIndex] {
-                    // Check if incoming handle is collapsed to the next anchor point
-                    let incomingHandleCollapsed = (abs(currentControl2.x - to.x) < 0.1 && abs(currentControl2.y - to.y) < 0.1)
-                    if incomingHandleCollapsed {
-                        shouldConvertToLine = true
-                    }
-                }
-            }
-            
-            if shouldConvertToLine {
-                // Both handles are collapsed - convert to line element
-                elements[elementIndex + 1] = .line(to: to)
-                
-                // Also convert current element to line if it's a curve
-                if elementIndex >= 0 && elementIndex < elements.count {
-                    if case .curve(let currentTo, _, _) = elements[elementIndex] {
-                        elements[elementIndex] = .line(to: currentTo)
-                    }
-                }
-                
-                Log.info("✅ REMOVED OUTGOING HANDLE: Converted to line element (both handles removed)", category: .fileOperations)
-            } else {
-                // Only outgoing handle collapsed - keep as curve but collapse the handle
-                elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
-                Log.info("✅ REMOVED OUTGOING HANDLE: Element \(elementIndex + 1)", category: .fileOperations)
-            }
+            // FIXED: Only collapse the outgoing handle to the anchor point
+            // Don't affect adjacent elements - they should keep their handles
+            elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ REMOVED OUTGOING HANDLE: Collapsed handle to anchor point only", category: .fileOperations)
             
         default:
             break
