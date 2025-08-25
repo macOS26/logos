@@ -306,40 +306,21 @@ struct DocumentBasedMainView: View {
         panel.begin { response in
             guard response == .OK, let url = panel.urls.first else { return }
             
-            let fileExtension = url.pathExtension.lowercased()
-            
-            Task {
-                do {
-                    let loadedDocument: VectorDocument
-                    
-                    if fileExtension == "svg" {
-                        // Import SVG file
-                        loadedDocument = try await FileOperations.importFromSVG(url: url)
-                    } else if fileExtension == "inkpen" {
-                        // Import Ink Pen document file
-                        loadedDocument = try FileOperations.importFromJSON(url: url)
-                    } else {
-                        // Import JSON file (default)
-                        loadedDocument = try FileOperations.importFromJSON(url: url)
-                    }
-                    
-                    // Replace current document with loaded one
-                    await MainActor.run {
-                        self.loadImportedDocument(loadedDocument)
-                        Log.info("✅ Successfully opened \(fileExtension.uppercased()) document from: \(url.path)", category: .fileOperations)
-                    }
-                    
-                } catch {
+            // Use DocumentGroup's native file opening mechanism to create new tab/window
+            NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { document, documentWasAlreadyOpen, error in
+                if let error = error {
                     Log.error("❌ Open failed: \(error)", category: .error)
                     
                     // Show error notification
-                    await MainActor.run {
+                    DispatchQueue.main.async {
                         let alert = NSAlert()
                         alert.messageText = "Open Failed"
                         alert.informativeText = "Error: \(error.localizedDescription)"
                         alert.alertStyle = .critical
                         alert.runModal()
                     }
+                } else {
+                    Log.info("✅ Successfully opened document in new tab/window from: \(url.path)", category: .fileOperations)
                 }
             }
         }

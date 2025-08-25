@@ -14,7 +14,7 @@ import UniformTypeIdentifiers
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
     
-    static var readableContentTypes: [UTType] { [.inkpen] }
+    static var readableContentTypes: [UTType] { [.inkpen, .svg] }
     
     init() {
         self.document = VectorDocument()
@@ -29,11 +29,43 @@ struct InkpenDocument: FileDocument {
             throw CocoaError(.fileReadCorruptFile)
         }
         
-        do {
-            self.document = try FileOperations.importFromJSONData(data)
-        } catch {
-            Log.error("❌ Failed to load document: \(error)", category: .error)
-            throw error
+        // Check if this is an SVG file by examining the file extension or content
+        // For FileDocument, we need to check the file extension from the configuration
+        let fileExtension = configuration.file.preferredFilename?.components(separatedBy: ".").last?.lowercased()
+        
+        if fileExtension == "svg" {
+            // For SVG files, we need to create a temporary URL to pass to the import function
+            // Since FileDocument doesn't provide direct URL access, we'll use the data-based approach
+            // and let the import function handle the SVG parsing from data
+            do {
+                self.document = try FileOperations.importFromSVGData(data)
+                
+                // CRITICAL FIX: Populate unified objects system after SVG import for proper rendering
+                // For SVG imports, we want to preserve the original stacking order from the SVG
+                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
+                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.objectWillChange.send()
+                
+                Log.info("✅ SVG document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
+            } catch {
+                Log.error("❌ Failed to load SVG document: \(error)", category: .error)
+                throw error
+            }
+        } else {
+            // Handle InkPen/JSON file import
+            do {
+                self.document = try FileOperations.importFromJSONData(data)
+                
+                // CRITICAL FIX: Populate unified objects system after JSON import for proper rendering
+                self.document.populateUnifiedObjectsFromLayers()
+                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.objectWillChange.send()
+                
+                Log.info("✅ JSON document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
+            } catch {
+                Log.error("❌ Failed to load JSON document: \(error)", category: .error)
+                throw error
+            }
         }
     }
     

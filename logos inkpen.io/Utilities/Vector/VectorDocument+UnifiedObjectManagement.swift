@@ -77,6 +77,50 @@ extension VectorDocument {
         // Removed excessive logging during drag operations
     }
     
+    /// Populates the unified objects array from existing layers and text objects
+    /// PRESERVES ORIGINAL ORDER: This version maintains the original stacking order from imports
+    internal func populateUnifiedObjectsFromLayersPreservingOrder() {
+        unifiedObjects.removeAll()
+        
+        // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
+        for (layerIndex, layer) in layers.enumerated() {
+            var layerObjects: [(object: Any, isText: Bool)] = []
+            
+            // Add all shapes from this layer in their current order
+            for shape in layer.shapes {
+                layerObjects.append((object: shape, isText: false))
+            }
+            
+            // Add all text objects that belong to this layer
+            for text in textObjects {
+                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
+                    layerObjects.append((object: text, isText: true))
+                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
+                    // Legacy text objects without layer assignment go to working layer
+                    layerObjects.append((object: text, isText: true))
+                }
+            }
+            
+            // Now create unified objects with sequential orderIDs within this layer
+            // PRESERVE ORIGINAL ORDER: First item gets lowest orderID (back), last item gets highest orderID (front)
+            for (arrayIndex, item) in layerObjects.enumerated() {
+                let orderID = arrayIndex // Preserve original order: first item gets lowest orderID (back)
+                
+                if item.isText {
+                    let text = item.object as! VectorText
+                    let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
+                    unifiedObjects.append(unifiedObject)
+                } else {
+                    let shape = item.object as! VectorShape
+                    let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+                    unifiedObjects.append(unifiedObject)
+                }
+            }
+        }
+        
+        Log.info("🔧 UNIFIED OBJECTS: Populated with \(unifiedObjects.count) objects preserving original order", category: .general)
+    }
+    
     /// Sync selection arrays to maintain compatibility with existing code
     func syncSelectionArrays() {
         // Update selectedShapeIDs and selectedTextIDs based on selectedObjectIDs

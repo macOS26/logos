@@ -578,6 +578,59 @@ class FileOperations {
         return document
     }
     
+    /// Synchronous version of SVG import for FileDocument protocol
+    static func importFromSVGSync(url: URL) throws -> VectorDocument {
+        Log.fileOperation("🎨 Importing document from SVG (sync): \(url.path)", level: .info)
+        
+        // Use a semaphore to make the async call synchronous
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultDocument: VectorDocument?
+        var resultError: Error?
+        
+        Task {
+            do {
+                resultDocument = try await importFromSVG(url: url)
+            } catch {
+                resultError = error
+            }
+            semaphore.signal()
+        }
+        
+        semaphore.wait()
+        
+        if let error = resultError {
+            throw error
+        }
+        
+        guard let document = resultDocument else {
+            throw VectorImportError.parsingError("Failed to import SVG: Unknown error", line: nil)
+        }
+        
+        return document
+    }
+    
+    /// Import SVG from data for FileDocument protocol
+    static func importFromSVGData(_ data: Data) throws -> VectorDocument {
+        Log.fileOperation("🎨 Importing document from SVG data", level: .info)
+        
+        // Create a temporary file to use with the existing SVG import infrastructure
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("svg")
+        
+        do {
+            try data.write(to: tempURL)
+            let document = try importFromSVGSync(url: tempURL)
+            
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempURL)
+            
+            return document
+        } catch {
+            // Clean up temporary file on error
+            try? FileManager.default.removeItem(at: tempURL)
+            throw error
+        }
+    }
+    
     /// Apply transform to shape coordinates and return new shape with identity transform
     /// This prevents coordinate drift during zoom operations
     private static func applyTransformToShapeCoordinates(shape: VectorShape, transform: CGAffineTransform) -> VectorShape {
