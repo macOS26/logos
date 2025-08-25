@@ -115,7 +115,7 @@ class GradientStrokeNSView: NSView {
         // Special handling for groups and compound shapes
         if shape.isGroup || shape.isGroupContainer {
             Log.info("   👥 GROUP/COMPOUND SHAPE: Using composite bounds", category: .general)
-            let bounds = shape.isGroup ? shape.bounds : shape.groupBounds
+            let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
             
             // For groups, use the overall bounds (already computed across all grouped shapes)
             let objectSpaceCorners = [

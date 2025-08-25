@@ -97,7 +97,7 @@ struct TransformBoxHandles: View {
 
     // Compute transformed bounds in canvas coordinates (after shape.transform)
     private func computeTransformedBounds() -> CGRect {
-        let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         
         // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
         var strokeExpandedBounds = baseBounds

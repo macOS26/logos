@@ -33,6 +33,12 @@ extension VectorDocument {
         layers[layerIndex].shapes.append(groupShape)
         selectedShapeIDs = [groupShape.id]
         
+        // CRITICAL FIX: Update unified objects system after grouping
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the new group
+        selectedObjectIDs = [groupShape.id]
+        
         Log.info("📦 Grouped \(selectedShapes.count) objects into group '\(groupShape.name)'", category: .general)
     }
     
@@ -77,6 +83,12 @@ extension VectorDocument {
         // Add flattened group
         layers[layerIndex].shapes.append(flattenedShape)
         selectedShapeIDs = [flattenedShape.id]
+        
+        // CRITICAL FIX: Update unified objects system after flattening
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the new flattened group
+        selectedObjectIDs = [flattenedShape.id]
         
         Log.fileOperation("🎨 Flattened \(selectedShapes.count) objects - preserving all colors, enabling transform tools", level: .info)
     }
@@ -125,6 +137,12 @@ extension VectorDocument {
         // Update selection
         selectedShapeIDs = newSelectedShapeIDs
         
+        // CRITICAL FIX: Update unified objects system after ungrouping
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the ungrouped shapes
+        selectedObjectIDs = newSelectedShapeIDs
+        
         if !shapesToRemove.isEmpty {
             Log.info("📦 Ungrouped \(shapesToRemove.count) groups, added \(shapesToAdd.count) objects", category: .general)
         } else {
@@ -166,6 +184,12 @@ extension VectorDocument {
         layers[layerIndex].shapes.append(contentsOf: shapesToAdd)
         selectedShapeIDs = newSelectedIDs
         
+        // CRITICAL FIX: Update unified objects system after unflattening
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the unflattened shapes
+        selectedObjectIDs = newSelectedIDs
+        
         Log.fileOperation("🎨 Unflattened group - restored \(shapesToAdd.count) individual shapes with original colors", level: .info)
     }
     
@@ -204,6 +228,12 @@ extension VectorDocument {
         layers[layerIndex].shapes.append(compoundShape)
         selectedShapeIDs = [compoundShape.id]
         
+        // CRITICAL FIX: Update unified objects system after creating compound path
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the new compound path
+        selectedObjectIDs = [compoundShape.id]
+        
         Log.info("🔗 Made compound path from \(selectedShapes.count) objects", category: .general)
     }
     
@@ -239,6 +269,12 @@ extension VectorDocument {
         // Add looping path
         layers[layerIndex].shapes.append(loopingShape)
         selectedShapeIDs = [loopingShape.id]
+        
+        // CRITICAL FIX: Update unified objects system after creating looping path
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the new looping path
+        selectedObjectIDs = [loopingShape.id]
         
         Log.fileOperation("🔄 Made looping path from \(selectedShapes.count) objects using winding fill rule", level: .info)
     }
@@ -282,6 +318,12 @@ extension VectorDocument {
         layers[layerIndex].shapes.append(contentsOf: newShapes)
         selectedShapeIDs = newSelectedIDs
         
+        // CRITICAL FIX: Update unified objects system after releasing compound path
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the released paths
+        selectedObjectIDs = newSelectedIDs
+        
         Log.info("🔗 Released compound path into \(newShapes.count) individual paths", category: .general)
     }
     
@@ -323,6 +365,12 @@ extension VectorDocument {
         // Add individual paths
         layers[layerIndex].shapes.append(contentsOf: newShapes)
         selectedShapeIDs = newSelectedIDs
+        
+        // CRITICAL FIX: Update unified objects system after releasing looping path
+        populateUnifiedObjectsFromLayers()
+        
+        // CRITICAL FIX: Update unified selection to use the released paths
+        selectedObjectIDs = newSelectedIDs
         
         Log.fileOperation("🔄 Released looping path into \(newShapes.count) individual paths", level: .info)
     }

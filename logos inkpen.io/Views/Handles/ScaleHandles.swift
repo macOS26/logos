@@ -44,7 +44,7 @@ struct ScaleHandles: View {
             return pathBounds.applying(shape.transform)
         } else {
             // For regular shapes, use existing logic
-            return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
     
@@ -460,7 +460,7 @@ struct ScaleHandles: View {
             bounds = pathBounds.applying(shape.transform)
         } else {
             // For regular shapes, use existing logic
-            bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         
@@ -526,7 +526,7 @@ struct ScaleHandles: View {
                     bounds = pathBounds.applying(shape.transform)
                 } else {
                     // For regular shapes, use existing logic
-                    bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                    bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                 }
                 let center = CGPoint(x: bounds.midX, y: bounds.midY)
                 scalingAnchorPoint = cornerPosition(for: cornerIndex, in: bounds, center: center)
@@ -658,7 +658,7 @@ struct ScaleHandles: View {
         
         // Update center point based on NEW bounds after scaling
         // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds
-        let newBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        let newBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         centerPoint = VectorPoint(CGPoint(x: newBounds.midX, y: newBounds.midY))
         
         // FORCE VIEW REFRESH: Trigger state change to rebuild UI with new points

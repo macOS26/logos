@@ -42,7 +42,7 @@ extension DrawingCanvas {
             case .shape(let shape):
                 // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
                 // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
-                let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
                 let centerX = bounds.midX
                 let centerY = bounds.midY
                 initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)

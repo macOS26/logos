@@ -54,7 +54,7 @@ struct RotateHandles: View {
             return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
         } else {
             // For regular shapes and untransformed images, use existing logic
-            return shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            return shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
     }
     
@@ -207,7 +207,7 @@ struct RotateHandles: View {
             bounds = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
         } else {
             // For regular shapes and untransformed images, use existing logic
-            bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         }
         centerPoint = VectorPoint(CGPoint(x: bounds.midX, y: bounds.midY))
         

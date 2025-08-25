@@ -80,7 +80,7 @@ struct SelectionOutline: View {
             // Compute precise bounds in canvas coordinates
             // Regular shapes: use the actual rendered path with transform baked-in
             // Group containers: transform group bounds corners
-            let baseBounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+            let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
             
             // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
             let strokeExpandedBounds: CGRect = {

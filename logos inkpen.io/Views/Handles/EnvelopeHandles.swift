@@ -33,7 +33,7 @@ struct EnvelopeHandles: View {
     
     var body: some View {
         // ENVELOPE TOOL: Show bounding box corners with correct colors
-        let bounds = shape.isGroup ? shape.bounds : (shape.isGroupContainer ? shape.groupBounds : shape.bounds)
+        let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         
         ZStack {
             // ACTUAL OBJECT OUTLINE: Show the real shape paths
