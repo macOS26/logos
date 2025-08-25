@@ -19,10 +19,10 @@ extension DrawingCanvas {
         let canvasLocation = screenToCanvas(location, geometry: geometry)
         
         // Check for green text box (text that is selected but not editing)
-        let greenTextDetected = findTextAt(location: canvasLocation) != nil
+        _ = findTextAt(location: canvasLocation) != nil
         
         // Get current tool name
-        let currentToolName = document.currentTool.rawValue
+        _ = document.currentTool.rawValue
         
         // Advanced click detection - reduced logging for performance
     }
@@ -288,7 +288,7 @@ extension DrawingCanvas {
     internal func handleUnifiedDragEnded(value: DragGesture.Value, geometry: GeometryProxy) {
         // FIXED: Always handle as completed drag - NO conversion to tap
         // This prevents drags from getting "lost" mid-operation
-        let dragDistance = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
+        _ = sqrt(pow(value.location.x - value.startLocation.x, 2) + pow(value.location.y - value.startLocation.y, 2))
         // Removed excessive logging during drag operations
         
         // Handle as completed drag

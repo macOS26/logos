@@ -384,7 +384,7 @@ struct ScaleHandles: View {
         let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
         let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
             
-            let oldBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            _ = document.layers[layerIndex].shapes[shapeIndex].bounds
             // Removed excessive logging during drag operations
             
             // CRITICAL FIX: Reset to initial transform first to prevent drift accumulation
@@ -393,7 +393,7 @@ struct ScaleHandles: View {
             // Apply the final transform to coordinates and reset transform to identity
             applyTransformToShapeCoordinates(layerIndex: layerIndex, shapeIndex: shapeIndex, transform: previewTransform)
             
-            let newBounds = document.layers[layerIndex].shapes[shapeIndex].bounds
+            _ = document.layers[layerIndex].shapes[shapeIndex].bounds
             // Removed excessive logging during drag operations
             
             // Reset preview transform and marquee bounds
@@ -619,7 +619,7 @@ struct ScaleHandles: View {
         
         // SCALING START: Minimal logging for performance
         
-        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        _ = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         // Removed excessive logging during drag operations
     }
     

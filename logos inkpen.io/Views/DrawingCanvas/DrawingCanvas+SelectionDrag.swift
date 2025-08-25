@@ -168,7 +168,7 @@ extension DrawingCanvas {
             
             // PROFESSIONAL OBJECT DRAGGING: Clean state reset for next drag operation
             // This ensures each new drag operation starts with fresh reference points
-            let movedObjects = initialObjectPositions.count
+            _ = initialObjectPositions.count
             
             // Reset state
             initialObjectPositions.removeAll()

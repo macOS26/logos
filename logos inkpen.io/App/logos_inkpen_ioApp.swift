@@ -1042,7 +1042,7 @@ class DisplayMonitor: NSObject {
         let screens = NSScreen.screens
         // Logging removed
         
-        for (index, screen) in screens.enumerated() {
+        for (_, screen) in screens.enumerated() {
             let frame = screen.frame
             let isValid = frame.width > 0 && frame.height > 0 && 
                          !frame.origin.x.isNaN && !frame.origin.y.isNaN &&

@@ -520,7 +520,7 @@ struct ShearHandles: View {
         
         // SHEAR START: Minimal logging for performance
         
-        let originalBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+        _ = shape.isGroupContainer ? shape.groupBounds : shape.bounds
         // Removed excessive logging during drag operations
     }
     

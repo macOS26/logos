@@ -20,7 +20,7 @@ extension VectorDocument {
         guard let maskID = selectedShapes.last?.id else { return }
         
         // Log clipping mask creation for debugging
-        if let maskShape = layers[layerIndex].shapes.first(where: { $0.id == maskID }) {
+        if layers[layerIndex].shapes.first(where: { $0.id == maskID }) != nil {
             // Logging removed
         }
         
