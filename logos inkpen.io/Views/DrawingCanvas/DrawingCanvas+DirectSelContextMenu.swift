@@ -47,12 +47,12 @@ extension DrawingCanvas {
         }
         
         // Clipping mask actions when shapes selected
-        if !document.selectedShapeIDs.isEmpty {
+        if !document.selectedObjectIDs.isEmpty {
             Divider()
             Button("Make Clipping Mask") {
                 document.makeClippingMaskFromSelection()
             }
-            .disabled(document.selectedShapeIDs.count < 2)
+            .disabled(document.selectedObjectIDs.count < 2)
             Button("Release Clipping Mask") {
                 document.releaseClippingMaskForSelection()
             }

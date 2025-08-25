@@ -158,13 +158,13 @@ struct PathOperationsPanel: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
-                    .disabled(document.selectedShapeIDs.count < 2)
+                    .disabled(document.selectedObjectIDs.count < 2)
                     Button("Release Clipping Mask") {
                         document.releaseClippingMaskForSelection()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .disabled(document.selectedShapeIDs.isEmpty)
+                    .disabled(document.selectedObjectIDs.isEmpty)
                 }
                 .padding(.horizontal, 12)
             }

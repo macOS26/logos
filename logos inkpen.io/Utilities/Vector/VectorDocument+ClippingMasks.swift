@@ -13,47 +13,91 @@ extension VectorDocument {
     /// Creates a clipping mask with top-most selected shape as the clipping path for the rest
     func makeClippingMaskFromSelection() {
         guard let layerIndex = selectedLayerIndex else { return }
-        let selectedShapes = getSelectedShapesInStackingOrder()
+        
+        // REFACTORED: Use unified objects system for selection
+        let selectedObjects = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let selectedShapes = selectedObjects.compactMap { unifiedObject -> VectorShape? in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape
+            }
+            return nil
+        }
+        
         guard selectedShapes.count >= 2 else { return }
         saveToUndoStack()
-        // Use topmost as mask
+        
+        // Use topmost as mask (last in array = topmost due to stacking order)
         guard let maskID = selectedShapes.last?.id else { return }
         
         // Log clipping mask creation for debugging
         if layers[layerIndex].shapes.first(where: { $0.id == maskID }) != nil {
-            // Logging removed
+            Log.info("🎭 CLIPPING MASK: Creating mask with shape '\(layers[layerIndex].shapes.first(where: { $0.id == maskID })?.name ?? "Unknown")'", category: .general)
         }
         
         // Mark mask
         if let idx = layers[layerIndex].shapes.firstIndex(where: { $0.id == maskID }) {
             layers[layerIndex].shapes[idx].isClippingPath = true
+            Log.info("🎭 CLIPPING MASK DEBUG: Set isClippingPath=true for shape '\(layers[layerIndex].shapes[idx].name)' in layers array", category: .general)
         }
         
         // Apply clipping to others
         for s in selectedShapes.dropLast() {
             if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
                 layers[layerIndex].shapes[i].clippedByShapeID = maskID
-                // Logging removed
+                Log.info("🎭 CLIPPING MASK: Applied clipping to shape '\(s.name)'", category: .general)
             }
         }
         
-        // CRITICAL FIX: Automatically select only the mask shape, deselect the clipped content
-        selectedShapeIDs.removeAll()
-        selectedShapeIDs.insert(maskID)
+        // CRITICAL FIX: Use unified objects system for selection
+        // Find the unified object for the mask shape
+        if let maskUnifiedObject = unifiedObjects.first(where: { 
+            if case .shape(let shape) = $0.objectType {
+                return shape.id == maskID
+            }
+            return false
+        }) {
+            selectedObjectIDs = [maskUnifiedObject.id]
+            syncSelectionArrays() // Keep legacy arrays in sync
+        }
         
-        // Logging removed
+        // CRITICAL: Sync unified objects after property changes
+        syncUnifiedObjectsAfterPropertyChange()
+        
+        // DEBUG: Check if unified objects were synced correctly
+        for unifiedObject in unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType {
+                if shape.id == maskID {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Unified object for mask '\(shape.name)' - isClippingPath: \(shape.isClippingPath)", category: .general)
+                } else if selectedShapes.dropLast().contains(where: { $0.id == shape.id }) {
+                    Log.info("🎭 CLIPPING MASK DEBUG: Unified object for clipped shape '\(shape.name)' - clippedByShapeID: \(shape.clippedByShapeID?.uuidString.prefix(8) ?? "nil")", category: .general)
+                }
+            }
+        }
+        
+        objectWillChange.send()
+        
+        Log.info("✅ CLIPPING MASK: Created successfully with \(selectedShapes.count - 1) clipped shapes", category: .general)
     }
     
     /// Releases any clipping relationship among selected shapes
     func releaseClippingMaskForSelection() {
         guard let layerIndex = selectedLayerIndex else { return }
         saveToUndoStack()
-        let active = getShapesByIds(selectedShapeIDs)
+        
+        // REFACTORED: Use unified objects system for selection
+        let selectedObjects = unifiedObjects.filter { selectedObjectIDs.contains($0.id) }
+        let selectedShapes = selectedObjects.compactMap { unifiedObject -> VectorShape? in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape
+            }
+            return nil
+        }
+        
         // Determine any masks among selection
-        let maskIDsToRelease: Set<UUID> = Set(active.filter { $0.isClippingPath }.map { $0.id })
+        let maskIDsToRelease: Set<UUID> = Set(selectedShapes.filter { $0.isClippingPath }.map { $0.id })
         
         // 1) Clear clipping relationship on selected shapes themselves
-        for s in active {
+        for s in selectedShapes {
             if let i = layers[layerIndex].shapes.firstIndex(where: { $0.id == s.id }) {
                 layers[layerIndex].shapes[i].clippedByShapeID = nil
                 // If this shape is a mask and was selected, clear its mask flag
@@ -70,9 +114,9 @@ extension VectorDocument {
                     // CRITICAL FIX: Restore proper bounds for image shapes after releasing clipping mask
                     let shape = layers[layerIndex].shapes[idx]
                     if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                                            // Force bounds recalculation for image shapes
-                    layers[layerIndex].shapes[idx].updateBounds()
-                    // Logging removed
+                        // Force bounds recalculation for image shapes
+                        layers[layerIndex].shapes[idx].updateBounds()
+                        Log.info("🎭 CLIPPING MASK: Restored bounds for image shape '\(shape.name)'", category: .general)
                     }
                 }
             }
@@ -90,11 +134,15 @@ extension VectorDocument {
             if shape.clippedByShapeID == nil && (ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil) {
                 // This image shape is no longer clipped, ensure its bounds are correct
                 layers[layerIndex].shapes[idx].updateBounds()
-                // Logging removed
+                Log.info("🎭 CLIPPING MASK: Restored bounds for unclipped image shape '\(shape.name)'", category: .general)
             }
         }
         
-        // Logging removed
+        // CRITICAL: Sync unified objects after property changes
+        syncUnifiedObjectsAfterPropertyChange()
+        objectWillChange.send()
+        
+        Log.info("✅ CLIPPING MASK: Released successfully", category: .general)
     }
     
     /// Moves a clipping mask and all its clipped content together
@@ -119,8 +167,11 @@ extension VectorDocument {
             }
         }
         
-        // Logging removed
+        // CRITICAL: Sync unified objects after property changes
+        syncUnifiedObjectsAfterPropertyChange()
         objectWillChange.send()
+        
+        Log.info("🎭 CLIPPING MASK: Moved mask and clipped content by \(offset)", category: .general)
     }
     
     /// Helper function to move a shape by updating its path coordinates
