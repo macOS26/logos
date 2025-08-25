@@ -105,10 +105,14 @@ extension DrawingCanvas {
                             // - control1 from NEXT element is the OUTGOING handle from this anchor point
                             
                             // INCOMING HANDLE (control2 of current element)
+                            // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
                             let handle2Location = CGPoint(x: control2.x, y: control2.y)
-                            let handle2Distance = distance(location, handle2Location)
-                            print("🎯 Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance)), tolerance: \(String(format: "%.1f", tolerance))")
-                            if handle2Distance <= tolerance {
+                            let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                            
+                            if !handle2Collapsed {
+                                let handle2Distance = distance(location, handle2Location)
+                                print("🎯 Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance)), tolerance: \(String(format: "%.1f", tolerance))")
+                                if handle2Distance <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
                                     pathIndex: 0,
@@ -129,15 +133,20 @@ extension DrawingCanvas {
                                 }
                                 return true
                             }
+                            }
                             
                             // OUTGOING HANDLE (control1 from NEXT element - if it exists)
                             if elementIndex + 1 < shape.path.elements.count {
                                 let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(_, let nextControl1, _) = nextElement {
-                                    let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                    let outgoingDistance = distance(location, outgoingHandleLocation)
-                                    print("🎯 Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance)), tolerance: \(String(format: "%.1f", tolerance))")
-                                    if outgoingDistance <= tolerance {
+                                if case .curve(let nextTo, let nextControl1, _) = nextElement {
+                                    // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
+                                    let outgoingHandleCollapsed = (abs(nextControl1.x - nextTo.x) < 0.1 && abs(nextControl1.y - nextTo.y) < 0.1)
+                                    
+                                    if !outgoingHandleCollapsed {
+                                        let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                        let outgoingDistance = distance(location, outgoingHandleLocation)
+                                        print("🎯 Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance)), tolerance: \(String(format: "%.1f", tolerance))")
+                                        if outgoingDistance <= tolerance {
                                         // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
                                         let handleID = HandleID(
                                             shapeID: shape.id,
@@ -158,6 +167,7 @@ extension DrawingCanvas {
                                             Log.fileOperation("🎯 Selected OUTGOING handle", level: .info)
                                         }
                                         return true
+                                    }
                                     }
                                 }
                             }

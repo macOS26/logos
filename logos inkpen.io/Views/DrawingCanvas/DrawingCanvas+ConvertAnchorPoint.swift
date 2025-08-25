@@ -491,46 +491,41 @@ extension DrawingCanvas {
                 // Check each path element for handles
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
-                    case .curve(let to, _, let control2):
-                        // Check incoming handle (control2 of current element)
-                        let incomingHandleLocation = CGPoint(x: control2.x, y: control2.y)
-                        if distance(location, incomingHandleLocation) <= tolerance {
+                    case .curve(let to, let control1, let control2):
+                        // Check control1 handle (belongs to THIS anchor point)
+                        let control1HandleLocation = CGPoint(x: control1.x, y: control1.y)
+                        if distance(location, control1HandleLocation) <= tolerance {
                             // Check if handle is not already collapsed to anchor point
-                            let handleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                            let handleCollapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
                             if !handleCollapsed {
-                                removeIncomingHandle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                return "incoming handle at element \(elementIndex)"
+                                removeControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                return "control1 handle at element \(elementIndex)"
                             }
                         }
                         
-                        // Check outgoing handle (control1 of NEXT element, if it exists)
-                        if elementIndex + 1 < shape.path.elements.count {
-                            let nextElement = shape.path.elements[elementIndex + 1]
-                            if case .curve(_, let nextControl1, _) = nextElement {
-                                let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                if distance(location, outgoingHandleLocation) <= tolerance {
-                                    // Check if handle is not already collapsed to anchor point
-                                    let handleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                                    if !handleCollapsed {
-                                        removeOutgoingHandle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                        return "outgoing handle at element \(elementIndex)"
-                                    }
-                                }
+                        // Check control2 handle (belongs to THIS anchor point)
+                        let control2HandleLocation = CGPoint(x: control2.x, y: control2.y)
+                        if distance(location, control2HandleLocation) <= tolerance {
+                            // Check if handle is not already collapsed to anchor point
+                            let handleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                            if !handleCollapsed {
+                                removeControl2Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                return "control2 handle at element \(elementIndex)"
                             }
                         }
                         
                     case .move(let to), .line(let to):
-                        // Check outgoing handle (control1 of NEXT element, if it exists)
+                        // Check control1 handle of NEXT element (if it exists)
                         if elementIndex + 1 < shape.path.elements.count {
                             let nextElement = shape.path.elements[elementIndex + 1]
-                            if case .curve(_, let nextControl1, _) = nextElement {
-                                let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                if distance(location, outgoingHandleLocation) <= tolerance {
+                            if case .curve(let nextTo, let nextControl1, _) = nextElement {
+                                let control1HandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                if distance(location, control1HandleLocation) <= tolerance {
                                     // Check if handle is not already collapsed to anchor point
-                                    let handleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                                    let handleCollapsed = (abs(nextControl1.x - nextTo.x) < 0.1 && abs(nextControl1.y - nextTo.y) < 0.1)
                                     if !handleCollapsed {
-                                        removeOutgoingHandle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                        return "outgoing handle at element \(elementIndex)"
+                                        removeNextElementControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                        return "control1 handle of next element at element \(elementIndex)"
                                     }
                                 }
                             }
@@ -546,8 +541,49 @@ extension DrawingCanvas {
         return nil // No handle was clicked
     }
     
-    /// Removes the incoming handle (control2) of a curve element
-    private func removeIncomingHandle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    /// Removes the control1 handle of a curve element (collapses to PREVIOUS anchor point)
+    private func removeControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+        guard layerIndex < document.layers.count,
+              shapeIndex < document.layers[layerIndex].shapes.count,
+              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        
+        switch element {
+        case .curve(let to, _, let control2):
+            // FIXED: control1 belongs to the PREVIOUS anchor point, not this one
+            // We need to find the previous element and collapse its control2 handle
+            if elementIndex > 0 {
+                let previousElement = elements[elementIndex - 1]
+                switch previousElement {
+                case .curve(let prevTo, let prevControl1, _):
+                    // Collapse the outgoing handle (control2) of the previous element to the previous anchor point
+                    elements[elementIndex - 1] = .curve(to: prevTo, control1: prevControl1, control2: prevTo)
+                default:
+                    break
+                }
+            }
+            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ REMOVED CONTROL1 HANDLE: Collapsed to previous anchor point", category: .fileOperations)
+            
+        default:
+            break
+        }
+    }
+    
+    /// Removes the control2 handle of a curve element (collapses to CURRENT anchor point)
+    private func removeControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -560,8 +596,8 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, let control1, _):
-            // FIXED: Only collapse the incoming handle to the anchor point
-            // Don't affect adjacent elements - they should keep their handles
+            // FIXED: control2 belongs to the CURRENT anchor point (incoming handle)
+            // Collapse the incoming handle to the current anchor point
             elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
@@ -571,15 +607,15 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ REMOVED INCOMING HANDLE: Collapsed handle to anchor point only", category: .fileOperations)
+            Log.info("✅ REMOVED CONTROL2 HANDLE: Collapsed to current anchor point", category: .fileOperations)
             
         default:
             break
         }
     }
     
-    /// Removes the outgoing handle (control1) of the next element
-    private func removeOutgoingHandle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    /// Removes the control1 handle of the NEXT element (for line/move elements)
+    private func removeNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -592,8 +628,7 @@ extension DrawingCanvas {
         
         switch nextElement {
         case .curve(let to, _, let control2):
-            // FIXED: Only collapse the outgoing handle to the anchor point
-            // Don't affect adjacent elements - they should keep their handles
+            // FIXED: Collapse control1 handle to the NEXT anchor point
             elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
@@ -603,7 +638,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ REMOVED OUTGOING HANDLE: Collapsed handle to anchor point only", category: .fileOperations)
+            Log.info("✅ REMOVED NEXT ELEMENT CONTROL1 HANDLE: Collapsed to next anchor point", category: .fileOperations)
             
         default:
             break
