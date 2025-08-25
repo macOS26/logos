@@ -242,17 +242,20 @@ extension VectorDocument {
             // Check if orderIDs are sequential starting from 0
             let expectedOrderIDs = Array(0..<layerObjects.count)
             
-            if orderIDs != expectedOrderIDs {
+            // CRITICAL FIX: Always fix the stacking order to ensure visual consistency
+            // The issue is that orderIDs might be sequential but in wrong order
+            let needsFixing = orderIDs != expectedOrderIDs || layerObjects.count > 1
+            
+            if needsFixing {
                 Log.info("🔧 UNDO FIX: OrderIDs inconsistent for layer \(layerIndex), fixing...", category: .general)
                 Log.info("  Current orderIDs: \(orderIDs)", category: .general)
                 Log.info("  Expected orderIDs: \(expectedOrderIDs)", category: .general)
                 
-                // CRITICAL: Preserve the current visual order by sorting by current orderID
-                // This ensures objects appear in the same order after fixing
+                // CRITICAL: The issue is that the orderIDs are in the wrong order
+                // We need to reverse them so that the last created object (which should be on top) gets the highest orderID
                 let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
                 
-                // Reassign orderIDs to maintain the current visual order
-                // Use the same logic as populateUnifiedObjectsFromLayers: reverse order
+                // REVERSE THE ORDER: Last created object gets highest orderID (front), first created gets lowest (back)
                 for (arrayIndex, unifiedObject) in sortedObjects.enumerated() {
                     let newOrderID = sortedObjects.count - 1 - arrayIndex // Reverse order: last item gets highest orderID (front)
                     
