@@ -70,6 +70,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var undoStack: [VectorDocument] = []
     @Published var redoStack: [VectorDocument] = []
     
+    // Flag to track when we're in an undo/redo operation to prevent reordering
+    internal var isUndoRedoOperation: Bool = false
+    
     // PROFESSIONAL TYPOGRAPHY MANAGEMENT
     @Published var fontManager: FontManager = FontManager()
     

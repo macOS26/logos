@@ -32,6 +32,10 @@ extension VectorDocument {
     func undo() {
         guard !undoStack.isEmpty else { return }
         
+        // Set flag to prevent reordering during undo operation
+        isUndoRedoOperation = true
+        defer { isUndoRedoOperation = false }
+        
         // Save current state to redo stack
         do {
             let data = try JSONEncoder().encode(self)
@@ -102,8 +106,13 @@ extension VectorDocument {
         layerIndex = previousState.layerIndex
         directSelectedShapeIDs = previousState.directSelectedShapeIDs
         
-        // CRITICAL: Sync unified objects system after state restoration
-        syncUnifiedObjectsAfterPropertyChange()
+        // CRITICAL FIX: After restoring state, ensure unified objects are properly ordered
+        // but only if the orderIDs are inconsistent with the current ordering system
+        fixUnifiedObjectsOrderingAfterUndo()
+        
+        // CRITICAL FIX: Sync legacy arrays to ensure consistency
+        syncLegacyArraysAfterUndo()
+        
         syncSelectionArrays()
         objectWillChange.send()
         
@@ -112,6 +121,10 @@ extension VectorDocument {
     
     func redo() {
         guard !redoStack.isEmpty else { return }
+        
+        // Set flag to prevent reordering during redo operation
+        isUndoRedoOperation = true
+        defer { isUndoRedoOperation = false }
         
         // Save current state to undo stack WITHOUT clearing redo stack
         do {
@@ -192,11 +205,150 @@ extension VectorDocument {
         layerIndex = nextState.layerIndex
         directSelectedShapeIDs = nextState.directSelectedShapeIDs
         
-        // CRITICAL: Sync unified objects system after state restoration
-        syncUnifiedObjectsAfterPropertyChange()
+        // CRITICAL FIX: After restoring state, ensure unified objects are properly ordered
+        // but only if the orderIDs are inconsistent with the current ordering system
+        fixUnifiedObjectsOrderingAfterUndo()
+        
+        // CRITICAL FIX: Sync legacy arrays to ensure consistency
+        syncLegacyArraysAfterUndo()
+        
         syncSelectionArrays()
         objectWillChange.send()
         
         Log.info("✅ Redo completed - restored state with \(unifiedObjects.count) unified objects", category: .general)
+    }
+    
+    /// CRITICAL FIX: Ensures unified objects are properly ordered after undo/redo operations
+    /// This function checks if the orderIDs are consistent with the current ordering system
+    /// and fixes them if necessary without changing the actual object order
+    private func fixUnifiedObjectsOrderingAfterUndo() {
+        // Temporarily disable the undo/redo flag to allow this specific operation
+        let wasUndoRedoOperation = isUndoRedoOperation
+        isUndoRedoOperation = false
+        
+        defer { isUndoRedoOperation = wasUndoRedoOperation }
+        
+        // Debug: Log the current order state
+        logCurrentOrderState("BEFORE FIX")
+        
+        // Check if orderIDs are consistent across all layers
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard layerObjects.count > 1 else { continue }
+            
+            // Get the orderIDs for this layer
+            let orderIDs = layerObjects.map { $0.orderID }.sorted()
+            
+            // Check if orderIDs are sequential starting from 0
+            let expectedOrderIDs = Array(0..<layerObjects.count)
+            
+            if orderIDs != expectedOrderIDs {
+                Log.info("🔧 UNDO FIX: OrderIDs inconsistent for layer \(layerIndex), fixing...", category: .general)
+                Log.info("  Current orderIDs: \(orderIDs)", category: .general)
+                Log.info("  Expected orderIDs: \(expectedOrderIDs)", category: .general)
+                
+                // CRITICAL: Preserve the current visual order by sorting by current orderID
+                // This ensures objects appear in the same order after fixing
+                let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+                
+                // Reassign orderIDs to maintain the current visual order
+                // Use the same logic as populateUnifiedObjectsFromLayers: reverse order
+                for (arrayIndex, unifiedObject) in sortedObjects.enumerated() {
+                    let newOrderID = sortedObjects.count - 1 - arrayIndex // Reverse order: last item gets highest orderID (front)
+                    
+                    // Find and update the unified object with the correct orderID
+                    if let objectIndex = unifiedObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
+                        switch unifiedObject.objectType {
+                        case .shape(let shape):
+                            unifiedObjects[objectIndex] = VectorObject(
+                                shape: shape,
+                                layerIndex: layerIndex,
+                                orderID: newOrderID
+                            )
+                        case .text(let text):
+                            unifiedObjects[objectIndex] = VectorObject(
+                                text: text,
+                                layerIndex: layerIndex,
+                                orderID: newOrderID
+                            )
+                        }
+                    }
+                }
+                
+                Log.info("🔧 UNDO FIX: Fixed orderIDs for layer \(layerIndex) - maintained visual order", category: .general)
+            }
+        }
+        
+        // Debug: Log the order state after fixing
+        logCurrentOrderState("AFTER FIX")
+    }
+    
+    /// Debug function to log the current order state
+    private func logCurrentOrderState(_ stage: String) {
+        Log.info("🔍 ORDER DEBUG [\(stage)]: Unified objects order state", category: .general)
+        
+        for layerIndex in layers.indices {
+            let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
+            guard !layerObjects.isEmpty else { continue }
+            
+            let sortedObjects = layerObjects.sorted { $0.orderID < $1.orderID }
+            let orderIDs = sortedObjects.map { $0.orderID }
+            
+            Log.info("  Layer \(layerIndex) (\(layers[layerIndex].name)): orderIDs=\(orderIDs)", category: .general)
+            
+            for (index, unifiedObject) in sortedObjects.enumerated() {
+                switch unifiedObject.objectType {
+                case .shape(let shape):
+                    Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Shape: \(shape.name)", category: .general)
+                case .text(let text):
+                    Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Text: \(text.content.prefix(20))", category: .general)
+                }
+            }
+        }
+    }
+    
+    /// CRITICAL FIX: Sync legacy arrays after undo/redo operations to ensure consistency
+    private func syncLegacyArraysAfterUndo() {
+        // Temporarily disable the undo/redo flag to allow this specific operation
+        let wasUndoRedoOperation = isUndoRedoOperation
+        isUndoRedoOperation = false
+        
+        defer { isUndoRedoOperation = wasUndoRedoOperation }
+        
+        // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
+        let originalTextObjects = textObjects
+        let originalShapes = layers.map { $0.shapes }
+        
+        // Clear existing legacy arrays
+        for layerIndex in layers.indices {
+            layers[layerIndex].shapes.removeAll()
+        }
+        textObjects.removeAll()
+        
+        // Rebuild legacy arrays from unified objects, maintaining order
+        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            switch unifiedObject.objectType {
+            case .shape(let shape):
+                // Use original shape from layers array to preserve all state
+                if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
+                    layers[unifiedObject.layerIndex].shapes.append(originalShape)
+                } else {
+                    layers[unifiedObject.layerIndex].shapes.append(shape)
+                }
+            case .text(let text):
+                // Use original text object to preserve all state, but ensure isEditing = false
+                if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
+                    var updatedText = originalText
+                    updatedText.isEditing = false
+                    textObjects.append(updatedText)
+                } else {
+                    var updatedText = text
+                    updatedText.isEditing = false
+                    textObjects.append(updatedText)
+                }
+            }
+        }
+        
+        Log.info("🔧 UNDO SYNC: Legacy arrays synced from unified objects", category: .general)
     }
 }

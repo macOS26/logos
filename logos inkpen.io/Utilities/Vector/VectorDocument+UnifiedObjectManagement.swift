@@ -21,6 +21,22 @@ extension VectorDocument {
     
     /// Adds a shape to the unified objects system
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this shape to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == shape.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
@@ -28,6 +44,22 @@ extension VectorDocument {
     
     /// Adds a text object to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this text to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .text(let existingText) = $0.objectType {
+                    return existingText.id == text.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
         let orderID = getNextOrderID(for: layerIndex)
         let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
@@ -36,6 +68,12 @@ extension VectorDocument {
     /// Populates the unified objects array from existing layers and text objects
     /// CRITICAL: This creates a truly unified ordering where text and shapes can be intermixed
     internal func populateUnifiedObjectsFromLayers() {
+        // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
+        if isUndoRedoOperation {
+            Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
+            return
+        }
+        
         unifiedObjects.removeAll()
         
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
@@ -80,6 +118,12 @@ extension VectorDocument {
     /// Populates the unified objects array from existing layers and text objects
     /// PRESERVES ORIGINAL ORDER: This version maintains the original stacking order from imports
     internal func populateUnifiedObjectsFromLayersPreservingOrder() {
+        // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
+        if isUndoRedoOperation {
+            Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
+            return
+        }
+        
         unifiedObjects.removeAll()
         
         // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
@@ -220,6 +264,12 @@ extension VectorDocument {
     
     /// CRITICAL FIX: Sync unified objects when shape properties change (colors, etc.)
     func syncUnifiedObjectsAfterPropertyChange() {
+        // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
+        if isUndoRedoOperation {
+            Log.info("🔧 SYNC: Skipping unified objects sync during undo/redo operation to preserve order", category: .general)
+            return
+        }
+        
         // CRITICAL FIX: Remove unified objects that no longer exist in legacy arrays
         let beforeCount = unifiedObjects.count
         unifiedObjects.removeAll { unifiedObject in
@@ -322,6 +372,12 @@ extension VectorDocument {
     
     /// CRITICAL FIX: Force complete resync of unified objects system
     func forceResyncUnifiedObjects() {
+        // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
+        if isUndoRedoOperation {
+            Log.info("🔧 FORCE RESYNC: Skipping unified objects resync during undo/redo operation to preserve order", category: .general)
+            return
+        }
+        
         Log.info("🔧 FORCE RESYNC: Rebuilding unified objects system", category: .general)
         populateUnifiedObjectsFromLayers()
         Log.info("🔧 FORCE RESYNC: Unified objects system rebuilt with \(unifiedObjects.count) objects", category: .general)
