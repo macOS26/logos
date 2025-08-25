@@ -121,6 +121,10 @@ extension DrawingCanvas {
                 
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                document.objectWillChange.send()
                 return
             }
         }
@@ -213,6 +217,10 @@ extension DrawingCanvas {
                 
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                
+                // CRITICAL FIX: Sync unified objects and force UI refresh
+                document.syncUnifiedObjectsAfterPropertyChange()
+                document.objectWillChange.send()
                 return
             }
         }
