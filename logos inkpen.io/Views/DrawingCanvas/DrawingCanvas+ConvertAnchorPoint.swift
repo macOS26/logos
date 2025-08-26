@@ -8,16 +8,14 @@
 import SwiftUI
 
 extension DrawingCanvas {
-    internal func handleConvertAnchorPointTap(at location: CGPoint) {
+    func handleConvertAnchorPointTap(at location: CGPoint) {
         // ZOOM-AWARE CONVERT POINT TOLERANCE: Scale tolerance based on zoom level
         // At high zoom levels, small physical movements translate to large canvas movements
         // So we need to reduce the tolerance proportionally
         let baseConvertTolerance: Double = 8.0 // Base tolerance in screen pixels
         let zoomLevel = document.zoomLevel
         let tolerance = max(2.0, baseConvertTolerance / zoomLevel) // Minimum 2px, scales with zoom
-        
-        // TEXT EDITING REMOVED
-        
+                
         // NEW: First check if clicking on a handle to remove it
         if let handleRemovalResult = removeHandleIfClicked(at: location, tolerance: tolerance) {
             Log.fileOperation("🎯 CONVERT POINT TOOL: Removed handle - \(handleRemovalResult)", level: .info)
@@ -204,7 +202,7 @@ extension DrawingCanvas {
     }
     
     // PROFESSIONAL UX IMPROVEMENT: Enable direct selection UI for convert point tool
-    internal func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
+    func enableDirectSelectionForConvertedPoint(shapeID: UUID, elementIndex: Int) {
         // Clear any existing selections but KEEP the convert point tool active
         document.selectedShapeIDs.removeAll()
         document.selectedTextIDs.removeAll()
@@ -236,7 +234,7 @@ extension DrawingCanvas {
         Log.info("  - User can see bezier handles while continuing to use Convert Point tool", category: .general)
     }
     
-    internal func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func convertLineToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -301,7 +299,7 @@ extension DrawingCanvas {
         }
     }
     
-    internal func convertSmoothToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func convertSmoothToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -334,7 +332,7 @@ extension DrawingCanvas {
         }
     }
     
-    internal func convertCornerToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func convertCornerToSmooth(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -443,7 +441,7 @@ extension DrawingCanvas {
         }
     }
     
-    internal func convertQuadToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func convertQuadToCorner(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -474,7 +472,7 @@ extension DrawingCanvas {
     // MARK: - Handle Removal Functionality
     
     /// Removes a handle if clicked, returns description of what was removed
-    private func removeHandleIfClicked(at location: CGPoint, tolerance: Double) -> String? {
+    func removeHandleIfClicked(at location: CGPoint, tolerance: Double) -> String? {
         // Search through all visible layers and shapes for handles to remove
         for layerIndex in document.layers.indices.reversed() {
             let layer = document.layers[layerIndex]
@@ -542,7 +540,7 @@ extension DrawingCanvas {
     }
     
     /// Removes the control1 handle of a curve element (collapses to PREVIOUS anchor point)
-    private func removeControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func removeControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -583,7 +581,7 @@ extension DrawingCanvas {
     }
     
     /// Removes the control2 handle of a curve element (collapses to CURRENT anchor point)
-    private func removeControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func removeControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
@@ -615,7 +613,7 @@ extension DrawingCanvas {
     }
     
     /// Removes the control1 handle of the NEXT element (for line/move elements)
-    private func removeNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+    func removeNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
               elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
