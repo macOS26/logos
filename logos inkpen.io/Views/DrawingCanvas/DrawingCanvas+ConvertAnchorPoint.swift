@@ -247,21 +247,75 @@ extension DrawingCanvas {
         
         switch element {
         case .line(let to):
-            // CRITICAL FIX: Convert line to curve but ONLY modify handles that belong to this anchor point
+            // Convert line to curve with BOTH handles extended (smooth point)
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
             
-            // STEP 1: Convert current line element to curve with incoming handle
-            let incomingHandle = VectorPoint(point.x - handleLength, point.y)
-            elements[elementIndex] = .curve(to: point, control1: VectorPoint(point.x, point.y), control2: incomingHandle)
+            // Calculate direction based on adjacent points for better handle placement
+            var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
             
-            // STEP 2: Add outgoing handle to NEXT element (if it exists and is a curve)
-            if elementIndex + 1 < elements.count {
-                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
-                    let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
-                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+            // Get previous and next points to determine path direction
+            var prevPoint: VectorPoint?
+            var nextPoint: VectorPoint?
+            
+            if elementIndex > 0 {
+                switch elements[elementIndex - 1] {
+                case .move(let from), .line(let from):
+                    prevPoint = from
+                case .curve(let from, _, _), .quadCurve(let from, _):
+                    prevPoint = from
+                default:
+                    break
                 }
             }
+            
+            if elementIndex + 1 < elements.count {
+                switch elements[elementIndex + 1] {
+                case .move(let next), .line(let next):
+                    nextPoint = next
+                case .curve(let next, _, _), .quadCurve(let next, _):
+                    nextPoint = next
+                default:
+                    break
+                }
+            }
+            
+            // Calculate tangent direction
+            if let prev = prevPoint, let next = nextPoint {
+                let dx = next.x - prev.x
+                let dy = next.y - prev.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
+                }
+            } else if let prev = prevPoint {
+                let dx = point.x - prev.x
+                let dy = point.y - prev.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
+                }
+            } else if let next = nextPoint {
+                let dx = next.x - point.x
+                let dy = next.y - point.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
+                }
+            }
+            
+            // Create symmetric handles along the direction vector
+            let outgoingHandle = VectorPoint(
+                point.x + directionVector.x * handleLength,
+                point.y + directionVector.y * handleLength
+            )
+            let incomingHandle = VectorPoint(
+                point.x - directionVector.x * handleLength,
+                point.y - directionVector.y * handleLength
+            )
+            
+            // Convert to curve with BOTH handles
+            elements[elementIndex] = .curve(to: point, control1: outgoingHandle, control2: incomingHandle)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -270,7 +324,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with proper handle structure", category: .fileOperations)
+            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with both handles", category: .fileOperations)
             
         case .move(let to):
             // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
@@ -312,12 +366,18 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, _):
-            // FIXED: Only convert the current point to a corner point
-            // Don't affect adjacent points - they should keep their handles
+            // Collapse BOTH handles to the anchor point to create a corner point
             let cornerPoint = VectorPoint(to.x, to.y)
             
-            // Convert current curve element to line element (removes handles for this point only)
-            elements[elementIndex] = .line(to: cornerPoint)
+            // STEP 1: Collapse incoming handle (control2) to the anchor point
+            elements[elementIndex] = .curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
+            
+            // STEP 2: Collapse outgoing handle (control1 of NEXT element) to the anchor point
+            if elementIndex + 1 < elements.count {
+                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
+                }
+            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -326,7 +386,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED SMOOTH CURVE TO CORNER POINT (only current point affected)", category: .fileOperations)
+            Log.info("✅ CONVERTED SMOOTH TO CORNER: Collapsed both handles to anchor point", category: .fileOperations)
         default:
             break
         }
@@ -344,20 +404,20 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, let control1, _):
-            // CRITICAL FIX: Create proper 180-degree symmetric handles based on path direction
+        case .curve(let to, _, _):
+            // Create proper 180-degree symmetric handles
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
             
             // Calculate the direction vector based on adjacent points
             var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
             
-            // Try to get direction from previous point
+            // Try to get direction from previous and next points
+            var prevPoint: VectorPoint?
+            var nextPoint: VectorPoint?
+            
             if elementIndex > 0 {
-                let prevElement = elements[elementIndex - 1]
-                var prevPoint: VectorPoint?
-                
-                switch prevElement {
+                switch elements[elementIndex - 1] {
                 case .move(let from), .line(let from):
                     prevPoint = from
                 case .curve(let from, _, _):
@@ -365,22 +425,10 @@ extension DrawingCanvas {
                 default:
                     break
                 }
-                
-                if let prev = prevPoint {
-                    let dx = point.x - prev.x
-                    let dy = point.y - prev.y
-                    let length = sqrt(dx * dx + dy * dy)
-                    if length > 0.1 {
-                        directionVector = CGPoint(x: dx / length, y: dy / length)
-                    }
-                }
             }
-            // If no previous point, try to get direction from next point
-            else if elementIndex + 1 < elements.count {
-                let nextElement = elements[elementIndex + 1]
-                var nextPoint: VectorPoint?
-                
-                switch nextElement {
+            
+            if elementIndex + 1 < elements.count {
+                switch elements[elementIndex + 1] {
                 case .move(let next), .line(let next):
                     nextPoint = next
                 case .curve(let next, _, _):
@@ -388,40 +436,49 @@ extension DrawingCanvas {
                 default:
                     break
                 }
-                
-                if let next = nextPoint {
-                    let dx = next.x - point.x
-                    let dy = next.y - point.y
-                    let length = sqrt(dx * dx + dy * dy)
-                    if length > 0.1 {
-                        directionVector = CGPoint(x: dx / length, y: dy / length)
-                    }
+            }
+            
+            // Calculate direction based on the path tangent
+            if let prev = prevPoint, let next = nextPoint {
+                // Use the direction from prev to next
+                let dx = next.x - prev.x
+                let dy = next.y - prev.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
+                }
+            } else if let prev = prevPoint {
+                // Use direction from prev to current
+                let dx = point.x - prev.x
+                let dy = point.y - prev.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
+                }
+            } else if let next = nextPoint {
+                // Use direction from current to next
+                let dx = next.x - point.x
+                let dy = next.y - point.y
+                let length = sqrt(dx * dx + dy * dy)
+                if length > 0.1 {
+                    directionVector = CGPoint(x: dx / length, y: dy / length)
                 }
             }
             
-            // ROTATE HANDLES BY -45 DEGREES for better visibility while maintaining 180-degree symmetry
-            let rotationAngle = -45.0 * .pi / 180.0  // -45 degrees in radians
-            let cosAngle = cos(rotationAngle)
-            let sinAngle = sin(rotationAngle)
-            
-            // Apply rotation to direction vector
-            let rotatedDirX = directionVector.x * cosAngle - directionVector.y * sinAngle
-            let rotatedDirY = directionVector.x * sinAngle + directionVector.y * cosAngle
-            
-            // Create symmetric handles using the rotated direction vector (EXACTLY like pen tool)
+            // Create symmetric handles along the direction vector
             let outgoingHandle = VectorPoint(
-                point.x + rotatedDirX * handleLength,
-                point.y + rotatedDirY * handleLength
+                point.x + directionVector.x * handleLength,
+                point.y + directionVector.y * handleLength
             )
             let incomingHandle = VectorPoint(
-                point.x - rotatedDirX * handleLength,
-                point.y - rotatedDirY * handleLength
+                point.x - directionVector.x * handleLength,
+                point.y - directionVector.y * handleLength
             )
             
-            // STEP 1: Add incoming handle (control2) to current element
-            elements[elementIndex] = .curve(to: point, control1: control1, control2: incomingHandle)
+            // Update the current element with the incoming handle
+            elements[elementIndex] = .curve(to: point, control1: point, control2: incomingHandle)
             
-            // STEP 2: Add outgoing handle (control1 of NEXT element)
+            // Update the next element with the outgoing handle (if it exists)
             if elementIndex + 1 < elements.count {
                 if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
                     elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
@@ -435,7 +492,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED CORNER POINT TO SMOOTH CURVE with 180-degree symmetric handles", category: .fileOperations)
+            Log.info("✅ CONVERTED CORNER TO SMOOTH: Added 180-degree symmetric handles", category: .fileOperations)
         default:
             break
         }
@@ -539,7 +596,7 @@ extension DrawingCanvas {
         return nil // No handle was clicked
     }
     
-    /// Removes the control1 handle of a curve element (collapses to PREVIOUS anchor point)
+    /// Removes the control1 handle of a curve element
     func removeControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
@@ -553,17 +610,15 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, let control2):
-            // FIXED: control1 belongs to the PREVIOUS anchor point, not this one
-            // We need to find the previous element and collapse its control2 handle
-            if elementIndex > 0 {
-                let previousElement = elements[elementIndex - 1]
-                switch previousElement {
-                case .curve(let prevTo, let prevControl1, _):
-                    // Collapse the outgoing handle (control2) of the previous element to the previous anchor point
-                    elements[elementIndex - 1] = .curve(to: prevTo, control1: prevControl1, control2: prevTo)
-                default:
-                    break
-                }
+            // Check if control2 is also collapsed
+            let control2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+            
+            if control2Collapsed {
+                // Both handles collapsed/removed - convert to line (corner point)
+                elements[elementIndex] = .line(to: to)
+            } else {
+                // Keep control2 - convert to quadCurve (cusp point)
+                elements[elementIndex] = .quadCurve(to: to, control: control2)
             }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
@@ -573,14 +628,27 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ REMOVED CONTROL1 HANDLE: Collapsed to previous anchor point", category: .fileOperations)
+            Log.info("✅ REMOVED CONTROL1 HANDLE: Converted to \(control2Collapsed ? "line (corner)" : "quadCurve (cusp)")", category: .fileOperations)
+            
+        case .quadCurve(let to, _):
+            // Removing the only handle - convert to line (corner point)
+            elements[elementIndex] = .line(to: to)
+            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ REMOVED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
             
         default:
             break
         }
     }
     
-    /// Removes the control2 handle of a curve element (collapses to CURRENT anchor point)
+    /// Removes the control2 handle of a curve element
     func removeControl2Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
         guard layerIndex < document.layers.count,
               shapeIndex < document.layers[layerIndex].shapes.count,
@@ -594,9 +662,16 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, let control1, _):
-            // FIXED: control2 belongs to the CURRENT anchor point (incoming handle)
-            // Collapse the incoming handle to the current anchor point
-            elements[elementIndex] = .curve(to: to, control1: control1, control2: to)
+            // Check if control1 is also collapsed
+            let control1Collapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
+            
+            if control1Collapsed {
+                // Both handles collapsed/removed - convert to line (corner point)
+                elements[elementIndex] = .line(to: to)
+            } else {
+                // Keep control1 - convert to quadCurve (cusp point)
+                elements[elementIndex] = .quadCurve(to: to, control: control1)
+            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -605,7 +680,20 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ REMOVED CONTROL2 HANDLE: Collapsed to current anchor point", category: .fileOperations)
+            Log.info("✅ REMOVED CONTROL2 HANDLE: Converted to \(control1Collapsed ? "line (corner)" : "quadCurve (cusp)")", category: .fileOperations)
+            
+        case .quadCurve(let to, _):
+            // Removing the only handle - convert to line (corner point)
+            elements[elementIndex] = .line(to: to)
+            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // CRITICAL FIX: Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ REMOVED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
             
         default:
             break

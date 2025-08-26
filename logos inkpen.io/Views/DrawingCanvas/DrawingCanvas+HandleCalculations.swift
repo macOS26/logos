@@ -23,7 +23,7 @@ extension DrawingCanvas {
         switch results {
         case .success(let linkedHandles):
             if let result = linkedHandles.first {
-                print("🔧 GPU CALC: Anchor(\(String(format: "%.1f", anchorPoint.x)), \(String(format: "%.1f", anchorPoint.y))) Dragged(\(String(format: "%.1f", draggedHandle.x)), \(String(format: "%.1f", draggedHandle.y))) Original(\(String(format: "%.1f", originalOppositeHandle.x)), \(String(format: "%.1f", originalOppositeHandle.y))) → Result(\(String(format: "%.1f", result.x)), \(String(format: "%.1f", result.y)))")
+                //print("🔧 GPU CALC: Anchor(\(String(format: "%.1f", anchorPoint.x)), \(String(format: "%.1f", anchorPoint.y))) Dragged(\(String(format: "%.1f", draggedHandle.x)), \(String(format: "%.1f", draggedHandle.y))) Original(\(String(format: "%.1f", originalOppositeHandle.x)), \(String(format: "%.1f", originalOppositeHandle.y))) → Result(\(String(format: "%.1f", result.x)), \(String(format: "%.1f", result.y)))")
                 return result
             }
         case .failure(let error):
@@ -83,6 +83,32 @@ extension DrawingCanvas {
         return (incomingHandle, outgoingHandle)
     }
     
+    /// Checks if a point is a corner point (both handles collapsed to the anchor)
+    private func isCornerPoint(elements: [PathElement], elementIndex: Int) -> Bool {
+        guard elementIndex < elements.count else { return false }
+        
+        switch elements[elementIndex] {
+        case .curve(let to, _, let control2):
+            // Check if incoming handle (control2) is collapsed to anchor point
+            let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+            
+            // Check if outgoing handle (control1 of NEXT element) is collapsed to anchor point
+            var outgoingHandleCollapsed = true // Default to true if no next element
+            if elementIndex + 1 < elements.count {
+                let nextElement = elements[elementIndex + 1]
+                if case .curve(_, let nextControl1, _) = nextElement {
+                    outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                }
+            }
+            
+            // Point is a corner if BOTH handles are collapsed
+            return incomingHandleCollapsed && outgoingHandleCollapsed
+            
+        default:
+            return false
+        }
+    }
+    
     /// Updates the opposite handle of the SAME anchor point to maintain smooth curves
     /// PROFESSIONAL BEHAVIOR: Smooth points work like a teeter-totter - both handles move together in a straight line
     /// ENHANCED: Also handles coincident points (first/last in closed paths) as smooth points
@@ -91,6 +117,12 @@ extension DrawingCanvas {
         // FIRST: Check for coincident points (exact same X,Y coordinates)
         if handleCoincidentSmoothPoints(elements: &elements, draggedHandleID: draggedHandleID, newDraggedPosition: newDraggedPosition) {
             return // Handled by coincident point logic
+        }
+        
+        // CHECK IF THIS IS A CORNER POINT (both handles collapsed)
+        // If so, don't update the linked handle - let each handle move independently
+        if isCornerPoint(elements: elements, elementIndex: draggedHandleID.elementIndex) {
+            return // Corner points don't have linked handles
         }
         
         if draggedHandleID.handleType == .control2 {

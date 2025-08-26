@@ -94,23 +94,40 @@ extension DrawingCanvas {
                 let deltaY = newPosition.y - originalPosition.y
                 let delta = CGPoint(x: deltaX, y: deltaY)
                 
-                // STEP 1: Update the anchor point position
+                // STEP 1: Update the anchor point AND its handles
                 switch elements[pointID.elementIndex] {
                 case .move(_):
                     elements[pointID.elementIndex] = .move(to: newPoint)
                 case .line(_):
                     elements[pointID.elementIndex] = .line(to: newPoint)
-                case .curve(_, let control1, let control2):
-                    elements[pointID.elementIndex] = .curve(to: newPoint, control1: control1, control2: control2)
+                case .curve(let oldTo, let control1, let control2):
+                    // Check if handles are collapsed to the anchor point
+                    let control1Collapsed = (abs(control1.x - oldTo.x) < 0.1 && abs(control1.y - oldTo.y) < 0.1)
+                    let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
+                    
+                    // If handles are collapsed, keep them collapsed to the NEW anchor position
+                    // Otherwise, move them by the delta to maintain their relative positions
+                    let newControl1 = control1Collapsed ? newPoint : VectorPoint(control1.x + deltaX, control1.y + deltaY)
+                    let newControl2 = control2Collapsed ? newPoint : VectorPoint(control2.x + deltaX, control2.y + deltaY)
+                    
+                    elements[pointID.elementIndex] = .curve(to: newPoint, control1: newControl1, control2: newControl2)
                 case .quadCurve(_, let control):
                     elements[pointID.elementIndex] = .quadCurve(to: newPoint, control: control)
                 case .close:
                     break
                 }
                 
-                // STEP 2: Check if this is a smooth curve point and move its handles
-                if isSmoothCurvePoint(elements: elements, elementIndex: pointID.elementIndex) {
-                    moveSmoothCurveHandles(elements: &elements, elementIndex: pointID.elementIndex, delta: delta)
+                // STEP 2: Update the outgoing handle (control1 of NEXT element) if it exists
+                if pointID.elementIndex + 1 < elements.count {
+                    if case .curve(let nextTo, let nextControl1, let nextControl2) = elements[pointID.elementIndex + 1] {
+                        // Check if the outgoing handle is collapsed to the original anchor position
+                        let outgoingCollapsed = (abs(nextControl1.x - originalPosition.x) < 0.1 && abs(nextControl1.y - originalPosition.y) < 0.1)
+                        
+                        // If collapsed, keep it collapsed to the NEW anchor position
+                        // Otherwise, move it by the delta
+                        let newNextControl1 = outgoingCollapsed ? newPoint : VectorPoint(nextControl1.x + deltaX, nextControl1.y + deltaY)
+                        elements[pointID.elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
+                    }
                 }
                 
                 // STEP 3: NEW - Check if this point has coincident points and apply smooth curve logic to them
@@ -156,21 +173,36 @@ extension DrawingCanvas {
         }
     }
     
-    /// Moves the handles of a smooth curve point while maintaining 180-degree alignment
-    private func moveSmoothCurveHandles(elements: inout [PathElement], elementIndex: Int, delta: CGPoint) {
+    /// Moves handles with an anchor point, maintaining their relative positions
+    /// This properly handles both smooth curve handles and collapsed handles (corner points)
+    private func moveHandlesWithAnchorPoint(elements: inout [PathElement], elementIndex: Int, delta: CGPoint) {
         guard elementIndex < elements.count else { return }
         
         switch elements[elementIndex] {
         case .curve(let to, let control1, let control2):
-            // Move incoming handle (control2) of current element by the same delta
+            // Move incoming handle (control2) by the same delta
+            // This maintains the handle's position relative to the anchor point
+            // If the handle is collapsed to the anchor, it stays collapsed
             let newControl2 = VectorPoint(control2.x + delta.x, control2.y + delta.y)
             elements[elementIndex] = .curve(to: to, control1: control1, control2: newControl2)
             
-            // Move outgoing handle (control1 of NEXT element) by the same delta if it exists
+            // Move outgoing handle (control1 of NEXT element) if it exists
             if elementIndex + 1 < elements.count {
                 let nextElement = elements[elementIndex + 1]
                 if case .curve(let nextTo, let nextControl1, let nextControl2) = nextElement {
-                    // Move the outgoing handle by the same delta to maintain relationship
+                    // Move the outgoing handle by the same delta
+                    // This maintains its position relative to the anchor point
+                    let newNextControl1 = VectorPoint(nextControl1.x + delta.x, nextControl1.y + delta.y)
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
+                }
+            }
+            
+        case .move(_), .line(_):
+            // For move/line elements, check if the NEXT element has an outgoing handle
+            if elementIndex + 1 < elements.count {
+                let nextElement = elements[elementIndex + 1]
+                if case .curve(let nextTo, let nextControl1, let nextControl2) = nextElement {
+                    // Move the outgoing handle by the same delta
                     let newNextControl1 = VectorPoint(nextControl1.x + delta.x, nextControl1.y + delta.y)
                     elements[elementIndex + 1] = .curve(to: nextTo, control1: newNextControl1, control2: nextControl2)
                 }
