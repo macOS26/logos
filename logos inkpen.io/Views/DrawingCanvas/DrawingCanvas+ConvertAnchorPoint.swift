@@ -247,12 +247,73 @@ extension DrawingCanvas {
         
         switch element {
         case .line(let to):
-            // Use the existing smooth handle calculation logic
+            // Create smooth point with BOTH handles on THIS point
             let point = VectorPoint(to.x, to.y)
-            let smoothHandles = calculateSmoothHandles(for: point, elementIndex: elementIndex, in: elements)
+            let handleLength: Double = 30.0
             
-            // Convert line to curve with symmetric 180-degree handles
-            elements[elementIndex] = .curve(to: point, control1: smoothHandles.outgoing, control2: smoothHandles.incoming)
+            // Calculate direction based on adjacent points
+            var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
+            
+            if elementIndex > 0, elementIndex + 1 < elements.count {
+                // Get previous and next points to determine tangent
+                var prevPoint: VectorPoint?
+                var nextPoint: VectorPoint?
+                
+                switch elements[elementIndex - 1] {
+                case .move(let p), .line(let p):
+                    prevPoint = p
+                case .curve(let p, _, _), .quadCurve(let p, _):
+                    prevPoint = p
+                default:
+                    break
+                }
+                
+                switch elements[elementIndex + 1] {
+                case .move(let p), .line(let p):
+                    nextPoint = p
+                case .curve(let p, _, _), .quadCurve(let p, _):
+                    nextPoint = p
+                default:
+                    break
+                }
+                
+                if let prev = prevPoint, let next = nextPoint {
+                    let dx = next.x - prev.x
+                    let dy = next.y - prev.y
+                    let length = sqrt(dx * dx + dy * dy)
+                    if length > 0.1 {
+                        directionVector = CGPoint(x: dx / length, y: dy / length)
+                    }
+                }
+            }
+            
+            // Create handles extending from THIS point
+            let incomingHandle = VectorPoint(
+                point.x - directionVector.x * handleLength,
+                point.y - directionVector.y * handleLength
+            )
+            let outgoingHandle = VectorPoint(
+                point.x + directionVector.x * handleLength,
+                point.y + directionVector.y * handleLength
+            )
+            
+            // THIS element gets the incoming handle (control2)
+            // Convert to curve with incoming handle
+            elements[elementIndex] = .curve(to: point, control1: point, control2: incomingHandle)
+            
+            // NEXT element gets the outgoing handle (control1) 
+            if elementIndex + 1 < elements.count {
+                switch elements[elementIndex + 1] {
+                case .line(let nextTo):
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextTo)
+                case .curve(let nextTo, _, let nextControl2):
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+                case .quadCurve(let nextTo, _):
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextTo)
+                default:
+                    break
+                }
+            }
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -261,7 +322,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with symmetric handles", category: .fileOperations)
+            Log.info("✅ CONVERTED LINE TO SMOOTH: Both handles on same point", category: .fileOperations)
             
         case .move(let to):
             // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
@@ -342,83 +403,28 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, _):
-            // Create proper 180-degree symmetric handles
+            // Create TEETER-TOTTER handles - both move together 180° apart
+            // EXACTLY like the bezier pen tool creates them
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
             
-            // Calculate the direction vector based on adjacent points
-            var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
+            // Use simple horizontal handles like calculateSmoothHandles does
+            // This ensures they're 180° aligned and move together
+            let incomingHandle = VectorPoint(point.x - handleLength, point.y)
+            let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
             
-            // Try to get direction from previous and next points
-            var prevPoint: VectorPoint?
-            var nextPoint: VectorPoint?
-            
-            if elementIndex > 0 {
-                switch elements[elementIndex - 1] {
-                case .move(let from), .line(let from):
-                    prevPoint = from
-                case .curve(let from, _, _):
-                    prevPoint = from
-                default:
-                    break
-                }
-            }
-            
-            if elementIndex + 1 < elements.count {
-                switch elements[elementIndex + 1] {
-                case .move(let next), .line(let next):
-                    nextPoint = next
-                case .curve(let next, _, _):
-                    nextPoint = next
-                default:
-                    break
-                }
-            }
-            
-            // Calculate direction based on the path tangent
-            if let prev = prevPoint, let next = nextPoint {
-                // Use the direction from prev to next
-                let dx = next.x - prev.x
-                let dy = next.y - prev.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            } else if let prev = prevPoint {
-                // Use direction from prev to current
-                let dx = point.x - prev.x
-                let dy = point.y - prev.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            } else if let next = nextPoint {
-                // Use direction from current to next
-                let dx = next.x - point.x
-                let dy = next.y - point.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            }
-            
-            // Create symmetric handles along the direction vector
-            let outgoingHandle = VectorPoint(
-                point.x + directionVector.x * handleLength,
-                point.y + directionVector.y * handleLength
-            )
-            let incomingHandle = VectorPoint(
-                point.x - directionVector.x * handleLength,
-                point.y - directionVector.y * handleLength
-            )
-            
-            // Update the current element with the incoming handle
+            // Update THIS element with incoming handle (control2)
             elements[elementIndex] = .curve(to: point, control1: point, control2: incomingHandle)
             
-            // Update the next element with the outgoing handle (if it exists)
+            // Update NEXT element with outgoing handle (control1)
             if elementIndex + 1 < elements.count {
-                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
+                switch elements[elementIndex + 1] {
+                case .curve(let nextTo, _, let nextControl2):
                     elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextControl2)
+                case .line(let nextTo):
+                    elements[elementIndex + 1] = .curve(to: nextTo, control1: outgoingHandle, control2: nextTo)
+                default:
+                    break
                 }
             }
             
@@ -429,7 +435,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED CORNER TO SMOOTH: Added 180-degree symmetric handles", category: .fileOperations)
+            Log.info("✅ CONVERTED CORNER TO SMOOTH: Both handles 180° aligned", category: .fileOperations)
         default:
             break
         }
@@ -506,7 +512,7 @@ extension DrawingCanvas {
                             }
                         }
                         
-                    case .move(let to), .line(let to):
+                    case .move(_), .line(_):
                         // Check control1 handle of NEXT element (if it exists)
                         if elementIndex + 1 < shape.path.elements.count {
                             let nextElement = shape.path.elements[elementIndex + 1]

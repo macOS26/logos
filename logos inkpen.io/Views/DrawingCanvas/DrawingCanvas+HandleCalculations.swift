@@ -73,7 +73,7 @@ extension DrawingCanvas {
 
     
     /// SIMPLE 180-DEGREE SYMMETRIC HANDLES - NO COMPLEX MATH!
-    private func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
+    internal func calculateSmoothHandles(for point: VectorPoint, elementIndex: Int, in elements: [PathElement]) -> (incoming: VectorPoint, outgoing: VectorPoint) {
         // Just create simple horizontal 180-degree handles like professional software
         let handleLength: Double = 30.0
         
@@ -119,11 +119,8 @@ extension DrawingCanvas {
             return // Handled by coincident point logic
         }
         
-        // CHECK IF THIS IS A CORNER POINT (both handles collapsed)
-        // If so, don't update the linked handle - let each handle move independently
-        if isCornerPoint(elements: elements, elementIndex: draggedHandleID.elementIndex) {
-            return // Corner points don't have linked handles
-        }
+        // Don't link handles for line or quadCurve elements (corner and cusp points)
+        // Only link handles for curve elements with both handles extended (smooth points)
         
         if draggedHandleID.handleType == .control2 {
             // Dragging INCOMING handle (control2) of current curve element
