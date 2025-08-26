@@ -247,75 +247,12 @@ extension DrawingCanvas {
         
         switch element {
         case .line(let to):
-            // Convert line to curve with BOTH handles extended (smooth point)
+            // Use the existing smooth handle calculation logic
             let point = VectorPoint(to.x, to.y)
-            let handleLength: Double = 30.0
+            let smoothHandles = calculateSmoothHandles(for: point, elementIndex: elementIndex, in: elements)
             
-            // Calculate direction based on adjacent points for better handle placement
-            var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
-            
-            // Get previous and next points to determine path direction
-            var prevPoint: VectorPoint?
-            var nextPoint: VectorPoint?
-            
-            if elementIndex > 0 {
-                switch elements[elementIndex - 1] {
-                case .move(let from), .line(let from):
-                    prevPoint = from
-                case .curve(let from, _, _), .quadCurve(let from, _):
-                    prevPoint = from
-                default:
-                    break
-                }
-            }
-            
-            if elementIndex + 1 < elements.count {
-                switch elements[elementIndex + 1] {
-                case .move(let next), .line(let next):
-                    nextPoint = next
-                case .curve(let next, _, _), .quadCurve(let next, _):
-                    nextPoint = next
-                default:
-                    break
-                }
-            }
-            
-            // Calculate tangent direction
-            if let prev = prevPoint, let next = nextPoint {
-                let dx = next.x - prev.x
-                let dy = next.y - prev.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            } else if let prev = prevPoint {
-                let dx = point.x - prev.x
-                let dy = point.y - prev.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            } else if let next = nextPoint {
-                let dx = next.x - point.x
-                let dy = next.y - point.y
-                let length = sqrt(dx * dx + dy * dy)
-                if length > 0.1 {
-                    directionVector = CGPoint(x: dx / length, y: dy / length)
-                }
-            }
-            
-            // Create symmetric handles along the direction vector
-            let outgoingHandle = VectorPoint(
-                point.x + directionVector.x * handleLength,
-                point.y + directionVector.y * handleLength
-            )
-            let incomingHandle = VectorPoint(
-                point.x - directionVector.x * handleLength,
-                point.y - directionVector.y * handleLength
-            )
-            
-            // Convert to curve with BOTH handles
-            elements[elementIndex] = .curve(to: point, control1: outgoingHandle, control2: incomingHandle)
+            // Convert line to curve with symmetric 180-degree handles
+            elements[elementIndex] = .curve(to: point, control1: smoothHandles.outgoing, control2: smoothHandles.incoming)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -324,7 +261,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with both handles", category: .fileOperations)
+            Log.info("✅ CONVERTED LINE TO SMOOTH CURVE with symmetric handles", category: .fileOperations)
             
         case .move(let to):
             // STEP 1: Move elements can't be converted directly, but we can add outgoing handle to next element
