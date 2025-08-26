@@ -364,16 +364,26 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, _):
-            // Collapse BOTH handles to the anchor point to create a corner point
+            // Convert to LINE element (true corner point with no handles)
             let cornerPoint = VectorPoint(to.x, to.y)
+            elements[elementIndex] = .line(to: cornerPoint)
             
-            // STEP 1: Collapse incoming handle (control2) to the anchor point
-            elements[elementIndex] = .curve(to: cornerPoint, control1: cornerPoint, control2: cornerPoint)
-            
-            // STEP 2: Collapse outgoing handle (control1 of NEXT element) to the anchor point
+            // Check NEXT element and handle it properly
             if elementIndex + 1 < elements.count {
-                if case .curve(let nextTo, _, let nextControl2) = elements[elementIndex + 1] {
-                    elements[elementIndex + 1] = .curve(to: nextTo, control1: cornerPoint, control2: nextControl2)
+                switch elements[elementIndex + 1] {
+                case .curve(let nextTo, _, let nextControl2):
+                    // Check if control2 is also collapsed (making it a corner point)
+                    let nextControl2Collapsed = (abs(nextControl2.x - nextTo.x) < 0.1 && abs(nextControl2.y - nextTo.y) < 0.1)
+                    
+                    if nextControl2Collapsed {
+                        // Both handles would be collapsed - convert to line (corner)
+                        elements[elementIndex + 1] = .line(to: nextTo)
+                    } else {
+                        // Keep control2 - convert to quadCurve (cusp)
+                        elements[elementIndex + 1] = .quadCurve(to: nextTo, control: nextControl2)
+                    }
+                default:
+                    break
                 }
             }
             
@@ -401,22 +411,22 @@ extension DrawingCanvas {
         let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
+        // This function is called from the line detection in handleConvertAnchorPointTap
+        // So we handle .line elements, NOT .curve elements
         switch element {
-        case .curve(let to, _, _):
-            // Create TEETER-TOTTER handles - both move together 180° apart
-            // EXACTLY like the bezier pen tool creates them
+        case .line(let to), .curve(let to, _, _):
+            // Create smooth point with both handles 180° apart
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
             
-            // Use simple horizontal handles like calculateSmoothHandles does
-            // This ensures they're 180° aligned and move together
+            // Use simple horizontal handles
             let incomingHandle = VectorPoint(point.x - handleLength, point.y)
             let outgoingHandle = VectorPoint(point.x + handleLength, point.y)
             
-            // Update THIS element with incoming handle (control2)
+            // Convert THIS element to curve with incoming handle
             elements[elementIndex] = .curve(to: point, control1: point, control2: incomingHandle)
             
-            // Update NEXT element with outgoing handle (control1)
+            // Update NEXT element with outgoing handle
             if elementIndex + 1 < elements.count {
                 switch elements[elementIndex + 1] {
                 case .curve(let nextTo, _, let nextControl2):
