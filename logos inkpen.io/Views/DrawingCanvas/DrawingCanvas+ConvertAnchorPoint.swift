@@ -103,6 +103,23 @@ extension DrawingCanvas {
                         restoreAllHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
                         return (shape.id, elementIndex)
                     }
+                    
+                    // NEW FEATURE: If no collapsed handles found, check if both handles are extended and collapse them
+                    if !hasCollapsedHandles {
+                        // Check if the clicked element has both handles extended (not collapsed)
+                        let clickedElement = shape.path.elements[elementIndex]
+                        if case .curve(let to, let control1, let control2) = clickedElement {
+                            // Check if both handles are extended (not collapsed to the anchor point)
+                            let control1Extended = !(abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
+                            let control2Extended = !(abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
+                            
+                            if control1Extended && control2Extended {
+                                Log.info("🎯 BOTH HANDLES EXTENDED: Collapsing both handles for anchor point at element \(elementIndex)", category: .general)
+                                collapseBothHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
+                                return (shape.id, elementIndex)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -559,6 +576,62 @@ extension DrawingCanvas {
             document.objectWillChange.send()
             
             Log.info("✅ RESTORED ALL HANDLES: All handles for anchor point restored to original positions", category: .fileOperations)
+        }
+    }
+    
+    /// Collapses both handles of an anchor point at once (like manually clicking both handles)
+    func collapseBothHandlesForAnchorPoint(layerIndex: Int, shapeIndex: Int, elementIndex: Int, anchorPoint: VectorPoint) {
+        guard layerIndex < document.layers.count,
+              shapeIndex < document.layers[layerIndex].shapes.count,
+              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        var needsUpdate = false
+        
+        // Collapse control2 (incoming handle) from current element
+        if elementIndex < elements.count {
+            let element = elements[elementIndex]
+            if case .curve(let to, let control1, let control2) = element {
+                // Store original position for potential restoration
+                let control2Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
+                UserDefaults.standard.set(control2.x, forKey: "\(control2Key)_x")
+                UserDefaults.standard.set(control2.y, forKey: "\(control2Key)_y")
+                
+                // Collapse control2 to the anchor point
+                let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
+                elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
+                needsUpdate = true
+            }
+        }
+        
+        // Collapse control1 (outgoing handle) from next element
+        if elementIndex + 1 < elements.count {
+            let nextElement = elements[elementIndex + 1]
+            if case .curve(let to, let control1, let control2) = nextElement {
+                // Store original position for potential restoration
+                let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
+                UserDefaults.standard.set(control1.x, forKey: "\(control1Key)_x")
+                UserDefaults.standard.set(control1.y, forKey: "\(control1Key)_y")
+                
+                // Collapse control1 to the anchor point
+                let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
+                elements[elementIndex + 1] = .curve(to: to, control1: collapsedControl1, control2: control2)
+                needsUpdate = true
+            }
+        }
+        
+        if needsUpdate {
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ COLLAPSED BOTH HANDLES: control2 from current element and control1 from next element", category: .fileOperations)
         }
     }
     
