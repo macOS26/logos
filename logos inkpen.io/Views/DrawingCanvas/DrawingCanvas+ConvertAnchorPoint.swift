@@ -591,35 +591,49 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         var needsUpdate = false
         
-        // Collapse control2 (incoming handle) from current element
-        if elementIndex < elements.count {
-            let element = elements[elementIndex]
-            if case .curve(let to, let control1, let control2) = element {
-                // Store original position for potential restoration
-                let control2Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
-                UserDefaults.standard.set(control2.x, forKey: "\(control2Key)_x")
-                UserDefaults.standard.set(control2.y, forKey: "\(control2Key)_y")
+        // Collapse handles from ALL elements that have handles belonging to this anchor point
+        for (checkIndex, checkElement) in elements.enumerated() {
+            if case .curve(let to, let control1, let control2) = checkElement {
+                // Check if this element's 'to' point is the clicked anchor point (control2 belongs to this anchor point)
+                if abs(to.x - anchorPoint.x) < 0.1 && abs(to.y - anchorPoint.y) < 0.1 {
+                    // Store original position for potential restoration
+                    let control2Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control2"
+                    UserDefaults.standard.set(control2.x, forKey: "\(control2Key)_x")
+                    UserDefaults.standard.set(control2.y, forKey: "\(control2Key)_y")
+                    
+                    // Collapse control2 to the anchor point
+                    let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
+                    elements[checkIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
+                    needsUpdate = true
+                    Log.info("🎯 COLLAPSE: Collapsed control2 for element \(checkIndex)", category: .general)
+                }
                 
-                // Collapse control2 to the anchor point
-                let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
-                elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
-                needsUpdate = true
-            }
-        }
-        
-        // Collapse control1 (outgoing handle) from next element
-        if elementIndex + 1 < elements.count {
-            let nextElement = elements[elementIndex + 1]
-            if case .curve(let to, let control1, let control2) = nextElement {
-                // Store original position for potential restoration
-                let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
-                UserDefaults.standard.set(control1.x, forKey: "\(control1Key)_x")
-                UserDefaults.standard.set(control1.y, forKey: "\(control1Key)_y")
-                
-                // Collapse control1 to the anchor point
-                let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
-                elements[elementIndex + 1] = .curve(to: to, control1: collapsedControl1, control2: control2)
-                needsUpdate = true
+                // Check if this element's control1 belongs to the clicked anchor point (outgoing handle from this anchor point)
+                // We need to check if the previous element's 'to' point is the clicked anchor point
+                if checkIndex > 0 {
+                    let previousElement = elements[checkIndex - 1]
+                    let previousAnchorPoint: VectorPoint
+                    
+                    switch previousElement {
+                    case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                        previousAnchorPoint = to
+                    default:
+                        previousAnchorPoint = VectorPoint(0, 0)
+                    }
+                    
+                    if abs(previousAnchorPoint.x - anchorPoint.x) < 0.1 && abs(previousAnchorPoint.y - anchorPoint.y) < 0.1 {
+                        // Store original position for potential restoration
+                        let control1Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control1"
+                        UserDefaults.standard.set(control1.x, forKey: "\(control1Key)_x")
+                        UserDefaults.standard.set(control1.y, forKey: "\(control1Key)_y")
+                        
+                        // Collapse control1 to the anchor point
+                        let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
+                        elements[checkIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
+                        needsUpdate = true
+                        Log.info("🎯 COLLAPSE: Collapsed control1 for element \(checkIndex)", category: .general)
+                    }
+                }
             }
         }
         
@@ -631,7 +645,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ COLLAPSED BOTH HANDLES: control2 from current element and control1 from next element", category: .fileOperations)
+            Log.info("✅ COLLAPSED ALL HANDLES: All handles for anchor point collapsed to anchor point", category: .fileOperations)
         }
     }
     
