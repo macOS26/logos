@@ -15,7 +15,16 @@ extension DrawingCanvas {
         let zoomLevel = document.zoomLevel
         let tolerance = max(2.0, baseTolerance / zoomLevel) // Minimum 2px, scales with zoom
         
-        // SIMPLIFIED: Only check for handle clicks to collapse them
+        // FIRST: Check if clicking on an anchor point with collapsed handles to restore them
+        if let restoreResult = restoreCollapsedHandlesIfClicked(at: location, tolerance: tolerance) {
+            Log.fileOperation("🎯 CONVERT POINT TOOL: Restored handles - \(restoreResult)", level: .info)
+            
+            // Enable direct selection UI to show the result
+            enableDirectSelectionForConvertedPoint(shapeID: restoreResult.shapeID, elementIndex: restoreResult.elementIndex)
+            return
+        }
+        
+        // SECOND: Check for handle clicks to collapse them
         if let collapseResult = collapseHandleIfClicked(at: location, tolerance: tolerance) {
             Log.fileOperation("🎯 CONVERT POINT TOOL: Collapsed handle - \(collapseResult)", level: .info)
             
@@ -28,6 +37,86 @@ extension DrawingCanvas {
         tryToSelectShapeForConvertTool(at: location)
         
         Log.info("Convert Anchor Point: No handle found at location \(location)", category: .general)
+    }
+    
+    // MARK: - Handle Collapse and Restore Functionality
+    
+    /// Restores collapsed handles if clicking on an anchor point with collapsed handles
+    func restoreCollapsedHandlesIfClicked(at location: CGPoint, tolerance: Double) -> (shapeID: UUID, elementIndex: Int)? {
+        // Search through all visible layers and shapes for anchor points with collapsed handles
+        for layerIndex in document.layers.indices.reversed() {
+            let layer = document.layers[layerIndex]
+            if !layer.isVisible { continue }
+            
+            // PROTECT LOCKED LAYERS: Don't allow restoring handles on locked layers
+            if layer.isLocked {
+                continue
+            }
+            
+            for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
+                if !shape.isVisible || shape.isLocked { continue }
+                
+                // Check each path element for anchor points with collapsed handles
+                for (elementIndex, element) in shape.path.elements.enumerated() {
+                    switch element {
+                    case .curve(let to, let control1, let control2):
+                        // Check if clicking on the anchor point (to)
+                        let anchorPointLocation = CGPoint(x: to.x, y: to.y)
+                        if distance(location, anchorPointLocation) <= tolerance {
+                            // Check if either handle is collapsed
+                            // control1 collapses to the current anchor point (where the curve starts)
+                            // control2 collapses to the destination anchor point (where the curve ends, the 'to' point)
+                            
+                            // Get the current anchor point for control1 check
+                            let currentAnchorPoint: VectorPoint
+                            if elementIndex > 0 {
+                                let previousElement = shape.path.elements[elementIndex - 1]
+                                switch previousElement {
+                                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                                    currentAnchorPoint = to
+                                case .close:
+                                    currentAnchorPoint = VectorPoint(0, 0) // Fallback
+                                }
+                            } else {
+                                currentAnchorPoint = VectorPoint(0, 0) // First element
+                            }
+                            
+                            let control1Collapsed = (abs(control1.x - currentAnchorPoint.x) < 0.1 && abs(control1.y - currentAnchorPoint.y) < 0.1)
+                            let control2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+                            
+                            if control1Collapsed || control2Collapsed {
+                                restoreHandlesForCurveElement(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                return (shape.id, elementIndex)
+                            }
+                        }
+                        
+                    case .move(let to), .line(let to):
+                        // Check if clicking on the anchor point (to)
+                        let anchorPointLocation = CGPoint(x: to.x, y: to.y)
+                        if distance(location, anchorPointLocation) <= tolerance {
+                            // Check if the next element has a collapsed control1 handle
+                            if elementIndex + 1 < shape.path.elements.count {
+                                let nextElement = shape.path.elements[elementIndex + 1]
+                                if case .curve(let nextTo, let nextControl1, _) = nextElement {
+                                    // Check if control1 is collapsed to the current anchor point
+                                    let control1Collapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                                    
+                                    if control1Collapsed {
+                                        restoreNextElementControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
+                                        return (shape.id, elementIndex)
+                                    }
+                                }
+                            }
+                        }
+                        
+                    default:
+                        break
+                    }
+                }
+            }
+        }
+        
+        return nil // No anchor point with collapsed handles was clicked
     }
     
     // MARK: - Simplified Handle Collapse Functionality
@@ -136,7 +225,12 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, _, let control2):
+        case .curve(let to, let originalControl1, let control2):
+            // Store the original control1 position for potential restoration
+            let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
+            UserDefaults.standard.set(originalControl1.x, forKey: "\(handleKey)_x")
+            UserDefaults.standard.set(originalControl1.y, forKey: "\(handleKey)_y")
+            
             // FORMULA 1: Control1 handle is the outgoing handle from the current anchor point, so collapse it to the current anchor point
             // We need to get the current anchor point (where the curve starts from)
             let currentAnchorPoint: VectorPoint
@@ -198,7 +292,12 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch element {
-        case .curve(let to, let control1, _):
+        case .curve(let to, let control1, let originalControl2):
+            // Store the original control2 position for potential restoration
+            let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
+            UserDefaults.standard.set(originalControl2.x, forKey: "\(handleKey)_x")
+            UserDefaults.standard.set(originalControl2.y, forKey: "\(handleKey)_y")
+            
             // FORMULA 1: Control2 handle belongs to THIS anchor point (to), so collapse it to THIS point
             let collapsedControl2 = VectorPoint(to.x, to.y)
             elements[elementIndex] = .curve(to: to, control1: control1, control2: collapsedControl2)
@@ -243,7 +342,12 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         
         switch nextElement {
-        case .curve(let to, _, let control2):
+        case .curve(let to, let originalControl1, let control2):
+            // Store the original control1 position for potential restoration
+            let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
+            UserDefaults.standard.set(originalControl1.x, forKey: "\(handleKey)_x")
+            UserDefaults.standard.set(originalControl1.y, forKey: "\(handleKey)_y")
+            
             // FORMULA 2: Control1 handle of NEXT element belongs to the SOURCE anchor point (where it's coming from)
             // Get the source anchor point (the line/move element's anchor point)
             let currentElement = elements[elementIndex]
@@ -269,6 +373,128 @@ extension DrawingCanvas {
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED NEXT ELEMENT CONTROL1 HANDLE: Handle collapsed to source anchor point", category: .fileOperations)
+            
+        default:
+            break
+        }
+    }
+    
+    // MARK: - Handle Restore Functions
+    
+    /// Restores handles for a curve element to their original positions
+    func restoreHandlesForCurveElement(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+        guard layerIndex < document.layers.count,
+              shapeIndex < document.layers[layerIndex].shapes.count,
+              elementIndex < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        let element = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        
+        switch element {
+        case .curve(let to, let control1, let control2):
+            // Check if we have stored original positions for both handles
+            let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
+            let control2Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
+            
+            let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
+            let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
+            let control2X = UserDefaults.standard.double(forKey: "\(control2Key)_x")
+            let control2Y = UserDefaults.standard.double(forKey: "\(control2Key)_y")
+            
+            // Check if we have stored positions (non-zero values indicate stored positions)
+            let hasControl1Original = (control1X != 0.0 || control1Y != 0.0)
+            let hasControl2Original = (control2X != 0.0 || control2Y != 0.0)
+            
+            var restoredControl1 = control1
+            var restoredControl2 = control2
+            
+            // Restore control1 if we have its original position
+            if hasControl1Original {
+                restoredControl1 = VectorPoint(control1X, control1Y)
+            }
+            
+            // Restore control2 if we have its original position
+            if hasControl2Original {
+                restoredControl2 = VectorPoint(control2X, control2Y)
+            }
+            
+            elements[elementIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
+            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ RESTORED CURVE HANDLES: Handles restored to reasonable positions", category: .fileOperations)
+            
+        default:
+            break
+        }
+    }
+    
+    /// Restores the control1 handle of the NEXT element (for line/move elements)
+    func restoreNextElementControl1Handle(layerIndex: Int, shapeIndex: Int, elementIndex: Int) {
+        guard layerIndex < document.layers.count,
+              shapeIndex < document.layers[layerIndex].shapes.count,
+              elementIndex + 1 < document.layers[layerIndex].shapes[shapeIndex].path.elements.count else { return }
+        
+        // Save to undo stack before making changes
+        document.saveToUndoStack()
+        
+        let nextElement = document.layers[layerIndex].shapes[shapeIndex].path.elements[elementIndex + 1]
+        var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
+        
+        switch nextElement {
+        case .curve(let to, _, let control2):
+            // Check if we have stored original position for control1 of the next element
+            let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
+            let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
+            let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
+            
+            // Check if we have stored position (non-zero values indicate stored position)
+            let hasControl1Original = (control1X != 0.0 || control1Y != 0.0)
+            
+            var restoredControl1: VectorPoint
+            
+            if hasControl1Original {
+                // Restore to original position
+                restoredControl1 = VectorPoint(control1X, control1Y)
+            } else {
+                // Fallback to reasonable position if no original stored
+                let currentElement = elements[elementIndex]
+                let sourceAnchorPoint: VectorPoint
+                
+                switch currentElement {
+                case .move(let to), .line(let to):
+                    sourceAnchorPoint = to
+                case .curve(let to, _, _), .quadCurve(let to, _):
+                    sourceAnchorPoint = to
+                default:
+                    sourceAnchorPoint = to // Fallback
+                }
+                
+                // Restore control1 to a reasonable position (1/3 towards destination)
+                restoredControl1 = VectorPoint(
+                    sourceAnchorPoint.x + (to.x - sourceAnchorPoint.x) * 0.33,
+                    sourceAnchorPoint.y + (to.y - sourceAnchorPoint.y) * 0.33
+                )
+            }
+            
+            elements[elementIndex + 1] = .curve(to: to, control1: restoredControl1, control2: control2)
+            
+            document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
+            document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+            
+            // Sync unified objects system after path changes
+            document.syncUnifiedObjectsAfterPropertyChange()
+            document.objectWillChange.send()
+            
+            Log.info("✅ RESTORED NEXT ELEMENT CONTROL1 HANDLE: Handle restored to reasonable position", category: .fileOperations)
             
         default:
             break
