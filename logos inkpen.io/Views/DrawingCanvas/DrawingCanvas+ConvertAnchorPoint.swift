@@ -64,24 +64,7 @@ extension DrawingCanvas {
                         let anchorPointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, anchorPointLocation) <= tolerance {
                             // Check if either handle is collapsed
-                            // control1 collapses to the current anchor point (where the curve starts)
-                            // control2 collapses to the destination anchor point (where the curve ends, the 'to' point)
-                            
-                            // Get the current anchor point for control1 check
-                            let currentAnchorPoint: VectorPoint
-                            if elementIndex > 0 {
-                                let previousElement = shape.path.elements[elementIndex - 1]
-                                switch previousElement {
-                                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
-                                    currentAnchorPoint = to
-                                case .close:
-                                    currentAnchorPoint = VectorPoint(0, 0) // Fallback
-                                }
-                            } else {
-                                currentAnchorPoint = VectorPoint(0, 0) // First element
-                            }
-                            
-                            let control1Collapsed = (abs(control1.x - currentAnchorPoint.x) < 0.1 && abs(control1.y - currentAnchorPoint.y) < 0.1)
+                            let control1Collapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
                             let control2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                             
                             if control1Collapsed || control2Collapsed {
