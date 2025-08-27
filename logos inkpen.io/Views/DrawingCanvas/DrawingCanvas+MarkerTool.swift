@@ -184,6 +184,9 @@ extension DrawingCanvas {
                 color: markerFillColor,
                 opacity: markerOpacity
             )
+            
+            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+            document.syncUnifiedObjectsAfterPropertyChange()
         }
     }
     
@@ -754,6 +757,10 @@ extension DrawingCanvas {
             
             // Update the marker stroke with the cleaned path
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            
+            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+            document.syncUnifiedObjectsAfterPropertyChange()
+            
             Log.fileOperation("🖊️ MARKER: Applied self-union to remove overlapping areas within marker stroke", level: .info)
         } else {
             Log.fileOperation("🖊️ MARKER: Self-union operation failed, keeping original path", level: .info)
@@ -808,6 +815,10 @@ extension DrawingCanvas {
                     )
                     
                     document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                    
+                    // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+                    document.syncUnifiedObjectsAfterPropertyChange()
+                    
                     Log.fileOperation("🖊️ MARKER: Applied expanded stroke union - stroke and fill combined as single shape", level: .info)
                 } else {
                     Log.fileOperation("🖊️ MARKER: Final union operation failed, keeping original path", level: .info)

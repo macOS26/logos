@@ -130,6 +130,9 @@ extension DrawingCanvas {
             }
         }
         
+        // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+        document.syncUnifiedObjectsAfterPropertyChange()
+        
         // Force UI update
         document.objectWillChange.send()
     }
@@ -366,6 +369,9 @@ extension DrawingCanvas {
                 break
             }
         }
+        
+        // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+        document.syncUnifiedObjectsAfterPropertyChange()
         
         // Force UI update
         document.objectWillChange.send()

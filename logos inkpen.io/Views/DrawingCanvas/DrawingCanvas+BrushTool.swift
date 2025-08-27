@@ -463,6 +463,9 @@ extension DrawingCanvas {
                 }
             }
             document.layers[layerIndex].shapes[shapeIndex] = finalShape
+            
+            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+            document.syncUnifiedObjectsAfterPropertyChange()
         } else { }
         
         // Logging disabled in hot path to reduce CPU overhead
@@ -549,6 +552,9 @@ extension DrawingCanvas {
             
             // Update the brush stroke with the cleaned path
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
+            
+            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
+            document.syncUnifiedObjectsAfterPropertyChange()
             
             Log.info("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke", category: .general)
         } else {
