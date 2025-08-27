@@ -54,8 +54,22 @@ extension DrawingCanvas {
                         // Check control1 handle (outgoing handle of THIS anchor point)
                         let control1HandleLocation = CGPoint(x: control1.x, y: control1.y)
                         if distance(location, control1HandleLocation) <= tolerance {
-                            // Check if handle is not already collapsed to anchor point
-                            let handleCollapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
+                            // Check if handle is not already collapsed to the current anchor point
+                            let currentAnchorPoint: VectorPoint
+                            if elementIndex > 0 {
+                                let previousElement = shape.path.elements[elementIndex - 1]
+                                switch previousElement {
+                                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                                    currentAnchorPoint = to
+                                case .close:
+                                    // For close elements, we need to find the last valid point
+                                    // This is a fallback case - in practice, close shouldn't be the previous element for a curve
+                                    currentAnchorPoint = VectorPoint(0, 0)
+                                }
+                            } else {
+                                currentAnchorPoint = VectorPoint(0, 0)
+                            }
+                            let handleCollapsed = (abs(control1.x - currentAnchorPoint.x) < 0.1 && abs(control1.y - currentAnchorPoint.y) < 0.1)
                             if !handleCollapsed {
                                 collapseControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
                                 return (shape.id, elementIndex)
@@ -123,8 +137,25 @@ extension DrawingCanvas {
         
         switch element {
         case .curve(let to, _, let control2):
-            // FORMULA 1: Control1 handle belongs to THIS anchor point (to), so collapse it to THIS point
-            let collapsedControl1 = VectorPoint(to.x, to.y)
+            // FORMULA 1: Control1 handle is the outgoing handle from the current anchor point, so collapse it to the current anchor point
+            // We need to get the current anchor point (where the curve starts from)
+            let currentAnchorPoint: VectorPoint
+            if elementIndex > 0 {
+                // Get the previous element's destination point
+                let previousElement = elements[elementIndex - 1]
+                switch previousElement {
+                case .move(let to), .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
+                    currentAnchorPoint = to
+                case .close:
+                    // For close elements, we need to find the last valid point
+                    // This is a fallback case - in practice, close shouldn't be the previous element for a curve
+                    currentAnchorPoint = VectorPoint(0, 0)
+                }
+            } else {
+                // If this is the first element, use the move point or default to origin
+                currentAnchorPoint = VectorPoint(0, 0)
+            }
+            let collapsedControl1 = VectorPoint(currentAnchorPoint.x, currentAnchorPoint.y)
             elements[elementIndex] = .curve(to: to, control1: collapsedControl1, control2: control2)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
