@@ -529,8 +529,17 @@ extension DrawingCanvas {
                             if case .curve(let nextTo, let nextControl1, _) = nextElement {
                                 let control1HandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
                                 if distance(location, control1HandleLocation) <= tolerance {
-                                    // Check if handle is not already collapsed to anchor point
-                                    let handleCollapsed = (abs(nextControl1.x - nextTo.x) < 0.1 && abs(nextControl1.y - nextTo.y) < 0.1)
+                                    // Check if handle is not already collapsed to the source anchor point (where it's coming from)
+                                    let sourceAnchorPoint: VectorPoint
+                                    switch element {
+                                    case .move(let to), .line(let to):
+                                        sourceAnchorPoint = to
+                                    case .curve(let to, _, _), .quadCurve(let to, _):
+                                        sourceAnchorPoint = to
+                                    default:
+                                        sourceAnchorPoint = nextTo // Fallback
+                                    }
+                                    let handleCollapsed = (abs(nextControl1.x - sourceAnchorPoint.x) < 0.1 && abs(nextControl1.y - sourceAnchorPoint.y) < 0.1)
                                     if !handleCollapsed {
                                         removeNextElementControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
                                         return "control1 handle of next element at element \(elementIndex)"
@@ -667,8 +676,22 @@ extension DrawingCanvas {
         
         switch nextElement {
         case .curve(let to, _, let control2):
-            // FIXED: Collapse control1 handle to the NEXT anchor point
-            elements[elementIndex + 1] = .curve(to: to, control1: to, control2: control2)
+            // FIXED: Collapse control1 handle to the anchor point where it's coming from (the line/move element's anchor point)
+            // Get the anchor point of the current element (line/move) that the handle is coming from
+            let currentElement = elements[elementIndex]
+            let sourceAnchorPoint: VectorPoint
+            
+            switch currentElement {
+            case .move(let to), .line(let to):
+                sourceAnchorPoint = to
+            case .curve(let to, _, _), .quadCurve(let to, _):
+                sourceAnchorPoint = to
+            default:
+                sourceAnchorPoint = to // Fallback
+            }
+            
+            // Collapse the control1 handle to the source anchor point
+            elements[elementIndex + 1] = .curve(to: to, control1: sourceAnchorPoint, control2: control2)
             
             document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
@@ -677,7 +700,7 @@ extension DrawingCanvas {
             document.syncUnifiedObjectsAfterPropertyChange()
             document.objectWillChange.send()
             
-            Log.info("✅ REMOVED NEXT ELEMENT CONTROL1 HANDLE: Collapsed to next anchor point", category: .fileOperations)
+            Log.info("✅ REMOVED NEXT ELEMENT CONTROL1 HANDLE: Collapsed to source anchor point", category: .fileOperations)
             
         default:
             break
