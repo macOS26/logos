@@ -173,8 +173,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the preview shape to the document immediately
-        document.addShape(activeBrushShape!)
+        // Add the preview shape to the front of the document immediately
+        document.addShapeToFront(activeBrushShape!)
         
         // Logging disabled in hot path to reduce CPU overhead
     }

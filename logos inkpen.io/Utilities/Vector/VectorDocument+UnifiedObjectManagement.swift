@@ -42,6 +42,36 @@ extension VectorDocument {
         unifiedObjects.append(unifiedObject)
     }
     
+    /// Adds a shape to the front of the unified objects system (for drawing tools)
+    func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
+        if isUndoRedoOperation {
+            // Try to find an existing unified object for this shape to preserve its orderID
+            if let existingObject = unifiedObjects.first(where: { 
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == shape.id
+                }
+                return false
+            }) {
+                // Use the existing orderID to preserve order
+                let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: existingObject.orderID)
+                unifiedObjects.append(unifiedObject)
+                return
+            }
+        }
+        
+        // Get the highest orderID for this layer and add 1 to put the new shape on top
+        let existingOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .map { $0.orderID }
+        
+        let highestOrderID = existingOrderIDs.isEmpty ? 0 : (existingOrderIDs.max() ?? 0)
+        let orderID = highestOrderID + 1
+        
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
     /// Adds a text object to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available

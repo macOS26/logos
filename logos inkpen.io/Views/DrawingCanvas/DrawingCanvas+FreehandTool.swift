@@ -55,8 +55,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the real shape to the document immediately for real-time preview
-        document.addShape(activeFreehandShape!)
+        // Add the real shape to the front of the document immediately for real-time preview
+        document.addShapeToFront(activeFreehandShape!)
         
         Log.fileOperation("🖊️ FREEHAND: Started drawing at \(location)", level: .info)
     }

@@ -70,8 +70,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the preview shape to the document immediately
-        document.addShape(activeMarkerShape!)
+        // Add the preview shape to the front of the document immediately
+        document.addShapeToFront(activeMarkerShape!)
         
         Log.fileOperation("🖊️ MARKER: Started drawing at \(location)", level: .info)
     }

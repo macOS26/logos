@@ -23,6 +23,20 @@ extension VectorDocument {
         syncSelectionArrays()
     }
     
+    /// Add shape to the front of the current layer (for drawing tools)
+    func addShapeToFront(_ shape: VectorShape) {
+        guard let layerIndex = selectedLayerIndex else { return }
+        saveToUndoStack()
+        layers[layerIndex].addShape(shape)
+        
+        // Add to front of unified system
+        addShapeToFrontOfUnifiedSystem(shape, layerIndex: layerIndex)
+        
+        selectedShapeIDs = [shape.id]
+        selectedObjectIDs = [shape.id]
+        syncSelectionArrays()
+    }
+    
     /// Add shape to a specific layer with unified system support
     func addShape(_ shape: VectorShape, to layerIndex: Int) {
         guard layerIndex >= 0 && layerIndex < layers.count else { return }
