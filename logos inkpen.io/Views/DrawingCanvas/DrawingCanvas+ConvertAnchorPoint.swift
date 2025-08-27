@@ -250,7 +250,8 @@ extension DrawingCanvas {
             // Create smooth point with BOTH handles on THIS point
             let point = VectorPoint(to.x, to.y)
             let handleLength: Double = 30.0
-            
+            var prepoint = VectorPoint(to.x, to.y)
+
             // Calculate direction based on adjacent points
             var directionVector = CGPoint(x: 1.0, y: 0.0) // Default horizontal
             
@@ -278,6 +279,7 @@ extension DrawingCanvas {
                 }
                 
                 if let prev = prevPoint, let next = nextPoint {
+                    prepoint = prev
                     let dx = next.x - prev.x
                     let dy = next.y - prev.y
                     let length = sqrt(dx * dx + dy * dy)
@@ -299,7 +301,7 @@ extension DrawingCanvas {
             
             // THIS element gets the incoming handle (control2)
             // Convert to curve with incoming handle
-            elements[elementIndex] = .curve(to: point, control1: point, control2: incomingHandle)
+            elements[elementIndex] = .curve(to: point, control1: prepoint, control2: incomingHandle)
             
             // NEXT element gets the outgoing handle (control1) 
             if elementIndex + 1 < elements.count {
