@@ -56,63 +56,52 @@ extension DrawingCanvas {
             for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
                 if !shape.isVisible || shape.isLocked { continue }
                 
-                // Check each path element for anchor points with collapsed handles
+                // FIRST: Check if clicking on any anchor point that has collapsed handles
+                // We need to check ALL elements to find ALL collapsed handles for the clicked point
+                var clickedAnchorPoint: VectorPoint?
+                var clickedElementIndex: Int?
+                
+                // Find which anchor point was clicked
                 for (elementIndex, element) in shape.path.elements.enumerated() {
                     switch element {
-                    case .curve(let to, let control1, let control2):
-                        // Check if clicking on the anchor point (to)
+                    case .curve(let to, _, _), .move(let to), .line(let to), .quadCurve(let to, _):
                         let anchorPointLocation = CGPoint(x: to.x, y: to.y)
                         if distance(location, anchorPointLocation) <= tolerance {
-                            // Check if either handle is collapsed
-                            let control1Collapsed = (abs(control1.x - to.x) < 0.1 && abs(control1.y - to.y) < 0.1)
-                            let control2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
-                            
-                            // Check for all collapsed handles that belong to this anchor point
-                            var hasCollapsedHandles = false
-                            
-                            // Check current element's handles
-                            if control1Collapsed || control2Collapsed {
-                                hasCollapsedHandles = true
-                            }
-                            
-                            // Check next element's control1 handle (outgoing handle from this anchor point)
-                            if elementIndex + 1 < shape.path.elements.count {
-                                let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(let nextTo, let nextControl1, _) = nextElement {
-                                    let nextControl1Collapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                                    if nextControl1Collapsed {
-                                        hasCollapsedHandles = true
-                                    }
-                                }
-                            }
-                            
-                            if hasCollapsedHandles {
-                                restoreAllHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: to)
-                                return (shape.id, elementIndex)
-                            }
+                            clickedAnchorPoint = to
+                            clickedElementIndex = elementIndex
+                            break
                         }
-                        
-                    case .move(let to), .line(let to):
-                        // Check if clicking on the anchor point (to)
-                        let anchorPointLocation = CGPoint(x: to.x, y: to.y)
-                        if distance(location, anchorPointLocation) <= tolerance {
-                            // Check if the next element has a collapsed control1 handle
-                            if elementIndex + 1 < shape.path.elements.count {
-                                let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(let nextTo, let nextControl1, _) = nextElement {
-                                    // Check if control1 is collapsed to the current anchor point
-                                    let control1Collapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
-                                    
-                                    if control1Collapsed {
-                                        restoreNextElementControl1Handle(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex)
-                                        return (shape.id, elementIndex)
-                                    }
-                                }
-                            }
-                        }
-                        
                     default:
                         break
+                    }
+                }
+                
+                // If we found a clicked anchor point, check ALL elements for collapsed handles
+                if let anchorPoint = clickedAnchorPoint, let elementIndex = clickedElementIndex {
+                    var hasCollapsedHandles = false
+                    
+                    // Check ALL elements for handles that belong to this anchor point
+                    for (checkIndex, checkElement) in shape.path.elements.enumerated() {
+                        switch checkElement {
+                        case .curve(let to, let control1, let control2):
+                            // Check if this element's handles belong to the clicked anchor point
+                            let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
+                            let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
+                            
+                            if control1Collapsed || control2Collapsed {
+                                hasCollapsedHandles = true
+                                Log.info("🎯 FOUND COLLAPSED HANDLE: Element \(checkIndex) has handle collapsed to anchor point", category: .general)
+                            }
+                            
+                        default:
+                            break
+                        }
+                    }
+                    
+                    if hasCollapsedHandles {
+                        Log.info("🎯 FOUND COLLAPSED HANDLES: Restoring all handles for anchor point at element \(elementIndex)", category: .general)
+                        restoreAllHandlesForAnchorPoint(layerIndex: layerIndex, shapeIndex: shapeIndex, elementIndex: elementIndex, anchorPoint: anchorPoint)
+                        return (shape.id, elementIndex)
                     }
                 }
             }
@@ -519,60 +508,44 @@ extension DrawingCanvas {
         var elements = document.layers[layerIndex].shapes[shapeIndex].path.elements
         var needsUpdate = false
         
-        // Restore handles from current element
-        if elementIndex < elements.count {
-            let element = elements[elementIndex]
-            if case .curve(let to, let control1, let control2) = element {
+        // Restore handles from ALL elements that have handles collapsed to this anchor point
+        for (checkIndex, checkElement) in elements.enumerated() {
+            if case .curve(let to, let control1, let control2) = checkElement {
                 // Check if control1 is collapsed to the anchor point
                 let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                 let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
                 
                 var restoredControl1 = control1
                 var restoredControl2 = control2
+                var elementNeedsUpdate = false
                 
                 // Restore control1 if collapsed
                 if control1Collapsed {
-                    let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
+                    let control1Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control1"
                     let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
                     let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
                     if control1X != 0.0 || control1Y != 0.0 {
                         restoredControl1 = VectorPoint(control1X, control1Y)
-                        needsUpdate = true
+                        elementNeedsUpdate = true
+                        Log.info("🎯 RESTORE: Restoring control1 for element \(checkIndex)", category: .general)
                     }
                 }
                 
                 // Restore control2 if collapsed
                 if control2Collapsed {
-                    let control2Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
+                    let control2Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control2"
                     let control2X = UserDefaults.standard.double(forKey: "\(control2Key)_x")
                     let control2Y = UserDefaults.standard.double(forKey: "\(control2Key)_y")
                     if control2X != 0.0 || control2Y != 0.0 {
                         restoredControl2 = VectorPoint(control2X, control2Y)
-                        needsUpdate = true
+                        elementNeedsUpdate = true
+                        Log.info("🎯 RESTORE: Restoring control2 for element \(checkIndex)", category: .general)
                     }
                 }
                 
-                if needsUpdate {
-                    elements[elementIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
-                }
-            }
-        }
-        
-        // Restore control1 handle from next element (outgoing handle from this anchor point)
-        if elementIndex + 1 < elements.count {
-            let nextElement = elements[elementIndex + 1]
-            if case .curve(let to, let control1, let control2) = nextElement {
-                let nextControl1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
-                
-                if nextControl1Collapsed {
-                    let control1Key = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
-                    let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
-                    let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
-                    if control1X != 0.0 || control1Y != 0.0 {
-                        let restoredControl1 = VectorPoint(control1X, control1Y)
-                        elements[elementIndex + 1] = .curve(to: to, control1: restoredControl1, control2: control2)
-                        needsUpdate = true
-                    }
+                if elementNeedsUpdate {
+                    elements[checkIndex] = .curve(to: to, control1: restoredControl1, control2: restoredControl2)
+                    needsUpdate = true
                 }
             }
         }
