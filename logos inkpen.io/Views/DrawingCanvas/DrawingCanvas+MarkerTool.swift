@@ -140,8 +140,10 @@ extension DrawingCanvas {
         
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         
-        // Print pressure value during drawing
-        print("🎨 MARKER PRESSURE: \(String(format: "%.2f", finalPressure)) at (\(Int(location.x)), \(Int(location.y))) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]")
+        // Reduced logging frequency for performance
+        if markerPoints.count % 20 == 0 {
+            Log.debug("Marker pressure: \(String(format: "%.2f", finalPressure)) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]", category: .pressure)
+        }
         
         return finalPressure
     }
@@ -255,7 +257,7 @@ extension DrawingCanvas {
             ) :
             douglasPeuckerSimplify(points: processedPoints, tolerance: smoothingTolerance)
         
-        print("🖊️ DOUGLAS-PEUCKER: Simplified to \(markerSimplifiedPoints.count) points (tolerance: \(String(format: "%.1f", smoothingTolerance)))")
+        Log.info("Douglas-Peucker: Simplified to \(markerSimplifiedPoints.count) points", category: .general)
         
         // Step 2: Generate smooth felt-tip marker stroke
         let markerStrokePath = createFinalMarkerStroke(

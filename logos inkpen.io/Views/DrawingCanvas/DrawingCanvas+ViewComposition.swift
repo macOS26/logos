@@ -370,14 +370,14 @@ extension DrawingCanvas {
         switch document.currentTool {
         case .brush:
             if isBrushDrawing {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Calling handleBrushDragUpdate", category: .pressure)
+                // Brush drag update - logging removed for performance
                 handleBrushDragUpdate(at: location)
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Brush not drawing, skipping update", category: .pressure)
             }
         case .marker:
             if isMarkerDrawing {
-                Log.info("🎨 PRESSURE DRAWING UPDATE: Calling handleMarkerDragUpdate", category: .pressure)
+                // Marker drag update - logging removed for performance
                 handleMarkerDragUpdate(at: location)
             } else {
                 Log.info("🎨 PRESSURE DRAWING UPDATE: Marker not drawing, skipping update", category: .pressure)

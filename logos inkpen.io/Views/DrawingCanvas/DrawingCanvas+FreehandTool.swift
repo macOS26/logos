@@ -166,7 +166,7 @@ extension DrawingCanvas {
         let optimizedCGPoints = MetalDrawingOptimizer.shared.optimizeFreehandDrawing(points: cgPoints, tolerance: tolerance)
         let simplifiedPoints = optimizedCGPoints.map { VectorPoint($0) }
         
-        print("🖊️ DOUGLAS-PEUCKER: Simplified to \(simplifiedPoints.count) points (tolerance: \(String(format: "%.1f", tolerance)))")
+        Log.info("Douglas-Peucker: Simplified to \(simplifiedPoints.count) points", category: .general)
         
         // STEP 3: Convert to smooth bezier curves with adaptive tension
         let finalCGPoints = simplifiedPoints.map { CGPoint(x: $0.x, y: $0.y) }
