@@ -48,6 +48,26 @@ extension DrawingCanvas {
             .scaleEffect(document.zoomLevel, anchor: .topLeading)
             .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
         }
+        
+        // Marker live preview (SwiftUI overlay; avoids document mutations during drag)
+        if let preview = markerPreviewPath {
+            Path { path in
+                addPathElements(preview.elements, to: &path)
+            }
+            .modifier(MarkerPreviewStyleModifier(appState: appState, document: document, preview: preview))
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
+        
+        // Freehand live preview (SwiftUI overlay; avoids document mutations during drag)
+        if let preview = freehandPreviewPath {
+            Path { path in
+                addPathElements(preview.elements, to: &path)
+            }
+            .modifier(FreehandPreviewStyleModifier(appState: appState, document: document, preview: preview))
+            .scaleEffect(document.zoomLevel, anchor: .topLeading)
+            .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        }
 
         bezierAnchorPoints()
         bezierControlHandles()
@@ -522,5 +542,52 @@ private struct BrushPreviewStyleModifier: ViewModifier {
             }
         })
         return offsetShape
+    }
+}
+
+// MARK: - Marker Preview Style Modifier
+
+private struct MarkerPreviewStyleModifier: ViewModifier {
+    @Environment(AppState.self) var appState
+    let appStateRef: AppState?
+    let document: VectorDocument
+    let preview: VectorPath
+    
+    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
+        self.document = document
+        self.preview = preview
+        self.appStateRef = appState
+    }
+    
+    func body(content: Content) -> some View {
+        // Marker tool always uses fill preview with current marker colors and opacity
+        let markerFillColor = document.markerUseFillAsStroke ? document.defaultFillColor.color : document.defaultStrokeColor.color
+        let markerOpacity = document.currentMarkerOpacity
+        
+        Path { p in addPathElements(preview.elements, to: &p) }
+            .fill(markerFillColor)
+            .opacity(markerOpacity)
+    }
+}
+
+// MARK: - Freehand Preview Style Modifier
+
+private struct FreehandPreviewStyleModifier: ViewModifier {
+    @Environment(AppState.self) var appState
+    let appStateRef: AppState?
+    let document: VectorDocument
+    let preview: VectorPath
+    
+    init(appState: AppState, document: VectorDocument, preview: VectorPath) {
+        self.document = document
+        self.preview = preview
+        self.appStateRef = appState
+    }
+    
+    func body(content: Content) -> some View {
+        // Freehand tool uses stroke preview with current stroke color and settings
+        Path { p in addPathElements(preview.elements, to: &p) }
+            .stroke(document.defaultStrokeColor.color, lineWidth: document.defaultStrokeWidth)
+            .opacity(document.defaultStrokeOpacity)
     }
 }

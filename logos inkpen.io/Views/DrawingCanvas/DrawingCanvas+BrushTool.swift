@@ -173,8 +173,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the preview shape to the front of the document immediately
-        document.addShapeToFront(activeBrushShape!)
+        // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
+        // Shape will be added only when drawing is complete
         
         // Logging disabled in hot path to reduce CPU overhead
     }
@@ -208,9 +208,9 @@ extension DrawingCanvas {
             processBrushStroke()
         }
         
-        // Clean up state
-        cancelBrushDrawing()
+        // Clean up state including clearing preview path for overlay system
         brushPreviewPath = nil
+        cancelBrushDrawing()
         
         // AUTO-DESELECT: Clear selection after completing brush stroke
         // This allows user to immediately change colors for the next stroke
@@ -254,62 +254,36 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateBrushPreview() {
-        // Throttle preview updates to avoid per-event heavy work
-        let nowTs = CFAbsoluteTimeGetCurrent()
-        let addedPoints = brushRawPoints.count - lastBrushPreviewPointCount
-        if (nowTs - lastBrushPreviewTime) < brushPreviewMinInterval && addedPoints < 3 {
-            return
+        // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
+        guard brushRawPoints.count >= 2 else { return }
+        
+        // Generate preview path for overlay rendering - SwiftUI will handle 60fps updates
+        let previewPath = generateLivePreviewPath()
+        brushPreviewPath = previewPath
+        
+        // No document updates during drawing - overlay handles all preview rendering
+    }
+    
+    /// Generate live preview path for overlay rendering
+    private func generateLivePreviewPath() -> VectorPath {
+        guard brushRawPoints.count >= 2 else {
+            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
-        lastBrushPreviewTime = nowTs
-        lastBrushPreviewPointCount = brushRawPoints.count
-
-        guard let activeBrushShape = activeBrushShape,
-              brushRawPoints.count >= 2,
-              document.selectedLayerIndex != nil else { return }
-
-        // Coalesce compute work off the main thread to avoid UI spikes
-        if isBrushPreviewComputing {
-            pendingBrushPreview = true
-            return
-        }
-        isBrushPreviewComputing = true
-
-        // Snapshot inputs to avoid races
-        let snapshotRawPoints = brushRawPoints
-        let snapshotThickness = document.currentBrushThickness
-        let snapshotSensitivity = document.currentBrushPressureSensitivity
-        let snapshotTaper = document.currentBrushTaper
-        let snapshotSmoothingTolerance = document.currentBrushSmoothingTolerance * 1.25
-        let targetShapeId = activeBrushShape.id
-
-        brushPreviewQueue.async {
-            // Compute preview path off the main thread
-            let previewPath = self.generateLivePreviewPathOffMain(
-                rawPoints: snapshotRawPoints,
-                thickness: snapshotThickness,
-                pressureSensitivity: snapshotSensitivity,
-                taper: snapshotTaper,
-                previewTolerance: snapshotSmoothingTolerance
+        
+        let rawPointLocations = brushRawPoints.map { $0.location }
+        let previewTolerance = document.currentBrushSmoothingTolerance * 1.25
+        let simplifiedPoints = douglasPeuckerSimplify(points: rawPointLocations, tolerance: previewTolerance)
+        
+        if simplifiedPoints.count >= 2 {
+            return generatePreviewVariableWidthPath(
+                centerPoints: simplifiedPoints,
+                recentRawPoints: brushRawPoints,
+                thickness: document.currentBrushThickness,
+                pressureSensitivity: document.currentBrushPressureSensitivity,
+                taper: document.currentBrushTaper
             )
-
-            DispatchQueue.main.async {
-                defer {
-                    isBrushPreviewComputing = false
-                    if pendingBrushPreview {
-                        pendingBrushPreview = false
-                        self.updateBrushPreview()
-                    }
-                }
-
-                guard self.isBrushDrawing,
-                      let layerIndex2 = self.document.selectedLayerIndex,
-                      self.document.layers[layerIndex2].shapes.contains(where: { $0.id == targetShapeId }) else { return }
-
-                // Update in-memory preview only; SwiftUI overlay will render it in real-time
-                self.brushPreviewPath = previewPath
-                // Trigger a SwiftUI update for the overlay without heavy layer diffs
-                self.dragPreviewUpdateTrigger.toggle()
-            }
+        } else {
+            return VectorPath(elements: [.move(to: VectorPoint(brushRawPoints[0].location))])
         }
     }
     
@@ -430,43 +404,41 @@ extension DrawingCanvas {
             taper: document.currentBrushTaper  // Use current tool settings
         )
         
-        // Step 3: Replace the preview shape with the final brush stroke
-        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeBrushShape.id }) {
-            // Update the shape with final brush stroke using current user settings and toggles
-            var finalShape = document.layers[layerIndex].shapes[shapeIndex]
-            finalShape.path = brushStrokePath
-            finalShape.strokeStyle = document.brushApplyNoStroke ? nil : StrokeStyle(
+        // Step 3: Create and add the final brush stroke to the document
+        var finalShape = VectorShape(
+            name: "Brush Stroke",
+            path: brushStrokePath,
+            strokeStyle: document.brushApplyNoStroke ? nil : StrokeStyle(
                 color: getCurrentStrokeColor(),
                 width: getCurrentStrokeWidth(),
                 opacity: getCurrentStrokeOpacity()
-            )
-            finalShape.fillStyle = FillStyle(
+            ),
+            fillStyle: FillStyle(
                 color: getCurrentFillColor(),
                 opacity: getCurrentFillOpacity()
             )
-            
-            // Apply overlap removal inline before writing back
-            if document.brushRemoveOverlap {
-                let cg = finalShape.path.cgPath
-                var cleaned: CGPath? = nil
-                // Try normalization (winding)
-                cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
-                // Fall back to self-union if normalization yields nil
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
-                if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
-                if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
-                    finalShape.path = VectorPath(cgPath: cleanedPath)
-                    Log.info("🖌️ BRUSH: Removed self-overlap (normalize/union)", category: .general)
-                } else {
-                    Log.info("🖌️ BRUSH: Overlap removal produced no change; keeping original", category: .general)
-                }
+        )
+        
+        // Apply overlap removal inline before adding to document
+        if document.brushRemoveOverlap {
+            let cg = finalShape.path.cgPath
+            var cleaned: CGPath? = nil
+            // Try normalization (winding)
+            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+            // Fall back to self-union if normalization yields nil
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                finalShape.path = VectorPath(cgPath: cleanedPath)
+                Log.info("🖌️ BRUSH: Removed self-overlap (normalize/union)", category: .general)
+            } else {
+                Log.info("🖌️ BRUSH: Overlap removal produced no change; keeping original", category: .general)
             }
-            document.layers[layerIndex].shapes[shapeIndex] = finalShape
-            
-            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
-            document.syncUnifiedObjectsAfterPropertyChange()
-        } else { }
+        }
+        
+        // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
+        document.addShapeToFront(finalShape)
         
         // Logging disabled in hot path to reduce CPU overhead
     }

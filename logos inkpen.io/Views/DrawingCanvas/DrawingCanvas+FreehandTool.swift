@@ -55,8 +55,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the real shape to the front of the document immediately for real-time preview
-        document.addShapeToFront(activeFreehandShape!)
+        // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
+        // Shape will be added only when drawing is complete
         
         Log.fileOperation("🖊️ FREEHAND: Started drawing at \(location)", level: .info)
     }
@@ -98,7 +98,8 @@ extension DrawingCanvas {
         // Apply curve fitting algorithms to create smooth bezier curves
         processFreehandPath()
         
-        // Clean up state
+        // Clean up state including clearing preview path for overlay system
+        freehandPreviewPath = nil
         cancelFreehandDrawing()
         
         Log.info("✅ FREEHAND: Path completed and converted to smooth curves", category: .fileOperations)
@@ -107,9 +108,8 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateFreehandPreview(smoothedLocation: CGPoint? = nil) {
-        guard let activeFreehandShape = activeFreehandShape,
-              freehandRawPoints.count >= 2,
-              let layerIndex = document.selectedLayerIndex else { return }
+        // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
+        guard freehandRawPoints.count >= 2 else { return }
         
         // Create simple line preview for real-time feedback
         var elements: [PathElement] = []
@@ -120,21 +120,9 @@ extension DrawingCanvas {
         }
         
         let previewPath = VectorPath(elements: elements)
+        freehandPreviewPath = previewPath
         
-        // Update the shape in the document
-        for shapeIndex in document.layers[layerIndex].shapes.indices {
-            if document.layers[layerIndex].shapes[shapeIndex].id == activeFreehandShape.id {
-                document.layers[layerIndex].shapes[shapeIndex].path = previewPath
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                break
-            }
-        }
-        
-        // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
-        document.syncUnifiedObjectsAfterPropertyChange()
-        
-        // Force UI update
-        document.objectWillChange.send()
+        // No document updates during drawing - overlay handles all preview rendering
     }
     
     // MARK: - Professional Curve Fitting with Advanced Smoothing
@@ -350,31 +338,30 @@ extension DrawingCanvas {
     // MARK: - Final Shape Update
     
     private func updateFinalFreehandShape(with smoothPath: VectorPath) {
-        guard let activeFreehandShape = activeFreehandShape,
-              let layerIndex = document.selectedLayerIndex else { return }
+        // Create and add the final freehand shape to the document
+        let strokeStyle = StrokeStyle(
+            color: document.defaultStrokeColor,
+            width: document.defaultStrokeWidth,
+            lineCap: document.defaultStrokeLineCap,
+            lineJoin: document.defaultStrokeLineJoin,
+            miterLimit: document.defaultStrokeMiterLimit,
+            opacity: document.defaultStrokeOpacity
+        )
         
-        // Update the shape with the final smooth path
-        for shapeIndex in document.layers[layerIndex].shapes.indices {
-            if document.layers[layerIndex].shapes[shapeIndex].id == activeFreehandShape.id {
-                document.layers[layerIndex].shapes[shapeIndex].path = smoothPath
-                
-                // Apply final styling (full opacity)
-                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(
-                    color: document.defaultStrokeColor,
-                    width: document.defaultStrokeWidth, // Use user's default stroke width
-                    opacity: document.defaultStrokeOpacity
-                )
-                
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                break
-            }
-        }
+        let fillStyle = FillStyle(
+            color: document.defaultFillColor,
+            opacity: document.defaultFillOpacity
+        )
         
-        // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
-        document.syncUnifiedObjectsAfterPropertyChange()
+        let finalShape = VectorShape(
+            name: "Freehand Path",
+            path: smoothPath,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
         
-        // Force UI update
-        document.objectWillChange.send()
+        // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
+        document.addShapeToFront(finalShape)
         
         Log.info("✅ FREEHAND: Applied smooth bezier curves to final shape", category: .fileOperations)
     }

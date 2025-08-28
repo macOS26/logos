@@ -230,6 +230,7 @@ struct DrawingCanvas: View {
     @State internal var freehandRealtimeSmoothingPoints: [CGPoint] = [] // For real-time smoothing
     @State internal var isFreehandDrawing = false
     @State internal var activeFreehandShape: VectorShape? = nil // Real-time freehand shape preview
+    @State internal var freehandPreviewPath: VectorPath? = nil // Preview path drawn by overlay (not in document)
 
     // BRUSH DRAWING STATE (Variable width brush strokes)
     @State internal var brushPath: VectorPath?
@@ -245,6 +246,7 @@ struct DrawingCanvas: View {
     @State internal var markerSimplifiedPoints: [CGPoint] = [] // Douglas-Peucker simplified points  
     @State internal var isMarkerDrawing = false
     @State internal var activeMarkerShape: VectorShape? = nil // Real-time marker shape preview
+    @State internal var markerPreviewPath: VectorPath? = nil // Preview path drawn by overlay (not in document)
 
     // Note: freehandSmoothingTolerance now comes from document.settings.freehandSmoothingTolerance
     

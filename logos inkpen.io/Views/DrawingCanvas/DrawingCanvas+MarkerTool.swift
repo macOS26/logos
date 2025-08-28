@@ -70,8 +70,8 @@ extension DrawingCanvas {
             fillStyle: fillStyle
         )
         
-        // Add the preview shape to the front of the document immediately
-        document.addShapeToFront(activeMarkerShape!)
+        // VECTOR APP OPTIMIZATION: Don't add to document during drawing - use overlay system
+        // Shape will be added only when drawing is complete
         
         Log.fileOperation("🖊️ MARKER: Started drawing at \(location)", level: .info)
     }
@@ -104,7 +104,8 @@ extension DrawingCanvas {
         // Process marker stroke to create smooth felt-tip stroke
         processMarkerStroke()
         
-        // Clean up state
+        // Clean up state including clearing preview path for overlay system
+        markerPreviewPath = nil
         cancelMarkerDrawing()
         
         // AUTO-DESELECT: Clear selection after completing marker stroke
@@ -151,45 +152,14 @@ extension DrawingCanvas {
     // MARK: - Real-time Preview
     
     private func updateMarkerPreview() {
-        guard let activeMarkerShape = activeMarkerShape,
-              markerRawPoints.count >= 2,
-              let layerIndex = document.selectedLayerIndex else { return }
+        // VECTOR APP OPTIMIZATION: Direct overlay update - no throttling for 60fps
+        guard markerRawPoints.count >= 2 else { return }
         
-        // LIVE PREVIEW: Generate actual felt-tip marker stroke in real-time!
+        // Generate preview path for overlay rendering - SwiftUI will handle 60fps updates
         let previewPath = generateMarkerLivePreviewPath()
+        markerPreviewPath = previewPath
         
-        // Find and update the shape in the document with the REAL marker preview
-        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeMarkerShape.id }) {
-            document.layers[layerIndex].shapes[shapeIndex].path = previewPath
-            
-            // Update colors using current user settings and marker options
-            let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
-            let strokeWidth = getCurrentStrokeWidth()
-            
-            // For marker tool: if "Use Fill as Stroke" is enabled, use fill color for both fill and stroke
-            // Otherwise, use stroke color for both fill and stroke
-            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            
-            // Apply marker-specific opacity consistently during live preview
-            let markerOpacity = document.currentMarkerOpacity
-            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = strokeColor != nil ? StrokeStyle(
-                color: markerStrokeColor,
-                width: strokeWidth,
-                placement: .outside,
-                lineCap: .round,
-                lineJoin: .round,
-                opacity: markerOpacity
-            ) : nil
-            
-            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(
-                color: markerFillColor,
-                opacity: markerOpacity
-            )
-            
-            // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
-            document.syncUnifiedObjectsAfterPropertyChange()
-        }
+        // No document updates during drawing - overlay handles all preview rendering
     }
     
     /// Generate live preview of the felt-tip marker stroke as the user draws
@@ -225,8 +195,8 @@ extension DrawingCanvas {
     
     private func processMarkerStroke() {
         guard markerRawPoints.count >= 3,
-              let activeMarkerShape = activeMarkerShape,
-              let layerIndex = document.selectedLayerIndex else { 
+              let _ = activeMarkerShape,
+              document.selectedLayerIndex != nil else { 
             Log.fileOperation("🖊️ MARKER: Too few points (\(markerRawPoints.count)) - keeping as simple stroke", level: .info)
             return 
         }
@@ -265,48 +235,58 @@ extension DrawingCanvas {
             recentRawPoints: markerRawPoints
         )
         
-        // Step 3: Replace the preview shape with the final marker stroke
-        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == activeMarkerShape.id }) {
-            // Update the shape with final marker stroke using current user settings and toggles
-            var finalShape = document.layers[layerIndex].shapes[shapeIndex]
-            finalShape.path = markerStrokePath
-            
-            let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
-            let strokeWidth = getCurrentStrokeWidth()
-            
-            // For marker tool: if "Use Fill Color for Stroke" is enabled, use fill color for both fill and stroke
-            // Otherwise, use stroke color for both fill and stroke
-            let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
-            
-            // Apply marker-specific opacity for finalized shape
-            let markerOpacity = document.currentMarkerOpacity
-            finalShape.strokeStyle = strokeColor != nil ? StrokeStyle(
-                color: markerStrokeColor,
-                width: strokeWidth,
-                placement: .outside,
-                lineCap: .round,
-                lineJoin: .round,
-                opacity: markerOpacity
-            ) : nil
-            
-            finalShape.fillStyle = FillStyle(
-                color: markerFillColor,
-                opacity: markerOpacity
-            )
-            
-            document.layers[layerIndex].shapes[shapeIndex] = finalShape
-            
-            // Apply self-union operation if remove overlap is enabled
-            if document.markerRemoveOverlap {
-                applySelfUnionToMarkerStroke(shapeIndex: shapeIndex, layerIndex: layerIndex)
+        // Step 3: Create and add the final marker stroke to the document
+        let strokeColor = document.markerApplyNoStroke ? nil : getCurrentStrokeColor()
+        let strokeWidth = getCurrentStrokeWidth()
+        
+        // For marker tool: if "Use Fill Color for Stroke" is enabled, use fill color for both fill and stroke
+        // Otherwise, use stroke color for both fill and stroke
+        let markerFillColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        let markerStrokeColor = document.markerUseFillAsStroke ? getCurrentFillColor() : getCurrentStrokeColor()
+        
+        // Apply marker-specific opacity for finalized shape
+        let markerOpacity = document.currentMarkerOpacity
+        let strokeStyle = strokeColor != nil ? StrokeStyle(
+            color: markerStrokeColor,
+            width: strokeWidth,
+            placement: .outside,
+            lineCap: .round,
+            lineJoin: .round,
+            opacity: markerOpacity
+        ) : nil
+        
+        let fillStyle = FillStyle(
+            color: markerFillColor,
+            opacity: markerOpacity
+        )
+        
+        var finalShape = VectorShape(
+            name: "Marker Stroke",
+            path: markerStrokePath,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
+        
+        // Apply self-union operation if remove overlap is enabled
+        if document.markerRemoveOverlap {
+            let cg = finalShape.path.cgPath
+            var cleaned: CGPath? = nil
+            cleaned = CoreGraphicsPathOperations.normalized(cg, using: .winding)
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.normalized(cg, using: .evenOdd) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .winding) }
+            if cleaned == nil { cleaned = CoreGraphicsPathOperations.union(cg, cg, using: .evenOdd) }
+            if let cleanedPath = cleaned, !cleanedPath.isEmpty, isPathBoundsFinite(cleanedPath.boundingBox) {
+                finalShape.path = VectorPath(cgPath: cleanedPath)
+                Log.info("🖊️ MARKER: Removed self-overlap", category: .general)
             }
-        } else {
-            Log.fileOperation("🚨 MARKER ERROR: Could not find activeMarkerShape in layer! ID: \(activeMarkerShape.id)", level: .info)
         }
+        
+        // VECTOR APP OPTIMIZATION: Add shape only once at the end, not during drawing
+        document.addShapeToFront(finalShape)
         
         Log.fileOperation("🖊️ MARKER: Generated smooth felt-tip stroke with \(markerSimplifiedPoints.count) control points", level: .info)
     }
+    
     
     // MARK: - Marker Stroke Generation
     
