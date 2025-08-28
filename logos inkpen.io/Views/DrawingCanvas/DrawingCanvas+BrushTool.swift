@@ -318,8 +318,8 @@ extension DrawingCanvas {
     
     private func processBrushStroke() {
         guard brushRawPoints.count >= 3,  // FIXED: Require at least 3 points like freehand
-              let activeBrushShape = activeBrushShape,
-              let layerIndex = document.selectedLayerIndex else { 
+              let _ = activeBrushShape,
+              let _ = document.selectedLayerIndex else {
             Log.info("🖌️ BRUSH: Too few points (\(brushRawPoints.count)) - keeping as simple shape", category: .general)
             return 
         }

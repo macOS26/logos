@@ -262,10 +262,13 @@ struct ProfessionalTextCanvas: View {
         if oldState != textBoxState {
             // Text box state changed - reduced logging for performance
             
-            // CRITICAL FIX: Update VectorText bounds when exiting editing mode
-            // This ensures selection box matches text canvas when switching states
+            // VECTOR APP OPTIMIZATION: Save text to document when exiting editing mode
             if oldState == .blue && (textBoxState == .green || textBoxState == .gray) {
+                // Save final text content and bounds to document
+                viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
                 viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+                Log.info("💾 SAVED TEXT TO DOCUMENT: Blue → \(textBoxState == .green ? "Green" : "Gray")", category: .fileOperations)
+                
             }
         }
     }
@@ -333,6 +336,11 @@ struct ProfessionalTextCanvas: View {
         
         // ESC key exits editing mode
         if keyPress.key == .escape {
+            // VECTOR APP OPTIMIZATION: Save text to document before exiting editing mode
+            viewModel.document.updateTextContent(viewModel.textObject.id, content: viewModel.text)
+            viewModel.updateDocumentTextBounds(viewModel.textBoxFrame)
+            Log.info("💾 SAVED TEXT TO DOCUMENT: ESC key pressed", category: .fileOperations)
+            
             textBoxState = .green
             viewModel.stopEditing()
             if let textIndex = document.textObjects.firstIndex(where: { $0.id == viewModel.textObject.id }) {
@@ -787,16 +795,11 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 return
             }
             
-            // Log.info("✅ TEXT CHANGED: '\(newText)' (was: '\(parent.viewModel.text)')", category: .fileOperations)
-            
-            // CRITICAL FIX: Update both view model and document, but prevent NSTextView reset
+            // VECTOR APP OPTIMIZATION: Real-time UI update, NO document updates during typing
             parent.isUpdatingFromTyping = true
             parent.viewModel.text = newText
-            parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: newText)
             
-            // CRITICAL FIX: Update VectorText bounds to match current text box frame
-            // This ensures the main selection system stays in sync with the text canvas
-            parent.viewModel.updateDocumentTextBounds(parent.viewModel.textBoxFrame)
+            // NO DOCUMENT UPDATES DURING TYPING - only update view model for real-time display
             
             // Reset flag after a brief delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
@@ -825,6 +828,12 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         func textDidEndEditing(_ notification: Notification) {
             Log.info("✅ TEXT EDITING ENDED", category: .fileOperations)
+            
+            // VECTOR APP OPTIMIZATION: Save to document ONLY when editing ends
+            let finalText = parent.viewModel.text
+            parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: finalText)
+            parent.viewModel.updateDocumentTextBounds(parent.viewModel.textBoxFrame)
+            
             // Text editing ended - reset any flags
             // Use async to avoid modifying state during view update
             DispatchQueue.main.async { [weak self] in
@@ -1057,8 +1066,14 @@ class ProfessionalTextViewModel: ObservableObject {
             return
         }
         
-        // CRITICAL: Don't sync if content hasn't actually changed (BUT always sync colors)
+        // VECTOR APP OPTIMIZATION: Prevent overwriting typed text with empty document text
         let contentChanged = self.text != textObject.content
+        let documentContentEmpty = textObject.content.isEmpty
+        let viewModelContentNotEmpty = !self.text.isEmpty
+        
+        // Don't sync content if document is empty but view model has content (user is typing)
+        let shouldSyncContent = contentChanged && !(documentContentEmpty && viewModelContentNotEmpty)
+        
         let fontChanged = self.fontSize != CGFloat(textObject.typography.fontSize)
         let editingChanged = self.isEditing != textObject.isEditing
         let colorChanged = self.textObject.typography.fillColor != textObject.typography.fillColor
@@ -1072,11 +1087,15 @@ class ProfessionalTextViewModel: ObservableObject {
             abs(self.textObject.typography.lineSpacing - textObject.typography.lineSpacing) > 0.01
         )
         
-        if !contentChanged && !fontChanged && !editingChanged && !colorChanged && !typographyChanged {
+        if !shouldSyncContent && !fontChanged && !editingChanged && !colorChanged && !typographyChanged {
             return // No changes, skip sync
         }
         
-        Log.fileOperation("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)", level: .info)
+        if shouldSyncContent {
+            Log.fileOperation("🔄 SYNCING from VectorText: '\(textObject.content)' (was: '\(self.text)') - Color changed: \(colorChanged)", level: .info)
+        } else {
+            Log.fileOperation("🔄 SYNCING from VectorText: CONTENT SKIPPED (protecting typed text) - Color changed: \(colorChanged)", level: .info)
+        }
         
         // Disable auto-resize during sync to prevent loops
         let wasAutoResizing = isAutoResizing
@@ -1086,8 +1105,8 @@ class ProfessionalTextViewModel: ObservableObject {
         // CRITICAL FIX: Update the textObject reference so SwiftUI Text gets new colors
         self.textObject = textObject
         
-        // CURSOR PRESERVATION: Only update text if content actually changed
-        if contentChanged {
+        // VECTOR APP OPTIMIZATION: Only update text if content should be synced (protect typed text)
+        if shouldSyncContent {
             self.text = textObject.content
             Log.fileOperation("📝 TEXT CONTENT UPDATED: Cursor may be affected", level: .info)
         } else {
