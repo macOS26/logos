@@ -205,10 +205,8 @@ struct ProfessionalLayerRow: View {
                                 isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
                                 isVisible: shape.isVisible,
                                 isLocked: shape.isLocked,
-                                onSelect: {
-                                    document.selectedObjectIDs = [unifiedObject.id]
-                                    document.syncSelectionArrays()
-                                    document.selectedLayerIndex = layerIndex
+                                onSelect: { isShiftPressed, isCommandPressed in
+                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
                                 layerIndex: layerIndex,
                                 document: document
@@ -221,10 +219,8 @@ struct ProfessionalLayerRow: View {
                                 isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
                                 isVisible: text.isVisible,
                                 isLocked: text.isLocked,
-                                onSelect: {
-                                    document.selectedObjectIDs = [unifiedObject.id]
-                                    document.syncSelectionArrays()
-                                    document.selectedLayerIndex = layerIndex
+                                onSelect: { isShiftPressed, isCommandPressed in
+                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
                                 },
                                 layerIndex: layerIndex,
                                 document: document
@@ -241,6 +237,32 @@ struct ProfessionalLayerRow: View {
     private func layerColor(for index: Int) -> Color {
         let colors: [Color] = [.gray, .blue, .green, .orange, .purple, .red, .pink, .yellow, .cyan]
         return colors[index % colors.count]
+    }
+    
+    /// Handles object selection with multi-select support using shift/command keys
+    private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
+        if isShiftPressed || isCommandPressed {
+            // Multi-select mode: Add to selection or remove if already selected
+            if document.selectedObjectIDs.contains(objectID) {
+                // Deselect if already selected
+                document.selectedObjectIDs.remove(objectID)
+                Log.info("🎯 LAYERS MULTI-SELECT: Deselected object \(objectID.uuidString.prefix(8))", category: .selection)
+            } else {
+                // Add to selection
+                document.selectedObjectIDs.insert(objectID)
+                Log.info("🎯 LAYERS MULTI-SELECT: Added object \(objectID.uuidString.prefix(8)) to selection", category: .selection)
+            }
+        } else {
+            // Single select mode: Replace selection
+            document.selectedObjectIDs = [objectID]
+            Log.info("🎯 LAYERS SINGLE-SELECT: Selected object \(objectID.uuidString.prefix(8))", category: .selection)
+        }
+        
+        // Update selection arrays and set layer
+        document.syncSelectionArrays()
+        document.selectedLayerIndex = layerIndex
+        
+        Log.info("🎯 LAYERS SELECTION: Total selected objects: \(document.selectedObjectIDs.count)", category: .selection)
     }
     
     // TEXT OBJECT COUNTING REMOVED

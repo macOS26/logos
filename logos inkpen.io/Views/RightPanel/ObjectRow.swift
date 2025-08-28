@@ -20,7 +20,7 @@ struct ObjectRow: View {
     let isSelected: Bool
     let isVisible: Bool
     let isLocked: Bool
-    let onSelect: () -> Void
+    let onSelect: (_ isShiftPressed: Bool, _ isCommandPressed: Bool) -> Void
     let layerIndex: Int
     let document: VectorDocument
     
@@ -69,7 +69,9 @@ struct ObjectRow: View {
         .animation(.easeInOut(duration: 0.15), value: isDragging)
         .contentShape(Rectangle())
         .onTapGesture {
-            onSelect()
+            let isShiftPressed = NSEvent.modifierFlags.contains(.shift)
+            let isCommandPressed = NSEvent.modifierFlags.contains(.command)
+            onSelect(isShiftPressed, isCommandPressed)
         }
         .draggable(DraggableVectorObject(
             objectType: objectType == .text ? .text : .shape,
@@ -100,7 +102,7 @@ struct ObjectRow: View {
         .contextMenu {
             // Context menu for object operations
             Button("Select") {
-                onSelect()
+                onSelect(false, false)
             }
             
             Divider()
