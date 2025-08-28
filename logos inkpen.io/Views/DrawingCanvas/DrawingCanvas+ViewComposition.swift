@@ -76,8 +76,8 @@ extension DrawingCanvas {
         }
         
         // Direct selection points and handles
-        // Show direct selection UI for both Direct Selection tool AND Convert Point tool
-        if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint {
+        // Show direct selection UI for Direct Selection, Convert Point, and Pen +/- tools
+        if document.currentTool == .directSelection || document.currentTool == .convertAnchorPoint || document.currentTool == .penPlusMinus {
             ProfessionalDirectSelectionView(
                 document: document,
                 selectedPoints: selectedPoints,

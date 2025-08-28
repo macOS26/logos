@@ -107,13 +107,13 @@ extension DrawingCanvas {
                 // Don't select individual points/handles yet - let user click to refine
             }
             // Keep existing direct selection if switching from convert point tool
-            else if oldTool == .convertAnchorPoint {
+            else if oldTool == .convertAnchorPoint || oldTool == .penPlusMinus {
                 Log.info("🎯 Maintaining direct selection from convert point tool", category: .selection)
             }
         }
         
-        // CASE 3: Switching TO Convert Point Tool
-        else if newTool == .convertAnchorPoint {
+        // CASE 3: Switching TO Convert Point Tool or Pen +/- Tool
+        else if newTool == .convertAnchorPoint || newTool == .penPlusMinus {
             // Convert regular selection to direct selection (same as direct selection tool) - REFACTORED: Use unified objects system
             if !document.selectedObjectIDs.isEmpty {
                 Log.info("🎯 Converting regular selection to direct selection for convert point tool", category: .selection)
@@ -128,8 +128,8 @@ extension DrawingCanvas {
         }
         
         // CASE 4: Switching AWAY from direct selection tools to other tools (not arrow)
-        else if (oldTool == .directSelection || oldTool == .convertAnchorPoint) && 
-                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint {
+        else if (oldTool == .directSelection || oldTool == .convertAnchorPoint || oldTool == .penPlusMinus) && 
+                 newTool != .selection && newTool != .directSelection && newTool != .convertAnchorPoint && newTool != .penPlusMinus {
             // Clear all selection state when switching to drawing tools - REFACTORED: Use unified objects system
             Log.info("🎯 Switching to drawing tool - clearing all selections", category: .selection)
             document.selectedObjectIDs.removeAll()

@@ -23,7 +23,7 @@ struct ToolGroupConfiguration {
     
     // MARK: - Single Source of Truth for Tool Groups
     static let toolGroupConfig: [String: [DrawingTool]] = [
-        "selection": [.selection, .directSelection, .convertAnchorPoint],
+        "selection": [.selection, .directSelection, .convertAnchorPoint, .penPlusMinus],
         "rectangles": [.rectangle, .square, .roundedRectangle, .pill],
         "circles": [.ellipse, .oval, .circle, .egg],
         // Triangles: show Equilateral as the primary triangle tool; remove the non-equilateral variant

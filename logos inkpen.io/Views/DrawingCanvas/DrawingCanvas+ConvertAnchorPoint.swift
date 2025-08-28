@@ -108,7 +108,7 @@ extension DrawingCanvas {
                     if !hasCollapsedHandles {
                         // Check if the clicked element has both handles extended (not collapsed)
                         let clickedElement = shape.path.elements[elementIndex]
-                        if case .curve(let to, let control1, let control2) = clickedElement {
+                        if case .curve(_, let control1, let control2) = clickedElement {
                             // Check if both handles are extended (not collapsed to the anchor point)
                             let control1Extended = !(abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Extended = !(abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)

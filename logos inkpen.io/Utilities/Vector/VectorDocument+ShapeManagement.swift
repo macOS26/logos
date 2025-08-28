@@ -161,7 +161,7 @@ extension VectorDocument {
     /// This considers both regular selection and direct selection
     func getActiveShapeIDs() -> Set<UUID> {
         // If direct selection tool is active and we have direct selected shapes, use those
-        if currentTool == .directSelection || currentTool == .convertAnchorPoint,
+        if currentTool == .directSelection || currentTool == .convertAnchorPoint || currentTool == .penPlusMinus,
            !directSelectedShapeIDs.isEmpty {
             return directSelectedShapeIDs
         }

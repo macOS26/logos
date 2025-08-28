@@ -285,6 +285,8 @@ struct VerticalToolbar: View {
             return "Direct Selection Tool (A) - Edit individual points and handles"
         case .convertAnchorPoint:
             return "Convert Anchor Point Tool (C) - Convert between smooth and corner points"
+        case .penPlusMinus:
+            return "Pen +/- Tool (+/-) - Add points to curves or delete points from paths"
         case .bezierPen:
             return "Bezier Pen Tool (P) - Draw bezier curves and paths"
         case .freehand:
