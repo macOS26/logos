@@ -127,15 +127,21 @@ struct ProfessionalDirectSelectionView: View {
         let anchorLocation = CGPoint(x: to.x, y: to.y)
         let control2Location = CGPoint(x: control2.x, y: control2.y)
         
-        // INCOMING HANDLE
-        bezierHandleLineAndCircle(from: anchorLocation, to: control2Location, shape: shape)
+        // INCOMING HANDLE - only render if NOT collapsed to anchor point
+        let incomingHandleCollapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
+        if !incomingHandleCollapsed {
+            bezierHandleLineAndCircle(from: anchorLocation, to: control2Location, shape: shape)
+        }
         
-        // OUTGOING HANDLE
+        // OUTGOING HANDLE - only render if NOT collapsed to anchor point
         if elementIndex + 1 < shape.path.elements.count {
             let nextElement = shape.path.elements[elementIndex + 1]
             if case .curve(_, let nextControl1, _) = nextElement {
                 let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+                let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                if !outgoingHandleCollapsed {
+                    bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+                }
             }
         }
     }
@@ -144,12 +150,15 @@ struct ProfessionalDirectSelectionView: View {
     private func bezierLineHandles(shape: VectorShape, elementIndex: Int, to: VectorPoint) -> some View {
         let anchorLocation = CGPoint(x: to.x, y: to.y)
         
-        // OUTGOING HANDLE
+        // OUTGOING HANDLE - only render if NOT collapsed to anchor point
         if elementIndex + 1 < shape.path.elements.count {
             let nextElement = shape.path.elements[elementIndex + 1]
             if case .curve(_, let nextControl1, _) = nextElement {
                 let control1Location = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+                let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                if !outgoingHandleCollapsed {
+                    bezierHandleLineAndCircle(from: anchorLocation, to: control1Location, shape: shape)
+                }
             }
         }
     }

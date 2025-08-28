@@ -70,9 +70,12 @@ extension DrawingCanvas {
                             if elementIndex + 1 < shape.path.elements.count {
                                 let nextElement = shape.path.elements[elementIndex + 1]
                                 if case .curve(_, let nextControl1, _) = nextElement {
-                                    let rawHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
-                                    let outgoingHandleLocation = rawHandleLocation.applying(shape.transform)
-                                    if distance(location, outgoingHandleLocation) <= tolerance {
+                                    // FIX: Ignore handles that are collapsed to the anchor point
+                                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
+                                    if !outgoingHandleCollapsed {
+                                        let rawHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                        let outgoingHandleLocation = rawHandleLocation.applying(shape.transform)
+                                        if distance(location, outgoingHandleLocation) <= tolerance {
                                         // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
                                         let handleID = HandleID(
                                             shapeID: shape.id,
@@ -93,6 +96,7 @@ extension DrawingCanvas {
                                             Log.fileOperation("🎯 Selected OUTGOING handle from line/move point", level: .info)
                                         }
                                         return true
+                                    }
                                     }
                                 }
                             }
@@ -142,7 +146,7 @@ extension DrawingCanvas {
                                 let nextElement = shape.path.elements[elementIndex + 1]
                                 if case .curve(let nextTo, let nextControl1, _) = nextElement {
                                     // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
-                                    let outgoingHandleCollapsed = (abs(nextControl1.x - nextTo.x) < 0.1 && abs(nextControl1.y - nextTo.y) < 0.1)
+                                    let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
                                     
                                     if !outgoingHandleCollapsed {
                                         let rawOutgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
@@ -178,10 +182,12 @@ extension DrawingCanvas {
                         case .quadCurve(let to, let control):
                             point = to
                             
-                            // Check control handle for quad curve
-                            let rawHandleLocation = CGPoint(x: control.x, y: control.y)
-                            let handleLocation = rawHandleLocation.applying(shape.transform)
-                            if distance(location, handleLocation) <= tolerance {
+                            // Check control handle for quad curve - only if not collapsed
+                            let quadHandleCollapsed = (abs(control.x - to.x) < 0.1 && abs(control.y - to.y) < 0.1)
+                            if !quadHandleCollapsed {
+                                let rawHandleLocation = CGPoint(x: control.x, y: control.y)
+                                let handleLocation = rawHandleLocation.applying(shape.transform)
+                                if distance(location, handleLocation) <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
                                     pathIndex: 0,
@@ -201,6 +207,7 @@ extension DrawingCanvas {
                                     Log.fileOperation("🎯 Selected quad handle", level: .info)
                                 }
                                 return true
+                            }
                             }
                             
                         case .close:
