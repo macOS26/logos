@@ -620,8 +620,24 @@ class FileOperations {
             try data.write(to: tempURL)
             let document = try importFromSVGSync(url: tempURL)
             
+            // CRITICAL FIX: Hydrate images after SVG import so embedded images are loaded
+            // This ensures SVG images are properly imported when opening through File > Open
+            ImageContentRegistry.setBaseDirectoryURL(tempURL.deletingLastPathComponent())
+            for layer in document.layers {
+                for shape in layer.shapes {
+                    _ = ImageContentRegistry.hydrateImageIfAvailable(for: shape)
+                }
+            }
+            
+            // Trigger UI refresh after hydration
+            DispatchQueue.main.async {
+                document.objectWillChange.send()
+            }
+            
             // Clean up temporary file
             try? FileManager.default.removeItem(at: tempURL)
+            
+            Log.fileOperation("✅ SVG data import completed with image hydration", level: .info)
             
             return document
         } catch {
