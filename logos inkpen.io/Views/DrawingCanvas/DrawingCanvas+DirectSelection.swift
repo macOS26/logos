@@ -70,7 +70,8 @@ extension DrawingCanvas {
                             if elementIndex + 1 < shape.path.elements.count {
                                 let nextElement = shape.path.elements[elementIndex + 1]
                                 if case .curve(_, let nextControl1, _) = nextElement {
-                                    let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                    let rawHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                    let outgoingHandleLocation = rawHandleLocation.applying(shape.transform)
                                     if distance(location, outgoingHandleLocation) <= tolerance {
                                         // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
                                         let handleID = HandleID(
@@ -106,7 +107,8 @@ extension DrawingCanvas {
                             
                             // INCOMING HANDLE (control2 of current element)
                             // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
-                            let handle2Location = CGPoint(x: control2.x, y: control2.y)
+                            let rawHandle2Location = CGPoint(x: control2.x, y: control2.y)
+                            let handle2Location = rawHandle2Location.applying(shape.transform)
                             let handle2Collapsed = (abs(control2.x - to.x) < 0.1 && abs(control2.y - to.y) < 0.1)
                             
                             if !handle2Collapsed {
@@ -143,7 +145,8 @@ extension DrawingCanvas {
                                     let outgoingHandleCollapsed = (abs(nextControl1.x - nextTo.x) < 0.1 && abs(nextControl1.y - nextTo.y) < 0.1)
                                     
                                     if !outgoingHandleCollapsed {
-                                        let outgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                        let rawOutgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
+                                        let outgoingHandleLocation = rawOutgoingHandleLocation.applying(shape.transform)
                                         let outgoingDistance = distance(location, outgoingHandleLocation)
                                         print("🎯 Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance)), tolerance: \(String(format: "%.1f", tolerance))")
                                         if outgoingDistance <= tolerance {
@@ -176,7 +179,8 @@ extension DrawingCanvas {
                             point = to
                             
                             // Check control handle for quad curve
-                            let handleLocation = CGPoint(x: control.x, y: control.y)
+                            let rawHandleLocation = CGPoint(x: control.x, y: control.y)
+                            let handleLocation = rawHandleLocation.applying(shape.transform)
                             if distance(location, handleLocation) <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
@@ -204,7 +208,8 @@ extension DrawingCanvas {
                         }
                         
                         // SECOND: Check if tap is near the main anchor point
-                        let pointLocation = CGPoint(x: point.x, y: point.y)
+                        let rawPointLocation = CGPoint(x: point.x, y: point.y)
+                        let pointLocation = rawPointLocation.applying(shape.transform)
                         if distance(location, pointLocation) <= tolerance {
                             let pointID = PointID(
                                 shapeID: shape.id,

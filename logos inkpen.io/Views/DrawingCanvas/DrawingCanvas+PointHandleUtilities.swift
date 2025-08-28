@@ -105,9 +105,10 @@ extension DrawingCanvas {
                     let control1Collapsed = (abs(control1.x - oldTo.x) < 0.1 && abs(control1.y - oldTo.y) < 0.1)
                     let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
                     
-                    // If handles are collapsed, keep them collapsed to the NEW anchor position
-                    // Otherwise, move them by the delta to maintain their relative positions
-                    let newControl1 = control1Collapsed ? newPoint : VectorPoint(control1.x + deltaX, control1.y + deltaY)
+                    // ADOBE ILLUSTRATOR BEHAVIOR: 
+                    // control1 belongs to PREVIOUS point - do NOT move it with current point
+                    // control2 belongs to CURRENT point - move it only if collapsed, otherwise leave it
+                    let newControl1 = control1  // DON'T MOVE - belongs to previous point
                     let newControl2 = control2Collapsed ? newPoint : VectorPoint(control2.x + deltaX, control2.y + deltaY)
                     
                     elements[pointID.elementIndex] = .curve(to: newPoint, control1: newControl1, control2: newControl2)
@@ -117,7 +118,7 @@ extension DrawingCanvas {
                     break
                 }
                 
-                // STEP 2: Update the outgoing handle (control1 of NEXT element) if it exists
+                // STEP 2: Update the outgoing handle that belongs to THIS point (control1 of NEXT element)
                 if pointID.elementIndex + 1 < elements.count {
                     if case .curve(let nextTo, let nextControl1, let nextControl2) = elements[pointID.elementIndex + 1] {
                         // Check if the outgoing handle is collapsed to the original anchor position
@@ -130,11 +131,9 @@ extension DrawingCanvas {
                     }
                 }
                 
-                // STEP 3: NEW - Check if this point has coincident points and apply smooth curve logic to them
-                let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
-                if !coincidentPoints.isEmpty {
-                    moveCoincidentPointsWithSmoothLogic(pointID: pointID, to: newPosition, delta: delta)
-                }
+                // ADOBE ILLUSTRATOR BEHAVIOR: Only move the selected point and its handles
+                // Neighboring points and their handles stay stationary
+                // Coincident points are handled by selection logic, not automatic movement
                 
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()

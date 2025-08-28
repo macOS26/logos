@@ -182,7 +182,8 @@ struct ProfessionalDirectSelectionView: View {
     @ViewBuilder
     private func bezierAnchorPointView(shape: VectorShape, elementIndex: Int, element: PathElement) -> some View {
         if let point = extractPointFromElement(element) {
-            let pointLocation = CGPoint(x: point.x, y: point.y)
+            let rawPointLocation = CGPoint(x: point.x, y: point.y)
+            let transformedPointLocation = rawPointLocation.applying(shape.transform)
             
             let pointID = PointID(
                 shapeID: shape.id,
@@ -199,8 +200,8 @@ struct ProfessionalDirectSelectionView: View {
                 .stroke(hasCoincidentPoints ? Color.orange : Color.blue, lineWidth: hasCoincidentPoints ? 2.0 : 1.0)
                 .frame(width: 8, height: 8)
                 .position(CGPoint(
-                    x: pointLocation.x * document.zoomLevel + document.canvasOffset.x,
-                    y: pointLocation.y * document.zoomLevel + document.canvasOffset.y
+                    x: transformedPointLocation.x * document.zoomLevel + document.canvasOffset.x,
+                    y: transformedPointLocation.y * document.zoomLevel + document.canvasOffset.y
                 ))
         }
     }
