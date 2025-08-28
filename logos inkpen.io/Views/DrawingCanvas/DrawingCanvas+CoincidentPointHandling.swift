@@ -113,7 +113,7 @@ extension DrawingCanvas {
     }
     
     /// Checks if a point is part of a closed path and finds its corresponding endpoint
-    /// For closed paths, the moveTo start point and the point before close should be coincident
+    /// CRITICAL: For closed paths, ONLY considers first/last points coincident if they are at the SAME LOCATION
     func findClosedPathEndpoints(for pointID: PointID) -> Set<PointID> {
         var endpointPairs: Set<PointID> = []
         
@@ -122,36 +122,54 @@ extension DrawingCanvas {
             let layer = document.layers[layerIndex]
             if let shape = layer.shapes.first(where: { $0.id == pointID.shapeID }) {
                 
-                // Check if this is a closed path
+                // MUST have a close command to be considered a closed path
                 let hasCloseElement = shape.path.elements.contains { element in
                     if case .close = element { return true }
                     return false
                 }
                 
-                if hasCloseElement || shape.path.isClosed {
+                // Only proceed if there's actually a close command
+                if hasCloseElement {
                     // Find the moveTo and the last point before close
                     var moveToIndex: Int?
                     var lastPointIndex: Int?
+                    var moveToPoint: VectorPoint?
+                    var lastPoint: VectorPoint?
                     
                     for (index, element) in shape.path.elements.enumerated() {
                         switch element {
-                        case .move(_):
+                        case .move(let to):
                             if moveToIndex == nil { // First moveTo
                                 moveToIndex = index
+                                moveToPoint = to
                             }
-                        case .line(_), .curve(_, _, _), .quadCurve(_, _):
+                        case .line(let to), .curve(let to, _, _), .quadCurve(let to, _):
                             lastPointIndex = index
+                            lastPoint = to
                         case .close:
                             break
                         }
                     }
                     
-                    // If this point is either the moveTo or the last point, include both
-                    if let moveIndex = moveToIndex, let lastIndex = lastPointIndex {
-                        if pointID.elementIndex == moveIndex {
-                            endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: lastIndex))
-                        } else if pointID.elementIndex == lastIndex {
-                            endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: moveIndex))
+                    // CRITICAL: Only treat as coincident if points are actually at the same location
+                    if let moveIndex = moveToIndex, let lastIndex = lastPointIndex,
+                       let firstPoint = moveToPoint, let endPoint = lastPoint {
+                        
+                        // Check if first and last points are at the same coordinates (within tolerance)
+                        let distance = sqrt(pow(firstPoint.x - endPoint.x, 2) + pow(firstPoint.y - endPoint.y, 2))
+                        let tolerance = 1.0 // Same tolerance as coordinate-based coincident detection
+                        
+                        if distance <= tolerance {
+                            // Points are actually coincident - include the pair
+                            if pointID.elementIndex == moveIndex {
+                                endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: lastIndex))
+                                Log.info("🔗 CLOSED PATH COINCIDENT: First point links to last point (distance: \(String(format: "%.3f", distance)))", category: .general)
+                            } else if pointID.elementIndex == lastIndex {
+                                endpointPairs.insert(PointID(shapeID: pointID.shapeID, pathIndex: pointID.pathIndex, elementIndex: moveIndex))
+                                Log.info("🔗 CLOSED PATH COINCIDENT: Last point links to first point (distance: \(String(format: "%.3f", distance)))", category: .general)
+                            }
+                        } else {
+                            Log.info("🔍 CLOSED PATH CHECK: First/last points not coincident (distance: \(String(format: "%.3f", distance)) > \(tolerance))", category: .general)
                         }
                     }
                 }

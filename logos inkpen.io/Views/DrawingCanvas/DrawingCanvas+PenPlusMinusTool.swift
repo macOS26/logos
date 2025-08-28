@@ -119,6 +119,7 @@ extension DrawingCanvas {
     // MARK: - Point Deletion with Curve Preservation
     
     /// Deletes a point while attempting to preserve curve continuity
+    /// CRITICAL: Protects coincident points (first/last in closed paths) - refuses deletion with system beep
     private func deletePointWithCurvePreservation(pointID: PointID) {
         guard let layerIndex = document.layers.firstIndex(where: { layer in
             layer.shapes.contains { $0.id == pointID.shapeID }
@@ -129,6 +130,27 @@ extension DrawingCanvas {
         let elements = shape.path.elements
         
         guard pointID.elementIndex < elements.count else { return }
+        
+        // CRITICAL FIX: Check if this point is coincident (first/last in closed path)
+        // Coincident points are SACRED - refuse deletion with system beep
+        let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
+        if !closedPathEndpoints.isEmpty {
+            // System beep to indicate refusal
+            NSSound.beep()
+            Log.info("🚫 PEN +/-: COINCIDENT POINT PROTECTION - Cannot remove first/last points (system beep)", category: .general)
+            Log.info("   Coincident points are sacred and maintain path closure integrity", category: .general)
+            return
+        }
+        
+        // Also check coordinate-based coincident points for extra protection
+        let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+        if !coincidentPoints.isEmpty {
+            // System beep to indicate refusal
+            NSSound.beep()
+            Log.info("🚫 PEN +/-: COINCIDENT POINT PROTECTION - Cannot remove coincident points (system beep)", category: .general)
+            Log.info("   Found \(coincidentPoints.count) coincident points - all coincident points are protected", category: .general)
+            return
+        }
         
         // Save to undo stack
         document.saveToUndoStack()
