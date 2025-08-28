@@ -62,7 +62,7 @@ extension DrawingCanvas {
         
         // Professional verification logging (only for significant movements)
         if enableHandToolLogging && (abs(cursorDelta.x) > 10 || abs(cursorDelta.y) > 10) {
-            Log.debug("Hand tool: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y)))", category: .navigation)
+            Log.info("Hand tool: Perfect sync maintained - delta: (\(String(format: "%.1f", cursorDelta.x)), \(String(format: "%.1f", cursorDelta.y)))", category: .debug)
         }
     }
 } 

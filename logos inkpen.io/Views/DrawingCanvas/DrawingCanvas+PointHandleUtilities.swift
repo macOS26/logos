@@ -92,7 +92,7 @@ extension DrawingCanvas {
                 // Calculate the movement delta
                 let deltaX = newPosition.x - originalPosition.x
                 let deltaY = newPosition.y - originalPosition.y
-                let delta = CGPoint(x: deltaX, y: deltaY)
+                //let delta = CGPoint(x: deltaX, y: deltaY)
                 
                 // STEP 1: Update the anchor point AND its handles
                 switch elements[pointID.elementIndex] {
@@ -102,7 +102,7 @@ extension DrawingCanvas {
                     elements[pointID.elementIndex] = .line(to: newPoint)
                 case .curve(let oldTo, let control1, let control2):
                     // Check if handles are collapsed to the anchor point
-                    let control1Collapsed = (abs(control1.x - oldTo.x) < 0.1 && abs(control1.y - oldTo.y) < 0.1)
+                    let _ = (abs(control1.x - oldTo.x) < 0.1 && abs(control1.y - oldTo.y) < 0.1) // control1Collapsed - unused
                     let control2Collapsed = (abs(control2.x - oldTo.x) < 0.1 && abs(control2.y - oldTo.y) < 0.1)
                     
                     // ADOBE ILLUSTRATOR BEHAVIOR: 

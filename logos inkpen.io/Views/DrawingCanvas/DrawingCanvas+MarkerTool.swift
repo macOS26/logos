@@ -141,8 +141,8 @@ extension DrawingCanvas {
         let finalPressure = max(0.1, min(1.0, 0.5 + pressureVariation))
         
         // Reduced logging frequency for performance
-        if markerPoints.count % 20 == 0 {
-            Log.debug("Marker pressure: \(String(format: "%.2f", finalPressure)) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]", category: .pressure)
+        if markerRawPoints.count % 20 == 0 {
+            Log.info("Marker pressure: \(String(format: "%.2f", finalPressure)) [speed: \(String(format: "%.1f", normalizedSpeed * 100))%]", category: .pressure)
         }
         
         return finalPressure

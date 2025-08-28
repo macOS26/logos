@@ -171,7 +171,7 @@ extension DrawingCanvas {
             let layer = document.layers[layerIndex]
             if !layer.isVisible || layer.isLocked { continue }
             
-            for (shapeIndex, shape) in layer.shapes.enumerated().reversed() {
+            for (_, shape) in layer.shapes.enumerated().reversed() {
                 if !shape.isVisible || shape.isLocked { continue }
                 
                 for (elementIndex, element) in shape.path.elements.enumerated() {

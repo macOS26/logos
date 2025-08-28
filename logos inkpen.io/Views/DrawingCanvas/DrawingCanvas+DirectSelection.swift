@@ -113,7 +113,7 @@ extension DrawingCanvas {
                             
                             if !handle2Collapsed {
                                 let handle2Distance = distance(location, handle2Location)
-                                Log.debug("Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance))", category: .selection)
+                                Log.info("Testing INCOMING handle at (\(String(format: "%.1f", handle2Location.x)), \(String(format: "%.1f", handle2Location.y))), distance: \(String(format: "%.1f", handle2Distance))", category: .selection)
                                 if handle2Distance <= tolerance {
                                 let handleID = HandleID(
                                     shapeID: shape.id,
@@ -148,7 +148,7 @@ extension DrawingCanvas {
                                         let rawOutgoingHandleLocation = CGPoint(x: nextControl1.x, y: nextControl1.y)
                                         let outgoingHandleLocation = rawOutgoingHandleLocation.applying(shape.transform)
                                         let outgoingDistance = distance(location, outgoingHandleLocation)
-                                        Log.debug("Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance))", category: .selection)
+                                        Log.info("Testing OUTGOING handle at (\(String(format: "%.1f", outgoingHandleLocation.x)), \(String(format: "%.1f", outgoingHandleLocation.y))), distance: \(String(format: "%.1f", outgoingDistance))", category: .selection)
                                         if outgoingDistance <= tolerance {
                                         // CRITICAL FIX: HandleID must point to the NEXT element where the handle actually lives
                                         let handleID = HandleID(

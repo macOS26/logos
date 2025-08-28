@@ -100,7 +100,7 @@ extension DrawingCanvas {
         
         // Update the initial zoom level for next gesture
         initialZoomLevel = finalZoomLevel
-        Log.info("Professional zoom completed: \(String(format: "%.3f", finalZoomLevel))x at focal point: \(currentMousePosition)", category: .navigation)
+        Log.info("Professional zoom completed: \(String(format: "%.3f", finalZoomLevel))x at focal point: \(currentMousePosition)", category: .debug)
 
         #if os(macOS)
         // After pinch ends, if still over canvas and zoom tool active, restore cursor now and next runloop

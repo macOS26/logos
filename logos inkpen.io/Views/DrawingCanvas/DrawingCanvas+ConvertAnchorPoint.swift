@@ -83,7 +83,7 @@ extension DrawingCanvas {
                     // Check ALL elements for handles that belong to this anchor point
                     for (checkIndex, checkElement) in shape.path.elements.enumerated() {
                         switch checkElement {
-                        case .curve(let to, let control1, let control2):
+                        case .curve(_, let control1, let control2):
                             // Check if this element's handles belong to the clicked anchor point
                             let control1Collapsed = (abs(control1.x - anchorPoint.x) < 0.1 && abs(control1.y - anchorPoint.y) < 0.1)
                             let control2Collapsed = (abs(control2.x - anchorPoint.x) < 0.1 && abs(control2.y - anchorPoint.y) < 0.1)
