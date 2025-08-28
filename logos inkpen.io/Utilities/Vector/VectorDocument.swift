@@ -110,6 +110,9 @@ class VectorDocument: ObservableObject, Codable {
     @Published var markerApplyNoStroke: Bool = false // When enabled, applies no stroke regardless of current stroke settings
     @Published var markerRemoveOverlap: Bool = true // Default ON: union overlapping parts of same marker shape
     
+    // CONVERT ANCHOR POINT TOOL: Store original handle positions for restoration
+    @Published var originalHandlePositions: [String: VectorPoint] = [:] // Key: "layerIndex_shapeIndex_elementIndex_handleType", Value: original position
+    
     // BRUSH SETTINGS (Variable width brush strokes)
     
 

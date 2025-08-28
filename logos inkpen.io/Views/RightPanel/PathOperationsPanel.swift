@@ -525,8 +525,8 @@ struct PathOperationsPanel: View {
             return
         }
         
-        // Remove original selected shapes
-        document.removeSelectedShapes()
+        // Remove original selected shapes (use unified objects system)
+        document.removeSelectedObjects()
         
         // Add new result shapes and select them
         for resultShape in resultShapes {

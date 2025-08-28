@@ -236,8 +236,7 @@ extension DrawingCanvas {
         case .curve(let to, let originalControl1, let control2):
             // Store the original control1 position for potential restoration
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control1"
-            UserDefaults.standard.set(originalControl1.x, forKey: "\(handleKey)_x")
-            UserDefaults.standard.set(originalControl1.y, forKey: "\(handleKey)_y")
+            document.originalHandlePositions[handleKey] = originalControl1
             
             // FORMULA 1: Control1 handle is the outgoing handle from the current anchor point, so collapse it to the current anchor point
             // We need to get the current anchor point (where the curve starts from)
@@ -303,8 +302,7 @@ extension DrawingCanvas {
         case .curve(let to, let control1, let originalControl2):
             // Store the original control2 position for potential restoration
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex)_control2"
-            UserDefaults.standard.set(originalControl2.x, forKey: "\(handleKey)_x")
-            UserDefaults.standard.set(originalControl2.y, forKey: "\(handleKey)_y")
+            document.originalHandlePositions[handleKey] = originalControl2
             
             // FORMULA 1: Control2 handle belongs to THIS anchor point (to), so collapse it to THIS point
             let collapsedControl2 = VectorPoint(to.x, to.y)
@@ -353,8 +351,7 @@ extension DrawingCanvas {
         case .curve(let to, let originalControl1, let control2):
             // Store the original control1 position for potential restoration
             let handleKey = "\(layerIndex)_\(shapeIndex)_\(elementIndex + 1)_control1"
-            UserDefaults.standard.set(originalControl1.x, forKey: "\(handleKey)_x")
-            UserDefaults.standard.set(originalControl1.y, forKey: "\(handleKey)_y")
+            document.originalHandlePositions[handleKey] = originalControl1
             
             // FORMULA 2: Control1 handle of NEXT element belongs to the SOURCE anchor point (where it's coming from)
             // Get the source anchor point (the line/move element's anchor point)
@@ -539,10 +536,8 @@ extension DrawingCanvas {
                 // Restore control1 if collapsed
                 if control1Collapsed {
                     let control1Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control1"
-                    let control1X = UserDefaults.standard.double(forKey: "\(control1Key)_x")
-                    let control1Y = UserDefaults.standard.double(forKey: "\(control1Key)_y")
-                    if control1X != 0.0 || control1Y != 0.0 {
-                        restoredControl1 = VectorPoint(control1X, control1Y)
+                    if let originalPosition = document.originalHandlePositions[control1Key] {
+                        restoredControl1 = originalPosition
                         elementNeedsUpdate = true
                         Log.info("🎯 RESTORE: Restoring control1 for element \(checkIndex)", category: .general)
                     }
@@ -551,10 +546,8 @@ extension DrawingCanvas {
                 // Restore control2 if collapsed
                 if control2Collapsed {
                     let control2Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control2"
-                    let control2X = UserDefaults.standard.double(forKey: "\(control2Key)_x")
-                    let control2Y = UserDefaults.standard.double(forKey: "\(control2Key)_y")
-                    if control2X != 0.0 || control2Y != 0.0 {
-                        restoredControl2 = VectorPoint(control2X, control2Y)
+                    if let originalPosition = document.originalHandlePositions[control2Key] {
+                        restoredControl2 = originalPosition
                         elementNeedsUpdate = true
                         Log.info("🎯 RESTORE: Restoring control2 for element \(checkIndex)", category: .general)
                     }
@@ -598,8 +591,7 @@ extension DrawingCanvas {
                 if abs(to.x - anchorPoint.x) < 0.1 && abs(to.y - anchorPoint.y) < 0.1 {
                     // Store original position for potential restoration
                     let control2Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control2"
-                    UserDefaults.standard.set(control2.x, forKey: "\(control2Key)_x")
-                    UserDefaults.standard.set(control2.y, forKey: "\(control2Key)_y")
+                    document.originalHandlePositions[control2Key] = control2
                     
                     // Collapse control2 to the anchor point
                     let collapsedControl2 = VectorPoint(anchorPoint.x, anchorPoint.y)
@@ -624,8 +616,7 @@ extension DrawingCanvas {
                     if abs(previousAnchorPoint.x - anchorPoint.x) < 0.1 && abs(previousAnchorPoint.y - anchorPoint.y) < 0.1 {
                         // Store original position for potential restoration
                         let control1Key = "\(layerIndex)_\(shapeIndex)_\(checkIndex)_control1"
-                        UserDefaults.standard.set(control1.x, forKey: "\(control1Key)_x")
-                        UserDefaults.standard.set(control1.y, forKey: "\(control1Key)_y")
+                        document.originalHandlePositions[control1Key] = control1
                         
                         // Collapse control1 to the anchor point
                         let collapsedControl1 = VectorPoint(anchorPoint.x, anchorPoint.y)
