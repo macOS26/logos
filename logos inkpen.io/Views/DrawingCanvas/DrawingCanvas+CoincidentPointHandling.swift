@@ -95,10 +95,20 @@ extension DrawingCanvas {
             selectedPoints.insert(coincidentPoint)
         }
         
-        if !coincidentPoints.isEmpty {
-            Log.info("🔗 COINCIDENT SELECTION: Selected \(coincidentPoints.count + 1) coincident points", category: .general)
+        // CRITICAL FIX: For closed paths, ALWAYS include first/last point pairs regardless of handle state
+        // This ensures first and last points move together even when handles are retracted
+        let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
+        for endpointID in closedPathEndpoints {
+            selectedPoints.insert(endpointID)
+            Log.info("🔗 CLOSED PATH ENDPOINT: Added endpoint \(endpointID) to selection", category: .general)
+        }
+        
+        let totalCoincident = coincidentPoints.count + closedPathEndpoints.count
+        if totalCoincident > 0 {
+            Log.info("🔗 COINCIDENT SELECTION: Selected \(totalCoincident + 1) total points", category: .general)
             Log.info("   Primary point: \(pointID)", category: .general)
-            Log.info("   Coincident points: \(coincidentPoints)", category: .general)
+            Log.info("   Coordinate coincident points: \(coincidentPoints.count)", category: .general)
+            Log.info("   Closed path endpoints: \(closedPathEndpoints.count)", category: .general)
         }
     }
     

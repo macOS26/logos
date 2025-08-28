@@ -227,11 +227,16 @@ extension DrawingCanvas {
                             if isShiftPressed && selectedPoints.contains(pointID) {
                                 // Shift+Click on selected point: deselect it and all coincident points
                                 let coincidentPoints = findCoincidentPoints(to: pointID, tolerance: coincidentPointTolerance)
+                                let closedPathEndpoints = findClosedPathEndpoints(for: pointID)
                                 selectedPoints.remove(pointID)
                                 for coincidentPoint in coincidentPoints {
                                     selectedPoints.remove(coincidentPoint)
                                 }
-                                Log.fileOperation("🎯 Deselected anchor point and \(coincidentPoints.count) coincident points", level: .info)
+                                for endpointID in closedPathEndpoints {
+                                    selectedPoints.remove(endpointID)
+                                }
+                                let totalRemoved = coincidentPoints.count + closedPathEndpoints.count
+                                Log.fileOperation("🎯 Deselected anchor point and \(totalRemoved) coincident/endpoint points", level: .info)
                             } else {
                                 // Select point with all coincident points for unified movement
                                 selectPointWithCoincidents(pointID, addToSelection: isShiftPressed)

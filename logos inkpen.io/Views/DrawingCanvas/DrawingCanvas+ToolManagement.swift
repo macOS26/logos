@@ -106,9 +106,14 @@ extension DrawingCanvas {
                 document.selectedObjectIDs.removeAll()
                 // Don't select individual points/handles yet - let user click to refine
             }
-            // Keep existing direct selection if switching from convert point tool
+            // CRITICAL FIX: Reset point/handle selections when switching from convert point tool
+            // This ensures coincident point detection gets reset properly
             else if oldTool == .convertAnchorPoint || oldTool == .penPlusMinus {
-                Log.info("🎯 Maintaining direct selection from convert point tool", category: .selection)
+                Log.info("🎯 Maintaining shape direct selection from convert point tool, resetting point/handle selections", category: .selection)
+                // Keep shape-level direct selection but reset point/handle level selections
+                selectedPoints.removeAll()
+                selectedHandles.removeAll()
+                Log.info("🔄 COINCIDENT RESET: Cleared point/handle selections to reset coincident detection", category: .selection)
             }
         }
         
