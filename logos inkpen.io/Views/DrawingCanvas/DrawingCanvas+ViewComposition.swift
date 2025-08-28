@@ -445,4 +445,82 @@ private struct BrushPreviewStyleModifier: ViewModifier {
                 .opacity(document.defaultFillOpacity)
         }
     }
+    
+    /// VECTOR APP OPTIMIZATION: Render only dragged objects as overlay (no full scene redraw)
+    @ViewBuilder
+    internal func draggedObjectPreview(geometry: GeometryProxy, dragDelta: CGPoint) -> some View {
+        if dragDelta != .zero && !document.selectedObjectIDs.isEmpty {
+            let draggedObjects = document.unifiedObjects.filter { document.selectedObjectIDs.contains($0.id) }
+            ForEach(draggedObjects, id: \.id) { unifiedObject in
+                draggedObjectView(unifiedObject, dragDelta: dragDelta)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func draggedObjectView(_ unifiedObject: VectorObject, dragDelta: CGPoint) -> some View {
+        switch unifiedObject.objectType {
+        case .shape(let shape):
+            draggedShapeView(shape, dragDelta: dragDelta)
+        case .text(let text):
+            draggedTextView(text, dragDelta: dragDelta)
+        }
+    }
+    
+    @ViewBuilder
+    private func draggedShapeView(_ shape: VectorShape, dragDelta: CGPoint) -> some View {
+        let offsetShape = applyDragOffsetToShape(shape, offset: dragDelta)
+        Path { path in
+            addPathElements(offsetShape.path.elements, to: &path)
+        }
+        .fill(shape.fillStyle?.color.color ?? .clear)
+        .overlay(
+            Path { path in
+                addPathElements(offsetShape.path.elements, to: &path)
+            }
+            .stroke(shape.strokeStyle?.color.color ?? .clear, lineWidth: shape.strokeStyle?.width ?? 0)
+        )
+        .scaleEffect(document.zoomLevel, anchor: .topLeading)
+        .offset(x: document.canvasOffset.x, y: document.canvasOffset.y)
+        .opacity(0.8)
+    }
+    
+    @ViewBuilder
+    private func draggedTextView(_ text: VectorText, dragDelta: CGPoint) -> some View {
+        Text(text.content)
+            .font(.system(size: text.typography.fontSize * document.zoomLevel))
+            .foregroundColor(text.typography.fillColor.color)
+            .position(
+                x: (text.position.x + dragDelta.x) * document.zoomLevel + document.canvasOffset.x,
+                y: (text.position.y + dragDelta.y) * document.zoomLevel + document.canvasOffset.y
+            )
+            .opacity(0.8)
+    }
+    
+    /// Apply drag offset to shape coordinates without modifying the original
+    private func applyDragOffsetToShape(_ shape: VectorShape, offset: CGPoint) -> VectorShape {
+        var offsetShape = shape
+        offsetShape.path = VectorPath(elements: shape.path.elements.map { element in
+            switch element {
+            case .move(let to):
+                return .move(to: VectorPoint(to.x + offset.x, to.y + offset.y))
+            case .line(let to):
+                return .line(to: VectorPoint(to.x + offset.x, to.y + offset.y))
+            case .curve(let to, let cp1, let cp2):
+                return .curve(
+                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
+                    control1: VectorPoint(cp1.x + offset.x, cp1.y + offset.y),
+                    control2: VectorPoint(cp2.x + offset.x, cp2.y + offset.y)
+                )
+            case .quadCurve(let to, let cp):
+                return .quadCurve(
+                    to: VectorPoint(to.x + offset.x, to.y + offset.y),
+                    control: VectorPoint(cp.x + offset.x, cp.y + offset.y)
+                )
+            case .close:
+                return .close
+            }
+        })
+        return offsetShape
+    }
 }

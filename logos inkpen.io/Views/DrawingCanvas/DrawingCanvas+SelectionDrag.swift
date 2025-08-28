@@ -114,9 +114,9 @@ extension DrawingCanvas {
         // This eliminates expensive document updates and bounds recalculation during drag
         currentDragDelta = canvasDelta
         
-        // ULTRA FAST PREVIEW: Use targeted state update instead of document update
-        // This triggers only the preview rendering without expensive document operations
-        dragPreviewUpdateTrigger.toggle()
+        // VECTOR APP OPTIMIZATION: Don't trigger full scene redraw - just update drag preview overlay
+        // The dragged object will be rendered as a separate overlay, keeping all other objects static
+        // NO dragPreviewUpdateTrigger.toggle() - we'll use SwiftUI overlay instead
     }
     
     internal func finishSelectionDrag() {

@@ -144,7 +144,7 @@ extension DrawingCanvas {
                             // OUTGOING HANDLE (control1 from NEXT element - if it exists)
                             if elementIndex + 1 < shape.path.elements.count {
                                 let nextElement = shape.path.elements[elementIndex + 1]
-                                if case .curve(let nextTo, let nextControl1, _) = nextElement {
+                                if case .curve(_, let nextControl1, _) = nextElement {
                                     // FIX: Ignore handles that are collapsed to the anchor point (removed via Convert Anchor Point tool)
                                     let outgoingHandleCollapsed = (abs(nextControl1.x - to.x) < 0.1 && abs(nextControl1.y - to.y) < 0.1)
                                     
