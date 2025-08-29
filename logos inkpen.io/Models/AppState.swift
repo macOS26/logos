@@ -83,6 +83,9 @@ class AppState {
     /// When true, the next opened document will present the New Document Setup sheet on appear
     var showSetupOnNewDoc: Bool = false
     
+    /// Controls whether the New Document Setup window should be available for opening
+    var shouldShowDocumentSetup: Bool = false
+    
     // MARK: - Preferences: Brush Preview
     enum BrushPreviewStyle: String, CaseIterable { case outline, fill }
     var brushPreviewStyle: BrushPreviewStyle = .outline {

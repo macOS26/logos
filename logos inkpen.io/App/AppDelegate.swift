@@ -105,12 +105,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     
     
     private func configureWindowsAsync() async {
-        // Add a delay to let the app fully initialize
+        // Add a delay to let the app fully initialize and check for existing document windows
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second delay
         
         await MainActor.run {
-            // Auto-hiding behavior disabled - new document setup window will remain open
-            Log.info("📄 App: Auto-hiding behavior disabled - new document setup window will remain open", category: .startup)
+            // Check if document windows are already open
+            let documentWindows = NSApplication.shared.windows.filter { window in
+                return window.title != "Document Setup" && 
+                       window.title != "" && 
+                       !window.title.contains("Preferences") &&
+                       !window.title.contains("Gradient") &&
+                       !window.title.contains("Ink Color Mixer")
+            }
+            
+            if documentWindows.isEmpty {
+                // No document windows open - enable and show New Document Setup window
+                Log.info("📄 App: No document windows detected - enabling New Document Setup window", category: .startup)
+                AppState.shared.shouldShowDocumentSetup = true
+                AppState.shared.openWindowAction?("onboarding-setup")
+            } else {
+                // Document windows are already open - don't show setup window
+                Log.info("📄 App: \(documentWindows.count) document window(s) detected - skipping New Document Setup window", category: .startup)
+                AppState.shared.shouldShowDocumentSetup = false
+            }
             
             // Adjust any Apple Metal HUD carrier view if present in visible windows
             NSApplication.shared.windows.forEach { window in

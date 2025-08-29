@@ -609,6 +609,368 @@ class FileOperations {
         return document
     }
     
+    /// Import PDF from data for FileDocument protocol
+    static func importFromPDFData(_ data: Data) throws -> VectorDocument {
+        Log.fileOperation("🎨 Importing document from PDF data", level: .info)
+        
+        // Create a temporary file to use with the existing PDF import infrastructure
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("pdf")
+        
+        do {
+            try data.write(to: tempURL)
+            let document = try importFromPDFSync(url: tempURL)
+            
+            // Clean up temporary file
+            try? FileManager.default.removeItem(at: tempURL)
+            
+            Log.fileOperation("✅ PDF data import completed", level: .info)
+            
+            return document
+        } catch {
+            // Clean up temporary file on error
+            try? FileManager.default.removeItem(at: tempURL)
+            throw error
+        }
+    }
+    
+    /// Synchronous version of PDF import for FileDocument protocol
+    static func importFromPDFSync(url: URL) throws -> VectorDocument {
+        Log.fileOperation("🎨 Importing document from PDF (sync): \(url.path)", level: .info)
+        
+        // Use a semaphore to make the async call synchronous
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultDocument: VectorDocument?
+        var resultError: Error?
+        
+        Task {
+            do {
+                resultDocument = try await importFromPDF(url: url)
+            } catch {
+                resultError = error
+            }
+            semaphore.signal()
+        }
+        
+        semaphore.wait()
+        
+        if let error = resultError {
+            throw error
+        }
+        
+        guard let document = resultDocument else {
+            throw VectorImportError.parsingError("Failed to import PDF: Unknown error", line: nil)
+        }
+        
+        return document
+    }
+    
+    /// Async PDF import method
+    static func importFromPDF(url: URL) async throws -> VectorDocument {
+        Log.fileOperation("🎨 Importing document from PDF: \(url.path)", level: .info)
+        
+        let result = await VectorImportManager.shared.importVectorFile(from: url)
+        
+        if !result.success {
+            let errorMessage = result.errors.first?.localizedDescription ?? "Unknown PDF import error"
+            throw VectorImportError.parsingError("Failed to import PDF: \(errorMessage)", line: nil)
+        }
+        
+        // Create a new VectorDocument from the imported shapes
+        let document = VectorDocument()
+        
+        // Use document dimensions from PDF file metadata
+        let pdfDocumentSize = result.metadata.documentSize
+        let canvasWidth = max(pdfDocumentSize.width, 100) // Minimum 100pt
+        let canvasHeight = max(pdfDocumentSize.height, 100) // Minimum 100pt
+        
+        // Set document size based on PDF dimensions
+        document.settings.width = canvasWidth / 72.0 // Convert to inches
+        document.settings.height = canvasHeight / 72.0
+        document.settings.unit = .inches
+        
+        Log.fileOperation("🎯 PDF IMPORT USING DOCUMENT DIMENSIONS:", level: .info)
+        Log.info("   PDF document size: \(pdfDocumentSize)", category: .general)
+        Log.info("   Canvas size: \(canvasWidth) × \(canvasHeight) pts", category: .general)
+        
+        // Clear existing layers and create pasteboard + canvas + imported layers in correct order
+        document.layers.removeAll()
+        
+        // Create pasteboard layer FIRST (index 0) - working area behind everything
+        var pasteboardLayer = VectorLayer(name: "Pasteboard")
+        pasteboardLayer.isLocked = true  // Pasteboard should be LOCKED to prevent interference
+        
+        // Calculate pasteboard size (10x larger than canvas, same aspect ratio)
+        let pasteboardSize = CGSize(width: canvasWidth * 10, height: canvasHeight * 10)
+        
+        // Calculate pasteboard position (centered on canvas)
+        let pasteboardOrigin = CGPoint(
+            x: (canvasWidth - pasteboardSize.width) / 2,
+            y: (canvasHeight - pasteboardSize.height) / 2
+        )
+        
+        let pasteboardRect = VectorShape.rectangle(
+            at: pasteboardOrigin,
+            size: pasteboardSize
+        )
+        var pasteboardShape = pasteboardRect
+        pasteboardShape.fillStyle = FillStyle(color: .black, opacity: 0.2)  // 20% black
+        pasteboardShape.strokeStyle = nil
+        pasteboardShape.name = "Pasteboard Background"
+        pasteboardLayer.addShape(pasteboardShape)
+        document.layers.append(pasteboardLayer)
+        
+        // Create canvas layer SECOND (index 1) so it's above pasteboard
+        var canvasLayer = VectorLayer(name: "Canvas")
+        canvasLayer.isLocked = true
+        let canvasRect = VectorShape.rectangle(
+            at: CGPoint(x: 0, y: 0),
+            size: CGSize(width: canvasWidth, height: canvasHeight)
+        )
+        var backgroundShape = canvasRect
+        backgroundShape.fillStyle = FillStyle(color: .white, opacity: 1.0)
+        backgroundShape.strokeStyle = nil
+        backgroundShape.name = "Canvas Background"
+        canvasLayer.addShape(backgroundShape)
+        document.layers.append(canvasLayer)
+        
+        // Create imported layer THIRD (index 2) so it's on top
+        var importedLayer = VectorLayer(name: "Imported PDF")
+        document.layers.append(importedLayer)
+        
+        // Add all imported shapes to the layer
+        for shape in result.shapes {
+            var importedShape = shape
+            
+            // Ensure the shape is editable
+            importedShape.isLocked = false
+            importedShape.isVisible = true
+            
+            importedLayer.addShape(importedShape)
+        }
+
+        // Update the layer in the document
+        if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported PDF" }) {
+            document.layers[importedIndex] = importedLayer
+        }
+        
+        // Select the imported layer (not canvas)
+        document.selectedLayerIndex = 2 // Index 2 since Canvas is at index 0 and Pasteboard is at index 1
+        
+        // Log warnings if any
+        for warning in result.warnings {
+            Log.fileOperation("⚠️ PDF Import Warning: \(warning)", level: .info)
+        }
+        
+        Log.info("✅ Successfully imported PDF document with \(result.shapes.count) shapes", category: .fileOperations)
+        Log.fileOperation("📐 Canvas sized to document dimensions: \(canvasWidth) × \(canvasHeight) pts", level: .info)
+        return document
+    }
+    
+    /// Generate PDF data from VectorDocument
+    static func generatePDFData(from document: VectorDocument) throws -> Data {
+        Log.fileOperation("📄 Generating PDF data from document", level: .info)
+        
+        // Get document dimensions
+        let canvasWidth = document.settings.width * 72.0 // Convert to points
+        let canvasHeight = document.settings.height * 72.0
+        let documentSize = CGSize(width: canvasWidth, height: canvasHeight)
+        
+        // Create PDF context
+        let pdfData = NSMutableData()
+        guard let pdfConsumer = CGDataConsumer(data: pdfData),
+              let pdfContext = CGContext(consumer: pdfConsumer, mediaBox: nil, nil) else {
+            throw VectorImportError.parsingError("Failed to create PDF context", line: nil)
+        }
+        
+        // Begin PDF document
+        let mediaBox = CGRect(origin: .zero, size: documentSize)
+        pdfContext.beginPDFPage(nil)
+        
+        // Set white background
+        pdfContext.setFillColor(CGColor.white)
+        pdfContext.fill(mediaBox)
+        
+        // Render document content
+        try renderDocumentToPDF(document: document, context: pdfContext, canvasSize: documentSize)
+        
+        // End PDF document
+        pdfContext.endPDFPage()
+        pdfContext.closePDF()
+        
+        Log.fileOperation("✅ PDF data generation completed", level: .info)
+        return pdfData as Data
+    }
+    
+    /// Render VectorDocument to PDF context
+    static func renderDocumentToPDF(document: VectorDocument, context: CGContext, canvasSize: CGSize) throws {
+        Log.fileOperation("🎨 Rendering document to PDF context", level: .info)
+        
+        // Save graphics state
+        context.saveGState()
+        
+        // Render layers (skip pasteboard and canvas background)
+        for (index, layer) in document.layers.enumerated() {
+            // Skip pasteboard (index 0) and canvas (index 1) for PDF export
+            guard index >= 2, !layer.isLocked, layer.isVisible else { continue }
+            
+            Log.fileOperation("🎨 Rendering layer: \(layer.name)", level: .info)
+            
+            // Render shapes in layer
+            for shape in layer.shapes where shape.isVisible {
+                try renderShapeToPDF(shape: shape, context: context)
+            }
+        }
+        
+        // Restore graphics state
+        context.restoreGState()
+        
+        Log.fileOperation("✅ Document rendered to PDF context", level: .info)
+    }
+    
+    /// Render individual shape to PDF context
+    static func renderShapeToPDF(shape: VectorShape, context: CGContext) throws {
+        // Convert VectorShape path to CGPath
+        let cgPath = convertVectorPathToCGPath(shape.path)
+        
+        // Save graphics state for this shape
+        context.saveGState()
+        
+        // Apply shape transform if any (if transform exists)
+        // Note: VectorShape may not have a transform property - skip for now
+        // context.concatenate(shape.transform)
+        
+        // Set up fill style
+        if let fillStyle = shape.fillStyle {
+            context.addPath(cgPath)
+            setFillStyle(fillStyle, context: context)
+            context.fillPath()
+        }
+        
+        // Set up stroke style
+        if let strokeStyle = shape.strokeStyle {
+            context.addPath(cgPath)
+            setStrokeStyle(strokeStyle, context: context)
+            context.strokePath()
+        }
+        
+        // Restore graphics state
+        context.restoreGState()
+    }
+    
+    /// Convert VectorPath to CGPath
+    static func convertVectorPathToCGPath(_ vectorPath: VectorPath) -> CGPath {
+        let cgPath = CGMutablePath()
+        
+        for element in vectorPath.elements {
+            switch element {
+            case .move(let point):
+                cgPath.move(to: CGPoint(x: point.x, y: point.y))
+            case .line(let point):
+                cgPath.addLine(to: CGPoint(x: point.x, y: point.y))
+            case .curve(let point, let control1, let control2):
+                cgPath.addCurve(
+                    to: CGPoint(x: point.x, y: point.y),
+                    control1: CGPoint(x: control1.x, y: control1.y),
+                    control2: CGPoint(x: control2.x, y: control2.y)
+                )
+            case .quadCurve(let point, let control):
+                cgPath.addQuadCurve(
+                    to: CGPoint(x: point.x, y: point.y),
+                    control: CGPoint(x: control.x, y: control.y)
+                )
+            case .close:
+                cgPath.closeSubpath()
+            }
+        }
+        
+        return cgPath
+    }
+    
+    /// Set fill style in PDF context
+    static func setFillStyle(_ fillStyle: FillStyle, context: CGContext) {
+        switch fillStyle.color {
+        case .rgb(let rgb):
+            context.setFillColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: fillStyle.opacity)
+        case .white:
+            context.setFillColor(red: 1, green: 1, blue: 1, alpha: fillStyle.opacity)
+        case .black:
+            context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
+        case .clear:
+            context.setFillColor(red: 0, green: 0, blue: 0, alpha: 0)
+        case .cmyk(let cmyk):
+            // Convert CMYK to RGB for PDF context
+            let r = 1.0 - min(1.0, cmyk.cyan * (1.0 - cmyk.black) + cmyk.black)
+            let g = 1.0 - min(1.0, cmyk.magenta * (1.0 - cmyk.black) + cmyk.black)
+            let b = 1.0 - min(1.0, cmyk.yellow * (1.0 - cmyk.black) + cmyk.black)
+            context.setFillColor(red: r, green: g, blue: b, alpha: fillStyle.opacity)
+        case .hsb(let hsb):
+            // Convert HSB to RGB for PDF context
+            let c = hsb.saturation * hsb.brightness
+            let x = c * (1 - abs((hsb.hue / 60).truncatingRemainder(dividingBy: 2) - 1))
+            let m = hsb.brightness - c
+            let (r, g, b): (CGFloat, CGFloat, CGFloat)
+            if hsb.hue < 60 { (r, g, b) = (c, x, 0) }
+            else if hsb.hue < 120 { (r, g, b) = (x, c, 0) }
+            else if hsb.hue < 180 { (r, g, b) = (0, c, x) }
+            else if hsb.hue < 240 { (r, g, b) = (0, x, c) }
+            else if hsb.hue < 300 { (r, g, b) = (x, 0, c) }
+            else { (r, g, b) = (c, 0, x) }
+            context.setFillColor(red: r + m, green: g + m, blue: b + m, alpha: fillStyle.opacity)
+        case .pantone(_), .spot(_):
+            // Fallback to black for specialty colors
+            context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
+        case .appleSystem(_):
+            // Fallback to black for system colors
+            context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
+        case .gradient(_):
+            // Fallback to black for gradients (would need separate implementation)
+            context.setFillColor(red: 0, green: 0, blue: 0, alpha: fillStyle.opacity)
+        }
+    }
+    
+    /// Set stroke style in PDF context
+    static func setStrokeStyle(_ strokeStyle: StrokeStyle, context: CGContext) {
+        // Set stroke color
+        switch strokeStyle.color {
+        case .rgb(let rgb):
+            context.setStrokeColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
+        case .white:
+            context.setStrokeColor(red: 1, green: 1, blue: 1, alpha: 1.0)
+        case .black:
+            context.setStrokeColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        case .clear:
+            context.setStrokeColor(red: 0, green: 0, blue: 0, alpha: 0)
+        case .cmyk(let cmyk):
+            // Convert CMYK to RGB for PDF context
+            let r = (1.0 - cmyk.cyan) * (1.0 - cmyk.black)
+            let g = (1.0 - cmyk.magenta) * (1.0 - cmyk.black)
+            let b = (1.0 - cmyk.yellow) * (1.0 - cmyk.black)
+            context.setStrokeColor(red: r, green: g, blue: b, alpha: 1.0)
+        case .hsb(let hsb):
+            // Convert HSB to RGB for PDF context
+            let rgb = hsb.rgbColor
+            context.setStrokeColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
+        case .pantone, .spot:
+            // Fallback to black for specialty colors in PDF export
+            context.setStrokeColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        case .appleSystem:
+            // Fallback to black for Apple system colors in PDF export
+            context.setStrokeColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        case .gradient:
+            // Use the first color of gradient as fallback for stroke
+            context.setStrokeColor(red: 0, green: 0, blue: 0, alpha: 1.0)
+        }
+        
+        // Set line width
+        context.setLineWidth(strokeStyle.width)
+        
+        // Set line cap
+        context.setLineCap(strokeStyle.lineCap)
+        
+        // Set line join
+        context.setLineJoin(strokeStyle.lineJoin)
+    }
+    
     /// Import SVG from data for FileDocument protocol
     static func importFromSVGData(_ data: Data) throws -> VectorDocument {
         Log.fileOperation("🎨 Importing document from SVG data", level: .info)

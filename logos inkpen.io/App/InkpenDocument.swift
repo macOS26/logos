@@ -14,8 +14,8 @@ import UniformTypeIdentifiers
 struct InkpenDocument: FileDocument {
     var document: VectorDocument
     
-    static var readableContentTypes: [UTType] { [.inkpen, .svg] }
-    static var writableContentTypes: [UTType] { [.inkpen, UTType(filenameExtension: "svg")!] }
+    static var readableContentTypes: [UTType] { [.inkpen, .svg, .pdf] }
+    static var writableContentTypes: [UTType] { [.inkpen, UTType(filenameExtension: "svg")!, .pdf] }
     
     init() {
         self.document = VectorDocument()
@@ -50,6 +50,22 @@ struct InkpenDocument: FileDocument {
                 Log.info("✅ SVG document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
             } catch {
                 Log.error("❌ Failed to load SVG document: \(error)", category: .error)
+                throw error
+            }
+        } else if fileExtension == "pdf" {
+            // For PDF files, use the data-based approach
+            do {
+                self.document = try FileOperations.importFromPDFData(data)
+                
+                // CRITICAL FIX: Populate unified objects system after PDF import for proper rendering
+                // For PDF imports, we want to preserve the original stacking order from the PDF
+                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
+                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.objectWillChange.send()
+                
+                Log.info("✅ PDF document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
+            } catch {
+                Log.error("❌ Failed to load PDF document: \(error)", category: .error)
                 throw error
             }
         } else {
@@ -95,6 +111,18 @@ struct InkpenDocument: FileDocument {
                 return FileWrapper(regularFileWithContents: data)
             } catch {
                 Log.error("❌ Failed to save SVG document: \(error)", category: .error)
+                throw error
+            }
+        } else if configuration.contentType == .pdf || 
+                  configuration.contentType.conforms(to: .pdf) ||
+                  configuration.contentType.identifier.contains("pdf") {
+            // Export as PDF
+            do {
+                let pdfData = try FileOperations.generatePDFData(from: document)
+                Log.info("✅ Successfully exported PDF document data", category: .fileOperations)
+                return FileWrapper(regularFileWithContents: pdfData)
+            } catch {
+                Log.error("❌ Failed to save PDF document: \(error)", category: .error)
                 throw error
             }
         } else {

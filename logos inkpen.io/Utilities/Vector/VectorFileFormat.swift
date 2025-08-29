@@ -19,7 +19,6 @@ enum VectorFileFormat: String, CaseIterable {
     case svg = "svg"
     case pdf = "pdf"
     case adobeIllustrator = "ai"
-    case eps = "eps"
     case dxf = "dxf"          // AutoCAD exchange format (preparation for DWG)a
     case dwf = "dwf"          // Design Web Format (Autodesk published format)
     case dwg = "dwg"          // AutoCAD drawing (future commercial support)
@@ -29,7 +28,6 @@ enum VectorFileFormat: String, CaseIterable {
         case .svg: return "SVG (Scalable Vector Graphics)"
         case .pdf: return "PDF (Portable Document Format)"
         case .adobeIllustrator: return "AI File"
-        case .eps: return "Encapsulated PostScript"
         case .dxf: return "AutoCAD Drawing Exchange"
         case .dwf: return "Design Web Format"
         case .dwg: return "AutoCAD Drawing"
@@ -41,7 +39,6 @@ enum VectorFileFormat: String, CaseIterable {
         case .svg: return "public.svg-image"
         case .pdf: return "com.adobe.pdf"
         case .adobeIllustrator: return "com.adobe.illustrator.ai-image"
-        case .eps: return "com.adobe.encapsulated-postscript"
         case .dxf: return "com.autodesk.dwg"
         case .dwf: return "com.autodesk.dwf"
         case .dwg: return "com.autodesk.dwg"
@@ -50,7 +47,7 @@ enum VectorFileFormat: String, CaseIterable {
     
     var isCurrentlySupported: Bool {
         switch self {
-        case .svg, .pdf, .adobeIllustrator, .eps, .dwf: return true
+        case .svg, .pdf, .adobeIllustrator, .dwf: return true
         case .dxf, .dwg: return false // Future implementation (requires commercial license)
         }
     }

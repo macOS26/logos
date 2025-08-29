@@ -60,8 +60,6 @@ class VectorImportManager {
             return await importPDF(from: url)
         case .adobeIllustrator:
             return await importAdobeIllustrator(from: url)
-        case .eps:
-            return await importEPS(from: url)
         case .dwf:
             return await importDWF(from: url)
         case .dxf, .dwg:
@@ -115,8 +113,6 @@ class VectorImportManager {
             return await importPDF(from: url)
         case .adobeIllustrator:
             return await importAdobeIllustrator(from: url)
-        case .eps:
-            return await importEPS(from: url)
         case .dwf:
             return await importDWF(from: url)
         case .dxf, .dwg:
@@ -183,9 +179,9 @@ class VectorImportManager {
             return .adobeIllustrator
         }
         
-        // EPS detection
-        if string.hasPrefix("%!PS-Adobe") && string.contains("EPSF") {
-            return .eps
+        // PostScript/EPS detection - treat as PDF for import
+        if string.hasPrefix("%!PS-Adobe") {
+            return .pdf
         }
         
         // DXF detection
@@ -469,8 +465,8 @@ class VectorImportManager {
         }
     }
     
-    // MARK: - EPS Import (PostScript Standard)
-    
+    // MARK: - EPS Import (PostScript Standard) - DEPRECATED
+    // Note: EPS/PostScript support removed, keeping method for compatibility
     private func importEPS(from url: URL) async -> VectorImportResult {
         var errors: [VectorImportError] = []
         let warnings: [String] = []
@@ -483,7 +479,7 @@ class VectorImportManager {
             let epsContent = try parseEPSContent(url)
             
             let metadata = VectorImportMetadata(
-                originalFormat: .eps,
+                originalFormat: .pdf, // EPS treated as PDF for import
                 documentSize: epsContent.boundingBox.size,
                 colorSpace: epsContent.colorSpace,
                 units: .points,
@@ -510,6 +506,59 @@ class VectorImportManager {
         } catch {
             errors.append(.parsingError(error.localizedDescription, line: nil))
             Log.error("❌ EPS import failed: \(error)", category: .error)
+            
+            return VectorImportResult(
+                success: false,
+                shapes: [],
+                textObjects: [],
+                metadata: createDefaultMetadata(),
+                errors: errors,
+                warnings: warnings
+            )
+        }
+    }
+    
+    // MARK: - PostScript Import
+    
+    private func importPostScript(from url: URL) async -> VectorImportResult {
+        var errors: [VectorImportError] = []
+        let warnings: [String] = []
+        
+        Log.fileOperation("📊 Importing PostScript (.ps)...", level: .info)
+        
+        // PostScript can often be converted to PDF for import, similar to EPS
+        do {
+            // Parse PostScript content using similar approach to EPS
+            let psContent = try parsePostScriptContent(url)
+            
+            let metadata = VectorImportMetadata(
+                originalFormat: .pdf, // PostScript treated as PDF for import
+                documentSize: psContent.boundingBox.size,
+                colorSpace: psContent.colorSpace,
+                units: .points,
+                dpi: 72.0,
+                layerCount: 1,
+                shapeCount: psContent.shapes.count,
+                textObjectCount: psContent.textCount,
+                importDate: Date(),
+                sourceApplication: psContent.creator,
+                documentVersion: psContent.version
+            )
+            
+            Log.fileOperation("✅ PostScript import successful: \(psContent.shapes.count) shapes", level: .info)
+            
+            return VectorImportResult(
+                success: true,
+                shapes: psContent.shapes,
+                textObjects: [],
+                metadata: metadata,
+                errors: errors,
+                warnings: warnings
+            )
+            
+        } catch {
+            errors.append(.parsingError(error.localizedDescription, line: nil))
+            Log.error("❌ PostScript import failed: \(error)", category: .error)
             
             return VectorImportResult(
                 success: false,
