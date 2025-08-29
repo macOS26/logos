@@ -10,7 +10,9 @@
       "Bash(grep:*)",
       "Read(/Users/toddbruss/Documents/**)",
       "Bash(find:*)",
-      "Read(/Users/toddbruss/Documents/**)"
+      "Read(/Users/toddbruss/Documents/**)",
+      "Read(/Users/toddbruss/Library/Mobile Documents/com~apple~CloudDocs/Documents/GameChanger/Sources/GameChanger/images/svg/**)",
+      "mcp__xcf-server__xcf"
     ],
     "deny": [],
     "ask": []

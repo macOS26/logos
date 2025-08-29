@@ -264,7 +264,7 @@ struct DocumentBasedMainView: View {
     
     private func saveDocumentAs() {
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [UTType.json, UTType.inkpen]
+        panel.allowedContentTypes = [UTType.json, UTType.inkpen, UTType(filenameExtension: "svg")!]
         panel.nameFieldStringValue = "Document.inkpen"
         panel.title = "Save Document"
         
@@ -276,12 +276,16 @@ struct DocumentBasedMainView: View {
     
     private func saveDocumentToURL(_ url: URL) {
         do {
-            try FileOperations.exportToJSON(document, url: url)
-            
-            // Generate and set custom document icon
-            DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
-            
-            Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
+            // Check file extension to determine format
+            if url.pathExtension.lowercased() == "svg" {
+                try FileOperations.exportToSVG(document, url: url)
+                Log.info("✅ Successfully saved document as SVG to: \(url.path)", category: .fileOperations)
+            } else {
+                try FileOperations.exportToJSON(document, url: url)
+                // Generate and set custom document icon only for inkpen files
+                DocumentIconGenerator.shared.setCustomIcon(for: url, document: document)
+                Log.info("✅ Successfully saved document to: \(url.path)", category: .fileOperations)
+            }
             
         } catch {
             Log.error("❌ Save failed: \(error)", category: .error)

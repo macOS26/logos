@@ -15,6 +15,7 @@ struct InkpenDocument: FileDocument {
     var document: VectorDocument
     
     static var readableContentTypes: [UTType] { [.inkpen, .svg] }
+    static var writableContentTypes: [UTType] { [.inkpen, UTType(filenameExtension: "svg")!] }
     
     init() {
         self.document = VectorDocument()
@@ -78,12 +79,33 @@ struct InkpenDocument: FileDocument {
     }
     
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        do {
-            let data = try FileOperations.exportToJSONData(document)
-            return FileWrapper(regularFileWithContents: data)
-        } catch {
-            Log.error("❌ Failed to save document: \(error)", category: .error)
-            throw error
+        // Debug logging to see what content type we're getting
+        Log.info("🔍 SAVE DEBUG: contentType = \(configuration.contentType.identifier)", category: .fileOperations)
+        Log.info("🔍 SAVE DEBUG: contentType description = \(configuration.contentType.description)", category: .fileOperations)
+        
+        // Check content type to determine export format
+        if configuration.contentType == UTType(filenameExtension: "svg") || 
+           configuration.contentType.conforms(to: UTType(filenameExtension: "svg")!) ||
+           configuration.contentType.identifier.contains("svg") {
+            // Export as SVG
+            do {
+                let svgContent = try FileOperations.generateSVGContent(from: document)
+                let data = svgContent.data(using: .utf8) ?? Data()
+                Log.info("✅ Successfully exported SVG document data", category: .fileOperations)
+                return FileWrapper(regularFileWithContents: data)
+            } catch {
+                Log.error("❌ Failed to save SVG document: \(error)", category: .error)
+                throw error
+            }
+        } else {
+            // Export as JSON (default for .inkpen and .json files)
+            do {
+                let data = try FileOperations.exportToJSONData(document)
+                return FileWrapper(regularFileWithContents: data)
+            } catch {
+                Log.error("❌ Failed to save JSON document: \(error)", category: .error)
+                throw error
+            }
         }
     }
 }
