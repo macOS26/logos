@@ -159,6 +159,10 @@ extension DrawingCanvas {
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
                         document.textObjects[textIndex].position.x += currentDragDelta.x
                         document.textObjects[textIndex].position.y += currentDragDelta.y
+                        
+                        // CRITICAL FIX: Trigger SwiftUI update immediately for text position changes
+                        // This ensures saved text visually updates without needing font panel changes
+                        document.objectWillChange.send()
                     }
                 }
             }
@@ -515,6 +519,12 @@ extension DrawingCanvas {
                     )
                 }
             }
+        }
+        
+        // CRITICAL FIX: Trigger SwiftUI view refresh to update text positions visually
+        // Use async to avoid "Publishing changes from within view updates" error
+        DispatchQueue.main.async {
+            document.objectWillChange.send()
         }
         
         Log.info("🔧 DRAG SYNC: Updated unified objects data without reordering", category: .general)

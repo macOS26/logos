@@ -59,6 +59,12 @@ struct StableProfessionalTextCanvas: View {
         // Find current text object and sync view model (without recreation)
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
+            
+            // CRITICAL FIX: Force position sync connection for saved text
+            // This establishes the same connection that blue mode creates
+            DispatchQueue.main.async {
+                self.viewModel.objectWillChange.send()
+            }
         }
     }
     
@@ -1151,18 +1157,12 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         // Line spacing is now handled separately in the typography properties
         
-        // CRITICAL FIX: Force SwiftUI update when any visual properties change
-        if colorChanged || typographyChanged {
-            let changes = [
-                colorChanged ? "color" : nil,
-                typographyChanged ? "typography" : nil
-            ].compactMap { $0 }.joined(separator: ", ")
-            
-            Log.fileOperation("🎨 VISUAL PROPERTIES CHANGED: \(changes) - forcing view refresh", level: .info)
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-        }
+        // CRITICAL FIX: Check if position changed to trigger visual update
+        let oldPosition = CGPoint(x: self.textBoxFrame.minX, y: self.textBoxFrame.minY)
+        let newPosition = CGPoint(x: textObject.position.x, y: textObject.position.y)
+        let positionChanged = abs(oldPosition.x - newPosition.x) > 0.01 || abs(oldPosition.y - newPosition.y) > 0.01
+        
+        Log.fileOperation("🔍 POSITION CHECK: old=\(oldPosition) new=\(newPosition) changed=\(positionChanged)", level: .info)
         
         // CRITICAL FIX: NEVER override user's manual resize - ONLY sync position
         // Text box size is ENTIRELY controlled by user manual resize and auto-resize
@@ -1172,6 +1172,20 @@ class ProfessionalTextViewModel: ObservableObject {
             width: self.textBoxFrame.width,   // PRESERVE USER'S WIDTH
             height: self.textBoxFrame.height  // PRESERVE USER'S HEIGHT
         )
+        
+        // CRITICAL FIX: Force SwiftUI update when any visual properties change
+        if colorChanged || typographyChanged || positionChanged {
+            let changes = [
+                colorChanged ? "color" : nil,
+                typographyChanged ? "typography" : nil,
+                positionChanged ? "position" : nil
+            ].compactMap { $0 }.joined(separator: ", ")
+            
+            Log.fileOperation("🎨 VISUAL PROPERTIES CHANGED: \(changes) - forcing view refresh", level: .info)
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
         
         Log.info("📦 EXTERNAL SYNC: Preserved user text box size, only updated position", category: .general)
     }
@@ -1343,14 +1357,18 @@ class ProfessionalTextViewModel: ObservableObject {
     
     public func updateDocumentTextBounds(_ frame: CGRect) {
         // Update the document VectorText position and bounds to match actual text canvas
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }) {
-            document.textObjects[textIndex].position = CGPoint(x: frame.minX, y: frame.minY)
-            document.textObjects[textIndex].bounds = CGRect(
-                x: 0, y: 0, 
-                width: frame.width, 
-                height: frame.height
-            )
-            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds)", level: .info)
+        // Use async to avoid "Publishing changes from within view updates" error
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if let textIndex = self.document.textObjects.firstIndex(where: { $0.id == self.textObject.id }) {
+                self.document.textObjects[textIndex].position = CGPoint(x: frame.minX, y: frame.minY)
+                self.document.textObjects[textIndex].bounds = CGRect(
+                    x: 0, y: 0, 
+                    width: frame.width, 
+                    height: frame.height
+                )
+                Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(self.document.textObjects[textIndex].position), bounds=\(self.document.textObjects[textIndex].bounds)", level: .info)
+            }
         }
     }
     
