@@ -113,14 +113,15 @@ extension VectorDocument {
         unifiedObjects.append(unifiedObject)
     }
     
-    /// Populates the unified objects array from existing layers and text objects
+    /// ⚠️ DEPRECATED: This function REVERSES layer order and should NOT be used!
+    /// USE populateUnifiedObjectsFromLayersPreservingOrder() instead to prevent layer corruption
     /// CRITICAL: This creates a truly unified ordering where text and shapes can be intermixed
+    @available(*, deprecated, message: "Use populateUnifiedObjectsFromLayersPreservingOrder() instead - this function reverses order!")
     internal func populateUnifiedObjectsFromLayers() {
-        // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
-        if isUndoRedoOperation {
-            Log.info("🔧 POPULATE: Skipping unified objects population during undo/redo operation to preserve order", category: .general)
-            return
-        }
+        // CRITICAL SAFEGUARD: Prevent this dangerous function from executing - always call the safe version instead
+        Log.error("⚠️ CRITICAL BUG PREVENTED: populateUnifiedObjectsFromLayers() blocked to prevent layer corruption! Using safe version.", category: .error)
+        populateUnifiedObjectsFromLayersPreservingOrder()
+        return
         
         unifiedObjects.removeAll()
         
@@ -263,7 +264,7 @@ extension VectorDocument {
     /// CRITICAL FIX: Update unified objects ordering to match layer ordering
     private func updateUnifiedObjectsOrdering() {
         // Re-populate unified objects to reflect any changes in layer ordering
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // Re-sync selection to maintain selected objects
         syncUnifiedSelectionFromLegacy()
@@ -427,7 +428,7 @@ extension VectorDocument {
         }
         
         Log.info("🔧 FORCE RESYNC: Rebuilding unified objects system", category: .general)
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         Log.info("🔧 FORCE RESYNC: Unified objects system rebuilt with \(unifiedObjects.count) objects", category: .general)
     }
     

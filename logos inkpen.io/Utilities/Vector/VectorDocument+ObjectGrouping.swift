@@ -34,7 +34,7 @@ extension VectorDocument {
         selectedShapeIDs = [groupShape.id]
         
         // CRITICAL FIX: Update unified objects system after grouping
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the new group
         selectedObjectIDs = [groupShape.id]
@@ -85,7 +85,7 @@ extension VectorDocument {
         selectedShapeIDs = [flattenedShape.id]
         
         // CRITICAL FIX: Update unified objects system after flattening
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the new flattened group
         selectedObjectIDs = [flattenedShape.id]
@@ -138,7 +138,7 @@ extension VectorDocument {
         selectedShapeIDs = newSelectedShapeIDs
         
         // CRITICAL FIX: Update unified objects system after ungrouping
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the ungrouped shapes
         selectedObjectIDs = newSelectedShapeIDs
@@ -185,7 +185,7 @@ extension VectorDocument {
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after unflattening
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the unflattened shapes
         selectedObjectIDs = newSelectedIDs
@@ -229,7 +229,7 @@ extension VectorDocument {
         selectedShapeIDs = [compoundShape.id]
         
         // CRITICAL FIX: Update unified objects system after creating compound path
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the new compound path
         selectedObjectIDs = [compoundShape.id]
@@ -271,7 +271,7 @@ extension VectorDocument {
         selectedShapeIDs = [loopingShape.id]
         
         // CRITICAL FIX: Update unified objects system after creating looping path
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the new looping path
         selectedObjectIDs = [loopingShape.id]
@@ -319,7 +319,7 @@ extension VectorDocument {
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after releasing compound path
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the released paths
         selectedObjectIDs = newSelectedIDs
@@ -367,7 +367,7 @@ extension VectorDocument {
         selectedShapeIDs = newSelectedIDs
         
         // CRITICAL FIX: Update unified objects system after releasing looping path
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // CRITICAL FIX: Update unified selection to use the released paths
         selectedObjectIDs = newSelectedIDs

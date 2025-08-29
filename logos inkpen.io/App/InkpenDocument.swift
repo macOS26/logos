@@ -57,7 +57,7 @@ struct InkpenDocument: FileDocument {
                 self.document = try FileOperations.importFromJSONData(data)
                 
                 // CRITICAL FIX: Populate unified objects system after JSON import for proper rendering
-                self.document.populateUnifiedObjectsFromLayers()
+                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
                 self.document.syncUnifiedObjectsAfterPropertyChange()
                 self.document.objectWillChange.send()
                 

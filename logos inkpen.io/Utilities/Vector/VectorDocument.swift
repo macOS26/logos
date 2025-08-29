@@ -146,7 +146,7 @@ class VectorDocument: ObservableObject, Codable {
         createCanvasAndWorkingLayers()
         
         // CRITICAL: Populate unified objects array with existing shapes
-        populateUnifiedObjectsFromLayers()
+        populateUnifiedObjectsFromLayersPreservingOrder()
         
         // Set the selected layer index to working layer (not canvas or pasteboard)
         self.selectedLayerIndex = 2 // Working layer is now at index 2
@@ -319,7 +319,7 @@ class VectorDocument: ObservableObject, Codable {
         
         // CRITICAL FIX: Only populate unified objects if they don't exist (for new documents)
         if unifiedObjects.isEmpty {
-            populateUnifiedObjectsFromLayers()
+            populateUnifiedObjectsFromLayersPreservingOrder()
         }
     }
     
