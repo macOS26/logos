@@ -37,6 +37,7 @@ class PDFCommandParser {
     private var shapes: [VectorShape] = []
     private var currentPath: [PathCommand] = []
     private var pathStartPoint = CGPoint.zero
+    private var pageSize = CGSize.zero
     
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
@@ -46,6 +47,13 @@ class PDFCommandParser {
               let document = CGPDFDocument(dataProvider) else {
             print("Failed to load PDF document")
             return []
+        }
+        
+        // Get page size from first page
+        if let firstPage = document.page(at: 1) {
+            let mediaBox = firstPage.getBoxRect(.mediaBox)
+            pageSize = mediaBox.size
+            print("PDF: Page size detected as \(pageSize)")
         }
         
         // Parse all pages
@@ -519,23 +527,23 @@ class PDFCommandParser {
         for command in currentPath {
             switch command {
             case .moveTo(let point):
-                // Transform coordinates: flip Y and center on canvas
-                let transformedPoint = VectorPoint(Double(point.x - 512), Double(512 - point.y))
+                // Transform coordinates: flip Y coordinate system
+                let transformedPoint = VectorPoint(Double(point.x), Double(pageSize.height - point.y))
                 vectorElements.append(.move(to: transformedPoint))
                 
             case .lineTo(let point):
-                let transformedPoint = VectorPoint(Double(point.x - 512), Double(512 - point.y))
+                let transformedPoint = VectorPoint(Double(point.x), Double(pageSize.height - point.y))
                 vectorElements.append(.line(to: transformedPoint))
                 
             case .curveTo(let cp1, let cp2, let to):
-                let transformedCP1 = VectorPoint(Double(cp1.x - 512), Double(512 - cp1.y))
-                let transformedCP2 = VectorPoint(Double(cp2.x - 512), Double(512 - cp2.y))
-                let transformedTo = VectorPoint(Double(to.x - 512), Double(512 - to.y))
+                let transformedCP1 = VectorPoint(Double(cp1.x), Double(pageSize.height - cp1.y))
+                let transformedCP2 = VectorPoint(Double(cp2.x), Double(pageSize.height - cp2.y))
+                let transformedTo = VectorPoint(Double(to.x), Double(pageSize.height - to.y))
                 vectorElements.append(.curve(to: transformedTo, control1: transformedCP1, control2: transformedCP2))
                 
             case .quadCurveTo(let cp, let to):
-                let transformedCP = VectorPoint(Double(cp.x - 512), Double(512 - cp.y))
-                let transformedTo = VectorPoint(Double(to.x - 512), Double(512 - to.y))
+                let transformedCP = VectorPoint(Double(cp.x), Double(pageSize.height - cp.y))
+                let transformedTo = VectorPoint(Double(to.x), Double(pageSize.height - to.y))
                 vectorElements.append(.quadCurve(to: transformedTo, control: transformedCP))
                 
             case .closePath:
