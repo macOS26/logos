@@ -640,35 +640,52 @@ class SVGParser: NSObject, XMLParserDelegate {
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
             
+            // CRITICAL FIX: Create ONE multi-line text object instead of multiple separate objects
+            // Combine all tspan content into a single multi-line string
+            var combinedContent: [String] = []
+            var firstFontSize: Double = 12
+            var firstFontFamily: String = "System Font"
+            var firstFillColor: VectorColor = .black
+            
             for (index, span) in currentTextSpans.enumerated() {
-                guard !span.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+                let cleanContent = span.content.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !cleanContent.isEmpty else { continue }
                 
-                let fontSize = parseLength(span.attributes["font-size"]) ?? 12
-                let rawFontFamily = extractFontFamily(from: span.attributes)
-                let fontFamily = normalizeFontFamily(rawFontFamily)
-                let fill = span.attributes["fill"] ?? "black"
+                // Use typography from the first non-empty tspan
+                if index == 0 || (combinedContent.isEmpty) {
+                    firstFontSize = parseLength(span.attributes["font-size"]) ?? 12
+                    let rawFontFamily = extractFontFamily(from: span.attributes)
+                    firstFontFamily = normalizeFontFamily(rawFontFamily)
+                    let fill = span.attributes["fill"] ?? "black"
+                    firstFillColor = parseColor(fill) ?? .black
+                }
+                
+                combinedContent.append(cleanContent)
+            }
+            
+            // Create a single multi-line text object
+            if !combinedContent.isEmpty {
+                let multiLineContent = combinedContent.joined(separator: "\n")
                 
                 let typography = TypographyProperties(
-                    fontFamily: fontFamily,
-                    fontSize: fontSize,
-                    lineHeight: fontSize,
+                    fontFamily: firstFontFamily,
+                    fontSize: firstFontSize,
+                    lineHeight: firstFontSize * 1.2, // Standard line spacing
                     strokeColor: .black,
-                    fillColor: parseColor(fill) ?? .black
+                    fillColor: firstFillColor
                 )
                 
-                // Calculate position: base position + tspan offset
-                let spanX = baseX + span.x
-                let spanY = baseY + span.y
-                
                 let textObject = VectorText(
-                    content: span.content.trimmingCharacters(in: .whitespacesAndNewlines),
+                    content: multiLineContent,
                     typography: typography,
-                    position: CGPoint(x: spanX, y: spanY),
-                    transform: finalTextTransform
+                    position: CGPoint(x: baseX, y: baseY),
+                    transform: finalTextTransform,
+                    isPointText: false,  // This is area text (multi-line)
+                    areaSize: nil        // Will be calculated automatically
                 )
                 
                 textObjects.append(textObject)
-                Log.fileOperation("📝 Created multi-line text object \(index + 1): '\(textObject.content)'", level: .info)
+                Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
             }
         } else {
             // Handle single-line text

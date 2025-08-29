@@ -4,7 +4,10 @@
       "Bash(xcodebuild:*)",
       "WebSearch",
       "WebSearch",
-      "WebSearch"
+      "WebSearch",
+      "Read(/Users/toddbruss/Documents/**)",
+      "Read(/Users/toddbruss/Documents/**)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

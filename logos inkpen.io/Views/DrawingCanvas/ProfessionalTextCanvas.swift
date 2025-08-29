@@ -48,7 +48,15 @@ struct StableProfessionalTextCanvas: View {
                 updateViewModelFromDocument()
             }
             .onChange(of: document.textObjects) { _, _ in
-                updateViewModelFromDocument()
+                // CRITICAL FIX: Don't sync during drag operations to prevent position reverting
+                let isDragOperation = !document.selectedObjectIDs.isEmpty || !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
+                
+                if !isDragOperation {
+                    updateViewModelFromDocument()
+                } else {
+                    // During drag operations, skip sync to prevent position reverting
+                    // The drag preview system will handle visual updates
+                }
             }
             // Additional fix: Use id to force view refresh when text content changes
             .id("\(textObjectID)-\(getDocumentMode())")

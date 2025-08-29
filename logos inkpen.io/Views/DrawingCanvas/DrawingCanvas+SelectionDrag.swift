@@ -482,7 +482,11 @@ extension DrawingCanvas {
     }
     
     /// CRITICAL FIX: Sync unified objects array after shapes/text have been moved
+    /// IMPORTANT: This only updates object data without changing layer ordering
     private func syncUnifiedObjectsAfterMovement() {
+        // CRITICAL FIX: Don't call populateUnifiedObjectsFromLayers() which reorders everything!
+        // Just update the object data while preserving orderID and layerIndex
+        
         // Update unified objects to reflect changes in layers and textObjects
         for i in document.unifiedObjects.indices {
             let unifiedObject = document.unifiedObjects[i]
@@ -492,27 +496,27 @@ extension DrawingCanvas {
                 // Find the updated shape in the layers array
                 if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                    let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
-                    // Update the unified object with the moved shape
+                    // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                     document.unifiedObjects[i] = VectorObject(
                         shape: updatedShape,
                         layerIndex: unifiedObject.layerIndex,
-                        orderID: unifiedObject.orderID
+                        orderID: unifiedObject.orderID  // Keep same orderID = no reordering
                     )
                 }
                 
             case .text(let oldText):
                 // Find the updated text in the textObjects array
                 if let updatedText = document.textObjects.first(where: { $0.id == oldText.id }) {
-                    // Update the unified object with the moved text
+                    // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
                     document.unifiedObjects[i] = VectorObject(
                         text: updatedText,
                         layerIndex: unifiedObject.layerIndex,
-                        orderID: unifiedObject.orderID
+                        orderID: unifiedObject.orderID  // Keep same orderID = no reordering
                     )
                 }
             }
         }
         
-        // Removed excessive logging during drag operations
+        Log.info("🔧 DRAG SYNC: Updated unified objects data without reordering", category: .general)
     }
 } 
