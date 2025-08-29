@@ -91,6 +91,7 @@ struct UnifiedObjectContentView: View {
                         dragPreviewDelta: isSelected ? dragPreviewDelta : .zero,
                         dragPreviewTrigger: dragPreviewTrigger
                     )
+                    .id("\(shape.id)-\(shape.path.isClosed)-\(maskShape.id)-\(maskShape.path.isClosed)")  // CRITICAL FIX: Include both shapes' path state
                     .onAppear {
                         print("🎭 UNIFIED OBJECT: Rendering clipped shape '\(shape.name)' clipped by '\(maskShape.name)'")
                         print("   🎯 Selection state: clipped=\(isClippedShapeSelected), mask=\(isMaskShapeSelected)")
@@ -138,6 +139,7 @@ struct UnifiedObjectContentView: View {
             dragPreviewDelta: dragPreviewDelta,
             dragPreviewTrigger: dragPreviewTrigger
         )
+        .id("\(shape.id)-\(shape.path.isClosed)-\(shape.bounds.hashValue)")  // CRITICAL FIX: Include path state in ID to trigger view refresh when closed
     }
     
     // Helper function to create pre-transformed paths for clipping masks

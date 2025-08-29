@@ -30,13 +30,13 @@ struct MainToolbarContent: ToolbarContent {
     
     // MARK: - Path Closing Support Functions
     private func hasOpenPaths() -> Bool {
-        // DISABLED: Auto-closing disabled - never show close paths option
-        return false
+        // Only check SELECTED paths for closing, not all paths
+        return hasSelectedPathsToClose()
     }
     
     private func closeOpenPaths() {
-        // DISABLED: Auto-closing paths disabled - objects should remain as drawn
-        Log.info("🚫 Path auto-closing disabled - objects remain unclosed as intended", category: .general)
+        // Only close SELECTED paths, not all paths in document
+        closeSelectedPaths()
     }
     
     private func hasSelectedPathsToClose() -> Bool {
@@ -115,6 +115,8 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
+        // CRITICAL FIX: Refresh unified objects after path changes to trigger UI update
+        document.populateUnifiedObjectsFromLayersPreservingOrder()
         document.objectWillChange.send()
     }
     
