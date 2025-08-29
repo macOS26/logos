@@ -119,7 +119,7 @@ struct UnifiedObjectContentView: View {
                 dragPreviewDelta: dragPreviewDelta,
                 dragPreviewTrigger: dragPreviewTrigger
             )
-            .id(text.id)
+            .id("\(text.id)-\(text.position.x)-\(text.position.y)")  // CRITICAL FIX: Include position in ID to trigger view refresh
             .allowsHitTesting(true)
         }
     }
