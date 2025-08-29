@@ -20,6 +20,15 @@ struct SVGContent {
     let missingFonts: [String]
     let creator: String?
     let version: String?
+    
+    // CRITICAL FIX: Include ordered elements for proper stacking
+    let orderedElements: [SVGElement]
+}
+
+// MARK: - SVG Element for Order Preservation
+enum SVGElement {
+    case shape(VectorShape)
+    case text(VectorText)
 }
 
 func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws -> SVGContent {
@@ -48,6 +57,7 @@ func parseSVGContent(_ data: Data, useExtremeValueHandling: Bool = false) throws
         dpi: 72.0,
         missingFonts: [],
         creator: result.creator,
-        version: result.version
+        version: result.version,
+        orderedElements: result.orderedElements
     )
 }

@@ -318,31 +318,35 @@ class FileOperations {
             }
         }
         
-        // Add all imported shapes to the layer with translation applied to coordinates (not transforms)
-        for shape in result.shapes {
-            var centeredShape = shape
-            
-            // CRITICAL FIX: Apply centering to actual coordinates, not transforms
-            // This prevents coordinate drift during zoom operations
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            let finalTransform = shape.transform.concatenating(centeringTransform)
-            
-            // Apply the complete transform to coordinates and reset transform to identity
-            centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
-            centeredShape.transform = .identity
-            
-            // Ensure the shape is editable
-            centeredShape.isLocked = false
-            centeredShape.isVisible = true
-            
-            importedLayer.addShape(centeredShape)
-        }
-
-        // Add imported text objects (apply transform to position and scale font metrics)
-        if !result.textObjects.isEmpty {
-            let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
-            for text in result.textObjects {
+        // CRITICAL FIX: Process elements in original SVG stacking order
+        // This preserves the visual layering as designed in the SVG file
+        let centeringTransform = CGAffineTransform(translationX: translateX, y: translateY)
+        
+        // Process both shapes and text in their original SVG order
+        for element in result.orderedElements {
+            switch element {
+            case .shape(let shape):
+                // Process shape with centering transform
+                var centeredShape = shape
+                
+                // CRITICAL FIX: Apply centering to actual coordinates, not transforms
+                // This prevents coordinate drift during zoom operations
+                let finalTransform = shape.transform.concatenating(centeringTransform)
+                
+                // Apply the complete transform to coordinates and reset transform to identity
+                centeredShape = applyTransformToShapeCoordinates(shape: centeredShape, transform: finalTransform)
+                centeredShape.transform = .identity
+                
+                // Ensure the shape is editable
+                centeredShape.isLocked = false
+                centeredShape.isVisible = true
+                
+                importedLayer.addShape(centeredShape)
+                
+            case .text(let text):
+                // Process text with centering transform
                 var placedText = text
+                
                 // Compose final transform with centering
                 let finalTransform = text.transform.concatenating(centeringTransform)
                 
@@ -383,6 +387,8 @@ class FileOperations {
                 document.textObjects.append(placedText)
             }
         }
+        
+        Log.fileOperation("✅ SVG STACKING ORDER: Processed \(result.orderedElements.count) elements in original SVG order", level: .info)
         
         // Update the layer in the document
         if let importedIndex = document.layers.firstIndex(where: { $0.name == "Imported SVG" }) {

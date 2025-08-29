@@ -34,7 +34,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
-                warnings: ["Could not detect file format"]
+                warnings: ["Could not detect file format"],
+                orderedElements: []
             )
         }
         
@@ -48,7 +49,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
-                warnings: ["Professional CAD formats require commercial licensing"]
+                warnings: ["Professional CAD formats require commercial licensing"],
+                orderedElements: []
             )
         }
         
@@ -71,7 +73,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
-                warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
+                warnings: ["DWG/DXF support requires Open Design Alliance licensing"],
+                orderedElements: []
             )
         }
     }
@@ -89,7 +92,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.unsupportedFormat(.svg)],
-                warnings: ["Could not detect file format"]
+                warnings: ["Could not detect file format"],
+                orderedElements: []
             )
         }
         
@@ -103,7 +107,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
-                warnings: ["Professional CAD formats require commercial licensing"]
+                warnings: ["Professional CAD formats require commercial licensing"],
+                orderedElements: []
             )
         }
         
@@ -126,7 +131,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.commercialLicenseRequired(format)],
-                warnings: ["DWG/DXF support requires Open Design Alliance licensing"]
+                warnings: ["DWG/DXF support requires Open Design Alliance licensing"],
+                orderedElements: []
             )
         }
     }
@@ -250,7 +256,8 @@ class VectorImportManager {
                 textObjects: importedTextObjects,
                 metadata: metadata,
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: svgContent.orderedElements
             )
             
         } catch {
@@ -263,7 +270,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
     }
@@ -278,7 +286,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: [.parsingError("Failed to open image", line: nil)],
-                warnings: []
+                warnings: [],
+                orderedElements: []
             )
         }
         let size = nsImage.size
@@ -326,7 +335,7 @@ class VectorImportManager {
             sourceApplication: nil,
             documentVersion: nil
         )
-        return VectorImportResult(success: true, shapes: [rectShape], textObjects: [], metadata: meta, errors: [], warnings: [])
+        return VectorImportResult(success: true, shapes: [rectShape], textObjects: [], metadata: meta, errors: [], warnings: [], orderedElements: [.shape(rectShape)])
     }
     
     // MARK: - PDF Import (Professional Standard)
@@ -346,7 +355,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
         
@@ -359,7 +369,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
         
@@ -392,7 +403,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: metadata,
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: shapes.map { .shape($0) }
             )
             
         } catch {
@@ -405,7 +417,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
     }
@@ -448,7 +461,8 @@ class VectorImportManager {
                     textObjects: pdfResult.textObjects,
                     metadata: metadata,
                     errors: pdfResult.errors,
-                    warnings: pdfResult.warnings + ["Imported via embedded PDF data"]
+                    warnings: pdfResult.warnings + ["Imported via embedded PDF data"],
+                    orderedElements: pdfResult.orderedElements
                 )
             } else {
                 throw VectorImportError.invalidStructure("No embedded PDF found")
@@ -464,7 +478,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
     }
@@ -504,7 +519,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: metadata,
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: epsContent.shapes.map { .shape($0) }
             )
             
         } catch {
@@ -517,7 +533,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
     }
@@ -575,7 +592,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: metadata,
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: shapes.map { .shape($0) }
             )
             
         } catch {
@@ -588,7 +606,8 @@ class VectorImportManager {
                 textObjects: [],
                 metadata: createDefaultMetadata(),
                 errors: errors,
-                warnings: warnings
+                warnings: warnings,
+                orderedElements: []
             )
         }
     }

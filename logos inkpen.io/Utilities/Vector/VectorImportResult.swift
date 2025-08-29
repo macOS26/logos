@@ -18,6 +18,9 @@ struct VectorImportResult: Identifiable {
     let metadata: VectorImportMetadata
     let errors: [VectorImportError]
     let warnings: [String]
+    
+    // CRITICAL FIX: Include ordered elements for proper SVG stacking
+    let orderedElements: [SVGElement]
 }
 
 /// Complete metadata for imported vector graphics
