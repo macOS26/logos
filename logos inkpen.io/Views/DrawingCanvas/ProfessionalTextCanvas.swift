@@ -479,8 +479,10 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainer?.lineFragmentPadding = 0
         
                 // CRITICAL: Configure for FIXED WIDTH, VERTICAL EXPANSION ONLY
-        let fixedWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width for visibility
-        let fixedHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height for visibility
+        // CRITICAL FIX: For SVG text, preserve original dimensions
+        let hasReasonableBounds = viewModel.textBoxFrame.width > 50 && viewModel.textBoxFrame.height > 20
+        let fixedWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
+        let fixedHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
         
         textView.textContainer?.widthTracksTextView = false  
         textView.textContainer?.heightTracksTextView = false 
@@ -544,6 +546,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     
     func updateNSView(_ nsView: NSTextView, context: Context) {
         let coordinator = context.coordinator
+        
+        // CRITICAL FIX: For SVG text, preserve original dimensions - declare once for entire function
+        let hasReasonableBounds = viewModel.textBoxFrame.width > 50 && viewModel.textBoxFrame.height > 20
 
         // CRITICAL: Lock the coordinator during non-typing updates to prevent saving programmatic selection changes.
         if !isUpdatingFromTyping {
@@ -615,8 +620,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // CRITICAL FIX: Update text container width when text box is resized
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
-        let newWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width
-        let newHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height
+        // CRITICAL FIX: For SVG text, preserve original dimensions (using hasReasonableBounds from above)
+        let newWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
+        let newHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
         
         if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
             print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
@@ -709,8 +715,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         // PERFORMANCE: Only update frame constraints if size actually changed
-        let safeWidth = max(viewModel.textBoxFrame.width, 200.0) // Ensure minimum width
-        let safeHeight = max(viewModel.textBoxFrame.height, 50.0) // Ensure minimum height
+        // CRITICAL FIX: For SVG text, preserve original dimensions (reusing hasReasonableBounds from above)
+        let safeWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
+        let safeHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
         
         let newFrame = CGRect(
             x: 0, y: 0,
@@ -975,11 +982,16 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         
         // Initialize text box frame with proper bounds
+        // CRITICAL FIX: For SVG text (with meaningful bounds), preserve original dimensions
+        // For native text (with default bounds), ensure minimum dimensions
+        let hasReasonableBounds = textObject.bounds.width > 50 && textObject.bounds.height > 20
+        let useMinimum = !hasReasonableBounds // Only use minimum for native text with small bounds
+        
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: max(textObject.bounds.width, 200),   // Ensure minimum width
-            height: max(textObject.bounds.height, 50)   // Ensure minimum height
+            width: useMinimum ? max(textObject.bounds.width, 200) : textObject.bounds.width,   // Preserve SVG width
+            height: useMinimum ? max(textObject.bounds.height, 50) : textObject.bounds.height   // Preserve SVG height
         )
         
         Log.info("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)", category: .general)
