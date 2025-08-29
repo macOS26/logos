@@ -843,13 +843,15 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
             
             // VECTOR APP OPTIMIZATION: Save to document ONLY when editing ends
             let finalText = parent.viewModel.text
-            parent.viewModel.document.updateTextContent(parent.viewModel.textObject.id, content: finalText)
-            parent.viewModel.updateDocumentTextBounds(parent.viewModel.textBoxFrame)
+            let textFrame = parent.viewModel.textBoxFrame
+            let textObjectId = parent.viewModel.textObject.id
             
-            // Text editing ended - reset any flags
-            // Use async to avoid modifying state during view update
+            // Use async to avoid modifying @Published properties during view update
             DispatchQueue.main.async { [weak self] in
-                self?.parent.isUpdatingFromTyping = false
+                guard let self = self else { return }
+                self.parent.viewModel.document.updateTextContent(textObjectId, content: finalText)
+                self.parent.viewModel.updateDocumentTextBounds(textFrame)
+                self.parent.isUpdatingFromTyping = false
             }
         }
     }

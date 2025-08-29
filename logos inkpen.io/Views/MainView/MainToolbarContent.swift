@@ -30,65 +30,13 @@ struct MainToolbarContent: ToolbarContent {
     
     // MARK: - Path Closing Support Functions
     private func hasOpenPaths() -> Bool {
-        // Check if there are any open paths that can be closed
-        for layer in document.layers {
-            for shape in layer.shapes {
-                // Check if path has no close element and has enough points to close
-                let hasCloseElement = shape.path.elements.contains { element in
-                    if case .close = element { return true }
-                    return false
-                }
-                
-                // Count actual points (not close elements)
-                let pointCount = shape.path.elements.filter { element in
-                    switch element {
-                    case .move, .line, .curve, .quadCurve: return true
-                    case .close: return false
-                    }
-                }.count
-                
-                if !hasCloseElement && pointCount >= 3 {
-                    return true
-                }
-            }
-        }
+        // DISABLED: Auto-closing disabled - never show close paths option
         return false
     }
     
     private func closeOpenPaths() {
-        // Close all open paths in the document
-        document.saveToUndoStack()
-        
-        for layerIndex in document.layers.indices {
-            for shapeIndex in document.layers[layerIndex].shapes.indices {
-                let shape = document.layers[layerIndex].shapes[shapeIndex]
-                
-                // Check if path is open and has enough points
-                let hasCloseElement = shape.path.elements.contains { element in
-                    if case .close = element { return true }
-                    return false
-                }
-                
-                let pointCount = shape.path.elements.filter { element in
-                    switch element {
-                    case .move, .line, .curve, .quadCurve: return true
-                    case .close: return false
-                    }
-                }.count
-                
-                if !hasCloseElement && pointCount >= 3 {
-                    // Add close element
-                    var newElements = shape.path.elements
-                    newElements.append(.close)
-                    
-                    let newPath = VectorPath(elements: newElements, isClosed: true)
-                    document.layers[layerIndex].shapes[shapeIndex].path = newPath
-                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                }
-            }
-        }
-        
-        document.objectWillChange.send()
+        // DISABLED: Auto-closing paths disabled - objects should remain as drawn
+        Log.info("🚫 Path auto-closing disabled - objects remain unclosed as intended", category: .general)
     }
     
     private func hasSelectedPathsToClose() -> Bool {

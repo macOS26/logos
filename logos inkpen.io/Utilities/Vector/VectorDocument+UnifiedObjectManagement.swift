@@ -122,46 +122,6 @@ extension VectorDocument {
         Log.error("⚠️ CRITICAL BUG PREVENTED: populateUnifiedObjectsFromLayers() blocked to prevent layer corruption! Using safe version.", category: .error)
         populateUnifiedObjectsFromLayersPreservingOrder()
         return
-        
-        unifiedObjects.removeAll()
-        
-        // For each layer, we need to create a truly unified ordering of ALL objects (shapes + text)
-        for (layerIndex, layer) in layers.enumerated() {
-            var layerObjects: [(object: Any, isText: Bool)] = []
-            
-            // Add all shapes from this layer in their current order
-            for shape in layer.shapes {
-                layerObjects.append((object: shape, isText: false))
-            }
-            
-            // Add all text objects that belong to this layer
-            for text in textObjects {
-                if let textLayerIndex = text.layerIndex, textLayerIndex == layerIndex {
-                    layerObjects.append((object: text, isText: true))
-                } else if text.layerIndex == nil && layerIndex == (selectedLayerIndex ?? 2) {
-                    // Legacy text objects without layer assignment go to working layer
-                    layerObjects.append((object: text, isText: true))
-                }
-            }
-            
-            // Now create unified objects with sequential orderIDs within this layer
-            // Higher orderID = front, so we assign orderIDs in reverse order
-            for (arrayIndex, item) in layerObjects.enumerated() {
-                let orderID = layerObjects.count - 1 - arrayIndex // Reverse order: last item gets highest orderID (front)
-                
-                if item.isText {
-                    let text = item.object as! VectorText
-                    let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
-                    unifiedObjects.append(unifiedObject)
-                } else {
-                    let shape = item.object as! VectorShape
-                    let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
-                    unifiedObjects.append(unifiedObject)
-                }
-            }
-        }
-        
-        // Removed excessive logging during drag operations
     }
     
     /// Populates the unified objects array from existing layers and text objects
@@ -372,23 +332,29 @@ extension VectorDocument {
                 // Find the updated shape in the layers array
                 if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
                    let updatedShape = layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
-                    // Update the unified object with the changed shape
-                    unifiedObjects[i] = VectorObject(
+                    // Update the unified object with the changed shape (deferred to avoid SwiftUI publishing warnings)
+                    let newObject = VectorObject(
                         shape: updatedShape,
                         layerIndex: unifiedObject.layerIndex,
                         orderID: unifiedObject.orderID
                     )
+                    DispatchQueue.main.async { [weak self] in
+                        self?.unifiedObjects[i] = newObject
+                    }
                 }
                 
             case .text(let oldText):
                 // Find the updated text in the textObjects array
                 if let updatedText = textObjects.first(where: { $0.id == oldText.id }) {
-                    // Update the unified object with the changed text
-                    unifiedObjects[i] = VectorObject(
+                    // Update the unified object with the changed text (deferred to avoid SwiftUI publishing warnings)
+                    let newObject = VectorObject(
                         text: updatedText,
                         layerIndex: unifiedObject.layerIndex,
                         orderID: unifiedObject.orderID
                     )
+                    DispatchQueue.main.async { [weak self] in
+                        self?.unifiedObjects[i] = newObject
+                    }
                 }
             }
         }
