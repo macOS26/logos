@@ -41,8 +41,8 @@ extension DrawingCanvas {
             let textContentArea = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
-                width: max(textObj.bounds.width, 200.0),
-                height: max(textObj.bounds.height, 60.0)
+                width: textObj.bounds.width,
+                height: textObj.bounds.height
             )
             
             let exactBounds = CGRect(
@@ -278,7 +278,7 @@ extension DrawingCanvas {
         
         // Create text container with similar settings to NSTextView
         let textContainer = NSTextContainer(containerSize: CGSize(
-            width: max(textObj.bounds.width, 200.0),
+            width: textObj.bounds.width,
             height: CGFloat.greatestFiniteMagnitude
         ))
         textContainer.lineFragmentPadding = 0
@@ -949,7 +949,7 @@ extension DrawingCanvas {
             
             // ADDITIONAL CHECK: Also consider clicks near the text box edges as potential resize operations
             // This prevents accidental text creation when clicking near text boxes
-            let edgeTolerance: Double = 10.0  // Reduced from 25.0 for more accurate detection
+            let edgeTolerance: Double = 0.0  // Set to 0.0 for exact text box selection
             let expandedBounds = textBounds.insetBy(dx: -edgeTolerance, dy: -edgeTolerance)
             
             if expandedBounds.contains(location) && !textBounds.insetBy(dx: edgeTolerance, dy: edgeTolerance).contains(location) {

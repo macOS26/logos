@@ -225,8 +225,8 @@ extension DrawingCanvas {
                 let textContentArea = CGRect(
                     x: text.position.x,
                     y: text.position.y,
-                    width: max(text.bounds.width, 200.0),
-                    height: max(text.bounds.height, 60.0)
+                    width: text.bounds.width,
+                    height: text.bounds.height
                 )
                 
                 let exactBounds = CGRect(
@@ -236,7 +236,7 @@ extension DrawingCanvas {
                     height: text.bounds.height
                 )
                 
-                let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
+                let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
                 
                 Log.info("  - Content area: \(textContentArea)", category: .selection)
                 Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
@@ -446,8 +446,8 @@ extension DrawingCanvas {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     let transformedBounds = shape.bounds.applying(shape.transform)
-                    // Use a small tolerance for selection box detection
-                    let selectionBoxBounds = transformedBounds.insetBy(dx: -2, dy: -2)
+                    // Use exact bounds for precise text selection (no tolerance)
+                    let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
                     if selectionBoxBounds.contains(location) {
                         return true
                     }
@@ -459,8 +459,8 @@ extension DrawingCanvas {
                         width: text.bounds.width,
                         height: text.bounds.height
                     )
-                    // Use a small tolerance for selection box detection
-                    let selectionBoxBounds = textBounds.insetBy(dx: -2, dy: -2)
+                    // Use exact bounds for precise text selection (no tolerance)
+                    let selectionBoxBounds = textBounds.insetBy(dx: 0, dy: 0)
                     if selectionBoxBounds.contains(location) {
                         return true
                     }

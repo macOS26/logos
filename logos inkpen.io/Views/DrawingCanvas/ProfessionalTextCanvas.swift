@@ -479,10 +479,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         textView.textContainer?.lineFragmentPadding = 0
         
                 // CRITICAL: Configure for FIXED WIDTH, VERTICAL EXPANSION ONLY
-        // CRITICAL FIX: For SVG text, preserve original dimensions
-        let hasReasonableBounds = viewModel.textBoxFrame.width > 50 && viewModel.textBoxFrame.height > 20
-        let fixedWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
-        let fixedHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
+        // CRITICAL FIX: Always preserve exact text box dimensions (no minimum size restrictions)
+        let fixedWidth = viewModel.textBoxFrame.width
+        let fixedHeight = viewModel.textBoxFrame.height
         
         textView.textContainer?.widthTracksTextView = false  
         textView.textContainer?.heightTracksTextView = false 
@@ -547,8 +546,7 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
     func updateNSView(_ nsView: NSTextView, context: Context) {
         let coordinator = context.coordinator
         
-        // CRITICAL FIX: For SVG text, preserve original dimensions - declare once for entire function
-        let hasReasonableBounds = viewModel.textBoxFrame.width > 50 && viewModel.textBoxFrame.height > 20
+        // CRITICAL FIX: Always preserve exact text box dimensions without size restrictions
 
         // CRITICAL: Lock the coordinator during non-typing updates to prevent saving programmatic selection changes.
         if !isUpdatingFromTyping {
@@ -620,9 +618,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         
         // CRITICAL FIX: Update text container width when text box is resized
         let currentContainerWidth = nsView.textContainer?.containerSize.width ?? 0
-        // CRITICAL FIX: For SVG text, preserve original dimensions (using hasReasonableBounds from above)
-        let newWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
-        let newHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
+        // CRITICAL FIX: Always preserve exact text box dimensions (no minimum size restrictions)
+        let newWidth = viewModel.textBoxFrame.width
+        let newHeight = viewModel.textBoxFrame.height
         
         if abs(currentContainerWidth - newWidth) > 1.0 { // Only update if significantly different
             print("📏 UPDATING TEXT CONTAINER WIDTH: \(String(format: "%.1f", currentContainerWidth))pt → \(String(format: "%.1f", newWidth))pt")
@@ -715,9 +713,9 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
         }
         
         // PERFORMANCE: Only update frame constraints if size actually changed
-        // CRITICAL FIX: For SVG text, preserve original dimensions (reusing hasReasonableBounds from above)
-        let safeWidth = hasReasonableBounds ? viewModel.textBoxFrame.width : max(viewModel.textBoxFrame.width, 200.0)
-        let safeHeight = hasReasonableBounds ? viewModel.textBoxFrame.height : max(viewModel.textBoxFrame.height, 50.0)
+        // CRITICAL FIX: Always preserve exact text box dimensions (no minimum size restrictions)
+        let safeWidth = viewModel.textBoxFrame.width
+        let safeHeight = viewModel.textBoxFrame.height
         
         let newFrame = CGRect(
             x: 0, y: 0,
