@@ -667,12 +667,25 @@ class SVGParser: NSObject, XMLParserDelegate {
             if !combinedContent.isEmpty {
                 let multiLineContent = combinedContent.joined(separator: "\n")
                 
+                // Parse font weight and alignment from the first tspan or CSS
+                let fontWeight = parseFontWeight(from: currentTextSpans.first?.attributes ?? currentTextAttributes)
+                let textAlignment = detectTextAlignment(from: currentTextSpans)
+                
                 let typography = TypographyProperties(
                     fontFamily: firstFontFamily,
+                    fontWeight: fontWeight,  // FIXED: Use parsed font weight
+                    fontStyle: .normal,
                     fontSize: firstFontSize,
                     lineHeight: firstFontSize * 1.2, // Standard line spacing
+                    lineSpacing: 0.0,
+                    letterSpacing: 0.0,
+                    alignment: textAlignment,  // FIXED: Use detected alignment
+                    hasStroke: false,
                     strokeColor: .black,
-                    fillColor: firstFillColor
+                    strokeWidth: 0.0,
+                    strokeOpacity: 1.0,
+                    fillColor: firstFillColor,
+                    fillOpacity: 1.0
                 )
                 
                 let textObject = VectorText(
@@ -700,12 +713,25 @@ class SVGParser: NSObject, XMLParserDelegate {
             let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
             let finalTextTransform = currentTransform.concatenating(textOwnTransform)
             
+            // Parse font weight and alignment for single-line text
+            let fontWeight = parseFontWeight(from: currentTextAttributes)
+            let textAlignment = TextAlignment.left  // Single line defaults to left
+            
             let typography = TypographyProperties(
                 fontFamily: fontFamily,
+                fontWeight: fontWeight,  // FIXED: Use parsed font weight
+                fontStyle: .normal,
                 fontSize: fontSize,
                 lineHeight: fontSize,
+                lineSpacing: 0.0,
+                letterSpacing: 0.0,
+                alignment: textAlignment,
+                hasStroke: false,
                 strokeColor: .black,
-                fillColor: parseColor(fill) ?? .black
+                strokeWidth: 0.0,
+                strokeOpacity: 1.0,
+                fillColor: parseColor(fill) ?? .black,
+                fillOpacity: 1.0
             )
             
             let textObject = VectorText(
@@ -765,6 +791,97 @@ class SVGParser: NSObject, XMLParserDelegate {
         // Nothing matched; fall back to Helvetica Neue
         Log.fileOperation("⚠️ Font not found in system: \(raw). Falling back to Helvetica Neue.", level: .info)
         return "Helvetica Neue"
+    }
+    
+    // MARK: - SVG Font Weight and Alignment Parsing
+    
+    private func parseFontWeight(from attributes: [String: String]) -> FontWeight {
+        // Check explicit font-weight attribute first
+        if let weightValue = attributes["font-weight"] {
+            switch weightValue.lowercased() {
+            case "100": return .thin
+            case "200": return .ultraLight
+            case "300": return .light
+            case "400", "normal": return .regular
+            case "500": return .medium
+            case "600": return .semibold
+            case "700", "bold": return .bold
+            case "800": return .heavy  // CRITICAL FIX: 800 maps to Heavy
+            case "900", "black": return .black
+            case "thin": return .thin
+            case "ultralight": return .ultraLight
+            case "light": return .light
+            case "regular": return .regular
+            case "medium": return .medium
+            case "semibold": return .semibold
+            case "heavy": return .heavy
+            default: return .regular
+            }
+        }
+        
+        // Check font-family for embedded weight (e.g., "Avenir-Heavy")
+        if let fontFamily = attributes["font-family"] {
+            let lowerFamily = fontFamily.lowercased()
+            if lowerFamily.contains("-heavy") || lowerFamily.contains(" heavy") {
+                return .heavy
+            } else if lowerFamily.contains("-bold") || lowerFamily.contains(" bold") {
+                return .bold
+            } else if lowerFamily.contains("-medium") || lowerFamily.contains(" medium") {
+                return .medium
+            } else if lowerFamily.contains("-light") || lowerFamily.contains(" light") {
+                return .light
+            }
+        }
+        
+        return .regular  // Default
+    }
+    
+    private func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
+        guard tspans.count > 1 else { return .left }
+        
+        // Check for explicit text-anchor attribute
+        if let firstTspan = tspans.first,
+           let textAnchor = firstTspan.attributes["text-anchor"] {
+            switch textAnchor.lowercased() {
+            case "start": return .left
+            case "middle": return .center
+            case "end": return .right
+            default: return .left
+            }
+        }
+        
+        // Analyze tspan x-coordinates to detect alignment pattern
+        let lines = tspans.map { (x: $0.x, contentLength: $0.content.count) }
+        
+        // Sort by content length (longest first)
+        let sortedByLength = lines.sorted { $0.contentLength > $1.contentLength }
+        
+        // Check center alignment pattern: shorter lines have larger x offsets
+        if sortedByLength.count >= 2 {
+            let longestLine = sortedByLength[0]
+            let shortestLine = sortedByLength.last!
+            
+            // Center alignment: shorter text has larger x offset
+            if shortestLine.x > longestLine.x {
+                let xDifference = abs(shortestLine.x - longestLine.x)
+                // Significant difference suggests intentional centering
+                if xDifference > 5.0 {
+                    return .center
+                }
+            }
+        }
+        
+        // Check if all x values are similar (left alignment)
+        let xValues = lines.map { $0.x }
+        let minX = xValues.min() ?? 0
+        let maxX = xValues.max() ?? 0
+        
+        if abs(maxX - minX) < 5.0 {
+            return .left
+        }
+        
+        // Default to left alignment
+        return .left
     }
     
     private func parseSVGRoot(attributes: [String: String]) {
