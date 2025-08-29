@@ -14,7 +14,8 @@
       "Read(/Users/toddbruss/Library/Mobile Documents/com~apple~CloudDocs/Documents/GameChanger/Sources/GameChanger/images/svg/**)",
       "mcp__xcf-server__xcf",
       "Bash(swiftc:*)",
-      "mcp__xcf-server__build_project"
+      "mcp__xcf-server__build_project",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

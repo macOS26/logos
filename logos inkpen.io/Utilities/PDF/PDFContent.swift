@@ -336,6 +336,20 @@ class PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &x) else { return }
         
+        // FILTER OUT PAGE BOUNDARY RECTANGLES: Skip rectangles that match page dimensions
+        let tolerance: CGFloat = 2.0 // Allow small differences
+        if abs(width - pageSize.width) < tolerance && abs(height - pageSize.height) < tolerance {
+            print("PDF: Skipping page boundary rectangle (\(width) x \(height)) that matches page size")
+            return
+        }
+        
+        // Also skip rectangles that are positioned at page origin (0,0) and match page size
+        if abs(x) < tolerance && abs(y) < tolerance && 
+           abs(width - pageSize.width) < tolerance && abs(height - pageSize.height) < tolerance {
+            print("PDF: Skipping page boundary rectangle at origin that matches page size")
+            return
+        }
+        
         // Add rectangle as move + lines + close
         let startPoint = CGPoint(x: x, y: y)
         let topRight = CGPoint(x: x + width, y: y)
