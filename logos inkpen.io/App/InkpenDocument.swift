@@ -56,8 +56,16 @@ struct InkpenDocument: FileDocument {
             do {
                 self.document = try FileOperations.importFromJSONData(data)
                 
-                // CRITICAL FIX: Populate unified objects system after JSON import for proper rendering
-                self.document.populateUnifiedObjectsFromLayersPreservingOrder()
+                // CRITICAL FIX: Only populate unified objects if they weren't loaded from the JSON file
+                // If unified objects exist in the saved file, preserve their exact ordering
+                if self.document.unifiedObjects.isEmpty {
+                    // File didn't have unified objects (legacy file) - populate from layers
+                    self.document.populateUnifiedObjectsFromLayersPreservingOrder()
+                    Log.info("📦 LEGACY IMPORT: Populated unified objects from layers (legacy file format)", category: .fileOperations)
+                } else {
+                    // File has unified objects - preserve the saved ordering
+                    Log.info("📦 MODERN IMPORT: Preserving unified objects ordering from saved file (\(self.document.unifiedObjects.count) objects)", category: .fileOperations)
+                }
                 self.document.syncUnifiedObjectsAfterPropertyChange()
                 self.document.objectWillChange.send()
                 

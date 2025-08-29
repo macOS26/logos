@@ -9,7 +9,8 @@
       "Read(/Users/toddbruss/Documents/**)",
       "Bash(grep:*)",
       "Read(/Users/toddbruss/Documents/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Read(/Users/toddbruss/Documents/**)"
     ],
     "deny": [],
     "ask": []
