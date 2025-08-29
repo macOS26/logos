@@ -31,9 +31,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentTextContent = ""
     private var currentTextAttributes: [String: String] = [:]
     
-    // CRITICAL FIX: Track element order for proper stacking
-    private var orderedElements: [SVGElement] = []
-    
     // Multi-line text support
     private var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
     private var isInMultiLineText: Bool = false
@@ -148,11 +145,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         let documentSize: CGSize
         let creator: String?
         let version: String?
-        
-        // CRITICAL FIX: Include ordered elements for proper stacking
-        let orderedElements: [SVGElement]
     }
-    
     
     func parse(_ xmlString: String) throws -> ParseResult {
         guard let data = xmlString.data(using: .utf8) else {
@@ -179,8 +172,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             textObjects: textObjects,
             documentSize: documentSize,
             creator: creator,
-            version: version,
-            orderedElements: orderedElements
+            version: version
         )
     }
 
@@ -706,8 +698,6 @@ class SVGParser: NSObject, XMLParserDelegate {
                 )
                 
                 textObjects.append(textObject)
-                // CRITICAL FIX: Track in ordered elements for proper stacking
-                orderedElements.append(.text(textObject))
                 Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
             }
         } else {
@@ -752,8 +742,6 @@ class SVGParser: NSObject, XMLParserDelegate {
             )
             
             textObjects.append(textObject)
-            // CRITICAL FIX: Track in ordered elements for proper stacking
-            orderedElements.append(.text(textObject))
             Log.fileOperation("📝 Created single-line text object: '\(textObject.content)'", level: .info)
         }
         
@@ -982,10 +970,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         shapes.append(shape)
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
         Log.info("✅ Added shape to collection - total: \(shapes.count)", category: .fileOperations)
     }
     
@@ -1044,8 +1028,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         shapes.append(shape)
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
     }
     
     private func parseCircle(attributes: [String: String]) {
@@ -1099,8 +1081,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         shapes.append(shape)
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
     }
     
     private func parseLine(attributes: [String: String]) {
@@ -1123,8 +1103,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         shapes.append(shape)
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
     }
     
     private func parsePolyline(attributes: [String: String], closed: Bool) {
@@ -1152,8 +1130,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         )
         
         shapes.append(shape)
-        // CRITICAL FIX: Track in ordered elements for proper stacking
-        orderedElements.append(.shape(shape))
     }
     
     // MARK: - Helper Functions
