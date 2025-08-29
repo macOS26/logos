@@ -7,7 +7,9 @@
       "WebSearch",
       "Read(/Users/toddbruss/Documents/**)",
       "Read(/Users/toddbruss/Documents/**)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Read(/Users/toddbruss/Documents/**)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

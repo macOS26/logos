@@ -48,15 +48,7 @@ struct StableProfessionalTextCanvas: View {
                 updateViewModelFromDocument()
             }
             .onChange(of: document.textObjects) { _, _ in
-                // CRITICAL FIX: Don't sync during drag operations to prevent position reverting
-                let isDragOperation = !document.selectedObjectIDs.isEmpty || !document.selectedShapeIDs.isEmpty || !document.selectedTextIDs.isEmpty
-                
-                if !isDragOperation {
-                    updateViewModelFromDocument()
-                } else {
-                    // During drag operations, skip sync to prevent position reverting
-                    // The drag preview system will handle visual updates
-                }
+                updateViewModelFromDocument()
             }
             // Additional fix: Use id to force view refresh when text content changes
             .id("\(textObjectID)-\(getDocumentMode())")
@@ -803,11 +795,18 @@ struct ProfessionalUniversalTextView: NSViewRepresentable {
                 return
             }
             
-            // VECTOR APP OPTIMIZATION: Real-time UI update, NO document updates during typing
+            // CRITICAL FIX: Update both view model AND document immediately to prevent data loss
             parent.isUpdatingFromTyping = true
             parent.viewModel.text = newText
             
-            // NO DOCUMENT UPDATES DURING TYPING - only update view model for real-time display
+            // SAVE TO DOCUMENT IMMEDIATELY to prevent losing text content
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.parent.viewModel.document.updateTextContent(
+                    self.parent.viewModel.textObject.id, 
+                    content: newText
+                )
+            }
             
             // Reset flag after a brief delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in

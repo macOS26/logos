@@ -313,14 +313,10 @@ extension DrawingCanvas {
         } else {
             Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
             
-            // CRITICAL FIX: COMPLETELY DISABLE force resync 
-            // The force resync is destroying text selection and causing layer reordering
-            // It should NEVER run during normal operation, only for debugging corrupt documents
-            
+            // CRITICAL FIX: If no objects found and we have text objects, try to force resync
             if !document.textObjects.isEmpty {
-                Log.info("🔧 SELECTION FIX: No objects found but \(document.textObjects.count) text objects exist - force resync DISABLED to preserve object integrity", category: .selection)
-                Log.info("🔧 TEXT DEBUG: First few text objects: \(document.textObjects.prefix(3).map { $0.content })", category: .selection)
-                Log.info("🔧 UNIFIED DEBUG: Unified objects count: \(document.unifiedObjects.count)", category: .selection)
+                Log.info("🔧 SELECTION FIX: No objects found but text objects exist - attempting force resync", category: .selection)
+                document.forceResyncUnifiedObjects()
             }
             
             // FIXED: Enhanced deselection logic - check if click is within any selection box

@@ -426,25 +426,9 @@ extension VectorDocument {
             return
         }
         
-        // CRITICAL FIX: Skip reordering during drag operations to prevent layer shuffling
-        // During drag operations, we should only sync object data, not rebuild the entire order
-        let isDragOperation = hasSelectedObjects() // If objects are selected, likely in a drag operation
-        
-        if isDragOperation {
-            Log.info("🔧 FORCE RESYNC: Skipping unified objects rebuild during drag operation to preserve layer order", category: .general)
-            // Just sync the existing objects instead of rebuilding
-            syncUnifiedObjectsAfterPropertyChange()
-            return
-        }
-        
         Log.info("🔧 FORCE RESYNC: Rebuilding unified objects system", category: .general)
-        populateUnifiedObjectsFromLayersPreservingOrder() // Use the order-preserving version
+        populateUnifiedObjectsFromLayers()
         Log.info("🔧 FORCE RESYNC: Unified objects system rebuilt with \(unifiedObjects.count) objects", category: .general)
-    }
-    
-    /// Check if there are selected objects that might be in the middle of an operation
-    private func hasSelectedObjects() -> Bool {
-        return !selectedObjectIDs.isEmpty || !selectedShapeIDs.isEmpty || !selectedTextIDs.isEmpty
     }
     
     /// CRITICAL FIX: Restore Canvas and Pasteboard layers if they get corrupted
