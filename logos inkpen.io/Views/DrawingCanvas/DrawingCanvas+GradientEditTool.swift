@@ -38,11 +38,14 @@ extension DrawingCanvas {
             .position(screenPoint)
             .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
             .gesture(
-                DragGesture(minimumDistance: 3)
+                DragGesture(minimumDistance: 0)  // OPTIMIZED: Reduce minimum distance for smoother real-time updates
                     .onChanged { value in
                         handleGradientCenterDrag(value: value, geometry: geometry, shape: selectedShape, gradient: selectedGradient)
                     }
                     .onEnded { _ in
+                        // OPTIMIZATION: Do full sync after drag completes for consistency
+                        document.syncUnifiedObjectsAfterPropertyChange()
+                        
                         // Save to undo stack when drag ends
                         document.saveToUndoStack()
                     }
@@ -129,6 +132,9 @@ extension DrawingCanvas {
         // Convert screen coordinates to canvas coordinates
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         
+        // DEBUG: Log that we're handling gradient dragging
+        Log.fileOperation("🎯 GRADIENT TOOL: handleGradientCenterDrag called", level: .info)
+        
         let shapeBounds = shape.bounds
         
         switch gradient {
@@ -140,8 +146,9 @@ extension DrawingCanvas {
             
             Log.fileOperation("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))", level: .info)
             
-            updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
-            updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
+            // OPTIMIZED: Use live drag optimized versions for smooth real-time updates
+            updateGradientOriginXOptimized(relativeX, shape: shape, applyToShapes: true, isLiveDrag: true)
+            updateGradientOriginYOptimized(relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
             
         case .radial(_):
             // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
@@ -153,49 +160,64 @@ extension DrawingCanvas {
             
             // Don't clamp the coordinates - allow them to extend beyond object bounds
             // This allows the origin point to move freely within the scaled gradient area
-            updateGradientOriginX(relativeX, shape: shape, applyToShapes: true)
-            updateGradientOriginY(relativeY, shape: shape, applyToShapes: true)
+            // OPTIMIZED: Use live drag optimized versions for smooth real-time updates
+            updateGradientOriginXOptimized(relativeX, shape: shape, applyToShapes: true, isLiveDrag: true)
+            updateGradientOriginYOptimized(relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
         }
     }
     
     /// Same update functions as stroke/fill panel
     private func updateGradientOriginX(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true) {
+        updateGradientOriginXOptimized(newX, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
+    }
+    
+    private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
+        updateGradientOriginYOptimized(newY, shape: shape, applyToShapes: applyToShapes, isLiveDrag: false)
+    }
+    
+    /// Optimized origin X update with live drag support
+    private func updateGradientOriginXOptimized(_ newX: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
-        
-        //Log.fileOperation("📐 Updating gradient origin X to: \(newX)", level: .info)
         
         switch selectedGradient {
         case .linear(var linear):
             linear.originPoint.x = newX
-            updateShapeGradient(shape: shape, newGradient: .linear(linear))
+            updateShapeGradientOptimized(shape: shape, newGradient: .linear(linear), isLiveDrag: isLiveDrag)
         case .radial(var radial):
             radial.originPoint.x = newX
             // Set focal point to match origin point (same as StrokeFillPanel)
             radial.focalPoint = CGPoint(x: newX, y: radial.originPoint.y)
-            updateShapeGradient(shape: shape, newGradient: .radial(radial))
+            updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
     
-    private func updateGradientOriginY(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true) {
+    /// Optimized origin Y update with live drag support
+    private func updateGradientOriginYOptimized(_ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
-        
-        //Log.fileOperation("📐 Updating gradient origin Y to: \(newY)", level: .info)
         
         switch selectedGradient {
         case .linear(var linear):
             linear.originPoint.y = newY
-            updateShapeGradient(shape: shape, newGradient: .linear(linear))
+            updateShapeGradientOptimized(shape: shape, newGradient: .linear(linear), isLiveDrag: isLiveDrag)
         case .radial(var radial):
             radial.originPoint.y = newY
             // Set focal point to match origin point (same as StrokeFillPanel)
             radial.focalPoint = CGPoint(x: radial.originPoint.x, y: newY)
-            updateShapeGradient(shape: shape, newGradient: .radial(radial))
+            updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
         }
     }
     
     /// Helper function to update shape gradient
     private func updateShapeGradient(shape: VectorShape, newGradient: VectorGradient) {
+        updateShapeGradientOptimized(shape: shape, newGradient: newGradient, isLiveDrag: false)
+    }
+    
+    /// Optimized gradient update with option to skip expensive operations during live dragging
+    private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         guard let layerIndex = document.selectedLayerIndex else { return }
+        
+        // DEBUG: Log optimization path
+        Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info)
         
         // Find and update the shape in the document
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
@@ -203,13 +225,29 @@ extension DrawingCanvas {
             updatedShape.fillStyle = FillStyle(color: .gradient(newGradient))
             document.layers[layerIndex].shapes[shapeIndex] = updatedShape
             
-            // CRITICAL FIX: Sync unified objects system and force UI refresh
-            document.syncUnifiedObjectsAfterPropertyChange()
-            DispatchQueue.main.async {
-                self.document.objectWillChange.send()
+            if isLiveDrag {
+                // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shape.id
+                    }
+                    return false
+                }) {
+                    // Update the specific unified object with the new shape data
+                    document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                }
+                
+                // Force immediate UI update for visual responsiveness
+                document.objectWillChange.send()
+            } else {
+                // FULL UPDATE: On drag end, do full sync for consistency
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
             }
             
-            Log.fileOperation("🎨 GRADIENT TOOL: Updated shape gradient for \(shape.id.uuidString.prefix(8))", level: .info)
+            Log.fileOperation("🎨 GRADIENT TOOL: Updated shape gradient for \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
         }
     }
     

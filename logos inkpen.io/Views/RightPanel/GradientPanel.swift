@@ -162,11 +162,14 @@ struct GradientFillSection: View {
                 getAspectRatio: getGradientAspectRatio,
                 updateOriginX: { updateGradientOriginX($0, applyToShapes: $1) },
                 updateOriginY: { updateGradientOriginY($0, applyToShapes: $1) },
+                updateOriginXOptimized: { updateGradientOriginXOptimized($0, applyToShapes: $1, isLiveDrag: $2) },
+                updateOriginYOptimized: { updateGradientOriginYOptimized($0, applyToShapes: $1, isLiveDrag: $2) },
                 addColorStop: addColorStop,
                 updateStopPosition: updateStopPosition,
                 updateStopOpacity: updateStopOpacity,
                 removeColorStop: removeColorStop,
                 applyGradientToSelectedShapes: applyGradientToSelectedShapes,
+                applyGradientToSelectedShapesOptimized: applyGradientToSelectedShapesOptimized,
                 activateGradientStop: activateGradientStop
             )
             
@@ -363,6 +366,15 @@ struct GradientFillSection: View {
     }
     
     private func updateGradientOriginX(_ newX: Double, applyToShapes: Bool = true) {
+        updateGradientOriginXOptimized(newX, applyToShapes: applyToShapes, isLiveDrag: false)
+    }
+    
+    private func updateGradientOriginY(_ newY: Double, applyToShapes: Bool = true) {
+        updateGradientOriginYOptimized(newY, applyToShapes: applyToShapes, isLiveDrag: false)
+    }
+    
+    /// Optimized origin X update with live drag support
+    private func updateGradientOriginXOptimized(_ newX: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
@@ -377,11 +389,12 @@ struct GradientFillSection: View {
         }
         // Only apply to shapes if requested (for performance during drag)
         if applyToShapes {
-            applyGradientToSelectedShapes()
+            applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
     
-    private func updateGradientOriginY(_ newY: Double, applyToShapes: Bool = true) {
+    /// Optimized origin Y update with live drag support
+    private func updateGradientOriginYOptimized(_ newY: Double, applyToShapes: Bool = true, isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
         
         switch gradient {
@@ -396,7 +409,7 @@ struct GradientFillSection: View {
         }
         // Only apply to shapes if requested (for performance during drag)
         if applyToShapes {
-            applyGradientToSelectedShapes()
+            applyGradientToSelectedShapesOptimized(isLiveDrag: isLiveDrag)
         }
     }
     
@@ -621,6 +634,11 @@ struct GradientFillSection: View {
     }
     
     func applyGradientToSelectedShapes() {
+        applyGradientToSelectedShapesOptimized(isLiveDrag: false)
+    }
+    
+    /// Optimized gradient application with option to skip expensive operations during live dragging
+    func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
         
         // REFACTORED: Use unified objects system for gradient application
@@ -639,10 +657,10 @@ struct GradientFillSection: View {
                         switch document.activeColorTarget {
                         case .fill:
                             document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
-                            Log.fileOperation("🎨 GRADIENT PANEL: Applied fill gradient to shape \(shape.id.uuidString.prefix(8))", level: .info)
+                            Log.fileOperation("🎨 GRADIENT PANEL: Applied fill gradient to shape \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
                         case .stroke:
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
-                            Log.fileOperation("🎨 GRADIENT PANEL: Applied stroke gradient to shape \(shape.id.uuidString.prefix(8))", level: .info)
+                            Log.fileOperation("🎨 GRADIENT PANEL: Applied stroke gradient to shape \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
                         }
                         hasChanges = true
                     }
@@ -657,10 +675,29 @@ struct GradientFillSection: View {
         
         // Sync unified objects if we made changes
         if hasChanges {
-            document.syncUnifiedObjectsAfterPropertyChange()
-            // CRITICAL FIX: Force immediate UI refresh for gradient changes
-            DispatchQueue.main.async {
-                self.document.objectWillChange.send()
+            if isLiveDrag {
+                // OPTIMIZED: During live drag, update only the specific shapes in unified objects for targeted rendering
+                for objectID in document.selectedObjectIDs {
+                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
+                        if case .shape(let unifiedShape) = document.unifiedObjects[unifiedIndex].objectType {
+                            // Find the updated shape in layers
+                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                               let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == unifiedShape.id }) {
+                                // Update the specific unified object with the new shape data
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
+                        }
+                    }
+                }
+                
+                // Force immediate UI update for visual responsiveness
+                document.objectWillChange.send()
+            } else {
+                // FULL UPDATE: On completion, do full sync for consistency
+                document.syncUnifiedObjectsAfterPropertyChange()
+                DispatchQueue.main.async {
+                    self.document.objectWillChange.send()
+                }
             }
         }
     }
@@ -1142,11 +1179,15 @@ struct GradientPreviewAndStopsView: View {
     let getAspectRatio: (VectorGradient) -> Double
     let updateOriginX: (Double, Bool) -> Void
     let updateOriginY: (Double, Bool) -> Void
+    // NEW: Optimized versions for live dragging
+    let updateOriginXOptimized: (Double, Bool, Bool) -> Void
+    let updateOriginYOptimized: (Double, Bool, Bool) -> Void
     let addColorStop: () -> Void
     let updateStopPosition: (UUID, Double) -> Void
     let updateStopOpacity: (UUID, Double) -> Void
     let removeColorStop: (UUID) -> Void
     let applyGradientToSelectedShapes: () -> Void
+    let applyGradientToSelectedShapesOptimized: (Bool) -> Void
     let activateGradientStop: (UUID, VectorColor) -> Void
     
     private func calculateDotPosition(geometry: GeometryProxy, squareSize: CGFloat, centerX: CGFloat, centerY: CGFloat) -> CGPoint {
@@ -1194,6 +1235,7 @@ struct GradientPreviewAndStopsView: View {
                         // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                         let clampedX = max(0.0, min(1.0, x))
                         let clampedY = max(0.0, min(1.0, y))
+                        // For CartesianGrid clicks, use normal (non-live drag) version
                         updateOriginX(clampedX, true)
                         updateOriginY(clampedY, true)
                         document.saveToUndoStack()
@@ -1219,10 +1261,13 @@ struct GradientPreviewAndStopsView: View {
                         // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                         let normalizedX = max(0.0, min(1.0, value.location.x / squareSize))
                         let normalizedY = max(0.0, min(1.0, value.location.y / squareSize))
-                        updateOriginX(normalizedX, true) // Enable live preview on shapes
-                        updateOriginY(normalizedY, true) // Enable live preview on shapes
+                        // OPTIMIZED: Use live drag optimized versions for smooth performance
+                        updateOriginXOptimized(normalizedX, true, true)
+                        updateOriginYOptimized(normalizedY, true, true)
                     }
-                    .onEnded { _ in 
+                    .onEnded { _ in
+                        // OPTIMIZATION: Do full sync after drag completes
+                        applyGradientToSelectedShapesOptimized(false)
                         document.saveToUndoStack() 
                     }
             )
@@ -1239,6 +1284,7 @@ struct GradientPreviewAndStopsView: View {
                 // Clamp preview to 0,0 to 1,1 bounds for visual clarity
                 let normalizedX = max(0.0, min(1.0, location.x / fullWidth))
                 let normalizedY = max(0.0, min(1.0, location.y / fullWidth))
+                // For tap gestures, use normal (non-live drag) version
                 updateOriginX(normalizedX, true)
                 updateOriginY(normalizedY, true)
                 document.saveToUndoStack()
