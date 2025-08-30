@@ -241,14 +241,13 @@ struct ProfessionalTextCanvas: View {
         
         // State check - reduced logging for performance
         
-        // FIXED: Prioritize editing state correctly, but respect deselection
-        // CRITICAL FIX: If text is not selected, it should not stay in blue mode regardless of focus
-        if currentTextObject.isEditing && isThisTextSelected {
+        // FIXED: Prioritize editing state correctly
+        if currentTextObject.isEditing {
             textBoxState = .blue
-            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
-        } else if hasTextViewFocus && isTextToolActive && isThisTextSelected {
+            Log.info("  → BLUE (editing mode) - isEditing=\(currentTextObject.isEditing), fontTool=\(isTextToolActive)", category: .general)
+        } else if hasTextViewFocus && isTextToolActive {
             textBoxState = .blue
-            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
+            Log.info("  → BLUE (NSTextView focus) - focus=\(hasTextViewFocus), fontTool=\(isTextToolActive)", category: .general)
         } else if isThisTextSelected && isTextToolActive {
             textBoxState = .green
             Log.info("  → GREEN (selected with font tool) - selected=\(isThisTextSelected), fontTool=\(isTextToolActive)", category: .general)
@@ -258,15 +257,6 @@ struct ProfessionalTextCanvas: View {
         } else {
             textBoxState = .gray
             Log.info("  → GRAY (unselected)", category: .general)
-            
-            // CRITICAL FIX: If going to gray mode, clear editing state to prevent stuck blue mode
-            if currentTextObject.isEditing {
-                if let textIndex = document.textObjects.firstIndex(where: { $0.id == textObjectID }) {
-                    document.textObjects[textIndex].isEditing = false
-                    viewModel.stopEditing()
-                    Log.info("  → CLEARED EDITING STATE: Text deselected, forcing exit from edit mode", category: .general)
-                }
-            }
         }
         
         if oldState != textBoxState {
@@ -394,8 +384,8 @@ struct ProfessionalTextBoxView: View {
                     height: viewModel.textBoxFrame.height + resizeOffset.height
                 )
                 .position(
-                    x: viewModel.textBoxFrame.minX + dragOffset.width + viewModel.textBoxFrame.width / 2,
-                    y: viewModel.textBoxFrame.minY + dragOffset.height + viewModel.textBoxFrame.height / 2
+                    x: viewModel.textBoxFrame.minX + dragOffset.width + (viewModel.textBoxFrame.width + resizeOffset.width) / 2,
+                    y: viewModel.textBoxFrame.minY + dragOffset.height + (viewModel.textBoxFrame.height + resizeOffset.height) / 2
                 )
                 .onTapGesture(count: 1) { location in
                     onTextBoxSelect(location)
@@ -445,9 +435,8 @@ struct ProfessionalTextContentView: View {
     
     var body: some View {
         // ALWAYS USE NSTextView for consistent rendering - just control editing state
-        // CONSISTENT RENDERING FIX: Keep isSelectable=true in ALL modes to prevent 1px text shift
-        // Only editing behavior changes between modes, not selectability for consistent text rendering
-        let isSelectable = true
+        // CRITICAL FIX: Allow selection in both BLUE (editing) and GREEN (selected) states for drag operations
+        let isSelectable = textBoxState == .blue || textBoxState == .green
         // FIXED: Allow hit testing when in BLUE (editing) mode so NSTextView can receive clicks for text editing
         let shouldAllowHitTesting = textBoxState == .blue
         ProfessionalUniversalTextView(viewModel: viewModel, isEditingAllowed: textBoxState == .blue, isSelectable: isSelectable)
@@ -1741,16 +1730,5 @@ class DisabledContextMenuTextView: NSTextView {
     override func rightMouseDown(with event: NSEvent) {
         // Consume right mouse events to prevent context menu
         // Don't call super to prevent the default context menu
-    }
-    
-    override func drawInsertionPoint(in rect: NSRect, color: NSColor, turnedOn flag: Bool) {
-        // Control I-beam cursor height - make it taller to prevent text jumping
-        var adjustedRect = rect
-        if let font = self.font {
-            // Set cursor height to exact font line height to prevent text positioning shifts
-            adjustedRect.size.height = font.capHeight + font.descender
-            adjustedRect.origin.y = rect.origin.y + (rect.height - adjustedRect.height) / 2
-        }
-        super.drawInsertionPoint(in: adjustedRect, color: color, turnedOn: flag)
     }
 }

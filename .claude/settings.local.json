@@ -15,8 +15,7 @@
       "mcp__xcf-server__xcf",
       "Bash(swiftc:*)",
       "mcp__xcf-server__build_project",
-      "Bash(git log:*)",
-      "WebFetch(domain:christiantietze.de)"
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []
