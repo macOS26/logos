@@ -52,11 +52,8 @@ extension DrawingCanvas {
                 height: textObj.bounds.height
             )
             
-            let expandedBounds = exactBounds.insetBy(dx: -30, dy: -20)
-            
             let hits = textContentArea.contains(location) || 
-                      exactBounds.contains(location) || 
-                      expandedBounds.contains(location)
+                      exactBounds.contains(location)
             
             if hits {
                 Log.fileOperation("🎯 BACKGROUND TAP: Hit text '\(textObj.content.prefix(20))'", level: .info)
