@@ -59,7 +59,7 @@ extension DrawingCanvas {
         .position(position)
         .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
         .gesture(
-            DragGesture(minimumDistance: 1)
+            DragGesture(minimumDistance: 0)  // OPTIMIZED: Reduce minimum distance for smoother real-time updates
                 .onChanged { value in
                     handleCornerRadiusToolDrag(
                         cornerIndex: cornerIndex,

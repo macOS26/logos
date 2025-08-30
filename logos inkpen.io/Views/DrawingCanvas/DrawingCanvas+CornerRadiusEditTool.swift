@@ -285,17 +285,9 @@ extension DrawingCanvas {
         )
         
         // Project onto 45-degree line for radius calculation only
-        // 🚀 PHASE 11: GPU-accelerated square root calculation
-        let sqrt2: Float
-        let metalEngine = MetalComputeEngine.shared
-        let sqrtResult = metalEngine.calculateSquareRootGPU(2.0)
-        switch sqrtResult {
-        case .success(let value):
-            sqrt2 = value
-        case .failure(_):
-            sqrt2 = Float(sqrt(2.0))
-        }
-        let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / CGFloat(sqrt2)
+        // PERFORMANCE FIX: Use simple constant instead of expensive GPU call for sqrt(2.0)
+        let sqrt2: CGFloat = 1.41421356237 // sqrt(2.0) - precomputed constant
+        let projectedDistance = (canvasDelta.x * direction.x + canvasDelta.y * direction.y) / sqrt2
         
         // Calculate radius change from the projected distance (in canvas coordinates)
         // FIXED: 1:1 mouse tracking - no scale factor needed
@@ -468,6 +460,9 @@ extension DrawingCanvas {
                 }
             }
             
+            // PERFORMANCE OPTIMIZED: Do full sync after drag completes for consistency
+            document.syncUnifiedObjectsAfterPropertyChange()
+            
             // Save to undo stack when drag ends
             document.saveToUndoStack()
             
@@ -479,6 +474,36 @@ extension DrawingCanvas {
             currentMousePosition = .zero
             
 
+        }
+    }
+    
+    // MARK: - Optimized Shape Update Functions
+    
+    /// PERFORMANCE OPTIMIZED: Update shape with live drag optimization
+    private func updateShapeWithOptimizedSync(_ shape: VectorShape, layerIndex: Int, shapeIndex: Int, isLiveDrag: Bool) {
+        // Update the shape in the document
+        document.layers[layerIndex].shapes[shapeIndex] = shape
+        
+        if isLiveDrag {
+            // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
+            if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                if case .shape(let unifiedShape) = unifiedObj.objectType {
+                    return unifiedShape.id == shape.id
+                }
+                return false
+            }) {
+                // Update the specific unified object with the new shape data
+                document.unifiedObjects[unifiedIndex] = VectorObject(shape: shape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+            }
+            
+            // Force immediate UI update for visual responsiveness
+            document.objectWillChange.send()
+        } else {
+            // FULL UPDATE: On completion, do full sync for consistency
+            document.syncUnifiedObjectsAfterPropertyChange()
+            DispatchQueue.main.async {
+                self.document.objectWillChange.send()
+            }
         }
     }
     
@@ -536,11 +561,8 @@ extension DrawingCanvas {
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
                 
-                // CRITICAL FIX: Sync unified objects and force UI refresh
-                document.syncUnifiedObjectsAfterPropertyChange()
-                DispatchQueue.main.async {
-                    self.document.objectWillChange.send()
-                }
+                // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
+                updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)
                 break
             }
         }
@@ -583,11 +605,8 @@ extension DrawingCanvas {
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
                 
-                // CRITICAL FIX: Sync unified objects and force UI refresh
-                document.syncUnifiedObjectsAfterPropertyChange()
-                DispatchQueue.main.async {
-                    self.document.objectWillChange.send()
-                }
+                // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
+                updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)
                 break
             }
         }
@@ -627,11 +646,8 @@ extension DrawingCanvas {
                 // Update the shape in the document
                 document.layers[layerIndex].shapes[shapeIndex] = shape
                 
-                // CRITICAL FIX: Sync unified objects and force UI refresh
-                document.syncUnifiedObjectsAfterPropertyChange()
-                DispatchQueue.main.async {
-                    self.document.objectWillChange.send()
-                }
+                // PERFORMANCE OPTIMIZED: Use live drag optimization for smooth corner radius editing
+                updateShapeWithOptimizedSync(shape, layerIndex: layerIndex, shapeIndex: shapeIndex, isLiveDrag: true)
                 break
             }
         }
