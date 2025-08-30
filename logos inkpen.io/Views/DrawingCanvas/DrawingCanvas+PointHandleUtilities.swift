@@ -68,6 +68,10 @@ extension DrawingCanvas {
     }
     
     internal func movePointToAbsolutePosition(_ pointID: PointID, to newPosition: CGPoint) {
+        movePointToAbsolutePositionOptimized(pointID, to: newPosition, isLiveDrag: isDraggingPoint)
+    }
+    
+    private func movePointToAbsolutePositionOptimized(_ pointID: PointID, to newPosition: CGPoint, isLiveDrag: Bool) {
         // Find the shape and update the point position
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) {
@@ -138,9 +142,25 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 
-                // CRITICAL FIX: Sync unified objects and force UI refresh
-                document.syncUnifiedObjectsAfterPropertyChange()
-                document.objectWillChange.send()
+                if isLiveDrag {
+                    // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
+                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                        if case .shape(let unifiedShape) = unifiedObj.objectType {
+                            return unifiedShape.id == pointID.shapeID
+                        }
+                        return false
+                    }) {
+                        // Update the specific unified object with the new shape data
+                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                    }
+                    
+                    // Force immediate UI update for visual responsiveness
+                    document.objectWillChange.send()
+                } else {
+                    // FULL UPDATE: On drag end, do full sync for consistency
+                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.objectWillChange.send()
+                }
                 return
             }
         }
@@ -213,6 +233,10 @@ extension DrawingCanvas {
     }
     
     internal func moveHandleToAbsolutePosition(_ handleID: HandleID, to newPosition: CGPoint) {
+        moveHandleToAbsolutePositionOptimized(handleID, to: newPosition, isLiveDrag: isDraggingHandle)
+    }
+    
+    private func moveHandleToAbsolutePositionOptimized(_ handleID: HandleID, to newPosition: CGPoint, isLiveDrag: Bool) {
         // Find the shape and update the handle position
         for layerIndex in document.layers.indices {
             if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == handleID.shapeID }) {
@@ -249,9 +273,25 @@ extension DrawingCanvas {
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
                 document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 
-                // CRITICAL FIX: Sync unified objects and force UI refresh
-                document.syncUnifiedObjectsAfterPropertyChange()
-                document.objectWillChange.send()
+                if isLiveDrag {
+                    // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
+                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                        if case .shape(let unifiedShape) = unifiedObj.objectType {
+                            return unifiedShape.id == handleID.shapeID
+                        }
+                        return false
+                    }) {
+                        // Update the specific unified object with the new shape data
+                        document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                    }
+                    
+                    // Force immediate UI update for visual responsiveness
+                    document.objectWillChange.send()
+                } else {
+                    // FULL UPDATE: On drag end, do full sync for consistency
+                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.objectWillChange.send()
+                }
                 return
             }
         }

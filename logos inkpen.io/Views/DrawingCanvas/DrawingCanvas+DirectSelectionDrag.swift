@@ -113,8 +113,10 @@ extension DrawingCanvas {
             }
         }
         
-        // Force UI update
-        document.objectWillChange.send()
+        // Force immediate UI update for real-time preview
+        DispatchQueue.main.async {
+            self.document.objectWillChange.send()
+        }
     }
     
     internal func finishDirectSelectionDrag() {
@@ -122,5 +124,29 @@ extension DrawingCanvas {
         isDraggingHandle = false
         originalPointPositions.removeAll()
         originalHandlePositions.removeAll()
+        
+        // Update bounds for all modified shapes now that dragging is complete
+        for pointID in selectedPoints {
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == pointID.shapeID }) {
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    break
+                }
+            }
+        }
+        for handleID in selectedHandles {
+            for layerIndex in document.layers.indices {
+                if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == handleID.shapeID }) {
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
+                    break
+                }
+            }
+        }
+        
+        // Perform expensive sync operations now that dragging is complete
+        document.syncUnifiedObjectsAfterPropertyChange()
+        
+        // Force UI update once at the end of drag operation
+        document.objectWillChange.send()
     }
 } 
