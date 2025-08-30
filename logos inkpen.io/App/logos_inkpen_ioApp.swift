@@ -34,28 +34,23 @@ struct logos_inken_ioApp: App {
     var body: some Scene {
         // ONBOARDING: Show New Document Setup Window only when no document windows exist
         WindowGroup("Document Setup", id: "onboarding-setup") {
-            if appState.shouldShowDocumentSetup {
-                NewDocumentSetupView(
-                    isPresented: .constant(true),
-                    onDocumentCreated: { newDoc, _ in
-                        // Store the configured document settings
-                        appState.pendingNewDocument = newDoc
-                        
-                        // Close this onboarding window
-                        dismissWindow(id: "onboarding-setup")
-                        
-                        // Reset the flag
-                        appState.shouldShowDocumentSetup = false
-                        
-                        // Create a new document using DocumentGroup
-                        NSDocumentController.shared.newDocument(nil)
-                    }
-                )
-                .environment(appState)
-            } else {
-                // Empty view when setup window shouldn't be shown
-                EmptyView()
-            }
+            NewDocumentSetupView(
+                isPresented: .constant(true),
+                onDocumentCreated: { newDoc, _ in
+                    // Store the configured document settings
+                    appState.pendingNewDocument = newDoc
+                    
+                    // Close this onboarding window
+                    dismissWindow(id: "onboarding-setup")
+                    
+                    // Reset the flag
+                    appState.shouldShowDocumentSetup = false
+                    
+                    // Create a new document using DocumentGroup
+                    NSDocumentController.shared.newDocument(nil)
+                }
+            )
+            .environment(appState)
         }
         .defaultSize(width: 900, height: 700)
         .windowResizability(.contentMinSize)
