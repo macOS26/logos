@@ -132,9 +132,6 @@ extension DrawingCanvas {
         // Convert screen coordinates to canvas coordinates
         let canvasPoint = screenToCanvas(value.location, geometry: geometry)
         
-        // DEBUG: Log that we're handling gradient dragging
-        Log.fileOperation("🎯 GRADIENT TOOL: handleGradientCenterDrag called", level: .info)
-        
         let shapeBounds = shape.bounds
         
         switch gradient {
@@ -144,11 +141,10 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            Log.fileOperation("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))", level: .info)
+            // Log.fileOperation("🎯 Linear gradient drag - Canvas: \(canvasPoint), Origin: (\(relativeX), \(relativeY))", level: .info) // Disabled for performance
             
-            // OPTIMIZED: Use live drag optimized versions for smooth real-time updates
-            updateGradientOriginXOptimized(relativeX, shape: shape, applyToShapes: true, isLiveDrag: true)
-            updateGradientOriginYOptimized(relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
+            // OPTIMIZED: Use combined update for maximum performance - single update instead of two separate calls
+            updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
             
         case .radial(_):
             // FIXED: Use the EXACT same coordinate system as LayerView radial gradient rendering
@@ -156,13 +152,12 @@ extension DrawingCanvas {
             let relativeX = (canvasPoint.x - shapeBounds.minX) / shapeBounds.width
             let relativeY = (canvasPoint.y - shapeBounds.minY) / shapeBounds.height
             
-            Log.fileOperation("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))", level: .info)
+            // Log.fileOperation("🎯 Radial gradient drag - Canvas: \(canvasPoint), Relative: (\(relativeX), \(relativeY))", level: .info) // Disabled for performance
             
             // Don't clamp the coordinates - allow them to extend beyond object bounds
             // This allows the origin point to move freely within the scaled gradient area
-            // OPTIMIZED: Use live drag optimized versions for smooth real-time updates
-            updateGradientOriginXOptimized(relativeX, shape: shape, applyToShapes: true, isLiveDrag: true)
-            updateGradientOriginYOptimized(relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
+            // OPTIMIZED: Use combined update for maximum performance - single update instead of two separate calls
+            updateGradientOriginXYOptimized(relativeX, relativeY, shape: shape, applyToShapes: true, isLiveDrag: true)
         }
     }
     
@@ -207,6 +202,24 @@ extension DrawingCanvas {
         }
     }
     
+    /// PERFORMANCE OPTIMIZED: Combined X+Y update for maximum speed - single update instead of two separate calls
+    private func updateGradientOriginXYOptimized(_ newX: Double, _ newY: Double, shape: VectorShape, applyToShapes: Bool = true, isLiveDrag: Bool) {
+        guard let selectedGradient = getSelectedShapeGradient(document: document) else { return }
+        
+        switch selectedGradient {
+        case .linear(var linear):
+            linear.originPoint.x = newX
+            linear.originPoint.y = newY
+            updateShapeGradientOptimized(shape: shape, newGradient: .linear(linear), isLiveDrag: isLiveDrag)
+        case .radial(var radial):
+            radial.originPoint.x = newX
+            radial.originPoint.y = newY
+            // Set focal point to match origin point (same as StrokeFillPanel)
+            radial.focalPoint = CGPoint(x: newX, y: newY)
+            updateShapeGradientOptimized(shape: shape, newGradient: .radial(radial), isLiveDrag: isLiveDrag)
+        }
+    }
+    
     /// Helper function to update shape gradient
     private func updateShapeGradient(shape: VectorShape, newGradient: VectorGradient) {
         updateShapeGradientOptimized(shape: shape, newGradient: newGradient, isLiveDrag: false)
@@ -216,8 +229,7 @@ extension DrawingCanvas {
     private func updateShapeGradientOptimized(shape: VectorShape, newGradient: VectorGradient, isLiveDrag: Bool) {
         guard let layerIndex = document.selectedLayerIndex else { return }
         
-        // DEBUG: Log optimization path
-        Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info)
+        // Log.fileOperation("🎯 GRADIENT TOOL: updateShapeGradientOptimized called with isLiveDrag: \(isLiveDrag)", level: .info) // Disabled for performance
         
         // Find and update the shape in the document
         if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
