@@ -1748,7 +1748,7 @@ class DisabledContextMenuTextView: NSTextView {
         var adjustedRect = rect
         if let font = self.font {
             // Set cursor height to exact font line height to prevent text positioning shifts
-            adjustedRect.size.height = font.ascender + font.descender
+            adjustedRect.size.height = font.capHeight + font.descender
             adjustedRect.origin.y = rect.origin.y + (rect.height - adjustedRect.height) / 2
         }
         super.drawInsertionPoint(in: adjustedRect, color: color, turnedOn: flag)
