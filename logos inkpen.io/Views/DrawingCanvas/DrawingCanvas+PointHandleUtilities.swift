@@ -140,9 +140,9 @@ extension DrawingCanvas {
                 // Coincident points are handled by selection logic, not automatic movement
                 
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 
                 if isLiveDrag {
+                    // Skip expensive updateBounds during live drag for smoother performance
                     // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
                         if case .shape(let unifiedShape) = unifiedObj.objectType {
@@ -157,7 +157,8 @@ extension DrawingCanvas {
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
-                    // FULL UPDATE: On drag end, do full sync for consistency
+                    // FULL UPDATE: On drag end, update bounds and do full sync for consistency
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     document.syncUnifiedObjectsAfterPropertyChange()
                     document.objectWillChange.send()
                 }
@@ -271,9 +272,9 @@ extension DrawingCanvas {
                 }
                 
                 document.layers[layerIndex].shapes[shapeIndex].path.elements = elements
-                document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                 
                 if isLiveDrag {
+                    // Skip expensive updateBounds during live drag for smoother performance
                     // OPTIMIZED: During live drag, update only the specific shape in unified objects for targeted rendering
                     if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
                         if case .shape(let unifiedShape) = unifiedObj.objectType {
@@ -288,7 +289,8 @@ extension DrawingCanvas {
                     // Force immediate UI update for visual responsiveness
                     document.objectWillChange.send()
                 } else {
-                    // FULL UPDATE: On drag end, do full sync for consistency
+                    // FULL UPDATE: On drag end, update bounds and do full sync for consistency
+                    document.layers[layerIndex].shapes[shapeIndex].updateBounds()
                     document.syncUnifiedObjectsAfterPropertyChange()
                     document.objectWillChange.send()
                 }
