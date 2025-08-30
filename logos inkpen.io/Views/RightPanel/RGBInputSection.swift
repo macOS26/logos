@@ -408,8 +408,29 @@ struct RGBInputSection: View {
             }
         }
         
-        // CRITICAL FIX: Sync unified objects for live color updates
-        document.syncUnifiedObjectsAfterPropertyChange()
+        // OPTIMIZED: Update unified objects directly during live color changes
+        if !activeShapeIDs.isEmpty {
+            for shapeID in activeShapeIDs {
+                // Update the specific unified object directly for targeted rendering
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shapeID
+                    }
+                    return false
+                }) {
+                    // Find updated shape data
+                    for layerIndex in document.layers.indices {
+                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            break
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Force immediate UI update for visual responsiveness
+        document.objectWillChange.send()
         
         // 🔥 NO AUTOMATIC TEXT UPDATES - only when swatches are clicked!
         
