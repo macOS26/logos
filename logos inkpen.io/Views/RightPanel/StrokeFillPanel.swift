@@ -748,6 +748,27 @@ struct StrokeFillPanel: View {
                     }
                 }
             }
+            
+            // OPTIMIZED: Direct unified object updates for smooth performance
+            for shapeID in activeShapeIDs {
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                    if case .shape(let unifiedShape) = unifiedObj.objectType {
+                        return unifiedShape.id == shapeID
+                    }
+                    return false
+                }) {
+                    // Find updated shape data
+                    for layerIndex in document.layers.indices {
+                        if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            break
+                        }
+                    }
+                }
+            }
+            
+            // Force immediate UI update for visual responsiveness
+            document.objectWillChange.send()
         }
     }
     
