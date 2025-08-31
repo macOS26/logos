@@ -20,7 +20,9 @@
       "Read(/Users/toddbruss/Library/Mobile Documents/com~apple~CloudDocs/Documents/GameChanger/Sources/GameChanger/images/svg/**)",
       "Read(/Users/toddbruss/Documents/**)",
       "Read(/Users/toddbruss/Documents/**)",
-      "mcp__xcf-server__run_project"
+      "mcp__xcf-server__run_project",
+      "mcp__xcf-server__use_xcf",
+      "mcp__xcf-server__snippet"
     ],
     "deny": [],
     "ask": []

@@ -264,6 +264,20 @@ class PDFCommandParser {
             print("PDF: Path construction (no-op) operator 'n' encountered")
         }
         
+        // Add debug callbacks for common PDF 1.4+ operators we might be missing
+        CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
+            print("PDF: 'q' (save graphics state) operator encountered")
+        }
+        
+        CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
+            print("PDF: 'Q' (restore graphics state) operator encountered")
+        }
+        
+        CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleXObject(scanner: scanner)
+        }
+        
         // Add opacity/transparency operator callbacks  
         CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
@@ -680,15 +694,23 @@ class PDFCommandParser {
     }
     
     private func handleGraphicsState(scanner: CGPDFScannerRef) {
+        // PDF 1.4+ uses names, PDF 1.3 uses strings - try both
         var nameRef: CGPDFStringRef?
+        var namePtr: UnsafePointer<CChar>?
+        var name: String
         
-        guard CGPDFScannerPopString(scanner, &nameRef) else {
-            print("PDF: Failed to read graphics state name")
+        if CGPDFScannerPopName(scanner, &namePtr) {
+            // PDF 1.4+ format - name
+            name = String(cString: namePtr!)
+            print("PDF: Graphics state '\(name)' (as name) - attempting to parse ExtGState...")
+        } else if CGPDFScannerPopString(scanner, &nameRef) {
+            // PDF 1.3 format - string
+            name = CGPDFStringCopyTextString(nameRef!)! as String
+            print("PDF: Graphics state '\(name)' (as string) - attempting to parse ExtGState...")
+        } else {
+            print("PDF: Failed to read graphics state name (tried both name and string formats)")
             return
         }
-        
-        let name = CGPDFStringCopyTextString(nameRef!)! as String
-        print("PDF: Graphics state '\(name)' - attempting to parse ExtGState...")
         
         // Access the page resources to find the ExtGState dictionary
         guard let page = currentPage,
@@ -721,6 +743,21 @@ class PDFCommandParser {
         }
         
         print("PDF: ExtGState '\(name)' parsed - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
+    }
+    
+    private func handleXObject(scanner: CGPDFScannerRef) {
+        var namePtr: UnsafePointer<CChar>?
+        
+        guard CGPDFScannerPopName(scanner, &namePtr) else {
+            print("PDF: Failed to read XObject name")
+            return
+        }
+        
+        let name = String(cString: namePtr!)
+        print("PDF: 'Do' XObject '\(name)' - PDF 1.4 content might be in XObjects (not yet implemented)")
+        
+        // TODO: Parse XObject content streams - this is where PDF 1.4 actual drawing operations likely are
+        // For now, just log that we encountered it
     }
     
     // MARK: - Fill and Stroke Handlers
