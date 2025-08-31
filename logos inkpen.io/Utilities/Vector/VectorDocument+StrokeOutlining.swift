@@ -67,12 +67,14 @@ extension VectorDocument {
                         
                         // Add stroke shape ABOVE the fill shape
                         layers[layerIndex].shapes.insert(strokeShape, at: shapeIndex + 1)
+                        addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                         newShapeIDs.insert(strokeShape.id)
                     }
                 } else {
                     // No fill, just replace with stroke outline
                     if let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                         layers[layerIndex].shapes[shapeIndex] = strokeShape
+                        addShapeToUnifiedSystem(strokeShape, layerIndex: layerIndex)
                         newShapeIDs.insert(strokeShape.id)
                     }
                 }
@@ -80,7 +82,13 @@ extension VectorDocument {
         }
         
         // Select only the stroke shapes (not the fill shapes)
-        selectedShapeIDs = newShapeIDs
+        selectedObjectIDs = newShapeIDs
+        
+        // CRITICAL FIX: Sync unified objects after creating stroke shapes
+        syncUnifiedObjectsAfterPropertyChange()
+        
+        // Force document refresh so arrow tool can see newly created shapes
+        objectWillChange.send()
     }
     
     /// Checks if outline stroke operation is available for current selection

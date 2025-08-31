@@ -36,6 +36,11 @@ extension VectorDocument {
                     // Replace warp object with unwrapped shape
                     layers[layerIndex].shapes[shapeIndex] = unwrappedShape
                     
+                    // Update the unified objects system to reflect the new unwrapped shape
+                    if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == shape.id }) {
+                        unifiedObjects[unifiedIndex] = VectorObject(shape: unwrappedShape, layerIndex: layerIndex, orderID: unifiedObjects[unifiedIndex].orderID)
+                    }
+                    
                     // Update selection to the unwrapped shape
                     selectedObjectIDs.remove(shape.id)
                     selectedObjectIDs.insert(unwrappedShape.id)
@@ -73,6 +78,11 @@ extension VectorDocument {
                 if let expandedShape = shape.expandWarpObject() {
                     // Replace warp object with expanded shape
                     layers[layerIndex].shapes[shapeIndex] = expandedShape
+                    
+                    // Update the unified objects system to reflect the new expanded shape
+                    if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == shape.id }) {
+                        unifiedObjects[unifiedIndex] = VectorObject(shape: expandedShape, layerIndex: layerIndex, orderID: unifiedObjects[unifiedIndex].orderID)
+                    }
                     
                     // Update selection to the expanded shape
                     selectedObjectIDs.remove(shape.id)
