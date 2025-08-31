@@ -739,21 +739,27 @@ class PDFCommandParser {
         if filled {
             let shapeName = "PDF Shape \(shapes.count + 1)"
             print("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)")
-            // Priority order: active gradient, current gradient, current fill color
-            if let gradient = activeGradient {
-                // This shape should get the gradient - track it
+            // Check if this is a white shape first
+            let r = Double(currentFillColor.components?[0] ?? 0.0)
+            let g = Double(currentFillColor.components?[1] ?? 0.0) 
+            let b = Double(currentFillColor.components?[2] ?? 1.0)
+            let a = Double(currentFillColor.components?[3] ?? 1.0)
+            let isWhiteShape = (r > 0.95 && g > 0.95 && b > 0.95) // Nearly white
+            
+            // Priority order: active gradient (only for white shapes), current gradient, current fill color
+            if let gradient = activeGradient, isWhiteShape {
+                // This WHITE shape should get the gradient - track it for compound path
                 gradientShapes.append(shapes.count) // Will be the index after we add this shape
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get active gradient - tracked for compound path")
+                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' (WHITE shape) will get active gradient - tracked for compound path")
             } else if let gradient = currentFillGradient {
                 fillStyle = FillStyle(gradient: gradient)
                 print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get current gradient fill")
             } else {
-                let r = Double(currentFillColor.components?[0] ?? 0.0)
-                let g = Double(currentFillColor.components?[1] ?? 0.0) 
-                let b = Double(currentFillColor.components?[2] ?? 1.0)
-                let a = Double(currentFillColor.components?[3] ?? 1.0)
                 print("PDF: 🎨 SOLID COLOR ASSIGNED: '\(shapeName)' will get fill color RGBA(\(r), \(g), \(b), \(a))")
+                if activeGradient != nil && !isWhiteShape {
+                    print("PDF: 🔍 SKIPPING non-white shape for gradient compound path - preserving original color")
+                }
                 
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
