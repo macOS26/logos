@@ -249,6 +249,27 @@ extension PDFCommandParser {
                 print("PDF 1.4: XObject '\(name)' - closePath")
                 i += 1
                 
+            case "W": // clip - set clipping path
+                print("PDF 1.4: XObject '\(name)' - 🖇️ CLIPPING PATH - this creates transparency!")
+                // For now, detect that this should be a clipping mask
+                // In a proper implementation, this would set a clipping region
+                i += 1
+                
+            case "n": // no-op path (often used with clipping)
+                if hasPath {
+                    print("PDF 1.4: XObject '\(name)' - 📐 PATH NO-OP - likely a clipping mask!")
+                    // Check if this is white - if so, make it transparent/knockout
+                    if let components = currentFillColor.components,
+                       components.count >= 3 && 
+                       components[0] > 0.9 && components[1] > 0.9 && components[2] > 0.9 {
+                        print("PDF 1.4: XObject '\(name)' - 🕳️ WHITE CLIPPING PATH - creating transparent knockout!")
+                        // Don't create a shape for white clipping paths - they should be transparent
+                        currentPath.removeAll()
+                        hasPath = false
+                    }
+                }
+                i += 1
+                
             case "f", "F": // fill
                 if hasPath {
                     print("PDF 1.4: XObject '\(name)' - 🎨 FILL OPERATION - creating shape!")
