@@ -1284,16 +1284,41 @@ extension PDFCommandParser {
             return [GradientStop(position: 0.0, color: colors.first ?? .black, opacity: 1.0)]
         }
         
+        // Sub-sample to reduce from ~1000 stops to 11 stops (0%, 10%, 20%, ..., 100%)
+        let targetStops = 11
+        let subSampledColors = subsampleColors(colors, targetCount: targetStops)
+        
         var stops: [GradientStop] = []
         
-        // Distribute colors evenly across the gradient
-        for (index, color) in colors.enumerated() {
-            let position = colors.count == 1 ? 0.0 : Double(index) / Double(colors.count - 1)
+        // Create stops at 10% intervals
+        for i in 0..<targetStops {
+            let position = Double(i) / Double(targetStops - 1) // 0.0, 0.1, 0.2, ..., 1.0
+            let colorIndex = min(i, subSampledColors.count - 1)
+            let color = subSampledColors[colorIndex]
+            
             stops.append(GradientStop(position: position, color: color, opacity: 1.0))
-            print("PDF: 📍 Gradient stop at \(position): \(color)")
+            print("PDF: 📍 Sub-sampled gradient stop at \(Int(position * 100))%: \(color)")
         }
         
         return stops
+    }
+    
+    private func subsampleColors(_ colors: [VectorColor], targetCount: Int) -> [VectorColor] {
+        guard colors.count > targetCount else {
+            return colors
+        }
+        
+        var sampledColors: [VectorColor] = []
+        
+        for i in 0..<targetCount {
+            // Calculate the index in the original array that corresponds to this sample
+            let sourceIndex = Int((Double(i) / Double(targetCount - 1)) * Double(colors.count - 1))
+            let clampedIndex = min(sourceIndex, colors.count - 1)
+            sampledColors.append(colors[clampedIndex])
+        }
+        
+        print("PDF: 🎨 Sub-sampled \(colors.count) colors down to \(sampledColors.count) colors")
+        return sampledColors
     }
     
     private func extractColorFromArray(_ array: CGPDFArrayRef) -> VectorColor {
