@@ -47,7 +47,12 @@ class PDFCommandParser {
     
     // For gradient tracking
     private var activeGradient: VectorGradient?
-    private var gradientShapes: [Int] = [] // Indices of shapes that should get the current gradient
+    private var gradientShapes: [Int] = []
+    
+    // For proper compound path detection
+    private var isInCompoundPath = false
+    private var compoundPathParts: [[PathCommand]] = []
+    private var moveToCount = 0  // Track multiple MoveTo operations
     
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
@@ -249,10 +254,22 @@ class PDFCommandParser {
     // MARK: - Operator Handlers
     
     private func handleMoveTo(scanner: CGPDFScannerRef) {
-        // If we have an existing path and start a new one, finalize the current path
+        // COMPOUND PATH DETECTION: Multiple MoveTo operations before fill = compound path
         if !currentPath.isEmpty {
-            print("PDF: Starting new path - finalizing previous path as default filled shape")
-            createShapeFromCurrentPath(filled: true, stroked: false)
+            print("PDF: COMPOUND PATH DETECTED - MoveTo with existing path, storing current path as part of compound")
+            
+            // Store the current path as part of a compound path
+            compoundPathParts.append(currentPath)
+            isInCompoundPath = true
+            moveToCount += 1
+            
+            print("PDF: Compound path part #\(compoundPathParts.count) stored (\(currentPath.count) commands)")
+        } else {
+            // Reset compound path tracking for new path sequence
+            moveToCount = 1
+            if !isInCompoundPath {
+                compoundPathParts.removeAll()
+            }
         }
         
         var x: CGFloat = 0, y: CGFloat = 0
@@ -544,11 +561,126 @@ class PDFCommandParser {
     
     private func handleFill() {
         print("PDF: Fill operation - creating filled shape")
-        createShapeFromCurrentPath(filled: true, stroked: false)
+        
+        if isInCompoundPath && !compoundPathParts.isEmpty {
+            print("PDF: 🔍 COMPOUND PATH FILL - Creating compound shape from \(compoundPathParts.count + 1) parts")
+            createCompoundShapeFromParts(filled: true, stroked: false)
+        } else {
+            createShapeFromCurrentPath(filled: true, stroked: false)
+        }
     }
     
     private func handleStroke() {
         createShapeFromCurrentPath(filled: false, stroked: true)
+    }
+    
+    private func createCompoundShapeFromParts(filled: Bool, stroked: Bool) {
+        // Add the current path as the final part
+        var allParts = compoundPathParts
+        if !currentPath.isEmpty {
+            allParts.append(currentPath)
+        }
+        
+        print("PDF: 🔧 Creating compound shape with \(allParts.count) subpaths")
+        
+        // Convert all parts to VectorPath elements
+        var combinedElements: [PathElement] = []
+        
+        for (partIndex, part) in allParts.enumerated() {
+            print("PDF: Processing compound part #\(partIndex + 1) with \(part.count) commands")
+            
+            for command in part {
+                switch command {
+                case .moveTo(let point):
+                    let adjustedPoint = CGPoint(x: point.x, y: pageSize.height - point.y)
+                    let vectorPoint = VectorPoint(adjustedPoint)
+                    combinedElements.append(.move(to: vectorPoint))
+                case .lineTo(let point):
+                    let adjustedPoint = CGPoint(x: point.x, y: pageSize.height - point.y)
+                    let vectorPoint = VectorPoint(adjustedPoint)
+                    combinedElements.append(.line(to: vectorPoint))
+                case .curveTo(let cp1, let cp2, let point):
+                    let adjustedCP1 = CGPoint(x: cp1.x, y: pageSize.height - cp1.y)
+                    let adjustedCP2 = CGPoint(x: cp2.x, y: pageSize.height - cp2.y)
+                    let adjustedPoint = CGPoint(x: point.x, y: pageSize.height - point.y)
+                    let vectorCP1 = VectorPoint(adjustedCP1)
+                    let vectorCP2 = VectorPoint(adjustedCP2)
+                    let vectorPoint = VectorPoint(adjustedPoint)
+                    combinedElements.append(.curve(to: vectorPoint, control1: vectorCP1, control2: vectorCP2))
+                case .quadCurveTo(let cp, let point):
+                    let adjustedCP = CGPoint(x: cp.x, y: pageSize.height - cp.y)
+                    let adjustedPoint = CGPoint(x: point.x, y: pageSize.height - point.y)
+                    let vectorCP = VectorPoint(adjustedCP)
+                    let vectorPoint = VectorPoint(adjustedPoint)
+                    combinedElements.append(.quadCurve(to: vectorPoint, control: vectorCP))
+                case .rectangle(let rect):
+                    // Convert rectangle to path elements
+                    let adjustedRect = CGRect(x: rect.origin.x, y: pageSize.height - rect.origin.y - rect.height, width: rect.width, height: rect.height)
+                    combinedElements.append(.move(to: VectorPoint(Double(adjustedRect.minX), Double(adjustedRect.minY))))
+                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.maxX), Double(adjustedRect.minY))))
+                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.maxX), Double(adjustedRect.maxY))))
+                    combinedElements.append(.line(to: VectorPoint(Double(adjustedRect.minX), Double(adjustedRect.maxY))))
+                    combinedElements.append(.close)
+                case .closePath:
+                    combinedElements.append(.close)
+                }
+            }
+        }
+        
+        let vectorPath = VectorPath(elements: combinedElements, isClosed: combinedElements.contains(.close))
+        
+        // Create fill and stroke styles
+        var fillStyle: FillStyle? = nil
+        var strokeStyle: StrokeStyle? = nil
+        
+        if filled {
+            let shapeName = "PDF Compound Shape \(shapes.count + 1)"
+            print("PDF: 🔍 Compound shape creation - filled=true, activeGradient=\(activeGradient != nil)")
+            
+            if let gradient = activeGradient {
+                fillStyle = FillStyle(gradient: gradient)
+                print("PDF: ✅ GRADIENT ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets active gradient with \(allParts.count) subpaths")
+            } else {
+                let r = Double(currentFillColor.components?[0] ?? 0.0)
+                let g = Double(currentFillColor.components?[1] ?? 0.0)
+                let b = Double(currentFillColor.components?[2] ?? 1.0)
+                let a = Double(currentFillColor.components?[3] ?? 1.0)
+                
+                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
+                fillStyle = FillStyle(color: vectorColor)
+                print("PDF: 🎨 SOLID COLOR ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(a))")
+            }
+        }
+        
+        if stroked {
+            let r = Double(currentStrokeColor.components?[0] ?? 0.0)
+            let g = Double(currentStrokeColor.components?[1] ?? 0.0)
+            let b = Double(currentStrokeColor.components?[2] ?? 1.0)
+            let a = Double(currentStrokeColor.components?[3] ?? 1.0)
+            
+            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
+            strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
+        }
+        
+        let compoundShape = VectorShape(
+            name: activeGradient != nil ? "PDF Compound Shape (Gradient)" : "PDF Compound Shape \(shapes.count + 1)",
+            path: vectorPath,
+            strokeStyle: strokeStyle,
+            fillStyle: fillStyle
+        )
+        
+        shapes.append(compoundShape)
+        
+        // Reset compound path state
+        compoundPathParts.removeAll()
+        currentPath.removeAll()
+        isInCompoundPath = false
+        moveToCount = 0
+        
+        // Clear the active gradient since it's been applied
+        activeGradient = nil
+        
+        print("PDF: ✅ Compound shape created with \(allParts.count) subpaths")
     }
     
     private func handleFillAndStroke() {
@@ -1530,42 +1662,15 @@ extension PDFCommandParser {
         // retroactively to previously created white shapes that are part of the compound path
         print("PDF: 🔍 COMPOUND PATH DETECTION: Looking for white shapes to retroactively apply gradient...")
         
-        for (index, shape) in shapes.enumerated().reversed() {
-            if let fillStyle = shape.fillStyle,
-               case .rgb(let rgbColor) = fillStyle.color {
-                
-                let isWhite = rgbColor.red >= 0.99 && rgbColor.green >= 0.99 && rgbColor.blue >= 0.99
-                
-                if isWhite {
-                    // Count path commands to estimate shape complexity
-                    let pathCommandCount = shape.path.elements.count
-                    
-                    // SMARTER LOGIC: Large complex white shapes (>25 commands) are likely backgrounds
-                    // Small-medium white shapes (<25 commands) are likely parts of the logo that need gradients
-                    if pathCommandCount <= 25 {
-                        print("PDF: 🚨 FOUND SMALL WHITE SHAPE FOR COMPOUND PATH: '\(shape.name)' (\(pathCommandCount) commands) - TAGGING WITH DISTINCTIVE COLOR")
-                        
-                        // Tag this shape with a distinctive "FUCKED UP" color that nobody would use
-                        let tagColor = VectorColor.rgb(RGBColor(red: 0.987, green: 0.123, blue: 0.789, alpha: 1.0)) // Hot magenta
-                        let taggedShape = VectorShape(
-                            name: shape.name,
-                            path: shape.path,
-                            strokeStyle: shape.strokeStyle,
-                            fillStyle: FillStyle(color: tagColor)
-                        )
-                        shapes[index] = taggedShape
-                        
-                        // Also track this for later compound path creation
-                        gradientShapes.append(index)
-                    } else {
-                        print("PDF: ℹ️ SKIPPING LARGE WHITE SHAPE: '\(shape.name)' (\(pathCommandCount) commands) - likely background, not part of gradient")
-                    }
-                } else {
-                    // Stop when we hit a non-white shape (probably the black background)
-                    break
-                }
-            }
-        }
+        // TODO: PROPER COMPOUND PATH DETECTION NEEDED
+        // Current approach is temporary - need to parse PDF operators to detect 
+        // when multiple paths are constructed together before a fill operation
+        
+        print("PDF: ⚠️ TEMPORARY SIMPLE APPROACH - need proper compound path detection")
+        
+        // For now, don't retroactively tag any shapes
+        // The compound path detection should happen during PDF parsing, not after
+        print("PDF: Compound path detection logic needs to be implemented during PDF operator parsing")
         
         print("PDF: 🎨 Gradient marked as active - will apply to contextually appropriate shapes")
         print("PDF: 📊 Tagged \(gradientShapes.count) white shapes with distinctive color for compound path")
