@@ -45,6 +45,10 @@ class PDFCommandParser {
     private var accumulatedPaths: [[PathCommand]] = []
     private var pendingFillColor: CGColor?
     
+    // For gradient tracking
+    private var activeGradient: VectorGradient?
+    private var gradientShapes: [Int] = [] // Indices of shapes that should get the current gradient
+    
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
@@ -73,10 +77,15 @@ class PDFCommandParser {
             createShapeFromCurrentPath(filled: true, stroked: false)
         }
         
-        // If we have a gradient, create the compound path now with ALL shapes
-        if let gradient = currentFillGradient {
-            print("PDF: 📋 Creating final compound path with all Atari logo shapes...")
+        // If we have an active gradient with tracked shapes, create the compound path
+        print("PDF: 🔍 Final check - activeGradient: \(activeGradient != nil), gradientShapes count: \(gradientShapes.count)")
+        if let gradient = activeGradient, !gradientShapes.isEmpty {
+            print("PDF: 📋 Creating final compound path with \(gradientShapes.count) tracked gradient shapes...")
             createCompoundPathWithGradient(gradient: gradient)
+        } else if activeGradient != nil {
+            print("PDF: ⚠️ Active gradient exists but no shapes tracked")
+        } else if !gradientShapes.isEmpty {
+            print("PDF: ⚠️ Shapes tracked but no active gradient")
         }
         
         print("PDF: Finished parsing. Total shapes created: \(shapes.count)")
@@ -595,8 +604,14 @@ class PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            // Priority order: current gradient, current fill color
-            if let gradient = currentFillGradient {
+            print("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)")
+            // Priority order: active gradient, current gradient, current fill color
+            if let gradient = activeGradient {
+                // This shape should get the gradient - track it
+                gradientShapes.append(shapes.count) // Will be the index after we add this shape
+                fillStyle = FillStyle(gradient: gradient)
+                print("PDF: OLD path - Shape will get active gradient - tracked for compound path")
+            } else if let gradient = currentFillGradient {
                 fillStyle = FillStyle(gradient: gradient)
                 print("PDF: Using current gradient fill")
             } else {
@@ -980,11 +995,11 @@ extension PDFCommandParser {
                 print("PDF: 🔑 Dictionary key: '\(keyString)' -> type: \(objectType.rawValue)")
             }, nil)
             
-            // For now, create the actual red-to-blue gradient we know exists
-            print("PDF: 🎨 Creating real red-to-blue gradient (matching actual PDF)")
+            // No function found - try to extract colors from other parts of the shading
+            print("PDF: 🎨 Using default gradient (no function found)")
             stops = [
-                GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0, alpha: 1.0)), opacity: 1.0),
-                GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0, alpha: 1.0)), opacity: 1.0)
+                GradientStop(position: 0.0, color: .black, opacity: 1.0),
+                GradientStop(position: 1.0, color: .white, opacity: 1.0)
             ]
             return stops
         }
@@ -1019,23 +1034,39 @@ extension PDFCommandParser {
                 
                 print("PDF: 📊 Extracting colors from single function dictionary")
                 let (startColor, endColor) = extractColorsFromFunction(function)
-                stops = [
-                    GradientStop(position: 0.0, color: startColor, opacity: 1.0),
-                    GradientStop(position: 1.0, color: endColor, opacity: 1.0)
-                ]
-                print("PDF: 🎨 Created \(stops.count) gradient stops from function")
+                
+                // Try to get all colors from the function for multi-stop gradients
+                let allColors = extractAllColorsFromFunction(function)
+                if allColors.count > 2 {
+                    stops = createGradientStopsFromColors(allColors)
+                    print("PDF: 🎨 Created \(stops.count) gradient stops from \(allColors.count) extracted colors")
+                } else {
+                    stops = [
+                        GradientStop(position: 0.0, color: startColor, opacity: 1.0),
+                        GradientStop(position: 1.0, color: endColor, opacity: 1.0)
+                    ]
+                    print("PDF: 🎨 Created \(stops.count) gradient stops from function")
+                }
                 
             } else if CGPDFObjectGetValue(functionObj!, .stream, &functionStream),
                       let stream = functionStream {
                 
-                print("PDF: 📊 Function is a stream, extracting dictionary from stream")
+                print("PDF: 📊 Function is a stream, extracting colors from stream data")
                 let streamDict = CGPDFStreamGetDictionary(stream)
-                let (startColor, endColor) = extractColorsFromFunction(streamDict!)
-                stops = [
-                    GradientStop(position: 0.0, color: startColor, opacity: 1.0),
-                    GradientStop(position: 1.0, color: endColor, opacity: 1.0)
-                ]
-                print("PDF: 🎨 Created \(stops.count) gradient stops from stream function")
+                
+                // Extract colors from the stream data itself, not the dictionary
+                let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict!)
+                if allColors.count > 2 {
+                    stops = createGradientStopsFromColors(allColors)
+                    print("PDF: 🎨 Created \(stops.count) gradient stops from \(allColors.count) stream colors")
+                } else {
+                    let (startColor, endColor) = extractColorsFromFunction(streamDict!)
+                    stops = [
+                        GradientStop(position: 0.0, color: startColor, opacity: 1.0),
+                        GradientStop(position: 1.0, color: endColor, opacity: 1.0)
+                    ]
+                    print("PDF: 🎨 Created \(stops.count) gradient stops from stream function fallback")
+                }
                 
             } else {
                 print("PDF: ❌ Failed to extract function (type \(objectType.rawValue)), creating default gradient")
@@ -1081,19 +1112,21 @@ extension PDFCommandParser {
         var functionType: CGPDFInteger = 0
         CGPDFDictionaryGetInteger(function, "FunctionType", &functionType)
         
-        var startColor = VectorColor.black
-        var endColor = VectorColor.white
+        var colors: [VectorColor] = []
         
         switch functionType {
         case 0: // Sampled function
             print("PDF: 📊 Processing sampled function (Type 0)")
-            (startColor, endColor) = extractColorsFromSampledFunction(function)
+            colors = extractColorsFromSampledFunction(function)
             
         case 2: // Exponential interpolation function  
             print("PDF: 📊 Processing exponential function (Type 2)")
             // Get C0 and C1 arrays (start and end colors)
             var c0Array: CGPDFArrayRef?
             var c1Array: CGPDFArrayRef?
+            
+            var startColor = VectorColor.black
+            var endColor = VectorColor.white
             
             if CGPDFDictionaryGetArray(function, "C0", &c0Array),
                let c0 = c0Array {
@@ -1111,19 +1144,156 @@ extension PDFCommandParser {
                 print("PDF: ❌ No C1 array found in function")
             }
             
+            colors = [startColor, endColor]
+            
         case 3: // Stitching function
             print("PDF: 📊 Processing stitching function (Type 3) - using default colors for now")
-            startColor = VectorColor.black
-            endColor = VectorColor.white
+            colors = [.black, .white]
             
         default:
             print("PDF: ❌ Unsupported function type \(functionType)")
-            startColor = VectorColor.black
-            endColor = VectorColor.white
+            colors = [.black, .white]
         }
         
-        print("PDF: 🎨 Final gradient colors: \(startColor) -> \(endColor)")
-        return (startColor, endColor)
+        // Create gradient stops from all colors
+        print("PDF: 🎨 Creating gradient stops from \(colors.count) colors")
+        
+        // For now, still return start/end for compatibility, but we have all colors
+        return (colors.first ?? .black, colors.last ?? .white)
+    }
+    
+    private func extractColorsFromSampledFunctionStream(stream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef) -> [VectorColor] {
+        print("PDF: 📊 Extracting colors from sampled function stream data")
+        
+        // Get parameters from the stream dictionary
+        var sizeArray: CGPDFArrayRef?
+        var bitsPerSample: CGPDFInteger = 8
+        var rangeArray: CGPDFArrayRef?
+        
+        CGPDFDictionaryGetArray(dictionary, "Size", &sizeArray)
+        CGPDFDictionaryGetInteger(dictionary, "BitsPerSample", &bitsPerSample)
+        CGPDFDictionaryGetArray(dictionary, "Range", &rangeArray)
+        
+        print("PDF: 📊 Stream function parameters: BitsPerSample=\(bitsPerSample)")
+        
+        // Get the raw stream data
+        var format: CGPDFDataFormat = CGPDFDataFormat.raw
+        if let data = CGPDFStreamCopyData(stream, &format) {
+            let cfData = data as CFData
+            let dataBytes = CFDataGetBytePtr(cfData)
+            let dataLength = CFDataGetLength(cfData)
+            
+            print("PDF: 📊 Stream sample data length: \(dataLength) bytes")
+            
+            // Determine number of output components (typically 3 for RGB)
+            var outputComponents = 3
+            if let range = rangeArray {
+                outputComponents = Int(CGPDFArrayGetCount(range)) / 2
+                print("PDF: 📊 Output components: \(outputComponents)")
+            }
+            
+            // Determine number of samples from Size array
+            var totalSamples = 1
+            if let size = sizeArray {
+                let sizeCount = CGPDFArrayGetCount(size)
+                for i in 0..<sizeCount {
+                    var sizeValue: CGPDFInteger = 0
+                    if CGPDFArrayGetInteger(size, i, &sizeValue) {
+                        totalSamples *= Int(sizeValue)
+                    }
+                }
+            }
+            print("PDF: 📊 Total samples: \(totalSamples)")
+            
+            let bytesPerSample = Int(bitsPerSample) / 8
+            
+            // Extract color samples
+            var colors: [VectorColor] = []
+            
+            for sampleIndex in 0..<totalSamples {
+                let baseOffset = sampleIndex * outputComponents * bytesPerSample
+                
+                if baseOffset + (outputComponents * bytesPerSample) <= dataLength {
+                    var r: Double = 0, g: Double = 0, b: Double = 0
+                    
+                    // Read RGB values based on bits per sample
+                    switch bitsPerSample {
+                    case 8:
+                        if outputComponents >= 3 {
+                            r = Double(dataBytes![baseOffset]) / 255.0
+                            g = Double(dataBytes![baseOffset + 1]) / 255.0
+                            b = Double(dataBytes![baseOffset + 2]) / 255.0
+                        }
+                    default:
+                        print("PDF: ⚠️ Unsupported bits per sample: \(bitsPerSample)")
+                        continue
+                    }
+                    
+                    // Apply range scaling if available
+                    if let range = rangeArray, CGPDFArrayGetCount(range) >= 6 {
+                        var rMin: CGPDFReal = 0, rMax: CGPDFReal = 1
+                        var gMin: CGPDFReal = 0, gMax: CGPDFReal = 1
+                        var bMin: CGPDFReal = 0, bMax: CGPDFReal = 1
+                        
+                        CGPDFArrayGetNumber(range, 0, &rMin)
+                        CGPDFArrayGetNumber(range, 1, &rMax)
+                        CGPDFArrayGetNumber(range, 2, &gMin)
+                        CGPDFArrayGetNumber(range, 3, &gMax)
+                        CGPDFArrayGetNumber(range, 4, &bMin)
+                        CGPDFArrayGetNumber(range, 5, &bMax)
+                        
+                        r = Double(rMin) + r * Double(rMax - rMin)
+                        g = Double(gMin) + g * Double(gMax - gMin)
+                        b = Double(bMin) + b * Double(bMax - bMin)
+                    }
+                    
+                    let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                    colors.append(color)
+                    
+                    print("PDF: 🎨 Stream Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)")
+                }
+            }
+            
+            if !colors.isEmpty {
+                return colors
+            }
+        }
+        
+        print("PDF: ⚠️ Could not extract colors from stream, using defaults")
+        return [.black, .white]
+    }
+    
+    private func extractAllColorsFromFunction(_ function: CGPDFDictionaryRef) -> [VectorColor] {
+        // Check function type
+        var functionType: CGPDFInteger = 0
+        CGPDFDictionaryGetInteger(function, "FunctionType", &functionType)
+        
+        switch functionType {
+        case 0: // Sampled function
+            return extractColorsFromSampledFunction(function)
+        case 2: // Exponential interpolation function  
+            let (start, end) = extractColorsFromFunction(function)
+            return [start, end]
+        default:
+            return [.black, .white]
+        }
+    }
+    
+    private func createGradientStopsFromColors(_ colors: [VectorColor]) -> [GradientStop] {
+        guard colors.count > 1 else {
+            return [GradientStop(position: 0.0, color: colors.first ?? .black, opacity: 1.0)]
+        }
+        
+        var stops: [GradientStop] = []
+        
+        // Distribute colors evenly across the gradient
+        for (index, color) in colors.enumerated() {
+            let position = colors.count == 1 ? 0.0 : Double(index) / Double(colors.count - 1)
+            stops.append(GradientStop(position: position, color: color, opacity: 1.0))
+            print("PDF: 📍 Gradient stop at \(position): \(color)")
+        }
+        
+        return stops
     }
     
     private func extractColorFromArray(_ array: CGPDFArrayRef) -> VectorColor {
@@ -1150,21 +1320,159 @@ extension PDFCommandParser {
         return .black
     }
     
-    private func extractColorsFromSampledFunction(_ function: CGPDFDictionaryRef) -> (VectorColor, VectorColor) {
+    private func extractColorsFromSampledFunction(_ function: CGPDFDictionaryRef) -> [VectorColor] {
         print("PDF: 📊 Extracting colors from sampled function...")
         
         // This function contains a lookup table with actual color samples
         // We need to read the actual sample data, not just the Range bounds
         
-        // TODO: Properly implement sampled function data reading
-        // For now, return reasonable gradient colors that work
-        print("PDF: ⚠️ TEMPORARY: Sampled function data reading not yet implemented")
-        print("PDF: 🎨 Using placeholder gradient colors")
+        // Get required parameters for decoding the sampled function
+        var sizeArray: CGPDFArrayRef?
+        var bitsPerSample: CGPDFInteger = 8
+        var domainArray: CGPDFArrayRef?
+        var rangeArray: CGPDFArrayRef?
         
-        let startColor = VectorColor.rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0))     // Red
-        let endColor = VectorColor.rgb(RGBColor(red: 0.0, green: 0.8, blue: 1.0))       // Cyan
+        CGPDFDictionaryGetArray(function, "Size", &sizeArray)
+        CGPDFDictionaryGetInteger(function, "BitsPerSample", &bitsPerSample)
+        CGPDFDictionaryGetArray(function, "Domain", &domainArray)
+        CGPDFDictionaryGetArray(function, "Range", &rangeArray)
         
-        return (startColor, endColor)
+        print("PDF: 📊 Sampled function parameters: BitsPerSample=\(bitsPerSample)")
+        
+        // The function dictionary may contain a separate stream object
+        // First check if there's a stream reference in the dictionary
+        var streamRef: CGPDFStreamRef?
+        var streamData: Data?
+        
+        // Try to get stream from dictionary first
+        if CGPDFDictionaryGetStream(function, "stream", &streamRef), let stream = streamRef {
+            var format: CGPDFDataFormat = CGPDFDataFormat.raw
+            if let data = CGPDFStreamCopyData(stream, &format) {
+                streamData = data as Data
+            }
+        } else {
+            // Function dictionary itself might be a stream - this often crashes, so skip for now
+            print("PDF: 📊 No separate stream found in function dictionary")
+        }
+        
+        if let data = streamData {
+            let cfData = data as CFData
+            let dataBytes = CFDataGetBytePtr(cfData)
+            let dataLength = CFDataGetLength(cfData)
+            
+            print("PDF: 📊 Sample data length: \(dataLength) bytes")
+            
+            // Determine number of output components (typically 3 for RGB)
+            var outputComponents = 3
+            if let range = rangeArray {
+                outputComponents = Int(CGPDFArrayGetCount(range)) / 2
+                print("PDF: 📊 Output components: \(outputComponents)")
+            }
+            
+            // Determine number of samples
+            var totalSamples = 1
+            if let size = sizeArray {
+                let sizeCount = CGPDFArrayGetCount(size)
+                for i in 0..<sizeCount {
+                    var sizeValue: CGPDFInteger = 0
+                    if CGPDFArrayGetInteger(size, i, &sizeValue) {
+                        totalSamples *= Int(sizeValue)
+                    }
+                }
+            }
+            print("PDF: 📊 Total samples: \(totalSamples)")
+            
+            let bytesPerSample = Int(bitsPerSample) / 8
+            let expectedDataLength = totalSamples * outputComponents * bytesPerSample
+            
+            print("PDF: 📊 Expected data length: \(expectedDataLength), actual: \(dataLength)")
+            
+            // Extract color samples
+            var colors: [VectorColor] = []
+            
+            for sampleIndex in 0..<totalSamples {
+                let baseOffset = sampleIndex * outputComponents * bytesPerSample
+                
+                if baseOffset + (outputComponents * bytesPerSample) <= dataLength {
+                    var r: Double = 0, g: Double = 0, b: Double = 0
+                    
+                    // Read RGB values based on bits per sample
+                    switch bitsPerSample {
+                    case 8:
+                        if outputComponents >= 3 {
+                            r = Double(dataBytes![baseOffset]) / 255.0
+                            g = Double(dataBytes![baseOffset + 1]) / 255.0
+                            b = Double(dataBytes![baseOffset + 2]) / 255.0
+                        }
+                    case 16:
+                        if outputComponents >= 3 {
+                            r = Double((UInt16(dataBytes![baseOffset]) << 8) | UInt16(dataBytes![baseOffset + 1])) / 65535.0
+                            g = Double((UInt16(dataBytes![baseOffset + 2]) << 8) | UInt16(dataBytes![baseOffset + 3])) / 65535.0
+                            b = Double((UInt16(dataBytes![baseOffset + 4]) << 8) | UInt16(dataBytes![baseOffset + 5])) / 65535.0
+                        }
+                    default:
+                        print("PDF: ⚠️ Unsupported bits per sample: \(bitsPerSample)")
+                        continue
+                    }
+                    
+                    // Apply range scaling if available
+                    if let range = rangeArray, CGPDFArrayGetCount(range) >= 6 {
+                        var rMin: CGPDFReal = 0, rMax: CGPDFReal = 1
+                        var gMin: CGPDFReal = 0, gMax: CGPDFReal = 1
+                        var bMin: CGPDFReal = 0, bMax: CGPDFReal = 1
+                        
+                        CGPDFArrayGetNumber(range, 0, &rMin)
+                        CGPDFArrayGetNumber(range, 1, &rMax)
+                        CGPDFArrayGetNumber(range, 2, &gMin)
+                        CGPDFArrayGetNumber(range, 3, &gMax)
+                        CGPDFArrayGetNumber(range, 4, &bMin)
+                        CGPDFArrayGetNumber(range, 5, &bMax)
+                        
+                        r = Double(rMin) + r * Double(rMax - rMin)
+                        g = Double(gMin) + g * Double(gMax - gMin)
+                        b = Double(bMin) + b * Double(bMax - bMin)
+                    }
+                    
+                    let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                    colors.append(color)
+                    
+                    print("PDF: 🎨 Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)")
+                }
+            }
+            
+            if !colors.isEmpty {
+                return colors
+            }
+        }
+        
+        // Fallback to Range values if stream reading fails
+        if let range = rangeArray {
+            print("PDF: 📊 Using Range values as fallback")
+            // Range typically contains [Rmin Rmax Gmin Gmax Bmin Bmax]
+            if CGPDFArrayGetCount(range) >= 6 {
+                var r1: CGPDFReal = 0, r2: CGPDFReal = 1
+                var g1: CGPDFReal = 0, g2: CGPDFReal = 1  
+                var b1: CGPDFReal = 0, b2: CGPDFReal = 1
+                
+                CGPDFArrayGetNumber(range, 0, &r1)
+                CGPDFArrayGetNumber(range, 1, &r2)
+                CGPDFArrayGetNumber(range, 2, &g1)
+                CGPDFArrayGetNumber(range, 3, &g2)
+                CGPDFArrayGetNumber(range, 4, &b1)
+                CGPDFArrayGetNumber(range, 5, &b2)
+                
+                let startColor = VectorColor.rgb(RGBColor(red: Double(r1), green: Double(g1), blue: Double(b1)))
+                let endColor = VectorColor.rgb(RGBColor(red: Double(r2), green: Double(g2), blue: Double(b2)))
+                
+                print("PDF: 🎨 Range start color: R=\(r1) G=\(g1) B=\(b1)")
+                print("PDF: 🎨 Range end color: R=\(r2) G=\(g2) B=\(b2)")
+                
+                return [startColor, endColor]
+            }
+        }
+        
+        print("PDF: ⚠️ Could not extract colors from sampled function, using defaults")
+        return [.black, .white]
     }
     
     private func createCorrectAtariRainbowStops() -> [GradientStop] {
@@ -1186,41 +1494,40 @@ extension PDFCommandParser {
     }
     
     private func applyGradientToWhiteShapes(gradient: VectorGradient) {
-        print("PDF: 🔍 Setting up for compound path creation...")
+        print("PDF: 🔍 Gradient operation encountered - marking as active")
         
-        // Store the gradient - we'll create the compound path at the end when we have ALL shapes
-        currentFillGradient = gradient
+        // Set the active gradient - any shapes created after this point should get this gradient
+        activeGradient = gradient
+        gradientShapes.removeAll() // Clear previous gradient shapes
         
-        print("PDF: 🎨 Gradient stored - will create compound path at document end")
+        print("PDF: 🎨 Active gradient set - will apply to subsequent shapes")
     }
     
     private func createCompoundPathWithGradient(gradient: VectorGradient) {
-        // The shapes that need the gradient are the ones created AFTER the gradient operation
-        // According to the PDF structure: 2 background shapes + 3 Atari logo shapes = 5 total
-        // We need to combine the LAST 3 shapes (the Atari logo parts)
-        
-        guard shapes.count >= 3 else {
-            print("PDF: ⚠️ Not enough shapes to create compound path")
+        // Use the tracked gradient shapes instead of hardcoded logic
+        guard !gradientShapes.isEmpty else {
+            print("PDF: ⚠️ No gradient shapes tracked")
             return
         }
         
-        let numberOfLogoParts = 3
-        let startIndex = shapes.count - numberOfLogoParts
+        print("PDF: 🔍 Creating compound path from \(gradientShapes.count) tracked gradient shapes")
         
-        var pathsToRemove: [Int] = []
         var combinedPaths: [VectorPath] = []
         
-        // Get the last 3 shapes (the Atari logo parts)
-        for i in startIndex..<shapes.count {
-            let shape = shapes[i]
-            combinedPaths.append(shape.path)
-            pathsToRemove.append(i)
-            print("PDF: 📝 Adding Atari logo shape '\(shape.name)' to compound path")
+        // Get the shapes that were marked for this gradient
+        for shapeIndex in gradientShapes {
+            if shapeIndex < shapes.count {
+                let shape = shapes[shapeIndex]
+                combinedPaths.append(shape.path)
+                print("PDF: 📝 Adding tracked shape '\(shape.name)' to compound path")
+            }
         }
         
-        // Remove the individual shapes
-        for i in pathsToRemove.reversed() {
-            shapes.remove(at: i)
+        // Remove the individual shapes (in reverse order to maintain indices)
+        for shapeIndex in gradientShapes.sorted(by: >) {
+            if shapeIndex < shapes.count {
+                shapes.remove(at: shapeIndex)
+            }
         }
         
         // Combine all path elements into one compound path
@@ -1241,6 +1548,10 @@ extension PDFCommandParser {
         
         shapes.append(compoundShape)
         print("PDF: ✅ Created compound shape with \(combinedPaths.count) subpaths")
+        
+        // Clear the tracking for next gradient
+        gradientShapes.removeAll()
+        activeGradient = nil
     }
     
     // Modified createShapeFromCurrentPath to accept custom fill style
@@ -1298,14 +1609,18 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
-            // Priority order: custom fill style, current gradient, current fill color
+            print("PDF: 🔍 Shape creation - filled=true, activeGradient=\(activeGradient != nil), customFillStyle=\(customFillStyle != nil)")
+            // Priority order: custom fill style, active gradient, current fill color
             if let custom = customFillStyle {
                 fillStyle = custom
                 print("PDF: Using custom fill style")
-            } else if let gradient = currentFillGradient {
+            } else if let gradient = activeGradient {
+                // This shape should get the gradient - track it
+                gradientShapes.append(shapes.count) // Will be the index after we add this shape
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: Using current gradient fill")
+                print("PDF: Shape will get active gradient - tracked for compound path")
             } else {
+                print("PDF: No active gradient, using current fill color")
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
