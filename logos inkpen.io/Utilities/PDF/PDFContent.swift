@@ -1519,13 +1519,19 @@ extension PDFCommandParser {
     }
     
     private func applyGradientToWhiteShapes(gradient: VectorGradient) {
-        print("PDF: 🔍 Gradient operation encountered - marking as active")
+        print("PDF: 🔍 Gradient/shading operation encountered - analyzing context")
         
-        // Set the active gradient - any shapes created after this point should get this gradient
+        // Set the active gradient for any shapes that follow this shading command
         activeGradient = gradient
-        gradientShapes.removeAll() // Clear previous gradient shapes
+        gradientShapes.removeAll()
         
-        print("PDF: 🎨 Active gradient set - will apply to subsequent shapes")
+        // In PDF, a shading operation can apply to:
+        // 1. Previously drawn shapes in the current graphics state
+        // 2. Shapes that follow and reference this shading
+        // 3. The current path being constructed
+        
+        // For now, mark this gradient as active for subsequent operations
+        print("PDF: 🎨 Gradient marked as active - will apply to contextually appropriate shapes")
     }
     
     private func createCompoundPathWithGradient(gradient: VectorGradient) {
