@@ -50,6 +50,11 @@ class PDFCommandParser {
     private var activeGradient: VectorGradient?
     private var gradientShapes: [Int] = []
     
+    // For opacity/transparency support
+    private var currentFillOpacity: Double = 1.0
+    private var currentStrokeOpacity: Double = 1.0
+    private var currentPage: CGPDFPage?
+    
     // For proper compound path detection
     private var isInCompoundPath = false
     private var compoundPathParts: [[PathCommand]] = []
@@ -108,6 +113,9 @@ class PDFCommandParser {
     
     private func parsePage(document: CGPDFDocument, pageNumber: Int) {
         guard let page = document.page(at: pageNumber) else { return }
+        
+        // Store current page for resource access
+        currentPage = page
         
         // Create operator table
         guard let operatorTable = CGPDFOperatorTableCreate() else { return }
@@ -254,6 +262,46 @@ class PDFCommandParser {
         // Debug callback for unknown operators
         CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
             print("PDF: Path construction (no-op) operator 'n' encountered")
+        }
+        
+        // Add opacity/transparency operator callbacks  
+        CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleFillOpacity(scanner: scanner)
+        }
+        
+        CGPDFOperatorTableSetCallback(operatorTable, "CA") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleStrokeOpacity(scanner: scanner)
+        }
+        
+        CGPDFOperatorTableSetCallback(operatorTable, "gs") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleGraphicsState(scanner: scanner)
+        }
+        
+        // Add debugging for potential opacity/transparency operators
+        CGPDFOperatorTableSetCallback(operatorTable, "A") { (scanner, info) in
+            print("PDF: 'A' operator (potential transparency) encountered")
+        }
+        
+        CGPDFOperatorTableSetCallback(operatorTable, "a") { (scanner, info) in
+            print("PDF: 'a' operator (potential transparency) encountered")
+        }
+        
+        // Add callbacks for blend mode operators
+        CGPDFOperatorTableSetCallback(operatorTable, "BM") { (scanner, info) in
+            print("PDF: 'BM' blend mode operator encountered")
+        }
+        
+        // Add callback for soft mask
+        CGPDFOperatorTableSetCallback(operatorTable, "SMask") { (scanner, info) in
+            print("PDF: 'SMask' soft mask operator encountered")
+        }
+        
+        // Add callback for transparency group
+        CGPDFOperatorTableSetCallback(operatorTable, "BDC") { (scanner, info) in
+            print("PDF: 'BDC' marked content operator encountered (might be transparency group)")
         }
         
         // Add gradient operator callbacks
@@ -561,20 +609,33 @@ class PDFCommandParser {
     }
     
     private func handleGenericFillColor(scanner: CGPDFScannerRef) {
-        // Try to read as RGB first
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0
+        // Try to read as RGB first, but also check for RGBA or other formats
+        var values: [CGFloat] = []
+        var value: CGFloat = 0
         
-        if CGPDFScannerPopNumber(scanner, &b) &&
-           CGPDFScannerPopNumber(scanner, &g) &&
-           CGPDFScannerPopNumber(scanner, &r) {
+        // Read all available numeric values
+        while CGPDFScannerPopNumber(scanner, &value) {
+            values.insert(value, at: 0) // Insert at beginning to reverse stack order
+        }
+        
+        print("PDF: Generic fill color - found \(values.count) values: \(values)")
+        
+        if values.count >= 3 {
+            let r = values[0]
+            let g = values[1] 
+            let b = values[2]
+            let a = values.count >= 4 ? values[3] : 1.0
             
-            // Normal color change processing
-            // (removed gradient preservation logic since gradient comes AFTER white shapes)
+            // Check if this might be transparency encoded in a different way
+            if values.count == 4 {
+                print("PDF: ⚠️ FOUND 4-component color - might be RGBA or transparency: \(values)")
+                currentFillOpacity = Double(a)
+            }
             
             currentFillColor = CGColor(red: r, green: g, blue: b, alpha: 1.0)
-            print("PDF: Generic fill color - assuming RGB(\(r), \(g), \(b))")
+            print("PDF: Generic fill color - RGB(\(r), \(g), \(b)) with potential alpha: \(a)")
         } else {
-            print("PDF: Generic fill color - could not parse parameters")
+            print("PDF: Generic fill color - could not parse parameters, got \(values.count) values")
         }
     }
     
@@ -590,6 +651,76 @@ class PDFCommandParser {
         } else {
             print("PDF: Generic stroke color - could not parse parameters")
         }
+    }
+    
+    // MARK: - Opacity/Transparency Handlers
+    
+    private func handleFillOpacity(scanner: CGPDFScannerRef) {
+        var opacity: CGFloat = 1.0
+        
+        guard CGPDFScannerPopNumber(scanner, &opacity) else {
+            print("PDF: Failed to read fill opacity")
+            return
+        }
+        
+        currentFillOpacity = Double(opacity)
+        print("PDF: Fill opacity set to \(currentFillOpacity)")
+    }
+    
+    private func handleStrokeOpacity(scanner: CGPDFScannerRef) {
+        var opacity: CGFloat = 1.0
+        
+        guard CGPDFScannerPopNumber(scanner, &opacity) else {
+            print("PDF: Failed to read stroke opacity")
+            return
+        }
+        
+        currentStrokeOpacity = Double(opacity)
+        print("PDF: Stroke opacity set to \(currentStrokeOpacity)")
+    }
+    
+    private func handleGraphicsState(scanner: CGPDFScannerRef) {
+        var nameRef: CGPDFStringRef?
+        
+        guard CGPDFScannerPopString(scanner, &nameRef) else {
+            print("PDF: Failed to read graphics state name")
+            return
+        }
+        
+        let name = CGPDFStringCopyTextString(nameRef!)! as String
+        print("PDF: Graphics state '\(name)' - attempting to parse ExtGState...")
+        
+        // Access the page resources to find the ExtGState dictionary
+        guard let page = currentPage,
+              let resourceDict = page.dictionary,
+              var resourcesRef: CGPDFDictionaryRef? = nil,
+              CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
+              let resourcesDict = resourcesRef,
+              var extGStateDict: CGPDFDictionaryRef? = nil,
+              CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict),
+              let extGState = extGStateDict,
+              var stateDict: CGPDFDictionaryRef? = nil,
+              CGPDFDictionaryGetDictionary(extGState, name, &stateDict),
+              let state = stateDict else {
+            print("PDF: Could not find ExtGState '\(name)' in resources")
+            return
+        }
+        
+        // Parse opacity values from the ExtGState dictionary
+        var fillOpacity: CGFloat = 1.0
+        var strokeOpacity: CGFloat = 1.0
+        
+        if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
+            currentFillOpacity = Double(fillOpacity)
+            print("PDF: ExtGState '\(name)' - Fill opacity (ca): \(currentFillOpacity)")
+        }
+        
+        if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
+            currentStrokeOpacity = Double(strokeOpacity)
+            print("PDF: ExtGState '\(name)' - Stroke opacity (CA): \(currentStrokeOpacity)")
+        }
+        
+        print("PDF: ExtGState '\(name)' parsed - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
     }
     
     // MARK: - Fill and Stroke Handlers
@@ -773,6 +904,7 @@ class PDFCommandParser {
         if filled {
             let shapeName = "PDF Shape \(shapes.count + 1)"
             print("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)")
+            print("PDF: 🎨 OPACITY DEBUG - currentFillOpacity=\(currentFillOpacity), currentStrokeOpacity=\(currentStrokeOpacity)")
             // Check if this is a white shape first
             let r = Double(currentFillColor.components?[0] ?? 0.0)
             let g = Double(currentFillColor.components?[1] ?? 0.0) 
@@ -798,8 +930,9 @@ class PDFCommandParser {
                 fillStyle = FillStyle(gradient: gradient)
                 print("PDF: ✅ PATTERN GRADIENT: '\(shapeName)' gets pattern gradient fill")
             } else {
-                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(a))")
-                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
+                let finalAlpha = a * currentFillOpacity
+                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(finalAlpha)) (opacity: \(currentFillOpacity))")
+                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: finalAlpha))
                 fillStyle = FillStyle(color: vectorColor)
             }
         }
@@ -809,9 +942,10 @@ class PDFCommandParser {
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 0.0) 
             let a = Double(currentStrokeColor.components?[3] ?? 1.0)
-            print("PDF: Applying stroke color RGBA(\(r), \(g), \(b), \(a))")
+            let finalAlpha = a * currentStrokeOpacity
+            print("PDF: Applying stroke color RGBA(\(r), \(g), \(b), \(finalAlpha)) (opacity: \(currentStrokeOpacity))")
             
-            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
+            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: finalAlpha))
             strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
         }
         
