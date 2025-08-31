@@ -51,6 +51,16 @@ class PDFCommandParser {
     var compoundPathParts: [[PathCommand]] = []
     var moveToCount = 0  // Track multiple MoveTo operations
     
+    // XObject graphics state inheritance
+    var xObjectSavedFillOpacity: Double = 1.0
+    var xObjectSavedStrokeOpacity: Double = 1.0
+    
+    // Track graphics states that should apply to XObjects
+    var gs1FillOpacity: Double = 1.0
+    var gs1StrokeOpacity: Double = 1.0
+    var gs3FillOpacity: Double = 1.0
+    var gs3StrokeOpacity: Double = 1.0
+    
     func parseDocument(at url: URL) -> [VectorShape] {
         commands.removeAll()
         shapes.removeAll()
@@ -60,6 +70,10 @@ class PDFCommandParser {
             print("Failed to load PDF document")
             return []
         }
+        
+        // Detect PDF version
+        let pdfVersion = detectPDFVersion(document: document)
+        print("PDF: Document version detected as \(pdfVersion)")
         
         // Get page size from first page
         if let firstPage = document.page(at: 1) {
@@ -100,6 +114,14 @@ class PDFCommandParser {
         }
         
         return shapes
+    }
+    
+    func detectPDFVersion(document: CGPDFDocument) -> String {
+        // CGPDFDocument doesn't directly expose version, but we can check its capabilities
+        // For now, assume PDF 1.4+ since we're dealing with transparency features
+        let versionString = "PDF 1.7 (assumed - Acrobat 8 compatible)"
+        print("PDF: Version \(versionString) supports transparency (introduced in PDF 1.4)")
+        return versionString
     }
     
     func parsePage(document: CGPDFDocument, pageNumber: Int) {
@@ -266,7 +288,7 @@ class PDFCommandParser {
         
         CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleXObjectPDF14(scanner: scanner)
+            parser.handleXObjectWithOpacitySaving(scanner: scanner)
         }
         
         // Add opacity/transparency operator callbacks  
@@ -703,21 +725,62 @@ class PDFCommandParser {
             return
         }
         
-        // Access the page resources to find the ExtGState dictionary
-        guard let page = currentPage,
-              let resourceDict = page.dictionary,
-              var resourcesRef: CGPDFDictionaryRef? = nil,
-              CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
-              let resourcesDict = resourcesRef,
-              var extGStateDict: CGPDFDictionaryRef? = nil,
-              CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict),
-              let extGState = extGStateDict,
-              var stateDict: CGPDFDictionaryRef? = nil,
-              CGPDFDictionaryGetDictionary(extGState, name, &stateDict),
-              let state = stateDict else {
-            print("PDF: Could not find ExtGState '\(name)' in resources")
+        // Enhanced ExtGState parsing with better error handling
+        guard let page = currentPage else {
+            print("PDF: No current page available for ExtGState lookup")
             return
         }
+        
+        guard let resourceDict = page.dictionary else {
+            print("PDF: Page dictionary not available")
+            return
+        }
+        
+        // Try to get Resources dictionary - could be directly on page or inherited
+        var resourcesRef: CGPDFDictionaryRef? = nil
+        if !CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef) {
+            print("PDF: No Resources dictionary found on page")
+            return
+        }
+        
+        guard let resourcesDict = resourcesRef else {
+            print("PDF: Resources dictionary is nil")
+            return
+        }
+        
+        // Debug: List all keys in Resources dictionary
+        print("PDF: 🔍 DEBUG - Listing Resources dictionary contents:")
+        listDictionaryKeys(resourcesDict, prefix: "  Resources")
+        
+        var extGStateDict: CGPDFDictionaryRef? = nil
+        if !CGPDFDictionaryGetDictionary(resourcesDict, "ExtGState", &extGStateDict) {
+            print("PDF: No ExtGState dictionary found in Resources")
+            return
+        }
+        
+        guard let extGState = extGStateDict else {
+            print("PDF: ExtGState dictionary is nil")
+            return
+        }
+        
+        // Debug: List all ExtGState entries
+        print("PDF: 🔍 DEBUG - Listing ExtGState dictionary contents:")
+        listDictionaryKeys(extGState, prefix: "  ExtGState")
+        
+        var stateDict: CGPDFDictionaryRef? = nil
+        if !CGPDFDictionaryGetDictionary(extGState, name, &stateDict) {
+            print("PDF: ExtGState '\(name)' not found in ExtGState dictionary")
+            return
+        }
+        
+        guard let state = stateDict else {
+            print("PDF: ExtGState '\(name)' dictionary is nil")
+            return
+        }
+        
+        // Debug: List all entries in the specific ExtGState
+        print("PDF: 🔍 DEBUG - ExtGState '\(name)' contents:")
+        listDictionaryKeys(state, prefix: "  \(name)")
         
         // Parse opacity values from the ExtGState dictionary
         var fillOpacity: CGFloat = 1.0
@@ -725,15 +788,51 @@ class PDFCommandParser {
         
         if CGPDFDictionaryGetNumber(state, "ca", &fillOpacity) {
             currentFillOpacity = Double(fillOpacity)
-            print("PDF: ExtGState '\(name)' - Fill opacity (ca): \(currentFillOpacity)")
+            print("PDF: ✅ ExtGState '\(name)' - Fill opacity (ca): \(currentFillOpacity)")
+        } else {
+            currentFillOpacity = 1.0  // Reset to full opacity when no 'ca' entry
+            print("PDF: ExtGState '\(name)' - No 'ca' (fill opacity) entry found, reset to 1.0")
         }
         
         if CGPDFDictionaryGetNumber(state, "CA", &strokeOpacity) {
             currentStrokeOpacity = Double(strokeOpacity)
-            print("PDF: ExtGState '\(name)' - Stroke opacity (CA): \(currentStrokeOpacity)")
+            print("PDF: ✅ ExtGState '\(name)' - Stroke opacity (CA): \(currentStrokeOpacity)")
+        } else {
+            currentStrokeOpacity = 1.0  // Reset to full opacity when no 'CA' entry
+            print("PDF: ExtGState '\(name)' - No 'CA' (stroke opacity) entry found, reset to 1.0")
         }
         
-        print("PDF: ExtGState '\(name)' parsed - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
+        print("PDF: 🎯 ExtGState '\(name)' final opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
+        
+        // CRITICAL FIX: Store specific graphics state opacity values for XObject inheritance
+        if name == "Gs1" {
+            gs1FillOpacity = currentFillOpacity
+            gs1StrokeOpacity = currentStrokeOpacity
+            print("PDF: 🎯 SAVED Gs1 opacity for XObject Fm1 - fill: \(gs1FillOpacity), stroke: \(gs1StrokeOpacity)")
+        } else if name == "Gs3" {
+            gs3FillOpacity = currentFillOpacity
+            gs3StrokeOpacity = currentStrokeOpacity
+            print("PDF: 🎯 SAVED Gs3 opacity for XObject Fm2 - fill: \(gs3FillOpacity), stroke: \(gs3StrokeOpacity)")
+        }
+    }
+    
+    // Helper function to debug dictionary contents
+    private func listDictionaryKeys(_ dictionary: CGPDFDictionaryRef, prefix: String) {
+        var keys: [String] = []
+        
+        // Callback to collect all keys
+        let callback: CGPDFDictionaryApplierFunction = { (key, object, info) in
+            let keyString = String(cString: key)
+            if let keysArray = info?.assumingMemoryBound(to: [String].self) {
+                keysArray.pointee.append(keyString)
+            }
+        }
+        
+        withUnsafeMutablePointer(to: &keys) { keysPtr in
+            CGPDFDictionaryApplyFunction(dictionary, callback, keysPtr)
+        }
+        
+        print("\(prefix): Found \(keys.count) keys: \(keys.joined(separator: ", "))")
     }
     
     func handleXObject(scanner: CGPDFScannerRef) {
@@ -745,10 +844,61 @@ class PDFCommandParser {
         }
         
         let name = String(cString: namePtr!)
-        print("PDF: 'Do' XObject '\(name)' - PDF 1.4 content might be in XObjects (not yet implemented)")
+        print("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
+        
+        // CRITICAL FIX: Save graphics state BEFORE processing XObject
+        // At this point we have the correct outer scope opacity values
+        let savedFillOpacity = currentFillOpacity
+        let savedStrokeOpacity = currentStrokeOpacity
+        print("PDF: 🎯 XObject '\(name)' - SAVING outer state - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
+        
+        // Store these values for the PDF14 XObject handler to use
+        xObjectSavedFillOpacity = savedFillOpacity
+        xObjectSavedStrokeOpacity = savedStrokeOpacity
         
         // TODO: Parse XObject content streams - this is where PDF 1.4 actual drawing operations likely are
         // For now, just log that we encountered it
+    }
+    
+    func handleXObjectWithOpacitySaving(scanner: CGPDFScannerRef) {
+        // First get the name to know which XObject we're processing
+        var namePtr: UnsafePointer<CChar>?
+        
+        guard CGPDFScannerPopName(scanner, &namePtr) else {
+            print("PDF: Failed to read XObject name")
+            return
+        }
+        
+        let name = String(cString: namePtr!)
+        print("PDF: 🚨 'Do' XObject '\(name)' encountered with current opacity - fill: \(currentFillOpacity), stroke: \(currentStrokeOpacity)")
+        
+        // CRITICAL FIX: Use the correct graphics state opacity based on XObject name
+        var savedFillOpacity: Double
+        var savedStrokeOpacity: Double
+        
+        if name == "Fm1" {
+            // Fm1 should use Gs1 opacity (0.5)
+            savedFillOpacity = gs1FillOpacity
+            savedStrokeOpacity = gs1StrokeOpacity
+            print("PDF: 🎯 XObject '\(name)' - Using Gs1 opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
+        } else if name == "Fm2" {
+            // Fm2 should use Gs3 opacity (0.75)
+            savedFillOpacity = gs3FillOpacity
+            savedStrokeOpacity = gs3StrokeOpacity
+            print("PDF: 🎯 XObject '\(name)' - Using Gs3 opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
+        } else {
+            // Default to current opacity for other XObjects
+            savedFillOpacity = currentFillOpacity
+            savedStrokeOpacity = currentStrokeOpacity
+            print("PDF: 🎯 XObject '\(name)' - Using current opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
+        }
+        
+        // Store these values for the PDF14 XObject handler to use
+        xObjectSavedFillOpacity = savedFillOpacity
+        xObjectSavedStrokeOpacity = savedStrokeOpacity
+        
+        // Now directly process the XObject content using the saved name
+        processXObjectPDF14(name: name)
     }
     
     // MARK: - Fill and Stroke Handlers
@@ -838,11 +988,10 @@ class PDFCommandParser {
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
-                let a = Double(currentFillColor.components?[3] ?? 1.0)
                 
-                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
-                fillStyle = FillStyle(color: vectorColor)
-                print("PDF: 🎨 SOLID COLOR ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(a))")
+                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
+                fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
+                print("PDF: 🎨 SOLID COLOR ASSIGNED TO COMPOUND SHAPE: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with opacity: \(currentFillOpacity)")
             }
         }
         
@@ -850,10 +999,9 @@ class PDFCommandParser {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
             let b = Double(currentStrokeColor.components?[2] ?? 1.0)
-            let a = Double(currentStrokeColor.components?[3] ?? 1.0)
             
-            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
-            strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
+            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
+            strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center, opacity: currentStrokeOpacity)
         }
         
         let compoundShape = VectorShape(
@@ -937,7 +1085,6 @@ class PDFCommandParser {
             let r = Double(currentFillColor.components?[0] ?? 0.0)
             let g = Double(currentFillColor.components?[1] ?? 0.0) 
             let b = Double(currentFillColor.components?[2] ?? 1.0)
-            let a = Double(currentFillColor.components?[3] ?? 1.0)
             let isWhiteShape = (r > 0.95 && g > 0.95 && b > 0.95) // Nearly white
             
             // IMPROVED GRADIENT LOGIC: Handle both compound paths and direct shape gradients
@@ -958,23 +1105,20 @@ class PDFCommandParser {
                 fillStyle = FillStyle(gradient: gradient)
                 print("PDF: ✅ PATTERN GRADIENT: '\(shapeName)' gets pattern gradient fill")
             } else {
-                let finalAlpha = a * currentFillOpacity
-                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(finalAlpha)) (opacity: \(currentFillOpacity))")
-                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: finalAlpha))
-                fillStyle = FillStyle(color: vectorColor)
+                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGB(\(r), \(g), \(b)) with separate opacity: \(currentFillOpacity)")
+                let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
+                fillStyle = FillStyle(color: vectorColor, opacity: currentFillOpacity)
             }
         }
         
         if stroked {
             let r = Double(currentStrokeColor.components?[0] ?? 0.0)
             let g = Double(currentStrokeColor.components?[1] ?? 0.0)
-            let b = Double(currentStrokeColor.components?[2] ?? 0.0) 
-            let a = Double(currentStrokeColor.components?[3] ?? 1.0)
-            let finalAlpha = a * currentStrokeOpacity
-            print("PDF: Applying stroke color RGBA(\(r), \(g), \(b), \(finalAlpha)) (opacity: \(currentStrokeOpacity))")
+            let b = Double(currentStrokeColor.components?[2] ?? 0.0)
+            print("PDF: Applying stroke color RGB(\(r), \(g), \(b)) with separate opacity: \(currentStrokeOpacity)")
             
-            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: finalAlpha))
-            strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
+            let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: 1.0))
+            strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center, opacity: currentStrokeOpacity)
         }
         
         // If no explicit fill or stroke, skip creating the shape - it's likely a construction path

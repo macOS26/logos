@@ -48,10 +48,12 @@ struct ColorSwatchGrid: View {
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
             case .text(let text):
-                return text.typography.strokeColor
+                return text.typography.hasStroke ? text.typography.strokeColor : .clear
             case .shape(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.color
+                } else {
+                    return .clear  // Show clear/none when no stroke exists
                 }
             }
         }

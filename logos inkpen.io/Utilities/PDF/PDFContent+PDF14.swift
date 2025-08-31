@@ -23,6 +23,11 @@ extension PDFCommandParser {
         }
         
         let name = String(cString: namePtr!)
+        processXObjectPDF14(name: name)
+    }
+    
+    /// Process an XObject by name (called directly with opacity saving)
+    func processXObjectPDF14(name: String) {
         print("PDF 1.4: Processing XObject '\(name)'...")
         
         // Get the XObject from page resources with detailed debugging
@@ -97,6 +102,11 @@ extension PDFCommandParser {
         print("PDF 1.4: 🚨🚨🚨 DEBUG VERSION IS RUNNING FOR '\(name)' 🚨🚨🚨")
         print("PDF 1.4: XObject '\(name)' - reading content stream data...")
         
+        // CRITICAL FIX: Use the saved outer scope opacity values from when XObject was referenced
+        let savedFillOpacity = xObjectSavedFillOpacity
+        let savedStrokeOpacity = xObjectSavedStrokeOpacity
+        print("PDF 1.4: XObject '\(name)' - USING saved outer opacity - fill: \(savedFillOpacity), stroke: \(savedStrokeOpacity)")
+        
         // Get the raw stream data to see what's inside
         var format = CGPDFDataFormat.raw
         guard let data = CGPDFStreamCopyData(xObjectStream, &format) else {
@@ -134,21 +144,24 @@ extension PDFCommandParser {
             print("PDF 1.4: XObject '\(name)' - PARSING CONTENT STREAM FOR REAL!")
             
             // Create a simple content stream from the data and parse it
-            if let contentString = String(data: previewData, encoding: .ascii), dataLength < 1000 {
+            if let _ = String(data: previewData, encoding: .ascii), dataLength < 1000 {
                 // For small streams, show full content
                 print("PDF 1.4: XObject '\(name)' - FULL CONTENT:")
                 print(String(data: Data(bytes: dataPtr, count: dataLength), encoding: .ascii) ?? "binary")
             }
             
             // Use the decompressed data to create a content stream and parse it
-            parseDecompressedXObjectContent(data: data, name: name)
+            parseDecompressedXObjectContent(data: data, name: name, 
+                                          savedFillOpacity: savedFillOpacity, 
+                                          savedStrokeOpacity: savedStrokeOpacity)
             
         } else {
             print("PDF 1.4: XObject '\(name)' - EMPTY content stream!")
         }
     }
     
-    private func parseDecompressedXObjectContent(data: CFData, name: String) {
+    private func parseDecompressedXObjectContent(data: CFData, name: String, 
+                                                savedFillOpacity: Double, savedStrokeOpacity: Double) {
         print("PDF 1.4: XObject '\(name)' - parsing content manually...")
         
         guard let dataPtr = CFDataGetBytePtr(data) else {
@@ -175,14 +188,17 @@ extension PDFCommandParser {
         if operations.contains("f") || operations.contains("F") {
             print("PDF 1.4: XObject '\(name)' - ✅ CONTAINS FILL OPERATION - this should create a shape!")
             
-            // Extract path operations
-            parseXObjectOperations(operations, name: name)
+            // Extract path operations with saved outer opacity values
+            parseXObjectOperations(operations, name: name, 
+                                 savedFillOpacity: savedFillOpacity, 
+                                 savedStrokeOpacity: savedStrokeOpacity)
         } else {
             print("PDF 1.4: XObject '\(name)' - no fill operations found")
         }
     }
     
-    private func parseXObjectOperations(_ operations: [String], name: String) {
+    private func parseXObjectOperations(_ operations: [String], name: String, 
+                                       savedFillOpacity: Double, savedStrokeOpacity: Double) {
         print("PDF 1.4: XObject '\(name)' - manually parsing operations to create shape...")
         
         var i = 0
@@ -273,7 +289,18 @@ extension PDFCommandParser {
             case "f", "F": // fill
                 if hasPath {
                     print("PDF 1.4: XObject '\(name)' - 🎨 FILL OPERATION - creating shape!")
+                    // CRITICAL FIX: Temporarily restore outer scope opacity for shape creation
+                    let tempFillOpacity = currentFillOpacity
+                    let tempStrokeOpacity = currentStrokeOpacity
+                    currentFillOpacity = savedFillOpacity
+                    currentStrokeOpacity = savedStrokeOpacity
+                    print("PDF 1.4: XObject '\(name)' - Using OUTER opacity for shape: fill=\(currentFillOpacity), stroke=\(currentStrokeOpacity)")
+                    
                     createShapeFromCurrentPath(filled: true, stroked: false)
+                    
+                    // Restore XObject opacity values
+                    currentFillOpacity = tempFillOpacity  
+                    currentStrokeOpacity = tempStrokeOpacity
                     hasPath = false
                 } else {
                     print("PDF 1.4: XObject '\(name)' - fill operation but no path!")
@@ -284,6 +311,9 @@ extension PDFCommandParser {
                 i += 1
             }
         }
+        
+        // CRITICAL FIX: Use the saved opacity for shape creation
+        print("PDF 1.4: XObject '\(name)' - Using outer scope opacity for shape creation")
     }
     
     private func createPDF14OperatorTable() -> CGPDFOperatorTableRef? {

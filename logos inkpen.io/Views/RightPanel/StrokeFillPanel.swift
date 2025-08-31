@@ -35,10 +35,12 @@ struct StrokeFillPanel: View {
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
             case .text(let text):
-                return text.typography.strokeColor
+                return text.typography.hasStroke ? text.typography.strokeColor : .clear
             case .shape(let shape):
                 if let strokeColor = shape.strokeStyle?.color {
                     return strokeColor
+                } else {
+                    return .clear  // Show clear/none when no stroke exists
                 }
             }
         }
