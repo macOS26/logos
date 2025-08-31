@@ -108,10 +108,11 @@ class GradientNSView: NSView {
             let centerX = pathBounds.minX + pathBounds.width * scaledOriginX
             let centerY = pathBounds.minY + pathBounds.height * scaledOriginY
             
-            // Calculate gradient direction based on startPoint and endPoint
+            // Use the stored angle instead of recalculating from coordinates
+            // This preserves angles from PDF transformation matrices and other sources
+            let gradientAngle = CGFloat(linear.storedAngle * .pi / 180.0)  // Convert degrees to radians
             let gradientVector = CGPoint(x: linear.endPoint.x - linear.startPoint.x, y: linear.endPoint.y - linear.startPoint.y)
             let gradientLength = sqrt(gradientVector.x * gradientVector.x + gradientVector.y * gradientVector.y)
-            let gradientAngle = atan2(gradientVector.y, gradientVector.x)
             
             // Apply scale to gradient length
             let scaledLength = gradientLength * CGFloat(scale) * max(pathBounds.width, pathBounds.height)

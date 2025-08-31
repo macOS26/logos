@@ -36,6 +36,7 @@ class PDFCommandParser {
     private var currentStrokeColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1) // Default black
     private var currentFillGradient: VectorGradient?
     private var currentStrokeGradient: VectorGradient?
+    private var currentTransformMatrix: CGAffineTransform = CGAffineTransform.identity // Track CTM for gradient angles
     private var shapes: [VectorShape] = []
     private var currentPath: [PathCommand] = []
     private var pathStartPoint = CGPoint.zero
@@ -920,11 +921,41 @@ extension PDFCommandParser {
             parser.handlePatternColorFill(scanner: scanner)
         }
         
+        // Matrix concatenation operator (cm)
+        CGPDFOperatorTableSetCallback(operatorTable, "cm") { (scanner, info) in
+            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
+            parser.handleConcatMatrix(scanner: scanner)
+        }
+        
         // Shading operator
         CGPDFOperatorTableSetCallback(operatorTable, "sh") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
             parser.handleShading(scanner: scanner)
         }
+    }
+    
+    // Matrix transformation handler
+    private func handleConcatMatrix(scanner: CGPDFScannerRef) {
+        var a: CGFloat = 1, b: CGFloat = 0, c: CGFloat = 0, d: CGFloat = 1, tx: CGFloat = 0, ty: CGFloat = 0
+        
+        // Pop matrix values in reverse order (PDF stack)
+        CGPDFScannerPopNumber(scanner, &ty)
+        CGPDFScannerPopNumber(scanner, &tx)
+        CGPDFScannerPopNumber(scanner, &d)
+        CGPDFScannerPopNumber(scanner, &c)
+        CGPDFScannerPopNumber(scanner, &b)
+        CGPDFScannerPopNumber(scanner, &a)
+        
+        let newTransform = CGAffineTransform(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
+        currentTransformMatrix = currentTransformMatrix.concatenating(newTransform)
+        
+        print("PDF: 📐 Matrix concatenation 'cm': [\(a), \(b), \(c), \(d), \(tx), \(ty)]")
+        print("PDF: 🔄 Current CTM: [\(currentTransformMatrix.a), \(currentTransformMatrix.b), \(currentTransformMatrix.c), \(currentTransformMatrix.d), \(currentTransformMatrix.tx), \(currentTransformMatrix.ty)]")
+        
+        // Extract rotation angle from transformation matrix
+        let angle = atan2(currentTransformMatrix.b, currentTransformMatrix.a)
+        let angleDegrees = angle * 180.0 / .pi
+        print("PDF: 📐 CTM Rotation angle: \(angleDegrees)°")
     }
     
     // Pattern color handlers
@@ -967,6 +998,9 @@ extension PDFCommandParser {
            let name = nameObj {
             let shadingName = String(cString: name)
             print("PDF: Shading operation with shading: \(shadingName)")
+            
+            // CRITICAL: The current transformation matrix (CTM) contains the gradient rotation
+            print("PDF: 🔍 GRADIENT APPLICATION - Current CTM rotation: \(atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi)°")
             
             // Create a shape with the shading gradient
             if let gradient = extractGradientFromShading(shadingName: shadingName, scanner: scanner) {
@@ -1028,6 +1062,30 @@ extension PDFCommandParser {
     }
     
     private func parseLinearGradient(from dict: CGPDFDictionaryRef) -> VectorGradient? {
+        // DEBUG: Print all available keys in the gradient dictionary
+        print("PDF: 🔍 Examining gradient dictionary keys:")
+        CGPDFDictionaryApplyFunction(dict, { key, value, info in
+            let keyString = String(cString: key)
+            let valueType = CGPDFObjectGetType(value)
+            print("PDF: 📋 Key: '\(keyString)' Type: \(valueType)")
+            
+            // Check for transform matrices
+            if keyString == "Matrix" || keyString == "Transform" {
+                var array: CGPDFArrayRef?
+                if CGPDFObjectGetValue(value, .array, &array), let matrixArray = array {
+                    let count = CGPDFArrayGetCount(matrixArray)
+                    var matrixValues: [CGFloat] = []
+                    for i in 0..<count {
+                        var num: CGFloat = 0
+                        CGPDFArrayGetNumber(matrixArray, i, &num)
+                        matrixValues.append(num)
+                    }
+                    print("PDF: 📐 Found transform matrix: \(matrixValues)")
+                }
+            }
+            
+        }, nil)
+        
         // Get coordinates array
         var coordsArray: CGPDFArrayRef?
         guard CGPDFDictionaryGetArray(dict, "Coords", &coordsArray),
@@ -1044,28 +1102,44 @@ extension PDFCommandParser {
         print("PDF: 📐 Raw gradient coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
         print("PDF: 📏 Page size: \(pageSize.width) x \(pageSize.height)")
         
-        // The coordinates (0,0) -> (1,0) are horizontal, but we need vertical (90 degrees)
-        // Rotate the gradient 90 degrees: (x,y) -> (-y,x)
-        let rotatedStartPoint = CGPoint(x: -Double(y0), y: Double(x0))
-        let rotatedEndPoint = CGPoint(x: -Double(y1), y: Double(x1))
+        // Apply the same coordinate system transformation as other PDF elements
+        // Transform coordinates: flip Y coordinate system (PDF has origin at bottom-left, we need top-left)
+        let transformedY0 = pageSize.height - y0
+        let transformedY1 = pageSize.height - y1
         
-        print("PDF: 📍 Original gradient vector: (\(x0), \(y0)) -> (\(x1), \(y1))")
-        print("PDF: 🔄 Rotated 90° for vertical: (\(rotatedStartPoint.x), \(rotatedStartPoint.y)) -> (\(rotatedEndPoint.x), \(rotatedEndPoint.y))")
+        let startPoint = CGPoint(x: Double(x0), y: Double(transformedY0))
+        let endPoint = CGPoint(x: Double(x1), y: Double(transformedY1))
         
-        let startPoint = rotatedStartPoint
-        let endPoint = rotatedEndPoint
+        // Calculate the actual gradient angle from the transformed vector
+        let deltaX = x1 - x0
+        let deltaY = transformedY1 - transformedY0  // Use transformed Y coordinates
+        let coordinateAngle = atan2(deltaY, deltaX) * 180.0 / .pi
+        
+        // CRITICAL: Use the transformation matrix rotation for the actual gradient angle
+        let ctmAngle = atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
+        let angleDegrees = coordinateAngle + ctmAngle
+        
+        print("PDF: 📍 Original PDF coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
+        print("PDF: 🔄 Transformed coordinates: (\(x0), \(transformedY0)) -> (\(x1), \(transformedY1))")
+        print("PDF: 📊 Delta values: ΔX=\(deltaX), ΔY=\(deltaY)")
+        print("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle: \(ctmAngle)°")
+        print("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + CTM rotation)")
         
         // Get function for color interpolation from the actual PDF data
         let stops = extractGradientStops(from: dict)
         
-        let linearGradient = LinearGradient(
+        var linearGradient = LinearGradient(
             startPoint: startPoint,
             endPoint: endPoint,
             stops: stops,
             spreadMethod: GradientSpreadMethod.pad
         )
         
+        // CRITICAL: Override the calculated angle with the CTM-adjusted angle
+        linearGradient.storedAngle = angleDegrees
+        
         print("PDF: Created linear gradient from (\(startPoint)) to (\(endPoint)) with \(stops.count) stops")
+        print("PDF: ✅ Applied CTM-corrected angle: \(angleDegrees)° to gradient")
         
         return .linear(linearGradient)
     }
@@ -1383,7 +1457,7 @@ extension PDFCommandParser {
                     let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
                     colors.append(color)
                     
-                    print("PDF: 🎨 Stream Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)")
+                   //print("PDF: 🎨 Stream Sample \(sampleIndex): R=\(r) G=\(g) B=\(b)")
                 }
             }
             
