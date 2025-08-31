@@ -95,6 +95,14 @@ class PDFCommandParser {
         }
         
         print("PDF: Finished parsing. Total shapes created: \(shapes.count)")
+        
+        // Calculate actual artwork bounds and update pageSize
+        if !shapes.isEmpty {
+            let artworkBounds = calculateArtworkBounds()
+            pageSize = artworkBounds.size
+            print("PDF: 🎯 Updated page size to artwork bounds: \(pageSize)")
+        }
+        
         return shapes
     }
     
@@ -250,6 +258,32 @@ class PDFCommandParser {
         
         // Add gradient operator callbacks
         setupGradientOperatorCallbacks(operatorTable)
+    }
+    
+    // MARK: - Utility Methods
+    
+    private func calculateArtworkBounds() -> CGRect {
+        guard !shapes.isEmpty else { return CGRect(origin: .zero, size: pageSize) }
+        
+        var minX = Double.greatestFiniteMagnitude
+        var minY = Double.greatestFiniteMagnitude
+        var maxX = -Double.greatestFiniteMagnitude
+        var maxY = -Double.greatestFiniteMagnitude
+        
+        for shape in shapes {
+            let bounds = shape.bounds
+            minX = min(minX, bounds.origin.x)
+            minY = min(minY, bounds.origin.y)
+            maxX = max(maxX, bounds.origin.x + bounds.size.width)
+            maxY = max(maxY, bounds.origin.y + bounds.size.height)
+        }
+        
+        return CGRect(
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        )
     }
     
     // MARK: - Operator Handlers
@@ -781,11 +815,11 @@ class PDFCommandParser {
             strokeStyle = StrokeStyle(color: vectorColor, width: 1.0, placement: .center)
         }
         
-        // If no explicit fill or stroke, provide default visible appearance
+        // If no explicit fill or stroke, skip creating the shape - it's likely a construction path
         if fillStyle == nil && strokeStyle == nil {
-            print("PDF: No fill or stroke specified - providing default blue fill")
-            let defaultColor = VectorColor.rgb(RGBColor(red: 0.0, green: 0.7, blue: 1.0, alpha: 1.0))
-            fillStyle = FillStyle(color: defaultColor)
+            print("PDF: No fill or stroke specified - skipping invisible construction path")
+            currentPath.removeAll()
+            return
         }
         
         let shape = VectorShape(

@@ -680,8 +680,8 @@ class FileOperations {
         
         // Use document dimensions from PDF file metadata
         let pdfDocumentSize = result.metadata.documentSize
-        let canvasWidth = max(pdfDocumentSize.width, 100) // Minimum 100pt
-        let canvasHeight = max(pdfDocumentSize.height, 100) // Minimum 100pt
+        let canvasWidth = pdfDocumentSize.width
+        let canvasHeight = pdfDocumentSize.height
         
         // Set document size based on PDF dimensions
         document.settings.width = canvasWidth / 72.0 // Convert to inches
