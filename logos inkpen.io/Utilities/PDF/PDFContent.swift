@@ -266,7 +266,7 @@ class PDFCommandParser {
         
         CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleXObject(scanner: scanner)
+            parser.handleXObjectPDF14(scanner: scanner)
         }
         
         // Add opacity/transparency operator callbacks  

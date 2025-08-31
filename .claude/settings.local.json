@@ -22,7 +22,11 @@
       "Read(/Users/toddbruss/Documents/**)",
       "mcp__xcf-server__run_project",
       "mcp__xcf-server__use_xcf",
-      "mcp__xcf-server__snippet"
+      "mcp__xcf-server__snippet",
+      "WebFetch(domain:opensource.adobe.com)",
+      "mcp__xcf-server__read_doc",
+      "mcp__xcf-server__create_diff_from_doc",
+      "mcp__xcf-server__apply_diff_to_doc"
     ],
     "deny": [],
     "ask": []
