@@ -106,7 +106,7 @@ struct ProfessionalOffsetPathSection: View {
                         Slider(value: Binding(
                             get: { Double(offsetDistance) },
                             set: { offsetDistance = Int($0) }
-                        ), in: 1...72, step: 1) {
+                        ), in: -30...30, step: 1) {
                             Text("Offset Distance")
                         }
                         .controlSize(.small)
@@ -252,108 +252,64 @@ struct ProfessionalOffsetPathSection: View {
         
         for shape in selectedShapes {
             
-            // Step 1: Apply stroke directly to the original path (centerline stroke)
-            let strokeStyle = StrokeStyle(
-                width: abs(CGFloat(offsetDistance)) * 2.0, // Offset Distance × 2
-                placement: .center,
-                lineCap: .round,
-                lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
-                miterLimit: CGFloat(miterLimit)
-            )
+            // PROPER OFFSET PATH: Create an offset path using CoreGraphics stroking
+            let offsetValue = CGFloat(offsetDistance)
             
-            // Step 2: Expand/Outline the stroke of the original path
-            if let expandedStroke = PathOperations.outlineStroke(path: shape.path.cgPath, strokeStyle: strokeStyle) {
-                // Step 3: Union the Expanded Stroke with itself (like Outline Stroke button)
-                if let unionedStroke = CoreGraphicsPathOperations.union(expandedStroke, expandedStroke, using: .winding) {
-                    
-                    var finalPath: CGPath
-                    
-                    if offsetDistance >= 0 {
-                        // POSITIVE OFFSET: Union the unioned expanded stroke with original shape
-                        if let finalResult = CoreGraphicsPathOperations.union(shape.path.cgPath, unionedStroke, using: .winding) {
-                            finalPath = finalResult
-                            Log.fileOperation("🔧 POSITIVE OFFSET: Expanded stroke + union with original shape", level: .info)
-                        } else {
-                            finalPath = unionedStroke
-                            Log.fileOperation("⚠️ POSITIVE OFFSET: Union with original failed, keeping unioned stroke", level: .info)
-                        }
-                    } else {
-                        // NEGATIVE OFFSET: Subtract the unioned expanded stroke from original shape
-                        if let finalResult = CoreGraphicsPathOperations.subtract(unionedStroke, from: shape.path.cgPath, using: .winding) {
-                            finalPath = finalResult
-                            Log.fileOperation("🔧 NEGATIVE OFFSET: Subtracted unioned stroke from original shape", level: .info)
-                        } else {
-                            finalPath = shape.path.cgPath
-                            Log.fileOperation("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original shape", level: .info)
-                        }
-                    }
-                    
-                    // Create the final offset shape
-                    let offsetVectorPath = VectorPath(cgPath: finalPath)
-                    let offsetShape = VectorShape(
-                        name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
-                        path: offsetVectorPath,
-                        strokeStyle: shape.strokeStyle,
-                        fillStyle: shape.fillStyle,
-                        transform: shape.transform,
-                        opacity: shape.opacity
-                    )
-                    
-                    // Insert offset shape in proper position relative to original shape
-                    if let layerIndex = document.selectedLayerIndex,
-                       let originalIndex = originalShapeIndices[shape.id] {
-                        
-                        if offsetDistance >= 0 && keepOriginalPath {
-                            // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
-                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
-                            Log.fileOperation("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)", level: .info)
-                        } else {
-                            // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
-                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
-                            Log.fileOperation("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)", level: .info)
-                        }
-                    } else {
-                        // Fallback: Add to document normally
-                        document.addShape(offsetShape)
-                    }
-                    
-                    newOffsetShapeIDs.insert(offsetShape.id)
-                    
+            // Create offset path by stroking with the offset distance
+            let offsetPath = shape.path.cgPath.copy(strokingWithWidth: abs(offsetValue) * 2.0,
+                                                    lineCap: .round,
+                                                    lineJoin: mapJoinTypeToCoreGraphics(selectedJoinType),
+                                                    miterLimit: CGFloat(miterLimit))
+            
+            var finalPath: CGPath
+            
+            if offsetDistance >= 0 {
+                // POSITIVE OFFSET: Union with original
+                if let unionResult = CoreGraphicsPathOperations.union(shape.path.cgPath, offsetPath, using: .winding) {
+                    finalPath = unionResult
+                    Log.fileOperation("🔧 POSITIVE OFFSET: Created expanded offset path", level: .info)
                 } else {
-                    Log.fileOperation("⚠️ OUTLINE STROKE UNION: Failed, keeping expanded stroke", level: .info)
-                    let offsetVectorPath = VectorPath(cgPath: expandedStroke)
-                    let offsetShape = VectorShape(
-                        name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
-                        path: offsetVectorPath,
-                        strokeStyle: shape.strokeStyle,
-                        fillStyle: shape.fillStyle,
-                        transform: shape.transform,
-                        opacity: shape.opacity
-                    )
-                    
-                    // Insert offset shape in proper position relative to original shape
-                    if let layerIndex = document.selectedLayerIndex,
-                       let originalIndex = originalShapeIndices[shape.id] {
-                        
-                        if offsetDistance >= 0 && keepOriginalPath {
-                            // POSITIVE OFFSET: Insert offset shape BEHIND the original shape
-                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex)
-                            Log.fileOperation("🔧 POSITIVE OFFSET: Inserted offset shape behind original at index \(originalIndex)", level: .info)
-                        } else {
-                            // NEGATIVE OFFSET or not keeping original: Insert offset shape AFTER the original shape
-                            document.layers[layerIndex].shapes.insert(offsetShape, at: originalIndex + 1)
-                            Log.fileOperation("🔧 NEGATIVE OFFSET: Inserted offset shape after original at index \(originalIndex + 1)", level: .info)
-                        }
-                    } else {
-                        // Fallback: Add to document normally
-                        document.addShape(offsetShape)
-                    }
-                    
-                    newOffsetShapeIDs.insert(offsetShape.id)
+                    finalPath = offsetPath
+                    Log.fileOperation("⚠️ POSITIVE OFFSET: Union failed, using stroke result", level: .info)
                 }
             } else {
-                Log.fileOperation("⚠️ OUTLINE STROKE: Failed on original path", level: .info)
+                // NEGATIVE OFFSET: Subtract stroke from original
+                if let subtractResult = CoreGraphicsPathOperations.subtract(offsetPath, from: shape.path.cgPath, using: .winding) {
+                    finalPath = subtractResult
+                    Log.fileOperation("🔧 NEGATIVE OFFSET: Created contracted offset path", level: .info)
+                } else {
+                    finalPath = shape.path.cgPath
+                    Log.fileOperation("⚠️ NEGATIVE OFFSET: Subtraction failed, keeping original", level: .info)
+                }
             }
+                
+                // Create the final offset shape
+                let offsetVectorPath = VectorPath(cgPath: finalPath)
+                let offsetShape = VectorShape(
+                    name: "\(shape.name) Offset \(offsetDistance > 0 ? "+" : "")\(offsetDistance)pt",
+                    path: offsetVectorPath,
+                    strokeStyle: shape.strokeStyle,
+                    fillStyle: shape.fillStyle,
+                    transform: shape.transform,
+                    opacity: shape.opacity
+                )
+                
+                // Insert offset shape with proper ordering based on offset direction
+                if offsetDistance >= 0 {
+                    // POSITIVE OFFSET: Goes BEHIND original shape (lower orderID)
+                    if let layerIndex = document.selectedLayerIndex {
+                        document.layers[layerIndex].addShape(offsetShape)
+                        // Use new behind insertion method to ensure proper orderID
+                        document.addShapeBehindInUnifiedSystem(offsetShape, layerIndex: layerIndex, behindShapeIDs: [shape.id])
+                    }
+                    Log.fileOperation("🔧 POSITIVE OFFSET: Added behind original with lower orderID", level: .info)
+                } else {
+                    // NEGATIVE OFFSET: Goes in FRONT of original shape (higher orderID)  
+                    document.addShape(offsetShape)
+                    Log.fileOperation("🔧 NEGATIVE OFFSET: Added in front of original with higher orderID", level: .info)
+                }
+                
+                newOffsetShapeIDs.insert(offsetShape.id)
             
         }
         
@@ -373,6 +329,9 @@ struct ProfessionalOffsetPathSection: View {
         
         // Always select the result of the offset path operation
         document.selectedShapeIDs = newOffsetShapeIDs
+        
+        // CRITICAL FIX: Sync unified objects after creating offset shapes
+        document.syncUnifiedObjectsAfterPropertyChange()
         
         // Force document refresh so arrow tool can see newly created shapes
         document.objectWillChange.send()

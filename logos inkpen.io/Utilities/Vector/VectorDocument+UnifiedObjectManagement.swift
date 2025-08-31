@@ -72,6 +72,36 @@ extension VectorDocument {
         unifiedObjects.append(unifiedObject)
     }
     
+    /// Adds a shape BEHIND existing shapes in the unified objects system (for positive offset paths)
+    func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
+        // Find the lowest orderID among the shapes we want to go behind
+        let targetOrderIDs = unifiedObjects
+            .filter { $0.layerIndex == layerIndex }
+            .compactMap { unifiedObj -> Int? in
+                switch unifiedObj.objectType {
+                case .shape(let existingShape):
+                    return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
+                case .text:
+                    return nil
+                }
+            }
+        
+        let orderID: Int
+        if let minTargetOrderID = targetOrderIDs.min() {
+            // Insert with an orderID just before the minimum target orderID
+            orderID = minTargetOrderID - 1
+        } else {
+            // Fallback: use lowest orderID for this layer minus 1
+            let existingOrderIDs = unifiedObjects
+                .filter { $0.layerIndex == layerIndex }
+                .map { $0.orderID }
+            orderID = (existingOrderIDs.min() ?? 0) - 1
+        }
+        
+        let unifiedObject = VectorObject(shape: shape, layerIndex: layerIndex, orderID: orderID)
+        unifiedObjects.append(unifiedObject)
+    }
+    
     /// Adds a text object to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
