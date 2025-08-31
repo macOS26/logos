@@ -1117,13 +1117,16 @@ extension PDFCommandParser {
         
         // CRITICAL: Use the transformation matrix rotation for the actual gradient angle
         let ctmAngle = atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
-        let angleDegrees = coordinateAngle + ctmAngle
+        // Apply Y-axis flip correction: PDF Y-axis points up, screen Y-axis points down
+        let correctedCtmAngle = -ctmAngle  // Flip the CTM angle for screen coordinates
+        let angleDegrees = coordinateAngle + correctedCtmAngle
         
         print("PDF: 📍 Original PDF coordinates: (\(x0), \(y0)) -> (\(x1), \(y1))")
         print("PDF: 🔄 Transformed coordinates: (\(x0), \(transformedY0)) -> (\(x1), \(transformedY1))")
         print("PDF: 📊 Delta values: ΔX=\(deltaX), ΔY=\(deltaY)")
         print("PDF: 📐 Coordinate angle: \(coordinateAngle)°, CTM angle: \(ctmAngle)°")
-        print("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + CTM rotation)")
+        print("PDF: 🔄 Y-flip corrected CTM angle: \(correctedCtmAngle)°")  
+        print("PDF: 🎯 FINAL gradient angle: \(angleDegrees)° (coordinate + Y-flipped CTM)")
         
         // Get function for color interpolation from the actual PDF data
         let stops = extractGradientStops(from: dict)
