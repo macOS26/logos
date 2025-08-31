@@ -604,22 +604,23 @@ class PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
+            let shapeName = "PDF Shape \(shapes.count + 1)"
             print("PDF: 🔍 OLD Shape creation - filled=true, activeGradient=\(activeGradient != nil), currentFillGradient=\(currentFillGradient != nil)")
             // Priority order: active gradient, current gradient, current fill color
             if let gradient = activeGradient {
                 // This shape should get the gradient - track it
                 gradientShapes.append(shapes.count) // Will be the index after we add this shape
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: OLD path - Shape will get active gradient - tracked for compound path")
+                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get active gradient - tracked for compound path")
             } else if let gradient = currentFillGradient {
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: Using current gradient fill")
+                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get current gradient fill")
             } else {
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0) 
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
                 let a = Double(currentFillColor.components?[3] ?? 1.0)
-                print("PDF: Applying fill color RGBA(\(r), \(g), \(b), \(a))")
+                print("PDF: 🎨 SOLID COLOR ASSIGNED: '\(shapeName)' will get fill color RGBA(\(r), \(g), \(b), \(a))")
                 
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
@@ -1525,13 +1526,49 @@ extension PDFCommandParser {
         activeGradient = gradient
         gradientShapes.removeAll()
         
-        // In PDF, a shading operation can apply to:
-        // 1. Previously drawn shapes in the current graphics state
-        // 2. Shapes that follow and reference this shading
-        // 3. The current path being constructed
+        // COMPOUND PATH LOGIC: In PDFs, when a gradient is defined, it often applies 
+        // retroactively to previously created white shapes that are part of the compound path
+        print("PDF: 🔍 COMPOUND PATH DETECTION: Looking for white shapes to retroactively apply gradient...")
         
-        // For now, mark this gradient as active for subsequent operations
+        for (index, shape) in shapes.enumerated().reversed() {
+            if let fillStyle = shape.fillStyle,
+               case .rgb(let rgbColor) = fillStyle.color {
+                
+                let isWhite = rgbColor.red >= 0.99 && rgbColor.green >= 0.99 && rgbColor.blue >= 0.99
+                
+                if isWhite {
+                    // Count path commands to estimate shape complexity
+                    let pathCommandCount = shape.path.elements.count
+                    
+                    // SMARTER LOGIC: Large complex white shapes (>25 commands) are likely backgrounds
+                    // Small-medium white shapes (<25 commands) are likely parts of the logo that need gradients
+                    if pathCommandCount <= 25 {
+                        print("PDF: 🚨 FOUND SMALL WHITE SHAPE FOR COMPOUND PATH: '\(shape.name)' (\(pathCommandCount) commands) - TAGGING WITH DISTINCTIVE COLOR")
+                        
+                        // Tag this shape with a distinctive "FUCKED UP" color that nobody would use
+                        let tagColor = VectorColor.rgb(RGBColor(red: 0.987, green: 0.123, blue: 0.789, alpha: 1.0)) // Hot magenta
+                        let taggedShape = VectorShape(
+                            name: shape.name,
+                            path: shape.path,
+                            strokeStyle: shape.strokeStyle,
+                            fillStyle: FillStyle(color: tagColor)
+                        )
+                        shapes[index] = taggedShape
+                        
+                        // Also track this for later compound path creation
+                        gradientShapes.append(index)
+                    } else {
+                        print("PDF: ℹ️ SKIPPING LARGE WHITE SHAPE: '\(shape.name)' (\(pathCommandCount) commands) - likely background, not part of gradient")
+                    }
+                } else {
+                    // Stop when we hit a non-white shape (probably the black background)
+                    break
+                }
+            }
+        }
+        
         print("PDF: 🎨 Gradient marked as active - will apply to contextually appropriate shapes")
+        print("PDF: 📊 Tagged \(gradientShapes.count) white shapes with distinctive color for compound path")
     }
     
     private func createCompoundPathWithGradient(gradient: VectorGradient) {
@@ -1640,18 +1677,19 @@ extension PDFCommandParser {
         var strokeStyle: StrokeStyle? = nil
         
         if filled {
+            let shapeName = "PDF Shape \(shapes.count + 1)"
             print("PDF: 🔍 Shape creation - filled=true, activeGradient=\(activeGradient != nil), customFillStyle=\(customFillStyle != nil)")
             // Priority order: custom fill style, active gradient, current fill color
             if let custom = customFillStyle {
                 fillStyle = custom
-                print("PDF: Using custom fill style")
+                print("PDF: ✅ CUSTOM STYLE ASSIGNED: '\(shapeName)' will get custom fill style")
             } else if let gradient = activeGradient {
                 // This shape should get the gradient - track it
                 gradientShapes.append(shapes.count) // Will be the index after we add this shape
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: Shape will get active gradient - tracked for compound path")
+                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get active gradient - tracked for compound path")
             } else {
-                print("PDF: No active gradient, using current fill color")
+                print("PDF: No active gradient, using current fill color for '\(shapeName)'")
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
                 let g = Double(currentFillColor.components?[1] ?? 0.0)
                 let b = Double(currentFillColor.components?[2] ?? 1.0)
@@ -1659,7 +1697,7 @@ extension PDFCommandParser {
                 
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
-                print("PDF: Using current fill color")
+                print("PDF: 🎨 SOLID COLOR ASSIGNED: '\(shapeName)' will get fill color RGBA(\(r), \(g), \(b), \(a))")
             }
         }
         
