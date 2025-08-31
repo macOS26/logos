@@ -746,21 +746,25 @@ class PDFCommandParser {
             let a = Double(currentFillColor.components?[3] ?? 1.0)
             let isWhiteShape = (r > 0.95 && g > 0.95 && b > 0.95) // Nearly white
             
-            // Priority order: active gradient (only for white shapes), current gradient, current fill color
-            if let gradient = activeGradient, isWhiteShape {
-                // This WHITE shape should get the gradient - track it for compound path
-                gradientShapes.append(shapes.count) // Will be the index after we add this shape
-                fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' (WHITE shape) will get active gradient - tracked for compound path")
+            // IMPROVED GRADIENT LOGIC: Handle both compound paths and direct shape gradients
+            if let gradient = activeGradient {
+                // Check if this should be a compound path or direct gradient application
+                if isWhiteShape && (isInCompoundPath || !compoundPathParts.isEmpty || gradientShapes.count > 0) {
+                    // White shape + compound path context = track for compound path
+                    gradientShapes.append(shapes.count) // Will be the index after we add this shape
+                    fillStyle = FillStyle(gradient: gradient)
+                    print("PDF: ✅ COMPOUND GRADIENT: '\(shapeName)' (WHITE) tracked for compound path")
+                } else {
+                    // Direct gradient application - regardless of color
+                    fillStyle = FillStyle(gradient: gradient)
+                    print("PDF: ✅ DIRECT GRADIENT: '\(shapeName)' gets gradient directly (not compound)")
+                    // Note: Don't clear activeGradient here - will be cleared after shape creation
+                }
             } else if let gradient = currentFillGradient {
                 fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get current gradient fill")
+                print("PDF: ✅ PATTERN GRADIENT: '\(shapeName)' gets pattern gradient fill")
             } else {
-                print("PDF: 🎨 SOLID COLOR ASSIGNED: '\(shapeName)' will get fill color RGBA(\(r), \(g), \(b), \(a))")
-                if activeGradient != nil && !isWhiteShape {
-                    print("PDF: 🔍 SKIPPING non-white shape for gradient compound path - preserving original color")
-                }
-                
+                print("PDF: 🎨 SOLID COLOR: '\(shapeName)' gets fill color RGBA(\(r), \(g), \(b), \(a))")
                 let vectorColor = VectorColor.rgb(RGBColor(red: r, green: g, blue: b, alpha: a))
                 fillStyle = FillStyle(color: vectorColor)
             }
@@ -792,6 +796,13 @@ class PDFCommandParser {
         )
         
         shapes.append(shape)
+        
+        // Clear activeGradient if it was used for direct application (not compound)
+        if activeGradient != nil && gradientShapes.isEmpty {
+            activeGradient = nil
+            print("PDF: 🔄 Cleared activeGradient after direct application")
+        }
+        
         currentPath.removeAll()
     }
 }
@@ -1010,11 +1021,78 @@ extension PDFCommandParser {
             
             // Create a shape with the shading gradient
             if let gradient = extractGradientFromShading(shadingName: shadingName, scanner: scanner) {
-                // The shading should be applied to previously created white shapes
-                // Find all white shapes and replace them with gradient-filled shapes
-                applyGradientToWhiteShapes(gradient: gradient)
+                // IMPROVED APPROACH: Use the shading within the current graphics context
+                handleGradientInContext(gradient: gradient)
             }
         }
+    }
+    
+    private func handleGradientInContext(gradient: VectorGradient) {
+        print("PDF: 🎯 CONTEXT-BASED GRADIENT APPLICATION")
+        
+        // Check the current PDF parsing context to determine how to apply the gradient
+        if !currentPath.isEmpty {
+            // Case 1: We have a current path - create a shape immediately with this gradient
+            print("PDF: 🔥 DIRECT PATH GRADIENT - Creating shape immediately from current path")
+            createShapeFromCurrentPath(filled: true, stroked: false, customFillStyle: FillStyle(gradient: gradient))
+            
+        } else if isInCompoundPath || !compoundPathParts.isEmpty {
+            // Case 2: We're building compound paths - gradient applies to the compound shape
+            print("PDF: 🔗 COMPOUND PATH GRADIENT - Shading applies to compound shape being built")
+            activeGradient = gradient
+            // This will be applied during compound path creation
+            
+        } else {
+            // Case 3: Standalone shading - create a shape from the shading itself
+            print("PDF: 🎨 STANDALONE SHADING - Creating shape directly from shading")
+            createShapeFromShading(gradient: gradient)
+        }
+    }
+    
+    private func createShapeFromShading(gradient: VectorGradient) {
+        // For standalone shadings, we need to create a shape that covers the entire page
+        // or the current clipping area. This is common for background gradients.
+        
+        print("PDF: 📐 Creating standalone shading shape covering page bounds")
+        
+        // Create a rectangle covering the entire page
+        let pageRect = [
+            PathCommand.moveTo(CGPoint(x: 0, y: 0)),
+            PathCommand.lineTo(CGPoint(x: pageSize.width, y: 0)),
+            PathCommand.lineTo(CGPoint(x: pageSize.width, y: pageSize.height)),
+            PathCommand.lineTo(CGPoint(x: 0, y: pageSize.height)),
+            PathCommand.closePath
+        ]
+        
+        // Convert to VectorPath elements
+        var vectorElements: [PathElement] = []
+        for command in pageRect {
+            switch command {
+            case .moveTo(let point):
+                let transformedPoint = VectorPoint(Double(point.x), Double(pageSize.height - point.y))
+                vectorElements.append(.move(to: transformedPoint))
+            case .lineTo(let point):
+                let transformedPoint = VectorPoint(Double(point.x), Double(pageSize.height - point.y))
+                vectorElements.append(.line(to: transformedPoint))
+            case .closePath:
+                vectorElements.append(.close)
+            default:
+                break
+            }
+        }
+        
+        let vectorPath = VectorPath(elements: vectorElements, isClosed: true)
+        let fillStyle = FillStyle(gradient: gradient)
+        
+        let shadingShape = VectorShape(
+            name: "PDF Shading Shape \(shapes.count + 1)",
+            path: vectorPath,
+            strokeStyle: nil,
+            fillStyle: fillStyle
+        )
+        
+        shapes.append(shadingShape)
+        print("PDF: ✅ Created standalone shading shape")
     }
     
     // Helper method to extract gradient from pattern
@@ -1741,22 +1819,42 @@ extension PDFCommandParser {
         activeGradient = gradient
         gradientShapes.removeAll()
         
-        // COMPOUND PATH LOGIC: In PDFs, when a gradient is defined, it often applies 
-        // retroactively to previously created white shapes that are part of the compound path
-        print("PDF: 🔍 COMPOUND PATH DETECTION: Looking for white shapes to retroactively apply gradient...")
+        // SMART GRADIENT DETECTION: Determine if this gradient needs compound path or applies to single shape
+        // Check if we have a current path being built (indicating single shape gradient)
+        // or if we have compound path parts (indicating compound path gradient)
         
-        // TODO: PROPER COMPOUND PATH DETECTION NEEDED
-        // Current approach is temporary - need to parse PDF operators to detect 
-        // when multiple paths are constructed together before a fill operation
+        if !currentPath.isEmpty {
+            // Case 1: We have a current path - this gradient applies to the shape being built
+            print("PDF: 🎯 SINGLE SHAPE GRADIENT - Current path exists, gradient will apply to next shape")
+            // activeGradient will be picked up by the next fill operation
+            
+        } else if isInCompoundPath || !compoundPathParts.isEmpty {
+            // Case 2: We're building a compound path - gradient applies to compound shape
+            print("PDF: 🔗 COMPOUND PATH GRADIENT - No current path, gradient for compound shape")
+            // Look for existing white shapes to retroactively apply gradient
+            
+            // Find recent white shapes that should be part of this compound path
+            let recentShapeCount = min(5, shapes.count) // Look at last 5 shapes
+            let startIndex = max(0, shapes.count - recentShapeCount)
+            
+            for i in startIndex..<shapes.count {
+                let shape = shapes[i]
+                if let fillStyle = shape.fillStyle,
+                   case .rgb(let rgbColor) = fillStyle.color,
+                   rgbColor.red > 0.95 && rgbColor.green > 0.95 && rgbColor.blue > 0.95 {
+                    // This is a white shape - mark it for gradient application
+                    gradientShapes.append(i)
+                    print("PDF: 📝 Tagged white shape '\(shape.name)' for compound gradient")
+                }
+            }
+            
+        } else {
+            // Case 3: No current path and no compound path - gradient for next shape created
+            print("PDF: 🎯 STANDALONE GRADIENT - No current path or compound, gradient for next shape")
+        }
         
-        print("PDF: ⚠️ TEMPORARY SIMPLE APPROACH - need proper compound path detection")
-        
-        // For now, don't retroactively tag any shapes
-        // The compound path detection should happen during PDF parsing, not after
-        print("PDF: Compound path detection logic needs to be implemented during PDF operator parsing")
-        
-        print("PDF: 🎨 Gradient marked as active - will apply to contextually appropriate shapes")
-        print("PDF: 📊 Tagged \(gradientShapes.count) white shapes with distinctive color for compound path")
+        print("PDF: 🎨 Gradient marked as active - detection mode determined")
+        print("PDF: 📊 Tagged \(gradientShapes.count) white shapes for compound path (if applicable)")
     }
     
     private func createCompoundPathWithGradient(gradient: VectorGradient) {
@@ -1872,10 +1970,23 @@ extension PDFCommandParser {
                 fillStyle = custom
                 print("PDF: ✅ CUSTOM STYLE ASSIGNED: '\(shapeName)' will get custom fill style")
             } else if let gradient = activeGradient {
-                // This shape should get the gradient - track it
-                gradientShapes.append(shapes.count) // Will be the index after we add this shape
-                fillStyle = FillStyle(gradient: gradient)
-                print("PDF: ✅ GRADIENT ASSIGNED: '\(shapeName)' will get active gradient - tracked for compound path")
+                // IMPROVED: Apply same smart gradient detection logic
+                let r = Double(currentFillColor.components?[0] ?? 0.0)
+                let g = Double(currentFillColor.components?[1] ?? 0.0) 
+                let b = Double(currentFillColor.components?[2] ?? 1.0)
+                let isWhiteShape = (r > 0.95 && g > 0.95 && b > 0.95)
+                
+                if isWhiteShape && (isInCompoundPath || !compoundPathParts.isEmpty || gradientShapes.count > 0) {
+                    // White shape + compound context = track for compound path
+                    gradientShapes.append(shapes.count) // Will be the index after we add this shape
+                    fillStyle = FillStyle(gradient: gradient)
+                    print("PDF: ✅ COMPOUND GRADIENT: '\(shapeName)' (WHITE) tracked for compound path")
+                } else {
+                    // Direct gradient application
+                    fillStyle = FillStyle(gradient: gradient)
+                    print("PDF: ✅ DIRECT GRADIENT: '\(shapeName)' gets gradient directly (not compound)")
+                    // Note: Don't clear activeGradient here - will be cleared after shape creation
+                }
             } else {
                 print("PDF: No active gradient, using current fill color for '\(shapeName)'")
                 let r = Double(currentFillColor.components?[0] ?? 0.0)
@@ -1914,6 +2025,13 @@ extension PDFCommandParser {
         )
         
         shapes.append(shape)
+        
+        // Clear activeGradient if it was used for direct application (not compound)
+        if activeGradient != nil && gradientShapes.isEmpty {
+            activeGradient = nil
+            print("PDF: 🔄 Cleared activeGradient after direct application")
+        }
+        
         currentPath.removeAll()
     }
 }
