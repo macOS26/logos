@@ -16,7 +16,10 @@
       "Bash(swiftc:*)",
       "mcp__xcf-server__build_project",
       "Bash(git log:*)",
-      "mcp__xcf-server__read_dir"
+      "mcp__xcf-server__read_dir",
+      "Read(/Users/toddbruss/Library/Mobile Documents/com~apple~CloudDocs/Documents/GameChanger/Sources/GameChanger/images/svg/**)",
+      "Read(/Users/toddbruss/Documents/**)",
+      "Read(/Users/toddbruss/Documents/**)"
     ],
     "deny": [],
     "ask": []
