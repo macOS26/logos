@@ -46,6 +46,9 @@ class PDFCommandParser {
     var currentStrokeOpacity: Double = 1.0
     var currentPage: CGPDFPage?
     
+    // PDF version tracking for proper logging
+    var detectedPDFVersion: String = "PDF 1.4"
+    
     // For proper compound path detection
     var isInCompoundPath = false
     var compoundPathParts: [[PathCommand]] = []
@@ -72,8 +75,8 @@ class PDFCommandParser {
         }
         
         // Detect PDF version
-        let pdfVersion = detectPDFVersion(document: document)
-        print("PDF: Document version detected as \(pdfVersion)")
+        detectedPDFVersion = detectPDFVersion(document: document)
+        print("PDF: Document version detected as \(detectedPDFVersion)")
         
         // Get page size from first page
         if let firstPage = document.page(at: 1) {
@@ -119,8 +122,8 @@ class PDFCommandParser {
     func detectPDFVersion(document: CGPDFDocument) -> String {
         // CGPDFDocument doesn't directly expose version, but we can check its capabilities
         // For now, assume PDF 1.4+ since we're dealing with transparency features
-        let versionString = "PDF 1.7 (assumed - Acrobat 8 compatible)"
-        print("PDF: Version \(versionString) supports transparency (introduced in PDF 1.4)")
+        let versionString = "PDF1.7"  // Shorter format for logging
+        print("PDF: Version \(versionString) (Acrobat 8 compatible) supports transparency (introduced in PDF 1.4)")
         return versionString
     }
     
