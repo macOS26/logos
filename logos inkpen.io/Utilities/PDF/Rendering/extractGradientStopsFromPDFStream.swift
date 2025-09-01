@@ -20,7 +20,20 @@ extension PDFCommandParser {
             let keyString = String(cString: key)
             let objectType = CGPDFObjectGetType(object)
             print("PDF: 📋 Shading dict key: '\(keyString)' -> type: \(objectType.rawValue)")
+            
+            // Look for Adobe private data or additional references
+            if keyString.hasPrefix("Adobe") || keyString.hasPrefix("AI") || keyString.hasPrefix("Private") {
+                print("PDF: 🎯 FOUND ADOBE PRIVATE KEY: '\(keyString)' - this might contain original gradient!")
+            }
         }, nil)
+        
+        // Check if there are any additional references to gradient objects
+        var additionalRefs: CGPDFObjectRef?
+        if CGPDFDictionaryGetObject(shadingDict, "GradientStops", &additionalRefs) ||
+           CGPDFDictionaryGetObject(shadingDict, "Adobe", &additionalRefs) ||
+           CGPDFDictionaryGetObject(shadingDict, "AI", &additionalRefs) {
+            print("PDF: 🎯 FOUND ADDITIONAL GRADIENT REFERENCE - investigating...")
+        }
         
         // Get the Function object from the shading dictionary
         var functionObj: CGPDFObjectRef?
@@ -39,6 +52,19 @@ extension PDFCommandParser {
             
             let streamDict = CGPDFStreamGetDictionary(stream)!
             print("PDF: 📊 Found Function stream - extracting sampled function data")
+            
+            // DEBUG: Check function stream dictionary for Adobe metadata or original gradient info
+            print("PDF: 🔍 DEBUG: Function stream dictionary contents:")
+            CGPDFDictionaryApplyFunction(streamDict, { (key, object, info) in
+                let keyString = String(cString: key)
+                let objectType = CGPDFObjectGetType(object)
+                print("PDF: 📋 Function key: '\(keyString)' -> type: \(objectType.rawValue)")
+                
+                // Look for any clues about original gradient structure
+                if keyString.contains("Stop") || keyString.contains("Color") || keyString.contains("Adobe") || keyString.contains("AI") {
+                    print("PDF: 🎯 POTENTIAL GRADIENT CLUE: '\(keyString)'")
+                }
+            }, nil)
             
             // Get function parameters
             var functionType: CGPDFInteger = 0
@@ -90,14 +116,16 @@ extension PDFCommandParser {
                 print("PDF: 🔄 Exponential function extraction failed, using fallback")
                 return createSubsampledGradientStops(from: shadingDict)
             } else if functionType == 3 {
-                // Stitching function - extract multiple sub-functions
+                // Stitching function - extract the ORIGINAL Adobe gradient stops
+                print("PDF: 🎯 STITCHING FUNCTION detected - extracting ORIGINAL Adobe gradient stops")
                 let nativeStops = extractStitchingFunctionGradientStops(dictionary: funcDict)
                 if !nativeStops.isEmpty {
+                    print("PDF: ✅ SUCCESS: Found \(nativeStops.count) ORIGINAL Adobe gradient stops from stitching function")
                     return nativeStops
+                } else {
+                    print("PDF: ❌ FAILED to extract original stops from stitching function")
+                    return createSubsampledGradientStops(from: shadingDict)
                 }
-                // If native extraction fails, use subsampling
-                print("PDF: 🔄 Native stitching function extraction failed, using subsampling")
-                return createSubsampledGradientStops(from: shadingDict)
             }
         }
         
@@ -289,10 +317,12 @@ extension PDFCommandParser {
     }
     
     private func extractStitchingFunctionGradientStops(dictionary: CGPDFDictionaryRef) -> [GradientStop] {
-        print("PDF: 📊 Extracting stitching function gradient stops")
+        print("PDF: 📊 Extracting stitching function gradient stops - this should give us the 5 native Adobe stops")
         
         var functionsArray: CGPDFArrayRef?
         var boundsArray: CGPDFArrayRef?
+        var encodeArray: CGPDFArrayRef?
+        var domainArray: CGPDFArrayRef?
         
         guard CGPDFDictionaryGetArray(dictionary, "Functions", &functionsArray),
               let functions = functionsArray else {
@@ -301,39 +331,82 @@ extension PDFCommandParser {
         }
         
         CGPDFDictionaryGetArray(dictionary, "Bounds", &boundsArray)
+        CGPDFDictionaryGetArray(dictionary, "Encode", &encodeArray)
+        CGPDFDictionaryGetArray(dictionary, "Domain", &domainArray)
         
         let functionCount = CGPDFArrayGetCount(functions)
+        print("PDF: 📊 Stitching function has \(functionCount) sub-functions")
+        
+        // Extract bounds to understand the gradient stop positions
+        var bounds: [Double] = [0.0] // Always starts at 0
+        if let boundsArr = boundsArray {
+            let boundsCount = CGPDFArrayGetCount(boundsArr)
+            print("PDF: 📊 Found \(boundsCount) bounds values")
+            for i in 0..<boundsCount {
+                var boundValue: CGPDFReal = 0
+                if CGPDFArrayGetNumber(boundsArr, i, &boundValue) {
+                    bounds.append(Double(boundValue))
+                    print("PDF: 📍 Bound[\(i)]: \(boundValue)")
+                }
+            }
+        }
+        bounds.append(1.0) // Always ends at 1
+        
+        print("PDF: 📊 Total bounds: \(bounds) - this gives us \(bounds.count) color stops")
+        
         var gradientStops: [GradientStop] = []
         
+        // Extract colors from each sub-function at the correct positions
         for i in 0..<functionCount {
             var functionObj: CGPDFObjectRef?
             guard CGPDFArrayGetObject(functions, i, &functionObj),
                   let funcObj = functionObj else {
+                print("PDF: ❌ Could not get function \(i)")
                 continue
             }
             
-            // Extract color from each sub-function
+            // Extract colors from this sub-function
             var functionDict: CGPDFDictionaryRef?
             if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
                let funcDict = functionDict {
                 
+                print("PDF: 📊 Processing sub-function \(i)")
                 let subStops = extractExponentialFunctionGradientStops(dictionary: funcDict)
                 
-                // Calculate position based on bounds
-                let position = Double(i) / Double(max(1, functionCount - 1))
-                
-                if !subStops.isEmpty {
-                    let stop = GradientStop(
-                        position: position,
+                if subStops.count >= 2 {
+                    // Add the start color of this sub-function at the correct position
+                    let startPosition = bounds[i]
+                    let startStop = GradientStop(
+                        position: startPosition,
                         color: subStops[0].color,
                         opacity: 1.0
                     )
-                    gradientStops.append(stop)
+                    gradientStops.append(startStop)
+                    print("PDF: 🎨 Added gradient stop at \(startPosition * 100)%: \(subStops[0].color)")
+                    
+                    // For the last function, also add the end color
+                    if i == functionCount - 1 {
+                        let endPosition = bounds[i + 1]
+                        let endStop = GradientStop(
+                            position: endPosition,
+                            color: subStops[1].color,
+                            opacity: 1.0
+                        )
+                        gradientStops.append(endStop)
+                        print("PDF: 🎨 Added final gradient stop at \(endPosition * 100)%: \(subStops[1].color)")
+                    }
                 }
             }
         }
         
-        print("PDF: ✅ Extracted \(gradientStops.count) gradient stops from stitching function")
+        // Sort by position to ensure correct order
+        gradientStops.sort { $0.position < $1.position }
+        
+        print("PDF: ✅ Extracted \(gradientStops.count) NATIVE gradient stops from stitching function")
+        for (index, stop) in gradientStops.enumerated() {
+            print("PDF: 🌈 Native Stop \(index): \(Int(stop.position * 100))% = \(stop.color)")
+        }
+        
         return gradientStops
     }
 }
