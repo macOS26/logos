@@ -1,5 +1,5 @@
 //
-//  PDFContent.swift
+//  PDFCommandParser.swift
 //  logos inkpen.io
 //
 //  Created by Todd Bruss on 8/22/25.
@@ -9,15 +9,6 @@ import Foundation
 import SwiftUI
 import CoreGraphics
 import PDFKit
-
-// MARK: - Parser Functions (Implementation Required)
-struct PDFContent {
-    let shapes: [VectorShape]
-    let textCount: Int
-    let creator: String?
-    let version: String?
-}
-
 
 // MARK: - PDF Command Parser
 class PDFCommandParser {
