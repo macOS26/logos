@@ -11,21 +11,249 @@ import CoreGraphics
 
 extension PDFCommandParser {
     
-    func createCorrectAtariRainbowStops() -> [GradientStop] {
-        print("PDF: 🌈 Using correct Atari rainbow gradient from SVG")
-        // SVG gradient stops:
-        // <stop offset="0" stop-color="#ed1c24"/>      - Red
-        // <stop offset=".11" stop-color="#d92734"/>    - Dark Red
-        // <stop offset=".34" stop-color="#a8465e"/>    - Purple-Red
-        // <stop offset=".67" stop-color="#5877a3"/>    - Blue
-        // <stop offset="1" stop-color="#00aeef"/>      - Cyan Blue
+    func extractGradientStopsFromPDFStream(shadingDict: CGPDFDictionaryRef) -> [GradientStop] {
+        print("PDF: 🔍 READING ACTUAL PDF STREAM DATA FOR GRADIENT STOPS")
         
-        return [
-            GradientStop(position: 0.0, color: .rgb(RGBColor(red: 0.929, green: 0.110, blue: 0.141)), opacity: 1.0),   // #ed1c24
-            GradientStop(position: 0.11, color: .rgb(RGBColor(red: 0.851, green: 0.153, blue: 0.204)), opacity: 1.0),  // #d92734
-            GradientStop(position: 0.34, color: .rgb(RGBColor(red: 0.659, green: 0.275, blue: 0.369)), opacity: 1.0),  // #a8465e
-            GradientStop(position: 0.67, color: .rgb(RGBColor(red: 0.345, green: 0.467, blue: 0.639)), opacity: 1.0),  // #5877a3
-            GradientStop(position: 0.98, color: .rgb(RGBColor(red: 0.0, green: 0.682, blue: 0.937)), opacity: 1.0)      // #00aeef
+        // DEBUG: Print all keys in the shading dictionary first
+        print("PDF: 🔍 DEBUG: Available keys in shading dictionary:")
+        CGPDFDictionaryApplyFunction(shadingDict, { (key, object, info) in
+            let keyString = String(cString: key)
+            let objectType = CGPDFObjectGetType(object)
+            print("PDF: 📋 Shading dict key: '\(keyString)' -> type: \(objectType.rawValue)")
+        }, nil)
+        
+        // Get the Function object from the shading dictionary
+        var functionObj: CGPDFObjectRef?
+        guard CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
+              let funcObj = functionObj else {
+            print("PDF: ❌ No Function found in shading dictionary - this is the problem!")
+            
+            // Check if there's a different way to access the function
+            print("PDF: 🔍 Checking for alternate function access methods...")
+            return []
+        }
+        
+        print("PDF: ✅ Found Function object in shading dictionary")
+        
+        // Check if it's a stream (FunctionType 0 - Sampled function)
+        var functionStream: CGPDFStreamRef?
+        if CGPDFObjectGetValue(funcObj, .stream, &functionStream),
+           let stream = functionStream {
+            
+            let streamDict = CGPDFStreamGetDictionary(stream)!
+            print("PDF: 📊 Found Function stream - extracting sampled function data")
+            
+            // Get function parameters
+            var functionType: CGPDFInteger = 0
+            CGPDFDictionaryGetInteger(streamDict, "FunctionType", &functionType)
+            print("PDF: 📊 Function Type: \(functionType)")
+            
+            if functionType == 0 {
+                // Sampled function - read the actual sample data
+                return extractSampledFunctionGradientStops(stream: stream, dictionary: streamDict)
+            }
+        }
+        
+        // Check if it's a dictionary (FunctionType 2 - Exponential function)
+        var functionDict: CGPDFDictionaryRef?
+        if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+           let funcDict = functionDict {
+            
+            var functionType: CGPDFInteger = 0
+            CGPDFDictionaryGetInteger(funcDict, "FunctionType", &functionType)
+            print("PDF: 📊 Function Type: \(functionType)")
+            
+            if functionType == 2 {
+                // Exponential function - extract C0 and C1 colors
+                return extractExponentialFunctionGradientStops(dictionary: funcDict)
+            } else if functionType == 3 {
+                // Stitching function - extract multiple sub-functions
+                return extractStitchingFunctionGradientStops(dictionary: funcDict)
+            }
+        }
+        
+        print("PDF: ❌ Could not extract gradient stops from PDF Function")
+        return []
+    }
+    
+    private func extractSampledFunctionGradientStops(stream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef) -> [GradientStop] {
+        print("PDF: 📊 Extracting sampled function gradient stops from stream data")
+        
+        // Get the raw stream data
+        var format: CGPDFDataFormat = CGPDFDataFormat.raw
+        guard let data = CGPDFStreamCopyData(stream, &format) else {
+            print("PDF: ❌ Could not read stream data")
+            return []
+        }
+        
+        let cfData = data as CFData
+        let dataBytes = CFDataGetBytePtr(cfData)
+        let dataLength = CFDataGetLength(cfData)
+        
+        // Get function parameters
+        var sizeArray: CGPDFArrayRef?
+        var bitsPerSample: CGPDFInteger = 8
+        var rangeArray: CGPDFArrayRef?
+        
+        CGPDFDictionaryGetArray(dictionary, "Size", &sizeArray)
+        CGPDFDictionaryGetInteger(dictionary, "BitsPerSample", &bitsPerSample)
+        CGPDFDictionaryGetArray(dictionary, "Range", &rangeArray)
+        
+        print("PDF: 📊 Stream data: \(dataLength) bytes, BitsPerSample: \(bitsPerSample)")
+        
+        // Calculate number of samples and output components
+        var totalSamples = 1
+        if let size = sizeArray {
+            let sizeCount = CGPDFArrayGetCount(size)
+            for i in 0..<sizeCount {
+                var sizeValue: CGPDFInteger = 0
+                if CGPDFArrayGetInteger(size, i, &sizeValue) {
+                    totalSamples *= Int(sizeValue)
+                }
+            }
+        }
+        
+        var outputComponents = 3 // Assume RGB
+        if let range = rangeArray {
+            outputComponents = Int(CGPDFArrayGetCount(range)) / 2
+        }
+        
+        print("PDF: 📊 Total samples: \(totalSamples), Output components: \(outputComponents)")
+        
+        let bytesPerSample = Int(bitsPerSample) / 8
+        var gradientStops: [GradientStop] = []
+        
+        // Extract color samples and convert to gradient stops
+        for sampleIndex in 0..<totalSamples {
+            let baseOffset = sampleIndex * outputComponents * bytesPerSample
+            
+            if baseOffset + (outputComponents * bytesPerSample) <= dataLength {
+                var r: Double = 0, g: Double = 0, b: Double = 0
+                
+                // Read RGB values
+                switch bitsPerSample {
+                case 8:
+                    if outputComponents >= 3 {
+                        r = Double(dataBytes![baseOffset]) / 255.0
+                        g = Double(dataBytes![baseOffset + 1]) / 255.0
+                        b = Double(dataBytes![baseOffset + 2]) / 255.0
+                    }
+                case 16:
+                    if outputComponents >= 3 {
+                        r = Double((UInt16(dataBytes![baseOffset]) << 8) | UInt16(dataBytes![baseOffset + 1])) / 65535.0
+                        g = Double((UInt16(dataBytes![baseOffset + 2]) << 8) | UInt16(dataBytes![baseOffset + 3])) / 65535.0
+                        b = Double((UInt16(dataBytes![baseOffset + 4]) << 8) | UInt16(dataBytes![baseOffset + 5])) / 65535.0
+                    }
+                default:
+                    continue
+                }
+                
+                // Apply range scaling if available
+                if let range = rangeArray, CGPDFArrayGetCount(range) >= 6 {
+                    var rMin: CGPDFReal = 0, rMax: CGPDFReal = 1
+                    var gMin: CGPDFReal = 0, gMax: CGPDFReal = 1
+                    var bMin: CGPDFReal = 0, bMax: CGPDFReal = 1
+                    
+                    CGPDFArrayGetNumber(range, 0, &rMin)
+                    CGPDFArrayGetNumber(range, 1, &rMax)
+                    CGPDFArrayGetNumber(range, 2, &gMin)
+                    CGPDFArrayGetNumber(range, 3, &gMax)
+                    CGPDFArrayGetNumber(range, 4, &bMin)
+                    CGPDFArrayGetNumber(range, 5, &bMax)
+                    
+                    r = Double(rMin) + r * Double(rMax - rMin)
+                    g = Double(gMin) + g * Double(gMax - gMin)
+                    b = Double(bMin) + b * Double(bMax - bMin)
+                }
+                
+                let position = Double(sampleIndex) / Double(max(1, totalSamples - 1))
+                let color = VectorColor.rgb(RGBColor(red: r, green: g, blue: b))
+                
+                gradientStops.append(GradientStop(position: position, color: color, opacity: 1.0))
+                print("PDF: 🎨 Sample \(sampleIndex): pos=\(position), RGB=(\(r),\(g),\(b))")
+            }
+        }
+        
+        print("PDF: ✅ Extracted \(gradientStops.count) gradient stops from sampled function")
+        return gradientStops
+    }
+    
+    private func extractExponentialFunctionGradientStops(dictionary: CGPDFDictionaryRef) -> [GradientStop] {
+        print("PDF: 📊 Extracting exponential function gradient stops")
+        
+        var c0Array: CGPDFArrayRef?
+        var c1Array: CGPDFArrayRef?
+        
+        var startColor = VectorColor.black
+        var endColor = VectorColor.white
+        
+        if CGPDFDictionaryGetArray(dictionary, "C0", &c0Array),
+           let c0 = c0Array {
+            startColor = extractColorFromArray(c0)
+            print("PDF: ✅ Extracted C0 color: \(startColor)")
+        }
+        
+        if CGPDFDictionaryGetArray(dictionary, "C1", &c1Array),
+           let c1 = c1Array {
+            endColor = extractColorFromArray(c1)
+            print("PDF: ✅ Extracted C1 color: \(endColor)")
+        }
+        
+        let gradientStops = [
+            GradientStop(position: 0.0, color: startColor, opacity: 1.0),
+            GradientStop(position: 1.0, color: endColor, opacity: 1.0)
         ]
+        
+        print("PDF: ✅ Extracted 2 gradient stops from exponential function")
+        return gradientStops
+    }
+    
+    private func extractStitchingFunctionGradientStops(dictionary: CGPDFDictionaryRef) -> [GradientStop] {
+        print("PDF: 📊 Extracting stitching function gradient stops")
+        
+        var functionsArray: CGPDFArrayRef?
+        var boundsArray: CGPDFArrayRef?
+        
+        guard CGPDFDictionaryGetArray(dictionary, "Functions", &functionsArray),
+              let functions = functionsArray else {
+            print("PDF: ❌ No Functions array in stitching function")
+            return []
+        }
+        
+        CGPDFDictionaryGetArray(dictionary, "Bounds", &boundsArray)
+        
+        let functionCount = CGPDFArrayGetCount(functions)
+        var gradientStops: [GradientStop] = []
+        
+        for i in 0..<functionCount {
+            var functionObj: CGPDFObjectRef?
+            guard CGPDFArrayGetObject(functions, i, &functionObj),
+                  let funcObj = functionObj else {
+                continue
+            }
+            
+            // Extract color from each sub-function
+            var functionDict: CGPDFDictionaryRef?
+            if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+               let funcDict = functionDict {
+                
+                let subStops = extractExponentialFunctionGradientStops(dictionary: funcDict)
+                
+                // Calculate position based on bounds
+                let position = Double(i) / Double(max(1, functionCount - 1))
+                
+                if !subStops.isEmpty {
+                    let stop = GradientStop(
+                        position: position,
+                        color: subStops[0].color,
+                        opacity: 1.0
+                    )
+                    gradientStops.append(stop)
+                }
+            }
+        }
+        
+        print("PDF: ✅ Extracted \(gradientStops.count) gradient stops from stitching function")
+        return gradientStops
     }
 }

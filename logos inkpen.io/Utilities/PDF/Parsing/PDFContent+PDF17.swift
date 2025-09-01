@@ -73,6 +73,9 @@ extension PDFCommandParser {
             
             print("\(detectedPDFVersion): Found page Resources dictionary")
             
+            // Store page resources for shading access
+            pageResourcesDict = resourcesDict
+            
             var xObjectDictRef: CGPDFDictionaryRef? = nil
             guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
                   let xObjectDict = xObjectDictRef else {
@@ -336,9 +339,9 @@ extension PDFCommandParser {
                    let shadingName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
                     print("\(detectedPDFVersion): XObject '\(name)' - 🎨 SHADING OPERATION: \(shadingName)")
                     
-                    // Create the Atari rainbow gradient since resource extraction fails in XObjects
-                    if shadingName == "Sh1" {
-                        let gradient = createAtariRainbowGradient()
+                    // Extract gradient from XObject's own resources, not page resources
+                    if let gradient = extractGradientFromXObjectResources(shadingName: shadingName, resourcesDict: resourcesDict) {
+                        print("\(detectedPDFVersion): XObject '\(name)' - ✅ Extracted gradient from PDF shading '\(shadingName)'")
                         
                         // Apply gradient to the current path or create a clipped gradient shape
                         if hasPath {
@@ -361,6 +364,8 @@ extension PDFCommandParser {
                             // Create a gradient shape that will be clipped
                             activeGradient = gradient
                         }
+                    } else {
+                        print("\(detectedPDFVersion): XObject '\(name)' - ❌ Failed to extract gradient from shading '\(shadingName)'")
                     }
                     i += 1
                 } else { i += 1 }

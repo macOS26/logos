@@ -37,6 +37,9 @@ class PDFCommandParser {
     var currentStrokeOpacity: Double = 1.0
     var currentPage: CGPDFPage?
     
+    // For page resources access
+    var pageResourcesDict: CGPDFDictionaryRef?
+    
     // PDF version tracking for proper logging
     var detectedPDFVersion: String = "PDF 1.4"
     
