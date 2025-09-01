@@ -26,11 +26,8 @@ extension PDFCommandParser {
         var functionObj: CGPDFObjectRef?
         guard CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
               let funcObj = functionObj else {
-            print("PDF: ❌ No Function found in shading dictionary - this is the problem!")
-            
-            // Check if there's a different way to access the function
-            print("PDF: 🔍 Checking for alternate function access methods...")
-            return []
+            print("PDF: ❌ No Function found in shading dictionary - falling back to subsampling")
+            return createSubsampledGradientStops(from: shadingDict)
         }
         
         print("PDF: ✅ Found Function object in shading dictionary")
@@ -49,8 +46,27 @@ extension PDFCommandParser {
             print("PDF: 📊 Function Type: \(functionType)")
             
             if functionType == 0 {
-                // Sampled function - read the actual sample data
-                return extractSampledFunctionGradientStops(stream: stream, dictionary: streamDict)
+                // Sampled function - extract ALL colors first, then subsample like PDF 1.3
+                print("PDF: 🔄 Sampled function - extracting all colors then subsampling like PDF 1.3")
+                let allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict)
+                if allColors.count > 11 {
+                    // More than 11 colors - subsample to 11 stops (0%, 10%, 20%, ..., 100%)
+                    let subsampledStops = createGradientStopsFromColors(allColors)
+                    print("PDF: ✅ Created \(subsampledStops.count) subsampled gradient stops from \(allColors.count) PDF colors")
+                    return subsampledStops
+                } else if allColors.count >= 2 {
+                    // 2-11 colors - use all of them including 2-color gradients
+                    var stops: [GradientStop] = []
+                    for i in 0..<allColors.count {
+                        let position = Double(i) / Double(max(1, allColors.count - 1))
+                        stops.append(GradientStop(position: position, color: allColors[i], opacity: 1.0))
+                    }
+                    print("PDF: ✅ Created \(stops.count) gradient stops from \(allColors.count) actual PDF colors")
+                    return stops
+                }
+                // If extraction fails, use fallback subsampling
+                print("PDF: 🔄 Color extraction failed, using fallback subsampling")
+                return createSubsampledGradientStops(from: shadingDict)
             }
         }
         
@@ -65,15 +81,79 @@ extension PDFCommandParser {
             
             if functionType == 2 {
                 // Exponential function - extract C0 and C1 colors
-                return extractExponentialFunctionGradientStops(dictionary: funcDict)
+                let nativeStops = extractExponentialFunctionGradientStops(dictionary: funcDict)
+                if nativeStops.count >= 2 {
+                    print("PDF: ✅ Using \(nativeStops.count) actual colors from exponential function")
+                    return nativeStops
+                }
+                // Only if extraction completely fails
+                print("PDF: 🔄 Exponential function extraction failed, using fallback")
+                return createSubsampledGradientStops(from: shadingDict)
             } else if functionType == 3 {
                 // Stitching function - extract multiple sub-functions
-                return extractStitchingFunctionGradientStops(dictionary: funcDict)
+                let nativeStops = extractStitchingFunctionGradientStops(dictionary: funcDict)
+                if !nativeStops.isEmpty {
+                    return nativeStops
+                }
+                // If native extraction fails, use subsampling
+                print("PDF: 🔄 Native stitching function extraction failed, using subsampling")
+                return createSubsampledGradientStops(from: shadingDict)
             }
         }
         
-        print("PDF: ❌ Could not extract gradient stops from PDF Function")
-        return []
+        print("PDF: ❌ Could not extract gradient stops from PDF Function - using subsampling fallback")
+        return createSubsampledGradientStops(from: shadingDict)
+    }
+    
+    private func createSubsampledGradientStops(from shadingDict: CGPDFDictionaryRef? = nil) -> [GradientStop] {
+        print("PDF: 🌈 Creating subsampled gradient stops from actual PDF data like PDF 1.3")
+        
+        var allColors: [VectorColor] = []
+        
+        // Try to extract actual colors from the PDF shading dictionary
+        if let shadingDict = shadingDict {
+            // Get the Function object from the shading dictionary
+            var functionObj: CGPDFObjectRef?
+            if CGPDFDictionaryGetObject(shadingDict, "Function", &functionObj),
+               let funcObj = functionObj {
+                
+                // Check if it's a dictionary (Function)
+                var functionDict: CGPDFDictionaryRef?
+                if CGPDFObjectGetValue(funcObj, .dictionary, &functionDict),
+                   let funcDict = functionDict {
+                    
+                    // Extract all colors from the function like PDF 1.3 does
+                    allColors = extractAllColorsFromFunction(funcDict)
+                    print("PDF: ✅ Extracted \(allColors.count) colors from PDF function")
+                }
+                
+                // Check if it's a stream (Sampled function)
+                var functionStream: CGPDFStreamRef?
+                if allColors.isEmpty,
+                   CGPDFObjectGetValue(funcObj, .stream, &functionStream),
+                   let stream = functionStream {
+                    
+                    let streamDict = CGPDFStreamGetDictionary(stream)!
+                    // Extract colors from stream like PDF 1.3 does
+                    allColors = extractColorsFromSampledFunctionStream(stream: stream, dictionary: streamDict)
+                    print("PDF: ✅ Extracted \(allColors.count) colors from PDF stream")
+                }
+            }
+        }
+        
+        // If we successfully extracted colors, subsample them like PDF 1.3
+        if allColors.count > 2 {
+            let subsampledStops = createGradientStopsFromColors(allColors)
+            print("PDF: ✅ Created \(subsampledStops.count) subsampled gradient stops from actual PDF data")
+            return subsampledStops
+        }
+        
+        // Fallback only if no colors could be extracted at all
+        print("PDF: ❌ Could not extract any colors from PDF - using basic two-color fallback")
+        return [
+            GradientStop(position: 0.0, color: .rgb(RGBColor(red: 1.0, green: 0.0, blue: 0.0)), opacity: 1.0),
+            GradientStop(position: 1.0, color: .rgb(RGBColor(red: 0.0, green: 0.0, blue: 1.0)), opacity: 1.0)
+        ]
     }
     
     private func extractSampledFunctionGradientStops(stream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef) -> [GradientStop] {
