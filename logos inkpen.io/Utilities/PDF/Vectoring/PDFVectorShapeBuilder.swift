@@ -106,8 +106,8 @@ class PDFVectorShapeBuilder {
         
         // Create stroke style
         var strokeStyle: StrokeStyle? = nil
-        if let gradient = strokeGradient {
-            // Stroke gradients need special handling - for now use solid color
+        if strokeGradient != nil {
+            // Stroke gradients need special handling - for now use solid color fallback
             if let color = strokeColor {
                 let r = Double(color.components?[0] ?? 0.0)
                 let g = Double(color.components?[1] ?? 0.0)
