@@ -10,8 +10,6 @@ import SwiftUI
 import CoreGraphics
 import PDFKit
 
-
-
 // MARK: - CoreGraphics Path Builder
 class PathBuilder {
     var path = CGMutablePath()
