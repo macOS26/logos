@@ -149,6 +149,11 @@ class PDFCommandParser {
     }
     
     func setupOperatorCallbacks(_ operatorTable: CGPDFOperatorTableRef) {
+        // Delegate to the dedicated operator interpreter module
+        PDFOperatorInterpreter.setupOperatorCallbacks(operatorTable, parser: self)
+    }
+    
+    func setupOperatorCallbacksOld(_ operatorTable: CGPDFOperatorTableRef) {
         // MoveTo operator
         CGPDFOperatorTableSetCallback(operatorTable, "m") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
@@ -341,27 +346,8 @@ class PDFCommandParser {
     // MARK: - Utility Methods
     
     func calculateArtworkBounds() -> CGRect {
-        guard !shapes.isEmpty else { return CGRect(origin: .zero, size: pageSize) }
-        
-        var minX = Double.greatestFiniteMagnitude
-        var minY = Double.greatestFiniteMagnitude
-        var maxX = -Double.greatestFiniteMagnitude
-        var maxY = -Double.greatestFiniteMagnitude
-        
-        for shape in shapes {
-            let bounds = shape.bounds
-            minX = min(minX, bounds.origin.x)
-            minY = min(minY, bounds.origin.y)
-            maxX = max(maxX, bounds.origin.x + bounds.size.width)
-            maxY = max(maxY, bounds.origin.y + bounds.size.height)
-        }
-        
-        return CGRect(
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY
-        )
+        // Delegate to the dedicated geometry module
+        return PDFBoundsCalculator.calculateArtworkBounds(from: shapes, pageSize: pageSize)
     }
     
     // MARK: - Operator Handlers
@@ -426,8 +412,8 @@ class PDFCommandParser {
         
         currentPoint = endPoint
         
-        // Check if this is actually a quadratic curve (can be converted)
-        if let quadCommand = convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
+        // Check if this is actually a quadratic curve (can be converted) using vectoring module
+        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
             currentPath.append(quadCommand)
         } else {
             currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
@@ -449,7 +435,7 @@ class PDFCommandParser {
         
         currentPoint = endPoint
         
-        if let quadCommand = convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
+        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
             currentPath.append(quadCommand)
         } else {
             currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
@@ -471,7 +457,7 @@ class PDFCommandParser {
         
         currentPoint = endPoint
         
-        if let quadCommand = convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
+        if let quadCommand = PDFCurveOptimizer.convertToQuadCurve(from: currentPoint, cp1: cp1, cp2: cp2, to: endPoint) {
             currentPath.append(quadCommand)
         } else {
             currentPath.append(.curveTo(cp1: cp1, cp2: cp2, to: endPoint))
@@ -490,17 +476,11 @@ class PDFCommandParser {
               CGPDFScannerPopNumber(scanner, &y),
               CGPDFScannerPopNumber(scanner, &x) else { return }
         
-        // FILTER OUT PAGE BOUNDARY RECTANGLES: Skip rectangles that match page dimensions
-        let tolerance: CGFloat = 2.0 // Allow small differences
-        if abs(width - pageSize.width) < tolerance && abs(height - pageSize.height) < tolerance {
-            print("PDF: Skipping page boundary rectangle (\(width) x \(height)) that matches page size")
-            return
-        }
+        let rect = CGRect(x: x, y: y, width: width, height: height)
         
-        // Also skip rectangles that are positioned at page origin (0,0) and match page size
-        if abs(x) < tolerance && abs(y) < tolerance && 
-           abs(width - pageSize.width) < tolerance && abs(height - pageSize.height) < tolerance {
-            print("PDF: Skipping page boundary rectangle at origin that matches page size")
+        // Use geometry module to filter out page boundary rectangles
+        if PDFBoundsCalculator.isPageBoundaryRectangle(rect, pageSize: pageSize) {
+            print("PDF: Skipping page boundary rectangle (\(width) x \(height))")
             return
         }
         
@@ -520,40 +500,7 @@ class PDFCommandParser {
         pathStartPoint = startPoint
     }
     
-    // MARK: - Quadratic Curve Detection
-    
-    func convertToQuadCurve(from start: CGPoint, cp1: CGPoint, cp2: CGPoint, to end: CGPoint) -> PathCommand? {
-        // Check if cubic curve can be represented as quadratic
-        // This happens when the control points follow the quadratic relationship:
-        // cp1 = start + 2/3 * (quad_cp - start)
-        // cp2 = end + 2/3 * (quad_cp - end)
-        
-        // Calculate potential quadratic control point
-        let potentialQCP1 = CGPoint(
-            x: start.x + 1.5 * (cp1.x - start.x),
-            y: start.y + 1.5 * (cp1.y - start.y)
-        )
-        
-        let potentialQCP2 = CGPoint(
-            x: end.x + 1.5 * (cp2.x - end.x),
-            y: end.y + 1.5 * (cp2.y - end.y)
-        )
-        
-        // Check if both calculations give the same control point (within tolerance)
-        let tolerance: CGFloat = 0.1
-        if abs(potentialQCP1.x - potentialQCP2.x) < tolerance &&
-           abs(potentialQCP1.y - potentialQCP2.y) < tolerance {
-            
-            let quadCP = CGPoint(
-                x: (potentialQCP1.x + potentialQCP2.x) / 2,
-                y: (potentialQCP1.y + potentialQCP2.y) / 2
-            )
-            
-            return .quadCurveTo(cp: quadCP, to: end)
-        }
-        
-        return nil
-    }
+    // MARK: - Quadratic Curve Detection (Moved to PDFCurveOptimizer module)
     
     // MARK: - Color Handlers
     
