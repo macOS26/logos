@@ -862,7 +862,6 @@ struct GradientFillSection: View {
     }
 }
 
-// MARK: - Gradient Section Sub-Views
 
 
 
@@ -870,14 +869,9 @@ struct GradientFillSection: View {
 
 
 
-// MARK: - Elliptical Gradient for Preview (since SwiftUI doesn't support elliptical radial gradients)
-
-// EllipticalGradient struct removed - now using NSView-based gradient preview that matches actual rendering
 
 
-// MARK: - Gradient Window Delegate
-
-// Preview
+// MARK: - Preview
 struct GradientPanel_Previews: PreviewProvider {
     static var previews: some View {
         GradientPanel(document: VectorDocument())
