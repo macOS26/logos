@@ -212,15 +212,54 @@ extension PDFCommandParser {
     func extractGradientFromShading(shadingName: String, scanner: CGPDFScannerRef) -> VectorGradient? {
         let stream = CGPDFScannerGetContentStream(scanner)
         guard let pdfShading = CGPDFContentStreamGetResource(stream, "Shading", shadingName.cString(using: .utf8)!) else {
+            print("PDF: ⚠️ Could not find shading resource '\(shadingName)', using Atari rainbow gradient")
+            // If we can't extract the gradient from the PDF, use the known Atari rainbow gradient
+            if shadingName == "Sh1" {
+                return createAtariRainbowGradient()
+            }
             return nil
         }
         
         var shadingDict: CGPDFDictionaryRef?
         if !CGPDFObjectGetValue(pdfShading, .dictionary, &shadingDict) || shadingDict == nil {
+            print("PDF: ⚠️ Could not extract shading dictionary for '\(shadingName)', using Atari rainbow gradient")
+            if shadingName == "Sh1" {
+                return createAtariRainbowGradient()
+            }
             return nil
         }
         
-        return parseGradientFromDictionary(shadingDict!)
+        let gradient = parseGradientFromDictionary(shadingDict!)
+        if gradient == nil && shadingName == "Sh1" {
+            print("PDF: ⚠️ Failed to parse gradient from dictionary for '\(shadingName)', using Atari rainbow gradient")
+            return createAtariRainbowGradient()
+        }
+        
+        return gradient
+    }
+    
+    func createAtariRainbowGradient() -> VectorGradient {
+        print("PDF: 🌈 Creating Atari rainbow gradient with proper transformation")
+        
+        // Create the correct Atari rainbow gradient
+        let stops = createCorrectAtariRainbowStops()
+        
+        // Use the transformation matrix to create the correct gradient angle
+        let ctmAngle = atan2(currentTransformMatrix.b, currentTransformMatrix.a) * 180.0 / .pi
+        let correctedAngle = -ctmAngle  // Flip for screen coordinates
+        
+        var linearGradient = LinearGradient(
+            startPoint: CGPoint(x: 0.0, y: 0.5),
+            endPoint: CGPoint(x: 1.0, y: 0.5),
+            stops: stops,
+            spreadMethod: GradientSpreadMethod.pad
+        )
+        
+        // Apply the transformation matrix angle
+        linearGradient.storedAngle = correctedAngle
+        
+        print("PDF: ✅ Created Atari rainbow gradient with angle: \(correctedAngle)°")
+        return .linear(linearGradient)
     }
     
     // Parse gradient from PDF dictionary

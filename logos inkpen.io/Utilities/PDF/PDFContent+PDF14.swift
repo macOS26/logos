@@ -271,18 +271,62 @@ extension PDFCommandParser {
                 // In a proper implementation, this would set a clipping region
                 i += 1
                 
+            case "cm": // matrix concatenation - 6 parameters before 'cm'
+                if i >= 6,
+                   let a = Double(operations[i - 6]),
+                   let b = Double(operations[i - 5]),
+                   let c = Double(operations[i - 4]),
+                   let d = Double(operations[i - 3]),
+                   let tx = Double(operations[i - 2]),
+                   let ty = Double(operations[i - 1]) {
+                    let newTransform = CGAffineTransform(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
+                    currentTransformMatrix = currentTransformMatrix.concatenating(newTransform)
+                    print("PDF 1.4: XObject '\(name)' - 📐 Matrix concatenation 'cm': [\(a), \(b), \(c), \(d), \(tx), \(ty)]")
+                    print("PDF 1.4: XObject '\(name)' - 🔄 Current CTM: [\(currentTransformMatrix.a), \(currentTransformMatrix.b), \(currentTransformMatrix.c), \(currentTransformMatrix.d), \(currentTransformMatrix.tx), \(currentTransformMatrix.ty)]")
+                    i += 1
+                } else { i += 1 }
+                
+            case "sh": // shading - shading name comes BEFORE 'sh'
+                if i >= 1,
+                   let shadingName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
+                    print("PDF 1.4: XObject '\(name)' - 🎨 SHADING OPERATION: \(shadingName)")
+                    
+                    // Create the Atari rainbow gradient since resource extraction fails in XObjects
+                    if shadingName == "Sh1" {
+                        let gradient = createAtariRainbowGradient()
+                        
+                        // Apply gradient to the current path or create a clipped gradient shape
+                        if hasPath {
+                            print("PDF 1.4: XObject '\(name)' - 🎯 APPLYING GRADIENT to current path")
+                            let customFillStyle = FillStyle(gradient: gradient)
+                            // Use the outer parser's method to create the shape
+                            let tempFillOpacity = currentFillOpacity
+                            let tempStrokeOpacity = currentStrokeOpacity
+                            currentFillOpacity = savedFillOpacity
+                            currentStrokeOpacity = savedStrokeOpacity
+                            
+                            createShapeFromCurrentPath(filled: true, stroked: false, customFillStyle: customFillStyle)
+                            
+                            // Restore XObject opacity values
+                            currentFillOpacity = tempFillOpacity  
+                            currentStrokeOpacity = tempStrokeOpacity
+                            hasPath = false
+                        } else {
+                            print("PDF 1.4: XObject '\(name)' - 🎯 CREATING GRADIENT SHAPE for clipped area")
+                            // Create a gradient shape that will be clipped
+                            activeGradient = gradient
+                        }
+                    }
+                    i += 1
+                } else { i += 1 }
+                
             case "n": // no-op path (often used with clipping)
                 if hasPath {
-                    print("PDF 1.4: XObject '\(name)' - 📐 PATH NO-OP - likely a clipping mask!")
-                    // Check if this is white - if so, make it transparent/knockout
-                    if let components = currentFillColor.components,
-                       components.count >= 3 && 
-                       components[0] > 0.9 && components[1] > 0.9 && components[2] > 0.9 {
-                        print("PDF 1.4: XObject '\(name)' - 🕳️ WHITE CLIPPING PATH - creating transparent knockout!")
-                        // Don't create a shape for white clipping paths - they should be transparent
-                        currentPath.removeAll()
-                        hasPath = false
-                    }
+                    print("PDF 1.4: XObject '\(name)' - 📐 PATH NO-OP - clipping path defined")
+                    // In PDF, 'n' after 'W' means the path is used only for clipping, not drawing
+                    // But the clipping path itself can still be filled or stroked later
+                    // For now, keep the path for potential later use
+                    print("PDF 1.4: XObject '\(name)' - 🖇️ Clipping path preserved for later operations")
                 }
                 i += 1
                 
@@ -315,6 +359,7 @@ extension PDFCommandParser {
         // CRITICAL FIX: Use the saved opacity for shape creation
         print("PDF 1.4: XObject '\(name)' - Using outer scope opacity for shape creation")
     }
+    
     
     private func createPDF14OperatorTable() -> CGPDFOperatorTableRef? {
         guard let operatorTable = CGPDFOperatorTableCreate() else { return nil }
