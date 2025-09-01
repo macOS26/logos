@@ -1,5 +1,5 @@
 //
-//  createAtariRainbowGradient.swift
+//  createGradientFromShading.swift
 //  logos inkpen.io
 //
 //  Created by Todd Bruss on 8/31/25.
@@ -11,7 +11,7 @@ import CoreGraphics
 
 extension PDFCommandParser {
     
-    func createAtariRainbowGradient(from shadingDict: CGPDFDictionaryRef? = nil) -> VectorGradient {
+    func createGradientFromShading(from shadingDict: CGPDFDictionaryRef? = nil) -> VectorGradient {
         print("PDF: 🌈 Creating gradient with proper transformation from PDF stream data")
         
         var stops: [GradientStop] = []

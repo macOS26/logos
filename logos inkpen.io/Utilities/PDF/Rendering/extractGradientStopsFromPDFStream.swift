@@ -1,5 +1,5 @@
 //
-//  createCorrectAtariRainbowStops.swift
+//  extractGradientStopsFromPDFStream.swift
 //  logos inkpen.io
 //
 //  Created by Todd Bruss on 8/31/25.
