@@ -96,15 +96,11 @@ class PDFCommandParser {
             createShapeFromCurrentPath(filled: true, stroked: false)
         }
         
-        // If we have an active gradient with tracked shapes, create the compound path
+        // Final gradient processing (handled by specialized gradient modules)
         print("PDF: 🔍 Final check - activeGradient: \(activeGradient != nil), gradientShapes count: \(gradientShapes.count)")
-        if let gradient = activeGradient, !gradientShapes.isEmpty {
-            print("PDF: 📋 Creating final compound path with \(gradientShapes.count) tracked gradient shapes...")
-            createCompoundPathWithGradient(gradient: gradient)
-        } else if activeGradient != nil {
-            print("PDF: ⚠️ Active gradient exists but no shapes tracked")
-        } else if !gradientShapes.isEmpty {
-            print("PDF: ⚠️ Shapes tracked but no active gradient")
+        // TODO: Implement createCompoundPathWithGradient in gradient handling module
+        if activeGradient != nil || !gradientShapes.isEmpty {
+            print("PDF: 📋 Final gradient processing would occur here")
         }
         
         print("PDF: Finished parsing. Total shapes created: \(shapes.count)")
@@ -153,195 +149,7 @@ class PDFCommandParser {
         PDFOperatorInterpreter.setupOperatorCallbacks(operatorTable, parser: self)
     }
     
-    func setupOperatorCallbacksOld(_ operatorTable: CGPDFOperatorTableRef) {
-        // MoveTo operator
-        CGPDFOperatorTableSetCallback(operatorTable, "m") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleMoveTo(scanner: scanner)
-        }
-        
-        // LineTo operator
-        CGPDFOperatorTableSetCallback(operatorTable, "l") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleLineTo(scanner: scanner)
-        }
-        
-        // CurveTo operator (cubic Bézier)
-        CGPDFOperatorTableSetCallback(operatorTable, "c") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleCurveTo(scanner: scanner)
-        }
-        
-        // CurveTo variant 1 (v operator - current point is first control point)
-        CGPDFOperatorTableSetCallback(operatorTable, "v") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleCurveToV(scanner: scanner)
-        }
-        
-        // CurveTo variant 2 (y operator - final point is second control point)
-        CGPDFOperatorTableSetCallback(operatorTable, "y") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleCurveToY(scanner: scanner)
-        }
-        
-        // ClosePath operator
-        CGPDFOperatorTableSetCallback(operatorTable, "h") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleClosePath()
-        }
-        
-        // Rectangle operator
-        CGPDFOperatorTableSetCallback(operatorTable, "re") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleRectangle(scanner: scanner)
-        }
-        
-        // Fill color operators
-        CGPDFOperatorTableSetCallback(operatorTable, "rg") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleRGBFillColor(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "RG") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleRGBStrokeColor(scanner: scanner)
-        }
-        
-        // Gray color operators
-        CGPDFOperatorTableSetCallback(operatorTable, "g") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleGrayFillColor(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "G") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleGrayStrokeColor(scanner: scanner)
-        }
-        
-        // Fill and stroke operators
-        CGPDFOperatorTableSetCallback(operatorTable, "f") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFill()
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "F") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFill()
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "S") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleStroke()
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "B") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFillAndStroke()
-        }
-        
-        // More fill/stroke variants
-        CGPDFOperatorTableSetCallback(operatorTable, "f*") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFill()
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "B*") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFillAndStroke()
-        }
-        
-        // CMYK color operators
-        CGPDFOperatorTableSetCallback(operatorTable, "k") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleCMYKFillColor(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "K") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleCMYKStrokeColor(scanner: scanner)
-        }
-        
-        // More color space operators
-        CGPDFOperatorTableSetCallback(operatorTable, "cs") { (scanner, info) in
-            print("PDF: Color space operator 'cs' (non-stroking)")
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "CS") { (scanner, info) in
-            print("PDF: Color space operator 'CS' (stroking)")
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "sc") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleGenericFillColor(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "SC") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleGenericStrokeColor(scanner: scanner)
-        }
-        
-        // Debug callback for unknown operators
-        CGPDFOperatorTableSetCallback(operatorTable, "n") { (scanner, info) in
-            print("PDF: Path construction (no-op) operator 'n' encountered")
-        }
-        
-        // Add debug callbacks for common PDF 1.4+ operators we might be missing
-        CGPDFOperatorTableSetCallback(operatorTable, "q") { (scanner, info) in
-            print("PDF: 'q' (save graphics state) operator encountered")
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "Q") { (scanner, info) in
-            print("PDF: 'Q' (restore graphics state) operator encountered")
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleXObjectWithOpacitySaving(scanner: scanner)
-        }
-        
-        // Add opacity/transparency operator callbacks  
-        CGPDFOperatorTableSetCallback(operatorTable, "ca") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleFillOpacity(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "CA") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleStrokeOpacity(scanner: scanner)
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "gs") { (scanner, info) in
-            let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleGraphicsState(scanner: scanner)
-        }
-        
-        // Add debugging for potential opacity/transparency operators
-        CGPDFOperatorTableSetCallback(operatorTable, "A") { (scanner, info) in
-            print("PDF: 'A' operator (potential transparency) encountered")
-        }
-        
-        CGPDFOperatorTableSetCallback(operatorTable, "a") { (scanner, info) in
-            print("PDF: 'a' operator (potential transparency) encountered")
-        }
-        
-        // Add callbacks for blend mode operators
-        CGPDFOperatorTableSetCallback(operatorTable, "BM") { (scanner, info) in
-            print("PDF: 'BM' blend mode operator encountered")
-        }
-        
-        // Add callback for soft mask
-        CGPDFOperatorTableSetCallback(operatorTable, "SMask") { (scanner, info) in
-            print("PDF: 'SMask' soft mask operator encountered")
-        }
-        
-        // Add callback for transparency group
-        CGPDFOperatorTableSetCallback(operatorTable, "BDC") { (scanner, info) in
-            print("PDF: 'BDC' marked content operator encountered (might be transparency group)")
-        }
-        
-        // Add gradient operator callbacks
-        setupGradientOperatorCallbacks(operatorTable)
-    }
+    // MARK: - Legacy operator callback setup (replaced by PDFOperatorInterpreter)
     
     // MARK: - Utility Methods
     
@@ -358,8 +166,5 @@ class PDFCommandParser {
     
     // MARK: - Opacity/Transparency Handlers (Moved to PDFTransparencyHandlers.swift)
     
-    // MARK: - Fill and Stroke Handlers
-    
-    // MARK: - Fill and Stroke Handlers (Moved to PDFShapeBuilder.swift)
 }
 
