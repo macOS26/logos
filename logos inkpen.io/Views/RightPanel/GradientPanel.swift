@@ -284,13 +284,13 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
-            // Apply live to selected shapes
-            applyGradientToSelectedShapes()
+            // OPTIMIZED: Use live drag optimization to avoid expensive sync during angle dragging
+            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
-            // Apply live to selected shapes
-            applyGradientToSelectedShapes()
+            // OPTIMIZED: Use live drag optimization to avoid expensive sync during angle dragging
+            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
         
         // Reset flag after a short delay to allow UI to update
@@ -410,8 +410,8 @@ struct GradientFillSection: View {
             radial.scaleY = newScale * currentAspectRatio
             currentGradient = .radial(radial)
         }
-        // Apply live to selected shapes
-        applyGradientToSelectedShapes()
+        // OPTIMIZED: Use live drag optimization to avoid expensive sync during scale dragging
+        applyGradientToSelectedShapesOptimized(isLiveDrag: true)
     }
     
     private func updateGradientAspectRatio(_ newAspectRatio: Double) {
@@ -426,8 +426,8 @@ struct GradientFillSection: View {
             // Keep scaleX constant, adjust scaleY based on aspect ratio
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
-            // Apply live to selected shapes
-            applyGradientToSelectedShapes()
+            // OPTIMIZED: Use live drag optimization to avoid expensive sync during aspect ratio dragging
+            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
     
@@ -452,8 +452,8 @@ struct GradientFillSection: View {
         case .radial(var radial):
             radial.radius = newRadius
             currentGradient = .radial(radial)
-            // Apply live to selected shapes
-            applyGradientToSelectedShapes()
+            // OPTIMIZED: Use live drag optimization to avoid expensive sync during radius dragging
+            applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
     
@@ -484,8 +484,8 @@ struct GradientFillSection: View {
                 // AUTO SORT after position change to maintain visual order
                 linear.stops.sort { $0.position < $1.position }
                 currentGradient = .linear(linear)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during stop position dragging
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
@@ -493,8 +493,8 @@ struct GradientFillSection: View {
                 // AUTO SORT after position change to maintain visual order
                 radial.stops.sort { $0.position < $1.position }
                 currentGradient = .radial(radial)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during stop position dragging
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         }
     }
@@ -507,15 +507,15 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].opacity = opacity
                 currentGradient = .linear(linear)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during opacity dragging
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].opacity = opacity
                 currentGradient = .radial(radial)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during opacity dragging
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         }
     }
@@ -528,15 +528,15 @@ struct GradientFillSection: View {
             if let index = linear.stops.firstIndex(where: { $0.id == stopId }) {
                 linear.stops[index].color = color
                 currentGradient = .linear(linear)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during color updates
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         case .radial(var radial):
             if let index = radial.stops.firstIndex(where: { $0.id == stopId }) {
                 radial.stops[index].color = color
                 currentGradient = .radial(radial)
-                // Apply live to selected shapes
-                applyGradientToSelectedShapes()
+                // OPTIMIZED: Use live drag optimization to avoid expensive sync during color updates
+                applyGradientToSelectedShapesOptimized(isLiveDrag: true)
             }
         }
     }

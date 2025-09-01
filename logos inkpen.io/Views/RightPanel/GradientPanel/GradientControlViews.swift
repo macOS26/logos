@@ -77,7 +77,11 @@ struct GradientAngleControlView: View {
                         get: { angle },
                         set: onAngleChange
                     ), in: -180...180, onEditingChanged: { editing in
-                        if !editing { document.saveToUndoStack() }
+                        if !editing { 
+                            // Force full sync when angle drag completes
+                            document.syncUnifiedObjectsAfterPropertyChange()
+                            document.saveToUndoStack() 
+                        }
                     })
                     .controlSize(.small)
                     
@@ -198,7 +202,11 @@ struct GradientScaleControlView: View {
                                 updateScale(newScale)
                             }
                         ), in: 0.01...8.0, onEditingChanged: { editing in
-                            if !editing { document.saveToUndoStack() }
+                            if !editing { 
+                                // Force full sync when scale drag completes
+                                document.syncUnifiedObjectsAfterPropertyChange()
+                                document.saveToUndoStack() 
+                            }
                         })
                         .controlSize(.small)
                         
@@ -226,7 +234,11 @@ struct GradientScaleControlView: View {
                                     updateAspectRatio(newAspectRatio)
                                 }
                             ), in: 0.01...2.0, onEditingChanged: { editing in
-                                if !editing { document.saveToUndoStack() }
+                                if !editing { 
+                                    // Force full sync when aspect ratio drag completes
+                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.saveToUndoStack() 
+                                }
                             })
                             .controlSize(.small)
                             
@@ -253,7 +265,11 @@ struct GradientScaleControlView: View {
                                     updateRadius(newRadius)
                                 }
                             ), in: 0.1...2.0, onEditingChanged: { editing in
-                                if !editing { document.saveToUndoStack() }
+                                if !editing { 
+                                    // Force full sync when radius drag completes
+                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.saveToUndoStack() 
+                                }
                             })
                             .controlSize(.small)
                             

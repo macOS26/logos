@@ -129,7 +129,6 @@ struct LinearGradient: Codable, Hashable, Identifiable {
             Log.fileOperation("🔧 ANGLE SET: userSpaceOnUse - coordinates can extend beyond 0-1", level: .info)
         }
         
-        Log.fileOperation("🔧 ANGLE UPDATE: \(degrees)° → center=(\(centerX), \(centerY)), start=\(startPoint), end=\(endPoint)", level: .info)
     }
     
     /// Create a simple two-color linear gradient
