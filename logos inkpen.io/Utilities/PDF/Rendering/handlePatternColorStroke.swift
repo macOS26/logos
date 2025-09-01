@@ -5,6 +5,10 @@
 //  Created by Todd Bruss on 8/31/25.
 //
 
+import Foundation
+import SwiftUI
+import CoreGraphics
+
 extension PDFCommandParser {
     func handlePatternColorStroke(scanner: CGPDFScannerRef) {
         var nameObj: UnsafePointer<Int8>?
