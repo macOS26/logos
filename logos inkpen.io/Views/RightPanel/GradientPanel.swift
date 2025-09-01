@@ -91,8 +91,8 @@ struct GradientFillSection: View {
                 document: document,
                 getOriginX: getGradientOriginX,
                 getOriginY: getGradientOriginY,
-                updateOriginX: { updateGradientOriginX($0, applyToShapes: true) },
-                updateOriginY: { updateGradientOriginY($0, applyToShapes: true) }
+                updateOriginX: { updateGradientOriginXOptimized($0, applyToShapes: true, isLiveDrag: true) },
+                updateOriginY: { updateGradientOriginYOptimized($0, applyToShapes: true, isLiveDrag: true) }
             )
             
             GradientScaleControlView(
@@ -284,12 +284,14 @@ struct GradientFillSection: View {
         case .linear(var linear):
             linear.angle = normalizedAngle
             currentGradient = .linear(linear)
-            // OPTIMIZED: Use live drag optimization to avoid expensive sync during angle dragging
+            // OPTIMIZED: Apply gradient to shapes immediately for live canvas updates
+            // but avoid the expensive sync - that will happen on drag end
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         case .radial(var radial):
             radial.angle = normalizedAngle
             currentGradient = .radial(radial)
-            // OPTIMIZED: Use live drag optimization to avoid expensive sync during angle dragging
+            // OPTIMIZED: Apply gradient to shapes immediately for live canvas updates
+            // but avoid the expensive sync - that will happen on drag end
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
         
@@ -410,7 +412,8 @@ struct GradientFillSection: View {
             radial.scaleY = newScale * currentAspectRatio
             currentGradient = .radial(radial)
         }
-        // OPTIMIZED: Use live drag optimization to avoid expensive sync during scale dragging
+        // OPTIMIZED: Apply gradient to shapes immediately for live canvas updates
+        // but avoid the expensive sync - that will happen on drag end
         applyGradientToSelectedShapesOptimized(isLiveDrag: true)
     }
     
@@ -426,7 +429,8 @@ struct GradientFillSection: View {
             // Keep scaleX constant, adjust scaleY based on aspect ratio
             radial.scaleY = radial.scaleX * newAspectRatio
             currentGradient = .radial(radial)
-            // OPTIMIZED: Use live drag optimization to avoid expensive sync during aspect ratio dragging
+            // OPTIMIZED: Apply gradient to shapes immediately for live canvas updates
+            // but avoid the expensive sync - that will happen on drag end
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
@@ -452,7 +456,8 @@ struct GradientFillSection: View {
         case .radial(var radial):
             radial.radius = newRadius
             currentGradient = .radial(radial)
-            // OPTIMIZED: Use live drag optimization to avoid expensive sync during radius dragging
+            // OPTIMIZED: Apply gradient to shapes immediately for live canvas updates
+            // but avoid the expensive sync - that will happen on drag end
             applyGradientToSelectedShapesOptimized(isLiveDrag: true)
         }
     }
@@ -604,7 +609,43 @@ struct GradientFillSection: View {
     func applyGradientToSelectedShapesOptimized(isLiveDrag: Bool) {
         guard let gradient = currentGradient else { return }
         
-        // REFACTORED: Use unified objects system for gradient application
+        if isLiveDrag {
+            // OPTIMIZED: During live drag, update both shape data AND specific unified objects
+            // This matches the gradient tool pattern for smooth real-time updates
+            for objectID in document.selectedObjectIDs {
+                if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
+                    if case .shape(let shape) = unifiedObject.objectType,
+                       let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        
+                        // Update the shape in the layer
+                        var updatedShape = shape
+                        switch document.activeColorTarget {
+                        case .fill:
+                            updatedShape.fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
+                        case .stroke:
+                            updatedShape.strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
+                        }
+                        document.layers[layerIndex].shapes[shapeIndex] = updatedShape
+                        
+                        // CRITICAL: Update the specific unified object with the new shape data
+                        if let unifiedIndex = document.unifiedObjects.firstIndex(where: { unifiedObj in
+                            if case .shape(let unifiedShape) = unifiedObj.objectType {
+                                return unifiedShape.id == shape.id
+                            }
+                            return false
+                        }) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        }
+                    }
+                }
+            }
+            // Force immediate UI update for visual responsiveness
+            document.objectWillChange.send()
+            return
+        }
+        
+        // FULL UPDATE: Only do expensive operations when not live dragging
         var hasChanges = false
         
         // Apply gradient to selected objects from unified system
@@ -620,10 +661,8 @@ struct GradientFillSection: View {
                         switch document.activeColorTarget {
                         case .fill:
                             document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(gradient: gradient, opacity: 1.0)
-                            Log.fileOperation("🎨 GRADIENT PANEL: Applied fill gradient to shape \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
                         case .stroke:
                             document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(gradient: gradient, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: 1.0)
-                            Log.fileOperation("🎨 GRADIENT PANEL: Applied stroke gradient to shape \(shape.id.uuidString.prefix(8)) (liveDrag: \(isLiveDrag))", level: .info)
                         }
                         hasChanges = true
                     }
@@ -631,36 +670,17 @@ struct GradientFillSection: View {
                 case .text:
                     // Note: Text objects don't support gradients directly
                     // Could implement gradient text rendering in the future
-                    Log.fileOperation("🎨 GRADIENT PANEL: Text objects don't support gradients yet", level: .info)
+                    break
                 }
             }
         }
         
         // Sync unified objects if we made changes
         if hasChanges {
-            if isLiveDrag {
-                // OPTIMIZED: During live drag, update only the specific shapes in unified objects for targeted rendering
-                for objectID in document.selectedObjectIDs {
-                    if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
-                        if case .shape(let unifiedShape) = document.unifiedObjects[unifiedIndex].objectType {
-                            // Find the updated shape in layers
-                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                               let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == unifiedShape.id }) {
-                                // Update the specific unified object with the new shape data
-                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: updatedShape, layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                            }
-                        }
-                    }
-                }
-                
-                // Force immediate UI update for visual responsiveness
-                document.objectWillChange.send()
-            } else {
-                // FULL UPDATE: On completion, do full sync for consistency
-                document.syncUnifiedObjectsAfterPropertyChange()
-                DispatchQueue.main.async {
-                    self.document.objectWillChange.send()
-                }
+            // FULL UPDATE: On completion, do full sync for consistency
+            document.syncUnifiedObjectsAfterPropertyChange()
+            DispatchQueue.main.async {
+                self.document.objectWillChange.send()
             }
         }
     }

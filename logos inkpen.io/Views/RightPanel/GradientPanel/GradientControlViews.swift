@@ -78,7 +78,8 @@ struct GradientAngleControlView: View {
                         set: onAngleChange
                     ), in: -180...180, onEditingChanged: { editing in
                         if !editing { 
-                            // Force full sync when angle drag completes
+                            // DEBOUNCED: Only do expensive sync when drag ends
+                            // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
                             document.syncUnifiedObjectsAfterPropertyChange()
                             document.saveToUndoStack() 
                         }
@@ -110,11 +111,11 @@ struct GradientOriginControlView: View {
         if currentGradient != nil {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Origin Point (0,0 = center, -1 to 1 = scaled range)")
+                    Text("Origin Point")
                         .font(.caption)
                         .foregroundColor(Color.ui.secondaryText)
                     Spacer()
-                    Text("-8 to 8")
+                    Text("0 to 1")
                         .font(.caption2)
                         .foregroundColor(Color.ui.primaryBlue)
                         .padding(.horizontal, 4)
@@ -132,8 +133,13 @@ struct GradientOriginControlView: View {
                             Slider(value: Binding(
                                 get: { currentGradient != nil ? getOriginX(currentGradient!) : 0.0 },
                                 set: updateOriginX
-                            ), in: -8.0...8.0, onEditingChanged: { editing in
-                                if !editing { document.saveToUndoStack() }
+                            ), in: 0.0...1.0, onEditingChanged: { editing in
+                                if !editing { 
+                                    // DEBOUNCED: Only do expensive sync when drag ends
+                                    // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
+                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.saveToUndoStack() 
+                                }
                             })
                             .controlSize(.small)
                             
@@ -156,8 +162,13 @@ struct GradientOriginControlView: View {
                             Slider(value: Binding(
                                 get: { currentGradient != nil ? getOriginY(currentGradient!) : 0.0 },
                                 set: updateOriginY
-                            ), in: -8.0...8.0, onEditingChanged: { editing in
-                                if !editing { document.saveToUndoStack() }
+                            ), in: 0.0...1.0, onEditingChanged: { editing in
+                                if !editing { 
+                                    // DEBOUNCED: Only do expensive sync when drag ends
+                                    // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
+                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.saveToUndoStack() 
+                                }
                             })
                             .controlSize(.small)
                             
@@ -203,7 +214,8 @@ struct GradientScaleControlView: View {
                             }
                         ), in: 0.01...8.0, onEditingChanged: { editing in
                             if !editing { 
-                                // Force full sync when scale drag completes
+                                // DEBOUNCED: Only do expensive sync when drag ends
+                                // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
                                 document.syncUnifiedObjectsAfterPropertyChange()
                                 document.saveToUndoStack() 
                             }
@@ -235,7 +247,8 @@ struct GradientScaleControlView: View {
                                 }
                             ), in: 0.01...2.0, onEditingChanged: { editing in
                                 if !editing { 
-                                    // Force full sync when aspect ratio drag completes
+                                    // DEBOUNCED: Only do expensive sync when drag ends
+                                    // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
                                     document.syncUnifiedObjectsAfterPropertyChange()
                                     document.saveToUndoStack() 
                                 }
@@ -266,7 +279,8 @@ struct GradientScaleControlView: View {
                                 }
                             ), in: 0.1...2.0, onEditingChanged: { editing in
                                 if !editing { 
-                                    // Force full sync when radius drag completes
+                                    // DEBOUNCED: Only do expensive sync when drag ends
+                                    // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
                                     document.syncUnifiedObjectsAfterPropertyChange()
                                     document.saveToUndoStack() 
                                 }
