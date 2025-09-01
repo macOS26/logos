@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  PDF17OperatorTable.swift
 //  logos inkpen.io
 //
 //  Created by Todd Bruss on 8/31/25.
@@ -142,7 +142,7 @@ extension PDFCommandParser {
         // Nested XObject support
         CGPDFOperatorTableSetCallback(operatorTable, "Do") { (scanner, info) in
             let parser = Unmanaged<PDFCommandParser>.fromOpaque(info!).takeUnretainedValue()
-            parser.handleXObjectPDF14(scanner: scanner)
+            parser.handleXObjectPDF17(scanner: scanner)
         }
         
         // Path construction no-op
