@@ -27,42 +27,74 @@ extension PDFCommandParser {
     }
     
     /// Process an XObject by name (called directly with opacity saving)
-    func processXObjectPDF14(name: String) {
+    func processXObjectPDF14(name: String, parentResourcesDict: CGPDFDictionaryRef? = nil) {
         print("PDF 1.4: Processing XObject '\(name)'...")
         
-        // Get the XObject from page resources with detailed debugging
-        guard let page = currentPage else {
-            print("PDF 1.4: No current page available")
-            return
+        // Try to find the XObject in parent resources first, then page resources
+        var foundXObject: CGPDFObjectRef? = nil
+        var foundResourcesDict: CGPDFDictionaryRef? = nil
+        
+        // First try parent XObject resources (for nested XObjects like Fm2 inside Fm1)
+        if let parentResources = parentResourcesDict {
+            print("PDF 1.4: Searching for '\(name)' in parent XObject resources first...")
+            var parentXObjectDictRef: CGPDFDictionaryRef? = nil
+            if CGPDFDictionaryGetDictionary(parentResources, "XObject", &parentXObjectDictRef),
+               let parentXObjectDict = parentXObjectDictRef {
+                var parentXObjectRef: CGPDFObjectRef? = nil
+                if CGPDFDictionaryGetObject(parentXObjectDict, name, &parentXObjectRef),
+                   let parentXObject = parentXObjectRef {
+                    foundXObject = parentXObject
+                    foundResourcesDict = parentResources
+                    print("PDF 1.4: Found '\(name)' in parent XObject resources!")
+                } else {
+                    print("PDF 1.4: '\(name)' not found in parent XObject resources, trying page resources...")
+                }
+            }
         }
         
-        guard let resourceDict = page.dictionary else {
-            print("PDF 1.4: Page has no dictionary")
-            return
+        // If not found in parent resources, try page resources
+        if foundXObject == nil {
+            guard let page = currentPage else {
+                print("PDF 1.4: No current page available")
+                return
+            }
+            
+            guard let resourceDict = page.dictionary else {
+                print("PDF 1.4: Page has no dictionary")
+                return
+            }
+            
+            var resourcesRef: CGPDFDictionaryRef? = nil
+            guard CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
+                  let resourcesDict = resourcesRef else {
+                print("PDF 1.4: Page has no Resources dictionary")
+                return
+            }
+            
+            print("PDF 1.4: Found page Resources dictionary")
+            
+            var xObjectDictRef: CGPDFDictionaryRef? = nil
+            guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
+                  let xObjectDict = xObjectDictRef else {
+                print("PDF 1.4: Resources has no XObject dictionary")
+                return
+            }
+            
+            print("PDF 1.4: Found XObject dictionary")
+            
+            var xObjectRef: CGPDFObjectRef? = nil
+            guard CGPDFDictionaryGetObject(xObjectDict, name, &xObjectRef),
+                  let xObject = xObjectRef else {
+                print("PDF 1.4: XObject '\(name)' not found in XObject dictionary")
+                return
+            }
+            
+            foundXObject = xObject
+            foundResourcesDict = resourcesDict
         }
         
-        var resourcesRef: CGPDFDictionaryRef? = nil
-        guard CGPDFDictionaryGetDictionary(resourceDict, "Resources", &resourcesRef),
-              let resourcesDict = resourcesRef else {
-            print("PDF 1.4: Page has no Resources dictionary")
-            return
-        }
-        
-        print("PDF 1.4: Found page Resources dictionary")
-        
-        var xObjectDictRef: CGPDFDictionaryRef? = nil
-        guard CGPDFDictionaryGetDictionary(resourcesDict, "XObject", &xObjectDictRef),
-              let xObjectDict = xObjectDictRef else {
-            print("PDF 1.4: Resources has no XObject dictionary")
-            return
-        }
-        
-        print("PDF 1.4: Found XObject dictionary")
-        
-        var xObjectRef: CGPDFObjectRef? = nil
-        guard CGPDFDictionaryGetObject(xObjectDict, name, &xObjectRef),
-              let xObject = xObjectRef else {
-            print("PDF 1.4: XObject '\(name)' not found in XObject dictionary")
+        guard let xObject = foundXObject else {
+            print("PDF 1.4: XObject '\(name)' not found in any resource dictionary")
             return
         }
         
@@ -94,11 +126,20 @@ extension PDFCommandParser {
         
         print("PDF 1.4: XObject '\(name)' is a Form XObject - parsing content stream...")
         
-        // Parse the XObject content stream
-        parseXObjectContentStream(xObjectStream, dictionary: xObjectStreamDict, name: name)
+        // Check if XObject has its own Resources dictionary  
+        var xObjectResourcesDict: CGPDFDictionaryRef? = nil
+        if CGPDFDictionaryGetDictionary(xObjectStreamDict, "Resources", &xObjectResourcesDict) {
+            print("PDF 1.4: XObject '\(name)' has its own Resources dictionary")
+        } else {
+            print("PDF 1.4: XObject '\(name)' will inherit parent Resources")
+            xObjectResourcesDict = foundResourcesDict
+        }
+        
+        // Parse the XObject content stream, passing the XObject's resources for nested XObject lookup
+        parseXObjectContentStream(xObjectStream, dictionary: xObjectStreamDict, name: name, resourcesDict: xObjectResourcesDict)
     }
     
-    private func parseXObjectContentStream(_ xObjectStream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef, name: String) {
+    private func parseXObjectContentStream(_ xObjectStream: CGPDFStreamRef, dictionary: CGPDFDictionaryRef, name: String, resourcesDict: CGPDFDictionaryRef? = nil) {
         print("PDF 1.4: 🚨🚨🚨 DEBUG VERSION IS RUNNING FOR '\(name)' 🚨🚨🚨")
         print("PDF 1.4: XObject '\(name)' - reading content stream data...")
         
@@ -153,7 +194,8 @@ extension PDFCommandParser {
             // Use the decompressed data to create a content stream and parse it
             parseDecompressedXObjectContent(data: data, name: name, 
                                           savedFillOpacity: savedFillOpacity, 
-                                          savedStrokeOpacity: savedStrokeOpacity)
+                                          savedStrokeOpacity: savedStrokeOpacity,
+                                          resourcesDict: resourcesDict)
             
         } else {
             print("PDF 1.4: XObject '\(name)' - EMPTY content stream!")
@@ -161,7 +203,8 @@ extension PDFCommandParser {
     }
     
     private func parseDecompressedXObjectContent(data: CFData, name: String, 
-                                                savedFillOpacity: Double, savedStrokeOpacity: Double) {
+                                                savedFillOpacity: Double, savedStrokeOpacity: Double,
+                                                resourcesDict: CGPDFDictionaryRef? = nil) {
         print("PDF 1.4: XObject '\(name)' - parsing content manually...")
         
         guard let dataPtr = CFDataGetBytePtr(data) else {
@@ -191,14 +234,16 @@ extension PDFCommandParser {
             // Extract path operations with saved outer opacity values
             parseXObjectOperations(operations, name: name, 
                                  savedFillOpacity: savedFillOpacity, 
-                                 savedStrokeOpacity: savedStrokeOpacity)
+                                 savedStrokeOpacity: savedStrokeOpacity,
+                                 resourcesDict: resourcesDict)
         } else {
             print("PDF 1.4: XObject '\(name)' - no fill operations found")
         }
     }
     
     private func parseXObjectOperations(_ operations: [String], name: String, 
-                                       savedFillOpacity: Double, savedStrokeOpacity: Double) {
+                                       savedFillOpacity: Double, savedStrokeOpacity: Double,
+                                       resourcesDict: CGPDFDictionaryRef? = nil) {
         print("PDF 1.4: XObject '\(name)' - manually parsing operations to create shape...")
         
         var i = 0
@@ -329,6 +374,19 @@ extension PDFCommandParser {
                     print("PDF 1.4: XObject '\(name)' - 🖇️ Clipping path preserved for later operations")
                 }
                 i += 1
+                
+            case "Do": // XObject - XObject name comes BEFORE 'Do'
+                if i >= 1,
+                   let xobjectName = operations[i - 1].hasPrefix("/") ? String(operations[i - 1].dropFirst()) : nil {
+                    print("PDF 1.4: XObject '\(name)' - 🚨 NESTED XObject reference: \(xobjectName)")
+                    // Handle nested XObjects - this is likely where the black background is!
+                    if xobjectName == "Fm2" {
+                        print("PDF 1.4: XObject '\(name)' - 🔍 PROCESSING NESTED Fm2 - likely contains black background!")
+                    }
+                    // CRITICAL FIX: Pass the current XObject's resources as parent for nested lookup
+                    processXObjectPDF14(name: xobjectName, parentResourcesDict: resourcesDict)
+                    i += 1
+                } else { i += 1 }
                 
             case "f", "F": // fill
                 if hasPath {
