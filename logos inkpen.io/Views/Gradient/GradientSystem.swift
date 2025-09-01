@@ -1,4 +1,3 @@
-
 //
 //  GradientStop.swift
 //  logos inkpen.io
@@ -95,12 +94,22 @@ struct LinearGradient: Codable, Hashable, Identifiable {
         storedAngle = degrees
         
         let radians = degrees * .pi / 180.0
-        let centerX = (startPoint.x + endPoint.x) / 2.0
-        let centerY = (startPoint.y + endPoint.y) / 2.0
         
-        // Calculate current gradient length (default to 0.5 if points are identical)
+        // FIXED: Use originPoint as center, or calculate a properly normalized center
+        var centerX = originPoint.x
+        var centerY = originPoint.y
+        
+        // If start/end points are valid (within 0-1 range), use their midpoint as center
+        if units == .objectBoundingBox && 
+           startPoint.x >= 0 && startPoint.x <= 1 && startPoint.y >= 0 && startPoint.y <= 1 &&
+           endPoint.x >= 0 && endPoint.x <= 1 && endPoint.y >= 0 && endPoint.y <= 1 {
+            centerX = (startPoint.x + endPoint.x) / 2.0
+            centerY = (startPoint.y + endPoint.y) / 2.0
+        }
+        
+        // Calculate current gradient length (default to 0.25 for objectBoundingBox)
         let currentLength = sqrt(pow(endPoint.x - startPoint.x, 2) + pow(endPoint.y - startPoint.y, 2))
-        let halfLength = currentLength > 0 ? currentLength / 2.0 : 0.25
+        let halfLength = currentLength > 0 ? currentLength / 2.0 : (units == .objectBoundingBox ? 0.25 : 50.0)
         
         // Calculate new start and end points based on angle
         let deltaX = cos(radians) * halfLength
