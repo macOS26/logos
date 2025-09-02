@@ -271,9 +271,9 @@ extension VectorDocument {
                                 layerIndex: layerIndex,
                                 orderID: newOrderID
                             )
-                        case .text(let text):
+                        // Text handled as VectorShape(let text):
                             unifiedObjects[objectIndex] = VectorObject(
-                                text: text,
+                                shape: shape,
                                 layerIndex: layerIndex,
                                 orderID: newOrderID
                             )
@@ -295,7 +295,7 @@ extension VectorDocument {
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             let textObjects = layerObjects.filter { 
-                if case .text = $0.objectType { return true }
+                if // Text handled as VectorShape = $0.objectType { return true }
                 return false
             }
             let shapeObjects = layerObjects.filter { 
@@ -313,7 +313,7 @@ extension VectorDocument {
                 // Check if any text objects are at the top when they shouldn't be
                 let topObjects = sortedLayerObjects.suffix(min(3, sortedLayerObjects.count))
                 let textObjectsAtTop = topObjects.filter { 
-                    if case .text = $0.objectType { return true }
+                    if // Text handled as VectorShape = $0.objectType { return true }
                     return false
                 }
                 
@@ -355,7 +355,7 @@ extension VectorDocument {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Shape: \(shape.name)", category: .general)
-                case .text(let text):
+                // Text handled as VectorShape(let text):
                     Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Text: \(text.content.prefix(20))", category: .general)
                 }
             }
@@ -393,7 +393,7 @@ extension VectorDocument {
                 } else {
                     layers[unifiedObject.layerIndex].shapes.append(shape)
                 }
-            case .text(let text):
+            // Text handled as VectorShape(let text):
                 // CRITICAL FIX: Preserve text object order by ensuring it maintains its position in the array
                 // Use original text object to preserve all state, but ensure isEditing = false
                 if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
