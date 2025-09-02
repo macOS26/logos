@@ -169,10 +169,10 @@ extension VectorDocument {
         
         // Remove any unified objects that reference text objects that no longer exist
         unifiedObjects.removeAll { unifiedObject in
-            if case .text(let text) = unifiedObject.objectType {
-                let textStillExists = textObjects.contains { $0.id == text.id }
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
+                let textStillExists = textObjects.contains { $0.id == shape.id }
                 if !textStillExists {
-                    Log.fileOperation("🗑️ CLEANUP: Removing unified object for deleted text '\(text.content)' (ID: \(text.id.uuidString.prefix(8)))", level: .info)
+                    Log.fileOperation("🗑️ CLEANUP: Removing unified object for deleted text '\(shape.textContent ?? "")' (ID: \(shape.id.uuidString.prefix(8)))", level: .info)
                 }
                 return !textStillExists
             }
@@ -190,13 +190,35 @@ extension VectorDocument {
     func selectTextAt(_ point: CGPoint) -> VectorText? {
         // Search from top to bottom (last drawn first) using unified objects
         for unifiedObject in unifiedObjects.reversed() {
-            if case .text(let textObj) = unifiedObject.objectType {
-                if textObj.isVisible && !textObj.isLocked {
-                    let transformedBounds = textObj.bounds.applying(textObj.transform)
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
+                if shape.isVisible && !shape.isLocked {
+                    let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let transformedBounds = CGRect(
+                        x: position.x + shape.bounds.minX,
+                        y: position.y + shape.bounds.minY,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
                     if transformedBounds.contains(point) {
                         selectedObjectIDs = [unifiedObject.id]
                         syncSelectionArrays() // Keep legacy arrays in sync
-                        return textObj
+                        
+                        // Convert VectorShape back to VectorText for return value
+                        if let textContent = shape.textContent, let typography = shape.typography {
+                            return VectorText(
+                                content: textContent,
+                                typography: typography,
+                                position: position,
+                                transform: .identity,
+                                isVisible: shape.isVisible,
+                                isLocked: shape.isLocked,
+                                isEditing: shape.isEditing ?? false,
+                                layerIndex: unifiedObject.layerIndex,
+                                isPointText: shape.isPointText ?? true,
+                                cursorPosition: shape.cursorPosition ?? 0,
+                                areaSize: shape.areaSize
+                            )
+                        }
                     }
                 }
             }

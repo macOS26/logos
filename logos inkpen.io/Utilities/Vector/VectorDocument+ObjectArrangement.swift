@@ -48,12 +48,6 @@ extension VectorDocument {
                             layerIndex: unselectedObject.layerIndex,
                             orderID: newOrderID
                         )
-                    case .text(let text):
-                        unifiedObjects[index] = VectorObject(
-                            text: text,
-                            layerIndex: unselectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
                     }
                     newOrderID += 1
                 }
@@ -66,12 +60,6 @@ extension VectorDocument {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
                             shape: shape,
-                            layerIndex: selectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    case .text(let text):
-                        unifiedObjects[index] = VectorObject(
-                            text: text,
                             layerIndex: selectedObject.layerIndex,
                             orderID: newOrderID
                         )
@@ -132,12 +120,7 @@ extension VectorDocument {
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: frontOrderID
                             )
-                        case .text(let text):
-                            unifiedObjects[selectedIndex] = VectorObject(
-                                text: text,
-                                layerIndex: selectedObject.layerIndex,
-                                orderID: frontOrderID
-                            )
+                        // Text objects are now handled as VectorShape with isTextObject = true
                         }
                         
                         switch objectInFront.objectType {
@@ -147,7 +130,7 @@ extension VectorDocument {
                                 layerIndex: objectInFront.layerIndex,
                                 orderID: selectedOrderID
                             )
-                        case .text(let text):
+                        // Text objects are now handled as VectorShape with isTextObject = true
                             unifiedObjects[frontIndex] = VectorObject(
                                 text: text,
                                 layerIndex: objectInFront.layerIndex,
@@ -207,7 +190,7 @@ extension VectorDocument {
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: behindOrderID
                             )
-                        case .text(let text):
+                        // Text objects are now handled as VectorShape with isTextObject = true
                             unifiedObjects[selectedIndex] = VectorObject(
                                 text: text,
                                 layerIndex: selectedObject.layerIndex,
@@ -222,7 +205,7 @@ extension VectorDocument {
                                 layerIndex: objectBehind.layerIndex,
                                 orderID: selectedOrderID
                             )
-                        case .text(let text):
+                        // Text objects are now handled as VectorShape with isTextObject = true
                             unifiedObjects[behindIndex] = VectorObject(
                                 text: text,
                                 layerIndex: objectBehind.layerIndex,
@@ -273,12 +256,6 @@ extension VectorDocument {
                             layerIndex: selectedObject.layerIndex,
                             orderID: newOrderID
                         )
-                    case .text(let text):
-                        unifiedObjects[index] = VectorObject(
-                            text: text,
-                            layerIndex: selectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
                     }
                     newOrderID += 1
                 }
@@ -291,12 +268,6 @@ extension VectorDocument {
                     case .shape(let shape):
                         unifiedObjects[index] = VectorObject(
                             shape: shape,
-                            layerIndex: unselectedObject.layerIndex,
-                            orderID: newOrderID
-                        )
-                    case .text(let text):
-                        unifiedObjects[index] = VectorObject(
-                            text: text,
                             layerIndex: unselectedObject.layerIndex,
                             orderID: newOrderID
                         )

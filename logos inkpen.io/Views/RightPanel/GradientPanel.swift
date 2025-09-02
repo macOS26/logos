@@ -667,10 +667,6 @@ struct GradientFillSection: View {
                         hasChanges = true
                     }
                     
-                case .text:
-                    // Note: Text objects don't support gradients directly
-                    // Could implement gradient text rendering in the future
-                    break
                 }
             }
         }
