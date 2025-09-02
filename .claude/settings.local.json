@@ -36,7 +36,8 @@
       "Bash(done)",
       "mcp__xcf-server__show_folder",
       "Bash(log stream:*)",
-      "Bash(log show:*)"
+      "Bash(log show:*)",
+      "Read(//**)"
     ],
     "deny": [],
     "ask": []

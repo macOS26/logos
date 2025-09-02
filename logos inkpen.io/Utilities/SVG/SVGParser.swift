@@ -18,8 +18,8 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentTransform = CGAffineTransform.identity
     private var transformStack: [CGAffineTransform] = []
     private var documentSize = CGSize(width: 100, height: 100)
-    private var viewBoxWidth: Double = 100.0
-    private var viewBoxHeight: Double = 100.0
+    internal var viewBoxWidth: Double = 100.0
+    internal var viewBoxHeight: Double = 100.0
     private var viewBoxX: Double = 0.0
     private var viewBoxY: Double = 0.0
     private var hasViewBox: Bool = false
@@ -36,16 +36,16 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var isInMultiLineText: Bool = false
     
     // MARK: - Gradient Support
-    private var gradientDefinitions: [String: VectorGradient] = [:]
-    private var currentGradientId: String?
-    private var currentGradientType: String? // "linearGradient" or "radialGradient"
-    private var currentGradientStops: [GradientStop] = []
-    private var currentGradientAttributes: [String: String] = [:]
-    private var isParsingGradient = false
+    internal var gradientDefinitions: [String: VectorGradient] = [:]
+    internal var currentGradientId: String?
+    internal var currentGradientType: String? // "linearGradient" or "radialGradient"
+    internal var currentGradientStops: [GradientStop] = []
+    internal var currentGradientAttributes: [String: String] = [:]
+    internal var isParsingGradient = false
     
     // MARK: - Extreme Value Handling for Radial Gradients
-    private var useExtremeValueHandling = false
-    private var detectedExtremeValues = false
+    internal var useExtremeValueHandling = false
+    internal var detectedExtremeValues = false
     
     // MARK: - Helper Computed Properties and Functions
     
@@ -54,54 +54,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         return (documentSize.width / viewBoxWidth, documentSize.height / viewBoxHeight)
     }
     
-    /// Helper function to parse gradient units from attributes
-    private func parseGradientUnits(from attributes: [String: String]) -> GradientUnits {
-        return GradientUnits(rawValue: attributes["gradientUnits"] ?? "objectBoundingBox") ?? .objectBoundingBox
-    }
-    
-    /// Helper function to parse spread method from attributes
-    private func parseSpreadMethod(from attributes: [String: String]) -> GradientSpreadMethod {
-        return GradientSpreadMethod(rawValue: attributes["spreadMethod"] ?? "pad") ?? .pad
-    }
-    
-    /// Helper function to parse radial gradient coordinates from attributes
-    private func parseRadialGradientCoordinates(from attributes: [String: String]) -> (cx: String, cy: String, r: String, fx: String?, fy: String?) {
-        return (
-            cx: attributes["cx"] ?? "50%",
-            cy: attributes["cy"] ?? "50%", 
-            r: attributes["r"] ?? "50%",
-            fx: attributes["fx"],
-            fy: attributes["fy"]
-        )
-    }
-    
-    /// Helper function to convert degrees to radians
-    private func degreesToRadians(_ degrees: Double) -> Double {
-        return degrees * .pi / 180.0
-    }
-    
-    /// Helper function to convert radians to degrees
-    private func radiansToDegrees(_ radians: Double) -> Double {
-        return radians * 180.0 / .pi
-    }
-    
-    /// Helper function to parse gradient transform from attributes
-    private func parseGradientTransformFromAttributes(_ attributes: [String: String]) -> (angle: Double, scaleX: Double, scaleY: Double) {
-        var gradientAngle: Double = 0.0
-        var gradientScaleX: Double = 1.0
-        var gradientScaleY: Double = 1.0
-        
-        if let gradientTransformRaw = attributes["gradientTransform"] {
-            Log.fileOperation("🔄 Parsing gradientTransform: \(gradientTransformRaw)", level: .info)
-            let transforms = parseGradientTransform(gradientTransformRaw)
-            gradientAngle = transforms.angle
-            gradientScaleX = transforms.scaleX
-            gradientScaleY = transforms.scaleY
-            Log.fileOperation("🔄 Extracted: angle=\(gradientAngle)°, scaleX=\(gradientScaleX), scaleY=\(gradientScaleY)", level: .info)
-        }
-        
-        return (angle: gradientAngle, scaleX: gradientScaleX, scaleY: gradientScaleY)
-    }
     
     /// Helper function to parse gradient transform angle from attributes
     private func parseGradientTransformAngle(from attributes: [String: String]) -> Double {
@@ -1284,7 +1236,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         return fillStyle
     }
     
-    private func parseColor(_ colorString: String) -> VectorColor? {
+    internal func parseColor(_ colorString: String) -> VectorColor? {
         let color = colorString.trimmingCharacters(in: .whitespaces)
         
         if color.hasPrefix("#") {
@@ -1338,7 +1290,7 @@ class SVGParser: NSObject, XMLParserDelegate {
         return nil
     }
     
-    private func parseLength(_ value: String?) -> Double? {
+    internal func parseLength(_ value: String?) -> Double? {
         guard let value = value else { return nil }
         
         let trimmed = value.trimmingCharacters(in: .whitespaces)
@@ -1370,7 +1322,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
     /// This version includes extreme value handling for radial gradients that cannot be reproduced
-    private func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
+    internal func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
         let trimmed = value.trimmingCharacters(in: .whitespaces)
         
         // Handle percentage values (most common in SVG gradients)
@@ -1536,124 +1488,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         return transform
     }
     
-    // MARK: - Gradient Parsing Methods
-    
-    private func parseLinearGradient(attributes: [String: String]) {
-        guard let id = attributes["id"] else {
-            Log.fileOperation("⚠️ Linear gradient missing id attribute", level: .info)
-            return
-        }
-        
-        currentGradientId = id
-        currentGradientType = "linearGradient"
-        currentGradientAttributes = attributes
-        currentGradientStops = []
-        isParsingGradient = true
-        
-        Log.fileOperation("🎨 Parsing linear gradient: \(id)", level: .info)
-        print("   - x1: \(attributes["x1"] ?? "0%"), y1: \(attributes["y1"] ?? "0%")")
-        print("   - x2: \(attributes["x2"] ?? "100%"), y2: \(attributes["y2"] ?? "0%")")
-        print("   - gradientUnits: \(attributes["gradientUnits"] ?? "objectBoundingBox")")
-    }
-    
-    private func parseRadialGradient(attributes: [String: String]) {
-        guard let id = attributes["id"] else {
-            Log.fileOperation("⚠️ Radial gradient missing id attribute", level: .info)
-            return
-        }
-        
-        currentGradientId = id
-        currentGradientType = "radialGradient"
-        currentGradientAttributes = attributes
-        currentGradientStops = []
-        isParsingGradient = true
-        
-        // DETECT EXTREME VALUES: Check if this radial gradient has extreme coordinates
-        let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
-        
-        // Check for extreme values in coordinates
-        let hasExtremeValues = detectExtremeValuesInRadialGradient(
-            cx: cxRaw, cy: cyRaw, r: rRaw, fx: fxRaw, fy: fyRaw
-        )
-        
-        if hasExtremeValues {
-            detectedExtremeValues = true
-            useExtremeValueHandling = true
-            Log.fileOperation("🚨 EXTREME VALUES DETECTED in radial gradient: \(id)", level: .info)
-            Log.info("   Enabling extreme value handling for this gradient", category: .general)
-        }
-        
-        Log.fileOperation("🎨 Parsing radial gradient: \(id) (extreme handling: \(useExtremeValueHandling))", level: .info)
-    }
-    
-    /// Detect extreme values in radial gradient coordinates that require special handling
-    /// Trigger extreme value handling if normalized coordinates are not between 0-1
-    private func detectExtremeValuesInRadialGradient(cx: String, cy: String, r: String, fx: String?, fy: String?) -> Bool {
-        let coordinates = [cx, cy, r, fx, fy].compactMap { $0 }
-        
-        for coord in coordinates {
-            // Skip percentage values
-            if coord.hasSuffix("%") { continue }
-            
-            // Check for absolute values that are extremely large or small
-            if let value = Double(coord) {
-                // Check for values that are way outside normal SVG coordinate ranges
-                if value < -10000 || value > 10000 {
-                    Log.fileOperation("🚨 EXTREME VALUE DETECTED: \(coord) = \(value)", level: .info)
-                    return true
-                }
-                
-                // CRITICAL: Check if normalized value (after division) is outside 0-1 range
-                if viewBoxWidth > 0 && viewBoxHeight > 0 {
-                    let normalizer = coord == cx || coord == fx ? viewBoxWidth : viewBoxHeight
-                    let normalizedValue = value / normalizer
-                    
-                    // If normalized value is not between 0-1, use extreme value handling
-                    if normalizedValue < 0.0 || normalizedValue > 1.0 {
-                        Log.fileOperation("🚨 NORMALIZED VALUE OUT OF RANGE: \(coord) = \(value) → \(normalizedValue) (not 0-1)", level: .info)
-                        return true
-                    }
-                }
-            }
-        }
-        
-        return false
-    }
-    
-    private func parseGradientStop(attributes: [String: String]) {
-        guard isParsingGradient else { return }
-        
-        let offset = parseLength(attributes["offset"]) ?? 0.0
-        var stopColor = VectorColor.black
-        var stopOpacity = 1.0
-        
-        // Parse stop-color
-        if let colorValue = attributes["stop-color"] {
-            stopColor = parseColor(colorValue) ?? .black
-        }
-        
-        // Parse stop-opacity
-        if let opacityValue = attributes["stop-opacity"] {
-            stopOpacity = parseLength(opacityValue) ?? 1.0
-        }
-        
-        // Handle style attribute which might contain stop-color and stop-opacity
-        if let style = attributes["style"] {
-            let styleDict = parseStyleAttribute(style)
-            if let stopColorValue = styleDict["stop-color"] {
-                stopColor = parseColor(stopColorValue) ?? stopColor
-            }
-            if let stopOpacityValue = styleDict["stop-opacity"] {
-                stopOpacity = parseLength(stopOpacityValue) ?? stopOpacity
-            }
-        }
-        
-        let gradientStop = GradientStop(position: offset, color: stopColor, opacity: stopOpacity)
-        currentGradientStops.append(gradientStop)
-        
-        Log.fileOperation("🎨 Added gradient stop: offset=\(offset), color=\(stopColor)", level: .info)
-    }
-    
     private func finishGradientElement() {
         guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
         
@@ -1690,210 +1524,12 @@ class SVGParser: NSObject, XMLParserDelegate {
             }
         }
         
-        // Determine gradient type from stored gradient type
         let vectorGradient: VectorGradient
         
         if gradientType == "linearGradient" {
-            // Parse gradient units first to handle coordinates properly
-            let gradientUnits = parseGradientUnits(from: attributes)
-            
-            // Parse linear gradient attributes with enhanced coordinate handling
-            let x1Raw = attributes["x1"] ?? "0%"
-            let y1Raw = attributes["y1"] ?? "0%"
-            let x2Raw = attributes["x2"] ?? "100%"
-            let y2Raw = attributes["y2"] ?? "0%"
-            
-            Log.fileOperation("🔧 Parsing coordinates: x1=\(x1Raw), y1=\(y1Raw), x2=\(x2Raw), y2=\(y2Raw), units=\(gradientUnits)", level: .info)
-            
-            // Parse coordinates with proper gradient units handling
-            let x1 = parseGradientCoordinate(x1Raw, gradientUnits: gradientUnits, isXCoordinate: true)
-            let y1 = parseGradientCoordinate(y1Raw, gradientUnits: gradientUnits, isXCoordinate: false)
-            let x2 = parseGradientCoordinate(x2Raw, gradientUnits: gradientUnits, isXCoordinate: true)
-            let y2 = parseGradientCoordinate(y2Raw, gradientUnits: gradientUnits, isXCoordinate: false)
-            
-            Log.fileOperation("🔧 Parsed coordinates: x1=\(x1), y1=\(y1), x2=\(x2), y2=\(y2)", level: .info)
-            
-            // Parse gradientTransform to capture rotation and scale (for Y-flips like scale(1,-1))
-            let transformInfo = parseGradientTransformFromAttributes(attributes)
-            
-            // SIMPLE OBJECT-RELATIVE: ALL gradients paint relative to individual object bounds
-            let startPoint: CGPoint
-            let endPoint: CGPoint
-            
-            // Use inherited coordinates if present and not overridden
-            if let inherited = inheritedGradient, case .linear(let inh) = inherited,
-               attributes["x1"] == nil && attributes["y1"] == nil && attributes["x2"] == nil && attributes["y2"] == nil {
-                startPoint = inh.startPoint
-                endPoint = inh.endPoint
-            } else {
-                // Use the original SVG coordinates directly (normalized earlier if needed)
-                startPoint = CGPoint(x: x1, y: y1)
-                endPoint = CGPoint(x: x2, y: y2)
-            }
-            
-            // Compute the base direction from coordinates
-            var deltaX = x2 - x1
-            var deltaY = y2 - y1
-            
-            // Apply scale from gradientTransform to the direction vector only
-            // Translation does not affect angle; rotation will be added separately
-            if transformInfo.scaleX != 1.0 || transformInfo.scaleY != 1.0 {
-                deltaX *= transformInfo.scaleX
-                deltaY *= transformInfo.scaleY
-            }
-            
-            // Angle from transformed direction
-            var computedAngle = radiansToDegrees(atan2(deltaY, deltaX))
-            
-            // Add any explicit rotate() from gradientTransform
-            if transformInfo.angle != 0.0 {
-                computedAngle += transformInfo.angle
-            }
-            
-            let angleDegrees = computedAngle
-            
-            print("🎯 GRADIENT FROM SVG: angle=\(String(format: "%.2f", angleDegrees))° (transform: \(transformInfo.angle)°)")
-            print("   Start: (\(String(format: "%.3f", startPoint.x)), \(String(format: "%.3f", startPoint.y)))")
-            print("   End: (\(String(format: "%.3f", endPoint.x)), \(String(format: "%.3f", endPoint.y)))")
-            Log.fileOperation("🔥 FINAL GRADIENT: Linear gradient with original coordinates, stops=\(currentGradientStops.count)", level: .info)
-            
-            // Parse spread method
-            let spreadMethod = parseSpreadMethod(from: attributes)
-            
-            // FORCE OBJECT BOUNDING BOX: Always use shape-relative coordinates
-            // Calculate origin point as the midpoint between start and end
-            let originX = clamp((startPoint.x + endPoint.x) / 2.0, 0.0, 1.0)
-            let originY = clamp((startPoint.y + endPoint.y) / 2.0, 0.0, 1.0)
-            
-            var linearGradient = LinearGradient(
-                startPoint: startPoint,
-                endPoint: endPoint,
-                stops: currentGradientStops,
-                spreadMethod: spreadMethod,
-                units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
-            )
-            
-            // Inherit units/spread if not specified
-            if let inherited = inheritedGradient, case .linear(let inh) = inherited {
-                if attributes["gradientUnits"] == nil { linearGradient.units = inh.units }
-                if attributes["spreadMethod"] == nil { linearGradient.spreadMethod = inh.spreadMethod }
-            }
-            
-            // Set the origin point to the center of the gradient
-            linearGradient.originPoint = CGPoint(x: originX, y: originY)
-            
-            // Set the angle from the calculated angle (after applying gradientTransform effects)
-            linearGradient.angle = angleDegrees
-            
-            vectorGradient = .linear(linearGradient)
-            Log.info("✅ Created linear gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
-            print("   - Start: \(startPoint), End: \(endPoint), Angle: \(String(format: "%.1f", angleDegrees))° (shape-relative)")
-            
-        } else { // radialGradient
-            // Parse gradient units first to handle coordinates properly
-            let gradientUnits = parseGradientUnits(from: attributes)
-            
-            // Parse radial gradient attributes with enhanced coordinate handling
-            let (cxRaw, cyRaw, rRaw, fxRaw, fyRaw) = parseRadialGradientCoordinates(from: attributes)
-            
-            Log.fileOperation("🔧 Parsing radial coordinates: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), units=\(gradientUnits)", level: .info)
-            
-            // Use extreme value handling if detected for this gradient
-            let useExtremeHandling = useExtremeValueHandling && detectedExtremeValues
-            
-            let cx = parseGradientCoordinate(cxRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling)
-            let cy = parseGradientCoordinate(cyRaw, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling)
-            let r = parseGradientCoordinate(rRaw, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) // Use X for radius
-            
-            // Parse focal point if specified, otherwise use center point
-            let fx = fxRaw != nil ? parseGradientCoordinate(fxRaw!, gradientUnits: gradientUnits, isXCoordinate: true, useExtremeValueHandling: useExtremeHandling) : cx
-            let fy = fyRaw != nil ? parseGradientCoordinate(fyRaw!, gradientUnits: gradientUnits, isXCoordinate: false, useExtremeValueHandling: useExtremeHandling) : cy
-            
-            Log.fileOperation("🔧 Parsed radial coordinates: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", level: .info)
-            print("🔧 Raw values: cxRaw=\(cxRaw), cyRaw=\(cyRaw), rRaw=\(rRaw), fxRaw=\(fxRaw ?? "nil"), fyRaw=\(fyRaw ?? "nil")")
-            
-            // CORE GRAPHICS COORDINATE CONVERSION: Proper coordinate system mapping
-            // parseGradientCoordinate already handles the conversion from userSpaceOnUse to objectBoundingBox
-            // So cx, cy, fx, fy are already in the correct 0-1 range
-            
-            var centerPoint: CGPoint
-            var focalPoint: CGPoint
-            
-            if useExtremeHandling {
-                // AUTO-CENTER MODE: Use your radial gradient code that auto-centers fills
-                centerPoint = CGPoint(x: 0.5, y: 0.5)  // Center of object
-                focalPoint = CGPoint(x: 0.5, y: 0.5)   // Focal at center
-                Log.fileOperation("🎯 AUTO-CENTERED RADIAL: center=(0.5,0.5), focal=(0.5,0.5) (extreme value mode)", level: .info)
-            } else {
-                // STANDARD MODE: Use parsed coordinates
-                centerPoint = CGPoint(x: cx, y: cy)
-                focalPoint = CGPoint(x: fx, y: fy)
-                Log.fileOperation("🎯 STANDARD RADIAL: center=(\(cx),\(cy)), focal=(\(fx),\(fy))", level: .info)
-            }
-            
-            // Handle radius for extreme value mode
-            let finalRadius: Double
-            if useExtremeHandling {
-                // AUTO-CENTER MODE: Use fixed radius that spans from center to object edge
-                finalRadius = 0.5
-                Log.fileOperation("🎯 AUTO-CENTERED RADIAL: radius=0.5 (spans center to object edge)", level: .info)
-            } else {
-                // STANDARD MODE: Use parsed radius
-                finalRadius = r
-                Log.fileOperation("🎯 STANDARD RADIAL: radius=\(r)", level: .info)
-            }
-            
-            Log.fileOperation("🎯 GRADIENT COORDINATES: center=(\(centerPoint.x),\(centerPoint.y)), focal=(\(focalPoint.x),\(focalPoint.y)), radius=\(finalRadius)", level: .info)
-            print("   Original: cx=\(cxRaw), cy=\(cyRaw), r=\(rRaw), fx=\(fxRaw ?? "nil"), fy=\(fyRaw ?? "nil")")
-            Log.info("   Converted: cx=\(cx), cy=\(cy), r=\(r), fx=\(fx), fy=\(fy)", category: .general)
-            Log.info("   Final: center=(\(centerPoint.x),\(centerPoint.y)), radius=\(finalRadius)", category: .general)
-            Log.info("   Units: \(gradientUnits) - parseGradientCoordinate handled conversion", category: .general)
-            
-            // Parse spread method
-            let spreadMethod = parseSpreadMethod(from: attributes)
-            
-            // NEW: Parse gradientTransform for angle and independent scaling
-            let (gradientAngle, gradientScaleX, gradientScaleY) = parseGradientTransformFromAttributes(attributes)
-            
-            // CORE GRAPHICS RADIAL GRADIENT: Use proper coordinate system conversion
-            var radialGradient = RadialGradient(
-                centerPoint: centerPoint,
-                radius: max(0.001, finalRadius), // Use final radius (auto-centered or parsed)
-                stops: currentGradientStops,
-                focalPoint: focalPoint, // Use the properly converted focal point
-                spreadMethod: spreadMethod,
-                units: .objectBoundingBox  // Force objectBoundingBox for proper shape fitting
-            )
-            
-            // Inherit center/radius/units/spread if not specified
-            if let inherited = inheritedGradient, case .radial(let inh) = inherited {
-                if attributes["cx"] == nil && attributes["cy"] == nil { radialGradient.centerPoint = inh.centerPoint }
-                if attributes["r"] == nil { radialGradient.radius = inh.radius }
-                if attributes["gradientUnits"] == nil { radialGradient.units = inh.units }
-                if attributes["spreadMethod"] == nil { radialGradient.spreadMethod = inh.spreadMethod }
-            }
-            
-            // Set the origin point to the center point
-            radialGradient.originPoint = centerPoint
-            
-            // Apply gradient transform for angle and scaling
-            radialGradient.angle = gradientAngle
-            radialGradient.scaleX = abs(gradientScaleX) // Apply transform scale
-            radialGradient.scaleY = abs(gradientScaleY) // Apply transform scale
-            
-            vectorGradient = .radial(radialGradient)
-            Log.info("✅ Created radial gradient: \(gradientId) with \(currentGradientStops.count) stops (FORCED objectBoundingBox)", category: .fileOperations)
-            print("   - Center: \(centerPoint), Radius: \(String(format: "%.3f", finalRadius)) (shape-relative)")
-            Log.info("   - Origin Point: \(radialGradient.originPoint)", category: .general)
-            Log.info("   - Scale: X=\(gradientScaleX), Y=\(gradientScaleY)", category: .general)
-            if useExtremeHandling {
-                Log.info("   - Mode: AUTO-CENTERED (extreme value handling)", category: .general)
-            } else {
-                Log.info("   - Mode: STANDARD (parsed coordinates)", category: .general)
-            }
-            if fxRaw != nil || fyRaw != nil {
-                Log.info("   - Focal point: \(focalPoint)", category: .general)
-            }
+            vectorGradient = finishLinearGradientElement(inheritedGradient: inheritedGradient)
+        } else {
+            vectorGradient = finishRadialGradientElement(inheritedGradient: inheritedGradient)
         }
         
         // Store the gradient definition
@@ -1914,82 +1550,6 @@ class SVGParser: NSObject, XMLParserDelegate {
         }
         
         Log.info("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops", category: .general)
-    }
-    
-    /// Parse SVG gradientTransform attribute to extract angle and aspect ratio
-    private func parseGradientTransform(_ transform: String) -> (angle: Double, scaleX: Double, scaleY: Double) {
-        var angle: Double = 0.0
-        var scaleX: Double = 1.0
-        var scaleY: Double = 1.0
-        
-        // Parse transform functions: translate(x,y) rotate(angle) scale(sx,sy)
-        // Example: "translate(771.04 670.64) rotate(83.98) scale(1 .65)"
-        
-        // Extract rotate value
-        if let rotateMatch = transform.range(of: #"rotate\(([^)]+)\)"#, options: .regularExpression) {
-            let rotateSubstring = String(transform[rotateMatch])
-            let numbers = extractNumbers(from: rotateSubstring)
-            if let rotateAngle = numbers.first {
-                // negate the SVG rotation
-                angle = -rotateAngle
-                Log.fileOperation("🔄 Extracted rotation: \(rotateAngle)° -> angle: \(angle)°", level: .info)
-            }
-        }
-        
-        // Extract scale values for independent X/Y scaling
-        if let scaleMatch = transform.range(of: #"scale\(([^)]+)\)"#, options: .regularExpression) {
-            let scaleSubstring = String(transform[scaleMatch])
-            let numbers = extractNumbers(from: scaleSubstring)
-            if numbers.count >= 2 {
-                scaleX = numbers[0]
-                scaleY = numbers[1]
-                Log.fileOperation("🔄 Extracted scale: x=\(scaleX), y=\(scaleY)", level: .info)
-            } else if numbers.count == 1 {
-                // Uniform scale
-                scaleX = numbers[0]
-                scaleY = numbers[0]
-                Log.fileOperation("🔄 Extracted uniform scale: \(numbers[0])", level: .info)
-            }
-        }
-        
-        return (angle: angle, scaleX: scaleX, scaleY: scaleY)
-    }
-    
-    /// Extract numbers from a string (helper for parseGradientTransform)
-    private func extractNumbers(from string: String) -> [Double] {
-        // Regular expression to match numbers (including decimals and negative)
-        let pattern = #"-?\d*\.?\d+"#
-        let regex = try! NSRegularExpression(pattern: pattern)
-        let range = NSRange(string.startIndex..<string.endIndex, in: string)
-        let matches = regex.matches(in: string, range: range)
-        
-        return matches.compactMap { match in
-            if let range = Range(match.range, in: string) {
-                return Double(String(string[range]))
-            }
-            return nil
-        }
-    }
-    
-    /// Clamp a value between min and max
-    private func clamp(_ value: Double, _ minValue: Double, _ maxValue: Double) -> Double {
-        return max(minValue, min(maxValue, value))
-    }
-    
-    private func parseStyleAttribute(_ style: String) -> [String: String] {
-        var styleDict: [String: String] = [:]
-        
-        let declarations = style.components(separatedBy: ";")
-        for declaration in declarations {
-            let keyValue = declaration.components(separatedBy: ":")
-            if keyValue.count >= 2 {
-                let key = keyValue[0].trimmingCharacters(in: .whitespacesAndNewlines)
-                let value = keyValue[1...].joined(separator: ":").trimmingCharacters(in: .whitespacesAndNewlines)
-                styleDict[key] = value
-            }
-        }
-        
-        return styleDict
     }
     
     // MARK: - Professional SVG Path Tokenization
