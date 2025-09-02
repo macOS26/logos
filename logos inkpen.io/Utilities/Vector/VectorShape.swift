@@ -483,7 +483,35 @@ struct VectorShape: Codable, Hashable, Identifiable {
         return expandedShape
     }
     
-    // Factory methods for common shapes
+    // MARK: - Text Object Factory Method
+    
+    /// Create a VectorShape that represents text
+    static func textObject(content: String, typography: TypographyProperties, position: CGPoint, isPointText: Bool = true, areaSize: CGSize? = nil) -> VectorShape {
+        // Create an empty path for text objects (text rendering doesn't use path)
+        let emptyPath = VectorPath(elements: [], isClosed: false)
+        
+        return VectorShape(
+            name: "Text: \(content.prefix(20))",
+            path: emptyPath,
+            geometricType: nil,
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: CGAffineTransform(translationX: position.x, y: position.y),
+            isVisible: true,
+            isLocked: false,
+            opacity: 1.0,
+            blendMode: .normal,
+            isTextObject: true,
+            textContent: content,
+            typography: typography,
+            isPointText: isPointText,
+            cursorPosition: content.count,
+            areaSize: areaSize,
+            isEditing: false
+        )
+    }
+    
+    // MARK: - Factory methods for common shapes
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)
         let path = VectorPath(elements: [
