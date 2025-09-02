@@ -353,6 +353,15 @@ extension DrawingCanvas {
     
     /// FIXED: Centralized hit detection logic with precise selection behavior
     private func performShapeHitTest(shape: VectorShape, at location: CGPoint) -> Bool {
+        // CRITICAL FIX: Special handling for text objects (they have empty paths)
+        if shape.isTextObject {
+            // Text objects use bounds-based hit testing, not path hit testing
+            let transformedBounds = shape.bounds.applying(shape.transform)
+            let isHit = transformedBounds.contains(location)
+            Log.info("  - Text object bounds hit: \(isHit) (bounds: \(transformedBounds))", category: .selection)
+            return isHit
+        }
+        
         // OPTION KEY ENHANCEMENT: Use path-based selection when Option key is held
         if isOptionPressed {
             // Option key held: Use precise path-based hit testing only
