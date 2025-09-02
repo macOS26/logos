@@ -37,7 +37,9 @@
       "mcp__xcf-server__show_folder",
       "Bash(log stream:*)",
       "Bash(log show:*)",
-      "Read(//**)"
+      "Read(//**)",
+      "mcp__xcf-server__create_doc",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
