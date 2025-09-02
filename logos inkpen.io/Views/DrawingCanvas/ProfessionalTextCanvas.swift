@@ -29,8 +29,8 @@ struct StableProfessionalTextCanvas: View {
         if let textObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {
-            // Fallback if text object not found
-            let fallbackText = VectorText(content: "Missing", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+            // MIGRATION FIX: Create fallback text with proper content
+            let fallbackText = VectorText(content: "Text", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: fallbackText, document: document))
         }
     }
@@ -56,9 +56,15 @@ struct StableProfessionalTextCanvas: View {
     }
     
     private func updateViewModelFromDocument() {
-        // Find current text object and sync view model (without recreation)
+        // MIGRATION FIX: Find text object in textObjects array (legacy system still used for editing)
         if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
+            Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
+        } else {
+            // FALLBACK: If text object missing from textObjects, log issue with debugging info
+            Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in textObjects array", level: .info)
+            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.textObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
+            Log.fileOperation("🔍 DEBUG: Total text objects: \(document.textObjects.count)", level: .info)
         }
     }
     
@@ -75,7 +81,7 @@ struct StableProfessionalTextCanvas: View {
                 return "\(currentTextObject.content)-\(currentTextObject.isEditing)"
             }
         }
-        return "missing"
+        return "text-missing"
     }
 }
 
