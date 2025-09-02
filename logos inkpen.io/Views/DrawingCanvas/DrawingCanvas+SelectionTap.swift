@@ -249,10 +249,12 @@ extension DrawingCanvas {
                 Log.info("  - Exact hit: \(exactHit)", category: .selection)
                 Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
                 
-                isHit = contentHit || exactHit || expandedHit
+                // CRITICAL FIX: For green text boxes, only use content hit (no bounding box)
+                // This prevents the bounding box from interfering with text movement
+                isHit = contentHit  // Only content-based selection for text objects
                 
                 if isHit {
-                    Log.info("✅ TEXT HIT: Text object selected", category: .selection)
+                    Log.info("✅ TEXT HIT: Text object selected (content-only)", category: .selection)
                 } else {
                     Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
                 }
@@ -454,33 +456,53 @@ extension DrawingCanvas {
     
     /// FIXED: Check if a location is within any existing selection box
     private func isLocationWithinSelectionBox(_ location: CGPoint) -> Bool {
+        Log.error("🚨 DEBUG SELECTION BOX CHECK: location=\(location)", category: .debug)
+        Log.error("🚨 DEBUG SELECTION BOX CHECK: selectedObjectIDs=\(document.selectedObjectIDs)", category: .debug)
+        
         // Check selected objects using unified system
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    let transformedBounds = shape.bounds.applying(shape.transform)
-                    // Use exact bounds for precise text selection (no tolerance)
-                    let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
-                    if selectionBoxBounds.contains(location) {
-                        return true
-                    }
+                    Log.error("🚨 DEBUG SHAPE: id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
+                    Log.error("🚨 DEBUG TRANSFORM: tx=\(shape.transform.tx), ty=\(shape.transform.ty)", category: .debug)
+                    Log.error("🚨 DEBUG BOUNDS: \(shape.bounds)", category: .debug)
                     
-                        let textBounds = CGRect(
-                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
-                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
-                        width: shape.bounds.width,
-                        height: shape.bounds.height
-                    )
-                    // Use exact bounds for precise text selection (no tolerance)
-                    let textSelectionBounds = textBounds.insetBy(dx: 0, dy: 0)
-                    if textSelectionBounds.contains(location) {
-                        return true
+                    // CRITICAL FIX: For text objects, only check content area, not bounding box
+                    if shape.isTextObject {
+                        // Only use text content area for text objects (no bounding box)
+                        let textContentArea = CGRect(
+                            x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
+                            y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                            width: shape.bounds.width,
+                            height: shape.bounds.height
+                        )
+                        Log.error("🚨 DEBUG TEXT CONTENT AREA: \(textContentArea)", category: .debug)
+                        let contains = textContentArea.contains(location)
+                        Log.error("🚨 DEBUG TEXT CONTAINS: \(contains)", category: .debug)
+                        
+                        if contains {
+                            Log.error("🚨 DEBUG SELECTION BOX: TEXT HIT - RETURNING TRUE", category: .debug)
+                            return true
+                        }
+                    } else {
+                        // For non-text shapes, use normal bounds checking
+                        let transformedBounds = shape.bounds.applying(shape.transform)
+                        let selectionBoxBounds = transformedBounds.insetBy(dx: 0, dy: 0)
+                        Log.error("🚨 DEBUG SHAPE BOUNDS: \(selectionBoxBounds)", category: .debug)
+                        let contains = selectionBoxBounds.contains(location)
+                        Log.error("🚨 DEBUG SHAPE CONTAINS: \(contains)", category: .debug)
+                        
+                        if contains {
+                            Log.error("🚨 DEBUG SELECTION BOX: SHAPE HIT - RETURNING TRUE", category: .debug)
+                            return true
+                        }
                     }
                 }
             }
         }
         
+        Log.error("🚨 DEBUG SELECTION BOX: NO HIT - RETURNING FALSE", category: .debug)
         return false
     }
     

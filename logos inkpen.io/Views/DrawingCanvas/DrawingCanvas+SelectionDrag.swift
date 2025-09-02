@@ -37,18 +37,27 @@ extension DrawingCanvas {
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
+                Log.error("🚨 DRAG DEBUG: Processing shape id=\(shape.id), isTextObject=\(shape.isTextObject)", category: .debug)
+                
                 if shape.isTextObject {
                     // CRITICAL FIX: For text objects, use actual position from textObjects array + center offset
                     if let textObject = document.textObjects.first(where: { $0.id == shape.id }) {
+                        Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
                         let centerX = textObject.position.x + textObject.bounds.width/2  
                         let centerY = textObject.position.y + textObject.bounds.height/2
-                        initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                        let calculatedCenter = CGPoint(x: centerX, y: centerY)
+                        Log.error("🚨 DRAG DEBUG: Calculated text center=\(calculatedCenter)", category: .debug)
+                        initialObjectPositions[unifiedObject.id] = calculatedCenter
                     } else {
                         // Fallback: Use shape bounds center
+                        Log.error("🚨 DRAG DEBUG: NO textObject found! Using shape fallback", category: .debug)
+                        Log.error("🚨 DRAG DEBUG: Shape transform=\(shape.transform), bounds=\(shape.bounds)", category: .debug)
                         let bounds = shape.bounds
                         let centerX = shape.transform.tx + bounds.width/2
                         let centerY = shape.transform.ty + bounds.height/2
-                        initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                        let fallbackCenter = CGPoint(x: centerX, y: centerY)
+                        Log.error("🚨 DRAG DEBUG: Fallback text center=\(fallbackCenter)", category: .debug)
+                        initialObjectPositions[unifiedObject.id] = fallbackCenter
                     }
                 } else {
                     // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
@@ -60,6 +69,7 @@ extension DrawingCanvas {
                 }
                 
                 // CRITICAL FIX: Store initial transform to prevent jitter
+                Log.error("🚨 DRAG DEBUG: Storing initial transform=\(shape.transform)", category: .debug)
                 initialObjectTransforms[unifiedObject.id] = shape.transform
             }
         }
@@ -165,8 +175,18 @@ extension DrawingCanvas {
                         // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
                         // Convert from center-based reference to position-based coordinates
                         let textBounds = document.textObjects[textIndex].bounds
-                        document.textObjects[textIndex].position.x = initialCenter.x - textBounds.width/2 + currentDragDelta.x
-                        document.textObjects[textIndex].position.y = initialCenter.y - textBounds.height/2 + currentDragDelta.y
+                        let newPositionX = initialCenter.x - textBounds.width/2 + currentDragDelta.x
+                        let newPositionY = initialCenter.y - textBounds.height/2 + currentDragDelta.y
+                        
+                        Log.error("🚨 FINISH DRAG: textID=\(unifiedObject.id)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: OLD position=\(document.textObjects[textIndex].position)", category: .debug)
+                        Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
+                        Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
+                        
+                        document.textObjects[textIndex].position.x = newPositionX
+                        document.textObjects[textIndex].position.y = newPositionY
+                        
+                        Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }
                 }
             }
@@ -501,18 +521,36 @@ extension DrawingCanvas {
             
             switch unifiedObject.objectType {
             case .shape(let oldShape):
-                // Find the updated shape in the layers array
-                if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                   let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
-                    // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
-                    document.unifiedObjects[i] = VectorObject(
-                        shape: updatedShape,
-                        layerIndex: unifiedObject.layerIndex,
-                        orderID: unifiedObject.orderID  // Keep same orderID = no reordering
-                    )
+                // CRITICAL FIX: Handle text objects differently - they're not in layers.shapes
+                if oldShape.isTextObject {
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing from textObjects array", category: .debug)
+                    if let textObject = document.textObjects.first(where: { $0.id == oldShape.id }) {
+                        Log.error("🚨 SYNC DEBUG: Found textObject at position=\(textObject.position)", category: .debug)
+                        var updatedShape = oldShape
+                        updatedShape.transform.tx = textObject.position.x
+                        updatedShape.transform.ty = textObject.position.y
+                        
+                        document.unifiedObjects[i] = VectorObject(
+                            shape: updatedShape,
+                            layerIndex: unifiedObject.layerIndex,
+                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                        )
+                        Log.error("🚨 SYNC DEBUG: Updated text transform to (\(textObject.position.x), \(textObject.position.y))", category: .debug)
+                    } else {
+                        Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
+                    }
+                } else {
+                    // Regular shapes - find in layers array
+                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                       let updatedShape = document.layers[layerIndex].shapes.first(where: { $0.id == oldShape.id }) {
+                        // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
+                        document.unifiedObjects[i] = VectorObject(
+                            shape: updatedShape,
+                            layerIndex: unifiedObject.layerIndex,
+                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                        )
+                    }
                 }
-                
-                // Text objects are now handled as VectorShape with isTextObject = true
             }
         }
         
