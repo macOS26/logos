@@ -54,8 +54,40 @@ struct UnifiedObjectContentView: View {
     var body: some View {
         switch unifiedObject.objectType {
         case .shape(let shape):
+            // CRITICAL FIX: Handle text objects represented as VectorShape
+            if shape.isTextObject {
+                // Render text using existing StableProfessionalTextCanvas
+                // Convert VectorShape back to VectorText for the text canvas
+                if let textContent = shape.textContent, let typography = shape.typography {
+                    let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                    let vectorText = VectorText(
+                        content: textContent,
+                        typography: typography,
+                        position: position,
+                        transform: .identity,
+                        isVisible: shape.isVisible,
+                        isLocked: shape.isLocked,
+                        isEditing: shape.isEditing ?? false,
+                        layerIndex: nil, // Will be handled by unified object
+                        isPointText: shape.isPointText ?? true,
+                        cursorPosition: shape.cursorPosition ?? 0,
+                        areaSize: shape.areaSize
+                    )
+                    
+                    StableProfessionalTextCanvas(
+                        document: document,
+                        textObjectID: shape.id, // Use shape ID
+                        dragPreviewDelta: dragPreviewDelta,
+                        dragPreviewTrigger: dragPreviewTrigger
+                    )
+                    .id("\(shape.id)-\(position.x)-\(position.y)")  // CRITICAL FIX: Include position in ID to trigger view refresh
+                    .allowsHitTesting(true)
+                } else {
+                    EmptyView()
+                }
+            }
             // CRITICAL FIX: Handle clipping masks in unified object system
-            if shape.isClippingPath {
+            else if shape.isClippingPath {
                 // Do not render clipping path shapes themselves
                 EmptyView()
                     .onAppear {
@@ -112,16 +144,6 @@ struct UnifiedObjectContentView: View {
                     }
             }
             
-        case .text(let text):
-            // Render text using existing StableProfessionalTextCanvas
-            StableProfessionalTextCanvas(
-                document: document,
-                textObjectID: text.id,
-                dragPreviewDelta: dragPreviewDelta,
-                dragPreviewTrigger: dragPreviewTrigger
-            )
-            .id("\(text.id)-\(text.position.x)-\(text.position.y)")  // CRITICAL FIX: Include position in ID to trigger view refresh
-            .allowsHitTesting(true)
         }
     }
     

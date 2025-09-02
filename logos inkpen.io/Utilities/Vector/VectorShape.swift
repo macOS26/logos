@@ -511,6 +511,32 @@ struct VectorShape: Codable, Hashable, Identifiable {
         )
     }
     
+    /// Convert a VectorText object to a VectorShape
+    static func from(_ vectorText: VectorText) -> VectorShape {
+        // Create an empty path for text objects (text rendering doesn't use path)
+        let emptyPath = VectorPath(elements: [], isClosed: false)
+        
+        return VectorShape(
+            name: "Text: \(vectorText.content.prefix(20))",
+            path: emptyPath,
+            geometricType: nil,
+            strokeStyle: nil,
+            fillStyle: nil,
+            transform: CGAffineTransform(translationX: vectorText.position.x, y: vectorText.position.y).concatenating(vectorText.transform),
+            isVisible: vectorText.isVisible,
+            isLocked: vectorText.isLocked,
+            opacity: 1.0,
+            blendMode: .normal,
+            isTextObject: true,
+            textContent: vectorText.content,
+            typography: vectorText.typography,
+            isPointText: vectorText.isPointText,
+            cursorPosition: vectorText.cursorPosition,
+            areaSize: vectorText.areaSize,
+            isEditing: vectorText.isEditing
+        )
+    }
+    
     // MARK: - Factory methods for common shapes
     static func rectangle(at origin: CGPoint, size: CGSize) -> VectorShape {
         let rect = CGRect(origin: origin, size: size)

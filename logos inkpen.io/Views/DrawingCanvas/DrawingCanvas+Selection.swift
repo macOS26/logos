@@ -22,22 +22,25 @@ extension DrawingCanvas {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
-                case .text(let textObj):
-                    if !textObj.isVisible || textObj.isLocked { continue }
-                    
-                    // Use exact same coordinate system as selection box
-                    let absoluteBounds = CGRect(
-                        x: textObj.position.x + textObj.bounds.minX,
-                        y: textObj.position.y + textObj.bounds.minY,
-                        width: textObj.bounds.width,
-                        height: textObj.bounds.height
-                    )
-                    
-                    if absoluteBounds.contains(location) {
-                        return true
-                    }
-                    
                 case .shape(let shape):
+                    // CRITICAL FIX: Handle text objects represented as VectorShape
+                    if shape.isTextObject {
+                        if !shape.isVisible || shape.isLocked { continue }
+                        
+                        // Use exact same coordinate system as selection box for text objects
+                        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        let absoluteBounds = CGRect(
+                            x: position.x + shape.bounds.minX,
+                            y: position.y + shape.bounds.minY,
+                            width: shape.bounds.width,
+                            height: shape.bounds.height
+                        )
+                        
+                        if absoluteBounds.contains(location) {
+                            return true
+                        }
+                        continue // Skip the regular shape handling for text objects
+                    }
                     // Check if the shape's layer is visible
                     if unifiedObject.layerIndex >= document.layers.count || !document.layers[unifiedObject.layerIndex].isVisible {
                         continue

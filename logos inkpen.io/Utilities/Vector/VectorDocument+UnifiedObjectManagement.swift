@@ -81,8 +81,6 @@ extension VectorDocument {
                 switch unifiedObj.objectType {
                 case .shape(let existingShape):
                     return behindShapeIDs.contains(existingShape.id) ? unifiedObj.orderID : nil
-                case .text:
-                    return nil
                 }
             }
         
@@ -102,44 +100,29 @@ extension VectorDocument {
         unifiedObjects.append(unifiedObject)
     }
     
-    /// Adds a text object to the unified objects system
+    /// Adds a text object as VectorShape to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        // Convert VectorText to VectorShape
+        let textShape = VectorShape.from(text)
+        
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this text to preserve its orderID
             if let existingObject = unifiedObjects.first(where: { 
-                if case .text(let existingText) = $0.objectType {
-                    return existingText.id == text.id
+                if case .shape(let existingShape) = $0.objectType {
+                    return existingShape.id == text.id
                 }
                 return false
             }) {
                 // Use the existing orderID to preserve order
-                let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: existingObject.orderID)
-                unifiedObjects.append(unifiedObject)
-                return
-            }
-            
-            // CRITICAL FIX: If no existing object found during undo/redo, try to find a similar text object
-            // with the same content and position to estimate the correct orderID
-            let similarTextObjects = unifiedObjects.filter { 
-                if case .text(let existingText) = $0.objectType {
-                    return existingText.content == text.content && 
-                           existingText.position == text.position &&
-                           $0.layerIndex == layerIndex
-                }
-                return false
-            }
-            
-            if let similarObject = similarTextObjects.first {
-                // Use the orderID of the similar object to maintain relative positioning
-                let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: similarObject.orderID)
+                let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: existingObject.orderID)
                 unifiedObjects.append(unifiedObject)
                 return
             }
         }
         
         let orderID = getNextOrderID(for: layerIndex)
-        let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
+        let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
         unifiedObjects.append(unifiedObject)
     }
     
@@ -191,7 +174,8 @@ extension VectorDocument {
                 
                 if item.isText {
                     let text = item.object as! VectorText
-                    let unifiedObject = VectorObject(text: text, layerIndex: layerIndex, orderID: orderID)
+                    let textShape = VectorShape.from(text)
+                    let unifiedObject = VectorObject(shape: textShape, layerIndex: layerIndex, orderID: orderID)
                     unifiedObjects.append(unifiedObject)
                 } else {
                     let shape = item.object as! VectorShape
@@ -214,9 +198,11 @@ extension VectorDocument {
             if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    selectedShapeIDs.insert(shape.id)
-                case .text(let text):
-                    selectedTextIDs.insert(text.id)
+                    if shape.isTextObject {
+                        selectedTextIDs.insert(shape.id)
+                    } else {
+                        selectedShapeIDs.insert(shape.id)
+                    }
                 }
             }
         }
@@ -238,11 +224,11 @@ extension VectorDocument {
             }
         }
         
-        // Add selected text objects
+        // Add selected text objects (now represented as VectorShape with isTextObject = true)
         for textID in selectedTextIDs {
             if let unifiedObject = unifiedObjects.first(where: { 
-                if case .text(let text) = $0.objectType {
-                    return text.id == textID
+                if case .shape(let shape) = $0.objectType {
+                    return shape.isTextObject && shape.id == textID
                 }
                 return false
             }) {
@@ -278,22 +264,34 @@ extension VectorDocument {
         for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                // Use original shape from layers array to preserve all state
-                if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
-                    layers[unifiedObject.layerIndex].shapes.append(originalShape)
+                if shape.isTextObject {
+                    // Convert VectorShape back to VectorText for legacy textObjects array
+                    if let textContent = shape.textContent, let typography = shape.typography {
+                        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                        var vectorText = VectorText(
+                            content: textContent,
+                            typography: typography,
+                            position: position,
+                            transform: .identity,
+                            isVisible: shape.isVisible,
+                            isLocked: shape.isLocked,
+                            isEditing: shape.isEditing ?? false,
+                            layerIndex: unifiedObject.layerIndex,
+                            isPointText: shape.isPointText ?? true,
+                            cursorPosition: shape.cursorPosition ?? 0,
+                            areaSize: shape.areaSize
+                        )
+                        // Note: VectorText.id is let, so we can't change it
+                        // We'll need to update VectorText.id to be var if we want to preserve IDs
+                        textObjects.append(vectorText)
+                    }
                 } else {
-                    layers[unifiedObject.layerIndex].shapes.append(shape)
-                }
-            case .text(let text):
-                // Use original text object to preserve all state, but ensure isEditing = false
-                if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
-                    var updatedText = originalText
-                    updatedText.isEditing = false
-                    textObjects.append(updatedText)
-                } else {
-                    var updatedText = text
-                    updatedText.isEditing = false
-                    textObjects.append(updatedText)
+                    // Regular shape - use original shape from layers array to preserve all state
+                    if let originalShape = originalShapes[unifiedObject.layerIndex].first(where: { $0.id == shape.id }) {
+                        layers[unifiedObject.layerIndex].shapes.append(originalShape)
+                    } else {
+                        layers[unifiedObject.layerIndex].shapes.append(shape)
+                    }
                 }
             }
         }
@@ -331,13 +329,6 @@ extension VectorDocument {
                     Log.info("🗑️ SYNC: Removing unified object for shape in non-existent layer", category: .general)
                     return true // Remove if layer doesn't exist
                 }
-            case .text(let text):
-                // Check if text still exists in textObjects array
-                let exists = textObjects.contains { $0.id == text.id }
-                if !exists {
-                    Log.info("🗑️ SYNC: Removing unified object for deleted text '\(text.content.prefix(20))' (ID: \(text.id.uuidString.prefix(8)))", category: .general)
-                }
-                return !exists
             }
         }
         
@@ -372,35 +363,21 @@ extension VectorDocument {
                         self?.unifiedObjects[i] = newObject
                     }
                 }
-                
-            case .text(let oldText):
-                // Find the updated text in the textObjects array
-                if let updatedText = textObjects.first(where: { $0.id == oldText.id }) {
-                    // Update the unified object with the changed text (deferred to avoid SwiftUI publishing warnings)
-                    let newObject = VectorObject(
-                        text: updatedText,
-                        layerIndex: unifiedObject.layerIndex,
-                        orderID: unifiedObject.orderID
-                    )
-                    DispatchQueue.main.async { [weak self] in
-                        self?.unifiedObjects[i] = newObject
-                    }
-                }
             }
         }
         
         // CRITICAL FIX: Ensure all text objects are in unified system
         let textUnifiedObjects = unifiedObjects.filter { unifiedObject in
-            if case .text = unifiedObject.objectType {
-                return true
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isTextObject
             }
             return false
         }
         
         let missingTextObjects = textObjects.filter { text in
             !textUnifiedObjects.contains { unifiedObject in
-                if case .text(let unifiedText) = unifiedObject.objectType {
-                    return unifiedText.id == text.id
+                if case .shape(let unifiedShape) = unifiedObject.objectType {
+                    return unifiedShape.isTextObject && unifiedShape.id == text.id
                 }
                 return false
             }

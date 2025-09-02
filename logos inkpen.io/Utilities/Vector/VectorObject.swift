@@ -19,7 +19,6 @@ struct VectorObject: Identifiable, Codable, Hashable {
     
     enum ObjectType: Codable, Hashable {
         case shape(VectorShape)
-        case text(VectorText)
     }
     
     init(shape: VectorShape, layerIndex: Int, orderID: Int) {
@@ -29,19 +28,11 @@ struct VectorObject: Identifiable, Codable, Hashable {
         self.objectType = .shape(shape)
     }
     
-    init(text: VectorText, layerIndex: Int, orderID: Int) {
-        self.id = text.id
-        self.orderID = orderID
-        self.layerIndex = layerIndex
-        self.objectType = .text(text)
-    }
     
     var isVisible: Bool {
         switch objectType {
         case .shape(let shape):
             return shape.isVisible
-        case .text(let text):
-            return text.isVisible
         }
     }
     
@@ -49,8 +40,6 @@ struct VectorObject: Identifiable, Codable, Hashable {
         switch objectType {
         case .shape(let shape):
             return shape.isLocked
-        case .text(let text):
-            return text.isLocked
         }
     }
 }
