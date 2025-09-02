@@ -287,6 +287,15 @@ struct VectorShape: Codable, Hashable, Identifiable {
     var originalBounds: CGRect?    // Original rectangle bounds (never changes, like originalPath)
     var cornerRadii: [Double] = [] // Current radius for each corner [topLeft, topRight, bottomRight, bottomLeft] in points
     
+    // MARK: - Text Object Properties (when isTextObject = true)
+    var isTextObject: Bool = false
+    var textContent: String? = nil
+    var typography: TypographyProperties? = nil
+    var isPointText: Bool? = nil // Point text (expands as you type) vs Area text (fixed area)
+    var cursorPosition: Int? = nil // Current cursor position for inline editing
+    var areaSize: CGSize? = nil // Area size for area text (nil for point text)
+    var isEditing: Bool? = nil // For inline text editing
+    
     init(name: String = "Shape", path: VectorPath, geometricType: GeometricShapeType? = nil, strokeStyle: StrokeStyle? = nil, fillStyle: FillStyle? = nil, transform: CGAffineTransform = .identity, isVisible: Bool = true, isLocked: Bool = false, opacity: Double = 1.0, blendMode: BlendMode = .normal, isGroup: Bool = false, groupedShapes: [VectorShape] = [], groupTransform: CGAffineTransform = .identity, isCompoundPath: Bool = false, isWarpObject: Bool = false, originalPath: VectorPath? = nil, warpEnvelope: [CGPoint] = [], originalEnvelope: [CGPoint] = [], isRoundedRectangle: Bool = false, originalBounds: CGRect? = nil, cornerRadii: [Double] = []) {
         self.id = UUID()
         self.name = name
@@ -574,6 +583,15 @@ struct VectorShape: Codable, Hashable, Identifiable {
         linkedImagePath = try container.decodeIfPresent(String.self, forKey: .linkedImagePath)
         linkedImageBookmarkData = try container.decodeIfPresent(Data.self, forKey: .linkedImageBookmarkData)
         
+        // NEW: Text object properties with defaults
+        isTextObject = try container.decodeIfPresent(Bool.self, forKey: .isTextObject) ?? false
+        textContent = try container.decodeIfPresent(String.self, forKey: .textContent)
+        typography = try container.decodeIfPresent(TypographyProperties.self, forKey: .typography)
+        isPointText = try container.decodeIfPresent(Bool.self, forKey: .isPointText)
+        cursorPosition = try container.decodeIfPresent(Int.self, forKey: .cursorPosition)
+        areaSize = try container.decodeIfPresent(CGSize.self, forKey: .areaSize)
+        isEditing = try container.decodeIfPresent(Bool.self, forKey: .isEditing)
+        
         // Removed excessive logging for performance
     }
     
@@ -583,6 +601,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         case isRoundedRectangle, originalBounds, cornerRadii
         case isClippingPath, clippedByShapeID
         case embeddedImageData, linkedImagePath, linkedImageBookmarkData
+        case isTextObject, textContent, typography, isPointText, cursorPosition, areaSize, isEditing
     }
 }
 
