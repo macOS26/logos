@@ -959,69 +959,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     
-    private func finishGradientElement() {
-        guard let gradientId = currentGradientId, let gradientType = currentGradientType, isParsingGradient else { return }
-        
-        let attributes = currentGradientAttributes
-        
-        // Handle gradient inheritance (xlink:href / href)
-        var inheritedGradient: VectorGradient? = nil
-        if let hrefRaw = attributes["xlink:href"] ?? attributes["href"] {
-            var refId = hrefRaw.trimmingCharacters(in: .whitespacesAndNewlines)
-            if refId.hasPrefix("url(#") && refId.hasSuffix(")") {
-                refId = String(refId.dropFirst(5).dropLast(1))
-            } else if refId.hasPrefix("#") {
-                refId = String(refId.dropFirst())
-            }
-            inheritedGradient = gradientDefinitions[refId]
-            if inheritedGradient != nil {
-                Log.fileOperation("🧬 Inheriting gradient from \(refId) for \(gradientId)", level: .info)
-            } else {
-                Log.fileOperation("⚠️ Referenced gradient not found: \(refId)", level: .info)
-            }
-        }
-        
-        // Ensure we have at least one gradient stop
-        if currentGradientStops.isEmpty {
-            if let inherited = inheritedGradient {
-                currentGradientStops = inherited.stops
-                Log.info("✅ Inherited \(currentGradientStops.count) stops from referenced gradient", category: .fileOperations)
-            } else {
-                Log.fileOperation("⚠️ Gradient \(gradientId) has no color stops - creating default black to white", level: .info)
-                currentGradientStops = [
-                    GradientStop(position: 0.0, color: .black),
-                    GradientStop(position: 1.0, color: .white)
-                ]
-            }
-        }
-        
-        let vectorGradient: VectorGradient
-        
-        if gradientType == "linearGradient" {
-            vectorGradient = finishLinearGradientElement(inheritedGradient: inheritedGradient)
-        } else {
-            vectorGradient = finishRadialGradientElement(inheritedGradient: inheritedGradient)
-        }
-        
-        // Store the gradient definition
-        gradientDefinitions[gradientId] = vectorGradient
-        
-        // Reset parsing state
-        currentGradientId = nil
-        currentGradientType = nil
-        currentGradientAttributes = [:]
-        currentGradientStops = []
-        isParsingGradient = false
-        
-        // Reset extreme value handling for next gradient
-        if detectedExtremeValues {
-            Log.fileOperation("🔄 Resetting extreme value handling for next gradient", level: .info)
-            detectedExtremeValues = false
-            useExtremeValueHandling = false
-        }
-        
-        Log.info("📚 Stored gradient definition: \(gradientId) with \(vectorGradient.stops.count) stops", category: .general)
-    }
     
     
 }
