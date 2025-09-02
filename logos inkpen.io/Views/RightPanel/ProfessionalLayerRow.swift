@@ -165,7 +165,7 @@ struct ProfessionalLayerRow: View {
     
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
         // CRITICAL: Determine which unified object this is
-        guard let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) else { return }
+        guard document.unifiedObjects.first(where: { $0.id == objectID }) != nil else { return }
         
         // Set the layer as selected first
         document.selectedLayerIndex = layerIndex

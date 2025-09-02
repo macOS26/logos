@@ -397,7 +397,7 @@ extension VectorDocument {
                 // CRITICAL FIX: Preserve text object order by ensuring it maintains its position in the array
                 // Use original text object to preserve all state, but ensure isEditing = false
                 if let originalText = originalTextObjects.first(where: { $0.id == shape.id }) {
-                    var updatedText = originalText
+                    _ = originalText
                     // Text handled as VectorShape - no action needed
                 } else {
                     // Text handled as VectorShape

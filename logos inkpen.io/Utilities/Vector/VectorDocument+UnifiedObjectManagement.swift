@@ -251,7 +251,7 @@ extension VectorDocument {
     /// CRITICAL FIX: Sync legacy arrays from unified objects array
     private func syncLegacyArraysFromUnified() {
         // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
-        let originalTextObjects = textObjects
+        _ = textObjects
         let originalShapes = layers.map { $0.shapes }
         
         // Clear existing legacy arrays
@@ -268,7 +268,7 @@ extension VectorDocument {
                     // Convert VectorShape back to VectorText for legacy textObjects array
                     if let textContent = shape.textContent, let typography = shape.typography {
                         let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                        var vectorText = VectorText(
+                        let vectorText = VectorText(
                             content: textContent,
                             typography: typography,
                             position: position,

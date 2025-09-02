@@ -829,7 +829,7 @@ class ClipboardManager {
     func copy(from document: VectorDocument) {
         // REFACTORED: Use unified objects system for copying
         var shapesToCopy: [VectorShape] = []
-        var textToCopy: [VectorText] = []
+        let textToCopy: [VectorText] = []
         
         // Collect selected objects from unified system
         for objectID in document.selectedObjectIDs {
