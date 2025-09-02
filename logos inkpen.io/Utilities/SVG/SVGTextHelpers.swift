@@ -14,7 +14,7 @@ extension SVGParser {
     // MARK: - Text Processing Helper Methods
     
     // Extract a font-family from either the explicit attribute or inline style
-    internal func extractFontFamily(from attributes: [String: String]) -> String? {
+    func extractFontFamily(from attributes: [String: String]) -> String? {
         if let explicit = attributes["font-family"], !explicit.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return explicit
         }
@@ -32,7 +32,7 @@ extension SVGParser {
     }
 
     // Normalize and validate font-family; if none of the candidates are installed, use Helvetica Neue
-    internal func normalizeFontFamily(_ rawFamily: String?) -> String {
+    func normalizeFontFamily(_ rawFamily: String?) -> String {
         // If not provided, default immediately
         guard let raw = rawFamily?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
             return "Helvetica Neue"
@@ -56,7 +56,7 @@ extension SVGParser {
     
     // MARK: - SVG Font Weight and Alignment Parsing
     
-    internal func parseFontWeight(from attributes: [String: String]) -> FontWeight {
+    func parseFontWeight(from attributes: [String: String]) -> FontWeight {
         // Check explicit font-weight attribute first
         if let weightValue = attributes["font-weight"] {
             switch weightValue.lowercased() {
@@ -97,7 +97,7 @@ extension SVGParser {
         return .regular  // Default
     }
     
-    internal func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
+    func detectTextAlignment(from tspans: [(content: String, attributes: [String: String], x: Double, y: Double)]) -> TextAlignment {
         guard tspans.count > 1 else { return .left }
         
         // Check for explicit text-anchor attribute
