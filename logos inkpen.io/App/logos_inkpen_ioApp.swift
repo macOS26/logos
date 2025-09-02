@@ -837,8 +837,7 @@ class ClipboardManager {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     shapesToCopy.append(shape)
-                case .text(let text):
-                    textToCopy.append(text)
+                    // Text handled as VectorShape
                 }
             }
         }
@@ -982,7 +981,7 @@ class ClipboardManager {
                     
                     // Add to unified objects system with orderID that places it behind selected objects
                     let newOrderID = targetOrderID - clipboardData.shapes.count - offset - 1  // SUBTRACT to place behind
-                    let unifiedObject = VectorObject(text: newText, layerIndex: layerIndex, orderID: newOrderID)
+                    let unifiedObject = VectorObject(shape: VectorShape.from(newText), layerIndex: layerIndex, orderID: newOrderID)
                     document.unifiedObjects.append(unifiedObject)
                     document.selectedObjectIDs.insert(newText.id)
                 }

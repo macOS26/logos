@@ -47,6 +47,9 @@ struct MainToolbarContent: ToolbarContent {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
+                    // Skip text objects - they don't have paths to close
+                    if shape.isTextObject { continue }
+                    
                     // Check if path has no close element and has enough points to close
                     let hasCloseElement = shape.path.elements.contains { element in
                         if case .close = element { return true }
@@ -63,9 +66,6 @@ struct MainToolbarContent: ToolbarContent {
                     if !hasCloseElement && pointCount >= 3 {
                         return true
                     }
-                case .text:
-                    // Text objects don't have paths to close
-                    continue
                 }
             }
         }
@@ -80,6 +80,9 @@ struct MainToolbarContent: ToolbarContent {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
+                    // Skip text objects - they don't have paths to close
+                    if shape.isTextObject { continue }
+                    
                     // Find the shape in the layers array and update it
                     if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
                        let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
@@ -108,9 +111,6 @@ struct MainToolbarContent: ToolbarContent {
                             Log.info("🎯 Closed selected path for shape \(shape.name)", category: .shapes)
                         }
                     }
-                case .text:
-                    // Text objects don't have paths to close
-                    continue
                 }
             }
         }
@@ -375,16 +375,15 @@ struct MainToolbarContent: ToolbarContent {
                 if unifiedObject.layerIndex >= 2 {
                     switch unifiedObject.objectType {
                     case .shape(let shape):
-                        let shapeBounds = shape.bounds.applying(shape.transform)
+                        let shapeBounds: CGRect
+                        if shape.isTextObject {
+                            // Text objects use bounds directly (already positioned)
+                            shapeBounds = shape.bounds.applying(shape.transform)
+                        } else {
+                            // Regular shapes use bounds + transform
+                            shapeBounds = shape.bounds.applying(shape.transform)
+                        }
                         combinedBounds = combinedBounds.map { $0.union(shapeBounds) } ?? shapeBounds
-                    case .text(let textObj):
-                        let textBounds = CGRect(
-                            x: textObj.position.x + textObj.bounds.minX,
-                            y: textObj.position.y + textObj.bounds.minY,
-                            width: textObj.bounds.width,
-                            height: textObj.bounds.height
-                        ).applying(textObj.transform)
-                        combinedBounds = combinedBounds.map { $0.union(textBounds) } ?? textBounds
                     }
                 }
             }
@@ -418,15 +417,17 @@ struct MainToolbarContent: ToolbarContent {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and lock it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        document.layers[layerIndex].shapes[shapeIndex].isLocked = true
-                    }
-                case .text(let text):
-                    // Find the text in the textObjects array and lock it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].isLocked = true
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and lock it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].isLocked = true
+                        }
+                    } else {
+                        // Find the shape in the layers array and lock it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            document.layers[layerIndex].shapes[shapeIndex].isLocked = true
+                        }
                     }
                 }
             }
@@ -464,15 +465,17 @@ struct MainToolbarContent: ToolbarContent {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and hide it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        document.layers[layerIndex].shapes[shapeIndex].isVisible = false
-                    }
-                case .text(let text):
-                    // Find the text in the textObjects array and hide it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].isVisible = false
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and hide it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].isVisible = false
+                        }
+                    } else {
+                        // Find the shape in the layers array and hide it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            document.layers[layerIndex].shapes[shapeIndex].isVisible = false
+                        }
                     }
                 }
             }

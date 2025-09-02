@@ -91,8 +91,6 @@ extension VectorDocument {
                     return false
                 }
                 return true
-            case .text:
-                return true
             }
         }
         
@@ -105,13 +103,15 @@ extension VectorDocument {
         for objectToDelete in protectedObjects {
             switch objectToDelete.objectType {
             case .shape(let shape):
-                // Remove from layers array
-                if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
-                    layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+                if shape.isTextObject {
+                    // Remove from textObjects array for text objects
+                    textObjects.removeAll { $0.id == shape.id }
+                } else {
+                    // Remove from layers array for regular shapes
+                    if let layerIndex = objectToDelete.layerIndex < layers.count ? objectToDelete.layerIndex : nil {
+                        layers[layerIndex].shapes.removeAll { $0.id == shape.id }
+                    }
                 }
-            case .text(let text):
-                // Remove from textObjects array
-                textObjects.removeAll { $0.id == text.id }
             }
         }
         

@@ -59,33 +59,9 @@ struct LayersPanel: View {
     
     private func layerRowContent(for layerIndex: Int) -> some View {
         ProfessionalLayerRow(
-            document: document,
             layerIndex: layerIndex,
-            isExpanded: expandedLayers.contains(layerIndex),
-            isRenaming: renamingLayerIndex == layerIndex,
-            newLayerName: $newLayerName,
-            onToggleExpanded: {
-                if expandedLayers.contains(layerIndex) {
-                    expandedLayers.remove(layerIndex)
-                } else {
-                    expandedLayers.insert(layerIndex)
-                }
-            },
-            onStartRename: {
-                renamingLayerIndex = layerIndex
-                newLayerName = document.layers[layerIndex].name
-            },
-            onFinishRename: {
-                if !newLayerName.isEmpty {
-                    document.renameLayer(at: layerIndex, to: newLayerName)
-                }
-                renamingLayerIndex = nil
-                newLayerName = ""
-            },
-            onCancelRename: {
-                renamingLayerIndex = nil
-                newLayerName = ""
-            }
+            layer: document.layers[layerIndex],
+            document: document
         )
     }
 } 

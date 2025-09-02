@@ -34,13 +34,15 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.hasStroke ? text.typography.strokeColor : .clear
             case .shape(let shape):
-                if let strokeColor = shape.strokeStyle?.color {
-                    return strokeColor
+                if shape.isTextObject {
+                    return shape.typography?.hasStroke == true ? shape.typography?.strokeColor ?? .clear : .clear
                 } else {
-                    return .clear  // Show clear/none when no stroke exists
+                    if let strokeColor = shape.strokeStyle?.color {
+                        return strokeColor
+                    } else {
+                        return .clear  // Show clear/none when no stroke exists
+                    }
                 }
             }
         }
@@ -52,11 +54,13 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.fillColor
             case .shape(let shape):
-                if let fillStyle = shape.fillStyle {
-                    return fillStyle.color
+                if shape.isTextObject {
+                    return shape.typography?.fillColor ?? .black
+                } else {
+                    if let fillStyle = shape.fillStyle {
+                        return fillStyle.color
+                    }
                 }
             }
         }
@@ -68,10 +72,12 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.strokeWidth
             case .shape(let shape):
-                return shape.strokeStyle?.width ?? document.defaultStrokeWidth
+                if shape.isTextObject {
+                    return shape.typography?.strokeWidth ?? document.defaultStrokeWidth
+                } else {
+                    return shape.strokeStyle?.width ?? document.defaultStrokeWidth
+                }
             }
         }
         return document.defaultStrokeWidth // Show default width for new shapes
@@ -82,10 +88,12 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(_):
-                return .center // Text objects don't have stroke placement - use default
             case .shape(let shape):
-                return shape.strokeStyle?.placement ?? .center
+                if shape.isTextObject {
+                    return .center // Text objects don't have stroke placement - use default
+                } else {
+                    return shape.strokeStyle?.placement ?? .center
+                }
             }
         }
         return .center
@@ -96,11 +104,13 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.fillOpacity
             case .shape(let shape):
-                if let opacity = shape.fillStyle?.opacity {
-                    return opacity
+                if shape.isTextObject {
+                    return shape.typography?.fillOpacity ?? document.defaultFillOpacity
+                } else {
+                    if let opacity = shape.fillStyle?.opacity {
+                        return opacity
+                    }
                 }
             }
         }
@@ -113,17 +123,18 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.strokeOpacity
             case .shape(let shape):
-                if let opacity = shape.strokeStyle?.opacity {
-                    return opacity
+                if shape.isTextObject {
+                    return shape.typography?.strokeOpacity ?? document.defaultStrokeOpacity
+                } else {
+                    if let opacity = shape.strokeStyle?.opacity {
+                        return opacity
+                    }
                 }
             }
         }
         return document.defaultStrokeOpacity  // Show default opacity for new shapes
     }
-    
 
     
     // PROFESSIONAL JOIN TYPE SUPPORT (Professional Standard)
@@ -132,10 +143,12 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(_):
-                return document.defaultStrokeLineJoin // Text objects don't have line join - use default
             case .shape(let shape):
-                return shape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
+                if shape.isTextObject {
+                    return document.defaultStrokeLineJoin // Text objects don't have line join - use default
+                } else {
+                    return shape.strokeStyle?.lineJoin ?? document.defaultStrokeLineJoin
+                }
             }
         }
         return document.defaultStrokeLineJoin
@@ -147,10 +160,12 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(_):
-                return document.defaultStrokeLineCap // Text objects don't have line cap - use default
             case .shape(let shape):
-                return shape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
+                if shape.isTextObject {
+                    return document.defaultStrokeLineCap // Text objects don't have line cap - use default
+                } else {
+                    return shape.strokeStyle?.lineCap ?? document.defaultStrokeLineCap
+                }
             }
         }
         return document.defaultStrokeLineCap
@@ -162,10 +177,12 @@ struct StrokeFillPanel: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(_):
-                return document.defaultStrokeMiterLimit // Text objects don't have miter limit - use default
             case .shape(let shape):
-                return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
+                if shape.isTextObject {
+                    return document.defaultStrokeMiterLimit // Text objects don't have miter limit - use default
+                } else {
+                    return shape.strokeStyle?.miterLimit ?? document.defaultStrokeMiterLimit
+                }
             }
         }
         return document.defaultStrokeMiterLimit
@@ -177,10 +194,12 @@ struct StrokeFillPanel: View {
         return document.selectedObjectIDs.contains { objectID in
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
-                case .text(_):
-                    return false // Text objects don't contain images
                 case .shape(let shape):
-                    return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                    if shape.isTextObject {
+                        return false // Text objects don't contain images
+                    } else {
+                        return ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil
+                    }
                 }
             }
             return false
@@ -192,11 +211,13 @@ struct StrokeFillPanel: View {
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
-                case .text(_):
-                    continue // Text objects don't contain images
                 case .shape(let shape):
-                    if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
-                        return shape.opacity
+                    if shape.isTextObject {
+                        continue // Text objects don't contain images
+                    } else {
+                        if ImageContentRegistry.containsImage(shape) || shape.linkedImagePath != nil || shape.embeddedImageData != nil {
+                            return shape.opacity
+                        }
                     }
                 }
             }
@@ -300,22 +321,23 @@ struct StrokeFillPanel: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and update it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].typography.fillColor = color
+                            hasChanges = true
                         }
-                        hasChanges = true
-                    }
-                    
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].typography.fillColor = color
-                        hasChanges = true
+                    } else {
+                        // Find the shape in the layers array and update it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color, opacity: document.defaultFillOpacity)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                            }
+                            hasChanges = true
+                        }
                     }
                 }
             }
@@ -330,15 +352,17 @@ struct StrokeFillPanel: View {
                 if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                     switch document.unifiedObjects[unifiedIndex].objectType {
                     case .shape(let shape):
-                        // Find updated shape data
-                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    case .text(let text):
-                        // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if shape.isTextObject {
+                            // Find updated text data
+                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
+                        } else {
+                            // Find updated shape data
+                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
                         }
                     }
                 }
@@ -362,22 +386,23 @@ struct StrokeFillPanel: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and update it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].typography.fillOpacity = opacity
+                            hasChanges = true
                         }
-                        hasChanges = true
-                    }
-                    
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].typography.fillOpacity = opacity
-                        hasChanges = true
+                    } else {
+                        // Find the shape in the layers array and update it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: document.defaultFillColor, opacity: opacity)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.opacity = opacity
+                            }
+                            hasChanges = true
+                        }
                     }
                 }
             }
@@ -392,15 +417,17 @@ struct StrokeFillPanel: View {
                 if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                     switch document.unifiedObjects[unifiedIndex].objectType {
                     case .shape(let shape):
-                        // Find updated shape data
-                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    case .text(let text):
-                        // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if shape.isTextObject {
+                            // Find updated text data
+                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
+                        } else {
+                            // Find updated shape data
+                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
                         }
                     }
                 }
@@ -424,23 +451,24 @@ struct StrokeFillPanel: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and update it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].typography.hasStroke = true
+                            document.textObjects[textIndex].typography.strokeColor = color
+                            hasChanges = true
                         }
-                        hasChanges = true
-                    }
-                    
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].typography.hasStroke = true
-                        document.textObjects[textIndex].typography.strokeColor = color
-                        hasChanges = true
+                    } else {
+                        // Find the shape in the layers array and update it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                            }
+                            hasChanges = true
+                        }
                     }
                 }
             }
@@ -455,15 +483,17 @@ struct StrokeFillPanel: View {
                 if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                     switch document.unifiedObjects[unifiedIndex].objectType {
                     case .shape(let shape):
-                        // Find updated shape data
-                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    case .text(let text):
-                        // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if shape.isTextObject {
+                            // Find updated text data
+                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
+                        } else {
+                            // Find updated shape data
+                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
                         }
                     }
                 }
@@ -487,22 +517,23 @@ struct StrokeFillPanel: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+                    if shape.isTextObject {
+                        // Find the text in the textObjects array and update it
+                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            document.textObjects[textIndex].typography.strokeWidth = width
+                            hasChanges = true
                         }
-                        hasChanges = true
-                    }
-                    
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                        document.textObjects[textIndex].typography.strokeWidth = width
-                        hasChanges = true
+                    } else {
+                        // Find the shape in the layers array and update it
+                        if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: document.defaultStrokeColor, width: width, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
+                            } else {
+                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.width = width
+                            }
+                            hasChanges = true
+                        }
                     }
                 }
             }
@@ -517,15 +548,17 @@ struct StrokeFillPanel: View {
                 if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                     switch document.unifiedObjects[unifiedIndex].objectType {
                     case .shape(let shape):
-                        // Find updated shape data
-                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
-                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
-                    case .text(let text):
-                        // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        if shape.isTextObject {
+                            // Find updated text data
+                            if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: VectorShape.from(document.textObjects[textIndex]), layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
+                        } else {
+                            // Find updated shape data
+                            if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                               let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                                document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                            }
                         }
                     }
                 }

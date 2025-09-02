@@ -207,33 +207,32 @@ extension DrawingCanvas {
                 // Use improved hit detection with consistent logic
                 isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 
-            case .text(let text):
-                Log.info("🎯 SELECTION TAP: Testing text object '\(text.content.prefix(20))'", category: .selection)
-                Log.info("  - Text ID: \(text.id)", category: .selection)
-                Log.info("  - Text position: \(text.position)", category: .selection)
-                Log.info("  - Text bounds: \(text.bounds)", category: .selection)
-                Log.info("  - Text isVisible: \(text.isVisible)", category: .selection)
-                Log.info("  - Text isLocked: \(text.isLocked)", category: .selection)
+                Log.info("🎯 SELECTION TAP: Testing text object '\(String((shape.textContent ?? "").prefix(20)))'", category: .selection)
+                Log.info("  - Text ID: \(shape.id)", category: .selection)
+                Log.info("  - Text position: \(CGPoint(x: shape.transform.tx, y: shape.transform.ty))", category: .selection)
+                Log.info("  - Text bounds: \(shape.bounds)", category: .selection)
+                Log.info("  - Text isVisible: \(shape.isVisible)", category: .selection)
+                Log.info("  - Text isLocked: \(shape.isLocked)", category: .selection)
                 Log.info("  - Click location: \(validatedLocation)", category: .selection)
                 
-                if !text.isVisible || text.isLocked { 
+                if !shape.isVisible || shape.isLocked { 
                     Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
                     continue 
                 }
                 
                 // Use the same hit testing logic as findTextAt
                 let textContentArea = CGRect(
-                    x: text.position.x,
-                    y: text.position.y,
-                    width: text.bounds.width,
-                    height: text.bounds.height
+                    x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
+                    y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
                 )
                 
                 let exactBounds = CGRect(
-                    x: text.position.x + text.bounds.minX,
-                    y: text.position.y + text.bounds.minY,
-                    width: text.bounds.width,
-                    height: text.bounds.height
+                    x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
+                    y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
+                    width: shape.bounds.width,
+                    height: shape.bounds.height
                 )
                 
                 let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
@@ -452,16 +451,15 @@ extension DrawingCanvas {
                         return true
                     }
                     
-                case .text(let text):
-                    let textBounds = CGRect(
-                        x: text.position.x + text.bounds.minX,
-                        y: text.position.y + text.bounds.minY,
-                        width: text.bounds.width,
-                        height: text.bounds.height
+                        let textBounds = CGRect(
+                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
+                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
                     )
                     // Use exact bounds for precise text selection (no tolerance)
-                    let selectionBoxBounds = textBounds.insetBy(dx: 0, dy: 0)
-                    if selectionBoxBounds.contains(location) {
+                    let textSelectionBounds = textBounds.insetBy(dx: 0, dy: 0)
+                    if textSelectionBounds.contains(location) {
                         return true
                     }
                 }

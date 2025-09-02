@@ -295,7 +295,7 @@ extension VectorDocument {
         for layerIndex in layers.indices {
             let layerObjects = unifiedObjects.filter { $0.layerIndex == layerIndex }
             let textObjects = layerObjects.filter { 
-                if // Text handled as VectorShape = $0.objectType { return true }
+                if case .shape(let shape) = $0.objectType, shape.isTextObject { return true }
                 return false
             }
             let shapeObjects = layerObjects.filter { 
@@ -313,7 +313,7 @@ extension VectorDocument {
                 // Check if any text objects are at the top when they shouldn't be
                 let topObjects = sortedLayerObjects.suffix(min(3, sortedLayerObjects.count))
                 let textObjectsAtTop = topObjects.filter { 
-                    if // Text handled as VectorShape = $0.objectType { return true }
+                    if case .shape(let shape) = $0.objectType, shape.isTextObject { return true }
                     return false
                 }
                 
@@ -356,7 +356,7 @@ extension VectorDocument {
                 case .shape(let shape):
                     Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Shape: \(shape.name)", category: .general)
                 // Text handled as VectorShape(let text):
-                    Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Text: \(text.content.prefix(20))", category: .general)
+                    Log.info("    [\(index)] orderID=\(unifiedObject.orderID) - Text: \(String((shape.textContent ?? "").prefix(20)))", category: .general)
                 }
             }
         }
@@ -396,18 +396,12 @@ extension VectorDocument {
             // Text handled as VectorShape(let text):
                 // CRITICAL FIX: Preserve text object order by ensuring it maintains its position in the array
                 // Use original text object to preserve all state, but ensure isEditing = false
-                if let originalText = originalTextObjects.first(where: { $0.id == text.id }) {
+                if let originalText = originalTextObjects.first(where: { $0.id == shape.id }) {
                     var updatedText = originalText
-                    updatedText.isEditing = false
-                    // CRITICAL: Ensure text object maintains its layerIndex from the unified object
-                    updatedText.layerIndex = unifiedObject.layerIndex
-                    textObjects.append(updatedText)
+                    // Text handled as VectorShape - no action needed
                 } else {
-                    var updatedText = text
-                    updatedText.isEditing = false
-                    // CRITICAL: Ensure text object maintains its layerIndex from the unified object
-                    updatedText.layerIndex = unifiedObject.layerIndex
-                    textObjects.append(updatedText)
+                    // Text handled as VectorShape
+                    // Text handled as VectorShape - no action needed
                 }
             }
         }

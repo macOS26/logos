@@ -102,34 +102,7 @@ struct SelectionHandlesView: View {
                             }
                         }
                         
-                    case .text(let textObject):
-                        // Show handles for selected text objects (Professional Standards)
-                        // Only keep transform handles for scale/rotate/shear tools since those need to work with text
-                        if document.currentTool == .scale {
-                            // Scale tool: Text scaling handles
-                            TextScaleHandles(
-                                document: document,
-                                textObject: textObject,
-                                zoomLevel: document.zoomLevel,
-                                canvasOffset: document.canvasOffset
-                            )
-                        } else if document.currentTool == .rotate {
-                            // Rotate tool: Text rotation handles
-                            TextRotateHandles(
-                                document: document,
-                                textObject: textObject,
-                                zoomLevel: document.zoomLevel,
-                                canvasOffset: document.canvasOffset
-                            )
-                        } else if document.currentTool == .shear {
-                            // Shear tool: Text shear handles
-                            TextShearHandles(
-                                document: document,
-                                textObject: textObject,
-                                zoomLevel: document.zoomLevel,
-                                canvasOffset: document.canvasOffset
-                            )
-                        }
+                        // Text objects are now handled as VectorShape with isTextObject = true
                     }
                 }
             }

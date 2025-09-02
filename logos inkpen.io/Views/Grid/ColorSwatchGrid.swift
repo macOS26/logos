@@ -28,8 +28,6 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.fillColor
             case .shape(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.color
@@ -47,8 +45,6 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.hasStroke ? text.typography.strokeColor : .clear
             case .shape(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.color
@@ -68,8 +64,6 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.fillOpacity
             case .shape(let shape):
                 if let fillStyle = shape.fillStyle {
                     return fillStyle.opacity
@@ -87,8 +81,6 @@ struct ColorSwatchGrid: View {
         if let firstSelectedObjectID = document.selectedObjectIDs.first,
            let unifiedObject = document.unifiedObjects.first(where: { $0.id == firstSelectedObjectID }) {
             switch unifiedObject.objectType {
-            case .text(let text):
-                return text.typography.strokeOpacity
             case .shape(let shape):
                 if let strokeStyle = shape.strokeStyle {
                     return strokeStyle.opacity
@@ -335,9 +327,8 @@ struct ColorSwatchGrid: View {
                         hasChanges = true
                     }
                     
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
                         document.textObjects[textIndex].typography.fillColor = color
                         document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
                         hasChanges = true
@@ -374,9 +365,8 @@ struct ColorSwatchGrid: View {
                         hasChanges = true
                     }
                     
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
+                        // Find the text in the textObjects array and update it
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
                         document.textObjects[textIndex].typography.hasStroke = true
                         document.textObjects[textIndex].typography.strokeColor = color
                         document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity

@@ -482,8 +482,7 @@ private struct BrushPreviewStyleModifier: ViewModifier {
         switch unifiedObject.objectType {
         case .shape(let shape):
             draggedShapeView(shape, dragDelta: dragDelta)
-        case .text(let text):
-            draggedTextView(text, dragDelta: dragDelta)
+            // Text handled as VectorShape
         }
     }
     

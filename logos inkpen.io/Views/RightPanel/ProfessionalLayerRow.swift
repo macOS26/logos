@@ -2,189 +2,109 @@
 //  ProfessionalLayerRow.swift
 //  logos inkpen.io
 //
-//  Created by Todd Bruss on 7/5/25.
+//  Created by Todd Bruss on 8/22/25.
 //
 
 import SwiftUI
 
-// PROFESSIONAL LAYER ROW (Professional Style)
 struct ProfessionalLayerRow: View {
-    @ObservedObject var document: VectorDocument
     let layerIndex: Int
-    let isExpanded: Bool
-    let isRenaming: Bool
-    @Binding var newLayerName: String
-    let onToggleExpanded: () -> Void
-    let onStartRename: () -> Void
-    let onFinishRename: () -> Void
-    let onCancelRename: () -> Void
-    
-    @State private var isDropTargeted = false
-    
-    private var layer: VectorLayer {
-        // SAFE LAYER ACCESS: Prevent crash during SVG import or layer changes
-        guard layerIndex >= 0 && layerIndex < document.layers.count else {
-            // Return a dummy layer if index is out of bounds
-            return VectorLayer(name: "Invalid Layer")
-        }
-        return document.layers[layerIndex]
-    }
-    
-    private var isSelected: Bool {
-        document.selectedLayerIndex == layerIndex
-    }
-    
-    private var isCanvasLayer: Bool {
-        return layerIndex == 1 && layer.name == "Canvas"
-    }
+    let layer: VectorLayer
+    @ObservedObject var document: VectorDocument
+    @State private var isExpanded: Bool = true
     
     var body: some View {
         VStack(spacing: 0) {
-            // Layer Header
-            HStack(spacing: 6) {
-                // Expand/Collapse Triangle
-                Button {
-                    onToggleExpanded()
-                } label: {
-                    Image(systemName: isExpanded ? "arrowtriangle.down.fill" : "arrowtriangle.right.fill")
-                        .font(.system(size: 8))
+            // Layer Header with Modern Design
+            HStack(spacing: 8) {
+                // Disclosure Triangle
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
+                        .rotationEffect(.degrees(0))
+                        .animation(.easeInOut(duration: 0.15), value: isExpanded)
+                        .frame(width: 12, height: 12)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-            // Visibility Toggle
-            Button {
-                // SAFE LAYER ACCESS: Check bounds before toggling
-                if layerIndex >= 0 && layerIndex < document.layers.count {
-                    document.layers[layerIndex].isVisible.toggle()
-                }
-            } label: {
-                    Image(systemName: layer.isVisible ? "eye.fill" : "eye.slash.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(layer.isVisible ? .blue : .secondary)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .help("Toggle Visibility")
-            
-            // Lock Toggle
-            Button {
-                // SAFE LAYER ACCESS: Check bounds before toggling
-                if layerIndex >= 0 && layerIndex < document.layers.count {
-                    document.layers[layerIndex].isLocked.toggle()
-                }
-            } label: {
-                    Image(systemName: layer.isLocked ? "lock.fill" : "lock.open.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(layer.isLocked ? .orange : .secondary)
-            }
-            .buttonStyle(PlainButtonStyle())
-            .help("Toggle Lock")
-            
-                // Layer Color Indicator
-                Circle()
+                // Layer Color Indicator (Professional Color Strip)
+                RoundedRectangle(cornerRadius: 2)
                     .fill(layerColor(for: layerIndex))
-                    .frame(width: 12, height: 12)
-            
-            
-            if isRenaming {
-                TextField("Layer Name", text: $newLayerName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(.system(size: 12, weight: .medium))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .onSubmit {
-                        onFinishRename()
+                    .frame(width: 4, height: 16)
+                
+                // Layer Name and Info
+                VStack(alignment: .leading, spacing: 1) {
+                    // Primary name
+                    Text(layer.name)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    // Object count info (Professional Detail)
+                    let objectCount = document.unifiedObjects.filter { $0.layerIndex == layerIndex }.count
+                    Text("\(objectCount) objects")
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                
+                Spacer()
+                
+                // Layer Tools (Professional Compact Icons)
+                HStack(spacing: 4) {
+                    // Visibility Toggle
+                    Button(action: {
+                        document.saveToUndoStack()
+                        document.layers[layerIndex].isVisible.toggle()
+                    }) {
+                        Image(systemName: layer.isVisible ? "eye" : "eye.slash")
+                            .font(.system(size: 10))
+                            .foregroundColor(layer.isVisible ? .secondary : .secondary.opacity(0.5))
+                            .frame(width: 14, height: 14)
                     }
-                    .onKeyPress(.escape) {
-                        onCancelRename()
-                        return .handled
+                    .buttonStyle(PlainButtonStyle())
+                    .help(layer.isVisible ? "Hide Layer" : "Show Layer")
+                    
+                    // Lock Toggle  
+                    Button(action: {
+                        document.saveToUndoStack()
+                        document.layers[layerIndex].isLocked.toggle()
+                    }) {
+                        Image(systemName: layer.isLocked ? "lock.fill" : "lock.open")
+                            .font(.system(size: 10))
+                            .foregroundColor(layer.isLocked ? .orange : .secondary.opacity(0.5))
+                            .frame(width: 14, height: 14)
                     }
-            } else {
-                Text(layer.name)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isCanvasLayer ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .onTapGesture(count: 2) {
-                        // Double-click to rename (only if not Canvas)
-                        if !isCanvasLayer {
-                            onStartRename()
-                        }
-                    }
-            }
-            
-                // Object Count (shapes + text objects for this layer)
-                let textObjectsInLayer = document.textObjects.filter { $0.layerIndex == layerIndex }.count
-                let totalObjects = layer.shapes.count + textObjectsInLayer
-                Text("\(totalObjects)")
-                    .font(.system(size: 9))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                .background(Color.gray.opacity(0.2))
-                    .cornerRadius(6)
+                    .buttonStyle(PlainButtonStyle())
+                    .help(layer.isLocked ? "Unlock Layer" : "Lock Layer")
+                }
             }
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
             .background(
-                Group {
-                    if isSelected {
-                        Color.blue.opacity(0.15)
-                    } else if isDropTargeted {
-                        Color.green.opacity(0.2)
-                    } else {
-                        Color.clear
-                    }
-                }
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(document.selectedLayerIndex == layerIndex ? 
+                          Color.accentColor.opacity(0.08) : 
+                          Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(document.selectedLayerIndex == layerIndex ? 
+                                   Color.accentColor.opacity(0.2) : 
+                                   Color.clear, lineWidth: 1)
+                    )
             )
-            .scaleEffect(isDropTargeted ? 1.02 : 1.0)
-            .animation(.easeInOut(duration: 0.2), value: isDropTargeted)
+            .contentShape(Rectangle())
             .onTapGesture {
-                // SAFE LAYER ACCESS: Check bounds before selection
-                guard layerIndex >= 0 && layerIndex < document.layers.count else { return }
-                
-                // PROTECT CANVAS LAYER: Don't allow selection of Canvas layer when locked
-                if isCanvasLayer && layer.isLocked {
-                    Log.info("🚫 Cannot select locked Canvas layer", category: .general)
-                    return
-                }
-                
                 document.selectedLayerIndex = layerIndex
-            }
-            .dropDestination(for: DraggableVectorObject.self) { droppedObjects, location in
-                for droppedObject in droppedObjects {
-                    document.handleObjectDrop(droppedObject, ontoLayerIndex: layerIndex)
-                }
-                return true
-            } isTargeted: { isTargeted in
-                isDropTargeted = isTargeted
-            }
-            .contextMenu {
-                // Context menu for layer operations
-                if !isCanvasLayer {
-                    Button("Rename Layer") {
-                        onStartRename()
-                    }
-                    
-                    Divider()
-                    
-                    Button("Duplicate Layer") {
-                        document.duplicateLayer(at: layerIndex)
-                    }
-                    
-                    Button("Delete Layer") {
-                        document.removeLayer(at: layerIndex)
-                    }
-                    .disabled(document.layers.count <= 1)
-                }
-                
-                Divider()
-                
-                Button(layer.isVisible ? "Hide Layer" : "Show Layer") {
-                    document.layers[layerIndex].isVisible.toggle()
-                }
-                
-                Button(layer.isLocked ? "Unlock Layer" : "Lock Layer") {
-                    document.layers[layerIndex].isLocked.toggle()
-                }
+                // Clear shape selection when selecting layer
+                document.selectedShapeIDs.removeAll()
+                document.selectedObjectIDs.removeAll()
+                // Clear text selection when selecting layer  
+                document.selectedTextIDs.removeAll()
+                document.syncSelectionArrays()
             }
             
             // Expanded Object List (Professional Style)
@@ -198,33 +118,37 @@ struct ProfessionalLayerRow: View {
                     ForEach(layerObjects, id: \.id) { unifiedObject in
                         switch unifiedObject.objectType {
                         case .shape(let shape):
-                            ObjectRow(
-                                objectType: .shape,
-                                objectId: shape.id,
-                                name: shape.name,
-                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                isVisible: shape.isVisible,
-                                isLocked: shape.isLocked,
-                                onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                },
-                                layerIndex: layerIndex,
-                                document: document
-                            )
-                        case .text(let text):
-                            ObjectRow(
-                                objectType: .text,
-                                objectId: text.id,
-                                name: text.content.isEmpty ? "Text" : text.content,
-                                isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
-                                isVisible: text.isVisible,
-                                isLocked: text.isLocked,
-                                onSelect: { isShiftPressed, isCommandPressed in
-                                    handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
-                                },
-                                layerIndex: layerIndex,
-                                document: document
-                            )
+                            if shape.isTextObject {
+                                // Handle text objects (VectorShape with isTextObject = true)
+                                ObjectRow(
+                                    objectType: .text,
+                                    objectId: shape.id,
+                                    name: shape.textContent?.isEmpty != false ? "Text" : (shape.textContent ?? "Text"),
+                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                    isVisible: shape.isVisible,
+                                    isLocked: shape.isLocked,
+                                    onSelect: { isShiftPressed, isCommandPressed in
+                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    },
+                                    layerIndex: layerIndex,
+                                    document: document
+                                )
+                            } else {
+                                // Handle regular shapes
+                                ObjectRow(
+                                    objectType: .shape,
+                                    objectId: shape.id,
+                                    name: shape.name,
+                                    isSelected: document.selectedObjectIDs.contains(unifiedObject.id),
+                                    isVisible: shape.isVisible,
+                                    isLocked: shape.isLocked,
+                                    onSelect: { isShiftPressed, isCommandPressed in
+                                        handleObjectSelection(unifiedObject.id, layerIndex: layerIndex, isShiftPressed: isShiftPressed, isCommandPressed: isCommandPressed)
+                                    },
+                                    layerIndex: layerIndex,
+                                    document: document
+                                )
+                            }
                         }
                     }
                 }
@@ -239,31 +163,31 @@ struct ProfessionalLayerRow: View {
         return colors[index % colors.count]
     }
     
-    /// Handles object selection with multi-select support using shift/command keys
     private func handleObjectSelection(_ objectID: UUID, layerIndex: Int, isShiftPressed: Bool, isCommandPressed: Bool) {
-        if isShiftPressed || isCommandPressed {
-            // Multi-select mode: Add to selection or remove if already selected
-            if document.selectedObjectIDs.contains(objectID) {
-                // Deselect if already selected
-                document.selectedObjectIDs.remove(objectID)
-                Log.info("🎯 LAYERS MULTI-SELECT: Deselected object \(objectID.uuidString.prefix(8))", category: .selection)
-            } else {
-                // Add to selection
-                document.selectedObjectIDs.insert(objectID)
-                Log.info("🎯 LAYERS MULTI-SELECT: Added object \(objectID.uuidString.prefix(8)) to selection", category: .selection)
-            }
-        } else {
-            // Single select mode: Replace selection
-            document.selectedObjectIDs = [objectID]
-            Log.info("🎯 LAYERS SINGLE-SELECT: Selected object \(objectID.uuidString.prefix(8))", category: .selection)
-        }
+        // CRITICAL: Determine which unified object this is
+        guard let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) else { return }
         
-        // Update selection arrays and set layer
-        document.syncSelectionArrays()
+        // Set the layer as selected first
         document.selectedLayerIndex = layerIndex
         
-        Log.info("🎯 LAYERS SELECTION: Total selected objects: \(document.selectedObjectIDs.count)", category: .selection)
+        if isCommandPressed {
+            // Command+click: toggle individual selection
+            if document.selectedObjectIDs.contains(objectID) {
+                document.selectedObjectIDs.remove(objectID)
+            } else {
+                document.selectedObjectIDs.insert(objectID)
+            }
+        } else if isShiftPressed {
+            // Shift+click: extend selection (add to selection)
+            document.selectedObjectIDs.insert(objectID)
+        } else {
+            // Regular click: select only this object
+            document.selectedObjectIDs = [objectID]
+        }
+        
+        // CRITICAL: Keep legacy arrays in sync with unified selection
+        document.syncSelectionArrays()
+        
+        Log.fileOperation("🎯 LAYERS: Selected object \(objectID.uuidString.prefix(8)) in layer \(layerIndex)", level: .info)
     }
-    
-    // TEXT OBJECT COUNTING REMOVED
-} 
+}

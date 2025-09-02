@@ -839,8 +839,8 @@ struct FontPanel: View {
         
         // FINAL VERIFICATION: Check unified objects system
         let textUnifiedObjects = document.unifiedObjects.filter { unifiedObject in
-            if case .text = unifiedObject.objectType {
-                return true
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isTextObject
             }
             return false
         }

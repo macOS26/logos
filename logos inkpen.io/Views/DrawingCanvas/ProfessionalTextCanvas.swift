@@ -1515,8 +1515,8 @@ class ProfessionalTextViewModel: ObservableObject {
             
             // CRITICAL: Also remove from unified objects system
             document.unifiedObjects.removeAll { unifiedObject in
-                if case .text(let text) = unifiedObject.objectType {
-                    return text.id == textObject.id
+                if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
+                    return shape.id == textObject.id
                 }
                 return false
             }

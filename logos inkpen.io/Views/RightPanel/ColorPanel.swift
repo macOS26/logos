@@ -263,12 +263,7 @@ struct ColorPanel: View {
                         hasChanges = true
                     }
                     
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                        document.textObjects[textIndex].typography.fillColor = color
-                        document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
-                        hasChanges = true
-                    }
+                    // Text objects are now handled as VectorShape with isTextObject = true
                 }
             }
         }
@@ -288,9 +283,7 @@ struct ColorPanel: View {
                             document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }
                             // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
+                        // Text objects handled as VectorShape
                     }
                 }
             }
@@ -346,9 +339,7 @@ struct ColorPanel: View {
                             document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }
                             // Find updated text data
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
-                        }
+                        // Text objects handled as VectorShape
                     }
                 }
             }
