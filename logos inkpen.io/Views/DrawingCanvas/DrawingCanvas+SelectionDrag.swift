@@ -37,17 +37,30 @@ extension DrawingCanvas {
         for unifiedObject in selectedObjects {
             switch unifiedObject.objectType {
             case .shape(let shape):
-                // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
-                // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
-                let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-                let centerX = bounds.midX
-                let centerY = bounds.midY
-                initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                if shape.isTextObject {
+                    // CRITICAL FIX: For text objects, use actual position from textObjects array + center offset
+                    if let textObject = document.textObjects.first(where: { $0.id == shape.id }) {
+                        let centerX = textObject.position.x + textObject.bounds.width/2  
+                        let centerY = textObject.position.y + textObject.bounds.height/2
+                        initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                    } else {
+                        // Fallback: Use shape bounds center
+                        let bounds = shape.bounds
+                        let centerX = shape.transform.tx + bounds.width/2
+                        let centerY = shape.transform.ty + bounds.height/2
+                        initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                    }
+                } else {
+                    // GROUP POSITION FIX: Use appropriate bounds for groups vs individual shapes
+                    // FLATTENED SHAPE FIX: Use actual path bounds for flattened shapes, not group bounds (CONSISTENT WITH SCALE TOOL)
+                    let bounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
+                    let centerX = bounds.midX
+                    let centerY = bounds.midY
+                    initialObjectPositions[unifiedObject.id] = CGPoint(x: centerX, y: centerY)
+                }
                 
                 // CRITICAL FIX: Store initial transform to prevent jitter
                 initialObjectTransforms[unifiedObject.id] = shape.transform
-                
-                // Text objects are handled as VectorShape with isTextObject = true
             }
         }
         
@@ -147,9 +160,13 @@ extension DrawingCanvas {
                         }
                     }
                     
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
-                        document.textObjects[textIndex].position.x += currentDragDelta.x
-                        document.textObjects[textIndex].position.y += currentDragDelta.y
+                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }),
+                       let initialCenter = initialObjectPositions[unifiedObject.id] {
+                        // CRITICAL FIX: Use absolute positioning from initial reference, not delta accumulation
+                        // Convert from center-based reference to position-based coordinates
+                        let textBounds = document.textObjects[textIndex].bounds
+                        document.textObjects[textIndex].position.x = initialCenter.x - textBounds.width/2 + currentDragDelta.x
+                        document.textObjects[textIndex].position.y = initialCenter.y - textBounds.height/2 + currentDragDelta.y
                     }
                 }
             }
