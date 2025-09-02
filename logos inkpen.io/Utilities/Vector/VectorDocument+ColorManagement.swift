@@ -114,21 +114,7 @@ extension VectorDocument {
                         hasChanges = true
                     }
                     
-                case .text(let text):
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = textObjects.firstIndex(where: { $0.id == text.id }) {
-                        saveToUndoStack()
-                        switch activeColorTarget {
-                        case .fill:
-                            textObjects[textIndex].typography.fillColor = color
-                            textObjects[textIndex].typography.fillOpacity = defaultFillOpacity
-                        case .stroke:
-                            textObjects[textIndex].typography.hasStroke = true
-                            textObjects[textIndex].typography.strokeColor = color
-                            textObjects[textIndex].typography.strokeOpacity = defaultStrokeOpacity
-                        }
-                        hasChanges = true
-                    }
+                    // Text objects are now handled as VectorShape with isTextObject = true
                 }
             }
         }

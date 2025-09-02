@@ -120,8 +120,7 @@ extension VectorDocument {
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: frontOrderID
                             )
-                        // Text objects are now handled as VectorShape with isTextObject = true
-                        }
+                                                }
                         
                         switch objectInFront.objectType {
                         case .shape(let shape):
@@ -130,9 +129,8 @@ extension VectorDocument {
                                 layerIndex: objectInFront.layerIndex,
                                 orderID: selectedOrderID
                             )
-                        // Text objects are now handled as VectorShape with isTextObject = true
-                            unifiedObjects[frontIndex] = VectorObject(
-                                text: text,
+                                                    unifiedObjects[frontIndex] = VectorObject(
+                                shape: shape,
                                 layerIndex: objectInFront.layerIndex,
                                 orderID: selectedOrderID
                             )
@@ -190,9 +188,8 @@ extension VectorDocument {
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: behindOrderID
                             )
-                        // Text objects are now handled as VectorShape with isTextObject = true
-                            unifiedObjects[selectedIndex] = VectorObject(
-                                text: text,
+                                                    unifiedObjects[selectedIndex] = VectorObject(
+                                shape: shape,
                                 layerIndex: selectedObject.layerIndex,
                                 orderID: behindOrderID
                             )
@@ -205,9 +202,8 @@ extension VectorDocument {
                                 layerIndex: objectBehind.layerIndex,
                                 orderID: selectedOrderID
                             )
-                        // Text objects are now handled as VectorShape with isTextObject = true
-                            unifiedObjects[behindIndex] = VectorObject(
-                                text: text,
+                                                    unifiedObjects[behindIndex] = VectorObject(
+                                shape: shape,
                                 layerIndex: objectBehind.layerIndex,
                                 orderID: selectedOrderID
                             )

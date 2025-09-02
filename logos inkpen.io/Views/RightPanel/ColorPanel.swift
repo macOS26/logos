@@ -263,7 +263,6 @@ struct ColorPanel: View {
                         hasChanges = true
                     }
                     
-                case .text(let text):
                     // Find the text in the textObjects array and update it
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
                         document.textObjects[textIndex].typography.fillColor = color
@@ -288,8 +287,7 @@ struct ColorPanel: View {
                            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                             document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }
-                    case .text(let text):
-                        // Find updated text data
+                            // Find updated text data
                         if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
                             document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }
@@ -322,7 +320,6 @@ struct ColorPanel: View {
                         hasChanges = true
                     }
                     
-                case .text(let text):
                     // Find the text in the textObjects array and update it
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
                         document.textObjects[textIndex].typography.hasStroke = true
@@ -348,8 +345,7 @@ struct ColorPanel: View {
                            let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
                             document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }
-                    case .text(let text):
-                        // Find updated text data
+                            // Find updated text data
                         if let textIndex = document.textObjects.firstIndex(where: { $0.id == text.id }) {
                             document.unifiedObjects[unifiedIndex] = VectorObject(text: document.textObjects[textIndex], layerIndex: document.unifiedObjects[unifiedIndex].layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
                         }

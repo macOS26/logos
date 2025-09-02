@@ -23,9 +23,6 @@ extension DrawingCanvas {
                     Log.info("🚫 Cannot move shape on locked layer '\(document.layers[unifiedObject.layerIndex].name)'", category: .general)
                     return
                 }
-            case .text:
-                // Text objects don't have layer restrictions for movement
-                break
             }
         }
         
@@ -50,14 +47,12 @@ extension DrawingCanvas {
                 // CRITICAL FIX: Store initial transform to prevent jitter
                 initialObjectTransforms[unifiedObject.id] = shape.transform
                 
-            case .text(let textObj):
-                // Store the text baseline position
-                initialObjectPositions[unifiedObject.id] = textObj.position
+                // Text objects are handled as VectorShape with isTextObject = true
             }
         }
         
         let shapeCount = selectedObjects.filter { if case .shape = $0.objectType { return true } else { return false } }.count
-        let textCount = selectedObjects.filter { if case .text = $0.objectType { return true } else { return false } }.count
+        let textCount = selectedObjects.filter { if case .shape(let shape) = $0.objectType, shape.isTextObject { return true } else { return false } }.count
         Log.fileOperation("🎯 SELECTION DRAG: Established reference positions for \(shapeCount) shapes and \(textCount) text objects", level: .info)
     }
     
@@ -75,9 +70,6 @@ extension DrawingCanvas {
                 if unifiedObject.layerIndex >= document.layers.count || document.layers[unifiedObject.layerIndex].isLocked {
                     return
                 }
-            case .text:
-                // Text objects don't have layer restrictions for movement
-                break
             }
         }
         
@@ -155,7 +147,6 @@ extension DrawingCanvas {
                         }
                     }
                     
-                case .text:
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == unifiedObject.id }) {
                         document.textObjects[textIndex].position.x += currentDragDelta.x
                         document.textObjects[textIndex].position.y += currentDragDelta.y
@@ -504,16 +495,7 @@ extension DrawingCanvas {
                     )
                 }
                 
-            case .text(let oldText):
-                // Find the updated text in the textObjects array
-                if let updatedText = document.textObjects.first(where: { $0.id == oldText.id }) {
-                    // CRITICAL FIX: Preserve original orderID - DO NOT reorder during drag
-                    document.unifiedObjects[i] = VectorObject(
-                        text: updatedText,
-                        layerIndex: unifiedObject.layerIndex,
-                        orderID: unifiedObject.orderID  // Keep same orderID = no reordering
-                    )
-                }
+                // Text objects are now handled as VectorShape with isTextObject = true
             }
         }
         

@@ -158,7 +158,6 @@ class DocumentState: ObservableObject {
         func isShape(_ unifiedObject: VectorObject) -> Bool {
             switch unifiedObject.objectType {
             case .shape: return true
-            case .text: return false
             }
         }
         
