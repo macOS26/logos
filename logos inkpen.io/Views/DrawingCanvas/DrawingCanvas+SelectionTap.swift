@@ -356,9 +356,15 @@ extension DrawingCanvas {
         // CRITICAL FIX: Special handling for text objects (they have empty paths)
         if shape.isTextObject {
             // Text objects use bounds-based hit testing, not path hit testing
-            let transformedBounds = shape.bounds.applying(shape.transform)
-            let isHit = transformedBounds.contains(location)
-            Log.info("  - Text object bounds hit: \(isHit) (bounds: \(transformedBounds))", category: .selection)
+            // Use transform translation for position (stored in transform.tx, transform.ty)
+            let textBounds = CGRect(
+                x: shape.transform.tx,
+                y: shape.transform.ty, 
+                width: shape.bounds.width,
+                height: shape.bounds.height
+            )
+            let isHit = textBounds.contains(location)
+            Log.info("  - Text object bounds hit: \(isHit) (bounds: \(textBounds))", category: .selection)
             return isHit
         }
         

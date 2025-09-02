@@ -538,6 +538,14 @@ struct VectorShape: Codable, Hashable, Identifiable {
         
         // CRITICAL FIX: Preserve the original VectorText ID so ProfessionalTextCanvas can find it
         shape.id = vectorText.id
+        
+        // CRITICAL FIX: Set proper bounds for text objects (empty paths have zero bounds)
+        shape.bounds = CGRect(
+            x: 0, y: 0, 
+            width: vectorText.bounds.width, 
+            height: vectorText.bounds.height
+        )
+        
         return shape
     }
     
