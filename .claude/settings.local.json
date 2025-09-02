@@ -34,7 +34,9 @@
       "WebFetch(domain:github.com)",
       "Bash(for:*)",
       "Bash(done)",
-      "mcp__xcf-server__show_folder"
+      "mcp__xcf-server__show_folder",
+      "Bash(log stream:*)",
+      "Bash(log show:*)"
     ],
     "deny": [],
     "ask": []

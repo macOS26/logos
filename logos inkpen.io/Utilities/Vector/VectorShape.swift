@@ -516,7 +516,7 @@ struct VectorShape: Codable, Hashable, Identifiable {
         // Create an empty path for text objects (text rendering doesn't use path)
         let emptyPath = VectorPath(elements: [], isClosed: false)
         
-        return VectorShape(
+        var shape = VectorShape(
             name: "Text: \(vectorText.content.prefix(20))",
             path: emptyPath,
             geometricType: nil,
@@ -535,6 +535,10 @@ struct VectorShape: Codable, Hashable, Identifiable {
             areaSize: vectorText.areaSize,
             isEditing: vectorText.isEditing
         )
+        
+        // CRITICAL FIX: Preserve the original VectorText ID so ProfessionalTextCanvas can find it
+        shape.id = vectorText.id
+        return shape
     }
     
     // MARK: - Factory methods for common shapes
