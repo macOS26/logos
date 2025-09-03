@@ -106,10 +106,7 @@ extension VectorDocument {
         layerIndex = previousState.layerIndex
         directSelectedShapeIDs = previousState.directSelectedShapeIDs
         
-        // CRITICAL FIX: After restoring state, ensure unified objects are properly ordered
-        // but only if the orderIDs are inconsistent with the current ordering system
-        fixUnifiedObjectsOrderingAfterUndo()
-        
+        // No need to fix ordering - undo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
         
@@ -205,10 +202,7 @@ extension VectorDocument {
         layerIndex = nextState.layerIndex
         directSelectedShapeIDs = nextState.directSelectedShapeIDs
         
-        // CRITICAL FIX: After restoring state, ensure unified objects are properly ordered
-        // but only if the orderIDs are inconsistent with the current ordering system
-        fixUnifiedObjectsOrderingAfterUndo()
-        
+        // No need to fix ordering - redo restored the exact state that was saved
         // CRITICAL FIX: Sync legacy arrays to ensure consistency
         syncLegacyArraysAfterUndo()
         

@@ -945,7 +945,7 @@ class ClipboardManager {
                 }
                 
                 // Find the lowest orderID of any selected object (shape or text) to paste behind it
-                var targetOrderID = 0
+                var insertionPoint = 0
                 
                 if !originalSelectedObjectIDs.isEmpty {
                     // Find the lowest orderID among selected objects in this layer
@@ -953,9 +953,30 @@ class ClipboardManager {
                         originalSelectedObjectIDs.contains($0.id) && $0.layerIndex == layerIndex 
                     }
                     if let lowestOrderID = selectedObjectsInLayer.map({ $0.orderID }).min() {
-                        targetOrderID = lowestOrderID
+                        insertionPoint = lowestOrderID
                     }
                 }
+                
+                // FIXED: Properly shift existing objects to make room for new objects behind selected ones
+                let numNewObjects = clipboardData.shapes.count + clipboardData.texts.count
+                
+                // Create new unified objects with shifted orderIDs
+                var updatedUnifiedObjects: [VectorObject] = []
+                for obj in document.unifiedObjects {
+                    if obj.layerIndex == layerIndex && obj.orderID >= insertionPoint {
+                        // Create new object with shifted orderID
+                        let newOrderID = obj.orderID + numNewObjects
+                        switch obj.objectType {
+                        case .shape(let shape):
+                            let newObj = VectorObject(shape: shape, layerIndex: obj.layerIndex, orderID: newOrderID)
+                            updatedUnifiedObjects.append(newObj)
+                        }
+                    } else {
+                        // Keep existing object unchanged
+                        updatedUnifiedObjects.append(obj)
+                    }
+                }
+                document.unifiedObjects = updatedUnifiedObjects
                 
                 // Insert shapes with proper orderID to place them behind selected objects
                 for (offset, shape) in clipboardData.shapes.enumerated() {
@@ -966,7 +987,7 @@ class ClipboardManager {
                     document.layers[layerIndex].shapes.append(newShape)
                     
                     // Add to unified objects system with orderID that places it behind selected objects
-                    let newOrderID = targetOrderID - offset - 1  // SUBTRACT to place behind
+                    let newOrderID = insertionPoint + offset
                     let unifiedObject = VectorObject(shape: newShape, layerIndex: layerIndex, orderID: newOrderID)
                     document.unifiedObjects.append(unifiedObject)
                     document.selectedObjectIDs.insert(newShape.id)
@@ -980,7 +1001,7 @@ class ClipboardManager {
                     document.textObjects.append(newText)
                     
                     // Add to unified objects system with orderID that places it behind selected objects
-                    let newOrderID = targetOrderID - clipboardData.shapes.count - offset - 1  // SUBTRACT to place behind
+                    let newOrderID = insertionPoint + clipboardData.shapes.count + offset
                     let unifiedObject = VectorObject(shape: VectorShape.from(newText), layerIndex: layerIndex, orderID: newOrderID)
                     document.unifiedObjects.append(unifiedObject)
                     document.selectedObjectIDs.insert(newText.id)
