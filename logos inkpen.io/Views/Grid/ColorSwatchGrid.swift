@@ -337,10 +337,27 @@ struct ColorSwatchGrid: View {
             }
         }
         
-        // Save to undo stack and sync if we made changes
+        // Save to undo stack and optimize sync if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            document.syncUnifiedObjectsAfterPropertyChange()
+            
+            // OPTIMIZED: Direct unified object updates for smooth performance
+            for objectID in document.selectedObjectIDs {
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
+                    switch document.unifiedObjects[unifiedIndex].objectType {
+                    case .shape(let shape):
+                        // Find updated shape data
+                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        }
+                            // Find updated text data
+                        // Text objects handled as VectorShape
+                    }
+                }
+            }
+            
+            // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
         }
     }
@@ -376,10 +393,27 @@ struct ColorSwatchGrid: View {
             }
         }
         
-        // Save to undo stack and sync if we made changes
+        // Save to undo stack and optimize sync if we made changes
         if hasChanges {
             document.saveToUndoStack()
-            document.syncUnifiedObjectsAfterPropertyChange()
+            
+            // OPTIMIZED: Direct unified object updates for smooth performance
+            for objectID in document.selectedObjectIDs {
+                if let unifiedIndex = document.unifiedObjects.firstIndex(where: { $0.id == objectID }) {
+                    switch document.unifiedObjects[unifiedIndex].objectType {
+                    case .shape(let shape):
+                        // Find updated shape data
+                        if let layerIndex = document.unifiedObjects[unifiedIndex].layerIndex < document.layers.count ? document.unifiedObjects[unifiedIndex].layerIndex : nil,
+                           let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            document.unifiedObjects[unifiedIndex] = VectorObject(shape: document.layers[layerIndex].shapes[shapeIndex], layerIndex: layerIndex, orderID: document.unifiedObjects[unifiedIndex].orderID)
+                        }
+                            // Find updated text data
+                        // Text objects handled as VectorShape
+                    }
+                }
+            }
+            
+            // Force immediate UI update for visual responsiveness
             document.objectWillChange.send()
         }
     }
