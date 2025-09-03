@@ -233,18 +233,20 @@ struct ColorSwatchGrid: View {
             LazyVGrid(columns: columns, spacing: 1) {
                 ForEach(Array(document.currentSwatches.enumerated()), id: \.offset) { index, color in
                     Button {
-                        // Apply color to the currently active target (fill or stroke)
+                        // CRITICAL FIX: Apply color to the currently active target using setActiveColor (like working ColorPanel)
                         if document.activeColorTarget == .stroke {
                             selectedStrokeColor = color
                             document.defaultStrokeColor = color  // Set default for new shapes
-                            applyStrokeColorToSelected(color)
+                            // CRITICAL FIX: Use setActiveColor to handle text objects properly
+                            document.setActiveColor(color)
                             Log.fileOperation("🎨 TOOLBAR: Set stroke color: \(color) (active target)", level: .info)
                             
                             // INK panel auto-updates from document bindings
                         } else {
                             selectedFillColor = color
                             document.defaultFillColor = color  // Set default for new shapes
-                            applyFillColorToSelected(color)
+                            // CRITICAL FIX: Use setActiveColor to handle text objects properly
+                            document.setActiveColor(color)
                             Log.fileOperation("🎨 TOOLBAR: Set fill color: \(color) (active target)", level: .info)
                             
                             // INK panel auto-updates from document bindings

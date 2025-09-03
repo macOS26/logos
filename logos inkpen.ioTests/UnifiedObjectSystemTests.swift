@@ -20,8 +20,8 @@ struct UnifiedObjectSystemTests {
             fontFamily: "Herculanum",
             fontWeight: .bold,
             fontSize: 24.0,
-            strokeColor: .black,
-            fillColor: .red
+            strokeColor: VectorColor.black,
+            fillColor: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0))
         )
         
         let text = VectorText(
@@ -59,7 +59,7 @@ struct UnifiedObjectSystemTests {
         let shape = VectorShape(
             name: "Test Shape",
             path: VectorPath(elements: [], isClosed: false),
-            fillStyle: FillStyle(color: .blue, opacity: 1.0)
+            fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1)), opacity: 1.0)
         )
         
         // Add shape twice with same ID
@@ -84,7 +84,7 @@ struct UnifiedObjectSystemTests {
         let regularShape = VectorShape(
             name: "Circle",
             path: VectorPath(elements: [], isClosed: true),
-            fillStyle: FillStyle(color: .green, opacity: 1.0),
+            fillStyle: FillStyle(color: VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0)), opacity: 1.0),
             isTextObject: false
         )
         document.addShapeToUnifiedSystem(regularShape, layerIndex: 0)
@@ -92,7 +92,7 @@ struct UnifiedObjectSystemTests {
         // Add text object
         let textObj = VectorText(
             content: "Hello World",
-            typography: TypographyProperties(strokeColor: .black, fillColor: .purple),
+            typography: TypographyProperties(strokeColor: VectorColor.black, fillColor: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 1))),
             position: CGPoint(x: 50, y: 75)
         )
         document.addTextToUnifiedSystem(textObj, layerIndex: 1)
@@ -109,7 +109,7 @@ struct UnifiedObjectSystemTests {
         }
         #expect(shapeObjects.count == 1)
         #expect(shapeObjects[0].name == "Circle")
-        #expect(shapeObjects[0].fillStyle?.color == .green)
+        #expect(shapeObjects[0].fillStyle?.color == VectorColor.rgb(RGBColor(red: 0, green: 1, blue: 0)))
         
         // Find text object
         let textObjects = document.unifiedObjects.compactMap { obj -> VectorShape? in
@@ -120,7 +120,7 @@ struct UnifiedObjectSystemTests {
         }
         #expect(textObjects.count == 1)
         #expect(textObjects[0].textContent == "Hello World")
-        #expect(textObjects[0].typography?.fillColor == .purple)
+        #expect(textObjects[0].typography?.fillColor == VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 1)))
     }
     
     @Test func testUnifiedObjectOrderingByLayer() async throws {
@@ -130,7 +130,7 @@ struct UnifiedObjectSystemTests {
         let shape1 = VectorShape(name: "Layer 0 Shape", path: VectorPath(elements: [], isClosed: false))
         document.addShapeToUnifiedSystem(shape1, layerIndex: 0)
         
-        let text1 = VectorText(content: "Layer 1 Text", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+        let text1 = VectorText(content: "Layer 1 Text", typography: TypographyProperties(strokeColor: VectorColor.black, fillColor: VectorColor.black))
         document.addTextToUnifiedSystem(text1, layerIndex: 1)
         
         let shape2 = VectorShape(name: "Layer 2 Shape", path: VectorPath(elements: [], isClosed: false))
@@ -167,10 +167,10 @@ struct UnifiedObjectSystemTests {
             letterSpacing: 2.0,
             alignment: .center,
             hasStroke: true,
-            strokeColor: .blue,
+            strokeColor: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1)),
             strokeWidth: 2.0,
             strokeOpacity: 0.8,
-            fillColor: .red,
+            fillColor: VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0)),
             fillOpacity: 0.9
         )
         
@@ -219,10 +219,10 @@ struct UnifiedObjectSystemTests {
             #expect(pastedShape.typography?.letterSpacing == 2.0)
             #expect(pastedShape.typography?.alignment == .center)
             #expect(pastedShape.typography?.hasStroke == true)
-            #expect(pastedShape.typography?.strokeColor == .blue)
+            #expect(pastedShape.typography?.strokeColor == VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1)))
             #expect(pastedShape.typography?.strokeWidth == 2.0)
             #expect(pastedShape.typography?.strokeOpacity == 0.8)
-            #expect(pastedShape.typography?.fillColor == .red)
+            #expect(pastedShape.typography?.fillColor == VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0)))
             #expect(pastedShape.typography?.fillOpacity == 0.9)
             
             // Verify area size preserved
@@ -243,7 +243,7 @@ struct UnifiedObjectSystemTests {
         let shape = VectorShape(name: "Selected Shape", path: VectorPath(elements: [], isClosed: false))
         document.addShapeToUnifiedSystem(shape, layerIndex: 0)
         
-        let text = VectorText(content: "Selected Text", typography: TypographyProperties(strokeColor: .black, fillColor: .black))
+        let text = VectorText(content: "Selected Text", typography: TypographyProperties(strokeColor: VectorColor.black, fillColor: VectorColor.black))
         document.addTextToUnifiedSystem(text, layerIndex: 1)
         
         // Select both objects
@@ -288,9 +288,9 @@ struct UnifiedObjectSystemTests {
             fontFamily: "Arial",
             fontSize: 12.0,
             hasStroke: false,
-            strokeColor: .black,
+            strokeColor: VectorColor.black,
             strokeOpacity: 0.5,
-            fillColor: .blue
+            fillColor: VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1))
         )
         
         let textObject = VectorText(
@@ -304,7 +304,7 @@ struct UnifiedObjectSystemTests {
         document.textObjects.append(textObject) // Keep legacy in sync
         
         // Simulate ColorPanel stroke color update
-        let newStrokeColor = VectorColor.red
+        let newStrokeColor = VectorColor.rgb(RGBColor(red: 1, green: 0, blue: 0))
         
         // Find text via unified objects (like migrated ColorPanel does)
         let foundInUnified = document.allTextObjects.contains(where: { $0.id == textObject.id })
@@ -368,7 +368,8 @@ struct UnifiedObjectSystemTests {
         let initialTypography = TypographyProperties(
             fontFamily: "Arial",
             fontSize: 14.0,
-            fillColor: .black,
+            strokeColor: VectorColor.black,
+            fillColor: VectorColor.black,
             fillOpacity: 1.0
         )
         
@@ -383,7 +384,7 @@ struct UnifiedObjectSystemTests {
         document.textObjects.append(textObject) // Keep legacy in sync
         
         // Test the ACTUAL ColorSwatchGrid fill color update
-        let newFillColor = VectorColor.blue
+        let newFillColor = VectorColor.rgb(RGBColor(red: 0, green: 0, blue: 1))
         
         // Simulate ColorSwatchGrid text fill color update
         if document.allTextObjects.contains(where: { $0.id == textObject.id }) {
@@ -440,7 +441,7 @@ struct UnifiedObjectSystemTests {
         // Add text using helper method
         let text = VectorText(
             content: "Legacy Test",
-            typography: TypographyProperties(strokeColor: .black, fillColor: .black),
+            typography: TypographyProperties(strokeColor: VectorColor.black, fillColor: VectorColor.black),
             position: CGPoint(x: 10, y: 20)
         )
         document.addTextToUnifiedSystem(text, layerIndex: 1)

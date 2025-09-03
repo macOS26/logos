@@ -201,15 +201,15 @@ struct ColorPanel: View {
                 document.defaultStrokeColor = color
                 Log.fileOperation("🎨 COLOR PANEL: Set stroke color: \(color) (active target)", level: .info)
                 
-                // Apply to selected shapes
-                applyStrokeColorToSelected(color)
+                // CRITICAL FIX: Use setActiveColor to handle text objects (like working callback)
+                document.setActiveColor(color)
             } else {
                 // Set default fill color for new shapes  
                 document.defaultFillColor = color
                 Log.fileOperation("🎨 COLOR PANEL: Set fill color: \(color) (active target)", level: .info)
                 
-                // Apply to selected shapes
-                applyFillColorToSelected(color)
+                // CRITICAL FIX: Use setActiveColor to handle text objects (like working callback)
+                document.setActiveColor(color)
             }
         }
     }
