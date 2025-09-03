@@ -293,6 +293,14 @@ struct VectorText: Identifiable, Codable, Hashable {
         // The ProfessionalTextCanvas handles proper multi-line text bounds calculation
         // This old method was treating multi-line text as single line, causing the thin blue selection line
         
+        // CRITICAL FIX: If areaSize is set, use it for bounds instead of calculating
+        // This preserves user-drawn text box dimensions during copy/paste
+        if let userAreaSize = areaSize {
+            bounds = CGRect(x: 0, y: 0, width: userAreaSize.width, height: userAreaSize.height)
+            Log.info("📦 BOUNDS FROM AREA SIZE: Using user-set areaSize \(userAreaSize) for bounds", category: .general)
+            return
+        }
+        
         // Only calculate bounds if we don't have proper bounds set (width and height both > 0)
         // OR if this is clearly single-line text (no line breaks)
         let hasProperBounds = bounds.width > 0 && bounds.height > 0

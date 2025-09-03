@@ -90,4 +90,25 @@ struct logos_inkpen_ioTests {
         #expect(!preview.contains("<text"), "Document with invisible text should not contain text elements")
         #expect(!preview.contains("Hidden Text Content"), "Hidden text content should not appear in SVG")
     }
+    
+    @Test func testVectorTextAreaSizePreservation() async throws {
+        // Test that VectorText properly preserves areaSize in bounds during initialization
+        let userAreaSize = CGSize(width: 263.0, height: 259.0)
+        
+        let vectorText = VectorText(
+            content: "Test text content",
+            typography: TypographyProperties(
+                strokeColor: VectorColor.black,
+                fillColor: VectorColor.black
+            ),
+            position: CGPoint(x: 100, y: 100),
+            isPointText: false,
+            areaSize: userAreaSize
+        )
+        
+        // The key test: bounds should match areaSize, not calculated text bounds
+        #expect(vectorText.bounds.width == userAreaSize.width, "Bounds width should match areaSize width")
+        #expect(vectorText.bounds.height == userAreaSize.height, "Bounds height should match areaSize height")
+        #expect(vectorText.areaSize == userAreaSize, "AreaSize should be preserved")
+    }
 }
