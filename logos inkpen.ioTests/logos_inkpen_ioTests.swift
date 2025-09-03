@@ -164,7 +164,7 @@ struct logos_inkpen_ioTests {
         let regularShape = VectorShape(
             name: "Regular Shape",
             path: VectorPath(elements: [], isClosed: false),
-            fillStyle: FillStyle(color: VectorColor.blue, opacity: 1.0),
+            fillStyle: FillStyle(color: VectorColor.black, opacity: 1.0),
             isTextObject: false
         )
         let shapeObject = VectorObject(shape: regularShape, layerIndex: 0, orderID: 0)

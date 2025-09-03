@@ -546,7 +546,7 @@ struct VectorText: Identifiable, Codable, Hashable {
         // Extract VectorText data from VectorShape
         // This is a reverse conversion from VectorShape.from(_:VectorText)
         return VectorText(
-            content: vectorShape.name, // Text content is stored in shape name
+            content: vectorShape.textContent ?? "", // Use the actual text content
             typography: TypographyProperties(
                 strokeColor: vectorShape.strokeStyle?.color ?? .black,
                 fillColor: vectorShape.fillStyle?.color ?? .black

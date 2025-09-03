@@ -331,7 +331,7 @@ struct FontPanel: View {
                                         Image(systemName: "text.alignleft")
                                             .font(.system(size: 14))
                                             .foregroundColor(currentTextAlignment == .left ? .white : .primary)
-                                            .frame(width: 30, height: 24)
+                                            .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .left ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
@@ -351,7 +351,7 @@ struct FontPanel: View {
                                         Image(systemName: "text.aligncenter")
                                             .font(.system(size: 14))
                                             .foregroundColor(currentTextAlignment == .center ? .white : .primary)
-                                            .frame(width: 30, height: 24)
+                                            .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .center ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
@@ -371,7 +371,7 @@ struct FontPanel: View {
                                         Image(systemName: "text.alignright")
                                             .font(.system(size: 14))
                                             .foregroundColor(currentTextAlignment == .right ? .white : .primary)
-                                            .frame(width: 30, height: 24)
+                                            .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .right ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
@@ -391,7 +391,7 @@ struct FontPanel: View {
                                         Image(systemName: "text.justify")
                                             .font(.system(size: 14))
                                             .foregroundColor(currentTextAlignment == .justified ? .white : .primary)
-                                            .frame(width: 30, height: 24)
+                                            .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .justified ? Color.blue : Color.clear)
                                             .cornerRadius(4)
                                     }
