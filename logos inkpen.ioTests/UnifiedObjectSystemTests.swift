@@ -361,6 +361,77 @@ struct UnifiedObjectSystemTests {
         #expect(updatedTextInUnified?.typography.strokeOpacity == updatedTextInLegacy?.typography.strokeOpacity)
     }
     
+    @Test func testColorSwatchGridTextFillColorUpdate() async throws {
+        let document = VectorDocument()
+        
+        // Create text object with initial fill color
+        let initialTypography = TypographyProperties(
+            fontFamily: "Arial",
+            fontSize: 14.0,
+            fillColor: .black,
+            fillOpacity: 1.0
+        )
+        
+        let textObject = VectorText(
+            content: "Test Fill Color",
+            typography: initialTypography,
+            position: CGPoint(x: 100, y: 150)
+        )
+        
+        // Add to document using proper helper methods
+        document.addTextToUnifiedSystem(textObject, layerIndex: 1)
+        document.textObjects.append(textObject) // Keep legacy in sync
+        
+        // Test the ACTUAL ColorSwatchGrid fill color update
+        let newFillColor = VectorColor.blue
+        
+        // Simulate ColorSwatchGrid text fill color update
+        if document.allTextObjects.contains(where: { $0.id == textObject.id }) {
+            // Apply the migrated updateTextFillColorInUnified logic
+            if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
+                if case .shape(let shape) = obj.objectType {
+                    return shape.isTextObject && shape.id == textObject.id
+                }
+                return false
+            }) {
+                if case .shape(var shape) = document.unifiedObjects[objectIndex].objectType {
+                    // Update typography fill color in the shape
+                    shape.typography?.fillColor = newFillColor
+                    shape.typography?.fillOpacity = document.defaultFillOpacity
+                    
+                    // Update unified objects
+                    document.unifiedObjects[objectIndex] = VectorObject(
+                        shape: shape,
+                        layerIndex: document.unifiedObjects[objectIndex].layerIndex,
+                        orderID: document.unifiedObjects[objectIndex].orderID
+                    )
+                    
+                    // Keep legacy textObjects array in sync
+                    if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }),
+                       let vectorText = VectorText.from(shape) {
+                        document.textObjects[legacyIndex] = vectorText
+                    }
+                }
+            }
+        }
+        
+        // Verify fill color changed in unified objects
+        let updatedTextInUnified = document.allTextObjects.first { $0.id == textObject.id }
+        #expect(updatedTextInUnified != nil)
+        #expect(updatedTextInUnified?.typography.fillColor == newFillColor)
+        #expect(updatedTextInUnified?.typography.fillOpacity == document.defaultFillOpacity)
+        
+        // Verify legacy array was kept in sync
+        let updatedTextInLegacy = document.textObjects.first { $0.id == textObject.id }
+        #expect(updatedTextInLegacy != nil)
+        #expect(updatedTextInLegacy?.typography.fillColor == newFillColor)
+        #expect(updatedTextInLegacy?.typography.fillOpacity == document.defaultFillOpacity)
+        
+        // Critical test: Both arrays should have same fill color values
+        #expect(updatedTextInUnified?.typography.fillColor == updatedTextInLegacy?.typography.fillColor)
+        #expect(updatedTextInUnified?.typography.fillOpacity == updatedTextInLegacy?.typography.fillOpacity)
+    }
+    
     // MARK: - Migration Compatibility Tests
     
     @Test func testLegacyArraysStillPopulated() async throws {

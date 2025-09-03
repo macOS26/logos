@@ -327,10 +327,9 @@ struct ColorSwatchGrid: View {
                         hasChanges = true
                     }
                     
-                        // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                        document.textObjects[textIndex].typography.fillColor = color
-                        document.textObjects[textIndex].typography.fillOpacity = document.defaultFillOpacity
+                        // MIGRATED: Use unified object system to update text fill color
+                    if document.allTextObjects.contains(where: { $0.id == shape.id }) {
+                        updateTextFillColorInUnified(id: shape.id, color: color, document: document)
                         hasChanges = true
                     }
                 }
@@ -397,6 +396,36 @@ struct ColorSwatchGrid: View {
             switch gradient {
             case .linear(_): return "Linear Gradient"
             case .radial(_): return "Radial Gradient"
+            }
+        }
+    }
+    
+    // MARK: - Unified Object System Helpers
+    
+    private func updateTextFillColorInUnified(id: UUID, color: VectorColor, document: VectorDocument) {
+        if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = document.unifiedObjects[objectIndex].objectType {
+                // Update typography fill color in the shape
+                shape.typography?.fillColor = color
+                shape.typography?.fillOpacity = document.defaultFillOpacity
+                
+                // Update unified objects
+                document.unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[objectIndex].layerIndex,
+                    orderID: document.unifiedObjects[objectIndex].orderID
+                )
+                
+                // Keep legacy textObjects array in sync during migration
+                if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == id }),
+                   let vectorText = VectorText.from(shape) {
+                    document.textObjects[legacyIndex] = vectorText
+                }
             }
         }
     }
