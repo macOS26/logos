@@ -153,7 +153,7 @@ class DocumentIconGenerator {
             }
         }
         
-        let hasVisibleText = document.textObjects.contains { textObj in
+        let hasVisibleText = document.allTextObjects.contains { textObj in
             textObj.isVisible
         }
         

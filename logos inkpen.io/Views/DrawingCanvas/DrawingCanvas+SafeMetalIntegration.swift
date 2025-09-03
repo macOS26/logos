@@ -186,7 +186,7 @@ extension DrawingCanvas {
         }
         
         // Count text objects
-        count += document.textObjects.filter { $0.isVisible }.count
+        count += document.allTextObjects.filter { $0.isVisible }.count
         
         // Count current drawing path if active
         if currentPath != nil && isDrawing {

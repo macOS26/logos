@@ -450,7 +450,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Unlock all text objects
-        for textIndex in document.textObjects.indices {
+        for textIndex in document.allTextObjects.indices {
             document.textObjects[textIndex].isLocked = false
         }
         
@@ -498,7 +498,7 @@ struct MainToolbarContent: ToolbarContent {
         }
         
         // Show all text objects
-        for textIndex in document.textObjects.indices {
+        for textIndex in document.allTextObjects.indices {
             document.textObjects[textIndex].isVisible = true
         }
         

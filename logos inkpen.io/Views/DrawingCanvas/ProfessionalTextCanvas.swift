@@ -182,7 +182,7 @@ struct ProfessionalTextCanvas: View {
                 
                 // CRITICAL: Ensure only one text box can be edited at a time
                 // Stop editing on all other text boxes first
-                for textIndex in document.textObjects.indices {
+                for textIndex in document.allTextObjects.indices {
                     if document.textObjects[textIndex].id != viewModel.textObject.id && document.textObjects[textIndex].isEditing {
                         document.textObjects[textIndex].isEditing = false
                         Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
@@ -1665,7 +1665,7 @@ class ProfessionalTextViewModel: ObservableObject {
         
         // Stop editing any other text boxes first
         var editingCount = 0
-        for textIndex in document.textObjects.indices {
+        for textIndex in document.allTextObjects.indices {
             if document.textObjects[textIndex].isEditing {
                 document.textObjects[textIndex].isEditing = false
                 editingCount += 1
