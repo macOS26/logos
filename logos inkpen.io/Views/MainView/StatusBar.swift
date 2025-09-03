@@ -112,7 +112,7 @@ struct StatusBar: View {
         }
         
         // Include selected text objects
-        for textObj in document.allTextObjects {
+        for textObj in document.textObjects {
             if document.selectedTextIDs.contains(textObj.id) {
                 // Calculate absolute text bounds
                 let textBounds = CGRect(
