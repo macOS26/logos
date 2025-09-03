@@ -285,34 +285,6 @@ struct EnvelopeHandles: View {
     
     // MARK: - Envelope Warping Logic
     
-    // Compute transformed bounds in canvas coordinates (same as selection box)
-    private func computeTransformedBounds() -> CGRect {
-        let baseBounds = shape.isGroupContainer ? shape.groupBounds : shape.bounds
-        
-        // CRITICAL FIX: Account for stroke width in bounding box for stroke-only shapes
-        var strokeExpandedBounds = baseBounds
-        let isStrokeOnly = (shape.fillStyle?.color == .clear || shape.fillStyle == nil)
-        if isStrokeOnly && shape.strokeStyle != nil {
-            let strokeWidth = shape.strokeStyle?.width ?? 1.0
-            let strokeExpansion = strokeWidth / 2.0 // Half stroke width on each side
-            strokeExpandedBounds = baseBounds.insetBy(dx: -strokeExpansion, dy: -strokeExpansion)
-        }
-        
-        // Use corner transformation for ALL shape types (consistent with selection box)
-        let t = shape.transform
-        let corners = [
-            CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.minY).applying(t),
-            CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.minY).applying(t),
-            CGPoint(x: strokeExpandedBounds.maxX, y: strokeExpandedBounds.maxY).applying(t),
-            CGPoint(x: strokeExpandedBounds.minX, y: strokeExpandedBounds.maxY).applying(t)
-        ]
-        let minX = corners.map { $0.x }.min() ?? strokeExpandedBounds.minX
-        let minY = corners.map { $0.y }.min() ?? strokeExpandedBounds.minY
-        let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
-        let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
-        return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
-    }
-    
     private func initializeEnvelopeCorners() {
         // WARP OBJECT HANDLING: Use stored original envelope for continuous warping
         if shape.isWarpObject && !shape.warpEnvelope.isEmpty {
@@ -339,16 +311,23 @@ struct EnvelopeHandles: View {
             return
         }
         
-        // CRITICAL FIX: Use same bounds calculation as selection box for consistency
-        let transformedBounds = computeTransformedBounds()
-        let newOriginalCorners = [
-            CGPoint(x: transformedBounds.minX, y: transformedBounds.minY), // Top-left
-            CGPoint(x: transformedBounds.maxX, y: transformedBounds.minY), // Top-right
-            CGPoint(x: transformedBounds.maxX, y: transformedBounds.maxY), // Bottom-right
-            CGPoint(x: transformedBounds.minX, y: transformedBounds.maxY)  // Bottom-left
-        ]
-        originalCorners = newOriginalCorners
-        warpedCorners = newOriginalCorners
+        // Use axis plane dtection for four pounted shapes or four ointed gorups and flattened objects
+        // otherwise use the bounding box
+        if shape.path.elements.count <= 4 || shape.isGroup {
+            let newOriginalCorners = calculateOrientedBoundingBox(for: shape)
+            originalCorners = newOriginalCorners
+            warpedCorners = newOriginalCorners
+        } else {
+            let bounds = shape.bounds
+            let newOriginalCorners = [
+                CGPoint(x: bounds.minX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.minY),
+                CGPoint(x: bounds.maxX, y: bounds.maxY),
+                CGPoint(x: bounds.minX, y: bounds.maxY)
+            ]
+            originalCorners = newOriginalCorners
+            warpedCorners = newOriginalCorners
+        }
         
         Log.fileOperation("🔧 ENVELOPE INITIALIZED: Using \(originalCorners.count) corners", level: .info)
     }
