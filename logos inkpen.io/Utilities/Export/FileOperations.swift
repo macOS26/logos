@@ -1128,10 +1128,8 @@ class FileOperations {
         }
         
         // Pre-analyze text objects for gradients
-        for unifiedObject in document.unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
-            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
-               let text = VectorText.from(shape) {
-                if !text.isVisible { continue }
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
             
             // Check text fill for gradients
             if case .gradient(let gradient) = text.typography.fillColor {
@@ -1152,7 +1150,6 @@ class FileOperations {
                     gradientToIdMapping[gradient] = gradientId
                     gradientCounter += 1
                 }
-            }
             }
         }
         
@@ -1302,7 +1299,7 @@ class FileOperations {
         }
         
         // Export text objects
-        for text in document.allTextObjects {
+        try document.forEachTextInOrder { text in
             svg += try generateSVGText(text, gradientMapping: gradientToIdMapping)
         }
         
@@ -1942,8 +1939,8 @@ class FileOperations {
         }
         
         // Draw text objects
-        for text in document.textObjects {
-            if !text.isVisible { continue }
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
             
             drawTextInPDF(text, context: context)
         }
@@ -2089,8 +2086,8 @@ class FileOperations {
         }
         
         // Draw text objects
-        for text in document.textObjects {
-            if !text.isVisible { continue }
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
             
             drawTextInPDF(text, context: context)
         }
@@ -2178,8 +2175,8 @@ class FileOperations {
         }
         
         // Draw text objects
-        for text in document.textObjects {
-            if !text.isVisible { continue }
+        document.forEachTextInOrder { text in
+            if !text.isVisible { return }
             
             drawTextInPDF(text, context: context)
         }

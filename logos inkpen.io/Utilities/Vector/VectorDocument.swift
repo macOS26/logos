@@ -83,6 +83,16 @@ class VectorDocument: ObservableObject, Codable {
         return unifiedObjects.filter { $0.layerIndex == layerIndex }
     }
     
+    // Helper method for ordered text iteration (avoids code duplication)
+    func forEachTextInOrder(_ action: (VectorText) throws -> Void) rethrows {
+        for unifiedObject in unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+               let text = VectorText.from(shape) {
+                try action(text)
+            }
+        }
+    }
+    
     func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
         return allShapes.filter { shape in
             // Find the unified object for this shape to get its layer
