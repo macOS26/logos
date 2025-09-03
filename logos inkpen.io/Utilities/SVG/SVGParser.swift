@@ -11,11 +11,11 @@ import SwiftUI
 // MARK: - PROFESSIONAL SVG PARSER
 class SVGParser: NSObject, XMLParserDelegate {
     var shapes: [VectorShape] = []
-    private var textObjects: [VectorText] = []
+    internal var textObjects: [VectorText] = []
     private var currentPath: VectorPath?
     private var currentStroke: StrokeStyle?
     private var currentFill: FillStyle?
-    private var currentTransform = CGAffineTransform.identity
+    internal var currentTransform = CGAffineTransform.identity
     private var transformStack: [CGAffineTransform] = []
     private var documentSize = CGSize(width: 100, height: 100)
     internal var viewBoxWidth: Double = 100.0
@@ -28,12 +28,12 @@ class SVGParser: NSObject, XMLParserDelegate {
     private var currentElementName = ""
     private var cssStyles: [String: [String: String]] = [:]
     private var currentStyleContent = ""
-    private var currentTextContent = ""
-    private var currentTextAttributes: [String: String] = [:]
+    internal var currentTextContent = ""
+    internal var currentTextAttributes: [String: String] = [:]
     
     // Multi-line text support
-    private var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
-    private var isInMultiLineText: Bool = false
+    internal var currentTextSpans: [(content: String, attributes: [String: String], x: Double, y: Double)] = []
+    internal var isInMultiLineText: Bool = false
     
     // MARK: - Gradient Support
     internal var gradientDefinitions: [String: VectorGradient] = [:]
@@ -322,7 +322,7 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
 
     // Apply space-separated CSS classes from a class attribute into an attribute dictionary
-    private func applyCSSClasses(_ classAttr: String, into attributes: inout [String: String]) {
+    internal func applyCSSClasses(_ classAttr: String, into attributes: inout [String: String]) {
         let classNames = classAttr.components(separatedBy: .whitespaces).filter { !$0.isEmpty }
         for cls in classNames {
             let selector = "." + cls
@@ -347,143 +347,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     
     // MARK: - SVG Element Parsers
     
-    private func parseText(attributes: [String: String]) {
-        currentTextContent = ""
-        currentTextSpans.removeAll()
-        isInMultiLineText = false
-        
-        // Merge class-based and inline styles for <text>
-        var merged = attributes
-        if let classAttr = attributes["class"], !classAttr.isEmpty {
-            applyCSSClasses(classAttr, into: &merged)
-        }
-        if let style = attributes["style"], !style.isEmpty {
-            let styleDict = parseStyleAttribute(style)
-            for (k, v) in styleDict { merged[k] = v }
-        }
-        currentTextAttributes = merged
-        Log.fileOperation("🔤 Starting text element parsing", level: .info)
-    }
-    
-    private func finishTextElement() {
-        // Handle multi-line text with tspan elements
-        if isInMultiLineText && !currentTextSpans.isEmpty {
-            let baseX = parseLength(currentTextAttributes["x"]) ?? 0
-            let baseY = parseLength(currentTextAttributes["y"]) ?? 0
-            let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
-            let finalTextTransform = currentTransform.concatenating(textOwnTransform)
-            
-            // CRITICAL FIX: Create ONE multi-line text object instead of multiple separate objects
-            // Combine all tspan content into a single multi-line string
-            var combinedContent: [String] = []
-            var firstFontSize: Double = 12
-            var firstFontFamily: String = "System Font"
-            var firstFillColor: VectorColor = .black
-            
-            for (index, span) in currentTextSpans.enumerated() {
-                let cleanContent = span.content.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !cleanContent.isEmpty else { continue }
-                
-                // Use typography from the first non-empty tspan
-                if index == 0 || (combinedContent.isEmpty) {
-                    firstFontSize = parseLength(span.attributes["font-size"]) ?? 12
-                    let rawFontFamily = extractFontFamily(from: span.attributes)
-                    firstFontFamily = normalizeFontFamily(rawFontFamily)
-                    let fill = span.attributes["fill"] ?? "black"
-                    firstFillColor = parseColor(fill) ?? .black
-                }
-                
-                combinedContent.append(cleanContent)
-            }
-            
-            // Create a single multi-line text object
-            if !combinedContent.isEmpty {
-                let multiLineContent = combinedContent.joined(separator: "\n")
-                
-                // Parse font weight and alignment from the first tspan or CSS
-                let fontWeight = parseFontWeight(from: currentTextSpans.first?.attributes ?? currentTextAttributes)
-                let textAlignment = detectTextAlignment(from: currentTextSpans)
-                
-                let typography = TypographyProperties(
-                    fontFamily: firstFontFamily,
-                    fontWeight: fontWeight,  // FIXED: Use parsed font weight
-                    fontStyle: .normal,
-                    fontSize: firstFontSize,
-                    lineHeight: firstFontSize * 1.2, // Standard line spacing
-                    lineSpacing: 0.0,
-                    letterSpacing: 0.0,
-                    alignment: textAlignment,  // FIXED: Use detected alignment
-                    hasStroke: false,
-                    strokeColor: .black,
-                    strokeWidth: 0.0,
-                    strokeOpacity: 1.0,
-                    fillColor: firstFillColor,
-                    fillOpacity: 1.0
-                )
-                
-                let textObject = VectorText(
-                    content: multiLineContent,
-                    typography: typography,
-                    position: CGPoint(x: baseX, y: baseY),
-                    transform: finalTextTransform,
-                    isPointText: false,  // This is area text (multi-line)
-                    areaSize: nil        // Will be calculated automatically
-                )
-                
-                textObjects.append(textObject)
-                Log.fileOperation("📝 Created single multi-line text object with \(combinedContent.count) lines: '\(multiLineContent.prefix(50))'", level: .info)
-            }
-        } else {
-            // Handle single-line text
-            guard !currentTextContent.isEmpty else { return }
-            
-            let x = parseLength(currentTextAttributes["x"]) ?? 0
-            let y = parseLength(currentTextAttributes["y"]) ?? 0
-            let fontSize = parseLength(currentTextAttributes["font-size"]) ?? 12
-            let rawFontFamily = extractFontFamily(from: currentTextAttributes)
-            let fontFamily = normalizeFontFamily(rawFontFamily)
-            let fill = currentTextAttributes["fill"] ?? "black"
-            let textOwnTransform = parseTransform(currentTextAttributes["transform"] ?? "")
-            let finalTextTransform = currentTransform.concatenating(textOwnTransform)
-            
-            // Parse font weight and alignment for single-line text
-            let fontWeight = parseFontWeight(from: currentTextAttributes)
-            let textAlignment = TextAlignment.left  // Single line defaults to left
-            
-            let typography = TypographyProperties(
-                fontFamily: fontFamily,
-                fontWeight: fontWeight,  // FIXED: Use parsed font weight
-                fontStyle: .normal,
-                fontSize: fontSize,
-                lineHeight: fontSize,
-                lineSpacing: 0.0,
-                letterSpacing: 0.0,
-                alignment: textAlignment,
-                hasStroke: false,
-                strokeColor: .black,
-                strokeWidth: 0.0,
-                strokeOpacity: 1.0,
-                fillColor: parseColor(fill) ?? .black,
-                fillOpacity: 1.0
-            )
-            
-            let textObject = VectorText(
-                content: currentTextContent.trimmingCharacters(in: .whitespacesAndNewlines),
-                typography: typography,
-                position: CGPoint(x: x, y: y),
-                transform: finalTextTransform
-            )
-            
-            textObjects.append(textObject)
-            Log.fileOperation("📝 Created single-line text object: '\(textObject.content)'", level: .info)
-        }
-        
-        // Reset state
-        currentTextContent = ""
-        currentTextAttributes = [:]
-        currentTextSpans.removeAll()
-        isInMultiLineText = false
-    }
 
     
     private func parseSVGRoot(attributes: [String: String]) {
