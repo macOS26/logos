@@ -283,7 +283,7 @@ struct DWFExportView: View {
         for layer in document.layers {
             count += layer.shapes.count
         }
-        count += document.textObjects.count
+        count += document.allTextObjects.count
         return count
     }
 }

@@ -530,6 +530,26 @@ struct VectorText: Identifiable, Codable, Hashable {
         points.deallocate()
         return elements
     }
+    
+    // MIGRATION: Convert VectorShape back to VectorText for unified access
+    static func from(_ vectorShape: VectorShape) -> VectorText? {
+        guard vectorShape.isTextObject else { return nil }
+        
+        // Extract VectorText data from VectorShape
+        // This is a reverse conversion from VectorShape.from(_:VectorText)
+        return VectorText(
+            content: vectorShape.name, // Text content is stored in shape name
+            typography: TypographyProperties(
+                strokeColor: vectorShape.strokeStyle?.color ?? .black,
+                fillColor: vectorShape.fillStyle?.color ?? .black
+            ),
+            position: vectorShape.bounds.origin,
+            transform: vectorShape.transform,
+            isVisible: vectorShape.isVisible,
+            isLocked: vectorShape.isLocked,
+            layerIndex: nil // Will be set from unified object
+        )
+    }
 }
 
 // MARK: - Professional Font Management

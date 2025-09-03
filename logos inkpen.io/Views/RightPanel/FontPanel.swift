@@ -827,7 +827,7 @@ struct FontPanel: View {
         Log.fileOperation("🎯 FONT PANEL: Converting text to vector outlines using YOUR multi-line Core Text implementation", level: .info)
         
         // VERIFICATION: Check if text was actually removed
-        let remainingTextCount = document.textObjects.count
+        let remainingTextCount = document.allTextObjects.count
         Log.fileOperation("🎯 VERIFICATION: \(remainingTextCount) text objects remaining after conversion", level: .info)
         
         if remainingTextCount > 0 {

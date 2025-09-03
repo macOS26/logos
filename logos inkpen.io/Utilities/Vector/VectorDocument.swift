@@ -41,6 +41,32 @@ class VectorDocument: ObservableObject, Codable {
     // NEW: Unified objects array for proper layer ordering
     @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
     
+    // MIGRATION: Safe computed properties for gradual transition to unified-only access
+    // These provide unified access while preserving backward compatibility
+    var allShapes: [VectorShape] {
+        return unifiedObjects.compactMap { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType, !shape.isTextObject {
+                return shape
+            }
+            return nil
+        }
+    }
+    
+    var allTextObjects: [VectorText] {
+        return unifiedObjects.compactMap { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject {
+                // Convert VectorShape back to VectorText
+                return VectorText.from(shape)
+            }
+            return nil
+        }
+    }
+    
+    var allObjectsByLayer: [Int: [VectorObject]] {
+        return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
+    }
+    
+    
     @Published var currentTool: DrawingTool = .brush
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
     @Published var rotationAnchor: RotationAnchor = .center // NEW: Rotation anchor point selection

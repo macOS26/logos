@@ -290,7 +290,7 @@ class DocumentIconGenerator {
     func generateSVGPreview(for document: VectorDocument) -> String {
         print("🔍 IconGenerator: Generating simplified SVG preview for document...")
         print("   Document has \(document.layers.count) layers")
-        print("   Document has \(document.textObjects.count) text objects")
+        print("   Document has \(document.allTextObjects.count) text objects")
         
         // SIMPLIFIED: Generate basic SVG without complex image handling
         // This is just for compatibility, the actual preview uses direct rendering
