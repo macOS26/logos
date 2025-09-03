@@ -1299,7 +1299,7 @@ class FileOperations {
         }
         
         // Export text objects
-        for text in document.textObjects {
+        for text in document.allTextObjects {
             svg += try generateSVGText(text, gradientMapping: gradientToIdMapping)
         }
         
