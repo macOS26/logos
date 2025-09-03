@@ -840,7 +840,7 @@ class ClipboardManager {
                         // CRITICAL FIX: Convert VectorShape back to VectorText for proper copy/paste
                         if let textContent = shape.textContent, let typography = shape.typography {
                             let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
-                            let vectorText = VectorText(
+                            var vectorText = VectorText(
                                 content: textContent,
                                 typography: typography,
                                 position: position,
@@ -853,6 +853,13 @@ class ClipboardManager {
                                 cursorPosition: shape.cursorPosition ?? 0,
                                 areaSize: shape.areaSize
                             )
+                            
+                            // CRITICAL SIZE FIX: Preserve original user-drawn text box size from VectorShape
+                            // Use the areaSize which preserves the user's manually set size
+                            if let userAreaSize = shape.areaSize {
+                                vectorText.bounds = CGRect(x: 0, y: 0, width: userAreaSize.width, height: userAreaSize.height)
+                            }
+                            
                             // Note: VectorText.id will be different since it's let, but we'll assign new ID during paste anyway
                             textToCopy.append(vectorText)
                         }
