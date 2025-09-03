@@ -877,85 +877,27 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     
-    /// Parse gradient coordinate with enhanced SVG compatibility and proper userSpaceOnUse handling
-    /// This version includes extreme value handling for radial gradients that cannot be reproduced
+    /// Parse gradient coordinate using GradientCoordinateConverter
     internal func parseGradientCoordinate(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true, useExtremeValueHandling: Bool = false) -> Double {
-        let trimmed = value.trimmingCharacters(in: .whitespaces)
-        
-        // Handle percentage values (most common in SVG gradients)
-        if trimmed.hasSuffix("%") {
-            let percentValue = Double(String(trimmed.dropLast(1))) ?? 0.0
-            return percentValue / 100.0
-        }
-        
-        // Handle absolute values
-        if let absoluteValue = Double(trimmed) {
-            if gradientUnits == .userSpaceOnUse {
-                // CRITICAL FIX: For userSpaceOnUse, normalize to viewBox dimensions (0-1 range)
-                // This creates proper shape-relative coordinates
-                let normalizer = isXCoordinate ? viewBoxWidth : viewBoxHeight
-                if normalizer > 0 {
-                    let normalizedValue = absoluteValue / normalizer
-                    
-                    // ENHANCED EXTREME VALUE HANDLING: For coordinates way outside the viewBox
-                    let finalValue: Double
-                    if useExtremeValueHandling {
-                        // EXTREME VALUE MODE: Use your radial gradient code for values outside 0-1
-                        if normalizedValue < 0.0 || normalizedValue > 1.0 {
-                            // Use your specialized radial gradient handling for out-of-bounds values
-                            // Map extreme values to reasonable 0-1 range
-                            if normalizedValue < 0.0 {
-                                // Negative coordinates: map to 0.0-0.5 range
-                                finalValue = 0.5 + (normalizedValue * 0.5)
-                                Log.fileOperation("🚨 EXTREME NEGATIVE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
-                            } else {
-                                // Values > 1.0: map to 0.5-1.0 range
-                                finalValue = 0.5 + ((normalizedValue - 1.0) * 0.5)
-                                Log.fileOperation("🚨 EXTREME LARGE COORDINATE: \(absoluteValue) → \(normalizedValue) → \(finalValue)", level: .info)
-                            }
-                        } else {
-                            // Coordinates within 0-1 range: use as-is
-                            finalValue = normalizedValue
-                            Log.info("✅ NORMAL COORDINATE: \(absoluteValue) → \(normalizedValue)", category: .fileOperations)
-                        }
-                    } else {
-                        // STANDARD MODE: Preserve normalized value even if outside 0-1; clamping happens later
-                        finalValue = normalizedValue
-                        Log.info("✅ STANDARD COORDINATE: \(absoluteValue) → \(normalizedValue) (preserved)", category: .fileOperations)
-                    }
-                    
-                    // Ensure final value is within 0-1 range
-                    let clampedValue = max(0.0, min(1.0, finalValue))
-                    
-                    let modeLabel = useExtremeValueHandling ? "EXTREME VALUE" : "STANDARD"
-                    Log.fileOperation("🔧 \(modeLabel) CONVERSION: \(absoluteValue) → \(normalizedValue) → \(finalValue) → \(clampedValue) (userSpaceOnUse → objectBoundingBox)", level: .info)
-                    Log.info("   Formula: \(absoluteValue) / \(normalizer)", category: .general)
-                    Log.info("   Using viewBox: \(viewBoxWidth) × \(viewBoxHeight)", category: .general)
-                    print("   Mapping: \(normalizedValue < 0.0 || normalizedValue > 1.0 ? (useExtremeValueHandling ? "outside 0-1→proportional mapping" : "outside 0-1→0.5") : "within 0-1 range")")
-                    return clampedValue
-                } else {
-                    Log.fileOperation("⚠️ Invalid viewBox dimension, using absolute coordinate", level: .info)
-                    return absoluteValue
-                }
-            } else {
-                // For objectBoundingBox, values should be in 0-1 range
-                if absoluteValue > 1.0 {
-                    // If value is > 1, assume it needs normalization
-                    return min(absoluteValue / 100.0, 1.0)
-                }
-                return absoluteValue
-            }
-        }
-        
-        // Default fallback
-        return 0.0
+        return GradientCoordinateConverter.parseGradientCoordinate(
+            value, 
+            gradientUnits: gradientUnits, 
+            isXCoordinate: isXCoordinate, 
+            useExtremeValueHandling: useExtremeValueHandling,
+            viewBoxWidth: viewBoxWidth,
+            viewBoxHeight: viewBoxHeight
+        )
     }
     
     /// ENHANCED RADIAL GRADIENT COORDINATE PARSING FOR EXTREME VALUES
-    /// This specialized version handles radial gradients with extreme values that cannot be reproduced
-    /// Use this option for radial files that have coordinates way outside normal bounds
     private func parseRadialGradientCoordinateExtreme(_ value: String, gradientUnits: GradientUnits = .objectBoundingBox, isXCoordinate: Bool = true) -> Double {
-        return parseGradientCoordinate(value, gradientUnits: gradientUnits, isXCoordinate: isXCoordinate, useExtremeValueHandling: true)
+        return GradientCoordinateConverter.parseRadialGradientCoordinateExtreme(
+            value,
+            gradientUnits: gradientUnits,
+            isXCoordinate: isXCoordinate,
+            viewBoxWidth: viewBoxWidth,
+            viewBoxHeight: viewBoxHeight
+        )
     }
     
     
