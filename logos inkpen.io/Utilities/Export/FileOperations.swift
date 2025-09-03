@@ -1128,7 +1128,7 @@ class FileOperations {
         }
         
         // Pre-analyze text objects for gradients
-        for text in document.textObjects {
+        for text in document.allTextObjects {
             if !text.isVisible { continue }
             
             // Check text fill for gradients
