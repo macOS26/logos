@@ -55,41 +55,6 @@ class SVGParser: NSObject, XMLParserDelegate {
     }
     
     
-    /// Helper function to parse gradient transform angle from attributes
-    private func parseGradientTransformAngle(from attributes: [String: String]) -> Double {
-        var finalAngle = 0.0
-        if let gradientTransform = attributes["gradientTransform"] {
-            Log.fileOperation("🔧 Parsing gradientTransform: \(gradientTransform)", level: .info)
-            
-            // Parse rotate transform
-            let rotatePattern = #"rotate\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
-            if let regex = try? NSRegularExpression(pattern: rotatePattern, options: []),
-               let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
-                
-                if let angleRange = Range(match.range(at: 1), in: gradientTransform) {
-                    let angleStr = String(gradientTransform[angleRange])
-                    if let transformAngle = Double(angleStr) {
-                        finalAngle = transformAngle
-                        Log.fileOperation("🔄 Found rotate transform: \(transformAngle)°", level: .info)
-                    }
-                }
-            }
-            
-            // Parse scale transform to check for Y-flip
-            let scalePattern = #"scale\s*\(\s*([+-]?[0-9]*\.?[0-9]+)\s*[,\s]+\s*([+-]?[0-9]*\.?[0-9]+)\s*\)"#
-            if let regex = try? NSRegularExpression(pattern: scalePattern, options: []),
-               let match = regex.firstMatch(in: gradientTransform, options: [], range: NSRange(gradientTransform.startIndex..., in: gradientTransform)) {
-                
-                if let scaleYRange = Range(match.range(at: 2), in: gradientTransform) {
-                    let scaleYStr = String(gradientTransform[scaleYRange])
-                    if let scaleY = Double(scaleYStr), scaleY < 0 {
-                        Log.fileOperation("🔄 Found Y-flip scale: \(scaleY)", level: .info)
-                    }
-                }
-            }
-        }
-        return finalAngle
-    }
     
     struct ParseResult {
         let shapes: [VectorShape]
