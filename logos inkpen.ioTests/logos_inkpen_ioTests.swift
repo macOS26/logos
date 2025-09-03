@@ -205,4 +205,35 @@ struct logos_inkpen_ioTests {
         #expect(textObjects[0].content == "First text", "First text object should have correct content")
         #expect(textObjects[1].content == "Second text", "Second text object should have correct content")
     }
+    
+    @Test func testStatusBarTextObjectsMigration() async throws {
+        // Test that StatusBar can use allTextObjects for selection bounds calculation
+        let document = VectorDocument()
+        
+        // Add a selected text object to unified system
+        let textShape = VectorShape(
+            name: "Status Text",
+            path: VectorPath(elements: [], isClosed: false),
+            fillStyle: FillStyle(color: VectorColor.black, opacity: 1.0),
+            transform: CGAffineTransform(translationX: 50, y: 100),
+            isTextObject: true,
+            textContent: "Status Test Text",
+            typography: TypographyProperties(strokeColor: .clear, fillColor: .black)
+        )
+        let textObject = VectorObject(shape: textShape, layerIndex: 0, orderID: 0)
+        document.unifiedObjects.append(textObject)
+        
+        // Mark text as selected
+        document.selectedTextIDs.insert(textShape.id)
+        
+        // Test that allTextObjects returns the text object
+        let allTexts = document.allTextObjects
+        #expect(allTexts.count == 1, "Should find 1 text object through allTextObjects")
+        #expect(allTexts[0].content == "Status Test Text", "Should return correct text content")
+        
+        // Verify backward compatibility - selectedTextIDs should work with allTextObjects
+        let selectedTexts = allTexts.filter { document.selectedTextIDs.contains($0.id) }
+        #expect(selectedTexts.count == 1, "Should find 1 selected text object")
+        #expect(selectedTexts[0].content == "Status Test Text", "Selected text should have correct content")
+    }
 }
