@@ -170,8 +170,15 @@ struct EnvelopeHandles: View {
     
     @ViewBuilder
     private func envelopeCornerHandles() -> some View {
-        ForEach(0..<4) { cornerIndex in
-            let cornerPos = warpedCorners.indices.contains(cornerIndex) ? warpedCorners[cornerIndex] : CGPoint.zero
+        // CRITICAL FIX: Use same handle positions as selection box
+        let transformedBounds = computeTransformedBounds()
+        
+        // Map warp corners to selection box corner indices: 0=TL, 2=TR, 4=BR, 6=BL
+        let selectionCornerIndices = [0, 2, 4, 6]
+        
+        ForEach(0..<4) { warpCornerIndex in
+            let selectionIndex = selectionCornerIndices[warpCornerIndex]
+            let cornerPos = handlePosition(index: selectionIndex, in: transformedBounds)
             
             Rectangle()
                 .fill(Color.green)  // All corners GREEN - no locking
@@ -311,6 +318,22 @@ struct EnvelopeHandles: View {
         let maxX = corners.map { $0.x }.max() ?? strokeExpandedBounds.maxX
         let maxY = corners.map { $0.y }.max() ?? strokeExpandedBounds.maxY
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+    
+    // Handle position calculation matching selection box exactly
+    private func handlePosition(index: Int, in rect: CGRect) -> CGPoint {
+        // 0 TL, 1 Top, 2 TR, 3 Right, 4 BR, 5 Bottom, 6 BL, 7 Left, 8 Center
+        switch index {
+        case 0: return CGPoint(x: rect.minX, y: rect.minY)
+        case 1: return CGPoint(x: rect.midX, y: rect.minY)
+        case 2: return CGPoint(x: rect.maxX, y: rect.minY)
+        case 3: return CGPoint(x: rect.maxX, y: rect.midY)
+        case 4: return CGPoint(x: rect.maxX, y: rect.maxY)
+        case 5: return CGPoint(x: rect.midX, y: rect.maxY)
+        case 6: return CGPoint(x: rect.minX, y: rect.maxY)
+        case 7: return CGPoint(x: rect.minX, y: rect.midY)
+        default: return CGPoint(x: rect.midX, y: rect.midY)
+        }
     }
     
     private func initializeEnvelopeCorners() {
