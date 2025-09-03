@@ -330,7 +330,7 @@ class DocumentIconGenerator {
         }
         
         // Render text objects
-        for textObj in document.textObjects where textObj.isVisible {
+        for textObj in document.allTextObjects where textObj.isVisible {
             svgContent += generateTextSVG(textObj)
         }
         

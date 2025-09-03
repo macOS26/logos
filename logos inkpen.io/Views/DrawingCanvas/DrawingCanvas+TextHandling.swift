@@ -88,7 +88,7 @@ extension DrawingCanvas {
     func findTextAt(location: CGPoint) -> UUID? {
         Log.info("🔍 FIND TEXT: Looking for text at location \(location)", category: .general)
         
-        for textObj in document.textObjects {
+        for textObj in document.allTextObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // ACCURATE HIT TESTING: Use precise text bounds with minimal tolerance
@@ -906,7 +906,7 @@ extension DrawingCanvas {
         
         Log.info("🔍 RESIZE HANDLE CHECK: Testing location \(location)", category: .general)
         
-        for textObj in document.textObjects {
+        for textObj in document.allTextObjects {
             if !textObj.isVisible || textObj.isLocked { continue }
             
             // Check ALL text boxes - editing, selected, and even unselected ones
