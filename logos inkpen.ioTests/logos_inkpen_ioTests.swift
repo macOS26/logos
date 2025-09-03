@@ -152,4 +152,57 @@ struct logos_inkpen_ioTests {
         #expect(pastedText.bounds.width == originalAreaSize.width, "Pasted text bounds width should match original areaSize")
         #expect(pastedText.bounds.height == originalAreaSize.height, "Pasted text bounds height should match original areaSize")
     }
+    
+    @Test func testUnifiedObjectsTextCountMigration() async throws {
+        // Test that allTextObjects computed property correctly counts text objects in the unified system
+        let document = VectorDocument()
+        
+        // Initially should have 0 text objects
+        #expect(document.allTextObjects.count == 0, "Empty document should have 0 text objects")
+        
+        // Add a regular shape (not text) to unified objects
+        let regularShape = VectorShape(
+            name: "Regular Shape",
+            path: VectorPath(elements: [], isClosed: false),
+            fillStyle: FillStyle(color: VectorColor.blue, opacity: 1.0),
+            isTextObject: false
+        )
+        let shapeObject = VectorObject(shape: regularShape, layerIndex: 0, orderID: 0)
+        document.unifiedObjects.append(shapeObject)
+        
+        // Should still have 0 text objects
+        #expect(document.allTextObjects.count == 0, "Document with only shapes should have 0 text objects")
+        
+        // Add text objects as unified shapes with isTextObject = true
+        let textShape1 = VectorShape(
+            name: "Text 1",
+            path: VectorPath(elements: [], isClosed: false),
+            fillStyle: FillStyle(color: VectorColor.black, opacity: 1.0),
+            isTextObject: true,
+            textContent: "First text",
+            typography: TypographyProperties(strokeColor: .clear, fillColor: .black)
+        )
+        let textObject1 = VectorObject(shape: textShape1, layerIndex: 0, orderID: 1)
+        document.unifiedObjects.append(textObject1)
+        
+        let textShape2 = VectorShape(
+            name: "Text 2",
+            path: VectorPath(elements: [], isClosed: false),
+            fillStyle: FillStyle(color: VectorColor.black, opacity: 1.0),
+            isTextObject: true,
+            textContent: "Second text",
+            typography: TypographyProperties(strokeColor: .clear, fillColor: .black)
+        )
+        let textObject2 = VectorObject(shape: textShape2, layerIndex: 1, orderID: 0)
+        document.unifiedObjects.append(textObject2)
+        
+        // Should now have 2 text objects
+        #expect(document.allTextObjects.count == 2, "Document should have 2 text objects")
+        
+        // Verify the text objects can be converted back properly
+        let textObjects = document.allTextObjects
+        #expect(textObjects.count == 2, "Should convert 2 text shapes back to VectorText objects")
+        #expect(textObjects[0].content == "First text", "First text object should have correct content")
+        #expect(textObjects[1].content == "Second text", "Second text object should have correct content")
+    }
 }
