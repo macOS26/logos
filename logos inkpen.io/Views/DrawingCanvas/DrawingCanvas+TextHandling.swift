@@ -34,7 +34,7 @@ extension DrawingCanvas {
         Log.info("🔍 BACKGROUND TAP: Checking if location \(location) hits any text", category: .general)
         
         // Use the same generous hit testing logic as findTextAt
-        let tapHitsText = document.allTextObjects.contains { textObj in
+        let tapHitsText = document.textObjects.contains { textObj in
             if !textObj.isVisible || textObj.isLocked { return false }
             
             // Use the same three hit testing methods as findTextAt
@@ -72,7 +72,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop all editing
-            for textIndex in document.allTextObjects.indices {
+            for textIndex in document.textObjects.indices {
                 if document.textObjects[textIndex].isEditing {
                     document.textObjects[textIndex].isEditing = false
                 }
@@ -127,7 +127,7 @@ extension DrawingCanvas {
         
         // CRITICAL: Ensure only one text box can be in edit mode at a time
         var editingCount = 0
-        for textIndex in document.allTextObjects.indices {
+        for textIndex in document.textObjects.indices {
             if document.textObjects[textIndex].isEditing {
                 editingCount += 1
                 Log.fileOperation("🔄 STOPPING EDIT: Text box \(document.textObjects[textIndex].id.uuidString.prefix(8)) was in edit mode", level: .info)
@@ -749,7 +749,7 @@ extension DrawingCanvas {
         // AGGRESSIVE background tap handler - deselects ALL text boxes
         
         // Check if tapping outside all text boxes (use fixed 300pt width)
-        let hitAnyTextBox = document.allTextObjects.contains { textObj in
+        let hitAnyTextBox = document.textObjects.contains { textObj in
             let textFrame = CGRect(
                 x: textObj.position.x,
                 y: textObj.position.y,
@@ -765,7 +765,7 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop editing any text that might be in edit mode
-            for textIndex in document.allTextObjects.indices {
+            for textIndex in document.textObjects.indices {
                 if document.textObjects[textIndex].isEditing {
                     document.textObjects[textIndex].isEditing = false
                 }
@@ -784,7 +784,7 @@ extension DrawingCanvas {
     /// Handle text box drawing like rectangle tool - user drags to define size
     func handleTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
-        let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
+        let hasEditingTextBox = document.textObjects.contains { $0.isEditing }
         if hasEditingTextBox {
             Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             Log.info("🚫 BLUE OUTLINE: Will NOT appear - this is a resize operation", category: .general)
@@ -847,7 +847,7 @@ extension DrawingCanvas {
     /// Finish text box drawing and create text with user-defined size
     func finishTextBoxDrawing(value: DragGesture.Value, geometry: GeometryProxy) {
         // CRITICAL FIX: Don't create new text boxes when any text box is in editing mode (blue state)
-        let hasEditingTextBox = document.allTextObjects.contains { $0.isEditing }
+        let hasEditingTextBox = document.textObjects.contains { $0.isEditing }
         if hasEditingTextBox {
             Log.info("🚫 FONT TOOL: Blocked - text box is in editing mode, not creating new text box", category: .general)
             return

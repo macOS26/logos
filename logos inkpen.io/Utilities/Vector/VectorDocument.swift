@@ -95,16 +95,6 @@ class VectorDocument: ObservableObject, Codable {
         }
     }
     
-    // MIGRATION: Helper methods for finding indices (for cases that need array index)
-    func findTextIndex(by id: UUID) -> Int? {
-        return allTextObjects.firstIndex { $0.id == id }
-    }
-    
-    func findShapeIndex(by id: UUID, inLayer layerIndex: Int) -> Int? {
-        guard layerIndex < layers.count else { return nil }
-        return layers[layerIndex].shapes.firstIndex { $0.id == id }
-    }
-    
     
     
     @Published var currentTool: DrawingTool = .brush
