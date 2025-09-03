@@ -21,6 +21,19 @@ extension VectorDocument {
     
     /// Adds a shape to the unified objects system
     func addShapeToUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this shape to preserve its orderID
@@ -44,6 +57,19 @@ extension VectorDocument {
     
     /// Adds a shape to the front of the unified objects system (for drawing tools)
     func addShapeToFrontOfUnifiedSystem(_ shape: VectorShape, layerIndex: Int) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
             // Try to find an existing unified object for this shape to preserve its orderID
@@ -74,6 +100,19 @@ extension VectorDocument {
     
     /// Adds a shape BEHIND existing shapes in the unified objects system (for positive offset paths)
     func addShapeBehindInUnifiedSystem(_ shape: VectorShape, layerIndex: Int, behindShapeIDs: Set<UUID>) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == shape.id
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
         // Find the lowest orderID among the shapes we want to go behind
         let targetOrderIDs = unifiedObjects
             .filter { $0.layerIndex == layerIndex }
@@ -102,6 +141,19 @@ extension VectorDocument {
     
     /// Adds a text object as VectorShape to the unified objects system
     func addTextToUnifiedSystem(_ text: VectorText, layerIndex: Int) {
+        // CRITICAL FIX: Check for existing object to prevent duplicates
+        let existingIndex = unifiedObjects.firstIndex { unifiedObject in
+            if case .shape(let existingShape) = unifiedObject.objectType {
+                return existingShape.id == text.id && existingShape.isTextObject
+            }
+            return false
+        }
+        
+        // If object already exists, remove it first to prevent duplicates
+        if let existingIndex = existingIndex {
+            unifiedObjects.remove(at: existingIndex)
+        }
+        
         // Convert VectorText to VectorShape
         let textShape = VectorShape.from(text)
         
