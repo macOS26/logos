@@ -66,6 +66,36 @@ class VectorDocument: ObservableObject, Codable {
         return Dictionary(grouping: unifiedObjects) { $0.layerIndex }
     }
     
+    // MIGRATION: Helper methods for common unified operations
+    func findObject(by id: UUID) -> VectorObject? {
+        return unifiedObjects.first { $0.id == id }
+    }
+    
+    func findShape(by id: UUID) -> VectorShape? {
+        return allShapes.first { $0.id == id }
+    }
+    
+    func findText(by id: UUID) -> VectorText? {
+        return allTextObjects.first { $0.id == id }
+    }
+    
+    func getObjectsInLayer(_ layerIndex: Int) -> [VectorObject] {
+        return unifiedObjects.filter { $0.layerIndex == layerIndex }
+    }
+    
+    func getShapesInLayer(_ layerIndex: Int) -> [VectorShape] {
+        return allShapes.filter { shape in
+            // Find the unified object for this shape to get its layer
+            return unifiedObjects.first { obj in
+                if case .shape(let objShape) = obj.objectType {
+                    return objShape.id == shape.id && obj.layerIndex == layerIndex
+                }
+                return false
+            } != nil
+        }
+    }
+    
+    
     
     @Published var currentTool: DrawingTool = .brush
     @Published var scalingAnchor: ScalingAnchor = .center // NEW: Scaling anchor point selection
