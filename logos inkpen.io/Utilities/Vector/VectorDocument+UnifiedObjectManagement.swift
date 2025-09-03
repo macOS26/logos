@@ -363,18 +363,32 @@ extension VectorDocument {
             if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == objectID }) {
                 switch unifiedObjects[unifiedIndex].objectType {
                 case .shape(let shape):
-                    // Find updated shape data in layers
-                    if let layerIndex = unifiedObjects[unifiedIndex].layerIndex < layers.count ? unifiedObjects[unifiedIndex].layerIndex : nil,
-                       let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        // Update with latest shape data while preserving orderID
-                        unifiedObjects[unifiedIndex] = VectorObject(
-                            shape: layers[layerIndex].shapes[shapeIndex], 
-                            layerIndex: layerIndex, 
-                            orderID: unifiedObjects[unifiedIndex].orderID
-                        )
+                    let layerIndex = unifiedObjects[unifiedIndex].layerIndex
+                    
+                    // CRITICAL FIX: Handle text objects differently - sync from textObjects array
+                    if shape.isTextObject {
+                        if let textObject = textObjects.first(where: { $0.id == shape.id }) {
+                            // Convert updated VectorText to VectorShape and preserve orderID
+                            let updatedShape = VectorShape.from(textObject)
+                            unifiedObjects[unifiedIndex] = VectorObject(
+                                shape: updatedShape, 
+                                layerIndex: layerIndex, 
+                                orderID: unifiedObjects[unifiedIndex].orderID
+                            )
+                            Log.info("🔄 SYNC: Updated text object '\(textObject.content.prefix(20))' with areaSize=\(textObject.areaSize?.debugDescription ?? "nil")", category: .general)
+                        }
+                    } else {
+                        // Regular shapes - find updated shape data in layers
+                        if layerIndex < layers.count,
+                           let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            // Update with latest shape data while preserving orderID
+                            unifiedObjects[unifiedIndex] = VectorObject(
+                                shape: layers[layerIndex].shapes[shapeIndex], 
+                                layerIndex: layerIndex, 
+                                orderID: unifiedObjects[unifiedIndex].orderID
+                            )
+                        }
                     }
-                    // Text objects are handled as VectorShape with isTextObject=true
-                    // No special text handling needed - they stay in place with same orderID
                 }
             }
         }

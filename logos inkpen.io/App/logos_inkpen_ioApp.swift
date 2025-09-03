@@ -839,6 +839,13 @@ class ClipboardManager {
                     if shape.isTextObject {
                         // CRITICAL FIX: Convert VectorShape back to VectorText for proper copy/paste
                         if let textContent = shape.textContent, let typography = shape.typography {
+                            // CRITICAL: Get areaSize from original textObjects array, not the unified shape
+                            let originalText = document.textObjects.first { $0.id == objectID }
+                            let originalAreaSize = originalText?.areaSize
+                            
+                            // DEBUG: Log what we're copying to identify the issue
+                            Log.info("📋 COPY DEBUG: textContent='\(textContent)', originalAreaSize=\(originalAreaSize?.debugDescription ?? "nil"), shapeAreaSize=\(shape.areaSize?.debugDescription ?? "nil")", category: .general)
+                            
                             let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
                             let vectorText = VectorText(
                                 content: textContent,
@@ -847,12 +854,15 @@ class ClipboardManager {
                                 transform: .identity,
                                 isVisible: shape.isVisible,
                                 isLocked: shape.isLocked,
-                                isEditing: shape.isEditing ?? false,
+                                isEditing: false,  // CRITICAL FIX: Never copy editing state - paste should not be in edit mode
                                 layerIndex: unifiedObject.layerIndex,
                                 isPointText: shape.isPointText ?? true,
-                                cursorPosition: shape.cursorPosition ?? 0,
-                                areaSize: shape.areaSize
+                                cursorPosition: 0,  // Reset cursor position for pasted text
+                                areaSize: originalAreaSize  // Use the original text's areaSize, not the shape's
                             )
+                            
+                            // DEBUG: Log the created VectorText to verify areaSize is preserved
+                            Log.info("📋 COPY DEBUG: Created VectorText with content='\(vectorText.content)', areaSize=\(vectorText.areaSize?.debugDescription ?? "nil")", category: .general)
                             
                             // SIZE FIX: VectorText initializer now properly handles areaSize for bounds
                             
@@ -924,6 +934,10 @@ class ClipboardManager {
             for text in clipboardData.texts {
                 var newText = text
                 newText.id = UUID()
+                
+                // DEBUG: Log what we're pasting to identify the issue
+                Log.info("📋 PASTE DEBUG: Pasting text with content='\(newText.content)', areaSize=\(newText.areaSize?.debugDescription ?? "nil")", category: .general)
+                
                 // PASTE AT EXACT ORIGINAL COORDINATES - no offset
                 document.textObjects.append(newText)
                 // CRITICAL FIX: Add to unified objects system for visibility

@@ -376,8 +376,9 @@ extension DrawingCanvas {
             isEditing: true
         )
         
-        // CRITICAL: Set bounds to user-drawn size, NOT calculated size
+        // CRITICAL: Set bounds AND areaSize to user-drawn size, NOT calculated size
         newText.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+        newText.areaSize = CGSize(width: width, height: height) // CRITICAL FIX: Preserve user-drawn dimensions
         
         // Add to document and associate with current layer
         document.addTextToLayer(newText, layerIndex: document.selectedLayerIndex!)
