@@ -204,59 +204,63 @@ extension DrawingCanvas {
                     continue
                 }
                 
-                // Use improved hit detection with consistent logic
-                isHit = performShapeHitTest(shape: shape, at: validatedLocation)
-                
-                Log.info("🎯 SELECTION TAP: Testing text object '\(String((shape.textContent ?? "").prefix(20)))'", category: .selection)
-                Log.info("  - Text ID: \(shape.id)", category: .selection)
-                Log.info("  - Text position: \(CGPoint(x: shape.transform.tx, y: shape.transform.ty))", category: .selection)
-                Log.info("  - Text bounds: \(shape.bounds)", category: .selection)
-                Log.info("  - Text isVisible: \(shape.isVisible)", category: .selection)
-                Log.info("  - Text isLocked: \(shape.isLocked)", category: .selection)
-                Log.info("  - Click location: \(validatedLocation)", category: .selection)
-                
-                if !shape.isVisible || shape.isLocked { 
-                    Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
-                    continue 
-                }
-                
-                // Use the same hit testing logic as findTextAt
-                let textContentArea = CGRect(
-                    x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
-                    y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
-                    width: shape.bounds.width,
-                    height: shape.bounds.height
-                )
-                
-                let exactBounds = CGRect(
-                    x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
-                    y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
-                    width: shape.bounds.width,
-                    height: shape.bounds.height
-                )
-                
-                let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
-                
-                Log.info("  - Content area: \(textContentArea)", category: .selection)
-                Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
-                Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
-                
-                let contentHit = textContentArea.contains(validatedLocation)
-                let exactHit = exactBounds.contains(validatedLocation)
-                let expandedHit = expandedBounds.contains(validatedLocation)
-                
-                Log.info("  - Content hit: \(contentHit)", category: .selection)
-                Log.info("  - Exact hit: \(exactHit)", category: .selection)
-                Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
-                
-                // CRITICAL FIX: For green text boxes, only use content hit (no bounding box)
-                // This prevents the bounding box from interfering with text movement
-                isHit = contentHit  // Only content-based selection for text objects
-                
-                if isHit {
-                    Log.info("✅ TEXT HIT: Text object selected (content-only)", category: .selection)
+                // Check if this is actually a text object
+                if shape.isTextObject {
+                    // TEXT OBJECT HANDLING - preserve existing logic
+                    Log.info("🎯 SELECTION TAP: Testing text object '\(String((shape.textContent ?? "").prefix(20)))'", category: .selection)
+                    Log.info("  - Text ID: \(shape.id)", category: .selection)
+                    Log.info("  - Text position: \(CGPoint(x: shape.transform.tx, y: shape.transform.ty))", category: .selection)
+                    Log.info("  - Text bounds: \(shape.bounds)", category: .selection)
+                    Log.info("  - Text isVisible: \(shape.isVisible)", category: .selection)
+                    Log.info("  - Text isLocked: \(shape.isLocked)", category: .selection)
+                    Log.info("  - Click location: \(validatedLocation)", category: .selection)
+                    
+                    if !shape.isVisible || shape.isLocked { 
+                        Log.info("🎯 SELECTION TAP: Skipping text object - not visible or locked", category: .selection)
+                        continue 
+                    }
+                    
+                    // Use the same hit testing logic as findTextAt
+                    let textContentArea = CGRect(
+                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x,
+                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
+                    
+                    let exactBounds = CGRect(
+                        x: CGPoint(x: shape.transform.tx, y: shape.transform.ty).x + shape.bounds.minX,
+                        y: CGPoint(x: shape.transform.tx, y: shape.transform.ty).y + shape.bounds.minY,
+                        width: shape.bounds.width,
+                        height: shape.bounds.height
+                    )
+                    
+                    let expandedBounds = exactBounds.insetBy(dx: 0, dy: 0)
+                    
+                    Log.info("  - Content area: \(textContentArea)", category: .selection)
+                    Log.info("  - Exact bounds: \(exactBounds)", category: .selection)
+                    Log.info("  - Expanded bounds: \(expandedBounds)", category: .selection)
+                    
+                    let contentHit = textContentArea.contains(validatedLocation)
+                    let exactHit = exactBounds.contains(validatedLocation)
+                    let expandedHit = expandedBounds.contains(validatedLocation)
+                    
+                    Log.info("  - Content hit: \(contentHit)", category: .selection)
+                    Log.info("  - Exact hit: \(exactHit)", category: .selection)
+                    Log.info("  - Expanded hit: \(expandedHit)", category: .selection)
+                    
+                    // CRITICAL FIX: For green text boxes, only use content hit (no bounding box)
+                    // This prevents the bounding box from interfering with text movement
+                    isHit = contentHit  // Only content-based selection for text objects
+                    
+                    if isHit {
+                        Log.info("✅ TEXT HIT: Text object selected (content-only)", category: .selection)
+                    } else {
+                        Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
+                    }
                 } else {
-                    Log.info("❌ TEXT MISS: Text object not selected", category: .selection)
+                    // REGULAR SHAPE - use direct selection hit detection logic
+                    isHit = performShapeHitTest(shape: shape, at: validatedLocation)
                 }
             }
             

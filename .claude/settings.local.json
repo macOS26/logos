@@ -39,7 +39,8 @@
       "Bash(log show:*)",
       "Read(//**)",
       "mcp__xcf-server__create_doc",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "mcp__xcf-server__apply_undo_diff_to_doc"
     ],
     "deny": [],
     "ask": []
