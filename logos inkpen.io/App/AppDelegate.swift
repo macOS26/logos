@@ -100,68 +100,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    
-    
-    
-    
-    private func configureWindowsAsync() async {
-        // Add a longer delay to let the app fully initialize and document windows to appear
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1.0 second delay
-        
-        await MainActor.run {
-            // Check if document windows are already open - be more specific about document windows
-            let documentWindows = NSApplication.shared.windows.filter { window in
-                return window.title != "Document Setup" && 
-                       window.title != "" && 
-                       !window.title.contains("Preferences") &&
-                       !window.title.contains("Gradient") &&
-                       !window.title.contains("Ink Color Mixer") &&
-                       !window.title.contains("Font") &&
-                       !window.title.contains("Color") &&
-                       window.contentViewController != nil &&
-                       (window.title.contains(".logos") || window.title == "Untitled" || window.title.hasSuffix(".svg") || window.title.hasSuffix(".ai"))
-            }
-            
-            // Additional check: See if any windows contain document content views
-            let hasDocumentContent = NSApplication.shared.windows.contains { window in
-                let contentViewType = String(describing: type(of: window.contentViewController))
-                return contentViewType.contains("Document") || contentViewType.contains("Main")
-            }
-            
-            if documentWindows.isEmpty && !hasDocumentContent {
-                // No document windows open - enable and show New Document Setup window
-                Log.info("📄 App: No document windows detected - enabling New Document Setup window", category: .startup)
-                AppState.shared.shouldShowDocumentSetup = true
-                AppState.shared.openWindowAction?("onboarding-setup")
-            } else {
-                // Document windows are already open - don't show setup window
-                Log.info("📄 App: \(documentWindows.count) document window(s) detected - skipping New Document Setup window", category: .startup)
-                if hasDocumentContent {
-                    Log.info("📄 App: Document content views detected - definitely skipping Document Setup", category: .startup)
-                }
-                AppState.shared.shouldShowDocumentSetup = false
-            }
-            
-            // Adjust any Apple Metal HUD carrier view if present in visible windows
-            NSApplication.shared.windows.forEach { window in
-                if AppState.shared.enableSystemMetalHUD {
-                    for subview in window.contentView?.subviews ?? [] {
-                        let className = String(describing: type(of: subview))
-                        if className.lowercased().contains("hud") || className.lowercased().contains("metal") {
-                            var frame = subview.frame
-                            frame.origin.x = AppState.shared.metalHUDOffsetX
-                            frame.origin.y = window.frame.height - AppState.shared.metalHUDOffsetY - frame.height
-                            frame.size.width = AppState.shared.metalHUDWidth
-                            frame.size.height = AppState.shared.metalHUDHeight
-                            subview.frame = frame
-                        }
-                    }
-                }
-            }
-            Log.startup("📄 App: Adjusted Metal HUD positioning where applicable")
-        }
-    }
-    
     func applicationDidBecomeActive(_ notification: Notification) {
         // Defer window operations to prevent blocking
         Task {
@@ -181,21 +119,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
     
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        // Check if we have any document windows open (not just visible windows)
-        let documentWindows = NSApplication.shared.windows.filter { window in
-            return window.title != "Document Setup" && window.title != ""
-        }
-        
-        // If no document windows are open, let DocumentGroup handle document creation
-        if documentWindows.isEmpty {
-            // REMOVED: Repetitive app reopen logging
-            return true
-        } else {
-            // REMOVED: Repetitive app reopen logging
-            return false
-        }
-    }
+//    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+//        // Check if we have any document windows open (not just visible windows)
+//        let documentWindows = NSApplication.shared.windows.filter { window in
+//            return window.title != "Document Setup" && window.title != ""
+//        }
+//        
+//        // If no document windows are open, let DocumentGroup handle document creation
+//        if documentWindows.isEmpty {
+//            // REMOVED: Repetitive app reopen logging
+//            return true
+//        } else {
+//            // REMOVED: Repetitive app reopen logging
+//            return false
+//        }
+//    }
     
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Log.startup("📄 App: Application should terminate - starting graceful shutdown")

@@ -56,6 +56,7 @@ struct logos_inken_ioApp: App {
         .windowResizability(.contentMinSize)
         .windowStyle(.hiddenTitleBar)
         .defaultPosition(.center)
+        .handlesExternalEvents(matching: Set<String>()) // DISABLE scene restoration for this window
 
         
         // PRIMARY: DocumentGroup handles BOTH new docs AND file opening (preserves all UI)
