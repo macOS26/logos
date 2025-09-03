@@ -278,6 +278,89 @@ struct UnifiedObjectSystemTests {
         #expect(selectedTexts[0].textContent == "Selected Text")
     }
     
+    // MARK: - ColorPanel Migration Tests
+    
+    @Test func testColorPanelTextStrokeUpdateViaUnified() async throws {
+        let document = VectorDocument()
+        
+        // Create text object with initial typography
+        let initialTypography = TypographyProperties(
+            fontFamily: "Arial",
+            fontSize: 12.0,
+            hasStroke: false,
+            strokeColor: .black,
+            strokeOpacity: 0.5,
+            fillColor: .blue
+        )
+        
+        let textObject = VectorText(
+            content: "Test Stroke Update",
+            typography: initialTypography,
+            position: CGPoint(x: 50, y: 100)
+        )
+        
+        // Add to document using proper helper methods
+        document.addTextToUnifiedSystem(textObject, layerIndex: 1)
+        document.textObjects.append(textObject) // Keep legacy in sync
+        
+        // Simulate ColorPanel stroke color update
+        let newStrokeColor = VectorColor.red
+        
+        // Find text via unified objects (like migrated ColorPanel does)
+        let foundInUnified = document.allTextObjects.contains(where: { $0.id == textObject.id })
+        #expect(foundInUnified == true, "Should find text in unified objects")
+        
+        // Simulate the migrated ColorPanel updateSelectedTextStrokeColor
+        document.selectedTextIDs = [textObject.id]
+        
+        // Update via unified objects system
+        if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == textObject.id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = document.unifiedObjects[objectIndex].objectType {
+                // Apply stroke color update
+                shape.typography?.hasStroke = true
+                shape.typography?.strokeColor = newStrokeColor
+                shape.typography?.strokeOpacity = document.defaultStrokeOpacity
+                
+                // Update unified objects
+                document.unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: document.unifiedObjects[objectIndex].layerIndex,
+                    orderID: document.unifiedObjects[objectIndex].orderID
+                )
+                
+                // Keep legacy array in sync
+                if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textObject.id }),
+                   let vectorText = VectorText.from(shape) {
+                    document.textObjects[legacyIndex] = vectorText
+                }
+            }
+        }
+        
+        // Verify update worked in unified objects
+        let updatedTextInUnified = document.allTextObjects.first { $0.id == textObject.id }
+        #expect(updatedTextInUnified != nil)
+        #expect(updatedTextInUnified?.typography.hasStroke == true)
+        #expect(updatedTextInUnified?.typography.strokeColor == newStrokeColor)
+        #expect(updatedTextInUnified?.typography.strokeOpacity == document.defaultStrokeOpacity)
+        
+        // Verify legacy array was kept in sync
+        let updatedTextInLegacy = document.textObjects.first { $0.id == textObject.id }
+        #expect(updatedTextInLegacy != nil)
+        #expect(updatedTextInLegacy?.typography.hasStroke == true)
+        #expect(updatedTextInLegacy?.typography.strokeColor == newStrokeColor)
+        #expect(updatedTextInLegacy?.typography.strokeOpacity == document.defaultStrokeOpacity)
+        
+        // Critical test: Both arrays should have same values
+        #expect(updatedTextInUnified?.typography.hasStroke == updatedTextInLegacy?.typography.hasStroke)
+        #expect(updatedTextInUnified?.typography.strokeColor == updatedTextInLegacy?.typography.strokeColor)
+        #expect(updatedTextInUnified?.typography.strokeOpacity == updatedTextInLegacy?.typography.strokeOpacity)
+    }
+    
     // MARK: - Migration Compatibility Tests
     
     @Test func testLegacyArraysStillPopulated() async throws {
