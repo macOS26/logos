@@ -175,11 +175,8 @@ struct CornerRadiusPanel: View {
             
             document.layers[layerIndex].shapes[shapeIndex] = shape
             
-            // CRITICAL FIX: Sync unified objects and force UI refresh
-            document.syncUnifiedObjectsAfterPropertyChange()
-            DispatchQueue.main.async {
-                self.document.objectWillChange.send()
-            }
+            // OPTIMIZED: Update unified objects without full sync
+            document.updateUnifiedObjectsOptimized()
         }
     }
     

@@ -392,6 +392,38 @@ extension VectorDocument {
         }
     }
     
+    /// OPTIMIZED: Update unified objects without full sync - preserves text object order and IDs
+    func updateUnifiedObjectsOptimized() {
+        // Skip during undo/redo operations to preserve exact order
+        if isUndoRedoOperation {
+            return
+        }
+        
+        // OPTIMIZED: Direct unified object updates for smooth performance
+        for objectID in selectedObjectIDs {
+            if let unifiedIndex = unifiedObjects.firstIndex(where: { $0.id == objectID }) {
+                switch unifiedObjects[unifiedIndex].objectType {
+                case .shape(let shape):
+                    // Find updated shape data in layers
+                    if let layerIndex = unifiedObjects[unifiedIndex].layerIndex < layers.count ? unifiedObjects[unifiedIndex].layerIndex : nil,
+                       let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                        // Update with latest shape data while preserving orderID
+                        unifiedObjects[unifiedIndex] = VectorObject(
+                            shape: layers[layerIndex].shapes[shapeIndex], 
+                            layerIndex: layerIndex, 
+                            orderID: unifiedObjects[unifiedIndex].orderID
+                        )
+                    }
+                    // Text objects are handled as VectorShape with isTextObject=true
+                    // No special text handling needed - they stay in place with same orderID
+                }
+            }
+        }
+        
+        // Force immediate UI update
+        objectWillChange.send()
+    }
+    
     /// CRITICAL FIX: Force complete resync of unified objects system
     func forceResyncUnifiedObjects() {
         // CRITICAL FIX: Skip reordering during undo/redo operations to preserve exact order
