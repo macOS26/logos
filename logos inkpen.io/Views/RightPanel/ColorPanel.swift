@@ -296,11 +296,16 @@ struct ColorPanel: View {
                         hasChanges = true
                     }
                     
-                    // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                        document.textObjects[textIndex].typography.hasStroke = true
-                        document.textObjects[textIndex].typography.strokeColor = color
-                        document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity
+                    // MIGRATED: Use unified object system to update text stroke color
+                    if document.allTextObjects.contains(where: { $0.id == shape.id }) {
+                        // Select this specific text for update
+                        let originalSelection = document.selectedTextIDs
+                        document.selectedTextIDs = [shape.id]
+                        
+                        updateSelectedTextStrokeColor(color: color, document: document)
+                        
+                        // Restore original selection
+                        document.selectedTextIDs = originalSelection
                         hasChanges = true
                     }
                 }
@@ -422,5 +427,42 @@ struct ColorPanel: View {
         
         // For now, other conversions (to/from SPOT) just return the color
         return color
+    }
+    
+    // MARK: - Unified Object System Migration Helpers
+    
+    private func updateSelectedTextStrokeColor(color: VectorColor, document: VectorDocument) {
+        guard !document.selectedTextIDs.isEmpty else { return }
+        
+        document.saveToUndoStack()
+        
+        for textID in document.selectedTextIDs {
+            if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
+                if case .shape(let shape) = obj.objectType {
+                    return shape.isTextObject && shape.id == textID
+                }
+                return false
+            }) {
+                if case .shape(var shape) = document.unifiedObjects[objectIndex].objectType {
+                    // Update typography in the shape
+                    shape.typography?.hasStroke = true
+                    shape.typography?.strokeColor = color
+                    shape.typography?.strokeOpacity = document.defaultStrokeOpacity
+                    
+                    // Update unified objects
+                    document.unifiedObjects[objectIndex] = VectorObject(
+                        shape: shape,
+                        layerIndex: document.unifiedObjects[objectIndex].layerIndex,
+                        orderID: document.unifiedObjects[objectIndex].orderID
+                    )
+                    
+                    // Keep legacy textObjects array in sync during migration
+                    if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
+                       let vectorText = VectorText.from(shape) {
+                        document.textObjects[legacyIndex] = vectorText
+                    }
+                }
+            }
+        }
     }
 } 
