@@ -153,8 +153,12 @@ class DocumentIconGenerator {
             }
         }
         
-        let hasVisibleText = document.textObjects.contains { textObj in
-            textObj.isVisible
+        // UNIFIED OBJECT SYSTEM: Check for visible text objects via unified shapes
+        let hasVisibleText = document.unifiedObjects.contains { unifiedObject in
+            if case .shape(let shape) = unifiedObject.objectType {
+                return shape.isTextObject && shape.isVisible
+            }
+            return false
         }
         
         return hasVisibleShapes || hasVisibleText
@@ -329,9 +333,12 @@ class DocumentIconGenerator {
             }
         }
         
-        // Render text objects
-        for textObj in document.textObjects where textObj.isVisible {
-            svgContent += generateTextSVG(textObj)
+        // Render text objects using unified shapes
+        for unifiedObject in document.unifiedObjects {
+            if case .shape(let shape) = unifiedObject.objectType, 
+               shape.isTextObject && shape.isVisible {
+                svgContent += generateTextFromShapeSVG(shape)
+            }
         }
         
         svgContent += "</svg>"
@@ -500,6 +507,34 @@ class DocumentIconGenerator {
         }
         
         return pathData.trimmingCharacters(in: .whitespaces)
+    }
+    
+    private func generateTextFromShapeSVG(_ shape: VectorShape) -> String {
+        guard let textContent = shape.textContent, let typography = shape.typography else {
+            return ""
+        }
+        
+        let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+        let content = textContent.isEmpty ? "Text" : textContent
+        
+        var svg = "<text x=\"\(position.x)\" y=\"\(position.y)\""
+        
+        // Add font properties
+        let fontSize = typography.fontSize
+        svg += " font-family=\"\(typography.fontFamily)\""
+        svg += " font-size=\"\(fontSize)\""
+        
+        // Add fill color
+        svg += " fill=\"\(typography.fillColor.svgColor)\""
+        
+        // Add stroke if present
+        if typography.strokeColor != .clear {
+            svg += " stroke=\"\(typography.strokeColor.svgColor)\""
+            svg += " stroke-width=\"\(typography.strokeWidth)\""
+        }
+        
+        svg += ">\(content)</text>"
+        return svg
     }
     
     private func generateTextSVG(_ textObj: VectorText) -> String {
