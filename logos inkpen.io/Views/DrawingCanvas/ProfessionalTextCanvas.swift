@@ -988,16 +988,31 @@ class ProfessionalTextViewModel: ObservableObject {
         self.textAlignment = textObject.typography.alignment.nsTextAlignment
         
         // Initialize text box frame with proper bounds
-        // CRITICAL FIX: For SVG text (with meaningful bounds), preserve original dimensions
-        // For native text (with default bounds), ensure minimum dimensions
-        let hasReasonableBounds = textObject.bounds.width > 50 && textObject.bounds.height > 20
-        let useMinimum = !hasReasonableBounds // Only use minimum for native text with small bounds
+        // CRITICAL FIX: Prioritize areaSize (user-drawn dimensions) over calculated bounds
+        // This preserves text box size during copy/paste operations
+        let width: CGFloat
+        let height: CGFloat
+        
+        if let userAreaSize = textObject.areaSize {
+            // Use user-defined area size (preserves manual text box sizing)
+            width = userAreaSize.width
+            height = userAreaSize.height
+            Log.info("📦 USING AREA SIZE: \(userAreaSize) for text box frame", category: .general)
+        } else {
+            // Fallback to bounds-based sizing for legacy text or SVG imports
+            let hasReasonableBounds = textObject.bounds.width > 50 && textObject.bounds.height > 20
+            let useMinimum = !hasReasonableBounds // Only use minimum for native text with small bounds
+            
+            width = useMinimum ? max(textObject.bounds.width, 200) : textObject.bounds.width   // Preserve SVG width
+            height = useMinimum ? max(textObject.bounds.height, 50) : textObject.bounds.height   // Preserve SVG height
+            Log.info("📦 USING BOUNDS: (\(textObject.bounds.width), \(textObject.bounds.height)) for text box frame", category: .general)
+        }
         
         self.textBoxFrame = CGRect(
             x: textObject.position.x,
             y: textObject.position.y,
-            width: useMinimum ? max(textObject.bounds.width, 200) : textObject.bounds.width,   // Preserve SVG width
-            height: useMinimum ? max(textObject.bounds.height, 50) : textObject.bounds.height   // Preserve SVG height
+            width: width,
+            height: height
         )
         
         Log.info("📦 TEXT BOX INITIALIZATION: Frame = \(self.textBoxFrame)", category: .general)
