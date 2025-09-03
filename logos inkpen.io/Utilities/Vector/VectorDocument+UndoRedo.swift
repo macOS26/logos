@@ -364,15 +364,14 @@ extension VectorDocument {
         
         defer { isUndoRedoOperation = wasUndoRedoOperation }
         
-        // CRITICAL FIX: Preserve original objects before clearing arrays to maintain state
-        let originalTextObjects = textObjects
+        // CRITICAL FIX: Don't clear textObjects - they were just restored from undo stack
+        // Only clear and rebuild the shapes arrays from unified objects
         let originalShapes = layers.map { $0.shapes }
         
-        // Clear existing legacy arrays
+        // Clear existing shapes arrays (but keep textObjects intact)
         for layerIndex in layers.indices {
             layers[layerIndex].shapes.removeAll()
         }
-        textObjects.removeAll()
         
         // CRITICAL FIX: Rebuild legacy arrays from unified objects, maintaining order
         // Sort by orderID to ensure proper stacking order
@@ -387,16 +386,9 @@ extension VectorDocument {
                 } else {
                     layers[unifiedObject.layerIndex].shapes.append(shape)
                 }
-            // Text handled as VectorShape(let text):
-                // CRITICAL FIX: Preserve text object order by ensuring it maintains its position in the array
-                // Use original text object to preserve all state, but ensure isEditing = false
-                if let originalText = originalTextObjects.first(where: { $0.id == shape.id }) {
-                    _ = originalText
-                    // Text handled as VectorShape - no action needed
-                } else {
-                    // Text handled as VectorShape
-                    // Text handled as VectorShape - no action needed
-                }
+            // Text objects are already restored from undo stack - no need to rebuild them
+                // The unified objects system handles text as VectorShape, but textObjects array
+                // is preserved from the undo restore operation
             }
         }
         
