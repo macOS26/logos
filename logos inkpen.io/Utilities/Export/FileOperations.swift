@@ -1128,8 +1128,10 @@ class FileOperations {
         }
         
         // Pre-analyze text objects for gradients
-        for text in document.allTextObjects {
-            if !text.isVisible { continue }
+        for unifiedObject in document.unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+               let text = VectorText.from(shape) {
+                if !text.isVisible { continue }
             
             // Check text fill for gradients
             if case .gradient(let gradient) = text.typography.fillColor {
@@ -1150,6 +1152,7 @@ class FileOperations {
                     gradientToIdMapping[gradient] = gradientId
                     gradientCounter += 1
                 }
+            }
             }
         }
         

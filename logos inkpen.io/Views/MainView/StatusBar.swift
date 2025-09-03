@@ -112,8 +112,10 @@ struct StatusBar: View {
         }
         
         // Include selected text objects
-        for textObj in document.allTextObjects {
-            if document.selectedTextIDs.contains(textObj.id) {
+        for unifiedObject in document.unifiedObjects.sorted(by: { $0.orderID < $1.orderID }) {
+            if case .shape(let shape) = unifiedObject.objectType, shape.isTextObject,
+               document.selectedTextIDs.contains(shape.id),
+               let textObj = VectorText.from(shape) {
                 // Calculate absolute text bounds
                 let textBounds = CGRect(
                     x: textObj.position.x + textObj.bounds.minX,
