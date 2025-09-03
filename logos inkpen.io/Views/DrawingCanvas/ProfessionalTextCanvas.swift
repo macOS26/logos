@@ -26,7 +26,7 @@ struct StableProfessionalTextCanvas: View {
         self.dragPreviewTrigger = dragPreviewTrigger
         
         // Create view model ONCE and reuse it
-        if let textObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        if let textObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             self._viewModel = StateObject(wrappedValue: ProfessionalTextViewModel(textObject: textObject, document: document))
         } else {
             // MIGRATION FIX: Create fallback text with proper content
@@ -57,19 +57,19 @@ struct StableProfessionalTextCanvas: View {
     
     private func updateViewModelFromDocument() {
         // MIGRATION FIX: Find text object in textObjects array (legacy system still used for editing)
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             viewModel.syncFromVectorText(currentTextObject)
             Log.fileOperation("✅ TEXT CANVAS: Found text object \(textObjectID.uuidString.prefix(8)) content: '\(currentTextObject.content)'", level: .info)
         } else {
             // FALLBACK: If text object missing from textObjects, log issue with debugging info
             Log.fileOperation("⚠️ TEXT CANVAS: Text object \(textObjectID.uuidString.prefix(8)) not found in textObjects array", level: .info)
-            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.allTextObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
+            Log.fileOperation("🔍 DEBUG: Available text object IDs: \(document.textObjects.map { $0.id.uuidString.prefix(8) })", level: .info)
             Log.fileOperation("🔍 DEBUG: Total text objects: \(document.allTextObjects.count)", level: .info)
         }
     }
     
     private func getDocumentMode() -> String {
-        if let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) {
+        if let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) {
             // PROFESSIONAL UX: Stable view while font tool is active
             // Create compact typography hash to avoid super long strings
             
@@ -164,7 +164,7 @@ struct ProfessionalTextCanvas: View {
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
         // CRITICAL FIX: Monitor document text objects for editing state changes
-        .onChange(of: document.allTextObjects.map { $0.isEditing }) { _, _ in
+        .onChange(of: document.textObjects.map { $0.isEditing }) { _, _ in
             Log.fileOperation("🔧 ANY TEXT EDITING STATE CHANGED - refreshing state", level: .info)
             updateTextBoxState(selectedIDs: document.selectedTextIDs)
         }
@@ -234,7 +234,7 @@ struct ProfessionalTextCanvas: View {
         let oldState = textBoxState
         
         // CRITICAL FIX: Always use current document text object, not potentially stale view model reference
-        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObjectID }) else {
+        guard let currentTextObject = document.textObjects.first(where: { $0.id == textObjectID }) else {
             textBoxState = .gray
             Log.info("  → GRAY (text object not found in document)", category: .general)
             return
@@ -1008,7 +1008,7 @@ class ProfessionalTextViewModel: ObservableObject {
     // No longer using notifications - cleanup not needed
     
     private func syncFromVectorText() {
-        guard let currentTextObject = document.allTextObjects.first(where: { $0.id == textObject.id }) else { return }
+        guard let currentTextObject = document.textObjects.first(where: { $0.id == textObject.id }) else { return }
         
         // SELECTIVE BLOCKING: Only block content changes during auto-resize, allow other updates
         if isAutoResizing && currentTextObject.content == self.text {
