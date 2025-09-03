@@ -93,28 +93,43 @@ extension VectorDocument {
             if let unifiedObject = unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        saveToUndoStack()
-                        switch activeColorTarget {
-                        case .fill:
-                            if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                            } else {
-                                layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                    if shape.isTextObject {
+                        // CRITICAL FIX: Handle text objects properly
+                        if let textIndex = textObjects.firstIndex(where: { $0.id == shape.id }) {
+                            saveToUndoStack()
+                            switch activeColorTarget {
+                            case .fill:
+                                textObjects[textIndex].typography.fillColor = color
+                                textObjects[textIndex].typography.fillOpacity = defaultFillOpacity
+                            case .stroke:
+                                textObjects[textIndex].typography.hasStroke = true
+                                textObjects[textIndex].typography.strokeColor = color
+                                textObjects[textIndex].typography.strokeOpacity = defaultStrokeOpacity
                             }
-                        case .stroke:
-                            if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
-                            } else {
-                                layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
-                            }
+                            hasChanges = true
                         }
-                        hasChanges = true
+                    } else {
+                        // Handle regular shapes in layers array
+                        if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,
+                           let shapeIndex = layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
+                            saveToUndoStack()
+                            switch activeColorTarget {
+                            case .fill:
+                                if layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
+                                    layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
+                                } else {
+                                    layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
+                                }
+                            case .stroke:
+                                if layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
+                                    layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: color, placement: .center)
+                                } else {
+                                    layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = color
+                                }
+                            }
+                            hasChanges = true
+                        }
                     }
-                    
-                    // Text objects are now handled as VectorShape with isTextObject = true
                 }
             }
         }
