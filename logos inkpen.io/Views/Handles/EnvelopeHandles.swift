@@ -611,7 +611,7 @@ struct EnvelopeHandles: View {
         calculateEnvelopeWarpPreview()
         
         // CRITICAL FIX: Sync unified objects after warping to ensure UI updates
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
     }
     
     private func updateShapeWithCurrentWarp() {
@@ -715,7 +715,7 @@ struct EnvelopeHandles: View {
         document.selectedObjectIDs.insert(warpObject.id)
         
         // CRITICAL FIX: Manually update unified objects system for shape replacement
-        // Don't use syncUnifiedObjectsAfterPropertyChange() as it's designed for property changes, not shape replacements
+        // Don't use updateUnifiedObjectsOptimized() as it's designed for property changes, not shape replacements
         if let unifiedObjectIndex = document.unifiedObjects.firstIndex(where: { unifiedObject in
             if case .shape(let targetShape) = unifiedObject.objectType {
                 return targetShape.id == currentShape.id

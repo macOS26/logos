@@ -61,7 +61,7 @@ extension VectorDocument {
         }
         
         // CRITICAL: Sync unified objects after property changes
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         
         // DEBUG: Check if unified objects were synced correctly
         for unifiedObject in unifiedObjects {
@@ -139,7 +139,7 @@ extension VectorDocument {
         }
         
         // CRITICAL: Sync unified objects after property changes
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         objectWillChange.send()
         
         Log.info("✅ CLIPPING MASK: Released successfully", category: .general)
@@ -168,7 +168,7 @@ extension VectorDocument {
         }
         
         // CRITICAL: Sync unified objects after property changes
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         objectWillChange.send()
         
         Log.info("🎭 CLIPPING MASK: Moved mask and clipped content by \(offset)", category: .general)

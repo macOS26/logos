@@ -144,7 +144,7 @@ extension DrawingCanvas {
         }
         
         // Perform expensive sync operations now that dragging is complete
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
         
         // Force UI update once at the end of drag operation
         document.objectWillChange.send()

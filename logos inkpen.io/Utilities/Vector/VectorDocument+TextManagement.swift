@@ -155,7 +155,7 @@ extension VectorDocument {
         selectedTextIDs.removeAll()
         
         // Sync unified objects after text removal
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         
         // CRITICAL: Force cleanup of any remaining unified objects that reference deleted text
         cleanupUnifiedObjectsAfterTextConversion()
@@ -234,7 +234,7 @@ extension VectorDocument {
             textObjects[index].content = content
             // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now
             // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
-            syncUnifiedObjectsAfterPropertyChange()
+            updateUnifiedObjectsOptimized()
         }
     }
     
@@ -255,7 +255,7 @@ extension VectorDocument {
             update(&textObjects[index].typography)
             // CRITICAL FIX: Don't call updateBounds() - text canvas manages bounds now  
             // textObjects[index].updateBounds() - REMOVED because it uses old single-line algorithm
-            syncUnifiedObjectsAfterPropertyChange()
+            updateUnifiedObjectsOptimized()
         }
     }
     

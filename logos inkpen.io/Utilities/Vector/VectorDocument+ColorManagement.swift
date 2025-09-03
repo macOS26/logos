@@ -121,7 +121,7 @@ extension VectorDocument {
         
         // CRITICAL FIX: Sync unified objects for live color updates
         if hasChanges {
-            syncUnifiedObjectsAfterPropertyChange()
+            updateUnifiedObjectsOptimized()
         }
     }
     

@@ -674,7 +674,7 @@ struct GradientFillSection: View {
         // Sync unified objects if we made changes
         if hasChanges {
             // FULL UPDATE: On completion, do full sync for consistency
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             DispatchQueue.main.async {
                 self.document.objectWillChange.send()
             }

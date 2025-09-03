@@ -331,7 +331,7 @@ struct ProfessionalOffsetPathSection: View {
         document.selectedShapeIDs = newOffsetShapeIDs
         
         // CRITICAL FIX: Sync unified objects after creating offset shapes
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
         
         // Force document refresh so arrow tool can see newly created shapes
         document.objectWillChange.send()

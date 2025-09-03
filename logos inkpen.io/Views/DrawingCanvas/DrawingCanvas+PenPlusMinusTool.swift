@@ -110,7 +110,7 @@ extension DrawingCanvas {
         document.layers[layerIndex].shapes[shapeIndex].updateBounds()
         
         // Update unified objects and UI
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
         document.objectWillChange.send()
         
         Log.info("Pen +/-: Inserted smooth point on curve segment", category: .general)
@@ -181,7 +181,7 @@ extension DrawingCanvas {
         }
         
         // Update UI
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
         document.objectWillChange.send()
     }
     

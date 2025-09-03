@@ -278,7 +278,7 @@ struct ShearHandles: View {
             Log.info("✅ SHEAR FINISHED: Applied shear to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Sync unified objects after shear to ensure UI updates
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             
             // CRITICAL FIX: Force refresh of point selection system (same as rotation tool)
             // This updates the points to match the sheared object positions

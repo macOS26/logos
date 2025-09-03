@@ -403,7 +403,7 @@ struct ScaleHandles: View {
             Log.info("✅ SCALING FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             
             // CRITICAL FIX: Force refresh of point selection system (same as rotate/shear tools)
             // This updates the points to match the scaled object positions

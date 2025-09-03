@@ -361,7 +361,7 @@ struct MainView: View {
         document.textObjects = importedDoc.textObjects
         
         // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
-        document.syncUnifiedObjectsAfterPropertyChange()
+        document.updateUnifiedObjectsOptimized()
         
         // Reset tool and view states for the new document
         document.currentTool = appState.defaultTool
@@ -448,7 +448,7 @@ struct MainView: View {
                         document.snapToGrid = loadedDocument.snapToGrid
                         
                         // CRITICAL FIX: Sync unified objects system to ensure imported images are properly registered
-                        document.syncUnifiedObjectsAfterPropertyChange()
+                        document.updateUnifiedObjectsOptimized()
                         
                         // Update current document URL
                         currentDocumentURL = url

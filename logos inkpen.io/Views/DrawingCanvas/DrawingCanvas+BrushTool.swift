@@ -526,7 +526,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].path = cleanedVectorPath
             
             // CRITICAL FIX: Sync unified objects system to ensure the updated shape is rendered
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             
             Log.info("🖌️ BRUSH: Applied self-union to remove overlapping areas within brush stroke", category: .general)
         } else {

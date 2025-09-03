@@ -51,7 +51,7 @@ extension VectorDocument {
         }
         
         // CRITICAL FIX: Sync unified objects after unwrapping to ensure UI updates
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         objectWillChange.send()
     }
     
@@ -94,7 +94,7 @@ extension VectorDocument {
         }
         
         // CRITICAL FIX: Sync unified objects after expanding to ensure UI updates
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         objectWillChange.send()
     }
 }

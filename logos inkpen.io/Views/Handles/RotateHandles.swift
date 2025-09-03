@@ -544,7 +544,7 @@ struct RotateHandles: View {
             Log.info("✅ ROTATION FINISHED: Applied final transform to coordinates and reset transform to identity", category: .fileOperations)
             
             // CRITICAL FIX: Sync unified objects after rotation to ensure UI updates
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             
             // CRITICAL FIX: Force refresh of point selection system (same as switching tools)
             // This updates the points to match the rotated object positions

@@ -80,7 +80,7 @@ struct GradientAngleControlView: View {
                         if !editing { 
                             // DEBOUNCED: Only do expensive sync when drag ends
                             // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                            document.syncUnifiedObjectsAfterPropertyChange()
+                            document.updateUnifiedObjectsOptimized()
                             document.saveToUndoStack() 
                         }
                     })
@@ -137,7 +137,7 @@ struct GradientOriginControlView: View {
                                 if !editing { 
                                     // DEBOUNCED: Only do expensive sync when drag ends
                                     // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.updateUnifiedObjectsOptimized()
                                     document.saveToUndoStack() 
                                 }
                             })
@@ -166,7 +166,7 @@ struct GradientOriginControlView: View {
                                 if !editing { 
                                     // DEBOUNCED: Only do expensive sync when drag ends
                                     // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.updateUnifiedObjectsOptimized()
                                     document.saveToUndoStack() 
                                 }
                             })
@@ -216,7 +216,7 @@ struct GradientScaleControlView: View {
                             if !editing { 
                                 // DEBOUNCED: Only do expensive sync when drag ends
                                 // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                                document.syncUnifiedObjectsAfterPropertyChange()
+                                document.updateUnifiedObjectsOptimized()
                                 document.saveToUndoStack() 
                             }
                         })
@@ -249,7 +249,7 @@ struct GradientScaleControlView: View {
                                 if !editing { 
                                     // DEBOUNCED: Only do expensive sync when drag ends
                                     // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.updateUnifiedObjectsOptimized()
                                     document.saveToUndoStack() 
                                 }
                             })
@@ -281,7 +281,7 @@ struct GradientScaleControlView: View {
                                 if !editing { 
                                     // DEBOUNCED: Only do expensive sync when drag ends
                                     // (gradient already applied during drag via applyGradientToSelectedShapesOptimized)
-                                    document.syncUnifiedObjectsAfterPropertyChange()
+                                    document.updateUnifiedObjectsOptimized()
                                     document.saveToUndoStack() 
                                 }
                             })

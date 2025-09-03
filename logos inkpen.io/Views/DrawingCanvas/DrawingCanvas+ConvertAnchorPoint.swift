@@ -263,7 +263,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED CONTROL1 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
@@ -276,7 +276,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
@@ -312,7 +312,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED CONTROL2 HANDLE: Handle collapsed to its anchor point", category: .fileOperations)
@@ -325,7 +325,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED QUAD HANDLE: Converted to line (corner)", category: .fileOperations)
@@ -374,7 +374,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED NEXT ELEMENT CONTROL1 HANDLE: Handle collapsed to source anchor point", category: .fileOperations)
@@ -436,7 +436,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ RESTORED CURVE HANDLES: Handles restored to reasonable positions", category: .fileOperations)
@@ -500,7 +500,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ RESTORED NEXT ELEMENT CONTROL1 HANDLE: Handle restored to reasonable position", category: .fileOperations)
@@ -565,7 +565,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ RESTORED ALL HANDLES: All handles for anchor point restored to original positions", category: .fileOperations)
@@ -633,7 +633,7 @@ extension DrawingCanvas {
             document.layers[layerIndex].shapes[shapeIndex].updateBounds()
             
             // Sync unified objects system after path changes
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             document.objectWillChange.send()
             
             Log.info("✅ COLLAPSED ALL HANDLES: All handles for anchor point collapsed to anchor point", category: .fileOperations)

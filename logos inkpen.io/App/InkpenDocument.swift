@@ -44,7 +44,7 @@ struct InkpenDocument: FileDocument {
                 // CRITICAL FIX: Populate unified objects system after SVG import for proper rendering
                 // For SVG imports, we want to preserve the original stacking order from the SVG
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
-                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.updateUnifiedObjectsOptimized()
                 self.document.objectWillChange.send()
                 
                 Log.info("✅ SVG document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
@@ -60,7 +60,7 @@ struct InkpenDocument: FileDocument {
                 // CRITICAL FIX: Populate unified objects system after PDF import for proper rendering
                 // For PDF imports, we want to preserve the original stacking order from the PDF
                 self.document.populateUnifiedObjectsFromLayersPreservingOrder()
-                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.updateUnifiedObjectsOptimized()
                 self.document.objectWillChange.send()
                 
                 Log.info("✅ PDF document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)
@@ -83,7 +83,7 @@ struct InkpenDocument: FileDocument {
                     // File has unified objects - preserve the saved ordering
                     Log.info("📦 MODERN IMPORT: Preserving unified objects ordering from saved file (\(self.document.unifiedObjects.count) objects)", category: .fileOperations)
                 }
-                self.document.syncUnifiedObjectsAfterPropertyChange()
+                self.document.updateUnifiedObjectsOptimized()
                 self.document.objectWillChange.send()
                 
                 Log.info("✅ JSON document loaded and unified system populated with \(self.document.unifiedObjects.count) objects", category: .fileOperations)

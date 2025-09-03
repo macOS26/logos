@@ -159,7 +159,7 @@ extension DrawingCanvas {
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync for consistency
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }
                 return
@@ -291,7 +291,7 @@ extension DrawingCanvas {
                 } else {
                     // FULL UPDATE: On drag end, update bounds and do full sync for consistency
                     document.layers[layerIndex].shapes[shapeIndex].updateBounds()
-                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.updateUnifiedObjectsOptimized()
                     document.objectWillChange.send()
                 }
                 return

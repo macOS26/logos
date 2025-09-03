@@ -512,7 +512,7 @@ extension DrawingCanvas {
                     
                     // CRITICAL FIX: Update the unified objects system to ensure the shape is visible
                     // The shape exists in layers but might not be visible due to unified system not being updated
-                    document.syncUnifiedObjectsAfterPropertyChange()
+                    document.updateUnifiedObjectsOptimized()
                     break
                 }
             }

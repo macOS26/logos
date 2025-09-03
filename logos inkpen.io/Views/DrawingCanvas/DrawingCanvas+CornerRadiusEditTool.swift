@@ -461,7 +461,7 @@ extension DrawingCanvas {
             }
             
             // PERFORMANCE OPTIMIZED: Do full sync after drag completes for consistency
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             
             // Save to undo stack when drag ends
             document.saveToUndoStack()
@@ -500,7 +500,7 @@ extension DrawingCanvas {
             document.objectWillChange.send()
         } else {
             // FULL UPDATE: On completion, do full sync for consistency
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
             DispatchQueue.main.async {
                 self.document.objectWillChange.send()
             }

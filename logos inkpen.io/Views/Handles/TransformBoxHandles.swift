@@ -293,7 +293,7 @@ struct TransformBoxHandles: View {
             document.objectWillChange.send()
             
             // CRITICAL FIX: Sync unified objects after scaling to ensure UI updates
-            document.syncUnifiedObjectsAfterPropertyChange()
+            document.updateUnifiedObjectsOptimized()
         } else {
             Log.error("❌ SCALING FAILED: Could not find shape in unified objects system", category: .error)
         }

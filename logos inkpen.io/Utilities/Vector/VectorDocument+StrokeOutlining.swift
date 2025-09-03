@@ -85,7 +85,7 @@ extension VectorDocument {
         selectedObjectIDs = newShapeIDs
         
         // CRITICAL FIX: Sync unified objects after creating stroke shapes
-        syncUnifiedObjectsAfterPropertyChange()
+        updateUnifiedObjectsOptimized()
         
         // Force document refresh so arrow tool can see newly created shapes
         objectWillChange.send()
