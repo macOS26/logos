@@ -41,7 +41,7 @@ extension DrawingCanvas {
                 
                 if shape.isTextObject {
                     // CRITICAL FIX: For text objects, use actual position from textObjects array + center offset
-                    if let textObject = document.textObjects.first(where: { $0.id == shape.id }) {
+                    if let textObject = document.allTextObjects.first(where: { $0.id == shape.id }) {
                         Log.error("🚨 DRAG DEBUG: Found textObject position=\(textObject.position), bounds=\(textObject.bounds)", category: .debug)
                         let centerX = textObject.position.x + textObject.bounds.width/2  
                         let centerY = textObject.position.y + textObject.bounds.height/2
@@ -524,7 +524,7 @@ extension DrawingCanvas {
                 // CRITICAL FIX: Handle text objects differently - they're not in layers.shapes
                 if oldShape.isTextObject {
                     Log.error("🚨 SYNC DEBUG: Text object - syncing from textObjects array", category: .debug)
-                    if let textObject = document.textObjects.first(where: { $0.id == oldShape.id }) {
+                    if let textObject = document.allTextObjects.first(where: { $0.id == oldShape.id }) {
                         Log.error("🚨 SYNC DEBUG: Found textObject at position=\(textObject.position)", category: .debug)
                         var updatedShape = oldShape
                         updatedShape.transform.tx = textObject.position.x

@@ -297,7 +297,7 @@ struct ColorPanel: View {
                     }
                     
                     // Find the text in the textObjects array and update it
-                    if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
+                    if let textIndex = document.findTextIndex(by: shape.id) {
                         document.textObjects[textIndex].typography.hasStroke = true
                         document.textObjects[textIndex].typography.strokeColor = color
                         document.textObjects[textIndex].typography.strokeOpacity = document.defaultStrokeOpacity

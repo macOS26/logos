@@ -20,12 +20,12 @@ struct FontPanel: View {
     
     // FIXED: Simple computed property that doesn't modify state during view update
     private var selectedText: VectorText? {
-        document.textObjects.first { document.selectedTextIDs.contains($0.id) }
+        document.allTextObjects.first { document.selectedTextIDs.contains($0.id) }
     }
     
     // FIXED: Simple computed property that doesn't modify state during view update
     private var editingText: VectorText? {
-        document.textObjects.first { $0.isEditing }
+        document.allTextObjects.first { $0.isEditing }
     }
     
     // GET CURRENT TEXT BOX STATE
@@ -653,7 +653,7 @@ struct FontPanel: View {
                 continue
             }
             
-            if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
+            if let textIndex = document.findTextIndex(by: textID) {
                 let originalTypography = document.textObjects[textIndex].typography
                 update(&document.textObjects[textIndex])
                 let updatedTypography = document.textObjects[textIndex].typography
