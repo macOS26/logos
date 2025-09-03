@@ -832,7 +832,7 @@ struct FontPanel: View {
         
         if remainingTextCount > 0 {
             Log.info("📋 REMAINING TEXT OBJECTS:", category: .general)
-            for (index, textObj) in document.textObjects.enumerated() {
+            for (index, textObj) in document.allTextObjects.enumerated() {
                 Log.info("   \(index): '\(textObj.content)' (ID: \(textObj.id.uuidString.prefix(8)))", category: .general)
             }
         }

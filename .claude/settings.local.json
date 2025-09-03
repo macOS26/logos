@@ -40,7 +40,8 @@
       "Read(//**)",
       "mcp__xcf-server__create_doc",
       "Bash(rm:*)",
-      "mcp__xcf-server__apply_undo_diff_to_doc"
+      "mcp__xcf-server__apply_undo_diff_to_doc",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

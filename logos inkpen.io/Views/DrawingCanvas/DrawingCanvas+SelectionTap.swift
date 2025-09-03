@@ -319,7 +319,7 @@ extension DrawingCanvas {
             Log.info("❌ NO HIT: No objects found at location \(validatedLocation)", category: .selection)
             
             // CRITICAL FIX: If no objects found and we have text objects, try to force resync
-            if !document.textObjects.isEmpty {
+            if !document.allTextObjects.isEmpty {
                 Log.info("🔧 SELECTION FIX: No objects found but text objects exist - attempting force resync", category: .selection)
                 document.forceResyncUnifiedObjects()
             }
