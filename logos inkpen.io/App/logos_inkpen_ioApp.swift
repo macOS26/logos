@@ -829,15 +829,37 @@ class ClipboardManager {
     func copy(from document: VectorDocument) {
         // REFACTORED: Use unified objects system for copying
         var shapesToCopy: [VectorShape] = []
-        let textToCopy: [VectorText] = []
+        var textToCopy: [VectorText] = []
         
         // Collect selected objects from unified system
         for objectID in document.selectedObjectIDs {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    shapesToCopy.append(shape)
-                    // Text handled as VectorShape
+                    if shape.isTextObject {
+                        // CRITICAL FIX: Convert VectorShape back to VectorText for proper copy/paste
+                        if let textContent = shape.textContent, let typography = shape.typography {
+                            let position = CGPoint(x: shape.transform.tx, y: shape.transform.ty)
+                            let vectorText = VectorText(
+                                content: textContent,
+                                typography: typography,
+                                position: position,
+                                transform: .identity,
+                                isVisible: shape.isVisible,
+                                isLocked: shape.isLocked,
+                                isEditing: shape.isEditing ?? false,
+                                layerIndex: unifiedObject.layerIndex,
+                                isPointText: shape.isPointText ?? true,
+                                cursorPosition: shape.cursorPosition ?? 0,
+                                areaSize: shape.areaSize
+                            )
+                            // Note: VectorText.id will be different since it's let, but we'll assign new ID during paste anyway
+                            textToCopy.append(vectorText)
+                        }
+                    } else {
+                        // Regular shape
+                        shapesToCopy.append(shape)
+                    }
                 }
             }
         }
