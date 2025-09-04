@@ -456,10 +456,10 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Keep legacy textObjects array in sync during migration
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }),
-                   let vectorText = VectorText.from(shape) {
-                    textObjects[legacyIndex] = vectorText
+                // CRITICAL FIX: Only update the color properties in legacy array, preserve position
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].typography.fillColor = color
+                    textObjects[legacyIndex].typography.fillOpacity = defaultFillOpacity
                 }
             }
         }
@@ -486,10 +486,10 @@ extension VectorDocument {
                     orderID: unifiedObjects[objectIndex].orderID
                 )
                 
-                // Keep legacy textObjects array in sync during migration
-                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }),
-                   let vectorText = VectorText.from(shape) {
-                    textObjects[legacyIndex] = vectorText
+                // CRITICAL FIX: Only update the color properties in legacy array, preserve position
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].typography.hasStroke = true
+                    textObjects[legacyIndex].typography.strokeColor = color
                 }
             }
         }
