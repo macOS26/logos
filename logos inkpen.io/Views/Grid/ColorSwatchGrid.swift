@@ -239,7 +239,7 @@ struct ColorSwatchGrid: View {
                             document.defaultStrokeColor = color  // Set default for new shapes
                             // CRITICAL FIX: Use setActiveColor to handle text objects properly
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 TOOLBAR: Set stroke color: \(color) (active target)", level: .info)
+                            Log.fileOperation("🎨 TOOLBAR: Set stroke color: \(color) (active target)", level: .debug)
                             
                             // INK panel auto-updates from document bindings
                         } else {
@@ -247,7 +247,7 @@ struct ColorSwatchGrid: View {
                             document.defaultFillColor = color  // Set default for new shapes
                             // CRITICAL FIX: Use setActiveColor to handle text objects properly
                             document.setActiveColor(color)
-                            Log.fileOperation("🎨 TOOLBAR: Set fill color: \(color) (active target)", level: .info)
+                            Log.fileOperation("🎨 TOOLBAR: Set fill color: \(color) (active target)", level: .debug)
                             
                             // INK panel auto-updates from document bindings
                         }
@@ -318,14 +318,9 @@ struct ColorSwatchGrid: View {
             if let unifiedObject = document.unifiedObjects.first(where: { $0.id == objectID }) {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
-                    // Find the shape in the layers array and update it
-                    if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
-                       let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shape.id }) {
-                        if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: color)
-                        } else {
-                            document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = color
-                        }
+                    // UNIFIED HELPER: Use unified system helper instead of direct manipulation
+                    if !shape.isTextObject {
+                        document.updateShapeFillColorInUnified(id: shape.id, color: color)
                         hasChanges = true
                     }
                     

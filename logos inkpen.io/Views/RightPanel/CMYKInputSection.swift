@@ -389,23 +389,18 @@ struct CMYKInputSection: View {
                             // Only update non-gradient fills/strokes
                             switch document.activeColorTarget {
                             case .fill:
-                                if let fillStyle = document.layers[layerIndex].shapes[shapeIndex].fillStyle,
-                                   case .gradient = fillStyle.color {
+                                // UNIFIED HELPER: Use unified system helper instead of direct manipulation
+                                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                                if let fillStyle = shape.fillStyle, case .gradient = fillStyle.color {
                                     // Skip gradient fills - they should only be updated via explicit gradient callbacks
                                     continue
                                 } else {
-                                    if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                        document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
-                                    } else {
-                                        document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
-                                    }
+                                    document.updateShapeFillColorInUnified(id: shape.id, color: vectorColor)
                                 }
                             case .stroke:
-                                if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                                } else {
-                                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
-                                }
+                                // UNIFIED HELPER: Use unified system helper instead of direct manipulation
+                                let shape = document.layers[layerIndex].shapes[shapeIndex]
+                                document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
                             }
                             break // Found the shape, no need to check other layers
                         }

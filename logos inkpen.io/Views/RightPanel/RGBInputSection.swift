@@ -390,17 +390,13 @@ struct RGBInputSection: View {
                     if let shapeIndex = document.layers[layerIndex].shapes.firstIndex(where: { $0.id == shapeID }) {
                         switch document.activeColorTarget {
                         case .fill:
-                            if document.layers[layerIndex].shapes[shapeIndex].fillStyle == nil {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle = FillStyle(color: vectorColor)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].fillStyle?.color = vectorColor
-                            }
+                            // UNIFIED HELPER: Use unified system helper instead of direct manipulation
+                            let shape = document.layers[layerIndex].shapes[shapeIndex]
+                            document.updateShapeFillColorInUnified(id: shape.id, color: vectorColor)
                         case .stroke:
-                            if document.layers[layerIndex].shapes[shapeIndex].strokeStyle == nil {
-                                                                    document.layers[layerIndex].shapes[shapeIndex].strokeStyle = StrokeStyle(color: vectorColor, width: document.defaultStrokeWidth, placement: document.defaultStrokePlacement, lineCap: document.defaultStrokeLineCap, lineJoin: document.defaultStrokeLineJoin, miterLimit: document.defaultStrokeMiterLimit, opacity: document.defaultStrokeOpacity)
-                            } else {
-                                document.layers[layerIndex].shapes[shapeIndex].strokeStyle?.color = vectorColor
-                            }
+                            // UNIFIED HELPER: Use unified system helper instead of direct manipulation
+                            let shape = document.layers[layerIndex].shapes[shapeIndex]
+                            document.updateShapeStrokeColorInUnified(id: shape.id, color: vectorColor)
                         }
                         break // Found the shape, no need to check other layers
                     }
