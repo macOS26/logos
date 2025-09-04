@@ -16,7 +16,6 @@ extension VectorDocument {
     // MARK: - Professional Text Management
     func addText(_ text: VectorText) {
         saveToUndoStack()
-        textObjects.append(text)
         
         // Add to unified system with current layer
         if let layerIndex = selectedLayerIndex {
@@ -39,16 +38,11 @@ extension VectorDocument {
         
         saveToUndoStack()
         
-        // Add text to global array (for rendering compatibility)
-        textObjects.append(text)
-        
         // Associate text with specific layer by storing layer reference
-        // Note: We still use global textObjects for rendering, but track layer association
         var modifiedText = text
         modifiedText.layerIndex = layerIndex
-        textObjects[textObjects.count - 1] = modifiedText
         
-        // Add to unified system
+        // Add to unified system (this will also update the textObjects array)
         addTextToUnifiedSystem(modifiedText, layerIndex: layerIndex)
         
         selectedTextIDs = [text.id]
@@ -83,8 +77,11 @@ extension VectorDocument {
                 )
                 // CRITICAL FIX: Don't call updateBounds() - preserve original bounds from ProfessionalTextCanvas
                 // duplicateText.updateBounds() - REMOVED because it uses old single-line algorithm
-                
-                textObjects.append(duplicateText)
+
+                // UNIFIED SYSTEM: Use unified helper instead of direct manipulation
+                if let layerIndex = originalText.layerIndex ?? selectedLayerIndex {
+                    addTextToUnifiedSystem(duplicateText, layerIndex: layerIndex)
+                }
                 newTextIDs.insert(duplicateText.id)
             }
         }
@@ -351,8 +348,8 @@ extension VectorDocument {
                 isGroup: false // Single unified shape, not a group
             )
             
-            // Add to current layer
-            layers[layerIndex].shapes.append(outlineShape)
+            // UNIFIED SYSTEM: Use unified helper instead of direct manipulation
+            addShapeToUnifiedSystem(outlineShape, layerIndex: layerIndex)
             
             // Remove original text object
             textObjects.remove(at: textIndex)

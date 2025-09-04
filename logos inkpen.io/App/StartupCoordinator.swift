@@ -16,7 +16,7 @@ class StartupCoordinator {
     private init() {}
     
     func performStartupTasks() async {
-        Log.debug("📄 StartupCoordinator: Beginning startup sequence", category: .startup)
+        Log.info("📄 StartupCoordinator: Beginning startup sequence", category: .startup)
         
         // Set up system call monitoring
         SystemCallInterceptor.shared.setupSystemCallMonitoring()
@@ -53,7 +53,7 @@ class StartupCoordinator {
         testErrorHandling()
 #endif
         
-        Log.debug("📄 StartupCoordinator: Startup sequence completed", category: .startup)
+        Log.info("📄 StartupCoordinator: Startup sequence completed", category: .startup)
     }
     
     private func configureWindowTabbing() async {
@@ -61,7 +61,7 @@ class StartupCoordinator {
             // Enable automatic tabbing for document windows; utility windows opt-out individually
             NSWindow.allowsAutomaticWindowTabbing = true
             UserDefaults.standard.set("always", forKey: "AppleWindowTabbingMode")
-            Log.debug("📄 StartupCoordinator: Window tabbing set to always; document windows will tab, utilities opt-out", category: .startup)
+            Log.info("📄 StartupCoordinator: Window tabbing set to always; document windows will tab, utilities opt-out", category: .startup)
         }
     }
     
@@ -79,7 +79,7 @@ class StartupCoordinator {
             for directory in directoriesToCheck {
                 do {
                     _ = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
-                    Log.debug("📄 StartupCoordinator: File system access verified for \(directory.lastPathComponent)", category: .startup)
+                    Log.info("📄 StartupCoordinator: File system access verified for \(directory.lastPathComponent)", category: .startup)
                 } catch {
                                           Log.warning("📄 StartupCoordinator: File system warning for \(directory.lastPathComponent): \(error.localizedDescription)", category: .startup)
                 }
@@ -92,13 +92,13 @@ class StartupCoordinator {
             let documentController = NSDocumentController.shared
             documentController.autosavingDelay = 30.0
             UserDefaults.standard.set(true, forKey: "NSQuitAlwaysKeepsWindows")
-            Log.debug("📄 StartupCoordinator: Document controller initialized", category: .startup)
+            Log.info("📄 StartupCoordinator: Document controller initialized", category: .startup)
         }
     }
     
     // Test method to verify error handling
     func testErrorHandling() {
-        Log.debug("📄 StartupCoordinator: Testing error handling...", category: .startup)
+        Log.info("📄 StartupCoordinator: Testing error handling...", category: .startup)
         
         // Simulate the DetachedSignatures error
         let testError = NSError(domain: "TestDomain", code: 2, userInfo: [
@@ -106,6 +106,6 @@ class StartupCoordinator {
         ])
         
         let wasHandled = SystemErrorHandler.shared.handleSystemError(testError)
-        Log.debug("📄 StartupCoordinator: Test error was handled: \(wasHandled)", category: .startup)
+        Log.info("📄 StartupCoordinator: Test error was handled: \(wasHandled)", category: .startup)
     }
 }

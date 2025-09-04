@@ -511,15 +511,16 @@ class TemplateManager {
             document.layers.append(layer)
         }
         
-        // Add template shapes to appropriate layers
+        // Add template shapes to appropriate layers using unified system
         if !template.initialShapes.isEmpty {
             // Add to first layer, create one if none exist
             if document.layers.isEmpty {
                 document.layers.append(VectorLayer(name: "Layer 1"))
             }
             
+            // UNIFIED SYSTEM: Use unified helper instead of direct manipulation
             for shape in template.initialShapes {
-                document.layers[0].shapes.append(shape)
+                document.addShapeToUnifiedSystem(shape, layerIndex: 0)
             }
         }
         
@@ -637,4 +638,3 @@ class TemplateManager {
         return "Template: Custom or Modified (\(shapeCount) shapes, \(layerCount) layers)"
     }
 }
-

@@ -159,8 +159,19 @@ extension VectorDocument {
             unifiedObjects.remove(at: existingIndex)
         }
         
+        // CRITICAL FIX: Also add to legacy textObjects array
+        let existingTextIndex = textObjects.firstIndex { $0.id == text.id }
+        if let existingTextIndex = existingTextIndex {
+            textObjects.remove(at: existingTextIndex)
+        }
+        
+        // Set the layer index on the text object
+        var textWithLayer = text
+        textWithLayer.layerIndex = layerIndex
+        textObjects.append(textWithLayer)
+        
         // Convert VectorText to VectorShape
-        let textShape = VectorShape.from(text)
+        let textShape = VectorShape.from(textWithLayer)
         
         // CRITICAL FIX: During undo/redo operations, preserve the original orderID if available
         if isUndoRedoOperation {
