@@ -66,15 +66,23 @@ struct UnifiedObjectSystemCriticalTests {
         let layer = VectorLayer(name: "Test Layer")
         document.layers.append(layer)
         
+        let initialUnifiedCount = document.unifiedObjects.count
+        let initialLayerShapeCount = document.layers[0].shapes.count
+        
         let shape = VectorShape.rectangle(at: CGPoint(x: 0, y: 0), size: CGSize(width: 50, height: 50))
         document.addShapeToUnifiedSystem(shape, layerIndex: 0)
         
-        #expect(document.unifiedObjects.count == 1, "Unified object not added")
-        #expect(document.layers[0].shapes.count == 1, "Legacy shape not added")
+        #expect(document.unifiedObjects.count == initialUnifiedCount + 1, "Unified object not added")
+        #expect(document.layers[0].shapes.count == initialLayerShapeCount + 1, "Legacy shape not added")
         
-        let unifiedShape = document.unifiedObjects.first
-        #expect(unifiedShape != nil, "Unified object missing")
-        if case .shape(let s) = unifiedShape?.objectType {
+        let addedUnifiedShape = document.unifiedObjects.first { obj in
+            if case .shape(let s) = obj.objectType {
+                return s.id == shape.id
+            }
+            return false
+        }
+        #expect(addedUnifiedShape != nil, "Unified object missing")
+        if let unifiedObj = addedUnifiedShape, case .shape(let s) = unifiedObj.objectType {
             #expect(s.id == shape.id, "Shape IDs don't match")
         }
     }
