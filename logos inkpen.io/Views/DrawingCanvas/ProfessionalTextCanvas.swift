@@ -1371,7 +1371,9 @@ class ProfessionalTextViewModel: ObservableObject {
                 width: frame.width, 
                 height: frame.height
             )
-            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds)", level: .info)
+            // CRITICAL FIX: Update areaSize to match new dimensions for proper copy/paste
+            document.textObjects[textIndex].areaSize = CGSize(width: frame.width, height: frame.height)
+            Log.fileOperation("📐 UPDATED VECTORTEXT BOUNDS: position=\(document.textObjects[textIndex].position), bounds=\(document.textObjects[textIndex].bounds), areaSize=\(document.textObjects[textIndex].areaSize?.debugDescription ?? "nil")", level: .info)
         }
     }
     
