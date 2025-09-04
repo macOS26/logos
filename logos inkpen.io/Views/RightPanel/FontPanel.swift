@@ -334,8 +334,8 @@ struct FontPanel: View {
                                             .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .left ? Color.blue : Color.clear)
                                             .cornerRadius(4)
+                                            .contentShape(Rectangle()) // Extend hit area to match entire frame area
                                     }
-                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Left")
                                     
@@ -354,8 +354,8 @@ struct FontPanel: View {
                                             .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .center ? Color.blue : Color.clear)
                                             .cornerRadius(4)
+                                            .contentShape(Rectangle()) // Extend hit area to match entire frame area
                                     }
-                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Center")
                                     
@@ -374,8 +374,8 @@ struct FontPanel: View {
                                             .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .right ? Color.blue : Color.clear)
                                             .cornerRadius(4)
+                                            .contentShape(Rectangle()) // Extend hit area to match entire frame area
                                     }
-                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Align Right")
                                     
@@ -394,13 +394,14 @@ struct FontPanel: View {
                                             .frame(width: 36, height: 28)
                                             .background(currentTextAlignment == .justified ? Color.blue : Color.clear)
                                             .cornerRadius(4)
+                                            .contentShape(Rectangle()) // Extend hit area to match entire frame area
                                     }
-                                    .contentShape(Rectangle()) // Extend hit area to match button frame
                                     .buttonStyle(PlainButtonStyle())
                                     .help("Justify")
                                     
                                     Spacer()
                                 }
+                                .padding(.vertical, 8) // Apply same hit area padding as vertical toolbar
                             }
                             
                             // Line Spacing Control (0 to fontSize/2)

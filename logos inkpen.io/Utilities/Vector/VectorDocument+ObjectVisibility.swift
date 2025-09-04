@@ -27,11 +27,9 @@ extension VectorDocument {
             }
         }
         
-        // Lock selected text objects
-        for textIndex in textObjects.indices {
-            if selectedTextIDs.contains(textObjects[textIndex].id) {
-                textObjects[textIndex].isLocked = true
-            }
+        // Lock selected text objects using unified helpers
+        for textID in selectedTextIDs {
+            lockTextInUnified(id: textID)
         }
         
         Log.info("🔒 Locked \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
@@ -57,10 +55,10 @@ extension VectorDocument {
             }
         }
         
-        // Unlock all text objects (they're global)
-        for textIndex in textObjects.indices {
-            if textObjects[textIndex].isLocked {
-                textObjects[textIndex].isLocked = false
+        // Unlock all text objects using unified helpers
+        for textObject in textObjects {
+            if textObject.isLocked {
+                unlockTextInUnified(id: textObject.id)
                 unlockedCount += 1
             }
         }
@@ -85,11 +83,9 @@ extension VectorDocument {
             }
         }
         
-        // Hide selected text objects
-        for textIndex in textObjects.indices {
-            if selectedTextIDs.contains(textObjects[textIndex].id) {
-                textObjects[textIndex].isVisible = false
-            }
+        // Hide selected text objects using unified helpers
+        for textID in selectedTextIDs {
+            hideTextInUnified(id: textID)
         }
         
         Log.info("👁️‍🗨️ Hidden \(selectedShapeIDs.count) shapes and \(selectedTextIDs.count) text objects", category: .general)
@@ -115,10 +111,10 @@ extension VectorDocument {
             }
         }
         
-        // Show all text objects (they're global)
-        for textIndex in textObjects.indices {
-            if !textObjects[textIndex].isVisible {
-                textObjects[textIndex].isVisible = true
+        // Show all text objects using unified helpers
+        for textObject in textObjects {
+            if !textObject.isVisible {
+                showTextInUnified(id: textObject.id)
                 shownCount += 1
             }
         }

@@ -494,4 +494,237 @@ extension VectorDocument {
             }
         }
     }
+    
+    // MARK: - UNIFIED LOCK/UNLOCK HELPERS
+    
+    func lockTextInUnified(id: UUID) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.isLocked = true
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].isLocked = true
+                }
+            }
+        }
+    }
+    
+    func unlockTextInUnified(id: UUID) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.isLocked = false
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].isLocked = false
+                }
+            }
+        }
+    }
+    
+    // MARK: - UNIFIED VISIBILITY HELPERS
+    
+    func hideTextInUnified(id: UUID) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.isVisible = false
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].isVisible = false
+                }
+            }
+        }
+    }
+    
+    func showTextInUnified(id: UUID) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.isVisible = true
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].isVisible = true
+                }
+            }
+        }
+    }
+    
+    // MARK: - UNIFIED OPACITY AND STROKE HELPERS
+    
+    func updateTextFillOpacityInUnified(id: UUID, opacity: Double) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.typography?.fillOpacity = opacity
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].typography.fillOpacity = opacity
+                }
+            }
+        }
+    }
+    
+    func updateTextStrokeWidthInUnified(id: UUID, width: Double) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                shape.typography?.strokeWidth = width
+                shape.typography?.hasStroke = width > 0
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].typography.strokeWidth = width
+                    textObjects[legacyIndex].typography.hasStroke = width > 0
+                }
+            }
+        }
+    }
+    
+    // MARK: - UNIFIED POSITION HELPERS
+    
+    func translateTextInUnified(id: UUID, delta: CGPoint) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update position in transform
+                shape.transform.tx += delta.x
+                shape.transform.ty += delta.y
+                
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Sync to legacy array
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                    textObjects[legacyIndex].position.x += delta.x
+                    textObjects[legacyIndex].position.y += delta.y
+                }
+            }
+        }
+    }
+    
+    func translateAllTextInUnified(delta: CGPoint) {
+        // Get all text IDs first to avoid mutation during iteration
+        let textIDs = textObjects.map { $0.id }
+        
+        // Use unified helper for each text
+        for textID in textIDs {
+            translateTextInUnified(id: textID, delta: delta)
+        }
+    }
+    
+    // MARK: - UNIFIED EDITING STATE HELPERS
+    
+    func setTextEditingInUnified(id: UUID, isEditing: Bool) {
+        // Check if text exists in unified system
+        if unifiedObjects.contains(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Note: isEditing is stored in textObjects only, not in unified shapes
+            // Sync to legacy array
+            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                textObjects[legacyIndex].isEditing = isEditing
+            }
+        }
+    }
+    
+    func updateTextLayerInUnified(id: UUID, layerIndex: Int) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            // Recreate VectorObject with new layerIndex (layerIndex is let constant)
+            let existingObject = unifiedObjects[objectIndex]
+            if case .shape(let shape) = existingObject.objectType {
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: layerIndex,
+                    orderID: existingObject.orderID
+                )
+            }
+            
+            // Sync to legacy array
+            if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }) {
+                textObjects[legacyIndex].layerIndex = layerIndex
+            }
+        }
+    }
 }

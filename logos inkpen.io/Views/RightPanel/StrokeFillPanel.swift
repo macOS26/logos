@@ -385,11 +385,9 @@ struct StrokeFillPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and update it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].typography.fillOpacity = opacity
-                            hasChanges = true
-                        }
+                        // Use unified helper for fill opacity update
+                        document.updateTextFillOpacityInUnified(id: shape.id, opacity: opacity)
+                        hasChanges = true
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
@@ -513,11 +511,9 @@ struct StrokeFillPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and update it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].typography.strokeWidth = width
-                            hasChanges = true
-                        }
+                        // Use unified helper for stroke width update
+                        document.updateTextStrokeWidthInUnified(id: shape.id, width: width)
+                        hasChanges = true
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,

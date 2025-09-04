@@ -418,10 +418,8 @@ struct MainToolbarContent: ToolbarContent {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and lock it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].isLocked = true
-                        }
+                        // Use unified helper for text locking
+                        document.lockTextInUnified(id: shape.id)
                     } else {
                         // Find the shape in the layers array and lock it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
@@ -449,9 +447,9 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        // Unlock all text objects
-        for textIndex in document.textObjects.indices {
-            document.textObjects[textIndex].isLocked = false
+        // Unlock all text objects using unified helpers
+        for textObject in document.textObjects {
+            document.unlockTextInUnified(id: textObject.id)
         }
         
         Log.info("🔓 Unlocked all objects", category: .shapes)
@@ -466,10 +464,8 @@ struct MainToolbarContent: ToolbarContent {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and hide it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].isVisible = false
-                        }
+                        // Use unified helper for text hiding
+                        document.hideTextInUnified(id: shape.id)
                     } else {
                         // Find the shape in the layers array and hide it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
@@ -497,9 +493,9 @@ struct MainToolbarContent: ToolbarContent {
             }
         }
         
-        // Show all text objects
-        for textIndex in document.textObjects.indices {
-            document.textObjects[textIndex].isVisible = true
+        // Show all text objects using unified helpers
+        for textObject in document.textObjects {
+            document.showTextInUnified(id: textObject.id)
         }
         
         Log.info("👁️ Showed all objects", category: .shapes)

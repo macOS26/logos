@@ -58,10 +58,8 @@ extension DrawingCanvas {
     
     // NEW: Helper function to finish text editing but keep text selected
     private func finishTextEditingButKeepSelected(_ textID: UUID) {
-        // Stop editing mode (BLUE → GREEN)
-        if let textIndex = document.textObjects.firstIndex(where: { $0.id == textID }) {
-            document.textObjects[textIndex].isEditing = false
-        }
+        // Stop editing mode using unified helper (BLUE → GREEN)
+        document.setTextEditingInUnified(id: textID, isEditing: false)
         
         // Keep text selected (GREEN state) - REFACTORED: Use unified objects system
         document.selectedObjectIDs = [textID]

@@ -72,9 +72,9 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop all editing
-            for textIndex in document.textObjects.indices {
-                if document.textObjects[textIndex].isEditing {
-                    document.textObjects[textIndex].isEditing = false
+            for textObject in document.textObjects {
+                if textObject.isEditing {
+                    document.setTextEditingInUnified(id: textObject.id, isEditing: false)
                 }
             }
             
@@ -766,9 +766,9 @@ extension DrawingCanvas {
             document.selectedShapeIDs.removeAll()
             
             // Stop editing any text that might be in edit mode
-            for textIndex in document.textObjects.indices {
-                if document.textObjects[textIndex].isEditing {
-                    document.textObjects[textIndex].isEditing = false
+            for textObject in document.textObjects {
+                if textObject.isEditing {
+                    document.setTextEditingInUnified(id: textObject.id, isEditing: false)
                 }
             }
             

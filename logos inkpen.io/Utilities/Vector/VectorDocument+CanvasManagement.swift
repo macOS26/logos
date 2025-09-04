@@ -162,11 +162,8 @@ extension VectorDocument {
             }
         }
 
-        // Translate text objects' positions
-        for i in textObjects.indices {
-            textObjects[i].position.x += delta.x
-            textObjects[i].position.y += delta.y
-        }
+        // Translate text objects' positions using unified helper
+        translateAllTextInUnified(delta: delta)
 
         objectWillChange.send()
     }

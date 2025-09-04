@@ -183,8 +183,8 @@ extension DrawingCanvas {
                         Log.error("🚨 FINISH DRAG: NEW position=(\(newPositionX), \(newPositionY))", category: .debug)
                         Log.error("🚨 FINISH DRAG: initialCenter=\(initialCenter), dragDelta=\(currentDragDelta)", category: .debug)
                         
-                        document.textObjects[textIndex].position.x = newPositionX
-                        document.textObjects[textIndex].position.y = newPositionY
+                        let delta = CGPoint(x: newPositionX - document.textObjects[textIndex].position.x, y: newPositionY - document.textObjects[textIndex].position.y)
+                        document.translateTextInUnified(id: unifiedObject.id, delta: delta)
                         
                         Log.error("🚨 FINISH DRAG: Updated textObject position to (\(newPositionX), \(newPositionY))", category: .debug)
                     }

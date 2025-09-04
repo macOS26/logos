@@ -71,8 +71,8 @@ extension VectorDocument {
         
         saveToUndoStack()
         
-        // Update the text object's layer association
-        textObjects[textIndex].layerIndex = toLayerIndex
+        // Update the text object's layer association using unified helper
+        updateTextLayerInUnified(id: textObjects[textIndex].id, layerIndex: toLayerIndex)
         
         // Update selection to the target layer
         selectedTextIDs = [textId]
