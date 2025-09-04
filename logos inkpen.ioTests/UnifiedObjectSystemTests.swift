@@ -1212,4 +1212,73 @@ struct UnifiedObjectSystemTests {
             }
         }
     }
+    
+    @Test func testTextBoxResizeAreaSizeSyncPreventsWrongPasteDimensions() async throws {
+        let document = VectorDocument()
+        
+        // Create initial text with specific area size
+        let originalAreaSize = CGSize(width: 300, height: 150)
+        let originalText = VectorText(
+            content: "Resize Test Text",
+            typography: TypographyProperties(
+                strokeColor: VectorColor.black,
+                fillColor: VectorColor.black
+            ),
+            position: CGPoint(x: 50, y: 100),
+            areaSize: originalAreaSize
+        )
+        
+        // Add to document
+        document.textObjects.append(originalText)
+        document.addTextToUnifiedSystem(originalText, layerIndex: 1)
+        
+        // Verify original areaSize
+        #expect(document.textObjects[0].areaSize == originalAreaSize)
+        
+        // SIMULATE MANUAL RESIZE: User drags resize handle
+        let newResizedFrame = CGRect(x: 50, y: 100, width: 500, height: 250)
+        let newAreaSize = CGSize(width: 500, height: 250)
+        
+        // Simulate the resize operation that updateDocumentTextBounds handles
+        if let textIndex = document.textObjects.firstIndex(where: { $0.id == originalText.id }) {
+            document.textObjects[textIndex].position = CGPoint(x: newResizedFrame.minX, y: newResizedFrame.minY)
+            document.textObjects[textIndex].bounds = CGRect(
+                x: 0, y: 0, 
+                width: newResizedFrame.width, 
+                height: newResizedFrame.height
+            )
+            // CRITICAL: This line prevents the paste bug
+            document.textObjects[textIndex].areaSize = CGSize(width: newResizedFrame.width, height: newResizedFrame.height)
+        }
+        
+        // Verify areaSize was updated after resize
+        let resizedText = document.textObjects.first { $0.id == originalText.id }
+        #expect(resizedText?.areaSize == newAreaSize, "REGRESSION: areaSize not updated after resize - will cause paste bug!")
+        
+        // Select and copy the resized text
+        document.selectedObjectIDs.insert(originalText.id)
+        let clipboardManager = ClipboardManager.shared
+        clipboardManager.copy(from: document)
+        
+        // Clear selection and paste
+        document.selectedObjectIDs.removeAll()
+        clipboardManager.paste(to: document)
+        
+        // Verify we now have 2 text objects
+        #expect(document.textObjects.count == 2, "Should have original + pasted text")
+        
+        // Find the pasted text (different ID)
+        let pastedText = document.textObjects.first { $0.id != originalText.id }
+        #expect(pastedText != nil, "Pasted text not found")
+        
+        if let pastedText = pastedText {
+            // CRITICAL: Pasted text must have the RESIZED dimensions, not original
+            #expect(pastedText.areaSize == newAreaSize, "PASTE BUG: Pasted text has wrong size - got \(pastedText.areaSize?.debugDescription ?? "nil"), expected \(newAreaSize)")
+            #expect(pastedText.areaSize != originalAreaSize, "PASTE BUG: Pasted text reverted to original size instead of current resized size")
+            
+            // Verify bounds also match
+            let expectedBounds = CGRect(x: 0, y: 0, width: 500, height: 250)
+            #expect(pastedText.bounds == expectedBounds, "Pasted text bounds don't match resized dimensions")
+        }
+    }
 }
