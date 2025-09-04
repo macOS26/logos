@@ -41,6 +41,10 @@ class VectorDocument: ObservableObject, Codable {
     // NEW: Unified objects array for proper layer ordering
     @Published var unifiedObjects: [VectorObject] = [] // All objects (shapes + text) with proper ordering
     
+    // PERFORMANCE: O(1) object lookup cache to replace O(n) searches
+    private var unifiedObjectLookupCache: [UUID: VectorObject] = [:]
+    private var lookupCacheValid: Bool = false
+    
     // MIGRATION: Safe computed properties for gradual transition to unified-only access
     // These provide unified access while preserving backward compatibility
     var allShapes: [VectorShape] {

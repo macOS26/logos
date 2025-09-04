@@ -543,20 +543,25 @@ struct VectorText: Identifiable, Codable, Hashable {
     static func from(_ vectorShape: VectorShape) -> VectorText? {
         guard vectorShape.isTextObject else { return nil }
         
+        // CRITICAL FIX: Use the shape's typography if available, otherwise create from stroke/fill
+        let typography = vectorShape.typography ?? TypographyProperties(
+            strokeColor: vectorShape.strokeStyle?.color ?? .black,
+            fillColor: vectorShape.fillStyle?.color ?? .black
+        )
+        
         // Extract VectorText data from VectorShape
         // This is a reverse conversion from VectorShape.from(_:VectorText)
-        return VectorText(
+        var vectorText = VectorText(
             content: vectorShape.textContent ?? "", // Use the actual text content
-            typography: TypographyProperties(
-                strokeColor: vectorShape.strokeStyle?.color ?? .black,
-                fillColor: vectorShape.fillStyle?.color ?? .black
-            ),
-            position: vectorShape.bounds.origin,
-            transform: vectorShape.transform,
-            isVisible: vectorShape.isVisible,
-            isLocked: vectorShape.isLocked,
-            layerIndex: nil // Will be set from unified object
+            typography: typography,
+            position: CGPoint(x: vectorShape.transform.tx, y: vectorShape.transform.ty),
+            areaSize: vectorShape.areaSize
         )
+        
+        // CRITICAL FIX: Preserve the original VectorShape ID so object lookups work
+        vectorText.id = vectorShape.id
+        
+        return vectorText
     }
 }
 
