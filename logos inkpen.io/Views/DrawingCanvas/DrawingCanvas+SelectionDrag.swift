@@ -521,17 +521,22 @@ extension DrawingCanvas {
             
             switch unifiedObject.objectType {
             case .shape(let oldShape):
-                // CRITICAL FIX: Handle text objects - unified objects are now the authority
+                // CRITICAL FIX: Handle text objects - sync unified objects FROM textObjects (after drag)
                 if oldShape.isTextObject {
-                    Log.error("🚨 SYNC DEBUG: Text object - syncing textObjects FROM unified objects (CORRECTED)", category: .debug)
+                    Log.error("🚨 SYNC DEBUG: Text object - syncing unified objects FROM textObjects (CORRECTED)", category: .debug)
                     if let textIndex = document.textObjects.firstIndex(where: { $0.id == oldShape.id }) {
-                        let unifiedPosition = CGPoint(x: oldShape.transform.tx, y: oldShape.transform.ty)
-                        Log.error("🚨 SYNC DEBUG: Updating textObject position to (\(unifiedPosition.x), \(unifiedPosition.y))", category: .debug)
+                        let updatedText = document.textObjects[textIndex]
+                        Log.error("🚨 SYNC DEBUG: Updating unified object position to (\(updatedText.position.x), \(updatedText.position.y))", category: .debug)
                         
-                        // CRITICAL FIX: Sync textObjects array FROM unified objects (not the reverse)
-                        document.textObjects[textIndex].position = unifiedPosition
+                        // CRITICAL FIX: Update unified object FROM textObjects array (textObjects has new position)
+                        let updatedShape = VectorShape.from(updatedText)
+                        document.unifiedObjects[i] = VectorObject(
+                            shape: updatedShape,
+                            layerIndex: unifiedObject.layerIndex,
+                            orderID: unifiedObject.orderID  // Keep same orderID = no reordering
+                        )
                         
-                        Log.error("🚨 SYNC DEBUG: Updated textObjects array from unified objects authority", category: .debug)
+                        Log.error("🚨 SYNC DEBUG: Updated unified objects array from textObjects authority", category: .debug)
                     } else {
                         Log.error("🚨 SYNC DEBUG: TEXT OBJECT NOT FOUND in textObjects array!", category: .debug)
                     }
