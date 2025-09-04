@@ -437,32 +437,8 @@ struct ColorPanel: View {
         document.saveToUndoStack()
         
         for textID in document.selectedTextIDs {
-            if let objectIndex = document.unifiedObjects.firstIndex(where: { obj in
-                if case .shape(let shape) = obj.objectType {
-                    return shape.isTextObject && shape.id == textID
-                }
-                return false
-            }) {
-                if case .shape(var shape) = document.unifiedObjects[objectIndex].objectType {
-                    // Update typography in the shape
-                    shape.typography?.hasStroke = true
-                    shape.typography?.strokeColor = color
-                    shape.typography?.strokeOpacity = document.defaultStrokeOpacity
-                    
-                    // Update unified objects
-                    document.unifiedObjects[objectIndex] = VectorObject(
-                        shape: shape,
-                        layerIndex: document.unifiedObjects[objectIndex].layerIndex,
-                        orderID: document.unifiedObjects[objectIndex].orderID
-                    )
-                    
-                    // Keep legacy textObjects array in sync during migration
-                    if let legacyIndex = document.textObjects.firstIndex(where: { $0.id == textID }),
-                       let vectorText = VectorText.from(shape) {
-                        document.textObjects[legacyIndex] = vectorText
-                    }
-                }
-            }
+            // MIGRATION: Use unified helper instead of duplicate code
+            document.updateTextStrokeColorInUnified(id: textID, color: color)
         }
     }
-} 
+}

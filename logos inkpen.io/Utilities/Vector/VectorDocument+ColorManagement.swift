@@ -94,20 +94,15 @@ extension VectorDocument {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // CRITICAL FIX: Handle text objects properly
-                        if let textIndex = textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            saveToUndoStack()
-                            switch activeColorTarget {
-                            case .fill:
-                                textObjects[textIndex].typography.fillColor = color
-                                textObjects[textIndex].typography.fillOpacity = defaultFillOpacity
-                            case .stroke:
-                                textObjects[textIndex].typography.hasStroke = true
-                                textObjects[textIndex].typography.strokeColor = color
-                                textObjects[textIndex].typography.strokeOpacity = defaultStrokeOpacity
-                            }
-                            hasChanges = true
+                        // MIGRATION: Use unified helpers instead of direct assignment
+                        saveToUndoStack()
+                        switch activeColorTarget {
+                        case .fill:
+                            updateTextFillColorInUnified(id: shape.id, color: color)
+                        case .stroke:
+                            updateTextStrokeColorInUnified(id: shape.id, color: color)
                         }
+                        hasChanges = true
                     } else {
                         // Handle regular shapes in layers array
                         if let layerIndex = unifiedObject.layerIndex < layers.count ? unifiedObject.layerIndex : nil,

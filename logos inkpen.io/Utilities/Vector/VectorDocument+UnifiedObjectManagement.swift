@@ -432,4 +432,66 @@ extension VectorDocument {
         
         Log.info("✅ SYSTEM RESTORE: Canvas and Pasteboard layers are intact", category: .general)
     }
+    
+    // MARK: - UNIFIED TEXT COLOR HELPERS (MIGRATED FROM COLORSWATCHGRID)
+    
+    /// MIGRATED FROM ColorSwatchGrid - Update text fill color using unified system 
+    /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE
+    func updateTextFillColorInUnified(id: UUID, color: VectorColor) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update typography fill color in the shape
+                shape.typography?.fillColor = color
+                shape.typography?.fillOpacity = defaultFillOpacity
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Keep legacy textObjects array in sync during migration
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }),
+                   let vectorText = VectorText.from(shape) {
+                    textObjects[legacyIndex] = vectorText
+                }
+            }
+        }
+    }
+    
+    /// MIGRATED FROM ColorPanel - Update text stroke color using unified system
+    /// NO MORE DUPLICATES - USE THIS ONE HELPER EVERYWHERE  
+    func updateTextStrokeColorInUnified(id: UUID, color: VectorColor) {
+        if let objectIndex = unifiedObjects.firstIndex(where: { obj in
+            if case .shape(let shape) = obj.objectType {
+                return shape.isTextObject && shape.id == id
+            }
+            return false
+        }) {
+            if case .shape(var shape) = unifiedObjects[objectIndex].objectType {
+                // Update typography stroke color in the shape
+                shape.typography?.hasStroke = true
+                shape.typography?.strokeColor = color
+                
+                // Update unified objects
+                unifiedObjects[objectIndex] = VectorObject(
+                    shape: shape,
+                    layerIndex: unifiedObjects[objectIndex].layerIndex,
+                    orderID: unifiedObjects[objectIndex].orderID
+                )
+                
+                // Keep legacy textObjects array in sync during migration
+                if let legacyIndex = textObjects.firstIndex(where: { $0.id == id }),
+                   let vectorText = VectorText.from(shape) {
+                    textObjects[legacyIndex] = vectorText
+                }
+            }
+        }
+    }
 }

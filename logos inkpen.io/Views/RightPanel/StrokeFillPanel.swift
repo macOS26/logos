@@ -322,11 +322,9 @@ struct StrokeFillPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and update it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].typography.fillColor = color
-                            hasChanges = true
-                        }
+                        // MIGRATION: Use unified helper instead of direct assignment
+                        document.updateTextFillColorInUnified(id: shape.id, color: color)
+                        hasChanges = true
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
@@ -452,12 +450,9 @@ struct StrokeFillPanel: View {
                 switch unifiedObject.objectType {
                 case .shape(let shape):
                     if shape.isTextObject {
-                        // Find the text in the textObjects array and update it
-                        if let textIndex = document.textObjects.firstIndex(where: { $0.id == shape.id }) {
-                            document.textObjects[textIndex].typography.hasStroke = true
-                            document.textObjects[textIndex].typography.strokeColor = color
-                            hasChanges = true
-                        }
+                        // MIGRATION: Use unified helper instead of direct assignment
+                        document.updateTextStrokeColorInUnified(id: shape.id, color: color)
+                        hasChanges = true
                     } else {
                         // Find the shape in the layers array and update it
                         if let layerIndex = unifiedObject.layerIndex < document.layers.count ? unifiedObject.layerIndex : nil,
